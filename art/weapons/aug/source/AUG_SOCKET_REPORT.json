@@ -1,0 +1,14 @@
+{
+  "muzzle_location_blender_m": [
+    -0.006867535877972841,
+    -0.40700000524520874,
+    0.06376965343952179
+  ],
+  "tip_sample_vertices": 170,
+  "markers": [
+    "WeaponOrigin",
+    "MuzzleSocket"
+  ],
+  "output_glb": "art\\weapons\\aug\\models\\aug_runtime_socketed.glb",
+  "output_blend": "art\\weapons\\aug\\source\\aug_runtime_socketed.blend"
+}

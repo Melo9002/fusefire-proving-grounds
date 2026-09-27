@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ct7ah4wjifpjk"
-path.s3tc="res://.godot/imported/aug_runtime_Image_0.png-6e35028d682c378d466dc379846f56a2.s3tc.ctex"
+uid="uid://dbvsqsblkl7fy"
+path.s3tc="res://.godot/imported/android_test_dummy_rigged_texture_diffuse.png-0f40a056d6bd0239733ee448abc2bbf1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "83372cd470b281f5b53913d9ab4f1fd9"
+"md5": "6fd03e8d8a39f8ae076aa55815ab110a"
 }
 
 [deps]
 
-source_file="res://art/weapons/aug/models/aug_runtime_Image_0.png"
-dest_files=["res://.godot/imported/aug_runtime_Image_0.png-6e35028d682c378d466dc379846f56a2.s3tc.ctex"]
+source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigged_texture_diffuse.png"
+dest_files=["res://.godot/imported/android_test_dummy_rigged_texture_diffuse.png-0f40a056d6bd0239733ee448abc2bbf1.s3tc.ctex"]
 
 [params]
 

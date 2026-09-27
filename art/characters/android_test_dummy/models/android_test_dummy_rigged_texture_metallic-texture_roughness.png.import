@@ -2,23 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b35io8mxmxag5"
-path="res://.godot/imported/android_test_dummy_rigprep_texture_diffuse.png-1165d6629879e59e3fedf7ab5214b155.ctex"
+uid="uid://bqdb011gsfa7b"
+path.s3tc="res://.godot/imported/android_test_dummy_rigged_texture_metallic-texture_roughness.png-987d81d3355296ea9bdcf618766d2214.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
-"md5": "6fd03e8d8a39f8ae076aa55815ab110a"
+"md5": "af02677115a250ad7100562a14d5930e"
 }
 
 [deps]
 
-source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigprep_texture_diffuse.png"
-dest_files=["res://.godot/imported/android_test_dummy_rigprep_texture_diffuse.png-1165d6629879e59e3fedf7ab5214b155.ctex"]
+source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigged_texture_metallic-texture_roughness.png"
+dest_files=["res://.godot/imported/android_test_dummy_rigged_texture_metallic-texture_roughness.png-987d81d3355296ea9bdcf618766d2214.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

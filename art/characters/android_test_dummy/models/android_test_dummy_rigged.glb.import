@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cchnlage5ivds"
-path="res://.godot/imported/android_test_dummy_rigprep.glb-62ffa9ce1d7d119673edbe4c2b6dc1ab.scn"
+uid="uid://cjbjb405x4wob"
+path="res://.godot/imported/android_test_dummy_rigged.glb-4ac562274c3608782da110664f494002.scn"
 
 [deps]
 
-source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigprep.glb"
-dest_files=["res://.godot/imported/android_test_dummy_rigprep.glb-62ffa9ce1d7d119673edbe4c2b6dc1ab.scn"]
+source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigged.glb"
+dest_files=["res://.godot/imported/android_test_dummy_rigged.glb-4ac562274c3608782da110664f494002.scn"]
 
 [params]
 

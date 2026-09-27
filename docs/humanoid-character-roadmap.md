@@ -141,8 +141,8 @@ Once that slice is stable, expand to the full animation list. This prevents prod
 
 ## Current asset status
 
-- Dummy rig-preparation runtime: 50,000 triangles, 1.60 m, PBR textures retained; 5,166 duplicate vertices safely welded. Controlled anatomical weighting and deformation tests are next.
+- Dummy rigged runtime: 50,000 triangles, 1.60 m, 26 bones, all 53,520 vertices weighted, hand IK controls and weapon/carry sockets present. Stress-pose deformation validation passed.
 - Dummy source: 500,000 triangles and no armature.
-- AUG runtime: 4,562 triangles, 0.79 m long, one mesh, one material, UVs retained.
+- AUG socketed runtime: 4,562 triangles, 0.79 m long, one mesh, one material, UVs retained, with stable origin and muzzle markers.
 - AUG source: 6,194 triangles across 17 mesh objects. Eight hidden cartridge/bullet objects were removed from the runtime copy.
 - AUG license: CC BY 4.0. Preserve the included attribution file in distributions and release credits.

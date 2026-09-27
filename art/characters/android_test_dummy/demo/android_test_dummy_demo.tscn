@@ -1,8 +1,8 @@
 [gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://art/characters/android_test_dummy/demo/android_test_dummy_demo.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://art/characters/android_test_dummy/models/android_test_dummy_rigprep.glb" id="2_dummy"]
-[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime.glb" id="3_aug"]
+[ext_resource type="PackedScene" path="res://art/characters/android_test_dummy/models/android_test_dummy_rigged.glb" id="2_dummy"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="3_aug"]
 
 [sub_resource type="Environment" id="Environment_demo"]
 background_mode = 1
@@ -144,6 +144,6 @@ theme_override_styles/panel = SubResource("Style_panel")
 [node name="Status" type="Label" parent="UI/StatusPanel"]
 theme_override_colors/font_color = Color(0.72, 0.93, 0.96, 1)
 theme_override_font_sizes/font_size = 15
-text = "ASSET CHECKPOINT 26A\nRig-preparation mesh preview — topology cleanup in progress"
+text = "ASSET CHECKPOINT 26A\n26C rigged asset import — animation presentation begins in 26D"
 horizontal_alignment = 1
 vertical_alignment = 1

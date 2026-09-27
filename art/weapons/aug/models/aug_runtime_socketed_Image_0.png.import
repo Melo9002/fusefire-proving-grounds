@@ -2,23 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://uy35b2mxii1w"
-path="res://.godot/imported/android_test_dummy_rigprep_texture_metallic-texture_roughness.png-93f904ddb7d5466e2df7ab51ea206280.ctex"
+uid="uid://db0umfkljmq5y"
+path.s3tc="res://.godot/imported/aug_runtime_socketed_Image_0.png-b1ba5c552254be88abc34ac452ec8d84.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
-"md5": "af02677115a250ad7100562a14d5930e"
+"md5": "83372cd470b281f5b53913d9ab4f1fd9"
 }
 
 [deps]
 
-source_file="res://art/characters/android_test_dummy/models/android_test_dummy_rigprep_texture_metallic-texture_roughness.png"
-dest_files=["res://.godot/imported/android_test_dummy_rigprep_texture_metallic-texture_roughness.png-93f904ddb7d5466e2df7ab51ea206280.ctex"]
+source_file="res://art/weapons/aug/models/aug_runtime_socketed_Image_0.png"
+dest_files=["res://.godot/imported/aug_runtime_socketed_Image_0.png-b1ba5c552254be88abc34ac452ec8d84.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

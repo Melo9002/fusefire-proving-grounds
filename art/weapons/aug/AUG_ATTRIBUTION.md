@@ -6,6 +6,6 @@
 - **License:** Creative Commons Attribution 4.0 International (CC BY 4.0)
 - **License text:** https://creativecommons.org/licenses/by/4.0/
 
-FuseFire's runtime derivative imports the original GLB into Blender, scales it to 0.79 metres, removes hidden decorative cartridge objects, and joins the visible receiver, barrel, magazine, trigger, bolt, grip, and sights into one mesh. UVs and the original material are retained.
+FuseFire's runtime derivative imports the original GLB into Blender, scales it to 0.79 metres, removes hidden decorative cartridge objects, and joins the visible receiver, barrel, magazine, trigger, bolt, grip, and sights into one mesh, and adds `WeaponOrigin` and `MuzzleSocket` attachment markers. UVs and the original material are retained.
 
 No endorsement by CastleBravo or Sketchfab is implied.

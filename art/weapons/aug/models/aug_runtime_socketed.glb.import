@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://chle0e6unp1"
-path="res://.godot/imported/aug_runtime.glb-0afe56d6c7e848f066bb3a7495cfb463.scn"
+uid="uid://i666mse7mv1j"
+path="res://.godot/imported/aug_runtime_socketed.glb-6cc7f3af03eb6d5da0d8e07835a84c8c.scn"
 
 [deps]
 
-source_file="res://art/weapons/aug/models/aug_runtime.glb"
-dest_files=["res://.godot/imported/aug_runtime.glb-0afe56d6c7e848f066bb3a7495cfb463.scn"]
+source_file="res://art/weapons/aug/models/aug_runtime_socketed.glb"
+dest_files=["res://.godot/imported/aug_runtime_socketed.glb-6cc7f3af03eb6d5da0d8e07835a84c8c.scn"]
 
 [params]
 
