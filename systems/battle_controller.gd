@@ -317,7 +317,7 @@ func get_squad_context(unit: TacticalUnit) -> SquadContext:
 	context.begin_round(turn_manager.current_round)
 	return context
 
-func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None") -> void:
+func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = []) -> void:
 	var actor_name := "Unknown"
 	if is_instance_valid(actor):
 		actor_name = String(actor.name)
@@ -331,6 +331,8 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 		"squad_adjustments": squad_adjustments,
 		"position_scores": position_scores,
 		"target_scores": target_scores,
+		"position_candidates": position_candidates.duplicate(true),
+		"target_candidates": target_candidates.duplicate(true),
 		"difficulty": AIDifficultyPolicy.get_label(ai_difficulty),
 	})
 

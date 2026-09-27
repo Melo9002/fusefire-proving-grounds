@@ -30,6 +30,7 @@ func _check_pause_and_manual_enemy_control() -> void:
 	check(debug_tools.debug_tools_enabled, "Debug tools are exposed and enabled on the test scene")
 	debug_tools.set_panel_open(true)
 	check(paused and debug_tools.panel_open, "Opening debug tools pauses the scene")
+	check(debug_tools._panel.position.y + debug_tools._panel.size.y <= debug_tools.get_viewport_rect().size.y, "Expanded F3 panel fits inside the 720p viewport")
 	debug_tools.set_manual_enemy_control(true)
 	debug_tools.set_panel_open(false)
 	check(not paused, "Closing debug tools resumes a pause it owns")

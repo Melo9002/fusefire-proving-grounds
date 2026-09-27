@@ -58,6 +58,9 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	result.quality = level.battle_controller.last_map_quality
 	result.map_source = level.battle_controller.grid_manager.map_data.source_kind
 	result.map_size = level.battle_controller.grid_manager.map_data.map_size
+	result.traversal_link_count = level.battle_controller.grid_manager.map_data.traversal_links.size()
+	for cell: MapCellData in level.battle_controller.grid_manager.map_data.cells.values():
+		result.elevated_cell_count += int(cell.grid_position.y != 0)
 	_decision_count = 0
 	_decision_records.clear()
 	level.battle_controller.ai_decision_recorded.connect(_on_ai_decision)

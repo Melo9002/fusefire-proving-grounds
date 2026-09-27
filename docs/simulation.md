@@ -36,6 +36,19 @@ Measure map quality across 80 standard and refinery maps:
 godot_console --headless --path . --script res://tests/map_quality_metrics_smoke.gd
 ```
 
+Run the Prototype 1 5v5 certification matrix:
+
+```powershell
+godot_console --headless --path . --script res://tests/prototype_1_milestone.gd
+```
+
+This matrix runs every mission twice with five combatants on each side. Protect and
+Rescue split the friendly force between player and allied factions so allied AI is
+also exercised. It covers 24×20, 32×24, and 40×30 maps; generic generation, refinery,
+and the authored arena; and verifies that elevation and traversal are present. Both
+Victory and Defeat are valid completed simulations. Stalls, timeouts, setup failures,
+and round-limit results fail the command.
+
 The map-quality run prints five separate category scores: cover, routes, open space,
 firing lanes, and spawn safety. It also prints a low-, middle-, and high-ranked seed.
 Recreate those seeds in Match Setup and play or inspect them before changing score
@@ -147,9 +160,16 @@ Repeating a premade map with the same battle seed, rules, rosters, mission confi
 
 Elapsed execution time is not deterministic and is not part of replay authority.
 
-## Current known reproduction
+## Current certification baseline
 
-Rescue seed `23003`, starting with mission offset `2`, reaches the round limit after pickup on the current build. Friendly units cluster around the elevated carrier instead of progressing to extraction. Keep this seed as a regression scenario until carrier priority and support positioning are refined.
+The Prototype 1 matrix completed 15 of 15 matches with no issues on 2026-09-27:
+seven missions across two passes plus one authored-map Eliminate match. It covered
+10 generic generated maps, four refinery maps, one authored map, all three generated
+sizes, and elevation/traversal in every match. The observed average was 6.9 rounds.
+
+This is a regression baseline, not a promise that every possible seed is balanced.
+Preserve any future failing seed through the JSON failure report and add it as a
+targeted regression case.
 
 ## Reducing console noise
 

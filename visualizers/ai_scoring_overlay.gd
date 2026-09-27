@@ -1,0 +1,146 @@
+class_name AIScoringOverlay
+extends Node3D
+
+@export var grid_manager: GridManager
+
+var overlay_enabled := false
+var latest_record: Dictionary = {}
+var _position_mesh := MeshInstance3D.new()
+var _target_mesh := MeshInstance3D.new()
+var _score_labels := Node3D.new()
+
+func _ready() -> void:
+	_position_mesh.name = "PositionScores"
+	_target_mesh.name = "TargetScores"
+	_score_labels.name = "MovementScoreLabels"
+	add_child(_position_mesh)
+	add_child(_target_mesh)
+	add_child(_score_labels)
+	_position_mesh.material_override = _material()
+	_target_mesh.material_override = _material()
+	visible = false
+
+func set_overlay_enabled(enabled: bool) -> void:
+	overlay_enabled = enabled
+	visible = enabled
+	if enabled and not latest_record.is_empty():
+		display(latest_record)
+	elif not enabled:
+		clear()
+
+func display(record: Dictionary) -> void:
+	latest_record = record.duplicate(true)
+	if not overlay_enabled or not grid_manager:
+		return
+	var position_candidates: Array = record.get("position_candidates", [])
+	_position_mesh.mesh = _build_position_mesh(position_candidates)
+	_target_mesh.mesh = _build_target_mesh(record.get("target_candidates", []))
+	_build_score_labels(position_candidates)
+
+func clear() -> void:
+	_position_mesh.mesh = null
+	_target_mesh.mesh = null
+	_clear_score_labels()
+
+func _build_position_mesh(candidates: Array) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var score_range := _score_range(candidates)
+	for candidate in candidates:
+		if not candidate.has("cell"):
+			continue
+		var cell := grid_manager.get_cell_data(candidate.cell)
+		if not cell:
+			continue
+		var color := _candidate_color(candidate, score_range)
+		var half := grid_manager.cell_size * (0.43 if candidate.get("chosen", false) else 0.31)
+		_add_quad(surface, cell.world_position + Vector3.UP * 0.16, half, color)
+	return surface.commit()
+
+func _build_score_labels(candidates: Array) -> void:
+	_clear_score_labels()
+	for candidate in candidates:
+		if candidate.get("status", "") == "rejected" or not candidate.has("score") or not candidate.has("cell"):
+			continue
+		var cell := grid_manager.get_cell_data(candidate.cell)
+		if not cell:
+			continue
+		var label := Label3D.new()
+		label.text = "%+.0f" % float(candidate.score)
+		label.position = cell.world_position + Vector3.UP * 0.3
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.fixed_size = true
+		label.font_size = 30
+		label.outline_size = 8
+		label.modulate = Color(0.15, 1.0, 1.0) if candidate.get("chosen", false) else Color.WHITE
+		label.no_depth_test = true
+		_score_labels.add_child(label)
+
+func _clear_score_labels() -> void:
+	for child in _score_labels.get_children():
+		child.queue_free()
+
+func _build_target_mesh(candidates: Array) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var score_range := _score_range(candidates)
+	for candidate in candidates:
+		if not candidate.has("cell"):
+			continue
+		var cell := grid_manager.get_cell_data(candidate.cell)
+		if not cell:
+			continue
+		var color := _candidate_color(candidate, score_range)
+		var half := grid_manager.cell_size * (0.36 if candidate.get("chosen", false) else 0.24)
+		var center := cell.world_position + Vector3.UP * 0.2
+		_add_diamond(surface, center, half, color)
+	return surface.commit()
+
+func _candidate_color(candidate: Dictionary, score_range: Vector2) -> Color:
+	if candidate.get("chosen", false):
+		return Color(0.15, 1.0, 1.0, 0.9)
+	if candidate.get("status", "") == "rejected":
+		return Color(1.0, 0.12, 0.12, 0.48)
+	var score := float(candidate.get("score", 0.0))
+	var ratio := 0.5 if is_equal_approx(score_range.x, score_range.y) else inverse_lerp(score_range.x, score_range.y, score)
+	return Color(1.0 - ratio * 0.7, 0.25 + ratio * 0.75, 0.12, 0.58)
+
+func _score_range(candidates: Array) -> Vector2:
+	var minimum := INF
+	var maximum := -INF
+	for candidate in candidates:
+		if candidate.get("status", "") == "rejected" or not candidate.has("score"):
+			continue
+		minimum = minf(minimum, float(candidate.score))
+		maximum = maxf(maximum, float(candidate.score))
+	return Vector2(0.0, 0.0) if minimum == INF else Vector2(minimum, maximum)
+
+func _add_quad(surface: SurfaceTool, center: Vector3, half: float, color: Color) -> void:
+	var a := center + Vector3(-half, 0, -half)
+	var b := center + Vector3(half, 0, -half)
+	var c := center + Vector3(half, 0, half)
+	var d := center + Vector3(-half, 0, half)
+	_triangle(surface, a, b, c, color)
+	_triangle(surface, a, c, d, color)
+
+func _add_diamond(surface: SurfaceTool, center: Vector3, half: float, color: Color) -> void:
+	var north := center + Vector3(0, 0, -half)
+	var east := center + Vector3(half, 0, 0)
+	var south := center + Vector3(0, 0, half)
+	var west := center + Vector3(-half, 0, 0)
+	_triangle(surface, north, east, south, color)
+	_triangle(surface, north, south, west, color)
+
+func _triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
+	surface.set_color(color); surface.add_vertex(a)
+	surface.set_color(color); surface.add_vertex(b)
+	surface.set_color(color); surface.add_vertex(c)
+
+func _material() -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.vertex_color_use_as_albedo = true
+	material.no_depth_test = true
+	return material
+

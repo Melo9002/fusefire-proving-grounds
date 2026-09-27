@@ -9,6 +9,8 @@ var mission_title := ""
 var difficulty := AIDifficultyPolicy.Tier.NORMAL
 var map_source := ""
 var map_size := Vector2i.ZERO
+var elevated_cell_count := 0
+var traversal_link_count := 0
 var status := Status.SETUP_FAILED
 var battle_result := TurnManager.BattleResult.ONGOING
 var rounds := 0
@@ -48,6 +50,8 @@ func reproduction_data() -> Dictionary:
 		"difficulty": AIDifficultyPolicy.Tier.keys()[difficulty],
 		"map_source": map_source,
 		"map_size": [map_size.x, map_size.y],
+		"elevated_cell_count": elevated_cell_count,
+		"traversal_link_count": traversal_link_count,
 		"status": status_label(),
 		"battle_result": battle_result_label(),
 		"rounds": rounds,

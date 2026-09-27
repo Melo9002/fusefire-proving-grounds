@@ -93,7 +93,7 @@ func get_hover_summary() -> Array[String]:
 		"CELL — %s | world (%.1f, %.1f, %.1f)" % [cell.grid_position, cell.world_position.x, cell.world_position.y, cell.world_position.z],
 		"Elevation %.1f | walkable %s | stop %s | move cost %d" % [cell.elevation, cell.walkable, cell.can_stop, cell.movement_cost],
 		"Cover %s %.1fm | blocks LOS %s" % [MapCellData.CoverType.keys()[cell.cover_type], cell.cover_height, cell.blocks_line_of_sight],
-		"Occupant %s | zones %s" % [unit.name if is_instance_valid(unit) else "none", ", ".join(zone_names) if not zone_names.is_empty() else "none"],
+		"Occupant %s | zones %s" % [String(unit.name) if is_instance_valid(unit) else "none", ", ".join(zone_names) if not zone_names.is_empty() else "none"],
 		"Traversal %s" % [", ".join(links) if not links.is_empty() else "none"],
 	]
 

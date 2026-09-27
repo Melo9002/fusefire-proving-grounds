@@ -335,7 +335,7 @@ These are structural extension points, not proof that arbitrary weapons, hazards
 
 ## 14. Tests and Validation
 
-The repository contains 45 headless GDScript smoke tests under `tests/`.
+The repository contains 49 headless GDScript smoke tests under `tests/`, including the full Prototype 1 certification matrix.
 
 ### Battle, UI, and lifetime
 
@@ -368,6 +368,7 @@ The repository contains 45 headless GDScript smoke tests under `tests/`.
 - `ai_difficulty_policy_smoke.gd`, `ai_intentional_mistakes_smoke.gd`, `ai_second_advance_smoke.gd`.
 - `squad_context_smoke.gd`.
 - `ai_match_simulation_smoke.gd`, `ai_match_determinism_smoke.gd`.
+- `prototype_1_milestone.gd`: 15-match 5v5 certification across all missions, map sources, sizes, elevation, and traversal.
 
 ### Replay and reproducibility
 

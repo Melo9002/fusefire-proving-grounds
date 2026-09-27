@@ -17,6 +17,8 @@ var _pending_target_scores := "None"
 var _policy: AIDifficultyPolicy
 var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
+var _last_position_candidates: Array[Dictionary] = []
+var _last_target_candidates: Array[Dictionary] = []
 var current_mission_intent := MissionIntentData.new()
 
 enum MissionStepResult {
@@ -61,6 +63,8 @@ func _on_active_unit_changed(new_active_unit: TacticalUnit) -> void:
 	_squad_context.begin_unit(unit)
 	_squad_notes.clear()
 	_last_position_scores = "None"
+	_last_position_candidates.clear()
+	_last_target_candidates.clear()
 	if current_mission_intent.is_actionable():
 		var existing_handlers := _squad_context.reserve_objective(unit, current_mission_intent.objective_id)
 		_squad_notes.append("Objective handler: first" if existing_handlers == 0 else "Objective already handled by %d ally: spread/support" % existing_handlers)
@@ -309,8 +313,14 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var options: Array[Dictionary] = []
 	var hostiles := _get_hostile_units()
 	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE]
+	_last_position_candidates.clear()
 	for candidate in reachable:
-		if not battle_controller.grid_manager.can_unit_occupy_cell(unit, candidate) or (safe_only and not _is_safe_advance_cell(candidate)):
+		if not battle_controller.grid_manager.can_unit_occupy_cell(unit, candidate):
+			var occupant := battle_controller.grid_manager.get_unit_at(candidate)
+			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Occupied by %s" % occupant.name if is_instance_valid(occupant) else "Illegal stopping cell"})
+			continue
+		if safe_only and not _is_safe_advance_cell(candidate):
+			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Unsafe second advance"})
 			continue
 		var route_index := -1
 		var route_distance := INF
@@ -321,11 +331,20 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 				route_distance = distance
 				route_index = index
 		if route_index < 0:
+			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Outside useful route"})
 			continue
 		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, mini(route_index, unit.stats.speed), objective_route, hostiles, battle_controller.grid_manager, _policy, _squad_context)
 		var score: float = scored.total
+		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": scored.summary}
+		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
+			if scored.has(component):
+				candidate_record[component] = scored[component]
 		if score > -INF:
 			options.append({"cell": candidate, "score": score, "scored": scored})
+		else:
+			candidate_record.status = "rejected"
+			candidate_record.reason = scored.summary
+		_last_position_candidates.append(candidate_record)
 		if score > best_score:
 			best_candidate = candidate
 			best_adjustment = _squad_context.destination_adjustment(unit, candidate) if _squad_context else 0.0
@@ -347,6 +366,8 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_candidate = selected.cell
 			best_adjustment = _squad_context.destination_adjustment(unit, best_candidate) if _squad_context else 0.0
 			best_summary = "%s; %s lapse: near-best tile %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
+	for candidate_record in _last_position_candidates:
+		candidate_record["chosen"] = candidate_record.get("cell", Vector3i(-1, -1, -1)) == best_candidate
 	if best_candidate.x >= 0 and await battle_controller.try_move(unit, best_candidate):
 		_last_move_destination = best_candidate
 		_last_position_scores = best_summary
@@ -412,19 +433,27 @@ func _find_attack_target() -> TacticalUnit:
 	var options: Array[Dictionary] = []
 	_pending_target_note = ""
 	_pending_target_scores = "None"
+	_last_target_candidates.clear()
 	var friendlies := _get_friendly_units()
 	for candidate in _get_hostile_units():
 		if not is_instance_valid(candidate) or not candidate.stats or candidate.stats.is_defeated:
 			continue
-		if battle_controller.evaluate_attack(unit, candidate).is_legal:
+		var attack_evaluation := battle_controller.evaluate_attack(unit, candidate)
+		if attack_evaluation.is_legal:
 			var scored := AITargetScorer.evaluate(unit, candidate, friendlies, current_mission_intent, _objective_manager, battle_controller.grid_manager, _policy, _squad_context)
 			var score: float = scored.total
+			var target_record := {"target": String(candidate.name), "cell": candidate.grid_position, "score": score, "status": "considered", "summary": scored.summary, "hit_chance": attack_evaluation.hit_chance}
+			for component in ["vulnerability", "focus", "vip", "threat", "mission", "focus_count"]:
+				target_record[component] = scored[component]
+			_last_target_candidates.append(target_record)
 			options.append({"target": candidate, "score": score, "scored": scored})
 			if score > best_score:
 				best_target = candidate
 				best_score = score
 				_pending_target_note = "Target focus: %+.0f (%d allies engaged)" % [scored.focus, scored.focus_count]
 				_pending_target_scores = scored.summary
+		else:
+			_last_target_candidates.append({"target": String(candidate.name), "cell": candidate.grid_position, "status": "rejected", "reason": attack_evaluation.reason})
 	if options.size() > 1:
 		options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 		var scores: Array[float] = [options[0].score]
@@ -440,6 +469,8 @@ func _find_attack_target() -> TacticalUnit:
 			best_target = selected.target
 			_pending_target_note = "Target focus: %+.0f (%d allies engaged)" % [selected.scored.focus, selected.scored.focus_count]
 			_pending_target_scores = "%s; %s lapse: near-best target %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
+	for target_record in _last_target_candidates:
+		target_record["chosen"] = is_instance_valid(best_target) and target_record.get("target", "") == String(best_target.name)
 	return best_target
 
 func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
@@ -453,7 +484,7 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 
 func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
 	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
-	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None")
+	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates)
 
 func _get_friendly_units() -> Array[TacticalUnit]:
 	var friendlies: Array[TacticalUnit] = []
