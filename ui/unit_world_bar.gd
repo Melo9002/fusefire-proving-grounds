@@ -48,6 +48,9 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 	_refresh_extract_button()
 
 func _process(_delta: float) -> void:
+	if _battle_controller and _battle_controller.replay_mode:
+		hide()
+		return
 	if not is_instance_valid(_target_unit):
 		queue_free()
 		return

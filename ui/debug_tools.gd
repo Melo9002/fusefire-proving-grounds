@@ -29,7 +29,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_interface()
 	battle_controller.ai_decision_recorded.connect(_on_ai_decision_recorded)
-	visible = debug_tools_enabled
+	visible = debug_tools_enabled and not battle_controller.replay_mode
 	_set_shot_trajectories_visible(debug_tools_enabled)
 	if debug_tools_enabled:
 		_set_overlay_visible(overlay_visible_at_start)

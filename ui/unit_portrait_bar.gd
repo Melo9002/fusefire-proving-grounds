@@ -33,4 +33,4 @@ func _on_active_unit_changed(unit: TacticalUnit) -> void:
 		portrait.set_selected(portrait.represents(unit))
 
 func _on_turn_phase_changed(phase: TurnManager.TurnPhase) -> void:
-	visible = phase != TurnManager.TurnPhase.TRANSITION
+	visible = not battle_controller.replay_mode and phase != TurnManager.TurnPhase.TRANSITION

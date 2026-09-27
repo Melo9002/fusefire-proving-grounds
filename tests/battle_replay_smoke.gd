@@ -32,6 +32,18 @@ func _run() -> void:
 	if recording:
 		var replay := await _create_battle(recording)
 		var replay_player := replay.get_node("BattleReplayPlayer")
+		var controls := replay.get_node_or_null("Visualizers/BattleUI/ReplayControls")
+		_check(controls != null, "Replay creates dedicated playback controls")
+		_check(not replay.get_node("Visualizers/BattleUI/UnitPortraitBar").visible, "Replay hides the tactical portrait bar")
+		_check(not replay.get_node("Visualizers/BattleUI/ObjectiveHUD").visible, "Replay hides the tactical objective HUD")
+		replay_player.set_playback_paused(true)
+		var paused_at: int = replay_player.verified_actions
+		for _frame in 8:
+			await process_frame
+		_check(replay_player.verified_actions == paused_at, "Pause holds replay between authoritative actions")
+		replay_player.set_playback_speed(4.0)
+		replay_player.camera_mode = replay_player.CameraMode.FOLLOW_ACTION
+		replay_player.set_playback_paused(false)
 		await _wait_for_replay(replay_player, 25.0)
 		_check(replay.turn_manager.battle_result == original_result, "Replay reaches the recorded battle result")
 		_check(replay.battle_controller.replay_mode, "Replay disables ordinary AI and manual input")

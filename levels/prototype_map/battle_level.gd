@@ -120,6 +120,7 @@ func _ready() -> void:
 
 func _initialize_replay_support() -> void:
 	if pending_replay:
+		_configure_replay_presentation()
 		var player = ReplayPlayerData.new()
 		player.name = "BattleReplayPlayer"
 		add_child(player)
@@ -127,6 +128,21 @@ func _initialize_replay_support() -> void:
 		return
 	_replay_recorder = ReplayRecorderData.new()
 	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager)
+
+func _configure_replay_presentation() -> void:
+	var hidden_paths := [
+		"Visualizers/BattleUI/TurnHUDController/VBoxContainer/APHUDController",
+		"Visualizers/BattleUI/TurnHUDController/VBoxContainer/APDisplayLabel",
+		"Visualizers/BattleUI/TurnHUDController/VBoxContainer/EndTurnButton",
+		"Visualizers/BattleUI/ActionHUDController",
+		"Visualizers/BattleUI/ObjectiveHUD",
+		"Visualizers/BattleUI/UnitPortraitBar",
+		"Visualizers/BattleUI/DebugTools",
+	]
+	for path in hidden_paths:
+		var control := get_node_or_null(path) as Control
+		if control:
+			control.hide()
 
 func replay_last_battle() -> void:
 	if not ReplaySessionData.has_recording():

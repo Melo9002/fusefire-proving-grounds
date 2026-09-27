@@ -2,8 +2,12 @@ class_name BattleReplayPlayer
 extends Node
 
 const StateFingerprint := preload("res://systems/replay/battle_state_fingerprint.gd")
+const ReplayControlsData := preload("res://ui/replay_controls.gd")
 
 signal playback_finished(success: bool)
+signal playback_progressed(completed: int, total: int)
+
+enum CameraMode { FREE, FOLLOW_ACTION }
 
 var recording
 var level: BattleLevel
@@ -11,18 +15,25 @@ var action_delay := 0.18
 var playback_complete := false
 var playback_succeeded := false
 var verified_actions := 0
+var playback_paused := false
+var playback_speed := 1.0
+var camera_mode: CameraMode = CameraMode.FREE
+var _controls: Control
 
 func begin(p_level: BattleLevel, p_recording) -> void:
 	level = p_level
 	recording = p_recording
+	_create_controls()
 	_play.call_deferred()
 
 func _play() -> void:
 	print("[Replay] PLAYBACK — %d actions" % recording.actions.size())
 	for index in recording.actions.size():
+		await _wait_until_playing()
 		if level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 			break
 		var record: Dictionary = recording.actions[index]
+		_focus_action(record)
 		var expected_state: String = record.get("expected_state", "")
 		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
 		# Some gameplay signals commit an automatic action while their enclosing action is
@@ -30,8 +41,9 @@ func _play() -> void:
 		# authoritative state, the nested record has already been applied.
 		if not expected_state.is_empty() and state_before == expected_state:
 			verified_actions += 1
+			playback_progressed.emit(verified_actions, recording.actions.size())
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
-			await get_tree().create_timer(action_delay).timeout
+			await _action_interval()
 			continue
 		if not await _execute(record):
 			push_error("Replay diverged at action %d: %s" % [index, record])
@@ -45,7 +57,8 @@ func _play() -> void:
 			playback_finished.emit(false)
 			return
 		verified_actions += 1
-		await get_tree().create_timer(action_delay).timeout
+		playback_progressed.emit(verified_actions, recording.actions.size())
+		await _action_interval()
 	var matches: bool = level.turn_manager.battle_result == recording.expected_result
 	print("[Replay] %s — verified %d/%d actions | expected %s, got %s" % [
 		"COMPLETED" if matches else "DIVERGED",
@@ -56,6 +69,43 @@ func _play() -> void:
 	playback_complete = true
 	playback_succeeded = matches
 	playback_finished.emit(matches)
+
+func set_playback_paused(paused: bool) -> void:
+	playback_paused = paused
+	print("[Replay] %s at action %d/%d" % ["PAUSED" if paused else "PLAYING", verified_actions, recording.actions.size()])
+
+func set_playback_speed(speed: float) -> void:
+	playback_speed = clampf(speed, 0.5, 4.0)
+	print("[Replay] SPEED — %.1f×" % playback_speed)
+
+func _wait_until_playing() -> void:
+	while playback_paused:
+		await get_tree().process_frame
+
+func _action_interval() -> void:
+	await _wait_until_playing()
+	var delay := action_delay / maxf(playback_speed, 0.1)
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+
+func _focus_action(record: Dictionary) -> void:
+	if camera_mode != CameraMode.FOLLOW_ACTION:
+		return
+	var actor := _find_unit(record.get("actor", ""))
+	if not is_instance_valid(actor):
+		return
+	var camera := level.get_node_or_null("CameraRig") as TacticalCamera
+	if camera:
+		camera.focus_position(actor.global_position)
+
+func _create_controls() -> void:
+	var canvas := level.get_node_or_null("Visualizers/BattleUI") as CanvasLayer
+	if not canvas:
+		return
+	_controls = ReplayControlsData.new()
+	_controls.name = "ReplayControls"
+	canvas.add_child(_controls)
+	_controls.setup(self)
 
 func _execute(record: Dictionary) -> bool:
 	var kind: String = record.get("kind", "")
@@ -75,7 +125,11 @@ func _execute(record: Dictionary) -> bool:
 	match kind:
 		"move":
 			var destination := _array_to_cell(record.get("to", []))
+			var original_movement_speed := actor.movement_speed
+			actor.movement_speed = original_movement_speed * playback_speed
 			var moved := await level.battle_controller.try_move(actor, destination)
+			if is_instance_valid(actor):
+				actor.movement_speed = original_movement_speed
 			if not moved:
 				print("[Replay] MOVE REJECTED — actor %s at %s | destination %s | active %s | phase %s | AP %d" % [
 					actor.name, level.battle_controller.grid_manager.get_unit_grid(actor), destination,

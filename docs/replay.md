@@ -34,6 +34,12 @@ prints the number of recorded actions followed by `COMPLETED` or `DIVERGED`.
 `COMPLETED` also reports how many action fingerprints matched. A mismatch prints the
 first divergent action plus its expected and actual states.
 
+Replay uses a dedicated bottom bar. **Pause/Play** stops between complete authoritative
+actions, speed choices from 0.5× to 4× adjust movement and action pacing, and the camera
+can remain **Free** or **Follow Action** by centering on each acting unit. The bar also
+shows action progress and can return directly to Match Setup. Tactical action, AP,
+portrait, objective, world-bar, and debug UI is hidden during playback.
+
 Run the automated end-to-end check with:
 
 ```powershell
@@ -42,7 +48,7 @@ godot_console --headless --path . --script res://tests/battle_replay_smoke.gd
 
 ## Current boundary
 
-The recording currently lives in memory and replays at turn-based action timing with
-the ordinary tactical camera. It is the data and execution foundation for later saved
-replay files, playback speed controls, pseudo real-time timing, a unit-follow camera,
-and a camera mode that cuts only to the final mover in an activation.
+The recording currently lives in memory and replays sequentially. It does not yet
+provide saved replay files, rewind/timeline scrubbing, pseudo-real-time reconstruction,
+smooth cinematic tracking, or a camera mode that follows only the final mover in an
+activation.
