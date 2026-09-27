@@ -1,0 +1,37 @@
+{
+  "source": {
+    "objects": 17,
+    "vertices": 10740,
+    "triangles": 6194
+  },
+  "source_dimensions_m": [
+    0.0017881966196000576,
+    0.009576530195772648,
+    0.0034749056212604046
+  ],
+  "removed_hidden_objects": [
+    "AUG_Ammo_AUG_0",
+    "AUG_Ammo_Bullet_AUG_0",
+    "AUG_Ammo.001_AUG_0",
+    "AUG_Ammo_Bullet.001_AUG_0",
+    "AUG_Ammo.004_AUG_0",
+    "AUG_Ammo_Bullet.004_AUG_0",
+    "AUG_Ammo.002_AUG_0",
+    "AUG_Ammo_Bullet.002_AUG_0"
+  ],
+  "runtime": {
+    "objects": 1,
+    "vertices": 7836,
+    "triangles": 4562
+  },
+  "runtime_dimensions_m": [
+    0.09833330661058426,
+    0.7900000214576721,
+    0.28665661811828613
+  ],
+  "target_length_m": 0.79,
+  "materials": [
+    "material"
+  ],
+  "uv_layers": 1
+}

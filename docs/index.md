@@ -9,6 +9,7 @@ This directory contains the project documentation intended for developers, desig
 - [Battle replay](replay.md) — action recording, deterministic playback, end-screen controls, testing, and future camera modes.
 - [Debug map inspection](debug-map-inspection.md) — F3 cell details, zones, traversal links, elevation, and map metadata.
 - [Asset import](asset-import.md) — a practical Godot workflow for importing models, textures, rigs, animations, and the future humanoid test character.
+- [Humanoid character replacement roadmap](humanoid-character-roadmap.md) — topology, rigging, animation states, cover, traversal, rescue, replay, and Bean retirement.
 
 ## Files that intentionally remain outside `docs/`
 

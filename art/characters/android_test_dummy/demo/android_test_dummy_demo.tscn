@@ -1,0 +1,149 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://art/characters/android_test_dummy/demo/android_test_dummy_demo.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://art/characters/android_test_dummy/models/android_test_dummy_rigprep.glb" id="2_dummy"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime.glb" id="3_aug"]
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+background_color = Color(0.018, 0.024, 0.035, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.42, 0.5, 0.62, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.075, 0.09, 0.12, 1)
+metallic = 0.15
+roughness = 0.82
+
+[sub_resource type="PlaneMesh" id="Mesh_floor"]
+material = SubResource("Material_floor")
+size = Vector2(4, 4)
+
+[sub_resource type="StandardMaterial3D" id="Material_plinth"]
+albedo_color = Color(0.08, 0.11, 0.14, 1)
+metallic = 0.55
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="Mesh_plinth"]
+material = SubResource("Material_plinth")
+top_radius = 0.47
+bottom_radius = 0.52
+height = 0.08
+radial_segments = 48
+
+[sub_resource type="BoxMesh" id="Mesh_weapon_stand"]
+material = SubResource("Material_plinth")
+size = Vector3(0.82, 0.06, 0.26)
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.025, 0.035, 0.05, 0.88)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.72, 0.82, 0.75)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 18.0
+content_margin_top = 14.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
+
+[node name="AndroidTestDummyDemo" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_demo")
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_floor")
+
+[node name="Display" type="Node3D" parent="."]
+
+[node name="CharacterPlinth" type="MeshInstance3D" parent="Display"]
+position = Vector3(-0.48, 0.04, 0)
+mesh = SubResource("Mesh_plinth")
+
+[node name="AndroidTestDummy" parent="Display" instance=ExtResource("2_dummy")]
+position = Vector3(-0.48, 0.08, 0)
+
+[node name="WeaponStand" type="MeshInstance3D" parent="Display"]
+position = Vector3(0.77, 0.92, 0)
+mesh = SubResource("Mesh_weapon_stand")
+
+[node name="AUG" parent="Display" instance=ExtResource("3_aug")]
+position = Vector3(0.77, 1.08, 0)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, -32, 0)
+light_color = Color(0.82, 0.9, 1, 1)
+light_energy = 2.1
+shadow_enabled = true
+
+[node name="RimLight" type="OmniLight3D" parent="."]
+position = Vector3(-1.8, 2.4, -1.6)
+light_color = Color(0.15, 0.75, 1, 1)
+light_energy = 5.0
+omni_range = 5.0
+
+[node name="FillLight" type="OmniLight3D" parent="."]
+position = Vector3(2.0, 1.5, 2.0)
+light_color = Color(1, 0.63, 0.42, 1)
+light_energy = 2.6
+omni_range = 4.5
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 38.0
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Margin" type="MarginContainer" parent="UI"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 820.0
+offset_bottom = 136.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/Margin"]
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="UI/Margin/VBox"]
+theme_override_colors/font_color = Color(0.4, 0.92, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "FUSEFIRE — ANDROID TEST DUMMY"
+
+[node name="Details" type="Label" parent="UI/Margin/VBox"]
+theme_override_colors/font_color = Color(0.86, 0.89, 0.94, 1)
+theme_override_font_sizes/font_size = 17
+text = "1.60 m character candidate  •  50k triangles  |  AUG 0.79 m  •  4,562 triangles"
+
+[node name="Help" type="Label" parent="UI/Margin/VBox"]
+theme_override_colors/font_color = Color(0.62, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 15
+text = "Left-drag: orbit    Wheel: zoom    Space: auto-rotation ON    R: reset"
+
+[node name="StatusPanel" type="PanelContainer" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -318.0
+offset_top = -91.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Status" type="Label" parent="UI/StatusPanel"]
+theme_override_colors/font_color = Color(0.72, 0.93, 0.96, 1)
+theme_override_font_sizes/font_size = 15
+text = "ASSET CHECKPOINT 26A\nRig-preparation mesh preview — topology cleanup in progress"
+horizontal_alignment = 1
+vertical_alignment = 1
