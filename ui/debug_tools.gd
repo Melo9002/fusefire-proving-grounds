@@ -1,6 +1,8 @@
 class_name DebugTools
 extends Control
 
+const DebugMapInspectorData := preload("res://visualizers/debug_map_inspector.gd")
+
 @export_group("Debug Availability")
 @export var debug_tools_enabled: bool = true
 @export var overlay_visible_at_start: bool = false
@@ -21,6 +23,11 @@ var _auto_battle_toggle: CheckButton
 var _shot_trajectory_toggle: CheckButton
 var _ai_decision_toggle: CheckButton
 var _ai_decision_label: Label
+var _map_inspection_label: Label
+var _map_inspector: Node3D
+var _map_inspection_toggle: CheckButton
+var _zone_toggle: CheckButton
+var _traversal_toggle: CheckButton
 var _show_ai_decisions: bool = true
 var _latest_ai_decision: Dictionary = {}
 
@@ -28,6 +35,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_interface()
+	_build_map_inspector()
 	battle_controller.ai_decision_recorded.connect(_on_ai_decision_recorded)
 	visible = debug_tools_enabled and not battle_controller.replay_mode
 	_set_shot_trajectories_visible(debug_tools_enabled)
@@ -37,6 +45,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if debug_tools_enabled and _overlay.visible:
 		_update_overlay()
+	if debug_tools_enabled and _map_inspector and _map_inspector.inspection_enabled:
+		_update_map_inspection()
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not debug_tools_enabled or not event.pressed or event.echo:
@@ -111,6 +121,20 @@ func _build_interface() -> void:
 	_ai_decision_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_ai_decision_label)
 
+	_map_inspection_label = Label.new()
+	_map_inspection_label.name = "MapInspectionOverlay"
+	_map_inspection_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_map_inspection_label.position = Vector2(-500, 105)
+	_map_inspection_label.custom_minimum_size = Vector2(480, 0)
+	_map_inspection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_map_inspection_label.add_theme_color_override("font_color", Color(0.55, 0.92, 1.0))
+	_map_inspection_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_map_inspection_label.add_theme_constant_override("shadow_offset_x", 2)
+	_map_inspection_label.add_theme_constant_override("shadow_offset_y", 2)
+	_map_inspection_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map_inspection_label.hide()
+	add_child(_map_inspection_label)
+
 	_panel = PanelContainer.new()
 	_panel.name = "DebugPanel"
 	_panel.position = Vector2(380, 110)
@@ -157,6 +181,23 @@ func _build_interface() -> void:
 	_ai_decision_toggle.toggled.connect(_set_ai_decisions_visible)
 	content.add_child(_ai_decision_toggle)
 
+	_map_inspection_toggle = CheckButton.new()
+	_map_inspection_toggle.text = "Inspect map cells and metadata"
+	_map_inspection_toggle.toggled.connect(_set_map_inspection_visible)
+	content.add_child(_map_inspection_toggle)
+
+	_zone_toggle = CheckButton.new()
+	_zone_toggle.text = "Show all map zones"
+	_zone_toggle.button_pressed = true
+	_zone_toggle.toggled.connect(_set_map_zones_visible)
+	content.add_child(_zone_toggle)
+
+	_traversal_toggle = CheckButton.new()
+	_traversal_toggle.text = "Show traversal links"
+	_traversal_toggle.button_pressed = true
+	_traversal_toggle.toggled.connect(_set_traversal_links_visible)
+	content.add_child(_traversal_toggle)
+
 	_manual_enemy_toggle = CheckButton.new()
 	_manual_enemy_toggle.text = "Manual enemy control"
 	_manual_enemy_toggle.toggled.connect(set_manual_enemy_control)
@@ -188,6 +229,37 @@ func _set_ai_decisions_visible(enabled: bool) -> void:
 	_show_ai_decisions = enabled
 	if _ai_decision_label:
 		_ai_decision_label.visible = enabled
+
+func _build_map_inspector() -> void:
+	if not battle_controller or not grid_manager:
+		return
+	_map_inspector = DebugMapInspectorData.new()
+	_map_inspector.name = "DebugMapInspector"
+	_map_inspector.grid_manager = grid_manager
+	_map_inspector.mouse_raycaster = battle_controller.mouse_raycaster
+	battle_controller.get_parent().get_parent().get_node("Visualizers").add_child.call_deferred(_map_inspector)
+
+func _set_map_inspection_visible(enabled: bool) -> void:
+	if _map_inspector:
+		_map_inspector.set_inspection_enabled(enabled)
+	if _map_inspection_label:
+		_map_inspection_label.visible = enabled
+
+func _set_map_zones_visible(enabled: bool) -> void:
+	if _map_inspector:
+		_map_inspector.set_zones_visible(enabled)
+
+func _set_traversal_links_visible(enabled: bool) -> void:
+	if _map_inspector:
+		_map_inspector.set_traversal_links_visible(enabled)
+
+func _update_map_inspection() -> void:
+	if not _map_inspection_label:
+		return
+	var lines: Array[String] = _map_inspector.get_map_summary()
+	lines.append("")
+	lines.append_array(_map_inspector.get_hover_summary())
+	_map_inspection_label.text = "\n".join(lines)
 
 func _on_ai_decision_recorded(record: Dictionary) -> void:
 	_latest_ai_decision = record
