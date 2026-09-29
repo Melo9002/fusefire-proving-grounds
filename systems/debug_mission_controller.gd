@@ -86,7 +86,7 @@ func force_extract(actor: TacticalUnit) -> bool:
 	if origin != destination:
 		grid_manager.update_unit_position(actor, origin, destination)
 		actor.global_position = grid_manager.get_cell_data(destination).world_position + Vector3.UP * actor.standing_height
-	if not objective_manager.try_extract(actor):
+	if not await objective_manager.try_extract(actor):
 		if is_instance_valid(actor) and origin != destination:
 			grid_manager.update_unit_position(actor, destination, origin)
 			actor.global_position = grid_manager.get_cell_data(origin).world_position + Vector3.UP * actor.standing_height

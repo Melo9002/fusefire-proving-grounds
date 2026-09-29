@@ -51,6 +51,7 @@ func _build_interface() -> void:
 	camera_button.name = "ReplayCameraButton"
 	camera_button.add_item("CAMERA: FREE")
 	camera_button.add_item("CAMERA: FOLLOW ACTION")
+	camera_button.add_item("CAMERA: CINEMATIC")
 	camera_button.select(0)
 	camera_button.item_selected.connect(_select_camera)
 	row.add_child(camera_button)
@@ -69,7 +70,7 @@ func _select_speed(index: int) -> void:
 	replay_player.set_playback_speed(speeds[index])
 
 func _select_camera(index: int) -> void:
-	replay_player.camera_mode = index
+	replay_player.set_camera_mode(index as BattleReplayPlayer.CameraMode)
 
 func _on_progressed(completed: int, total: int) -> void:
 	progress_label.text = "ACTION %d / %d" % [completed, total]

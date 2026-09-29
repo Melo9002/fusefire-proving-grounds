@@ -106,10 +106,13 @@ func _execute_turn() -> void:
 		if mission_step == MissionStepResult.INTERACTED:
 			continue
 		var attack_target = _find_attack_target()
-		if attack_target and battle_controller.try_attack(unit, attack_target):
-			_squad_context.reserve_target(unit, attack_target)
+		if attack_target and await battle_controller.try_attack(unit, attack_target):
+			# A cinematic kill can keep this coroutine suspended until the defeated
+			# target has finished its presentation and left the tree.
+			if is_instance_valid(attack_target):
+				_squad_context.reserve_target(unit, attack_target)
 			if not _pending_target_note.is_empty(): _squad_notes.append(_pending_target_note)
-			_record_ai_decision("Attack", attack_target.name, "Legal shot; target score balances vulnerability with allied focus.", "Move, Defend")
+			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Defend")
 			await get_tree().create_timer(0.25).timeout
 			continue
 		var movement_target = _find_nearest_hostile()
@@ -120,7 +123,7 @@ func _execute_turn() -> void:
 		if has_moved and await _try_safe_second_advance(movement_target):
 			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Defend")
 			continue
-		if battle_controller.try_defend(unit):
+		if await battle_controller.try_defend(unit):
 			var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
 			_record_ai_decision("Defend", unit.name, reason, "Attack, Move")
 		break
@@ -142,7 +145,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		var rescue_target := _objective_manager.find_mission_actor(current_mission_intent.target_ids)
 		if rescue_target and _objective_manager.can_rescue(unit, rescue_target):
 			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Defend")
-			if _objective_manager.try_rescue(unit, rescue_target):
+			if await _objective_manager.try_rescue(unit, rescue_target):
 				return MissionStepResult.INTERACTED
 		if not has_moved and rescue_target and await _move_toward(rescue_target):
 			_record_ai_decision("Move", str(_last_move_destination), "Approached the rescue target.", "Attack, Defend")
@@ -166,7 +169,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		if carrier and carrier != unit:
 			return MissionStepResult.NONE
 		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Defend")
-		if _objective_manager.try_extract(unit):
+		if await _objective_manager.try_extract(unit):
 			await get_tree().process_frame
 			if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
 				turn_manager.end_current_turn()
@@ -189,7 +192,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Defend")
 		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
 			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Defend")
-			if _objective_manager.try_extract(unit):
+			if await _objective_manager.try_extract(unit):
 				await get_tree().process_frame
 				if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
 					turn_manager.end_current_turn()
@@ -229,7 +232,7 @@ func _execute_vip_turn() -> void:
 		if not escorts.is_empty():
 			await _move_toward(escorts[0])
 	if unit.stats.current_ap > 0:
-		battle_controller.try_defend(unit)
+		await battle_controller.try_defend(unit)
 	if _should_control_unit():
 		turn_manager.end_current_turn()
 

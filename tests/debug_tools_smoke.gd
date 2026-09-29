@@ -40,7 +40,7 @@ func _check_pause_and_manual_enemy_control() -> void:
 	check(turns.current_phase == TurnManager.TurnPhase.ENEMY_TURN, "Manual control holds the enemy phase")
 	check(enemy.grid_position == enemy_start and enemy.stats.current_ap == enemy.stats.max_ap, "Enemy AI waits without moving or spending AP")
 	check(battle.is_current_phase_manually_controlled(), "Normal action input is enabled for the active enemy")
-	check(battle.try_defend(enemy), "A manually controlled enemy uses the shared action gateway")
+	check(await battle.try_defend(enemy), "A manually controlled enemy uses the shared action gateway")
 
 	debug_tools.set_manual_enemy_control(false)
 	level.queue_free()

@@ -2,6 +2,7 @@ extends Node3D
 class_name BattleController
 
 const SquadContextData = preload("res://systems/ai/squad_context.gd")
+const ActionCameraDirectorData = preload("res://systems/camera/action_camera_director.gd")
 
 signal move_mode_toggled(is_active: bool)
 signal attack_mode_toggled(is_active: bool)
@@ -42,6 +43,7 @@ var ai_decision_seed: int = 1
 var _combat_rng := RandomNumberGenerator.new()
 var _squad_contexts: Dictionary[int, SquadContext] = {}
 var replay_mode := false
+var action_camera_director: Node
 var is_action_in_progress: bool = false:
 	set(value):
 		if is_action_in_progress != value:
@@ -213,7 +215,7 @@ func _on_unit_clicked(unit: TacticalUnit) -> void:
 		return
 	if is_attack_mode_active and is_instance_valid(tactical_unit) \
 		and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
-		try_attack(tactical_unit, unit)
+		await try_attack(tactical_unit, unit)
 		return
 
 	if not debug_player_ai and turn_manager.select_player_unit(unit):
@@ -366,7 +368,15 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 		return false
 
 	var attack_cmd = AttackAction.new(attacker, target, UNIFORM_AP_COST, evaluation.hit_chance, _combat_rng.randf() * 100.0)
+	if not attack_cmd.is_valid():
+		return false
+	var will_defeat: bool = attack_cmd.roll_override < float(attack_cmd.hit_chance) and target.stats.current_hp <= 25
+	is_action_in_progress = true
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		camera_presented = await action_camera_director.present(attacker, &"attack", target.global_position, attacker.stats.current_ap - UNIFORM_AP_COST, will_defeat)
 	if not attack_cmd.execute():
+		is_action_in_progress = false
 		return false
 	attacker.present_attack(target.global_position)
 	attack_resolved.emit(attacker, target, attack_cmd.did_hit, evaluation.hit_chance)
@@ -378,17 +388,33 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 
 	is_attack_mode_active = false
 	is_move_mode_active = false
+	if camera_presented:
+		await get_tree().create_timer(0.42).timeout
+		await action_camera_director.finish_live_presentation(true)
+	is_action_in_progress = false
 	return true
 
 func try_defend(unit: TacticalUnit) -> bool:
 	if is_action_in_progress or not turn_manager.can_unit_act(unit):
 		return false
 	var action = DefendAction.new(unit, UNIFORM_AP_COST)
+	if not action.is_valid():
+		return false
+	is_action_in_progress = true
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, unit.stats.current_ap - UNIFORM_AP_COST)
 	if not action.execute():
+		is_action_in_progress = false
 		return false
 	record_replay_action("defend", unit)
 	is_move_mode_active = false
 	is_attack_mode_active = false
+	if camera_presented:
+		await get_tree().create_timer(0.25).timeout
+		await action_camera_director.finish_live_presentation(true)
+	is_action_in_progress = false
 	return true
 
 func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
@@ -402,18 +428,26 @@ func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	if path.is_empty():
 		return false
 	var action = MoveAction.new(unit, target_cell, _build_movement_path(unit, path), grid_manager, UNIFORM_AP_COST)
-	if not action.execute():
+	if not action.is_valid():
 		return false
 	is_action_in_progress = true
 	is_move_mode_active = false
 	is_attack_mode_active = false
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(target_cell), unit.stats.current_ap - UNIFORM_AP_COST)
+	if not action.execute():
+		is_action_in_progress = false
+		return false
 	await unit.movement_finished
-	is_action_in_progress = false
 	unit_moved.emit(unit, start_cell, target_cell)
 	record_replay_action("move", unit, {
 		"from": [start_cell.x, start_cell.y, start_cell.z],
 		"to": [target_cell.x, target_cell.y, target_cell.z],
 	})
+	if camera_presented:
+		await action_camera_director.finish_live_presentation(true)
+	is_action_in_progress = false
 	return true
 
 func record_replay_action(kind: String, actor: TacticalUnit, details: Dictionary = {}) -> void:

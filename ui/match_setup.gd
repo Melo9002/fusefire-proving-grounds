@@ -15,11 +15,19 @@ var vip_behavior: OptionButton
 var objective_option: OptionButton
 var difficulty_option: OptionButton
 var deployment_summary: Label
+var compatibility_toggle: CheckButton
+var compatibility_status: Label
 var _seed_rng := RandomNumberGenerator.new()
+
+const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
+const COMPATIBILITY_SECTION := "rendering"
+const COMPATIBILITY_KEY := "compatibility_mode"
+const RESTART_MARKER := "--fusefire-renderer-restart"
 
 func _ready() -> void:
 	_build_vip_setup()
 	_build_objective_setup()
+	_build_compatibility_setup()
 	_build_deployment_summary()
 	_seed_rng.randomize()
 	_prepare_new_seed()
@@ -40,6 +48,90 @@ func _ready() -> void:
 	seed_input.value_changed.connect(_update_summary)
 	_refresh_seed_controls()
 	_update_summary(0.0)
+	_apply_saved_renderer_preference()
+
+func _build_compatibility_setup() -> void:
+	var box := VBoxContainer.new()
+	box.name = "CompatibilitySetup"
+	compatibility_toggle = CheckButton.new()
+	compatibility_toggle.name = "CompatibilityModeToggle"
+	compatibility_toggle.text = "INTEL / COMPATIBILITY RENDERER"
+	compatibility_toggle.tooltip_text = "Restarts FuseFire with Godot's OpenGL Compatibility renderer. Recommended for Intel integrated graphics or systems that freeze under D3D12."
+	compatibility_status = Label.new()
+	compatibility_status.name = "CompatibilityStatus"
+	compatibility_status.modulate = Color(0.66, 0.76, 0.86)
+	compatibility_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(compatibility_toggle)
+	box.add_child(compatibility_status)
+	var setup_box := $CenterContainer/Panel/Margin/VBox
+	setup_box.add_child(box)
+	setup_box.move_child(box, setup_box.get_child_count() - 2)
+	compatibility_toggle.set_pressed_no_signal(_saved_compatibility_preference())
+	compatibility_toggle.toggled.connect(_on_compatibility_toggled)
+	_refresh_compatibility_status()
+
+func _saved_compatibility_preference() -> bool:
+	var settings := ConfigFile.new()
+	if settings.load(DISPLAY_SETTINGS_PATH) != OK:
+		return false
+	return bool(settings.get_value(COMPATIBILITY_SECTION, COMPATIBILITY_KEY, false))
+
+func _current_renderer() -> String:
+	if RenderingServer.has_method("get_current_rendering_method"):
+		return String(RenderingServer.call("get_current_rendering_method"))
+	var arguments := OS.get_cmdline_args()
+	var method_index := arguments.find("--rendering-method")
+	if method_index >= 0 and method_index + 1 < arguments.size():
+		return String(arguments[method_index + 1])
+	return "forward_plus"
+
+func _is_compatibility_renderer() -> bool:
+	return _current_renderer() == "gl_compatibility"
+
+func _refresh_compatibility_status(message := "") -> void:
+	if not compatibility_status:
+		return
+	if not message.is_empty():
+		compatibility_status.text = message
+	elif _is_compatibility_renderer():
+		compatibility_status.text = "ACTIVE — OpenGL Compatibility renderer. Safer for Intel integrated graphics."
+	else:
+		compatibility_status.text = "CURRENT — Forward+ / D3D12. Toggle to restart with the Intel-friendly renderer."
+
+func _apply_saved_renderer_preference() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var wants_compatibility := _saved_compatibility_preference()
+	if wants_compatibility == _is_compatibility_renderer():
+		return
+	# Do not loop forever if a driver or platform rejects the requested renderer.
+	if RESTART_MARKER in OS.get_cmdline_user_args():
+		_refresh_compatibility_status("Renderer restart did not apply. Start Godot manually with --rendering-method gl_compatibility.")
+		return
+	_restart_with_renderer(wants_compatibility)
+
+func _on_compatibility_toggled(enabled: bool) -> void:
+	var settings := ConfigFile.new()
+	settings.load(DISPLAY_SETTINGS_PATH)
+	settings.set_value(COMPATIBILITY_SECTION, COMPATIBILITY_KEY, enabled)
+	if settings.save(DISPLAY_SETTINGS_PATH) != OK:
+		compatibility_toggle.set_pressed_no_signal(not enabled)
+		_refresh_compatibility_status("Could not save the renderer preference.")
+		return
+	_refresh_compatibility_status("Restarting with %s…" % ("Compatibility" if enabled else "Forward+"))
+	_restart_with_renderer(enabled)
+
+func _restart_with_renderer(use_compatibility: bool) -> void:
+	var arguments: PackedStringArray = []
+	if OS.has_feature("editor"):
+		arguments.append_array(["--path", ProjectSettings.globalize_path("res://")])
+	arguments.append_array(["--rendering-method", "gl_compatibility" if use_compatibility else "forward_plus"])
+	arguments.append_array(["--", RESTART_MARKER])
+	var process_id := OS.create_process(OS.get_executable_path(), arguments)
+	if process_id < 0:
+		_refresh_compatibility_status("Could not restart automatically. Close FuseFire and launch it again.")
+		return
+	get_tree().quit()
 
 func _build_vip_setup() -> void:
 	var box := VBoxContainer.new()

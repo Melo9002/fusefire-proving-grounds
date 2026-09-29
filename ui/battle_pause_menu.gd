@@ -2,9 +2,11 @@ class_name BattlePauseMenu
 extends Control
 
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
+const ActionCameraDirectorData := preload("res://systems/camera/action_camera_director.gd")
 
 @export var debug_tools: DebugTools
 var is_open := false
+var action_camera_option: OptionButton
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -70,6 +72,16 @@ func _build_interface() -> void:
 	title.add_theme_font_size_override("font_size", 24)
 	options.add_child(title)
 
+	var camera_label := Label.new()
+	camera_label.text = "ACTION CAMERA"
+	options.add_child(camera_label)
+	action_camera_option = OptionButton.new()
+	action_camera_option.name = "ActionCameraOption"
+	for label in ["Off", "Final Actions", "Combat Only", "All Actions"]:
+		action_camera_option.add_item(label)
+	options.add_child(action_camera_option)
+	_bind_action_camera_option.call_deferred()
+
 	var resume := Button.new()
 	resume.name = "ResumeButton"
 	resume.text = "RESUME"
@@ -87,3 +99,11 @@ func _build_interface() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_color", Color(0.65, 0.7, 0.78))
 	options.add_child(hint)
+
+func _bind_action_camera_option() -> void:
+	var director := get_tree().get_first_node_in_group("action_camera_director")
+	if not director:
+		action_camera_option.disabled = true
+		return
+	action_camera_option.select(int(director.frequency))
+	action_camera_option.item_selected.connect(func(index: int): director.set_frequency(index))

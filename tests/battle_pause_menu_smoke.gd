@@ -22,6 +22,7 @@ func _run() -> void:
 	check(menu.visible and menu.is_open and paused, "Opening the battle menu pauses gameplay")
 	check(menu.has_node("Dimmer/Center/Panel/Margin/Options/ResumeButton"), "Pause menu exposes Resume")
 	check(menu.has_node("Dimmer/Center/Panel/Margin/Options/SetupButton"), "Pause menu exposes Return to Match Setup")
+	check(menu.has_node("Dimmer/Center/Panel/Margin/Options/ActionCameraOption"), "Pause menu exposes action-camera frequency")
 	menu.set_open(false)
 	check(not menu.visible and not menu.is_open and not paused, "Resume closes the menu and restores gameplay")
 

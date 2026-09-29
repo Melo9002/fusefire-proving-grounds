@@ -166,6 +166,9 @@ func _build_interface() -> void:
 
 	_panel = PanelContainer.new()
 	_panel.name = "DebugPanel"
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.035, 0.045, 0.065, 1.0)
+	_panel.add_theme_stylebox_override("panel", panel_style)
 	_panel.position = Vector2(350, 38)
 	_panel.custom_minimum_size = Vector2(390, 0)
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP

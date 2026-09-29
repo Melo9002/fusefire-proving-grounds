@@ -42,7 +42,7 @@ func _run() -> void:
 			await process_frame
 		_check(replay_player.verified_actions == paused_at, "Pause holds replay between authoritative actions")
 		replay_player.set_playback_speed(4.0)
-		replay_player.camera_mode = replay_player.CameraMode.FOLLOW_ACTION
+		replay_player.set_camera_mode(replay_player.CameraMode.CINEMATIC)
 		replay_player.set_playback_paused(false)
 		await _wait_for_replay(replay_player, 25.0)
 		_check(replay.turn_manager.battle_result == original_result, "Replay reaches the recorded battle result")

@@ -4,6 +4,7 @@ extends Node3D
 const ReplayRecorderData := preload("res://systems/replay/battle_replay_recorder.gd")
 const ReplayPlayerData := preload("res://systems/replay/battle_replay_player.gd")
 const ReplaySessionData := preload("res://systems/replay/battle_replay_session.gd")
+const ActionCameraDirectorData := preload("res://systems/camera/action_camera_director.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
@@ -36,6 +37,7 @@ var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
+var action_camera_director: Node
 
 func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false) -> void:
 	generated_size = map_size if FlatMapGenerator.MAP_SIZES.has(map_size) else Vector2i(32, 24)
@@ -79,6 +81,11 @@ func configure_replay(recording) -> void:
 	battle_controller.replay_mode = true
 
 func _ready() -> void:
+	action_camera_director = ActionCameraDirectorData.new()
+	action_camera_director.name = "ActionCameraDirector"
+	add_child(action_camera_director)
+	action_camera_director.setup(get_node("CameraRig") as TacticalCamera)
+	battle_controller.action_camera_director = action_camera_director
 	print("[AI Difficulty] %s" % AIDifficultyPolicy.get_label(ai_difficulty))
 	print("[BattleSeed] %d — %s map" % [battle_seed, "generated" if use_generated_map else "authored"])
 	if mission_definition != null:

@@ -24,6 +24,8 @@ func _create_level(kind: MissionObjectiveDefinition.Kind, include_vip := false, 
 	level.configure(player_count, 2, false, 1, 0, Vector2i(32, 24), include_vip, MissionActor.VIPBehavior.PLAYER_CONTROLLED, MissionCatalog.create_mission(kind, 2, include_vip))
 	root.add_child(level)
 	await create_timer(0.15).timeout
+	# This suite checks objective rules; camera timing has its own focused tests.
+	level.action_camera_director.frequency = level.action_camera_director.Frequency.OFF
 	return level
 
 func _finish(level: BattleLevel) -> void:
@@ -56,7 +58,7 @@ func _check_round_objectives() -> void:
 	var survivor := survive_level.turn_manager.player_units[0]
 	var exit := survive_level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")[0]
 	survive_level.battle_controller.grid_manager.update_unit_position(survivor, survivor.grid_position, exit)
-	check(survive_level.objective_manager.try_extract(survivor), "A survivor can evacuate after the timed stage")
+	check(await survive_level.objective_manager.try_extract(survivor), "A survivor can evacuate after the timed stage")
 	await process_frame
 	check(survive_level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Evacuating every survivor grants victory")
 	await _finish(survive_level)
@@ -95,10 +97,10 @@ func _check_rescue() -> void:
 	var teammate := level.turn_manager.player_units[1]
 	level.battle_controller.grid_manager.update_unit_position(teammate, teammate.grid_position, exit)
 	check(level.turn_manager.select_player_unit(teammate), "The carrier's teammate remains selectable")
-	check(level.objective_manager.try_extract(teammate), "Other squad members may evacuate after the VIP is picked up")
+	check(await level.objective_manager.try_extract(teammate), "Other squad members may evacuate after the VIP is picked up")
 	check(level.turn_manager.select_player_unit(carrier), "The VIP carrier remains selectable after a teammate evacuates")
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, exit)
-	check(level.objective_manager.try_extract(carrier), "The carrier extracts together with the rescued VIP")
+	check(await level.objective_manager.try_extract(carrier), "The carrier extracts together with the rescued VIP")
 	await process_frame
 	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Rescuing and extracting the VIP grants victory")
 	await _finish(level)

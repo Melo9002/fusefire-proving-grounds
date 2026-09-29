@@ -7,7 +7,7 @@ const ReplayControlsData := preload("res://ui/replay_controls.gd")
 signal playback_finished(success: bool)
 signal playback_progressed(completed: int, total: int)
 
-enum CameraMode { FREE, FOLLOW_ACTION }
+enum CameraMode { FREE, FOLLOW_ACTION, CINEMATIC }
 
 var recording
 var level: BattleLevel
@@ -33,7 +33,6 @@ func _play() -> void:
 		if level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 			break
 		var record: Dictionary = recording.actions[index]
-		_focus_action(record)
 		var expected_state: String = record.get("expected_state", "")
 		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
 		# Some gameplay signals commit an automatic action while their enclosing action is
@@ -45,6 +44,8 @@ func _play() -> void:
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
 			await _action_interval()
 			continue
+		await _focus_action(record)
+		await _wait_until_playing()
 		if not await _execute(record):
 			push_error("Replay diverged at action %d: %s" % [index, record])
 			playback_complete = true
@@ -78,6 +79,12 @@ func set_playback_speed(speed: float) -> void:
 	playback_speed = clampf(speed, 0.5, 4.0)
 	print("[Replay] SPEED — %.1f×" % playback_speed)
 
+func set_camera_mode(mode: CameraMode) -> void:
+	camera_mode = mode
+	var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera if is_instance_valid(level) else null
+	if replay_camera and camera_mode != CameraMode.CINEMATIC:
+		replay_camera.clear_cinematic_view()
+
 func _wait_until_playing() -> void:
 	while playback_paused:
 		await get_tree().process_frame
@@ -89,14 +96,38 @@ func _action_interval() -> void:
 		await get_tree().create_timer(delay).timeout
 
 func _focus_action(record: Dictionary) -> void:
-	if camera_mode != CameraMode.FOLLOW_ACTION:
+	if record.get("kind", "") == "end_turn":
 		return
 	var actor := _find_unit(record.get("actor", ""))
 	if not is_instance_valid(actor):
 		return
 	var camera := level.get_node_or_null("CameraRig") as TacticalCamera
-	if camera:
+	if not camera:
+		return
+	if camera_mode == CameraMode.FREE:
+		camera.clear_cinematic_view()
+	elif camera_mode == CameraMode.FOLLOW_ACTION:
 		camera.focus_position(actor.global_position)
+	elif camera_mode == CameraMode.CINEMATIC:
+		var focus_point := _action_focus_point(record, actor)
+		var director := level.action_camera_director
+		if director:
+			await director.present(actor, StringName(record.get("kind", "")), focus_point, actor.stats.current_ap, false, true)
+
+func _action_focus_point(record: Dictionary, actor: TacticalUnit) -> Vector3:
+	var kind: String = record.get("kind", "")
+	if kind == "move":
+		var destination := _array_to_cell(record.get("to", []))
+		if destination.x >= 0:
+			return level.battle_controller.grid_manager.grid_to_world(destination)
+	if kind in ["attack", "rescue"]:
+		var target := _find_unit(record.get("target", ""))
+		if is_instance_valid(target):
+			return target.global_position
+	var facing := Vector3.FORWARD
+	if is_instance_valid(actor.visual_adapter):
+		facing = actor.visual_adapter.global_basis.z.normalized()
+	return actor.global_position + facing * 4.0
 
 func _create_controls() -> void:
 	var canvas := level.get_node_or_null("Visualizers/BattleUI") as CanvasLayer
@@ -141,14 +172,14 @@ func _execute(record: Dictionary) -> bool:
 			var target: TacticalUnit = _find_unit(record.get("target", ""))
 			if not is_instance_valid(target):
 				return false
-			return level.battle_controller.try_attack(actor, target)
+			return await level.battle_controller.try_attack(actor, target)
 		"defend":
-			return level.battle_controller.try_defend(actor)
+			return await level.battle_controller.try_defend(actor)
 		"rescue":
 			var target: TacticalUnit = _find_unit(record.get("target", ""))
-			return is_instance_valid(target) and level.objective_manager.try_rescue(actor, target)
+			return is_instance_valid(target) and await level.objective_manager.try_rescue(actor, target)
 		"extract":
-			return level.objective_manager.try_extract(actor)
+			return await level.objective_manager.try_extract(actor)
 	return false
 
 func _activate(actor: TacticalUnit) -> bool:

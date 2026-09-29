@@ -111,7 +111,7 @@ func _on_objective_changed(_state: MissionObjectiveState) -> void:
 
 func _on_extract_pressed() -> void:
 	if _objective_manager and is_instance_valid(_target_unit) and _target_unit is TacticalUnit:
-		_objective_manager.try_extract(_target_unit as TacticalUnit)
+		await _objective_manager.try_extract(_target_unit as TacticalUnit)
 	_refresh_extract_button()
 
 func _refresh_extract_button() -> void:

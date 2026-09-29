@@ -157,9 +157,20 @@ func should_seek_extraction(unit: TacticalUnit) -> bool:
 	return mission.mission_id != &"prototype_survive" or get_objective(&"survive").is_completed()
 
 func try_extract(unit: TacticalUnit) -> bool:
+	if not can_extract(unit):
+		return false
+	var camera_presented := false
+	if _battle_controller and not _battle_controller.replay_mode and _battle_controller.action_camera_director:
+		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		_battle_controller.is_action_in_progress = true
+		camera_presented = await _battle_controller.action_camera_director.present(unit, &"extract", unit.global_position + facing * 3.0, unit.stats.current_ap, true)
 	var succeeded := ExtractAction.new(unit, self).execute()
 	if succeeded and _battle_controller:
 		_battle_controller.record_replay_action("extract", unit)
+	if camera_presented:
+		await _battle_controller.action_camera_director.finish_live_presentation(true)
+	if _battle_controller:
+		_battle_controller.is_action_in_progress = false
 	return succeeded
 
 func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
@@ -176,9 +187,20 @@ func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 
 func try_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	var target_name := String(target.name) if is_instance_valid(target) else ""
+	if not can_rescue(rescuer, target):
+		return false
+	var camera_presented := false
+	if _battle_controller and not _battle_controller.replay_mode and _battle_controller.action_camera_director:
+		_battle_controller.is_action_in_progress = true
+		camera_presented = await _battle_controller.action_camera_director.present(rescuer, &"rescue", target.global_position, rescuer.stats.current_ap, true)
 	var succeeded := RescueActionData.new(rescuer, target, self).execute()
 	if succeeded and _battle_controller:
 		_battle_controller.record_replay_action("rescue", rescuer, {"target": target_name})
+	if camera_presented:
+		await get_tree().create_timer(0.3).timeout
+		await _battle_controller.action_camera_director.finish_live_presentation(true)
+	if _battle_controller:
+		_battle_controller.is_action_in_progress = false
 	return succeeded
 
 func complete_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:

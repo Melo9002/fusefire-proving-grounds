@@ -31,8 +31,8 @@ func _run() -> void:
 	check(not battle.can_attack(player, turns.player_units[1]), "Friendly fire is rejected")
 	check(not battle.can_attack(player, enemy), "Out-of-range attacks are rejected")
 	var player_ap_before_invalid_actions := player.stats.current_ap
-	check(not battle.try_attack(player, enemy), "The shared gateway rejects an out-of-range attack")
-	check(not battle.try_defend(turns.player_units[1]), "An inactive friendly cannot act")
+	check(not await battle.try_attack(player, enemy), "The shared gateway rejects an out-of-range attack")
+	check(not await battle.try_defend(turns.player_units[1]), "An inactive friendly cannot act")
 	check(not await battle.try_move(turns.player_units[1], grid.world_to_grid(turns.player_units[1].global_position) + Vector3i.RIGHT), "An inactive friendly cannot move")
 	check(player.stats.current_ap == player_ap_before_invalid_actions and turns.player_units[1].stats.current_ap == turns.player_units[1].stats.max_ap, "Failed actions preserve AP")
 	check(FactionRules.are_hostile(TacticalUnit.Faction.ALLY, TacticalUnit.Faction.ENEMY), "Allies and enemies are hostile")
@@ -62,12 +62,12 @@ func _run() -> void:
 	enemy.global_position = player.global_position + Vector3(1, 0, 0)
 	grid.update_unit_position(enemy, old_enemy_cell, grid.world_to_grid(enemy.global_position))
 	var enemy_ap_before_invalid_action := enemy.stats.current_ap
-	check(not battle.try_defend(enemy), "A unit cannot act outside its own active turn")
+	check(not await battle.try_defend(enemy), "A unit cannot act outside its own active turn")
 	check(enemy.stats.current_ap == enemy_ap_before_invalid_action, "Rejected actions do not spend AP")
 	enemy.stats.is_defending = true
-	check(battle.try_attack(player, enemy), "In-range attack executes")
+	check(await battle.try_attack(player, enemy), "In-range attack executes")
 	check(enemy.stats.current_hp == 88 and player.stats.current_ap == 0, "Defend halves damage and attack costs one AP")
-	check(not battle.try_attack(player, enemy), "Attack without AP is rejected")
+	check(not await battle.try_attack(player, enemy), "Attack without AP is rejected")
 	check(turns.current_phase == TurnManager.TurnPhase.PLAYER_TURN, "Zero AP does not automatically end the phase")
 
 	# LOS reads full-cover terrain independently from movement connectivity.

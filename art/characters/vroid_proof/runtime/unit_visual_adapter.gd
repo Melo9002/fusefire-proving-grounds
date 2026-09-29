@@ -3,15 +3,35 @@ class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
 
+@export var camera_focus_anchor := Vector3(0.0, 1.05, 0.0)
+@export var camera_eye_anchor := Vector3(0.0, 1.5, 0.0)
+@export var camera_body_height := 1.6
+
+func get_camera_focus() -> Vector3:
+	return to_global(camera_focus_anchor)
+
+func get_camera_eye() -> Vector3:
+	return to_global(camera_eye_anchor)
+
+func get_camera_height() -> float:
+	return maxf(0.2, camera_body_height * global_basis.y.length())
+
 var tactical_unit: TacticalUnit
 var _last_parent_position := Vector3.ZERO
 var _return_generation := 0
+var _team_accent: MeshInstance3D
+
+const PLAYER_ACCENT := Color(0.05, 0.65, 1.0, 1.0)
+const ALLY_ACCENT := Color(0.2, 1.0, 0.35, 1.0)
+const ENEMY_ACCENT := Color(1.0, 0.12, 0.08, 1.0)
+const NEUTRAL_ACCENT := Color(0.85, 0.85, 0.85, 1.0)
 
 func _ready() -> void:
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
 	_build_animation_controller()
+	_build_team_accent()
 	skeleton.skeleton_updated.connect(_align_weapon_to_demo_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	_last_parent_position = get_parent_node_3d().global_position
@@ -21,6 +41,39 @@ func _ready() -> void:
 
 func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit
+	if is_node_ready():
+		_apply_team_accent()
+
+func _build_team_accent() -> void:
+	_team_accent = MeshInstance3D.new()
+	_team_accent.name = "TeamAccentRing"
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.31
+	ring.outer_radius = 0.37
+	ring.rings = 12
+	ring.ring_segments = 24
+	_team_accent.mesh = ring
+	_team_accent.position = Vector3(0.0, 0.025, 0.0)
+	_team_accent.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_team_accent)
+	_apply_team_accent()
+
+func _apply_team_accent() -> void:
+	if not is_instance_valid(_team_accent):
+		return
+	var accent := NEUTRAL_ACCENT
+	if is_instance_valid(tactical_unit):
+		match tactical_unit.faction:
+			TacticalUnit.Faction.PLAYER: accent = PLAYER_ACCENT
+			TacticalUnit.Faction.ALLY: accent = ALLY_ACCENT
+			TacticalUnit.Faction.ENEMY: accent = ENEMY_ACCENT
+	var material := StandardMaterial3D.new()
+	material.albedo_color = accent
+	material.emission_enabled = true
+	material.emission = accent
+	material.emission_energy_multiplier = 2.2
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_team_accent.material_override = material
 
 func _exit_tree() -> void:
 	# Skeleton modifiers can emit once more while their hierarchy is being

@@ -77,13 +77,13 @@ func _refresh_diagonals_near(changed: Vector3i) -> void:
 			var b := a + Vector3i.RIGHT
 			var c := a + Vector3i.BACK
 			var d := b + Vector3i.BACK
-			var clear := _clear_for_diagonal(a) and _clear_for_diagonal(b) and _clear_for_diagonal(c) and _clear_for_diagonal(d)
+			var diagonal_is_clear := _clear_for_diagonal(a) and _clear_for_diagonal(b) and _clear_for_diagonal(c) and _clear_for_diagonal(d)
 			for pair in [[a, d], [b, c]]:
 				if not grid_to_id_map.has(pair[0]) or not grid_to_id_map.has(pair[1]):
 					continue
 				var first: int = grid_to_id_map[pair[0]]
 				var second: int = grid_to_id_map[pair[1]]
-				if clear:
+				if diagonal_is_clear:
 					astar.connect_points(first, second)
 				elif astar.are_points_connected(first, second):
 					astar.disconnect_points(first, second)
