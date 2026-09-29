@@ -20,7 +20,7 @@ tip_vertices = [vertex for vertex in world_vertices if vertex.y <= minimum_y + 0
 tip_center = sum(tip_vertices, Vector()) / len(tip_vertices)
 muzzle_location = Vector((tip_center.x, minimum_y - 0.012, tip_center.z))
 
-for existing in [obj for obj in bpy.data.objects if obj.name in {"MuzzleSocket", "WeaponOrigin"}]:
+for existing in [obj for obj in bpy.data.objects if obj.name in {"MuzzleSocket", "WeaponOrigin", "SupportHandTarget"}]:
     bpy.data.objects.remove(existing, do_unlink=True)
 
 muzzle = bpy.data.objects.new("MuzzleSocket", None)
@@ -39,11 +39,23 @@ bpy.context.scene.collection.objects.link(origin)
 origin.parent = rifle
 origin.matrix_parent_inverse = rifle.matrix_world.inverted()
 
+# Presentation-only target for a left support-hand IK chain. The rifle points
+# toward negative Blender Y (positive Godot Z after glTF conversion), so this
+# sits forward of the pistol grip and slightly below the receiver.
+support_hand = bpy.data.objects.new("SupportHandTarget", None)
+support_hand.empty_display_type = "CUBE"
+support_hand.empty_display_size = 0.045
+support_hand.location = Vector((0.0, -0.16, 0.025))
+bpy.context.scene.collection.objects.link(support_hand)
+support_hand.parent = rifle
+support_hand.matrix_parent_inverse = rifle.matrix_world.inverted()
+
 rifle["fusefire_length_m"] = 0.79
 rifle["fusefire_muzzle_marker"] = "MuzzleSocket"
+rifle["fusefire_support_hand_marker"] = "SupportHandTarget"
 
 bpy.ops.object.select_all(action="DESELECT")
-for obj in (rifle, muzzle, origin):
+for obj in (rifle, muzzle, origin, support_hand):
     obj.select_set(True)
 bpy.context.view_layer.objects.active = rifle
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_OUT))
@@ -57,7 +69,8 @@ bpy.ops.export_scene.gltf(
 report = {
     "muzzle_location_blender_m": list(muzzle_location),
     "tip_sample_vertices": len(tip_vertices),
-    "markers": ["WeaponOrigin", "MuzzleSocket"],
+    "support_hand_location_blender_m": list(support_hand.location),
+    "markers": ["WeaponOrigin", "MuzzleSocket", "SupportHandTarget"],
     "output_glb": str(GLB_OUT.relative_to(PROJECT)),
     "output_blend": str(BLEND_OUT.relative_to(PROJECT)),
 }

@@ -1,0 +1,19 @@
+{
+  "source_blend": "art\\characters\\vroid_proof\\source\\vroidTest_intake.blend",
+  "runtime_blend": "art\\characters\\vroid_proof\\source\\vroidTest_runtime.blend",
+  "runtime_glb": "art\\characters\\vroid_proof\\models\\vroid_test_runtime.glb",
+  "source_height_m": 1.635536,
+  "target_height_m": 1.6,
+  "runtime_height_m": 1.6,
+  "scale_factor": 0.97827267,
+  "armature": "VRoidProof_Armature",
+  "bone_count": 229,
+  "mesh_count": 3,
+  "triangles": 45813,
+  "shape_keys": 58,
+  "right_hand_bone": "J_Bip_R_Hand",
+  "left_hand_bone": "J_Bip_L_Hand",
+  "head_bone": "J_Bip_C_Head",
+  "secondary_colliders_exported": false,
+  "authoritative_root_motion": false
+}

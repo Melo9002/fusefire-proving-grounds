@@ -113,14 +113,31 @@ func initialize_battle(prebuilt_map: MapData = null) -> bool:
 		last_map_quality.summary(),
 	])
 
-	for unit_item in turn_manager.player_units + turn_manager.allied_units + turn_manager.enemy_units:
+	var battle_units: Array[TacticalUnit] = turn_manager.player_units + turn_manager.allied_units + turn_manager.enemy_units
+	for unit_item in battle_units:
 		var start_grid = world_to_grid(unit_item.global_position - Vector3.UP * unit_item.standing_height)
 		grid_manager.register_unit(unit_item, start_grid)
 		unit_item.defeated.connect(_on_unit_defeated)
+	_orient_units_toward_opposition(battle_units)
 	units_registered.emit(turn_manager.player_units)
 
 	turn_manager.start_battle()
 	return true
+
+func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
+	# Generated deployments have no authored facing. Use the opposing team's
+	# center so each formation begins with a coherent, combat-ready direction.
+	for unit_item in units:
+		if not is_instance_valid(unit_item):
+			continue
+		var hostile_center := Vector3.ZERO
+		var hostile_count := 0
+		for other in units:
+			if is_instance_valid(other) and FactionRules.are_hostile(unit_item.faction, other.faction):
+				hostile_center += other.global_position
+				hostile_count += 1
+		if hostile_count > 0:
+			unit_item.face_world_position(hostile_center / float(hostile_count))
 
 func toggle_move_mode() -> void:
 	if is_current_phase_manually_controlled() and not is_action_in_progress:
@@ -351,6 +368,7 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	var attack_cmd = AttackAction.new(attacker, target, UNIFORM_AP_COST, evaluation.hit_chance, _combat_rng.randf() * 100.0)
 	if not attack_cmd.execute():
 		return false
+	attacker.present_attack(target.global_position)
 	attack_resolved.emit(attacker, target, attack_cmd.did_hit, evaluation.hit_chance)
 	record_replay_action("attack", attacker, {
 		"target": String(target.name),
@@ -430,7 +448,7 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 		tactical_unit = null
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	unit.queue_free()
+	unit.finish_defeat_presentation()
 
 func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> void:
 	grid_manager.register_unit(unit, grid_position)

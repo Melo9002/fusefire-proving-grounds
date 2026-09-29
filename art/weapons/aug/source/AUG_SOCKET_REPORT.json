@@ -5,9 +5,15 @@
     0.06376965343952179
   ],
   "tip_sample_vertices": 170,
+  "support_hand_location_blender_m": [
+    0.0,
+    -0.1599999964237213,
+    0.02500000037252903
+  ],
   "markers": [
     "WeaponOrigin",
-    "MuzzleSocket"
+    "MuzzleSocket",
+    "SupportHandTarget"
   ],
   "output_glb": "art\\weapons\\aug\\models\\aug_runtime_socketed.glb",
   "output_blend": "art\\weapons\\aug\\source\\aug_runtime_socketed.blend"

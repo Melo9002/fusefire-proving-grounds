@@ -1,10 +1,11 @@
-extends Node3D
+extends CharacterBody3D
 class_name TacticalUnit
 
 enum Faction { PLAYER, ENEMY, ALLY, NEUTRAL }
 
 signal movement_finished
 signal defeated(unit: TacticalUnit)
+signal attack_presented(target_world_position: Vector3)
 
 @export var movement_speed: float = 5.0
 @export var standing_height: float = 1.0
@@ -13,6 +14,7 @@ signal defeated(unit: TacticalUnit)
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
 @export var unit_hud_scene: PackedScene = preload("res://ui/unit_world_bar.tscn")
+@export var visual_adapter: UnitVisualAdapter
 
 var current_path: PackedVector3Array = PackedVector3Array()
 var grid_position: Vector3i = Vector3i.ZERO
@@ -45,10 +47,19 @@ func can_extract_others() -> bool:
 func _ready() -> void:
 	if stats:
 		stats.defeated.connect(_on_stats_defeated)
+		stats.hp_changed.connect(_on_hp_changed)
+	if visual_adapter:
+		visual_adapter.setup(self)
 	_spawn_world_hud()
 
 func _on_stats_defeated() -> void:
+	if visual_adapter:
+		visual_adapter.present_defeat()
 	defeated.emit(self)
+
+func _on_hp_changed(_current: int, _maximum: int) -> void:
+	if visual_adapter and stats and not stats.is_defeated:
+		visual_adapter.present_hit()
 
 func _process(delta: float) -> void:
 	if not is_moving:
@@ -56,6 +67,8 @@ func _process(delta: float) -> void:
 
 	if current_waypoint_idx >= current_path.size():
 		is_moving = false
+		if visual_adapter:
+			visual_adapter.present_idle()
 		movement_finished.emit()
 		return
 
@@ -73,6 +86,26 @@ func move_along_path(path: PackedVector3Array) -> void:
 	current_path = path
 	current_waypoint_idx = 0
 	is_moving = true
+	if visual_adapter:
+		visual_adapter.present_move()
+
+func present_attack(target_world_position: Vector3) -> void:
+	if visual_adapter:
+		visual_adapter.present_attack(target_world_position)
+	attack_presented.emit(target_world_position)
+
+func face_world_position(target_world_position: Vector3) -> void:
+	if visual_adapter:
+		visual_adapter.face_world_position(target_world_position)
+
+func finish_defeat_presentation() -> void:
+	# Tactical removal has already happened. Leave only the harmless visual body
+	# long enough for its one-shot defeat pose to be readable.
+	collision_layer = 0
+	collision_mask = 0
+	await get_tree().create_timer(1.25).timeout
+	if is_instance_valid(self):
+		queue_free()
 
 func _spawn_world_hud() -> void:
 	if not unit_hud_scene:

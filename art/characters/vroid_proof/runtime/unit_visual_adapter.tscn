@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.gd" id="1_adapter"]
+
+[sub_resource type="SphereMesh" id="Sphere_target"]
+radius = 0.018
+height = 0.036
+
+[node name="UnitVisualAdapter" type="Node3D"]
+position = Vector3(0, -1, 0)
+script = ExtResource("1_adapter")
+
+[node name="Character" type="Node3D" parent="."]
+
+[node name="IKTargets" type="Node3D" parent="Character"]
+
+[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets"]
+position = Vector3(-0.19, 1.12, 0.19)
+
+[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget"]
+visible = false
+mesh = SubResource("Sphere_target")
+
+[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets"]
+position = Vector3(-0.48, 1.03, 0.02)
+
+[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets"]
+position = Vector3(0.48, 1.04, 0.05)

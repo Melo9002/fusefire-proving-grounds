@@ -1,21 +1,24 @@
-[gd_scene format=3 uid="uid://c7nrcruyj4khu"]
+[gd_scene load_steps=6 format=3 uid="uid://c7nrcruyj4khu"]
 
 [ext_resource type="Script" uid="uid://dbww1fki3xm5f" path="res://units/tactical_unit.gd" id="1_bwycf"]
 [ext_resource type="Script" uid="uid://bkh6dyrmx6y7k" path="res://scripts/components/unit_stats.gd" id="2_2equr"]
 [ext_resource type="Script" path="res://scripts/components/mission_actor.gd" id="3_mission_actor"]
+[ext_resource type="PackedScene" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.tscn" id="4_visual"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_8x357"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_8x357"]
 
-[node name="TacticalUnit" type="CharacterBody3D" unique_id=225498665 node_paths=PackedStringArray("stats", "mission_actor")]
+[node name="TacticalUnit" type="CharacterBody3D" unique_id=225498665 node_paths=PackedStringArray("stats", "mission_actor", "visual_adapter")]
 collision_layer = 4
 collision_mask = 3
 script = ExtResource("1_bwycf")
 stats = NodePath("UnitStats")
 mission_actor = NodePath("MissionActor")
+visual_adapter = NodePath("UnitVisualAdapter")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1078393390]
+visible = false
 mesh = SubResource("CapsuleMesh_8x357")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=568116781]
@@ -26,3 +29,5 @@ script = ExtResource("2_2equr")
 
 [node name="MissionActor" type="Node" parent="."]
 script = ExtResource("3_mission_actor")
+
+[node name="UnitVisualAdapter" parent="." instance=ExtResource("4_visual")]
