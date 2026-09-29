@@ -29,7 +29,7 @@ static func evaluate(
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
 		var hostile_cell := grid.get_unit_grid(hostile)
-		var distance := absi(hostile_cell.x - candidate.x) + absi(hostile_cell.y - candidate.y) + absi(hostile_cell.z - candidate.z)
+		var distance := CombatRules.attack_distance(hostile_cell, candidate, grid)
 		var directional_cover := CombatRules.get_directional_cover(hostile_cell, candidate, grid)
 		if distance <= hostile.attack_range:
 			match directional_cover:

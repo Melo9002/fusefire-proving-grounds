@@ -263,7 +263,7 @@ func _advance_exposure(candidate: Vector3i) -> float:
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
 		var hostile_cell := grid.get_unit_grid(hostile)
-		var distance := absi(hostile_cell.x - candidate.x) + absi(hostile_cell.y - candidate.y) + absi(hostile_cell.z - candidate.z)
+		var distance := CombatRules.attack_distance(hostile_cell, candidate, grid)
 		if distance <= hostile.attack_range and CombatRules.has_line_of_sight_to_position(hostile, destination, grid, unit.get_world_3d()):
 			match CombatRules.get_directional_cover(hostile_cell, candidate, grid):
 				MapCellData.CoverType.FULL:

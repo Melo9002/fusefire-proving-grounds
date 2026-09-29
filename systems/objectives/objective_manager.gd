@@ -172,7 +172,7 @@ func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 		return false
 	if target.get_mission_actor_kind() != MissionActor.Kind.RESCUABLE:
 		return false
-	return _grid_manager.get_unit_grid(rescuer).distance_to(_grid_manager.get_unit_grid(target)) == 1.0
+	return CombatRules.can_reach_adjacent(_grid_manager.get_unit_grid(rescuer), _grid_manager.get_unit_grid(target), _grid_manager)
 
 func try_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	var target_name := String(target.name) if is_instance_valid(target) else ""
@@ -289,7 +289,7 @@ func _on_unit_moved(unit: TacticalUnit, _from: Vector3i, to: Vector3i) -> void:
 func _adjacent_target(cell: Vector3i, ids: Array[StringName]) -> TacticalUnit:
 	for occupied in _grid_manager.occupancy_map:
 		var target := _grid_manager.get_unit_at(occupied)
-		if is_instance_valid(target) and ids.has(target.get_mission_id()) and cell.distance_to(occupied) == 1.0: return target
+		if is_instance_valid(target) and ids.has(target.get_mission_id()) and CombatRules.can_reach_adjacent(cell, occupied, _grid_manager): return target
 	return null
 
 func _has_extract_target(unit: TacticalUnit) -> bool:

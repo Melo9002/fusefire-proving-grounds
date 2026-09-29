@@ -276,7 +276,7 @@ func update_attack_range() -> void:
 		if pathfinder.astar.is_point_disabled(point_id):
 			continue
 
-		var distance = absi(attacker_grid.x - grid_pos.x) + absi(attacker_grid.y - grid_pos.y) + absi(attacker_grid.z - grid_pos.z)
+		var distance = CombatRules.attack_distance(attacker_grid, grid_pos, grid_manager)
 		if distance == 0 or distance > tactical_unit.attack_range:
 			continue
 

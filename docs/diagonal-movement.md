@@ -1,5 +1,18 @@
 # Diagonal movement
 
+Shooting uses physical 3D distance divided by tile size for range, shared by
+manual attacks, range previews, and AI firing/exposure scoring. A ray can graze
+a single exposed corner, but cannot pass through the artificial inset between
+two touching diagonal LOS blockers. Height still matters: shots above the
+blocks remain possible. Existing directional cover considers both sides for
+exact diagonal approaches.
+
+Rescue and automatic pickup accept same-level diagonal neighbours only when
+both side cells are clear and stoppable. Extraction uses zone membership and
+needs no adjacency change. Melee is not implemented.
+
+Additional regression: `godot_console --headless --path . --script tests/diagonal_combat_test.gd`.
+
 Same-elevation clear tiles connect in eight directions. A diagonal requires
 all four cells in its 2x2 square to exist, be walkable, and allow stopping.
 Either blocked side forbids corner cutting. Low cover cannot be crossed

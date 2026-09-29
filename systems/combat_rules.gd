@@ -41,7 +41,7 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 
 	var attacker_grid = grid.get_unit_grid(attacker)
 	var target_grid = grid.get_unit_grid(target)
-	var grid_distance = absi(attacker_grid.x - target_grid.x) + absi(attacker_grid.y - target_grid.y) + absi(attacker_grid.z - target_grid.z)
+	var grid_distance = attack_distance(attacker_grid, target_grid, grid)
 	if grid_distance > attacker.attack_range:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
 	var visibility := _evaluate_target_visibility(attacker, target, grid)
@@ -58,6 +58,20 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 
 static func can_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, world: World3D) -> bool:
 	return evaluate_attack(attacker, target, grid, world).is_legal
+
+static func attack_distance(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> float:
+	return grid.grid_to_world(from_cell).distance_to(grid.grid_to_world(to_cell)) / grid.cell_size
+
+static func can_reach_adjacent(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> bool:
+	var delta := to_cell - from_cell
+	if delta.y != 0 or delta == Vector3i.ZERO or absi(delta.x) > 1 or absi(delta.z) > 1:
+		return false
+	if delta.x != 0 and delta.z != 0:
+		for side in [from_cell + Vector3i(delta.x, 0, 0), from_cell + Vector3i(0, 0, delta.z)]:
+			var data := grid.get_cell_data(side)
+			if not data or not data.walkable or not data.can_stop:
+				return false
+	return true
 
 static func has_line_of_sight_to_position(attacker: TacticalUnit, destination: Vector3, grid: GridManager, _world: World3D) -> bool:
 	var target_cell = grid.world_to_grid(destination)
@@ -134,6 +148,7 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
 	var candidates: Array = grid.map_data.los_blocking_cells if los_blockers_only else grid.map_data.cells.values()
+	var grazed: Array[MapCellData] = []
 	for data: MapCellData in candidates:
 		if data.cover_height <= 0.0:
 			continue
@@ -143,11 +158,19 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			continue
 		if _segment_enters_obstacle(origin, destination, data, grid.cell_size):
 			return data
+		if data.blocks_line_of_sight and _segment_enters_obstacle(origin, destination, data, grid.cell_size, true):
+			for other in grazed:
+				var delta := data.grid_position - other.grid_position
+				if delta.y == 0 and absi(delta.x) == 1 and absi(delta.z) == 1:
+					return data
+			grazed.append(data)
 	return null
 
-static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float) -> bool:
+static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
 	var inset := 0.001
-	var half_cell = cell_size * 0.5 - inset
+	# Full-height obstacles meet at their edges. Shrinking their horizontal
+	# bounds creates artificial cracks through touching diagonal blocks.
+	var half_cell = cell_size * 0.5 + inset if closed_edges else cell_size * 0.5 - inset
 	var minimum = Vector3(cell.world_position.x - half_cell, cell.world_position.y + inset, cell.world_position.z - half_cell)
 	var maximum = Vector3(cell.world_position.x + half_cell, cell.world_position.y + cell.cover_height - inset, cell.world_position.z + half_cell)
 	var direction = destination - origin
