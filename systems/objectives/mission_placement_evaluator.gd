@@ -9,8 +9,8 @@ var pathfinder: Pathfinder
 var player_spawns: Array[Vector3i]
 var enemy_spawns: Array[Vector3i]
 var blocked: Dictionary[Vector3i, bool] = {}
-var player_distances: Dictionary[Vector3i, int] = {}
-var enemy_distances: Dictionary[Vector3i, int] = {}
+var player_distances: Dictionary[Vector3i, float] = {}
+var enemy_distances: Dictionary[Vector3i, float] = {}
 var deployment_separation := 1
 
 func _init(data: MapData, graph: Pathfinder) -> void:
@@ -35,18 +35,18 @@ func legal_candidates() -> Array[Vector3i]:
 	return result
 
 func score_reach(position: Vector3i) -> float:
-	var friendly: int = player_distances.get(position, UNREACHABLE)
-	var hostile: int = enemy_distances.get(position, UNREACHABLE)
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
 	return minf(friendly, hostile) * 3.0 - absf(friendly - hostile) * 1.5 + _tactical_score(position)
 
 func score_friendly_extract(position: Vector3i) -> float:
-	var friendly: int = player_distances.get(position, UNREACHABLE)
-	var hostile: int = enemy_distances.get(position, UNREACHABLE)
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
 	return friendly * 3.0 - hostile * 0.25 + _tactical_score(position) + position.y * 2.0
 
 func score_enemy_extract(position: Vector3i) -> float:
-	var friendly: int = player_distances.get(position, UNREACHABLE)
-	var hostile: int = enemy_distances.get(position, UNREACHABLE)
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
 	return hostile * 3.0 - friendly * 0.25 + _tactical_score(position) + position.y * 2.0
 
 func is_reach_candidate(position: Vector3i) -> bool:
@@ -62,8 +62,8 @@ func is_enemy_extract_candidate(position: Vector3i) -> bool:
 		and player_distances.get(position, UNREACHABLE) >= _minimum_route_fraction(0.12)
 
 func score_rescue(position: Vector3i) -> float:
-	var friendly: int = player_distances.get(position, UNREACHABLE)
-	var hostile: int = enemy_distances.get(position, UNREACHABLE)
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
 	return minf(friendly, hostile) * 2.5 - absf(friendly - hostile) + _tactical_score(position) + position.y * 3.0
 
 func reserve(cells: Array[Vector3i]) -> void:
@@ -84,8 +84,8 @@ func _tactical_score(position: Vector3i) -> float:
 			cover += 1
 	return cover * 2.0 + mini(exits, 3) * 1.5 - (6.0 if exits < 2 else 0.0)
 
-func _build_distances(origins: Array[Vector3i]) -> Dictionary[Vector3i, int]:
-	var distances: Dictionary[Vector3i, int] = {}
+func _build_distances(origins: Array[Vector3i]) -> Dictionary[Vector3i, float]:
+	var distances: Dictionary[Vector3i, float] = {}
 	var frontier: Array[Vector3i] = []
 	for origin in origins:
 		if pathfinder.grid_to_id_map.has(origin):
@@ -95,13 +95,13 @@ func _build_distances(origins: Array[Vector3i]) -> Dictionary[Vector3i, int]:
 		frontier.sort_custom(func(a: Vector3i, b: Vector3i) -> bool: return distances[a] < distances[b])
 		var current: Vector3i = frontier[0]
 		frontier.remove_at(0)
-		var current_cost: int = distances[current]
+		var current_cost: float = distances[current]
 		var current_id: int = pathfinder.grid_to_id_map[current]
 		for neighbor_id in pathfinder.astar.get_point_connections(current_id):
 			if pathfinder.astar.is_point_disabled(neighbor_id):
 				continue
 			var neighbor: Vector3i = pathfinder.id_to_grid_map[neighbor_id]
-			var cost := current_cost + int(pathfinder.movement_costs.get(neighbor, 1))
+			var cost := current_cost + pathfinder.get_step_cost(current, neighbor)
 			if distances.has(neighbor) and distances[neighbor] <= cost:
 				continue
 			distances[neighbor] = cost
