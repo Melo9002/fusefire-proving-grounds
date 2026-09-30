@@ -8,7 +8,9 @@ const AIM := &"aim"
 const SHOOT := &"shoot"
 const HIT := &"hit"
 const DEFEAT := &"defeat"
-const STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT]
+const STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
+	&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land",
+	&"pickup", &"carry_idle", &"carry_move", &"boarding"]
 
 const HIPS := &"J_Bip_C_Hips"
 const SPINE := &"J_Bip_C_Spine"
@@ -91,10 +93,39 @@ func _build_animation_player() -> void:
 	var library := AnimationLibrary.new()
 	library.add_animation(IDLE, _make_idle())
 	library.add_animation(MOVE, _make_move())
+	library.add_animation(&"move_back", _make_directional_move(Vector2(0, -1)))
+	library.add_animation(&"move_left", _make_directional_move(Vector2(-1, 0)))
+	library.add_animation(&"move_right", _make_directional_move(Vector2(1, 0)))
 	library.add_animation(AIM, _make_aim())
 	library.add_animation(SHOOT, _make_shoot())
 	library.add_animation(HIT, _make_hit())
 	library.add_animation(DEFEAT, _make_defeat())
+	for pose in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
+		library.add_animation(pose, _make_rescue_pose(pose))
+	for pose in [&"cover_low", &"cover_high", &"vault", &"climb", &"descend", &"land"]:
+		library.add_animation(pose, _make_tactical_pose(pose))
+	for side in [-1, 1]:
+		var shot := _make_shoot()
+		_add_position(shot, HIPS, [0.0, 0.07, 0.32], [Vector3(side * 0.10, -0.03, 0), Vector3(side * 0.14, -0.03, 0), Vector3(side * 0.10, -0.03, 0)])
+		library.add_animation(&"shoot_left" if side < 0 else &"shoot_right", shot)
+	# Explicit rest tracks prevent a cover crouch from leaking into idle/aim.
+	var reset := _new_animation(0.0, false)
+	var seen := {}
+	for clip_name in library.get_animation_list():
+		var clip := library.get_animation(clip_name)
+		for track in clip.get_track_count():
+			var path := clip.track_get_path(track)
+			var kind := clip.track_get_type(track)
+			var key := "%s:%s" % [path, kind]
+			if seen.has(key):
+				continue
+			seen[key] = true
+			var bone := StringName(path.get_subname(0))
+			if kind == Animation.TYPE_ROTATION_3D:
+				_add_rotation(reset, bone, [0.0], [Quaternion.IDENTITY])
+			elif kind == Animation.TYPE_POSITION_3D:
+				_add_position(reset, bone, [0.0], [Vector3.ZERO])
+	library.add_animation(&"RESET", reset)
 	animation_player.add_animation_library(&"", library)
 
 
@@ -106,6 +137,19 @@ func _build_animation_tree() -> void:
 
 	var state_machine := AnimationNodeStateMachine.new()
 	for state_name: StringName in STATES:
+		if state_name == &"carry_move":
+			var carry_tree := AnimationNodeBlendTree.new()
+			var carry_clip := AnimationNodeAnimation.new()
+			carry_clip.animation = &"carry_move"
+			carry_tree.add_node(&"Clip", carry_clip)
+			carry_tree.add_node(&"Pace", AnimationNodeTimeScale.new())
+			carry_tree.connect_node(&"Pace", 0, &"Clip")
+			carry_tree.connect_node(&"output", 0, &"Pace")
+			state_machine.add_node(state_name, carry_tree)
+			continue
+		if state_name == MOVE:
+			state_machine.add_node(state_name, _make_locomotion_tree())
+			continue
 		var animation_node := AnimationNodeAnimation.new()
 		animation_node.animation = state_name
 		state_machine.add_node(state_name, animation_node)
@@ -124,6 +168,46 @@ func _build_animation_tree() -> void:
 	animation_tree.tree_root = state_machine
 	animation_tree.active = true
 	playback = animation_tree.get(&"parameters/playback") as AnimationNodeStateMachinePlayback
+	set_locomotion(Vector2(0, 1), 1.0)
+
+
+func set_locomotion(direction: Vector2, cycles_per_second: float) -> void:
+	animation_tree.set("parameters/move/Direction/blend_position", direction)
+	animation_tree.set("parameters/move/Pace/scale", clampf(cycles_per_second, 0.1, 5.0))
+	animation_tree.set("parameters/carry_move/Pace/scale", clampf(cycles_per_second, 0.1, 5.0))
+
+
+func _make_locomotion_tree() -> AnimationNodeBlendTree:
+	var tree := AnimationNodeBlendTree.new()
+	var directions := AnimationNodeBlendSpace2D.new()
+	# Synchronized loops preserve the planted/swinging foot when turning.
+	directions.sync = true
+	var clips := [&"move", &"move_back", &"move_left", &"move_right"]
+	var points := [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0)]
+	for i in clips.size():
+		var node := AnimationNodeAnimation.new()
+		node.animation = clips[i]
+		directions.add_blend_point(node, points[i], -1, clips[i])
+	tree.add_node(&"Direction", directions)
+	tree.add_node(&"Pace", AnimationNodeTimeScale.new())
+	tree.connect_node(&"Pace", 0, &"Direction")
+	tree.connect_node(&"output", 0, &"Pace")
+	return tree
+
+
+func _make_directional_move(direction: Vector2) -> Animation:
+	var animation := _make_move()
+	# Re-author thigh swing in travel direction, keeping knee flexion anatomical.
+	# Lift happens during the first half-cycle for the left leg and second for right.
+	for side in ["L", "R"]:
+		var bone := LEFT_UPPER_LEG if side == "L" else RIGHT_UPPER_LEG
+		var track := animation.find_track(NodePath(".:%s" % bone), Animation.TYPE_ROTATION_3D)
+		animation.remove_track(track)
+		var sign_value := 1.0 if side == "L" else -1.0
+		var start := _rotation(-22.0 * direction.y * sign_value, 0, 18.0 * direction.x * sign_value)
+		var end := _rotation(22.0 * direction.y * sign_value, 0, -18.0 * direction.x * sign_value)
+		_add_rotation(animation, bone, [0.0, 0.5, 1.0], [start, end, start])
+	return animation
 
 
 func _make_idle() -> Animation:
@@ -131,6 +215,62 @@ func _make_idle() -> Animation:
 	_add_rotation(animation, CHEST, [0.0, 1.0, 2.0], [_rotation(0.0, 0.0, -1.0), _rotation(-2.4, 0.0, 1.5), _rotation(0.0, 0.0, -1.0)])
 	_add_rotation(animation, HEAD, [0.0, 1.0, 2.0], [_rotation(0.0, -1.0, 0.0), _rotation(0.8, 1.0, 0.0), _rotation(0.0, -1.0, 0.0)])
 	_add_grip(animation)
+	return animation
+
+
+func _make_tactical_pose(pose: StringName) -> Animation:
+	# Blocking poses: knee flexion stays negative on this imported rig.
+	# Root travel is supplied by the tactical path, never by these clips.
+	var landing := pose == &"land"
+	var animation := _new_animation(0.3 if landing else 0.8, not landing)
+	var crouch := 0.10 if pose == &"cover_low" else 0.012
+	var thigh := 30.0 if pose == &"cover_low" else 10.0
+	var knee := -60.0 if pose == &"cover_low" else -20.0
+	if pose in [&"vault", &"climb", &"descend", &"land"]:
+		crouch = 0.10
+		thigh = 45.0
+		knee = -80.0
+	if pose == &"descend":
+		crouch = 0.05
+		thigh = 25.0
+		knee = -55.0
+	var end := animation.length
+	var times := [0.0, end * 0.5, end]
+	_add_position(animation, HIPS, times, [Vector3(0, -crouch, 0), Vector3(0, -crouch - 0.015, 0), Vector3.ZERO if landing else Vector3(0, -crouch, 0)])
+	for side in ["L", "R"]:
+		var upper := LEFT_UPPER_LEG if side == "L" else RIGHT_UPPER_LEG
+		var lower := LEFT_LOWER_LEG if side == "L" else RIGHT_LOWER_LEG
+		var foot := LEFT_FOOT if side == "L" else RIGHT_FOOT
+		var alternating := pose in [&"climb", &"descend"]
+		var a := thigh * (0.35 if alternating and side == "R" else 1.0)
+		var b := thigh * (0.35 if alternating and side == "L" else 1.0)
+		_add_rotation(animation, upper, times, [_rotation(a, 0, 0), _rotation(b, 0, 0), Quaternion.IDENTITY if landing else _rotation(a, 0, 0)])
+		_add_rotation(animation, lower, times, [_rotation(knee, 0, 0), _rotation(knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(knee, 0, 0)])
+		_add_rotation(animation, foot, times, [_rotation(-a - knee, 0, 0), _rotation(-b - knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(-a - knee, 0, 0)])
+	_add_rotation(animation, CHEST, [0.0], [_rotation(-5, 12, -6) if pose == &"cover_high" else _rotation(-8, 0, 0)])
+	_add_grip(animation)
+	return animation
+
+func _make_rescue_pose(pose: StringName) -> Animation:
+	var moving := pose == &"carry_move"
+	var animation := _make_move() if moving else _new_animation(0.6, pose == &"carry_idle")
+	if moving:
+		animation.remove_track(animation.find_track(NodePath(".:%s" % CHEST), Animation.TYPE_ROTATION_3D))
+	var times := [0.0, 0.3, 0.6]
+	var angles := [-10.0, -12.0, -10.0]
+	if pose == &"pickup":
+		angles = [-5.0, -35.0, -10.0]
+	elif pose == &"boarding":
+		angles = [-10.0, -30.0, -5.0]
+	if moving:
+		times = [0.0, 0.5, 1.0]
+	_add_rotation(animation, CHEST, times, [_rotation(angles[0], 0, 0), _rotation(angles[1], 0, 0), _rotation(angles[2], 0, 0)])
+	if not moving:
+		_add_grip(animation)
+	for side in ["L", "R"]:
+		var sign_value := -1.0 if side == "L" else 1.0
+		_add_rotation(animation, StringName("J_Bip_%s_UpperArm" % side), [0.0], [_rotation(-20, 0, 45 * sign_value)])
+		_add_rotation(animation, StringName("J_Bip_%s_LowerArm" % side), [0.0], [_rotation(-65, 0, 0)])
 	return animation
 
 

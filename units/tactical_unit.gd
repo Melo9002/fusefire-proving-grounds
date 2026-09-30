@@ -20,6 +20,8 @@ var current_path: PackedVector3Array = PackedVector3Array()
 var grid_position: Vector3i = Vector3i.ZERO
 var current_waypoint_idx: int = 0
 var is_moving: bool = false
+var _visual_segments: Array[StringName] = []
+var _visual_waypoint := -1
 var carried_unit: TacticalUnit
 var _movement_speed_before_carry := -1
 
@@ -31,6 +33,8 @@ func carry_unit(unit: TacticalUnit) -> void:
 	stats.speed = maxi(2, stats.speed - 2)
 	unit.visible = false
 	unit.process_mode = Node.PROCESS_MODE_DISABLED
+	if visual_adapter:
+		visual_adapter.present_pickup()
 
 func is_carrying_unit() -> bool:
 	return is_instance_valid(carried_unit)
@@ -68,11 +72,16 @@ func _process(delta: float) -> void:
 	if current_waypoint_idx >= current_path.size():
 		is_moving = false
 		if visual_adapter:
-			visual_adapter.present_idle()
+			visual_adapter.present_movement_end()
 		movement_finished.emit()
 		return
 
 	var target_waypoint = current_path[current_waypoint_idx]
+	if visual_adapter:
+		if _visual_waypoint != current_waypoint_idx:
+			_visual_waypoint = current_waypoint_idx
+			visual_adapter.present_path_segment(_visual_segments[current_waypoint_idx] if current_waypoint_idx < _visual_segments.size() else &"move")
+		visual_adapter.update_locomotion(global_position.direction_to(target_waypoint) * movement_speed, delta)
 
 	global_position = global_position.move_toward(target_waypoint, movement_speed * delta)
 
@@ -80,10 +89,12 @@ func _process(delta: float) -> void:
 		global_position = target_waypoint
 		current_waypoint_idx += 1
 
-func move_along_path(path: PackedVector3Array) -> void:
+func move_along_path(path: PackedVector3Array, visual_segments: Array[StringName] = []) -> void:
 	if path.size() == 0:
 		return
 	current_path = path
+	_visual_segments = visual_segments
+	_visual_waypoint = -1
 	current_waypoint_idx = 0
 	is_moving = true
 	if visual_adapter:

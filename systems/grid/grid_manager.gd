@@ -13,6 +13,8 @@ signal unit_unregistered(unit: TacticalUnit, grid_pos: Vector3i)
 func register_unit(unit: TacticalUnit, grid_pos: Vector3i) -> void:
 	occupancy_map[grid_pos] = unit
 	unit.grid_position = grid_pos
+	if unit.visual_adapter:
+		unit.visual_adapter.presentation_grid = self
 	print_rich("[color=cyan][GridManager][/color] Registered unit [b]%s[/b] at %s | Faction: %s" % [unit.name, grid_pos, unit.faction])
 	unit_registered.emit(unit, grid_pos)
 

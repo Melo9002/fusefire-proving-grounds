@@ -79,7 +79,7 @@ func _ready() -> void:
 	mouse_raycaster.floor_clicked.connect(_on_floor_clicked)
 	mouse_raycaster.unit_clicked.connect(_on_unit_clicked)
 
-func initialize_battle(prebuilt_map: MapData = null) -> bool:
+func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition = null) -> bool:
 	_combat_rng.seed = ai_decision_seed * 2147483647 + 104729
 	if prebuilt_map:
 		grid_manager.map_data = prebuilt_map
@@ -91,6 +91,7 @@ func initialize_battle(prebuilt_map: MapData = null) -> bool:
 		await get_tree().create_timer(0.05).timeout
 		MapBuilder.scan_obstacles(get_world_3d(), grid_manager, pathfinder)
 	MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
+	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
 	var faction_counts := {
 		TacticalUnit.Faction.PLAYER: 0,
 		TacticalUnit.Faction.ALLY: 0,
@@ -428,6 +429,7 @@ func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	if path.is_empty():
 		return false
 	var action = MoveAction.new(unit, target_cell, _build_movement_path(unit, path), grid_manager, UNIFORM_AP_COST)
+	action.visual_segments = preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)
 	if not action.is_valid():
 		return false
 	is_action_in_progress = true

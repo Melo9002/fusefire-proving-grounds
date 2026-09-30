@@ -14,6 +14,7 @@ var zones: Dictionary[StringName, MapZoneData] = {}
 var source_kind: String = "authored"
 var generation_seed: int = 0
 var map_size := Vector2i.ZERO
+var transport_footprints: Dictionary = {}
 
 func add_cell(cell: MapCellData) -> void:
 	cells[cell.grid_position] = cell
@@ -94,6 +95,7 @@ func rebuild_los_index() -> void:
 			los_blocking_cells.append(cell)
 
 func clear() -> void:
+	transport_footprints.clear()
 	containers.clear()
 	buildings.clear()
 	platforms.clear()

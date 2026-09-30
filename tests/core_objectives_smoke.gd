@@ -82,7 +82,7 @@ func _check_reach() -> void:
 	await _finish(level)
 
 func _check_rescue() -> void:
-	var level := await _create_level(MissionObjectiveDefinition.Kind.RESCUE, false, 2)
+	var level := await _create_level(MissionObjectiveDefinition.Kind.RESCUE, false, 3)
 	var target := level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
 	var target_cell := level.battle_controller.grid_manager.get_unit_grid(target)
 	var approach := target_cell + Vector3i.LEFT
@@ -93,14 +93,29 @@ func _check_rescue() -> void:
 	check(level.objective_manager.get_objective(&"rescue").is_completed(), "Rescue completes beside its neutral target")
 	check(carrier.is_carrying_unit() and carrier.stats.speed == original_speed - 2, "The rescuer carries the VIP with reduced movement")
 	check(not target.visible, "A carried VIP no longer remains visible at the pickup cell")
+	var enemy := level.turn_manager.enemy_units[0]
+	check(not AttackAction.new(carrier, enemy).is_valid(), "Carrier cannot bypass shooting restriction with a direct action")
+	check(not level.battle_controller.evaluate_attack(carrier, enemy).is_legal, "Carrier cannot preview a legal shot")
+	if carrier.visual_adapter:
+		check(not carrier.visual_adapter.arm_ik.active, "Carrier disables weapon IK")
+		check(carrier.visual_adapter.weapon.get_parent() == carrier.visual_adapter.character_root, "Carrier stows rifle off the hand socket")
+		check(carrier.visual_adapter.character_root.has_node("RescuePassenger"), "Carrier displays a cosmetic passenger")
+		await create_timer(0.65).timeout
+		check(carrier.visual_adapter.get_presentation_state() == &"carry_idle", "Pickup returns to carrying stance")
 	var exit := level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")[0]
 	var teammate := level.turn_manager.player_units[1]
+	var remaining := level.turn_manager.player_units[2]
 	level.battle_controller.grid_manager.update_unit_position(teammate, teammate.grid_position, exit)
 	check(level.turn_manager.select_player_unit(teammate), "The carrier's teammate remains selectable")
 	check(await level.objective_manager.try_extract(teammate), "Other squad members may evacuate after the VIP is picked up")
 	check(level.turn_manager.select_player_unit(carrier), "The VIP carrier remains selectable after a teammate evacuates")
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, exit)
 	check(await level.objective_manager.try_extract(carrier), "The carrier extracts together with the rescued VIP")
+	await process_frame
+	check(level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING, "VIP boarding leaves time to evacuate remaining escorts")
+	check(level.objective_manager.can_end_mission_early(), "VIP boarding permits deliberate departure")
+	level.battle_controller.grid_manager.update_unit_position(remaining, remaining.grid_position, exit)
+	check(await level.objective_manager.try_extract(remaining), "Remaining escort can board after VIP objective completed")
 	await process_frame
 	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Rescuing and extracting the VIP grants victory")
 	await _finish(level)
@@ -110,6 +125,17 @@ func _check_extract() -> void:
 	check(not level.objective_manager.should_seek_extraction(level.turn_manager.enemy_units[0]), "Enemies never seek the player's extraction zone")
 	check(level.objective_manager.get_objective(&"extract_vips") == null, "Extract missions do not require a VIP unless one was enabled")
 	var destinations := level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")
+	var transport := level.objective_zone_visualizer.get_node_or_null("ExtractionTransport") as Node3D
+	check(transport != null, "Extraction mission displays a transport")
+	if transport:
+		var floor_node := level.battle_controller.grid_manager.map_floor
+		var offset := transport.global_position - floor_node.global_position
+		check(absf(offset.x) < floor_node.size.x * 0.5 and absf(offset.z) < floor_node.size.z * 0.5, "Transport is inside the playable map")
+		var footprint: Array = level.battle_controller.grid_manager.map_data.transport_footprints.get(&"extract", [])
+		check(footprint.size() == 8, "Truck reserves a 2 by 4 footprint")
+		for cell_pos: Vector3i in footprint:
+			var cell := level.battle_controller.grid_manager.get_cell_data(cell_pos)
+			check(not cell.walkable and cell.cover_type == MapCellData.CoverType.FULL and cell.blocks_line_of_sight, "Truck cells provide blocking full cover")
 	var exhausted := level.turn_manager.player_units[1]
 	exhausted.stats.current_ap = 0
 	level.battle_controller.grid_manager.update_unit_position(exhausted, exhausted.grid_position, destinations[0])
@@ -120,9 +146,11 @@ func _check_extract() -> void:
 		world_bar._refresh_extract_button()
 		check(world_bar.extract_button.visible and not world_bar.extract_button.disabled, "Extract is immediately enabled in an active extraction zone")
 		world_bar.extract_button.button_down.emit()
-		await process_frame
+		check(level.battle_controller.is_action_in_progress, "Boarding holds the action lock")
+		check(not await level.objective_manager.try_extract(exhausted), "Repeated extraction is rejected during boarding")
+		await create_timer(0.75).timeout
 	check(level.objective_manager.extracted_units == 1, "The Extract button's mouse-down signal evacuates the eligible unit")
 	check(level.objective_manager.can_end_mission_early(), "One extracted unit unlocks early mission ending")
 	check(level.objective_manager.end_mission_early(), "The player can end early and leave a living unit behind")
-	check(level.objective_manager.get_result_report() == "VIPs extracted 0/0 | Units extracted 1/2", "The mission report retains extraction consequences")
+	check(level.objective_manager.get_result_report() == "VIPs extracted 0/0 | Units extracted 1/2 | Left behind 1", "The mission report retains extraction consequences")
 	await _finish(level)

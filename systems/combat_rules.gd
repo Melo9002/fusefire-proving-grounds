@@ -34,6 +34,8 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	var default_aim := get_shot_destination(target, grid)
+	if attacker.is_carrying_unit():
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Cannot shoot while carrying", default_aim)
 	if not attacker.stats or not target.stats or attacker.stats.is_defeated or target.stats.is_defeated:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Unit defeated", default_aim)
 	if not FactionRules.are_hostile(attacker.faction, target.faction):

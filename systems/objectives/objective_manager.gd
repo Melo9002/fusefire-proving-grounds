@@ -20,6 +20,7 @@ var extracted_vips := 0
 var total_units := 0
 var extracted_units := 0
 var escaped_enemies := 0
+var left_behind := 0
 
 func _ready() -> void:
 	if mission: load_mission(mission)
@@ -66,7 +67,7 @@ func get_mission_intent(unit: TacticalUnit) -> MissionIntentData:
 		return _build_intent(rescue, MissionIntentData.Kind.RESCUE, &"", "Approach and secure the rescue target.")
 
 	if should_seek_extraction(unit):
-		var extraction := _first_active_objective(MissionObjectiveDefinition.Kind.EXTRACT, unit.faction)
+		var extraction := _extraction_for_faction(unit.faction)
 		if extraction:
 			var zone_id := extraction.definition.zone_id if not extraction.definition.zone_id.is_empty() else &"extract"
 			return _build_intent(extraction, MissionIntentData.Kind.EXTRACT, zone_id, "Reach the extraction zone and evacuate.")
@@ -89,6 +90,13 @@ func _first_active_objective(kind: MissionObjectiveDefinition.Kind, faction: Tac
 	for state in get_objectives():
 		if state.is_active() and state.definition.kind == kind and state.definition.is_pursued_by(faction):
 			return state
+	return null
+
+func _extraction_for_faction(faction: TacticalUnit.Faction) -> MissionObjectiveState:
+	for state in get_objectives():
+		if state.definition.kind == MissionObjectiveDefinition.Kind.EXTRACT and state.definition.is_pursued_by(faction):
+			if state.is_active() or (mission.mission_id == &"prototype_rescue" and state.is_completed()):
+				return state
 	return null
 
 func _build_intent(state: MissionObjectiveState, kind: MissionIntentData.Kind, zone_id: StringName, reason: String) -> MissionIntentData:
@@ -144,7 +152,7 @@ func has_required_objective_failed() -> bool:
 func can_extract(unit: TacticalUnit) -> bool:
 	if not mission or not is_instance_valid(unit) or unit.is_moving or not _turn_manager or not _grid_manager: return false
 	if not _turn_manager.player_units.has(unit) and not _turn_manager.allied_units.has(unit) and not _turn_manager.enemy_units.has(unit): return false
-	var extraction := _first_active_objective(MissionObjectiveDefinition.Kind.EXTRACT, unit.faction)
+	var extraction := _extraction_for_faction(unit.faction)
 	if not extraction or not _has_extract_target(unit): return false
 	var zone_id := extraction.definition.zone_id if not extraction.definition.zone_id.is_empty() else &"extract"
 	if not _grid_manager.map_data.get_objective_zone(zone_id).has(_grid_manager.get_unit_grid(unit)): return false
@@ -157,13 +165,20 @@ func should_seek_extraction(unit: TacticalUnit) -> bool:
 	return mission.mission_id != &"prototype_survive" or get_objective(&"survive").is_completed()
 
 func try_extract(unit: TacticalUnit) -> bool:
+	if _battle_controller and _battle_controller.is_action_in_progress:
+		return false
 	if not can_extract(unit):
 		return false
+	if _battle_controller:
+		_battle_controller.is_action_in_progress = true
 	var camera_presented := false
 	if _battle_controller and not _battle_controller.replay_mode and _battle_controller.action_camera_director:
 		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
 		_battle_controller.is_action_in_progress = true
 		camera_presented = await _battle_controller.action_camera_director.present(unit, &"extract", unit.global_position + facing * 3.0, unit.stats.current_ap, true)
+	if unit.visual_adapter:
+		unit.visual_adapter.present_boarding()
+		await get_tree().create_timer(0.6).timeout
 	var succeeded := ExtractAction.new(unit, self).execute()
 	if succeeded and _battle_controller:
 		_battle_controller.record_replay_action("extract", unit)
@@ -255,17 +270,27 @@ func complete_extraction(unit: TacticalUnit) -> bool:
 	return true
 
 func can_end_mission_early() -> bool:
-	return mission and mission.mission_id == &"prototype_extract" and extracted_units > 0 and _all_vip_objectives_complete()
+	return mission and mission.mission_id in [&"prototype_extract", &"prototype_rescue"] and extracted_units + extracted_vips > 0 and _all_vip_objectives_complete() and _turn_manager.battle_result == TurnManager.BattleResult.ONGOING
+
+func get_units_left_behind() -> int:
+	return _turn_manager.player_units.size() + _turn_manager.allied_units.size() if _turn_manager else 0
 
 func end_mission_early() -> bool:
 	if not can_end_mission_early(): return false
+	if _battle_controller and _battle_controller.is_action_in_progress: return false
+	# Departure stores its pre-action fingerprint; playback validates it before
+	# applying this terminal command, then checks the final battle result.
+	_battle_controller.record_replay_action("depart", null)
+	left_behind = get_units_left_behind()
 	_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
+	mission_report_changed.emit()
 	return true
 
 func get_result_report() -> String:
 	if mission and mission.mission_id == &"prototype_enemy_evacuation":
 		return "Enemies escaped %d/%d" % [escaped_enemies, get_objective(&"enemy_escape").definition.target_amount]
-	return "VIPs extracted %d/%d | Units extracted %d/%d" % [extracted_vips, total_vips, extracted_units, total_units]
+	var report := "VIPs extracted %d/%d | Units extracted %d/%d" % [extracted_vips, total_vips, extracted_units, total_units]
+	return report + (" | Left behind %d" % left_behind if left_behind > 0 else "")
 
 func _initialize_extraction_totals() -> void:
 	for unit in _turn_manager.player_units + _turn_manager.allied_units:
@@ -350,6 +375,8 @@ func _evaluate_outcome() -> void:
 		_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
 		return
 	if are_required_objectives_complete():
+		if mission.mission_id == &"prototype_rescue" and extracted_units < total_units:
+			return
 		if mission.mission_id != &"prototype_extract" or extracted_units >= total_units:
 			_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
 			return

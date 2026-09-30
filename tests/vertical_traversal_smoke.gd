@@ -19,6 +19,9 @@ func _run() -> void:
 	var battle = level.battle_controller
 	var grid = battle.grid_manager
 	var unit: TacticalUnit = level.turn_manager.player_units[0]
+	var poses: Array[StringName] = []
+	if unit.visual_adapter:
+		unit.visual_adapter.presentation_state_changed.connect(func(pose: StringName): poses.append(pose))
 	var bottom := Vector3i(7, 0, 6)
 	var top := Vector3i(7, 2, 5)
 	var platform_destination := Vector3i(8, 2, 4)
@@ -29,6 +32,8 @@ func _run() -> void:
 	check(ladder_path.size() == 2, "The ladder is a direct explicit traversal link")
 	check(await battle.try_move(unit, top), "A unit can climb the ladder through the normal Move action")
 	check(grid.get_unit_grid(unit) == top and is_equal_approx(unit.global_position.y, 3.0), "The unit arrives on the platform's logical and world elevation")
+	if unit.visual_adapter:
+		check(&"climb" in poses and &"land" in poses, "Climbing selects traversal and landing presentation")
 
 	var platform_path = battle.pathfinder.calculate_3d_path(top, platform_destination)
 	check(platform_path.size() > 1, "Elevated platform cells use ordinary horizontal pathfinding")

@@ -4,8 +4,14 @@ extends VBoxContainer
 @export var objective_manager: ObjectiveManager
 @export var objective_label: Label
 @export var end_mission_button: Button
+var _departure_confirmation: ConfirmationDialog
 
 func _ready() -> void:
+	_departure_confirmation = ConfirmationDialog.new()
+	_departure_confirmation.title = "Depart in transport"
+	_departure_confirmation.ok_button_text = "Leave now"
+	add_child(_departure_confirmation)
+	_departure_confirmation.confirmed.connect(func(): objective_manager.end_mission_early())
 	objective_manager.mission_loaded.connect(_on_changed)
 	objective_manager.objective_progress_changed.connect(_on_changed)
 	objective_manager.objective_completed.connect(_on_changed)
@@ -18,8 +24,8 @@ func _on_changed(_value) -> void:
 	_refresh()
 
 func _on_end_mission() -> void:
-	objective_manager.end_mission_early()
-	_refresh()
+	_departure_confirmation.dialog_text = "Leave now? %d units will be left behind." % objective_manager.get_units_left_behind()
+	_departure_confirmation.popup_centered()
 
 func _refresh() -> void:
 	if not objective_manager or not objective_manager.mission:

@@ -16,6 +16,8 @@ func _init(p_attacker: TacticalUnit, p_target: TacticalUnit, p_ap_cost: int = 1,
 	roll_override = p_roll_override
 
 func is_valid() -> bool:
+	if is_instance_valid(attacker) and attacker.is_carrying_unit():
+		return false
 	if not is_instance_valid(attacker) or not attacker.stats:
 		return false
 	if not is_instance_valid(target) or not target.stats:

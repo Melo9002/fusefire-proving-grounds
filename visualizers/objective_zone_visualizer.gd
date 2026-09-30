@@ -10,8 +10,10 @@ func show_mission(mission: MissionDefinition) -> void:
 		return
 	var zone_id := StringName()
 	var enemy_owned := false
+	var is_extraction := false
 	for objective in mission.objectives:
 		if objective.kind == MissionObjectiveDefinition.Kind.EXTRACT:
+			is_extraction = true
 			zone_id = objective.zone_id if not objective.zone_id.is_empty() else &"extract"
 			enemy_owned = objective.is_pursued_by(TacticalUnit.Faction.ENEMY)
 		elif objective.kind == MissionObjectiveDefinition.Kind.REACH and zone_id.is_empty(): zone_id = &"reach"
@@ -26,6 +28,19 @@ func show_mission(mission: MissionDefinition) -> void:
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mesh_instance.material_override = material
 	add_child(mesh_instance)
+	if is_extraction:
+		var cells := grid_manager.map_data.get_objective_zone(zone_id)
+		var transport := preload("res://visualizers/extraction_transport.gd").new()
+		transport.name = "ExtractionTransport"
+		add_child(transport)
+		transport.setup(grid_manager, cells, enemy_owned, grid_manager.map_data.transport_footprints.get(zone_id, []))
+		if not cells.is_empty():
+			var label := Label3D.new()
+			label.text = "BOARDING AREA"
+			label.position = to_local(grid_manager.grid_to_world(cells[0]) + Vector3.UP * 0.3)
+			label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			label.font_size = 32
+			add_child(label)
 
 func _build_mesh(cells: Array[Vector3i]) -> ArrayMesh:
 	var surface := SurfaceTool.new()

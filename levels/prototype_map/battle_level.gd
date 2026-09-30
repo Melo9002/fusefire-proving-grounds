@@ -113,7 +113,7 @@ func _ready() -> void:
 		_spawn_generated_team(enemy_unit_count, TacticalUnit.Faction.ENEMY, enemy_units_parent, generated_map)
 		var cover_counts := _count_cover(generated_map)
 		print_rich("[color=cyan][MapGenerator][/color] COVER — seed %d, %dx%d, %d low, %d full, %d building(s), %d platform(s), %d hill(s)" % [generation_seed, width, depth, cover_counts.x, cover_counts.y, generated_map.buildings.size(), generated_map.platforms.size(), generated_map.hills.size()])
-		if await battle_controller.initialize_battle(generated_map):
+		if await battle_controller.initialize_battle(generated_map, mission_definition):
 			_initialize_objectives()
 			_initialize_replay_support()
 	else:
@@ -121,7 +121,7 @@ func _ready() -> void:
 		_spawn_team(allied_unit_count, ally_spawn_zone, allied_units_parent, true)
 		_spawn_vip()
 		_spawn_team(enemy_unit_count, enemy_spawn_zone, enemy_units_parent, true)
-		if await battle_controller.initialize_battle():
+		if await battle_controller.initialize_battle(null, mission_definition):
 			_initialize_objectives()
 			_initialize_replay_support()
 

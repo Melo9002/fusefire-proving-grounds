@@ -35,10 +35,15 @@ func _play() -> void:
 		var record: Dictionary = recording.actions[index]
 		var expected_state: String = record.get("expected_state", "")
 		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
+		if record.get("kind", "") == "depart" and not expected_state.is_empty() and state_before != expected_state:
+			push_error("Replay departure state diverged")
+			playback_complete = true
+			playback_finished.emit(false)
+			return
 		# Some gameplay signals commit an automatic action while their enclosing action is
 		# still finishing. If the earlier replayed action already produced this exact
 		# authoritative state, the nested record has already been applied.
-		if not expected_state.is_empty() and state_before == expected_state:
+		if record.get("kind", "") != "depart" and not expected_state.is_empty() and state_before == expected_state:
 			verified_actions += 1
 			playback_progressed.emit(verified_actions, recording.actions.size())
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
@@ -52,7 +57,7 @@ func _play() -> void:
 			playback_finished.emit(false)
 			return
 		var actual_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
-		if not expected_state.is_empty() and actual_state != expected_state:
+		if record.get("kind", "") != "depart" and not expected_state.is_empty() and actual_state != expected_state:
 			push_error("Replay state diverged at action %d (%s by %s).\nExpected: %s\nActual:   %s" % [index, record.get("kind", "unknown"), record.get("actor", ""), expected_state, actual_state])
 			playback_complete = true
 			playback_finished.emit(false)
@@ -140,12 +145,17 @@ func _create_controls() -> void:
 
 func _execute(record: Dictionary) -> bool:
 	var kind: String = record.get("kind", "")
+	if kind == "depart":
+		return level.objective_manager.end_mission_early()
 	if kind == "end_turn":
 		level.turn_manager.end_current_turn()
 		return true
 	var actor: TacticalUnit = _find_unit(record.get("actor", ""))
 	if not is_instance_valid(actor):
 		return false
+	# Zero-AP extraction is legal for exhausted/non-active units as well.
+	if kind == "extract":
+		return await level.objective_manager.try_extract(actor)
 	if not _activate(actor):
 		print("[Replay] ACTOR REJECTED — wanted %s | active %s | phase %s" % [
 			actor.name,
@@ -190,6 +200,7 @@ func _activate(actor: TacticalUnit) -> bool:
 	return false
 
 func _find_unit(unit_name: String) -> TacticalUnit:
+	if unit_name.is_empty(): return null
 	var candidate := level.find_child(unit_name, true, false)
 	return candidate as TacticalUnit
 

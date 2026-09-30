@@ -6,7 +6,7 @@ static func evaluate(
 	candidate: Vector3i,
 	start: Vector3i,
 	goal: Vector3i,
-	route_progress: int,
+	route_progress: float,
 	objective_route: bool,
 	hostiles: Array[TacticalUnit],
 	grid: GridManager,
@@ -46,7 +46,7 @@ static func evaluate(
 						exposure -= 9.0
 					_:
 						exposure -= 14.0
-		if distance <= unit.attack_range:
+		if not unit.is_carrying_unit() and distance <= unit.attack_range:
 			var origin := candidate_world + Vector3.UP * unit.standing_height
 			var target := CombatRules.get_shot_destination(hostile, grid)
 			if CombatRules.get_blocking_cell(origin, target, grid) == null:
@@ -60,6 +60,11 @@ static func evaluate(
 	exposure *= policy.position_exposure_weight
 	firing *= policy.position_firing_weight
 	danger *= policy.position_danger_weight
+	# A carrier cannot return fire: preserving the passenger outweighs speed.
+	if unit.is_carrying_unit():
+		exposure *= 2.5
+		danger *= 2.0
+		cover *= 1.5
 	var squad_score := squad_adjustment * policy.crowding_penalty_weight
 	var total := progress + cover + exposure + firing + danger + squad_score
 	return {

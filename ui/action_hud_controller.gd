@@ -102,7 +102,8 @@ func _update_button_states() -> void:
 	if move_button:
 		move_button.disabled = not has_ap
 	if attack_button:
-		attack_button.disabled = not has_ap
+		attack_button.disabled = not has_ap or unit.is_carrying_unit()
+		attack_button.tooltip_text = "Cannot shoot while carrying a rescued unit" if unit.is_carrying_unit() else ""
 	if defend_button:
 		defend_button.disabled = not has_ap
 

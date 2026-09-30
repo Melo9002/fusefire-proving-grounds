@@ -6,6 +6,11 @@ signal presentation_state_changed(state_name: StringName)
 @export var camera_focus_anchor := Vector3(0.0, 1.05, 0.0)
 @export var camera_eye_anchor := Vector3(0.0, 1.5, 0.0)
 @export var camera_body_height := 1.6
+@export_group("Locomotion")
+## Degrees per second when following a path. Attacks still face their target immediately.
+@export_range(90.0, 1080.0) var turn_speed_degrees := 360.0
+## Metres travelled per full left/right step cycle. Tune alongside the move clip.
+@export_range(0.5, 4.0) var stride_length := 1.6
 
 func get_camera_focus() -> Vector3:
 	return to_global(camera_focus_anchor)
@@ -17,7 +22,34 @@ func get_camera_height() -> float:
 	return maxf(0.2, camera_body_height * global_basis.y.length())
 
 var tactical_unit: TacticalUnit
-var _last_parent_position := Vector3.ZERO
+var presentation_grid: GridManager
+var _segment_state: StringName = &"move"
+var _passenger: Node3D
+
+func present_pickup() -> void:
+	arm_ik.active = false
+	weapon.reparent(character_root)
+	weapon.position = Vector3(0.26, 0.8, -0.24)
+	weapon.rotation = Vector3(0, 0, -0.65)
+	if not is_instance_valid(_passenger):
+		_passenger = preload("res://art/characters/vroid_proof/runtime/rescue_passenger.gd").new()
+		_passenger.name = "RescuePassenger"
+		character_root.add_child(_passenger)
+		_passenger.position = Vector3(0, 1.38, -0.16)
+	_play(&"pickup")
+	_return_to_idle_after(0.6)
+
+func present_boarding() -> void:
+	_return_generation += 1
+	_play(&"boarding")
+	if is_instance_valid(_passenger):
+		var tween := create_tween()
+		tween.tween_property(_passenger, "scale", Vector3.ONE * 0.01, 0.55)
+
+func _carrying() -> bool:
+	return is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit()
+const POSE_CONTEXT := preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd")
+const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 var _return_generation := 0
 var _team_accent: MeshInstance3D
 
@@ -34,7 +66,6 @@ func _ready() -> void:
 	_build_team_accent()
 	skeleton.skeleton_updated.connect(_align_weapon_to_demo_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
-	_last_parent_position = get_parent_node_3d().global_position
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_align_weapon_to_demo_aim()
@@ -82,14 +113,63 @@ func _exit_tree() -> void:
 		skeleton.skeleton_updated.disconnect(_align_weapon_to_demo_aim)
 
 func present_move() -> void:
-	_play(&"move")
+	_return_generation += 1
+	_segment_state = &"move"
+	_play(&"carry_move" if _carrying() else &"move")
+
+func present_path_segment(state_name: StringName) -> void:
+	if state_name == _segment_state:
+		return
+	var was_traversing := _segment_state in TRAVERSAL_STATES
+	_segment_state = state_name
+	_return_generation += 1
+	if was_traversing and state_name == &"move":
+		_play(&"land")
+		_return_to_idle_after(0.3)
+	else:
+		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
+
+func present_movement_end() -> void:
+	if _segment_state in TRAVERSAL_STATES:
+		_play(&"land")
+		_return_to_idle_after(0.3)
+	else:
+		present_idle()
+
+func _cover_context() -> Dictionary:
+	if is_instance_valid(presentation_grid) and is_instance_valid(tactical_unit):
+		return POSE_CONTEXT.cover_at(presentation_grid, tactical_unit.grid_position, global_basis.z)
+	return {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 
 func present_idle() -> void:
-	_play(&"rifle_idle")
+	_return_generation += 1
+	if _carrying():
+		_play(&"carry_idle")
+		return
+	var cover := _cover_context()
+	if cover.type == MapCellData.CoverType.NONE:
+		_play(&"rifle_idle")
+	else:
+		face_world_position(global_position + cover.direction)
+		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
+
+func update_locomotion(world_velocity: Vector3, delta: float) -> void:
+	var flat := Vector3(world_velocity.x, 0.0, world_velocity.z)
+	if flat.length_squared() < 0.000001:
+		return
+	var desired_yaw := atan2(flat.x, flat.z)
+	global_rotation.y = rotate_toward(global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
+	var local_velocity := global_basis.inverse() * flat
+	animation_controller.set_locomotion(Vector2(local_velocity.x, local_velocity.z).normalized(), flat.length() / stride_length)
 
 func present_attack(target_world_position: Vector3) -> void:
+	var cover := _cover_context()
 	face_world_position(target_world_position)
-	_play(&"shoot")
+	var shot := &"shoot"
+	if cover.type == MapCellData.CoverType.FULL:
+		# Visual lean only; the combat evaluator has already resolved the shot.
+		shot = &"shoot_left" if global_basis.x.dot(cover.direction) >= 0.0 else &"shoot_right"
+	_play(shot)
 	_return_to_idle_after(0.34)
 
 func present_hit() -> void:
@@ -114,17 +194,15 @@ func _process(_delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
 	_update_weapon_pose()
-	var parent_position := get_parent_node_3d().global_position
-	var travel := parent_position - _last_parent_position
-	travel.y = 0.0
-	# Placement and debug teleportation are not walking. In particular, spawn
-	# placement happens after _ready and must not overwrite initial facing.
-	if is_instance_valid(tactical_unit) and tactical_unit.is_moving and travel.length_squared() > 0.000001:
-		face_world_position(parent_position + travel)
-	_last_parent_position = parent_position
+	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
 func _update_weapon_pose() -> void:
+	if _carrying(): return
 	super._update_weapon_pose()
+
+func _align_weapon_to_demo_aim() -> void:
+	if _carrying(): return
+	super._align_weapon_to_demo_aim()
 
 func _play(state_name: StringName) -> void:
 	if is_instance_valid(animation_controller):
@@ -137,9 +215,9 @@ func _return_to_idle_after(seconds: float) -> void:
 	if generation != _return_generation:
 		return
 	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
-		_play(&"move")
+		_play(&"carry_move" if _segment_state == &"move" and _carrying() else _segment_state)
 	else:
-		_play(&"rifle_idle")
+		present_idle()
 
 func _forward_state_change(state_name: StringName) -> void:
 	presentation_state_changed.emit(state_name)
@@ -148,6 +226,6 @@ func _on_animation_state_changed(state_name: StringName) -> void:
 	if _pose_tween != null and _pose_tween.is_valid():
 		_pose_tween.kill()
 	_pose_tween = create_tween()
-	_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot"] else 0.0, 0.28)
-	if state_name == &"shoot":
+	_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot", &"shoot_left", &"shoot_right"] else 0.0, 0.28)
+	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
 		_play_shot_feedback()

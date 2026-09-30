@@ -6,6 +6,7 @@ var target_tile: Vector3i
 var path: PackedVector3Array
 var grid_manager: GridManager
 var ap_cost: int
+var visual_segments: Array[StringName] = []
 
 func _init(
 	p_unit: TacticalUnit,
@@ -41,6 +42,6 @@ func execute() -> bool:
 	# Reserve the destination while the unit animates toward it.
 	var current_grid = grid_manager.get_unit_grid(unit)
 	grid_manager.update_unit_position(unit, current_grid, target_tile)
-	unit.move_along_path(path)
+	unit.move_along_path(path, visual_segments)
 
 	return true
