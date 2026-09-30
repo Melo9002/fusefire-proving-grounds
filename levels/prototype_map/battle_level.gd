@@ -4,7 +4,7 @@ extends Node3D
 const ReplayRecorderData := preload("res://systems/replay/battle_replay_recorder.gd")
 const ReplayPlayerData := preload("res://systems/replay/battle_replay_player.gd")
 const ReplaySessionData := preload("res://systems/replay/battle_replay_session.gd")
-const ActionCameraDirectorData := preload("res://systems/camera/action_camera_director.gd")
+const ActionCameraDirectorData := preload("res://presentation/camera/action_camera_director.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
@@ -134,7 +134,7 @@ func _initialize_replay_support() -> void:
 		player.begin(self, pending_replay)
 		return
 	_replay_recorder = ReplayRecorderData.new()
-	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager)
+	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager)
 
 func _configure_replay_presentation() -> void:
 	var hidden_paths := [
@@ -221,6 +221,7 @@ func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node
 		unit.mission_actor.mission_id = StringName(unit_name)
 	parent.add_child(unit)
 	var ai := AIController.new()
+	ai.objective_manager = objective_manager
 	ai.name = "%sAI" % unit_name
 	ai.unit = unit
 	ai.turn_manager = turn_manager

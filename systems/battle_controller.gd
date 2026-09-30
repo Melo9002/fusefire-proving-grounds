@@ -2,7 +2,7 @@ extends Node3D
 class_name BattleController
 
 const SquadContextData = preload("res://systems/ai/squad_context.gd")
-const ActionCameraDirectorData = preload("res://systems/camera/action_camera_director.gd")
+const ActionCameraDirectorData = preload("res://presentation/camera/action_camera_director.gd")
 
 signal move_mode_toggled(is_active: bool)
 signal attack_mode_toggled(is_active: bool)

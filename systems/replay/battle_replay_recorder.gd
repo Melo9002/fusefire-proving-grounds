@@ -10,11 +10,11 @@ var _battle_controller: BattleController
 var _turn_manager: TurnManager
 var _objective_manager: ObjectiveManager
 
-func begin(configuration: Dictionary, battle_controller: BattleController, turn_manager: TurnManager) -> void:
+func begin(configuration: Dictionary, battle_controller: BattleController, turn_manager: TurnManager, objective_manager: ObjectiveManager = null) -> void:
 	recording.configuration = configuration.duplicate(true)
 	_battle_controller = battle_controller
 	_turn_manager = turn_manager
-	_objective_manager = battle_controller.get_tree().get_first_node_in_group("objective_manager") as ObjectiveManager
+	_objective_manager = objective_manager
 	battle_controller.replay_action_committed.connect(_on_action_committed)
 	turn_manager.turn_ended.connect(_on_action_committed)
 	turn_manager.battle_ended.connect(_on_battle_ended)

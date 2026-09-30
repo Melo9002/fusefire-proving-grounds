@@ -2,30 +2,30 @@
 
 [ext_resource type="Script" uid="uid://cqcmmhrekr2of" path="res://systems/grid/mouse_raycaster.gd" id="1_822c8"]
 [ext_resource type="Script" uid="uid://ck52agsrnr6h" path="res://systems/battle_controller.gd" id="3_fg2v6"]
-[ext_resource type="Script" uid="uid://cu36ocv6o5mgc" path="res://visualizers/grid_visualizer.gd" id="4_q85eh"]
+[ext_resource type="Script" uid="uid://cu36ocv6o5mgc" path="res://presentation/overlays/grid_visualizer.gd" id="4_q85eh"]
 [ext_resource type="PackedScene" uid="uid://c7nrcruyj4khu" path="res://units/tactical_unit.tscn" id="4_tsi40"]
-[ext_resource type="Script" uid="uid://cf02ctu30b6hm" path="res://visualizers/grid_cursor.gd" id="5_q85eh"]
-[ext_resource type="Script" uid="uid://ddyyfvx30kuoe" path="res://visualizers/path_visualizer.gd" id="6_8rqs0"]
+[ext_resource type="Script" uid="uid://cf02ctu30b6hm" path="res://presentation/overlays/grid_cursor.gd" id="5_q85eh"]
+[ext_resource type="Script" uid="uid://ddyyfvx30kuoe" path="res://presentation/overlays/path_visualizer.gd" id="6_8rqs0"]
 [ext_resource type="Script" uid="uid://xam0a3oofrn" path="res://systems/grid/grid_manager.gd" id="7_ao12l"]
 [ext_resource type="Script" uid="uid://sduodsntgvey" path="res://systems/turn_manager.gd" id="8_butv0"]
 [ext_resource type="Script" uid="uid://cefiwjk6lxrw1" path="res://ui/turn_hud_controller.gd" id="9_6xxhk"]
 [ext_resource type="Script" uid="uid://l6ueyj681aqx" path="res://ui/aphud_controller.gd" id="10_0ueux"]
 [ext_resource type="Script" uid="uid://ceqxrcr6py18c" path="res://ui/action_hud_controller.gd" id="13_q7tb2"]
-[ext_resource type="Script" path="res://systems/camera/tactical_camera.gd" id="15_camera"]
+[ext_resource type="Script" path="res://presentation/camera/tactical_camera.gd" id="15_camera"]
 [ext_resource type="Script" path="res://levels/prototype_map/battle_level.gd" id="16_level"]
 [ext_resource type="Script" path="res://systems/spawning/spawn_zone.gd" id="17_zone"]
 [ext_resource type="Script" path="res://ui/unit_portrait_bar.gd" id="18_portrait_bar"]
 [ext_resource type="PackedScene" path="res://ui/unit_portrait.tscn" id="19_portrait"]
-[ext_resource type="Script" path="res://visualizers/unit_selection_visualizer.gd" id="20_selection"]
+[ext_resource type="Script" path="res://presentation/overlays/unit_selection_visualizer.gd" id="20_selection"]
 [ext_resource type="Script" path="res://systems/grid/terrain_feature.gd" id="21_terrain"]
-[ext_resource type="Script" path="res://visualizers/cover_visualizer.gd" id="22_cover"]
+[ext_resource type="Script" path="res://presentation/overlays/cover_visualizer.gd" id="22_cover"]
 [ext_resource type="Script" path="res://systems/grid/elevated_surface.gd" id="23_surface"]
 [ext_resource type="Script" path="res://systems/grid/traversal_link.gd" id="24_link"]
 [ext_resource type="Script" path="res://systems/grid/elevation_path.gd" id="25_elevation_path"]
 [ext_resource type="Script" path="res://ui/debug_tools.gd" id="26_debug_tools"]
-[ext_resource type="Script" path="res://visualizers/shot_trajectory_visualizer.gd" id="27_shot_trajectory"]
+[ext_resource type="Script" path="res://presentation/overlays/shot_trajectory_visualizer.gd" id="27_shot_trajectory"]
 [ext_resource type="Script" path="res://systems/objectives/objective_manager.gd" id="28_objectives"]
-[ext_resource type="Script" path="res://visualizers/objective_zone_visualizer.gd" id="29_objective_zones"]
+[ext_resource type="Script" path="res://presentation/overlays/objective_zone_visualizer.gd" id="29_objective_zones"]
 [ext_resource type="Script" path="res://ui/objective_hud.gd" id="30_objective_hud"]
 [ext_resource type="Script" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
 
@@ -808,7 +808,8 @@ layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager")]
+[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager", "presentation_root")]
+presentation_root = NodePath("../..")
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

@@ -1,4 +1,4 @@
-extends "res://art/characters/vroid_proof/demo/vroid_weapon_ik_demo.gd"
+extends "res://art/characters/vroid_proof/runtime/character_rig.gd"
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
@@ -65,11 +65,11 @@ func _ready() -> void:
 	_build_arm_ik()
 	_build_animation_controller()
 	_build_team_accent()
-	skeleton.skeleton_updated.connect(_align_weapon_to_demo_aim)
+	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_align_weapon_to_demo_aim()
+	_align_weapon_to_aim()
 
 func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit
@@ -110,8 +110,8 @@ func _apply_team_accent() -> void:
 func _exit_tree() -> void:
 	# Skeleton modifiers can emit once more while their hierarchy is being
 	# removed. Disconnect before descendants lose legal global transforms.
-	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_demo_aim):
-		skeleton.skeleton_updated.disconnect(_align_weapon_to_demo_aim)
+	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
+		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
 
 func present_move() -> void:
 	_return_generation += 1
@@ -201,9 +201,9 @@ func _update_weapon_pose() -> void:
 	if _carrying(): return
 	super._update_weapon_pose()
 
-func _align_weapon_to_demo_aim() -> void:
+func _align_weapon_to_aim() -> void:
 	if _carrying(): return
-	super._align_weapon_to_demo_aim()
+	super._align_weapon_to_aim()
 
 func _play(state_name: StringName) -> void:
 	if is_instance_valid(animation_controller):

@@ -4,6 +4,8 @@ This directory contains the project documentation intended for developers, desig
 
 ## Guides
 
+- [Code organization](code-organization.md) — current folder responsibilities, dependency wiring and migration notes.
+
 - [Maintainability audit](maintainability-audit.md) — concrete coupling, obsolete helpers, ownership, documentation drift, and validation limits.
 - [Optimization audit](repository-audit.md) — performance findings, preservation requirements, and implementation progress.
 

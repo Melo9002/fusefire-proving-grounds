@@ -67,7 +67,7 @@ The authored and generated spawn systems both support up to five actors per comb
 
 ## 4. Combat System
 
-Combat legality and accuracy live in `systems/combat_rules.gd`; execution lives in `systems/battle_controller.gd` and `scripts/actions/attack_action.gd`.
+Combat legality and accuracy live in `systems/combat_rules.gd`; execution lives in `systems/battle_controller.gd` and `systems/actions/attack_action.gd`.
 
 ### Attack legality
 
@@ -420,7 +420,7 @@ No additional known runtime bug is asserted here without a reproducible failure 
 | HP/AP and unit exhaustion | IMPLEMENTED | `unit_stats.gd`, `turn_manager.gd` |
 | SP/ammunition/resupply | PLACEHOLDER | No runtime system found |
 | Grid movement and weighted A* | IMPLEMENTED | `pathfinder.gd`, `move_action.gd` |
-| Move/Attack/Defend actions | IMPLEMENTED | `scripts/actions/` |
+| Move/Attack/Defend actions | IMPLEMENTED | `systems/actions/` |
 | Rescue/carry/extract | IMPLEMENTED | `objective_manager.gd`, `tactical_unit.gd` |
 | Multi-point LOS and accuracy | IMPLEMENTED | `combat_rules.gd` |
 | Directional cover | IMPLEMENTED | `combat_rules.gd` |

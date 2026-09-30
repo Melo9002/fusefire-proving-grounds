@@ -1,9 +1,9 @@
 class_name DebugTools
 extends Control
 
-const DebugMapInspectorData := preload("res://visualizers/debug_map_inspector.gd")
+const DebugMapInspectorData := preload("res://presentation/overlays/debug_map_inspector.gd")
 const DebugMissionControllerData := preload("res://systems/debug_mission_controller.gd")
-const AIScoringOverlayData := preload("res://visualizers/ai_scoring_overlay.gd")
+const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_overlay.gd")
 
 @export_group("Debug Availability")
 @export var debug_tools_enabled: bool = true
@@ -13,6 +13,8 @@ const AIScoringOverlayData := preload("res://visualizers/ai_scoring_overlay.gd")
 @export var battle_controller: BattleController
 @export var turn_manager: TurnManager
 @export var grid_manager: GridManager
+## Battle-local parent for developer overlays; independent of scene hierarchy.
+@export var presentation_root: Node3D
 
 var panel_open: bool = false
 var _paused_by_debug_tools: bool = false
@@ -315,19 +317,21 @@ func _set_ai_decisions_visible(enabled: bool) -> void:
 		_ai_decision_label.visible = enabled
 
 func _build_map_inspector() -> void:
-	if not battle_controller or not grid_manager:
+	if not battle_controller or not grid_manager or not presentation_root:
 		return
 	_map_inspector = DebugMapInspectorData.new()
 	_map_inspector.name = "DebugMapInspector"
 	_map_inspector.grid_manager = grid_manager
 	_map_inspector.mouse_raycaster = battle_controller.mouse_raycaster
-	battle_controller.get_parent().get_parent().get_node("Visualizers").add_child.call_deferred(_map_inspector)
+	presentation_root.add_child.call_deferred(_map_inspector)
 
 func _build_ai_scoring_overlay() -> void:
+	if not presentation_root:
+		return
 	_ai_scoring_overlay = AIScoringOverlayData.new()
 	_ai_scoring_overlay.name = "AIScoringOverlay"
 	_ai_scoring_overlay.grid_manager = grid_manager
-	battle_controller.get_parent().get_parent().get_node("Visualizers").add_child.call_deferred(_ai_scoring_overlay)
+	presentation_root.add_child.call_deferred(_ai_scoring_overlay)
 
 func _set_ai_scoring_visible(enabled: bool) -> void:
 	if _ai_scoring_overlay:

@@ -2,7 +2,7 @@ class_name ObjectiveManager
 extends Node
 
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
-const RescueActionData = preload("res://scripts/actions/rescue_action.gd")
+const RescueActionData = preload("res://systems/actions/rescue_action.gd")
 
 signal mission_loaded(mission: MissionDefinition)
 signal objective_progress_changed(state: MissionObjectiveState)

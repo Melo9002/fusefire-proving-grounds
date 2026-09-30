@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://c7nrcruyj4khu"]
 
 [ext_resource type="Script" uid="uid://dbww1fki3xm5f" path="res://units/tactical_unit.gd" id="1_bwycf"]
-[ext_resource type="Script" uid="uid://bkh6dyrmx6y7k" path="res://scripts/components/unit_stats.gd" id="2_2equr"]
-[ext_resource type="Script" path="res://scripts/components/mission_actor.gd" id="3_mission_actor"]
+[ext_resource type="Script" uid="uid://bkh6dyrmx6y7k" path="res://units/components/unit_stats.gd" id="2_2equr"]
+[ext_resource type="Script" path="res://units/components/mission_actor.gd" id="3_mission_actor"]
 [ext_resource type="PackedScene" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.tscn" id="4_visual"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_8x357"]

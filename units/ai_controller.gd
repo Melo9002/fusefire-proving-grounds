@@ -6,6 +6,8 @@ const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
 @export var unit: TacticalUnit
 @export var turn_manager: TurnManager
 @export var battle_controller: BattleController
+## Supplied by the owning battle; null means a battle without objectives.
+@export var objective_manager: ObjectiveManager
 
 var _is_executing: bool = false
 var _last_move_destination := Vector3i.ZERO
@@ -36,7 +38,7 @@ func _ready() -> void:
 	battle_controller.debug_enemy_control_changed.connect(_on_debug_enemy_control_changed)
 	battle_controller.debug_player_ai_changed.connect(_on_debug_player_ai_changed)
 	unit.defeated.connect(_on_unit_defeated)
-	_objective_manager = get_tree().get_first_node_in_group("objective_manager") as ObjectiveManager
+	_objective_manager = objective_manager
 	_policy = AIDifficultyPolicy.create(battle_controller.ai_difficulty)
 	_decision_rng.seed = battle_controller.ai_decision_seed * 1000003 + String(unit.name).hash()
 

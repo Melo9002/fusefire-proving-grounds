@@ -2,7 +2,7 @@ class_name BattlePauseMenu
 extends Control
 
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
-const ActionCameraDirectorData := preload("res://systems/camera/action_camera_director.gd")
+const ActionCameraDirectorData := preload("res://presentation/camera/action_camera_director.gd")
 
 @export var debug_tools: DebugTools
 var is_open := false
