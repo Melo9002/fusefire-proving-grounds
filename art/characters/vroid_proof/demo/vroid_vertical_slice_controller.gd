@@ -1,4 +1,7 @@
 extends Node
+## Edit saved poses in ../animations/animation_workbench.tscn.
+## The _make_* builders below are fallbacks; saved library clips take precedence.
+## Workflow and procedural timing: docs/animation-editing-guide.md.
 
 signal state_changed(state_name: StringName)
 
@@ -34,6 +37,7 @@ var current_state := IDLE
 var sequence_running := false
 var _sequence_generation := 0
 var _visual_tween: Tween
+var clip_library: AnimationLibrary
 
 
 func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D) -> void:
@@ -108,6 +112,16 @@ func _build_animation_player() -> void:
 		var shot := _make_shoot()
 		_add_position(shot, HIPS, [0.0, 0.07, 0.32], [Vector3(side * 0.10, -0.03, 0), Vector3(side * 0.14, -0.03, 0), Vector3(side * 0.10, -0.03, 0)])
 		library.add_animation(&"shoot_left" if side < 0 else &"shoot_right", shot)
+	# Saved clips are authoritative; builders remain a fallback for missing clips.
+	if clip_library:
+		for clip_name in clip_library.get_animation_list():
+			if clip_name == &"RESET" or not library.has_animation(clip_name): continue
+			var edited := clip_library.get_animation(clip_name)
+			if not _valid_bone_clip(edited):
+				push_warning("Ignoring invalid skeletal clip: %s" % clip_name)
+				continue
+			library.remove_animation(clip_name)
+			library.add_animation(clip_name, edited)
 	# Explicit rest tracks prevent a cover crouch from leaking into idle/aim.
 	var reset := _new_animation(0.0, false)
 	var seen := {}
@@ -127,6 +141,14 @@ func _build_animation_player() -> void:
 				_add_position(reset, bone, [0.0], [Vector3.ZERO])
 	library.add_animation(&"RESET", reset)
 	animation_player.add_animation_library(&"", library)
+
+func _valid_bone_clip(clip: Animation) -> bool:
+	for track in clip.get_track_count():
+		var path := clip.track_get_path(track)
+		if clip.track_get_type(track) not in [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D]: return false
+		if path.get_concatenated_names() != "." or path.get_subname_count() != 1: return false
+		if skeleton.find_bone(path.get_subname(0)) < 0: return false
+	return clip.get_track_count() > 0
 
 
 func _build_animation_tree() -> void:

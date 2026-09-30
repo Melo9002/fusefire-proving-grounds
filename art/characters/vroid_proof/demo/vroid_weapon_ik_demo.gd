@@ -32,6 +32,13 @@ var _recoil_tween: Tween
 const GRIP_OFFSET := Vector3(0.0, -0.035, 0.025)
 # Approximate center of the AUG optic in weapon coordinates, checked in the demo.
 const SIGHT_OFFSET := Vector3(0.0, 0.13, -0.10)
+@export_group("Animation Clips")
+## Edit this shared library through animations/animation_workbench.tscn. Missing clips use generated defaults.
+@export var clip_library: AnimationLibrary = preload("res://art/characters/vroid_proof/animations/prototype_clips.tres")
+@export_group("Weapon Contact")
+## Metres in weapon-local coordinates; moves the rifle relative to the firing wrist.
+@export var grip_offset := GRIP_OFFSET
+@export var sight_offset := SIGHT_OFFSET
 # Editable contact points, in rifle-local and right-upper-arm-local metres.
 @export var stock_contact_offset := Vector3(0.0, 0.065, -0.28)
 @export var shoulder_contact_offset := Vector3(0.035, 0.015, 0.055)
@@ -39,8 +46,15 @@ var stock_marker: Marker3D
 var shoulder_marker: Marker3D
 var sight_marker: Marker3D
 var support_ik_target: Marker3D
+@export_group("Low Ready")
 @export var carry_angles_degrees := Vector3(35, 40, -8)
 @export var carry_grip_position := Vector3(-0.08, 1.16, 0.15)
+@export_group("Rescue Carry")
+## Positions are in Character-local metres; stowed angles are degrees.
+@export var passenger_position := Vector3(0, 1.38, -0.16)
+@export var stowed_weapon_position := Vector3(0.26, 0.8, -0.24)
+@export var stowed_weapon_angles_degrees := Vector3(0, 0, rad_to_deg(-0.65))
+@export_group("")
 var carry_motion_blend := 0.0
 var _carry_phase := 0.0
 var preview_direction := Vector2(0, 1)
@@ -197,7 +211,7 @@ func _build_weapon_attachment() -> void:
 	weapon.name = "AUG"
 	# The source WeaponOrigin is centered on the firing-hand grip. This small
 	# offset nests it into the palm while its +Z axis remains the firing axis.
-	weapon.position = GRIP_OFFSET
+	weapon.position = grip_offset
 	weapon_attachment.add_child(weapon)
 	support_hand_target = weapon.find_child("SupportHandTarget", true, false) as Node3D
 	assert(support_hand_target != null, "AUG must expose SupportHandTarget")
@@ -205,7 +219,7 @@ func _build_weapon_attachment() -> void:
 	assert(muzzle_socket != null, "AUG must expose MuzzleSocket")
 	sight_marker = Marker3D.new()
 	sight_marker.name = "SightReference"
-	sight_marker.position = SIGHT_OFFSET
+	sight_marker.position = sight_offset
 	weapon.add_child(sight_marker)
 	stock_marker = Marker3D.new()
 	stock_marker.name = "ButtstockContact"
@@ -253,6 +267,7 @@ func _build_arm_ik() -> void:
 func _build_animation_controller() -> void:
 	animation_controller = VERTICAL_SLICE_CONTROLLER.new()
 	animation_controller.name = "VerticalSliceController"
+	animation_controller.clip_library = clip_library
 	add_child(animation_controller)
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
@@ -283,7 +298,7 @@ func _align_weapon_to_demo_aim() -> void:
 		return
 	var desired_global_basis := character_root.global_basis * _rifle_local_basis()
 	weapon.basis = weapon_attachment.global_basis.inverse() * desired_global_basis
-	weapon.position = weapon_attachment.global_basis.inverse() * (desired_global_basis * GRIP_OFFSET)
+	weapon.position = weapon_attachment.global_basis.inverse() * (desired_global_basis * grip_offset)
 
 
 func _update_status() -> void:
@@ -301,14 +316,14 @@ func _on_animation_state_changed(state_name: StringName) -> void:
 	if rescue_pose and not is_instance_valid(_demo_passenger):
 		_demo_passenger = preload("res://art/characters/vroid_proof/runtime/rescue_passenger.gd").new()
 		character_root.add_child(_demo_passenger)
-		_demo_passenger.position = Vector3(0, 1.38, -0.16)
+		_demo_passenger.position = passenger_position
 	if is_instance_valid(_demo_passenger):
 		_demo_passenger.visible = rescue_pose
 		arm_ik.active = ik_enabled and not rescue_pose
 		if rescue_pose:
 			weapon.reparent(character_root)
-			weapon.position = Vector3(0.26, 0.8, -0.24)
-			weapon.rotation = Vector3(0, 0, -0.65)
+			weapon.position = stowed_weapon_position
+			weapon.rotation_degrees = stowed_weapon_angles_degrees
 		else:
 			weapon.reparent(weapon_attachment)
 	_update_status()
@@ -341,7 +356,7 @@ func _update_weapon_pose() -> void:
 	var shoulder_world := skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin
 	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
 	stock_marker.position = stock_contact_offset
-	var aimed_grip := shoulder_marker.position - stock_contact_offset - GRIP_OFFSET
+	var aimed_grip := shoulder_marker.position - stock_contact_offset - grip_offset
 	var moving: bool = is_instance_valid(animation_controller) and animation_controller.current_state in [&"move", &"carry_move"]
 	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, get_process_delta_time() * 5.0)
 	_carry_phase += get_process_delta_time() * TAU * 2.0
@@ -356,7 +371,7 @@ func _update_weapon_pose() -> void:
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):
 		var support_offset := weapon.to_local(support_hand_target.global_position)
-		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (GRIP_OFFSET + support_offset)
+		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_offset)
 
 
 func _play_shot_feedback() -> void:

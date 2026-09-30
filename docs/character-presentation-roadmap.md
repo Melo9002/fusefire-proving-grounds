@@ -26,8 +26,9 @@ The VRoid character is a proof asset, not the foundation of the final character 
 | **26F — Complete** | Locomotion and transitions | Directional step blending, gradual turns, short crossfades, and speed matching | Accepted as an editable animation foundation |
 | **26G — Foundation accepted** | Directional cover and traversal | Low/high cover, left/right exposure, vault, climb, descent, and landing blocking poses | Distinct poses accepted for now; polish deferred |
 | **26H — Visual review** | Rescue and extraction | Pickup, carry idle/movement, cosmetic passenger, boarding, and parked transport | Objective and rescue replay checks pass; visual acceptance pending |
-| **26I** | Battle and replay validation | Run authored/generated maps, elevations, objectives, AI-vs-AI, and replay | Outcomes and state fingerprints match; visuals never drift from authoritative tiles |
-| **26J** | Prototype default | Use the humanoid presentation by default while retaining the Bean debug option | Match setup launches the proof character and a debug option restores Beans |
+| **26I — Handoff ready** | Animation handoff pass | Editable clip library/workbench, grouped offsets, and documented Blender/Godot workflow | Workbench and runtime use the same saved clips; first new Blender-authored replacement still needs visual review |
+| **26J** | Battle and replay validation | Run authored/generated maps, elevations, objectives, AI-vs-AI, and replay | Outcomes and state fingerprints match; visuals never drift from authoritative tiles |
+| **26K** | Prototype default verification | Verify humanoid default presentation and Bean debug option | Match setup launches the proof character and a debug option restores Beans |
 | **27A** | Body-family contract | Define shared presentation requests and per-family capabilities | Standard, tall, short, and quadruped adapters can report which actions they support |
 | **27B** | Humanoid variants | Test height and proportion variation with retargeted humanoid animation | Tall and short humanoids keep feet planted and hands aligned after correction passes |
 | **27C** | Non-humanoid proof | Add one dog-like robot or other quadruped using a separate rig | The unit obeys the same tactical and replay systems through its own animation adapter |

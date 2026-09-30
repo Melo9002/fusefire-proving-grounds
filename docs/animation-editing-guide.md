@@ -1,6 +1,61 @@
 # Character Animation Editing Guide
 
-This guide covers the Prototype 1 VRoid character and AUG presentation. The current clips are blocking-quality animations generated in Godot. They prove the runtime pipeline, but they are intended to be replaced or refined by visually authored clips.
+This guide covers the Prototype 1 VRoid character and AUG presentation. The blocking clips were generated in Godot and are now saved as an editable library. The demo and live units load the same library. Start with one small idle edit, inspect it in the demo, then test it in a match.
+
+## Start here: edit an existing clip in Godot
+
+All paths below are relative to the project root (the FileSystem dock's `res://`).
+
+1. Open `art/characters/vroid_proof/animations/animation_workbench.tscn` in Godot's editor. This is an editing scene, not a playable demo: use the editor's 3D view, not F6.
+2. Select its `AnimationPlayer`. In the Animation panel, choose `rifle_idle`, then scrub the timeline. The character should move.
+3. Select an existing rotation key on a chest/head track. Adjust its value or timing in the key Inspector; start small. Keep the first/last keys compatible for a seamless loop. These saved rotations are quaternions, unlike the degree-based generator helpers.
+4. Save the external `prototype_clips.tres` library using the Animation panel's library management/save controls, and save the scene. Confirm the `.tres` changes in Git. Do not use Make Unique unless intentionally creating a separate library.
+5. Open `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn`, press F6, then **1**. Restart the running demo after saved edits; clips are loaded at startup.
+6. Test in a battle and replay. Revert the `.tres` edit in Git if it does not look right.
+
+The workbench previews **skeletal keys only**. It deliberately has no weapon IK, passenger, muzzle flash, or procedural defeat fall. Use the demo to inspect the combined result. Do not edit the Remote scene tree to make permanent changes: those disappear when the game stops.
+
+### Where each kind of edit belongs
+
+| Edit | File or Inspector location |
+| --- | --- |
+| Skeletal poses, key timing, clip lengths and loops | `art/characters/vroid_proof/animations/prototype_clips.tres`, through the workbench |
+| Demo weapon/contact/rescue offsets | Root of `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn` |
+| Live weapon/contact/rescue offsets, stride, turn speed, camera anchors | Root of `art/characters/vroid_proof/runtime/unit_visual_adapter.tscn` |
+| Shared default offsets for both scenes | Exported defaults in `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.gd` |
+| Blend states, crossfade times, generated fallback clips, procedural defeat fall | `art/characters/vroid_proof/demo/vroid_vertical_slice_controller.gd` |
+| Gameplay-to-animation requests and return timers | `art/characters/vroid_proof/runtime/unit_visual_adapter.gd` |
+| Rescue dummy mesh | `art/characters/vroid_proof/runtime/rescue_passenger.gd` |
+
+Changing a demo Inspector value does **not** change live units. Copy accepted values into the runtime adapter scene, or change the shared script default if neither scene overrides it. The library is shared automatically; offsets are scene properties.
+
+### Clip names and demo controls
+
+| Clips | Preview | Loop |
+| --- | --- | --- |
+| `rifle_idle` | 1 | Yes |
+| `move`, `move_back`, `move_left`, `move_right` | 2 or arrow keys; T previews turns; brackets change speed | Yes; keep matching cycle lengths/phases |
+| `aim`, `shoot`, `hit`, `defeat` | 3, 4, 5, 6 | Aim holds; others play once |
+| `cover_low`, `cover_high` | 7, 8 | Yes |
+| `shoot_left`, `shoot_right` | 9, 0 | No |
+| `vault`, `climb`, `descend`, `land` | V, B, N, L | Traversal loops; landing plays once |
+| `pickup`, `carry_idle`, `carry_move`, `boarding` | R, P, M, E | Carry idle/move loop; others play once |
+
+Right mouse drag orbits; C changes view; I toggles arm IK for inspection; Space runs the basic sequence. `RESET` is a technical rest pose, not a gameplay clip. Runtime rebuilds RESET from the used tracks; leave the workbench RESET intact.
+
+### Inspector units and coordinates
+
+**Weapon Contact** exposes grip, sight, buttstock and shoulder offsets. Grip/sight/stock offsets use weapon-local metres. The shoulder offset is added in Character-local axes to the animated right upper-arm origin. **Low Ready** exposes rifle Euler angles in degrees and grip position in Character-local metres. **Rescue Carry** exposes passenger/stowed rifle positions and stowed rifle angles in degrees. **Locomotion** exposes turn speed in degrees/second and stride in metres per cycle. **Camera Anchors** are adapter-local metres.
+
+The runtime model faces **+Z**, with **+Y up**. Avoid flipping the character or root to correct one bad stride. Bone track paths are `.:J_Bip_...` relative to the Skeleton3D, and keys contain local bone poses including the imported rest transform. Only bone rotation/position tracks are accepted; gameplay still owns map translation.
+
+### What remains procedural
+
+`AnimationPlayer` stores the clips. `AnimationTree` chooses/blends them and controls locomotion pace. Arm IK runs afterward and can override keyed arm positions, so inspect hand contacts in the demo. Weapon carry/aim blending and recoil are driven by the presentation script. Defeat also tilts/translates the Character root in `_apply_visual_root_state()`.
+
+Changing clip length alone does not change action timing: the adapter currently returns from shooting at 0.34 s, hit at 0.58 s, and pickup at 0.6 s; ObjectiveManager boards for 0.6 s. Inspect these callers before lengthening those clips. For now, keep replacements within the existing action windows. A full-body fall authored in Blender must replace the procedural fall too, or both will apply.
+
+Saved library clips take precedence over `_make_*()` builders. Editing a builder will not change an existing saved clip. Missing names fall back to generated clips; invalid bone tracks produce a warning and fall back. `tools/export_animation_workbench.gd` was used once to bootstrap the files and refuses to overwrite them. Do not regenerate over hand edits.
 
 ## 26H rescue and extraction previews
 
@@ -33,7 +88,7 @@ Clips are generated by `_make_move()` and `_make_directional_move()` in `art/cha
 
 ## Current structure
 
-Run `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn`. `vroid_vertical_slice_controller.gd` creates the clips and `AnimationTree`; `vroid_weapon_ik_demo.gd` places the AUG, drives arm IK, aligns the sight with the eye, and presents recoil and muzzle flash.
+Run `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn`. `vroid_vertical_slice_controller.gd` loads saved clips over its generated fallbacks and creates the `AnimationTree`; `vroid_weapon_ik_demo.gd` places the AUG, drives arm IK, approximates sight/shoulder alignment, and presents recoil and muzzle flash.
 
 The right hand owns the rifle attachment, the left hand follows `SupportHandTarget`, and `MuzzleSocket` drives effects. Movement remains in place because gameplay owns exact tactical positions. Press `C` to switch between three-quarter and side inspection cameras.
 
@@ -50,9 +105,9 @@ The clip builders in `vroid_vertical_slice_controller.gd` are `_make_idle()`, `_
 
 Weapon-pose controls live in `vroid_weapon_ik_demo.gd`:
 
-- `GRIP_OFFSET` places the AUG relative to the firing hand.
-- `SIGHT_OFFSET` identifies the optic reference.
-- `ready_grip` controls low ready.
+- `grip_offset` places the AUG relative to the firing hand.
+- `sight_offset` identifies the optic reference.
+- `carry_grip_position` controls low ready.
 - `aimed_grip` derives the sighted pose from the aiming eye.
 - The elbow-pole positions control elbow bend direction.
 
@@ -62,15 +117,27 @@ This is useful for small corrections. Visual tools are better for timing, weight
 
 Use Blender for finished skeletal clips and Godot for blending, IK correction, effects, and gameplay integration.
 
-1. Open `art/characters/vroid_proof/source/vroidTest_runtime.blend`.
+1. Open `art/characters/vroid_proof/source/vroidTest_runtime.blend` and Save As a working copy. The current Godot-generated clips are **not** Blender actions in this file; this route authors replacements, not a round trip of the existing keys.
 2. Select `VRoidProof_Armature` and enter Pose Mode.
 3. Open the Dope Sheet and switch to Action Editor.
-4. Create actions named `rifle_idle`, `move`, `aim`, `shoot`, `hit`, and `defeat`.
+4. Start with one action named `rifle_idle`; later use the clip names in the table above. Keep actions saved/stashed so Blender retains them.
 5. Pose and key only intended bones. Inspect every clip from front, side, and three-quarter views.
 6. Keep locomotion in place. FuseFire moves the actor between exact tiles.
 7. Save the Blender file before exporting.
-8. Export with the existing skeleton and bone names. Do not regenerate weights, apply the armature, or rename bones.
-9. Connect the imported clips to the existing Godot `AnimationTree` state names.
+8. Export a separate glTF Binary (`.glb`) with animation enabled, using the existing armature and bone names. Export only skeletal animation; avoid object transform, shape-key, and scale animation in this first handoff. Use the exporter's Actions mode when available, and bake control-rig/constraint motion into bone keys. Do not regenerate weights, apply the armature modifier, change the rest pose, or rename bones. Do not overwrite `vroid_test_runtime.glb`.
+9. Put the exported file under `art/characters/vroid_proof/animations/`, let Godot import it as a **Scene**, and inspect its AnimationPlayer. Check the exact imported animation name and that the skeleton still matches. Exporter options vary with Blender version; see the [official Blender glTF manual](https://docs.blender.org/manual/en/latest/addons/scene_gltf2.html).
+10. Convert one imported clip to the runtime's skeleton-relative paths with the helper below. It checks bone names/rest transforms, strips constant identity scale tracks, rejects unsupported tracks, and refuses to overwrite an existing output. It does not retarget a different rig.
+11. In the workbench AnimationPlayer's animation/library management, replace only the corresponding animation in the unnamed library with the converted `.tres`, retaining its exact gameplay name. Save `prototype_clips.tres`. Keep the rest of the library and RESET. Configure the appropriate loop mode, then test in the demo and a match.
+
+Example command from the project root (replace the input filename and imported animation name with your actual export):
+
+```powershell
+godot_console --headless --path . --script tools/import_animation_clip.gd -- res://art/characters/vroid_proof/animations/my_idle.glb rifle_idle res://art/characters/vroid_proof/animations/my_idle_clip.tres
+```
+
+If conversion reports a rest mismatch, return to the runtime Blender copy and check export transforms; do not bypass the check. A raw imported animation library uses different track paths and is not a drop-in replacement for the Clip Library field. Godot's general import/save-to-file options are described in its [import configuration documentation](https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/import_configuration.html).
+
+The converter has been tested with the existing same-rig scene. A newly authored Blender export still needs its first end-to-end visual check. Ask for help with that first clip if the exporter introduces extra tracks or changes the rest pose.
 
 Work on copies of the runtime Blender file until export is proven. The untouched VRM and intake Blender file remain recovery sources.
 
@@ -86,7 +153,7 @@ shoulder contact: the aiming eye currently sits about 11 cm from the optic line,
 so a later cheek/head pose pass is needed before calling the sighted pose finished.
 
 
-The AUG should eventually expose `StockContact` where the buttstock touches the body. The character adapter should expose `ShoulderContact` near the front of the firing shoulder.
+The current generated markers are `ButtstockContact` on the weapon and `ShoulderContact` on the character; these are presentation markers, not gameplay collision.
 
 Solve the weapon pose in this order:
 
@@ -111,6 +178,7 @@ Similar proportions may need only adapter offsets. Short, tall, or unusual propo
 ## Validation
 
 ```powershell
+godot_console --headless --path . -s tests/animation_handoff_test.gd
 godot_console --headless --path . -s tests/vroid_asset_import_test.gd
 godot_console --headless --path . -s tests/vroid_weapon_ik_test.gd
 godot_console --headless --path . -s tests/vroid_vertical_slice_animation_test.gd

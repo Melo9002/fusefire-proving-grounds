@@ -3,6 +3,7 @@ class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
 
+@export_group("Camera Anchors")
 @export var camera_focus_anchor := Vector3(0.0, 1.05, 0.0)
 @export var camera_eye_anchor := Vector3(0.0, 1.5, 0.0)
 @export var camera_body_height := 1.6
@@ -29,13 +30,13 @@ var _passenger: Node3D
 func present_pickup() -> void:
 	arm_ik.active = false
 	weapon.reparent(character_root)
-	weapon.position = Vector3(0.26, 0.8, -0.24)
-	weapon.rotation = Vector3(0, 0, -0.65)
+	weapon.position = stowed_weapon_position
+	weapon.rotation_degrees = stowed_weapon_angles_degrees
 	if not is_instance_valid(_passenger):
 		_passenger = preload("res://art/characters/vroid_proof/runtime/rescue_passenger.gd").new()
 		_passenger.name = "RescuePassenger"
 		character_root.add_child(_passenger)
-		_passenger.position = Vector3(0, 1.38, -0.16)
+		_passenger.position = passenger_position
 	_play(&"pickup")
 	_return_to_idle_after(0.6)
 
