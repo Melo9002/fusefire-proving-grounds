@@ -11,6 +11,9 @@ var range_mesh_instance: MeshInstance3D
 var path_mesh_instance: MeshInstance3D
 var _range_material: StandardMaterial3D
 var _path_material: StandardMaterial3D
+var _last_path := PackedVector3Array()
+var _last_path_cell_size := -1.0
+var _last_path_padding := -1.0
 
 func _ready() -> void:
 	range_mesh_instance = MeshInstance3D.new()
@@ -56,6 +59,13 @@ func draw_path(path_vectors: PackedVector3Array, color: Color = path_color) -> v
 		return
 
 	_path_material.albedo_color = color
+	# Color is independent of geometry. Preserve the mesh when only tint changes.
+	if path_mesh_instance.mesh != null and path_vectors == _last_path \
+		and grid_manager.cell_size == _last_path_cell_size and tile_padding == _last_path_padding:
+		return
+	_last_path = path_vectors.duplicate()
+	_last_path_cell_size = grid_manager.cell_size
+	_last_path_padding = tile_padding
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -111,4 +121,6 @@ func clear_range_zone() -> void:
 	range_mesh_instance.mesh = null
 
 func clear_path() -> void:
-	path_mesh_instance.mesh = null
+	if path_mesh_instance.mesh != null:
+		path_mesh_instance.mesh = null
+	_last_path.clear()

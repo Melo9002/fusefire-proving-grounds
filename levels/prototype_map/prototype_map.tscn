@@ -38,8 +38,6 @@ ambient_light_energy = 0.55
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ebqvm"]
 
-[sub_resource type="Compositor" id="Compositor_ytady"]
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ebqvm"]
 albedo_color = Color(1, 0, 0.023529412, 1)
 
@@ -53,8 +51,6 @@ albedo_color = Color(0.12, 0.24, 0.38, 1)
 albedo_color = Color(0.95, 0.7, 0.12, 1)
 
 [sub_resource type="PlaceholderMesh" id="PlaceholderMesh_8x357"]
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ebqvm"]
 
 [node name="BattleLevel" type="Node3D" unique_id=1534168603 node_paths=PackedStringArray("player_spawn_zone", "enemy_spawn_zone", "ally_spawn_zone", "player_units_parent", "allied_units_parent", "enemy_units_parent", "objective_units_parent", "turn_manager", "battle_controller", "objective_manager", "objective_zone_visualizer")]
 script = ExtResource("16_level")
@@ -124,7 +120,6 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=371801750]
 environment = SubResource("Environment_8x357")
 camera_attributes = SubResource("CameraAttributesPractical_ebqvm")
-compositor = SubResource("Compositor_ytady")
 
 [node name="MapFloor" type="CSGBox3D" parent="Environment" unique_id=584320246]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -649,9 +644,8 @@ mesh = SubResource("PlaceholderMesh_8x357")
 script = ExtResource("4_q85eh")
 target_floor = NodePath("../../Environment/MapFloor")
 
-[node name="GridCursor" type="Decal" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager")]
+[node name="GridCursor" type="MeshInstance3D" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager")]
 layers = 2
-texture_albedo = SubResource("CompressedTexture2D_ebqvm")
 script = ExtResource("5_q85eh")
 grid_manager = NodePath("../../Systems/GridManager")
 highlight_color = Color(0.9999594, 0.122358926, 0.10734794, 0.8)

@@ -4,6 +4,9 @@ This directory contains the project documentation intended for developers, desig
 
 ## Guides
 
+- [Maintainability audit](maintainability-audit.md) — concrete coupling, obsolete helpers, ownership, documentation drift, and validation limits.
+- [Optimization audit](repository-audit.md) — performance findings, preservation requirements, and implementation progress.
+
 - [Architecture](architecture.md) — ownership boundaries, combat flow, objectives, AI, generation, validation, and known limits.
 - [Simulation and reproducibility](simulation.md) — AI-versus-AI batches, seeds, map sizes, output interpretation, and deterministic checks.
 - [Battle replay](replay.md) — action recording, deterministic playback, end-screen controls, testing, and future camera modes.

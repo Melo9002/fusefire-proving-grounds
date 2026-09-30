@@ -44,9 +44,10 @@ static func _place_zone(candidates: Array[Vector3i], evaluator: MissionPlacement
 static func _grow_zone(anchor: Vector3i, candidates: Array[Vector3i], evaluator: MissionPlacementEvaluator) -> Array[Vector3i]:
 	var zone: Array[Vector3i] = [anchor]
 	var frontier: Array[Vector3i] = [anchor]
-	while not frontier.is_empty() and zone.size() < ZONE_SIZE:
-		var current: Vector3i = frontier[0]
-		frontier.remove_at(0)
+	var head := 0
+	while head < frontier.size() and zone.size() < ZONE_SIZE:
+		var current: Vector3i = frontier[head]
+		head += 1
 		for direction in CARDINALS:
 			var neighbor: Vector3i = current + direction
 			if neighbor.y == anchor.y and candidates.has(neighbor) and not evaluator.blocked.has(neighbor) and not zone.has(neighbor):
