@@ -57,6 +57,18 @@ func _run() -> void:
 	await _wait_until(func(): return level.turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN)
 	check(carrier.is_carrying_unit(), "The first ally becomes the rescue carrier")
 	check(supporter.grid_position.distance_to(carrier.grid_position) < before, "A later ally closes distance to support the mobile rescue carrier")
+	# After the passenger boards, living enemies must not veto escort evacuation.
+	var objectives := root.get_tree().get_first_node_in_group("objective_manager") as ObjectiveManager
+	level.action_camera_director.frequency = 0
+	_place(level, carrier, exit)
+	check(await objectives.try_extract(carrier), "Carrier boards before escort departure")
+	await process_frame
+	_place(level, supporter, exit)
+	var ai := level.allied_units_parent.get_node("AllyUnit2AI") as AIController
+	ai.current_mission_intent = objectives.get_mission_intent(supporter)
+	check(not level.turn_manager.enemy_units.is_empty(), "Enemies remain alive during evacuation regression")
+	var step: int = await ai._try_mission_step(false)
+	check(step == AIController.MissionStepResult.EXTRACTED, "Escort extracts despite remaining hostiles after VIP evacuation")
 	print("Rescue carrier support smoke: %d failure(s)" % failures)
 	level.queue_free()
 	await process_frame

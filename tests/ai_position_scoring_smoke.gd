@@ -49,6 +49,8 @@ func _run() -> void:
 		var carrier_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context)
 		check(carrier_score.firing == 0.0 and carrier_score.exposure < normal_score.exposure * 2.0, "Carrier avoids exposed firing positions more strongly than combat units")
 		player.carried_unit = null
+		var objective_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, true, hostiles, grid, normal, context)
+		check(objective_score.firing == 0.0 and objective_score.exposure < normal_score.exposure, "Objective travel favors protection over acquiring a firing lane")
 		check(easy_score.exposure > normal_score.exposure and hard_score.exposure < normal_score.exposure, "Difficulty weights incoming exposure")
 		check(easy_score.firing < normal_score.firing and hard_score.firing > normal_score.firing, "Difficulty weights firing opportunities")
 		var more_progress := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 3, false, hostiles, grid, normal, context)

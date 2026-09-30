@@ -60,6 +60,11 @@ static func evaluate(
 	exposure *= policy.position_exposure_weight
 	firing *= policy.position_firing_weight
 	danger *= policy.position_danger_weight
+	# Objective routes reward safe travel, not detours to acquire firing lanes.
+	if objective_route:
+		firing = 0.0
+		exposure *= 1.5
+		cover *= 1.25
 	# A carrier cannot return fire: preserving the passenger outweighs speed.
 	if unit.is_carrying_unit():
 		exposure *= 2.5

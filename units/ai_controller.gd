@@ -120,6 +120,10 @@ func _execute_turn() -> void:
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Defend")
 			await get_tree().create_timer(0.25).timeout
 			continue
+		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
+			await battle_controller.try_defend(unit)
+			_record_ai_decision("Defend", unit.name, "Hold the objective route when no useful advance or supporting shot is available; do not chase enemies.", "Move, Attack")
+			break
 		var movement_target = _find_nearest_hostile()
 		var protected_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		if protected_carrier and protected_carrier != unit:
@@ -179,21 +183,18 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		if carrier and carrier != unit:
 			if await _clear_carrier_route(carrier): return MissionStepResult.MOVED
 			return MissionStepResult.NONE
-		if not unit.is_carrying_unit() and _rescue_cleanup_pending():
-			return MissionStepResult.NONE
 		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Defend")
 		if await _objective_manager.try_extract(unit):
 			await get_tree().process_frame
 			if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
 				turn_manager.end_current_turn()
 			return MissionStepResult.EXTRACTED
-	if (has_moved and not unit.is_carrying_unit()) or current_mission_intent.kind not in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
+	if current_mission_intent.kind not in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT:
-		if not unit.is_carrying_unit() and _rescue_cleanup_pending():
-			return MissionStepResult.NONE
 		var rescue_carrier := _objective_manager.find_rescue_carrier(unit.faction)
 		if rescue_carrier and rescue_carrier != unit:
+			if has_moved: return MissionStepResult.NONE
 			if await _clear_carrier_route(rescue_carrier): return MissionStepResult.MOVED
 			if _grid_distance_to(rescue_carrier) > 2 and await _move_toward_range(rescue_carrier, 2):
 				_squad_notes.append("Mobile objective support: +30")
@@ -204,7 +205,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 	var destination := _nearest_reachable_zone_cell(current_mission_intent.zone_id)
 	if destination.x < 0:
 		return MissionStepResult.NONE
-	if await _move_toward_cell(destination):
+	if await _move_toward_cell(destination, has_moved):
 		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Defend")
 		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
 			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Defend")
@@ -218,12 +219,6 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			await get_tree().process_frame
 		return MissionStepResult.MOVED
 	return MissionStepResult.NONE
-
-func _rescue_cleanup_pending() -> bool:
-	return _objective_manager != null and _objective_manager.mission != null \
-		and _objective_manager.mission.mission_id == &"prototype_rescue" \
-		and _objective_manager.find_rescue_carrier(unit.faction) == null \
-		and not _get_hostile_units().is_empty()
 
 func _carrier_route(carrier: TacticalUnit) -> Dictionary:
 	var reserved := {}
