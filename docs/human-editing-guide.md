@@ -1,0 +1,25 @@
+# Human editing map
+
+Use this page when you know what you want to change but not where FuseFire owns it.
+
+| Goal | Edit here | Verify with |
+| --- | --- | --- |
+| Replace the character or weapon | Open `art/characters/vroid_proof/runtime/unit_visual_adapter.tscn`; change **Model Assets** on its root | `tests/unit_visual_adapter_test.gd` and a local battle |
+| Edit animation clips | `art/characters/vroid_proof/animations/animation_workbench.tscn` and `prototype_clips.tres` | Animation workbench, then `tests/unit_visual_adapter_test.gd` |
+| Tune hands, sight, stock, shoulder, or carry offsets | **Weapon Contact**, **Low Ready**, and **Rescue Carry** on the adapter root | `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn` |
+| Match foot speed to a new walk cycle | **Locomotion → Stride Length** on the adapter; **Gameplay → Movement Speed** on the unit | Locomotion demo and a local battle |
+| Tune shot, hit, landing, or pickup return timing | **Action Timing** on the adapter root | `tests/unit_visual_adapter_test.gd` |
+| Change movement range, HP, or AP | `units/tactical_unit.tscn` → `UnitStats` | Core battle/objective smoke tests |
+| Change weapon range or world movement speed | `units/tactical_unit.tscn` root → **Gameplay** | `tests/battle_smoke.gd` |
+| Tune tactical camera movement and zoom | `levels/prototype_map/prototype_map.tscn` → `CameraRig` | `tests/action_camera_director_test.gd`, `tests/camera_obstruction_test.gd`, and manual close/far zoom |
+| Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
+| Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
+
+## Asset contracts
+
+A replacement humanoid must contain a `Skeleton3D` with the current VRoid
+`J_Bip_*` bone names. A replacement weapon must contain `SupportHandTarget` and
+`MuzzleSocket` nodes. These contracts are checked when the runtime rig assembles.
+
+The detailed model and animation procedures remain in `asset-import.md` and
+`animation-editing-guide.md`. Do not edit `.godot/` or generated import files.

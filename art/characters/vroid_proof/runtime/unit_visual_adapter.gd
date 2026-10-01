@@ -12,6 +12,16 @@ signal presentation_state_changed(state_name: StringName)
 @export_range(90.0, 1080.0) var turn_speed_degrees := 360.0
 ## Metres travelled per full left/right step cycle. Tune alongside the move clip.
 @export_range(0.5, 4.0) var stride_length := 1.6
+@export_group("Action Timing")
+## Delay before pickup returns to the appropriate idle pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var pickup_return_seconds := 0.6
+## Delay before traversal landing returns to locomotion or idle.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var landing_return_seconds := 0.3
+## Delay before a shot returns to the appropriate ready pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var shoot_return_seconds := 0.34
+## Delay before hit reaction returns to the appropriate ready pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var hit_return_seconds := 0.58
+@export_group("")
 
 func get_camera_focus() -> Vector3:
 	return to_global(camera_focus_anchor)
@@ -38,7 +48,7 @@ func present_pickup() -> void:
 		character_root.add_child(_passenger)
 		_passenger.position = passenger_position
 	_play(&"pickup")
-	_return_to_idle_after(0.6)
+	_return_to_idle_after(pickup_return_seconds)
 
 func present_boarding() -> void:
 	_return_generation += 1
@@ -126,14 +136,14 @@ func present_path_segment(state_name: StringName) -> void:
 	_return_generation += 1
 	if was_traversing and state_name == &"move":
 		_play(&"land")
-		_return_to_idle_after(0.3)
+		_return_to_idle_after(landing_return_seconds)
 	else:
 		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
 
 func present_movement_end() -> void:
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
-		_return_to_idle_after(0.3)
+		_return_to_idle_after(landing_return_seconds)
 	else:
 		present_idle()
 
@@ -171,11 +181,11 @@ func present_attack(target_world_position: Vector3) -> void:
 		# Visual lean only; the combat evaluator has already resolved the shot.
 		shot = &"shoot_left" if global_basis.x.dot(cover.direction) >= 0.0 else &"shoot_right"
 	_play(shot)
-	_return_to_idle_after(0.34)
+	_return_to_idle_after(shoot_return_seconds)
 
 func present_hit() -> void:
 	_play(&"hit")
-	_return_to_idle_after(0.58)
+	_return_to_idle_after(hit_return_seconds)
 
 func present_defeat() -> void:
 	_return_generation += 1

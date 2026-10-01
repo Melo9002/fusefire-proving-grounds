@@ -1,11 +1,15 @@
 extends Node3D
 
-const CHARACTER_SCENE := preload("res://art/characters/vroid_proof/models/vroid_test_runtime.glb")
-const WEAPON_SCENE := preload("res://art/weapons/aug/models/aug_runtime_socketed.glb")
 const ANIMATION_CONTROLLER := preload("res://art/characters/vroid_proof/runtime/character_animation_controller.gd")
 
 const RIGHT_ARM := [&"J_Bip_R_UpperArm", &"J_Bip_R_LowerArm", &"J_Bip_R_Hand"]
 const LEFT_ARM := [&"J_Bip_L_UpperArm", &"J_Bip_L_LowerArm", &"J_Bip_L_Hand"]
+
+@export_group("Model Assets")
+## Character model to assemble. It must contain a Skeleton3D using the J_Bip VRoid bone names.
+@export var character_scene: PackedScene = preload("res://art/characters/vroid_proof/models/vroid_test_runtime.glb")
+## Weapon model to attach. It must contain SupportHandTarget and MuzzleSocket nodes.
+@export var weapon_scene: PackedScene = preload("res://art/weapons/aug/models/aug_runtime_socketed.glb")
 
 @onready var character_root: Node3D = $Character
 @onready var right_hand_target: Marker3D = $Character/IKTargets/RightHandTarget
@@ -61,7 +65,8 @@ func _rifle_local_basis() -> Basis:
 
 
 func _build_character() -> void:
-	var model := CHARACTER_SCENE.instantiate() as Node3D
+	assert(character_scene != null, "Character scene is required")
+	var model := character_scene.instantiate() as Node3D
 	character_root.add_child(model)
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	assert(skeleton != null, "VRoid runtime model must contain Skeleton3D")
@@ -73,7 +78,8 @@ func _build_weapon_attachment() -> void:
 	weapon_attachment.bone_name = RIGHT_ARM[2]
 	skeleton.add_child(weapon_attachment)
 
-	weapon = WEAPON_SCENE.instantiate() as Node3D
+	assert(weapon_scene != null, "Weapon scene is required")
+	weapon = weapon_scene.instantiate() as Node3D
 	weapon.name = "AUG"
 	# The source WeaponOrigin is centered on the firing-hand grip. This small
 	# offset nests it into the palm while its +Z axis remains the firing axis.

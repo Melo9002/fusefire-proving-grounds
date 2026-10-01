@@ -1,7 +1,8 @@
 class_name UnitStats
 extends Node
 @export_group("Movement")
-@export var speed: int = 5
+## Grid cells reachable by one Move action. This does not control animation speed.
+@export_range(1, 30, 1, "suffix:cells") var speed: int = 5
 
 signal hp_changed(current: int, max_hp: int)
 signal ap_changed(current: int, max_ap: int)
@@ -9,7 +10,7 @@ signal status_changed
 signal defeated
 
 @export_group("Health")
-@export var max_hp: int = 100:
+@export_range(1, 999, 1) var max_hp: int = 100:
 	set(value):
 		max_hp = max(1, value)
 		current_hp = min(current_hp, max_hp)
@@ -22,7 +23,7 @@ var current_hp: int = 100:
 			hp_changed.emit(current_hp, max_hp)
 
 @export_group("Action Points (AP)")
-@export var max_ap: int = 2:
+@export_range(1, 20, 1) var max_ap: int = 2:
 	set(value):
 		max_ap = max(1, value)
 		current_ap = min(current_ap, max_ap)
