@@ -20,6 +20,10 @@ func _run() -> void:
 	var menu := level.get_node("Visualizers/BattleUI/BattlePauseMenu") as BattlePauseMenu
 	var debug := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
 	var camera := level.get_node("CameraRig") as TacticalCamera
+	var world_bar := level.find_child("UnitWorldBar", true, false) as UnitWorldBar
+	check(is_instance_valid(world_bar), "Battle creates a unit world stats bar")
+	check(debug.z_index > world_bar.z_index and menu.z_index > world_bar.z_index, "Debug and pause UI render above world stats bars")
+	check(menu.z_index > debug.z_index, "Pause menu remains the highest modal layer")
 
 	menu.set_open(true)
 	check(menu.visible and menu.is_open and paused, "Opening the battle menu pauses gameplay")

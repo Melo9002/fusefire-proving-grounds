@@ -19,6 +19,7 @@ const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_ov
 var panel_open: bool = false
 var _paused_by_debug_tools: bool = false
 var _panel: PanelContainer
+var _seed_label: Label
 var _overlay: Label
 var _hint: Label
 var _manual_enemy_toggle: CheckButton
@@ -45,6 +46,9 @@ var _latest_ai_decision: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Unit world bars are added to the same CanvasLayer after battle startup.
+	# Keep modal developer UI above those dynamically-created controls.
+	z_index = 90
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_interface()
 	_build_map_inspector()
@@ -78,6 +82,7 @@ func set_panel_open(open: bool) -> void:
 	panel_open = open
 	_panel.visible = open
 	if open:
+		_update_seed_display()
 		_capture_inspected_destination()
 		_refresh_mission_controls()
 		_paused_by_debug_tools = not get_tree().paused
@@ -171,8 +176,8 @@ func _build_interface() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.035, 0.045, 0.065, 1.0)
 	_panel.add_theme_stylebox_override("panel", panel_style)
-	_panel.position = Vector2(350, 38)
-	_panel.custom_minimum_size = Vector2(390, 0)
+	_panel.position = Vector2(300, 38)
+	_panel.custom_minimum_size = Vector2(500, 0)
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.visible = false
 	add_child(_panel)
@@ -197,71 +202,103 @@ func _build_interface() -> void:
 	help.text = "F3 — toggle panel and pause"
 	content.add_child(help)
 
+	var seed_row := HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 12)
+	content.add_child(seed_row)
+	_seed_label = Label.new()
+	_seed_label.name = "SeedSummary"
+	_seed_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_seed_label.add_theme_color_override("font_color", Color(0.75, 0.88, 1.0))
+	seed_row.add_child(_seed_label)
+	var copy_seed := Button.new()
+	copy_seed.text = "Copy Seed"
+	copy_seed.tooltip_text = "Copy the match seed for an exact reproduction."
+	copy_seed.pressed.connect(_copy_battle_seed)
+	seed_row.add_child(copy_seed)
+	_update_seed_display()
+
+	var tabs := TabContainer.new()
+	tabs.name = "DebugSections"
+	tabs.custom_minimum_size = Vector2(468, 430)
+	content.add_child(tabs)
+	var diagnostics := VBoxContainer.new()
+	diagnostics.name = "Diagnostics"
+	diagnostics.add_theme_constant_override("separation", 6)
+	tabs.add_child(diagnostics)
+	var control := VBoxContainer.new()
+	control.name = "Control"
+	control.add_theme_constant_override("separation", 8)
+	tabs.add_child(control)
+	var mission := VBoxContainer.new()
+	mission.name = "Mission"
+	mission.add_theme_constant_override("separation", 8)
+	tabs.add_child(mission)
+
 	_overlay_toggle = CheckButton.new()
 	_overlay_toggle.text = "Show battle-data overlay"
 	_overlay_toggle.button_pressed = overlay_visible_at_start
 	_overlay_toggle.toggled.connect(_set_overlay_visible)
-	content.add_child(_overlay_toggle)
+	diagnostics.add_child(_overlay_toggle)
 
 	_shot_trajectory_toggle = CheckButton.new()
 	_shot_trajectory_toggle.text = "Show shot trajectories"
 	_shot_trajectory_toggle.button_pressed = true
 	_shot_trajectory_toggle.toggled.connect(_set_shot_trajectories_visible)
-	content.add_child(_shot_trajectory_toggle)
+	diagnostics.add_child(_shot_trajectory_toggle)
 
 	_ai_decision_toggle = CheckButton.new()
 	_ai_decision_toggle.text = "Show AI decision explanations"
 	_ai_decision_toggle.button_pressed = true
 	_ai_decision_toggle.toggled.connect(_set_ai_decisions_visible)
-	content.add_child(_ai_decision_toggle)
+	diagnostics.add_child(_ai_decision_toggle)
 
 	_map_inspection_toggle = CheckButton.new()
 	_map_inspection_toggle.text = "Inspect map cells and metadata"
 	_map_inspection_toggle.toggled.connect(_set_map_inspection_visible)
-	content.add_child(_map_inspection_toggle)
+	diagnostics.add_child(_map_inspection_toggle)
 
 	_zone_toggle = CheckButton.new()
 	_zone_toggle.text = "Show all map zones"
 	_zone_toggle.button_pressed = true
 	_zone_toggle.toggled.connect(_set_map_zones_visible)
-	content.add_child(_zone_toggle)
+	diagnostics.add_child(_zone_toggle)
 
 	_traversal_toggle = CheckButton.new()
 	_traversal_toggle.text = "Show traversal links"
 	_traversal_toggle.button_pressed = true
 	_traversal_toggle.toggled.connect(_set_traversal_links_visible)
-	content.add_child(_traversal_toggle)
+	diagnostics.add_child(_traversal_toggle)
 
 
 	_ai_scoring_toggle = CheckButton.new()
 	_ai_scoring_toggle.text = "Show AI scoring overlay"
 	_ai_scoring_toggle.tooltip_text = "Shows numeric movement scores, rejected cells, targets, and the chosen plan."
 	_ai_scoring_toggle.toggled.connect(_set_ai_scoring_visible)
-	content.add_child(_ai_scoring_toggle)
+	diagnostics.add_child(_ai_scoring_toggle)
 
 	_manual_enemy_toggle = CheckButton.new()
 	_manual_enemy_toggle.text = "Manual enemy control"
 	_manual_enemy_toggle.toggled.connect(set_manual_enemy_control)
-	content.add_child(_manual_enemy_toggle)
+	control.add_child(_manual_enemy_toggle)
 
 	_auto_battle_toggle = CheckButton.new()
 	_auto_battle_toggle.text = "AI controls both teams"
 	_auto_battle_toggle.toggled.connect(set_auto_battle)
-	content.add_child(_auto_battle_toggle)
+	control.add_child(_auto_battle_toggle)
 
 	var mission_heading := Label.new()
 	mission_heading.text = "MISSION CONTROLS"
 	mission_heading.add_theme_color_override("font_color", Color(1.0, 0.55, 0.82))
-	content.add_child(mission_heading)
+	mission.add_child(mission_heading)
 
 	var advance_round := Button.new()
 	advance_round.text = "Advance One Round"
 	advance_round.pressed.connect(_debug_advance_round)
-	content.add_child(advance_round)
+	mission.add_child(advance_round)
 
 	_objective_option = OptionButton.new()
 	_objective_option.tooltip_text = "Active mission objective affected by Complete or Fail."
-	content.add_child(_objective_option)
+	mission.add_child(_objective_option)
 	var objective_buttons := HBoxContainer.new()
 	var complete_objective := Button.new()
 	complete_objective.text = "Complete Objective"
@@ -271,11 +308,11 @@ func _build_interface() -> void:
 	fail_objective.text = "Fail Objective"
 	fail_objective.pressed.connect(_debug_fail_objective)
 	objective_buttons.add_child(fail_objective)
-	content.add_child(objective_buttons)
+	mission.add_child(objective_buttons)
 
 	_actor_option = OptionButton.new()
 	_actor_option.tooltip_text = "Actor affected by Teleport or Force Extraction."
-	content.add_child(_actor_option)
+	mission.add_child(_actor_option)
 	var actor_buttons := HBoxContainer.new()
 	var teleport_actor := Button.new()
 	teleport_actor.text = "Teleport to Inspected Cell"
@@ -285,23 +322,41 @@ func _build_interface() -> void:
 	force_extract.text = "Force Extraction"
 	force_extract.pressed.connect(_debug_force_extract)
 	actor_buttons.add_child(force_extract)
-	content.add_child(actor_buttons)
+	mission.add_child(actor_buttons)
 
 	_mission_status = Label.new()
 	_mission_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mission_status.custom_minimum_size = Vector2(350, 36)
 	_mission_status.text = "Hover a destination before opening F3."
 	_mission_status.add_theme_color_override("font_color", Color(1.0, 0.72, 0.88))
-	content.add_child(_mission_status)
+	mission.add_child(_mission_status)
 
 	var explanation := Label.new()
 	explanation.text = "Manual control pauses enemy decisions.\nUse the normal action bar, then End Turn.\nAI control runs complete rounds for testing."
-	content.add_child(explanation)
+	control.add_child(explanation)
 
 	var resume := Button.new()
 	resume.text = "Resume Battle"
 	resume.pressed.connect(set_panel_open.bind(false))
 	content.add_child(resume)
+
+func _update_seed_display() -> void:
+	if not _seed_label or not battle_controller or not grid_manager:
+		return
+	var source := grid_manager.map_data.source_kind.to_upper()
+	var map_seed := grid_manager.map_data.generation_seed
+	_seed_label.text = "MATCH SEED: %d   |   MAP: %s%s" % [
+		battle_controller.battle_seed,
+		source,
+		" (%d)" % map_seed if source.begins_with("GENERATED") else "",
+	]
+
+func _copy_battle_seed() -> void:
+	if not battle_controller:
+		return
+	DisplayServer.clipboard_set(str(battle_controller.battle_seed))
+	if _mission_status:
+		_mission_status.text = "Copied match seed %d." % battle_controller.battle_seed
 
 func _set_overlay_visible(enabled: bool) -> void:
 	if _overlay:
@@ -500,6 +555,7 @@ func _update_overlay() -> void:
 	var phase_name: String = TurnManager.TurnPhase.keys()[turn_manager.current_phase]
 	var lines: Array[String] = [
 		"DEBUG  [F3]",
+		"Seed %d  |  %s%s" % [battle_controller.battle_seed, grid_manager.map_data.source_kind.to_upper(), " %d" % grid_manager.map_data.generation_seed if grid_manager.map_data.source_kind.begins_with("generated") else ""],
 		"Round %d  |  %s" % [turn_manager.current_round, phase_name],
 		"Map cells: %d  |  Occupied: %d" % [grid_manager.map_data.cells.size(), grid_manager.occupancy_map.size()],
 	]

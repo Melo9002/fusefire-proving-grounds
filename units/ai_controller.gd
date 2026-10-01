@@ -602,12 +602,17 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 		"remaining_ap": unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1,
 		"recent_move_origins": _recent_move_origins.duplicate(),
 		"consecutive_low_value_actions": _consecutive_low_value_actions,
-		"hold_score": null if is_nan(_last_hold_score) else _last_hold_score,
-		"move_acceptance_threshold": null if is_nan(_last_move_threshold) else _last_move_threshold,
+		"hold_score": _optional_score(_last_hold_score),
+		"move_acceptance_threshold": _optional_score(_last_move_threshold),
 		"urgency_bonus": _last_urgency_bonus,
 		"route_corridor": _last_route_corridor,
 	}
 	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates, context)
+
+func _optional_score(value: float) -> Variant:
+	if is_nan(value):
+		return null
+	return value
 
 func _get_friendly_units() -> Array[TacticalUnit]:
 	var friendlies: Array[TacticalUnit] = []

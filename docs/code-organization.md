@@ -22,6 +22,8 @@
 
 Presentation consumes game state; moving a presentation script must not alter movement rules, costs, AI scoring or replay identifiers. Unit components announce state changes; they do not discover UI consumers. Scenes wire dependencies through exported properties.
 
+`ShotResultFeedback` listens to BattleController's resolved-attack signal and displays a short target-local HIT or MISS cue. It is presentation-only: the action has already resolved damage, AP, replay data and AI state before the cue is created.
+
 ## Explicit debug presentation interface
 
 AIController receives its ObjectiveManager from BattleLevel before entering the tree. BattleReplayRecorder.begin receives the same battle-local manager explicitly; null represents a battle without objectives. Neither consumer searches global groups. The dependency-isolation test creates two generated battles with an unrelated global manager first, and checks both teams and recorders. Other global consumers (world bars and authored terrain discovery) still require migration; this is not yet full multi-battle isolation.

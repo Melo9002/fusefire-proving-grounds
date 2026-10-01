@@ -6,6 +6,8 @@ Task 24A extends the existing F3 tools with read-only inspection of the battlefi
 
 1. Start an authored or generated match.
 2. Press **F3**.
+
+The fixed panel header shows the match seed and generated-map seed. Use **Copy Seed** before leaving a suspicious match. Diagnostics, control overrides, and mission mutation commands live in separate tabs so the reproduction identity remains visible while navigating the tools. The optional battle-data overlay also shows the seed during play.
 3. Enable **Inspect map cells and metadata**.
 4. Close the F3 panel or leave it open while paused, then hover a walkable map surface.
 5. On stacked terrain, hold **Alt** and use the mouse wheel to choose another surface.
