@@ -1,6 +1,8 @@
 class_name MatchSetup
 extends Control
 
+const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
 @export var ally_count: SpinBox
@@ -271,19 +273,19 @@ func _refresh_seed_controls() -> void:
 
 func _start_battle() -> void:
 	var battle = battle_scene.instantiate() as BattleLevel
-	battle.configure(
-		int(player_count.value),
-		int(enemy_count.value),
-		generated_map_toggle.button_pressed,
-		int(seed_input.value),
-		int(ally_count.value),
-		Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected],
-		vip_toggle.button_pressed,
-		vip_behavior.selected,
-		MissionCatalog.create_mission(objective_option.selected, int(enemy_count.value), vip_toggle.button_pressed),
-		difficulty_option.selected,
-		map_size_option.selected == 3
-	)
+	var config := BattleConfigurationData.new()
+	config.player_count = int(player_count.value)
+	config.enemy_count = int(enemy_count.value)
+	config.generated_map = generated_map_toggle.button_pressed
+	config.seed = int(seed_input.value)
+	config.ally_count = int(ally_count.value)
+	config.map_size = Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
+	config.include_vip = vip_toggle.button_pressed
+	config.vip_behavior = vip_behavior.selected
+	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
+	config.difficulty = difficulty_option.selected
+	config.refinery = map_size_option.selected == 3
+	battle.configure_battle(config)
 	get_tree().root.add_child(battle)
 	get_tree().current_scene = battle
 	queue_free()

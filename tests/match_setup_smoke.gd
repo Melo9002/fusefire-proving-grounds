@@ -1,6 +1,7 @@
 extends SceneTree
 
 const COMBINATIONS := [Vector2i(1, 1), Vector2i(1, 5), Vector2i(5, 1), Vector2i(5, 5)]
+const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
 
 var failures: int = 0
 
@@ -15,13 +16,19 @@ func check(condition: bool, message: String) -> void:
 func _run() -> void:
 	for combination_index in COMBINATIONS.size():
 		var counts = COMBINATIONS[combination_index]
-		await _check_combination(counts.x, counts.y, combination_index % 2 == 0)
+		await _check_combination(counts.x, counts.y, combination_index % 2 == 0, combination_index % 2 == 1)
 	print("Match setup smoke: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
-func _check_combination(player_count: int, enemy_count: int, expect_victory: bool) -> void:
+func _check_combination(player_count: int, enemy_count: int, expect_victory: bool, use_named_configuration: bool) -> void:
 	var level = load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(player_count, enemy_count)
+	if use_named_configuration:
+		var config := BattleConfigurationData.new()
+		config.player_count = player_count
+		config.enemy_count = enemy_count
+		level.configure_battle(config)
+	else:
+		level.configure(player_count, enemy_count)
 	root.add_child(level)
 	await create_timer(0.15).timeout
 

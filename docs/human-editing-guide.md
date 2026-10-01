@@ -14,6 +14,7 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Tune tactical camera movement and zoom | `levels/prototype_map/prototype_map.tscn` → `CameraRig` | `tests/action_camera_director_test.gd`, `tests/camera_obstruction_test.gd`, and manual close/far zoom |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
+| Start a battle from code | Fill a `BattleConfiguration`, then call `BattleLevel.configure_battle()` | `tests/match_setup_smoke.gd` and `tests/battle_replay_smoke.gd` |
 
 ## Asset contracts
 
@@ -26,6 +27,13 @@ The detailed model and animation procedures remain in `asset-import.md` and
 normal editing path; `character_fallback_animation_builder.gd` only supplies
 safe placeholder clips when an authored clip is missing. Do not edit `.godot/`
 or generated import files.
+
+## Battle setup from code
+
+Use `systems/battle_configuration.gd` when a menu, simulation, or tool starts a
+battle. Its named fields make team counts, map settings, mission, difficulty,
+and seed visible at the call site. `BattleLevel.configure()` remains only as a
+compatibility wrapper for older Prototype 1 scripts.
 
 ## What remains runtime-built
 
