@@ -212,7 +212,7 @@ func _play(state_name: StringName) -> void:
 func _return_to_idle_after(seconds: float) -> void:
 	_return_generation += 1
 	var generation := _return_generation
-	await get_tree().create_timer(seconds).timeout
+	await get_tree().create_timer(seconds, false).timeout
 	if generation != _return_generation:
 		return
 	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:

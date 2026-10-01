@@ -114,7 +114,7 @@ func finish_defeat_presentation() -> void:
 	# long enough for its one-shot defeat pose to be readable.
 	collision_layer = 0
 	collision_mask = 0
-	await get_tree().create_timer(1.25).timeout
+	await get_tree().create_timer(1.25, false).timeout
 	if is_instance_valid(self):
 		queue_free()
 

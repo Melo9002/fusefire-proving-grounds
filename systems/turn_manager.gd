@@ -35,6 +35,8 @@ func start_battle() -> void:
 
 ## Players end their phase manually; each AI ends its own activation.
 func end_current_turn() -> void:
+	if get_tree().paused:
+		return
 	if battle_result != BattleResult.ONGOING or is_any_unit_moving():
 		print_rich("[color=yellow][TurnManager][/color] Cannot end turn: Unit is still moving!")
 		return
@@ -141,6 +143,8 @@ func _on_player_ap_changed(current: int, _maximum: int, unit: TacticalUnit) -> v
 		_advance_selection_if_needed.call_deferred(unit.get_instance_id())
 
 func _advance_selection_if_needed(exhausted_unit_id: int) -> void:
+	if get_tree().paused:
+		await get_tree().create_timer(0.0, false).timeout
 	var exhausted_unit := instance_from_id(exhausted_unit_id) as TacticalUnit
 	if not is_instance_valid(exhausted_unit):
 		return

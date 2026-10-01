@@ -83,7 +83,7 @@ func play_sequence() -> void:
 		playback.travel(current_state)
 		_apply_visual_root_state(current_state)
 		state_changed.emit(current_state)
-		await get_tree().create_timer(float(step.seconds)).timeout
+		await get_tree().create_timer(float(step.seconds), false).timeout
 	if generation == _sequence_generation:
 		sequence_running = false
 

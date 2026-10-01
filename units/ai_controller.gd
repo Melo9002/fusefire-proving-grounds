@@ -1,6 +1,15 @@
 extends Node
 class_name AIController
 
+## Repeated low-value turns gradually loosen movement conservatism so a battle
+## cannot remain in a perfect Defend loop. These limits deliberately preserve
+## caution for carriers, VIPs, and critically injured units.
+const URGENCY_START_ACTIONS := 3
+const URGENCY_PER_ACTION := 3.0
+const URGENCY_MAX_SCORE := 18.0
+const ROUTE_CORRIDOR_BASE := 2.0
+const ROUTE_CORRIDOR_MAX_BONUS := 2.0
+
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
 
 @export var unit: TacticalUnit
@@ -22,6 +31,11 @@ var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
 var _last_position_candidates: Array[Dictionary] = []
 var _last_target_candidates: Array[Dictionary] = []
+var _last_hold_score := NAN
+var _last_move_threshold := NAN
+var _last_urgency_bonus := 0.0
+var _last_route_corridor := ROUTE_CORRIDOR_BASE
+var _consecutive_low_value_actions := 0
 var current_mission_intent := MissionIntentData.new()
 
 enum MissionStepResult {
@@ -68,6 +82,10 @@ func _on_active_unit_changed(new_active_unit: TacticalUnit) -> void:
 	_last_position_scores = "None"
 	_last_position_candidates.clear()
 	_last_target_candidates.clear()
+	_last_hold_score = NAN
+	_last_move_threshold = NAN
+	_last_urgency_bonus = 0.0
+	_last_route_corridor = ROUTE_CORRIDOR_BASE
 	if current_mission_intent.is_actionable():
 		var existing_handlers := _squad_context.reserve_objective(unit, current_mission_intent.objective_id)
 		_squad_notes.append("Objective handler: first" if existing_handlers == 0 else "Objective already handled by %d ally: spread/support" % existing_handlers)
@@ -81,7 +99,7 @@ func _execute_turn() -> void:
 		return
 	_is_executing = true
 	# Brief pause makes the enemy activation visible before it acts.
-	await get_tree().create_timer(0.6).timeout
+	await get_tree().create_timer(0.6, false).timeout
 	if not _should_control_unit():
 		_is_executing = false
 		return
@@ -111,6 +129,7 @@ func _execute_turn() -> void:
 		if unit.is_carrying_unit():
 			# Never chase hostiles when the casualty cannot reach an exit this AP.
 			await battle_controller.try_defend(unit)
+			_record_ai_decision("Defend", unit.name, "The carrier cannot reach extraction this AP and will not abandon the evacuation route to chase enemies.", "Move, Attack")
 			break
 		var attack_target = _find_attack_target()
 		if attack_target and await battle_controller.try_attack(unit, attack_target):
@@ -120,7 +139,7 @@ func _execute_turn() -> void:
 				_squad_context.reserve_target(unit, attack_target)
 			if not _pending_target_note.is_empty(): _squad_notes.append(_pending_target_note)
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Defend")
-			await get_tree().create_timer(0.25).timeout
+			await get_tree().create_timer(0.25, false).timeout
 			continue
 		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
 			await battle_controller.try_defend(unit)
@@ -269,9 +288,11 @@ func _execute_vip_turn() -> void:
 	if unit.mission_actor.vip_behavior == MissionActor.VIPBehavior.FOLLOW_ESCORT:
 		var escorts := turn_manager.player_units.filter(func(candidate: TacticalUnit): return candidate.mission_actor == null or not candidate.mission_actor.is_vip())
 		if not escorts.is_empty():
-			await _move_toward(escorts[0])
+			if await _move_toward(escorts[0]):
+				_record_ai_decision("Move", str(_last_move_destination), "Followed the nearest available escort.", "Defend")
 	if unit.stats.current_ap > 0:
-		await battle_controller.try_defend(unit)
+		if await battle_controller.try_defend(unit):
+			_record_ai_decision("Defend", unit.name, "Stayed with the escort when no useful follow movement remained.", "Move")
 	if _should_control_unit():
 		turn_manager.end_current_turn()
 
@@ -360,7 +381,11 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var route_end := battle_controller.world_to_grid(path[path.size() - 1])
 	var initial_cost := _route_cost(path)
 	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, objective_route, hostiles, battle_controller.grid_manager, _policy, null)
-	best_score = hold.total + 1.0
+	_last_urgency_bonus = _get_movement_urgency_bonus()
+	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
+	_last_hold_score = hold.total
+	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
+	best_score = _last_move_threshold
 	_last_position_candidates.clear()
 	for candidate in reachable:
 		if candidate == start_cell: continue
@@ -377,7 +402,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		for index in range(1, path.size()):
 			var route_cell := battle_controller.world_to_grid(path[index])
 			var distance := candidate.distance_to(route_cell)
-			if distance <= 2.0 and (distance < route_distance or (is_equal_approx(distance, route_distance) and index > route_index)):
+			if distance <= _last_route_corridor and (distance < route_distance or (is_equal_approx(distance, route_distance) and index > route_index)):
 				route_distance = distance
 				route_index = index
 		if route_index < 0:
@@ -398,7 +423,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 			if scored.has(component):
 				candidate_record[component] = scored[component]
-		if score > hold.total + 1.0:
+		if score > _last_move_threshold:
 			options.append({"cell": candidate, "score": score, "scored": scored})
 		else:
 			candidate_record.status = "rejected"
@@ -435,6 +460,15 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		_reserve_destination(best_candidate, best_adjustment)
 		return true
 	return false
+
+func _get_movement_urgency_bonus() -> float:
+	if _consecutive_low_value_actions < URGENCY_START_ACTIONS:
+		return 0.0
+	if unit.is_carrying_unit() or (unit.mission_actor and unit.mission_actor.is_vip()):
+		return 0.0
+	if unit.stats and unit.stats.current_hp <= 25:
+		return 0.0
+	return minf(URGENCY_MAX_SCORE, float(_consecutive_low_value_actions - URGENCY_START_ACTIONS + 1) * URGENCY_PER_ACTION)
 
 func _route_cost(path: PackedVector3Array) -> float:
 	var cost := 0.0
@@ -558,8 +592,22 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 		_squad_notes.append("Destination reserved for later allies")
 
 func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
+	if action == "Defend":
+		_consecutive_low_value_actions += 1
+	elif action in ["Move", "Attack", "Rescue", "Extract", "Support"]:
+		_consecutive_low_value_actions = 0
 	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
-	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates)
+	var context := {
+		"grid_position": unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1),
+		"remaining_ap": unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1,
+		"recent_move_origins": _recent_move_origins.duplicate(),
+		"consecutive_low_value_actions": _consecutive_low_value_actions,
+		"hold_score": null if is_nan(_last_hold_score) else _last_hold_score,
+		"move_acceptance_threshold": null if is_nan(_last_move_threshold) else _last_move_threshold,
+		"urgency_bonus": _last_urgency_bonus,
+		"route_corridor": _last_route_corridor,
+	}
+	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates, context)
 
 func _get_friendly_units() -> Array[TacticalUnit]:
 	var friendlies: Array[TacticalUnit] = []

@@ -352,6 +352,9 @@ func _update_ai_scoring_details(record: Dictionary) -> void:
 	var lines: Array[String] = [
 		"AI SCORING — %s [%s]" % [record.get("actor", "Unknown"), record.get("difficulty", "Normal")],
 		"CHOSEN — %s %s" % [record.get("action", "Unknown"), record.get("subject", "")],
+		"Cell %s | AP %s | Hold %s | Move threshold %s | Urgency %+.1f | Defend streak %s" % [record.get("grid_position", "?"), record.get("remaining_ap", "?"), _format_optional_score(record.get("hold_score")), _format_optional_score(record.get("move_acceptance_threshold")), float(record.get("urgency_bonus", 0.0)), record.get("consecutive_low_value_actions", 0)],
+		"Route corridor: %.1f" % float(record.get("route_corridor", 2.0)),
+		"Recent move origins: %s" % str(record.get("recent_move_origins", [])),
 		"Movement: %d scored | %d rejected" % [legal_positions.size(), rejected_positions.size()],
 	]
 	for candidate in legal_positions.slice(0, 8):
@@ -366,6 +369,9 @@ func _update_ai_scoring_details(record: Dictionary) -> void:
 			else:
 				lines.append("%s %+.1f%s — %s" % [candidate.get("target", "?"), float(candidate.get("score", 0.0)), "  CHOSEN" if candidate.get("chosen", false) else "", candidate.get("summary", "")])
 	_ai_scoring_label.text = "\n".join(lines)
+
+func _format_optional_score(value: Variant) -> String:
+	return "n/a" if value == null else "%+.1f" % float(value)
 
 func _build_mission_controller() -> void:
 	_mission_controller = DebugMissionControllerData.new()

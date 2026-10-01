@@ -4,6 +4,8 @@ This directory contains the project documentation intended for developers, desig
 
 ## Guides
 
+- [Prototype 1 27A recovery audit](prototype-1-audit-27a.md) — canonical verified findings, protected invariants, optimization targets, and the recovery sequence.
+
 - [Code organization](code-organization.md) — current folder responsibilities, dependency wiring and migration notes.
 
 - [Maintainability audit](maintainability-audit.md) — concrete coupling, obsolete helpers, ownership, documentation drift, and validation limits.

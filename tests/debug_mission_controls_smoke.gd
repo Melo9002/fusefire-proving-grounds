@@ -55,11 +55,10 @@ func _check_force_extraction() -> void:
 	await create_timer(0.25).timeout
 	var controller = _make_controller(level)
 	var actor: TacticalUnit = level.turn_manager.player_units[0]
-	check(controller.force_extract(actor), "Debug force extraction uses the mission's extraction zone and action")
+	check(await controller.force_extract(actor), "Debug force extraction uses the mission's extraction zone and action")
 	await process_frame
 	check(level.objective_manager.extracted_units == 1, "Forced extraction updates mission extraction counters")
 	check(level.turn_manager.player_units.is_empty(), "Forced extraction removes the actor from the active roster")
 	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Forced extraction evaluates the normal mission victory")
 	level.queue_free()
 	await process_frame
-

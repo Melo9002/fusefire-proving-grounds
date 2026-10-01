@@ -27,8 +27,18 @@ func _run() -> void:
 		and first.decision_count == second.decision_count \
 		and first.decision_records.size() == first.decision_count \
 		and second.decision_records.size() == second.decision_count \
+		and _records_include_decision_context(first.decision_records) \
+		and _records_include_decision_context(second.decision_records) \
 		and first.decision_records == second.decision_records
 	print("[AISim] AUTHORED-MAP DETERMINISM — %s" % ("PASSED" if matches else "FAILED"))
 	if not matches:
 		push_error("Repeated match diverged:\n  %s\n  %s" % [first.summary(), second.summary()])
 	quit(0 if matches else 1)
+
+func _records_include_decision_context(records: Array[Dictionary]) -> bool:
+	for record in records:
+		for key in ["grid_position", "remaining_ap", "recent_move_origins", "consecutive_low_value_actions", "hold_score", "move_acceptance_threshold", "urgency_bonus", "route_corridor"]:
+			if not record.has(key):
+				push_error("AI decision record is missing diagnostic field: %s" % key)
+				return false
+	return true

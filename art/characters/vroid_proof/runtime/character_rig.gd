@@ -202,7 +202,7 @@ func _play_shot_feedback() -> void:
 	_recoil_tween = create_tween()
 	_recoil_tween.tween_property(self, "recoil", 0.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	muzzle_flash.visible = true
-	await get_tree().create_timer(0.075).timeout
+	await get_tree().create_timer(0.075, false).timeout
 	if generation == _shot_feedback_generation:
 		muzzle_flash.visible = false
 func _on_animation_state_changed(state_name: StringName) -> void:

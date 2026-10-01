@@ -42,6 +42,13 @@ Run the Prototype 1 5v5 certification matrix:
 godot_console --headless --path . --script res://tests/prototype_1_milestone.gd
 ```
 
+Reproduce the former seed-25005 extraction Defend loop and verify that bounded
+AI urgency resolves it:
+
+```powershell
+godot_console --headless --path . --script res://tests/ai_stalemate_recovery_smoke.gd
+```
+
 This matrix runs every mission twice with five combatants on each side. Protect and
 Rescue split the friendly force between player and allied factions so allied AI is
 also exercised. It covers 24×20, 32×24, and 40×30 maps; generic generation, refinery,
