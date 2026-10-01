@@ -1,6 +1,6 @@
 extends Node3D
 
-const ANIMATION_CONTROLLER := preload("res://art/characters/vroid_proof/runtime/character_animation_controller.gd")
+const ANIMATION_CONTROLLER_FALLBACK := preload("res://art/characters/vroid_proof/runtime/character_animation_controller.gd")
 
 const RIGHT_ARM := [&"J_Bip_R_UpperArm", &"J_Bip_R_LowerArm", &"J_Bip_R_Hand"]
 const LEFT_ARM := [&"J_Bip_L_UpperArm", &"J_Bip_L_LowerArm", &"J_Bip_L_Hand"]
@@ -24,7 +24,7 @@ var support_hand_target: Node3D
 var muzzle_socket: Node3D
 var muzzle_flash: MeshInstance3D
 var ik_enabled := true
-var animation_controller: Node
+@onready var animation_controller: Node = get_node_or_null("VerticalSliceController")
 var _shot_feedback_generation := 0
 var aim_blend := 0.0
 var recoil := 0.0
@@ -137,10 +137,13 @@ func _build_arm_ik() -> void:
 
 
 func _build_animation_controller() -> void:
-	animation_controller = ANIMATION_CONTROLLER.new()
-	animation_controller.name = "VerticalSliceController"
+	# Runtime and demo scenes expose this stable component in the editor. Keep a
+	# fallback for older external scenes that extend CharacterRig directly.
+	if not is_instance_valid(animation_controller):
+		animation_controller = ANIMATION_CONTROLLER_FALLBACK.new()
+		animation_controller.name = "VerticalSliceController"
+		add_child(animation_controller)
 	animation_controller.clip_library = clip_library
-	add_child(animation_controller)
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
 

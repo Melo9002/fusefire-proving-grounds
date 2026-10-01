@@ -22,4 +22,16 @@ A replacement humanoid must contain a `Skeleton3D` with the current VRoid
 `MuzzleSocket` nodes. These contracts are checked when the runtime rig assembles.
 
 The detailed model and animation procedures remain in `asset-import.md` and
-`animation-editing-guide.md`. Do not edit `.godot/` or generated import files.
+`animation-editing-guide.md`. Authored clips in `prototype_clips.tres` are the
+normal editing path; `character_fallback_animation_builder.gd` only supplies
+safe placeholder clips when an authored clip is missing. Do not edit `.godot/`
+or generated import files.
+
+## What remains runtime-built
+
+The selected imported model supplies its `Skeleton3D`. Godot requires the weapon
+bone attachment and two-bone IK solver to become children of that skeleton, so
+the rig creates those model-dependent nodes after loading. Stable composition—IK
+targets and the animation controller—remains visible in the runtime and demo
+scenes. This boundary keeps model swapping possible without hiding ordinary
+editable structure in code.
