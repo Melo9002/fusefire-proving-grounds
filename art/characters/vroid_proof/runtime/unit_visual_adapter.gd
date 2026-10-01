@@ -3,6 +3,12 @@ class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
 
+const TeamPaletteData := preload("res://presentation/team_presentation_palette.gd")
+
+@export_group("Team Presentation")
+## Shared faction colors and ground-ring appearance.
+@export var team_palette: TeamPaletteData = preload("res://presentation/team_presentation_palette.tres")
+
 @export_group("Camera Anchors")
 @export var camera_focus_anchor := Vector3(0.0, 1.05, 0.0)
 @export var camera_eye_anchor := Vector3(0.0, 1.5, 0.0)
@@ -64,11 +70,6 @@ const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 var _return_generation := 0
 var _team_accent: MeshInstance3D
 
-const PLAYER_ACCENT := Color(0.05, 0.65, 1.0, 1.0)
-const ALLY_ACCENT := Color(0.2, 1.0, 0.35, 1.0)
-const ENEMY_ACCENT := Color(1.0, 0.12, 0.08, 1.0)
-const NEUTRAL_ACCENT := Color(0.85, 0.85, 0.85, 1.0)
-
 func _ready() -> void:
 	_build_character()
 	_build_weapon_attachment()
@@ -90,12 +91,12 @@ func _build_team_accent() -> void:
 	_team_accent = MeshInstance3D.new()
 	_team_accent.name = "TeamAccentRing"
 	var ring := TorusMesh.new()
-	ring.inner_radius = 0.31
-	ring.outer_radius = 0.37
-	ring.rings = 12
-	ring.ring_segments = 24
+	ring.inner_radius = team_palette.inner_radius
+	ring.outer_radius = team_palette.outer_radius
+	ring.rings = team_palette.radial_segments
+	ring.ring_segments = team_palette.ring_segments
 	_team_accent.mesh = ring
-	_team_accent.position = Vector3(0.0, 0.025, 0.0)
+	_team_accent.position = Vector3(0.0, team_palette.height, 0.0)
 	_team_accent.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_team_accent)
 	_apply_team_accent()
@@ -103,17 +104,17 @@ func _build_team_accent() -> void:
 func _apply_team_accent() -> void:
 	if not is_instance_valid(_team_accent):
 		return
-	var accent := NEUTRAL_ACCENT
+	var accent: Color = team_palette.neutral
 	if is_instance_valid(tactical_unit):
 		match tactical_unit.faction:
-			TacticalUnit.Faction.PLAYER: accent = PLAYER_ACCENT
-			TacticalUnit.Faction.ALLY: accent = ALLY_ACCENT
-			TacticalUnit.Faction.ENEMY: accent = ENEMY_ACCENT
+			TacticalUnit.Faction.PLAYER: accent = team_palette.player
+			TacticalUnit.Faction.ALLY: accent = team_palette.ally
+			TacticalUnit.Faction.ENEMY: accent = team_palette.enemy
 	var material := StandardMaterial3D.new()
 	material.albedo_color = accent
 	material.emission_enabled = true
 	material.emission = accent
-	material.emission_energy_multiplier = 2.2
+	material.emission_energy_multiplier = team_palette.emission_energy
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_team_accent.material_override = material
 

@@ -15,6 +15,7 @@
 | `units/` | Unit composition, movement/presentation orchestration and AI execution |
 | `presentation/overlays/` | Grid, cursor, path, cover, selection, objectives and debugging visualizations; extraction transport is retained here for now |
 | `presentation/camera/` | Tactical camera movement and action-camera direction |
+| `presentation/team_presentation_palette.tres` | Shared faction colors and tactical unit ground-ring appearance |
 | `ui/` | Screen controls, HUDs and input forwarding |
 | `levels/` | Scene composition and explicit dependency wiring |
 | `art/` | Art assets and current character rig implementation/workbench |
