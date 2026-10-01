@@ -6,7 +6,13 @@ extends Node3D
 @export var target_offset := Vector3(0.0, 2.25, 0.0)
 @export var hit_color := Color(1.0, 0.28, 0.18, 1.0)
 @export var miss_color := Color(0.75, 0.82, 0.9, 1.0)
-@export_range(16, 96, 1) var font_size := 28
+## Higher values sharpen the generated text texture. Use Pixel Size for its world-space size.
+@export_range(24, 128, 1) var font_resolution := 64
+## Metres per generated text pixel. Lower this to make the cue smaller without losing detail.
+@export_range(0.0005, 0.01, 0.0001, "suffix:m/px") var pixel_size := 0.0015
+@export_range(0, 24, 1) var outline_size := 6
+## Enable only when the cue must remain the same apparent size at every camera distance.
+@export var keep_screen_size := false
 @export_group("Motion")
 @export_range(0.1, 3.0, 0.05, "suffix:s") var lifetime_seconds := 0.85
 @export_range(0.0, 2.0, 0.05, "suffix:m") var rise_distance := 0.55
@@ -26,11 +32,12 @@ func _on_attack_resolved(_attacker: TacticalUnit, target: TacticalUnit, did_hit:
 	var cue := Label3D.new()
 	cue.name = "ShotResult_%s" % last_result_text
 	cue.text = last_result_text
-	cue.font_size = font_size
-	cue.outline_size = 8
+	cue.font_size = font_resolution
+	cue.pixel_size = pixel_size
+	cue.outline_size = outline_size
 	cue.modulate = hit_color if did_hit else miss_color
 	cue.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	cue.fixed_size = true
+	cue.fixed_size = keep_screen_size
 	cue.no_depth_test = true
 	add_child(cue)
 	cue.global_position = last_target_position + target_offset
