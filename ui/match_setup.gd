@@ -231,6 +231,8 @@ func _on_objective_selected(index: int) -> void:
 	vip_toggle.disabled = needs_vip
 	if needs_vip:
 		vip_toggle.button_pressed = true
+	else:
+		vip_toggle.button_pressed = false
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:

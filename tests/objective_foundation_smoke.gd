@@ -70,6 +70,10 @@ func _run() -> void:
 	check(not setup.seed_input.editable and setup.seed_input.value >= 1, "Automatic seed mode locks the generated value")
 	check(objective_option.item_count == MissionCatalog.PRESETS.size(), "Match setup offers every objective preset")
 	check(objective_option.get_item_text(MissionObjectiveDefinition.Kind.EXTRACT) == "Extract", "Objective choices retain their readable names")
+	setup._on_objective_selected(MissionObjectiveDefinition.Kind.PROTECT)
+	check(setup.vip_toggle.button_pressed and setup.vip_toggle.disabled, "Protect requires and locks its friendly VIP")
+	setup._on_objective_selected(MissionObjectiveDefinition.Kind.ELIMINATE)
+	check(not setup.vip_toggle.button_pressed and not setup.vip_toggle.disabled, "Leaving Protect restores the optional VIP to its off default")
 	setup.vip_toggle.button_pressed = true
 	setup.vip_behavior.select(MissionActor.VIPBehavior.PLAYER_CONTROLLED)
 	setup._update_summary(0.0)
