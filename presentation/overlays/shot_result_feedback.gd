@@ -6,7 +6,7 @@ extends Node3D
 @export var target_offset := Vector3(0.0, 2.25, 0.0)
 @export var hit_color := Color(1.0, 0.28, 0.18, 1.0)
 @export var miss_color := Color(0.75, 0.82, 0.9, 1.0)
-@export_range(16, 96, 1) var font_size := 20
+@export_range(16, 96, 1) var font_size := 28
 @export_group("Motion")
 @export_range(0.1, 3.0, 0.05, "suffix:s") var lifetime_seconds := 0.85
 @export_range(0.0, 2.0, 0.05, "suffix:m") var rise_distance := 0.55

@@ -763,6 +763,7 @@ layout_mode = 2
 text = "END MISSION — LEAVE OTHERS BEHIND"
 
 [node name="UnitPortraitBar" type="Control" parent="Visualizers/BattleUI" unique_id=887133846 node_paths=PackedStringArray("turn_manager", "battle_controller", "portraits_container")]
+visible = false
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5

@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://4pf4b4gp1p6t" path="res://ui/unit_world_bar.gd" id="1_oug2r"]
 
 [node name="UnitWorldBar" type="Control" unique_id=241115286 node_paths=PackedStringArray("hp_bar", "ap_label", "carry_label", "extract_button")]
+z_index = -10
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -25,13 +26,13 @@ text = "AP"
 [node name="HPBar" type="ProgressBar" parent="VBoxContainer" unique_id=302245433]
 layout_mode = 2
 
-[node name="CarryLabel" type="Label" parent="VBoxContainer"]
+[node name="CarryLabel" type="Label" parent="VBoxContainer" unique_id=1444642317]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
 text = "CARRYING VIP"
 
-[node name="ExtractButton" type="Button" parent="VBoxContainer"]
+[node name="ExtractButton" type="Button" parent="VBoxContainer" unique_id=928966253]
+visible = false
 layout_mode = 2
 text = "EXTRACT"
-visible = false
