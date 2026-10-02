@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DirectorData := preload("res://systems/camera/action_camera_director.gd")
+const DirectorData := preload("res://presentation/camera/action_camera_director.gd")
 
 var failures := 0
 

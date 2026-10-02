@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="TeamPresentationPalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://presentation/team_presentation_palette.gd" id="1_palette"]
+
+[resource]
+resource_name = "Prototype 1 Team Presentation"
+script = ExtResource("1_palette")

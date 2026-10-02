@@ -21,8 +21,16 @@ var camera_mode: CameraMode = CameraMode.FREE
 var _controls: Control
 
 func begin(p_level: BattleLevel, p_recording) -> void:
+	# The player and its controls must remain responsive while the tactical tree is
+	# paused so playback can be resumed from the middle of an action.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	level = p_level
 	recording = p_recording
+	var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera
+	if replay_camera:
+		# Replay pause doubles as an inspection/photo mode. Normal battle cameras
+		# retain inherited processing and therefore remain frozen by their pause menu.
+		replay_camera.process_mode = Node.PROCESS_MODE_ALWAYS
 	_create_controls()
 	_play.call_deferred()
 
@@ -78,6 +86,11 @@ func _play() -> void:
 
 func set_playback_paused(paused: bool) -> void:
 	playback_paused = paused
+	if paused and is_instance_valid(level):
+		var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera
+		if replay_camera:
+			replay_camera.clear_cinematic_view()
+	get_tree().paused = paused
 	print("[Replay] %s at action %d/%d" % ["PAUSED" if paused else "PLAYING", verified_actions, recording.actions.size()])
 
 func set_playback_speed(speed: float) -> void:
@@ -98,7 +111,7 @@ func _action_interval() -> void:
 	await _wait_until_playing()
 	var delay := action_delay / maxf(playback_speed, 0.1)
 	if delay > 0.0:
-		await get_tree().create_timer(delay).timeout
+		await get_tree().create_timer(delay, false).timeout
 
 func _focus_action(record: Dictionary) -> void:
 	if record.get("kind", "") == "end_turn":
@@ -185,6 +198,8 @@ func _execute(record: Dictionary) -> bool:
 			return await level.battle_controller.try_attack(actor, target)
 		"defend":
 			return await level.battle_controller.try_defend(actor)
+		"wait":
+			return level.battle_controller.try_end_unit_turn(actor, record.get("reason", "Replay wait"))
 		"rescue":
 			var target: TacticalUnit = _find_unit(record.get("target", ""))
 			return is_instance_valid(target) and await level.objective_manager.try_rescue(actor, target)

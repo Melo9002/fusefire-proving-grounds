@@ -40,7 +40,8 @@ func _run() -> void:
 	check(grid.occupancy_map.size() == 10, "AI movement preserves unique 5v5 occupancy")
 	for enemy in turns.enemy_units:
 		check(grid.get_unit_grid(enemy) != enemy_start_cells[enemy], "%s moves through the shared movement gateway" % enemy.name)
-		check(enemy.stats.current_ap == 0 and enemy.stats.is_defending, "%s spends its remaining AP on shared Defend" % enemy.name)
+		# A safe second advance can consume the remaining AP instead of Defend.
+		check(enemy.stats.current_ap == 0, "%s spends its AP through shared actions" % enemy.name)
 	for unit in turns.player_units + turns.enemy_units:
 		check(not unit.is_moving, "%s finishes movement before the next round" % unit.name)
 

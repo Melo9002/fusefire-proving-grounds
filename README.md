@@ -1,6 +1,6 @@
 # Project FuseFire
 
-A 3D tactical combat prototype made in Godot 4.7. Choose independent player and enemy force sizes, then fight on a multilayer 32×24 battlefield.
+A 3D tactical combat prototype made in Godot 4.7. Choose independent player, allied AI, and enemy force sizes, then fight across authored or generated multilayer battlefields.
 
 ## Play
 
@@ -25,7 +25,7 @@ When the selected unit spends its final AP, selection advances through the frien
 | Click a player unit | Select it if it has AP remaining |
 | Move, then click a yellow cell | Spend 1 AP to move |
 | Attack, then click an enemy | Spend 1 AP if the target is in range and visible |
-| Defend | Spend 1 AP to halve incoming damage until the unit's next phase |
+| Skip | End the selected unit's activation without granting a defensive bonus |
 | End Turn | End the player phase; enemies act in sequence |
 | Tab | Toggle the grid overlay |
 | Mouse at screen edge / WASD / arrow keys | Pan the camera within the battlefield |
@@ -36,7 +36,7 @@ When the selected unit spends its final AP, selection advances through the frien
 | Alt + mouse wheel | Cycle legal surfaces under the cursor; the floor hint, movement preview and click use the same choice |
 | Q / E or Page Up / Page Down | Rotate the camera with the keyboard |
 
-Units start their phase with 2 AP and have 100 HP. Attacks deal 25 damage, or 12 against a defending unit. Attack range uses cardinal grid distance. Every unit uses `UnitStats.speed` for its movement budget. Animation speed is separate.
+Units start their phase with 2 AP and have 100 HP. Attacks deal 25 damage. Attack range uses grid distance with diagonal targeting and corner blocking. Every unit uses `UnitStats.speed` for its movement budget. Animation speed is separate.
 
 Camera height gently follows the manually selected unit; selection does not automatically recenter horizontal position. Focus preserves zoom and rotation. Edge scrolling retains a 36-pixel inner band and 72-pixel outside tolerance, and pauses during mouse camera gestures, over UI, or on focus loss. Left click is reserved for selection and orders. The original selection outline is unchanged.
 

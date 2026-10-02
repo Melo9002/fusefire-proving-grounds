@@ -19,7 +19,7 @@ func run() -> void:
 	workbench.add_child(model)
 	model.owner = workbench
 	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
-	var controller = load("res://art/characters/vroid_proof/demo/vroid_vertical_slice_controller.gd").new()
+	var controller = load("res://art/characters/vroid_proof/runtime/character_animation_controller.gd").new()
 	workbench.add_child(controller)
 	controller.setup(skeleton, model)
 	var library: AnimationLibrary = controller.animation_player.get_animation_library(&"")

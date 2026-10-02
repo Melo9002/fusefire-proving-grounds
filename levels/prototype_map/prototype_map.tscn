@@ -2,32 +2,33 @@
 
 [ext_resource type="Script" uid="uid://cqcmmhrekr2of" path="res://systems/grid/mouse_raycaster.gd" id="1_822c8"]
 [ext_resource type="Script" uid="uid://ck52agsrnr6h" path="res://systems/battle_controller.gd" id="3_fg2v6"]
-[ext_resource type="Script" uid="uid://cu36ocv6o5mgc" path="res://visualizers/grid_visualizer.gd" id="4_q85eh"]
+[ext_resource type="Script" uid="uid://cu36ocv6o5mgc" path="res://presentation/overlays/grid_visualizer.gd" id="4_q85eh"]
 [ext_resource type="PackedScene" uid="uid://c7nrcruyj4khu" path="res://units/tactical_unit.tscn" id="4_tsi40"]
-[ext_resource type="Script" uid="uid://cf02ctu30b6hm" path="res://visualizers/grid_cursor.gd" id="5_q85eh"]
-[ext_resource type="Script" uid="uid://ddyyfvx30kuoe" path="res://visualizers/path_visualizer.gd" id="6_8rqs0"]
+[ext_resource type="Script" uid="uid://cf02ctu30b6hm" path="res://presentation/overlays/grid_cursor.gd" id="5_q85eh"]
+[ext_resource type="Script" uid="uid://ddyyfvx30kuoe" path="res://presentation/overlays/path_visualizer.gd" id="6_8rqs0"]
 [ext_resource type="Script" uid="uid://xam0a3oofrn" path="res://systems/grid/grid_manager.gd" id="7_ao12l"]
 [ext_resource type="Script" uid="uid://sduodsntgvey" path="res://systems/turn_manager.gd" id="8_butv0"]
 [ext_resource type="Script" uid="uid://cefiwjk6lxrw1" path="res://ui/turn_hud_controller.gd" id="9_6xxhk"]
 [ext_resource type="Script" uid="uid://l6ueyj681aqx" path="res://ui/aphud_controller.gd" id="10_0ueux"]
 [ext_resource type="Script" uid="uid://ceqxrcr6py18c" path="res://ui/action_hud_controller.gd" id="13_q7tb2"]
-[ext_resource type="Script" path="res://systems/camera/tactical_camera.gd" id="15_camera"]
-[ext_resource type="Script" path="res://levels/prototype_map/battle_level.gd" id="16_level"]
-[ext_resource type="Script" path="res://systems/spawning/spawn_zone.gd" id="17_zone"]
-[ext_resource type="Script" path="res://ui/unit_portrait_bar.gd" id="18_portrait_bar"]
+[ext_resource type="Script" uid="uid://hmal0vf2en0a" path="res://presentation/camera/tactical_camera.gd" id="15_camera"]
+[ext_resource type="Script" uid="uid://gcucp70q54kj" path="res://levels/prototype_map/battle_level.gd" id="16_level"]
+[ext_resource type="Script" uid="uid://cvlwqpdvre6i3" path="res://systems/spawning/spawn_zone.gd" id="17_zone"]
+[ext_resource type="Script" uid="uid://c3u4j7ajg5or5" path="res://ui/unit_portrait_bar.gd" id="18_portrait_bar"]
 [ext_resource type="PackedScene" path="res://ui/unit_portrait.tscn" id="19_portrait"]
-[ext_resource type="Script" path="res://visualizers/unit_selection_visualizer.gd" id="20_selection"]
-[ext_resource type="Script" path="res://systems/grid/terrain_feature.gd" id="21_terrain"]
-[ext_resource type="Script" path="res://visualizers/cover_visualizer.gd" id="22_cover"]
-[ext_resource type="Script" path="res://systems/grid/elevated_surface.gd" id="23_surface"]
-[ext_resource type="Script" path="res://systems/grid/traversal_link.gd" id="24_link"]
-[ext_resource type="Script" path="res://systems/grid/elevation_path.gd" id="25_elevation_path"]
-[ext_resource type="Script" path="res://ui/debug_tools.gd" id="26_debug_tools"]
-[ext_resource type="Script" path="res://visualizers/shot_trajectory_visualizer.gd" id="27_shot_trajectory"]
-[ext_resource type="Script" path="res://systems/objectives/objective_manager.gd" id="28_objectives"]
-[ext_resource type="Script" path="res://visualizers/objective_zone_visualizer.gd" id="29_objective_zones"]
-[ext_resource type="Script" path="res://ui/objective_hud.gd" id="30_objective_hud"]
-[ext_resource type="Script" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
+[ext_resource type="Script" uid="uid://yej5une887qc" path="res://presentation/overlays/unit_selection_visualizer.gd" id="20_selection"]
+[ext_resource type="Script" uid="uid://bcta4njlbg1yh" path="res://systems/grid/terrain_feature.gd" id="21_terrain"]
+[ext_resource type="Script" uid="uid://ced0lgt46m7n0" path="res://presentation/overlays/cover_visualizer.gd" id="22_cover"]
+[ext_resource type="Script" uid="uid://cm77kvxtdsqu7" path="res://systems/grid/elevated_surface.gd" id="23_surface"]
+[ext_resource type="Script" uid="uid://bwym8k6sycpcj" path="res://systems/grid/traversal_link.gd" id="24_link"]
+[ext_resource type="Script" uid="uid://bls22btyx61ek" path="res://systems/grid/elevation_path.gd" id="25_elevation_path"]
+[ext_resource type="Script" uid="uid://bf6tknjhck7bu" path="res://ui/debug_tools.gd" id="26_debug_tools"]
+[ext_resource type="Script" uid="uid://2jfkea6p7uoh" path="res://presentation/overlays/shot_trajectory_visualizer.gd" id="27_shot_trajectory"]
+[ext_resource type="Script" uid="uid://c3bchoobjde7d" path="res://systems/objectives/objective_manager.gd" id="28_objectives"]
+[ext_resource type="Script" uid="uid://dtrn5ar0jvj61" path="res://presentation/overlays/objective_zone_visualizer.gd" id="29_objective_zones"]
+[ext_resource type="Script" uid="uid://c8a8mxj62ynma" path="res://ui/objective_hud.gd" id="30_objective_hud"]
+[ext_resource type="Script" uid="uid://dtndlvy51i1x4" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
+[ext_resource type="Script" uid="uid://dw8rxo54ggelm" path="res://presentation/overlays/shot_result_feedback.gd" id="32_shot_result"]
 
 [sub_resource type="Environment" id="Environment_8x357"]
 background_mode = 1
@@ -37,8 +38,6 @@ ambient_light_color = Color(0.72, 0.8, 0.92, 1)
 ambient_light_energy = 0.55
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ebqvm"]
-
-[sub_resource type="Compositor" id="Compositor_ytady"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ebqvm"]
 albedo_color = Color(1, 0, 0.023529412, 1)
@@ -53,8 +52,6 @@ albedo_color = Color(0.12, 0.24, 0.38, 1)
 albedo_color = Color(0.95, 0.7, 0.12, 1)
 
 [sub_resource type="PlaceholderMesh" id="PlaceholderMesh_8x357"]
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ebqvm"]
 
 [node name="BattleLevel" type="Node3D" unique_id=1534168603 node_paths=PackedStringArray("player_spawn_zone", "enemy_spawn_zone", "ally_spawn_zone", "player_units_parent", "allied_units_parent", "enemy_units_parent", "objective_units_parent", "turn_manager", "battle_controller", "objective_manager", "objective_zone_visualizer")]
 script = ExtResource("16_level")
@@ -71,15 +68,15 @@ battle_controller = NodePath("Systems/BattleController")
 objective_manager = NodePath("Systems/ObjectiveManager")
 objective_zone_visualizer = NodePath("Visualizers/ObjectiveZoneVisualizer")
 
-[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("map_floor", "camera", "turn_manager")]
-rotation_degrees = Vector3(-45, 0, 0)
+[node name="CameraRig" type="Node3D" parent="." unique_id=445858828 node_paths=PackedStringArray("map_floor", "camera", "turn_manager")]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0)
 script = ExtResource("15_camera")
 map_floor = NodePath("../Environment/MapFloor")
 camera = NodePath("Camera3D")
 turn_manager = NodePath("../Systems/TurnManager")
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=743300731]
-position = Vector3(0, 0, 42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 42)
 fov = 25.70093
 
 [node name="Systems" type="Node3D" parent="." unique_id=635339450]
@@ -109,14 +106,13 @@ map_floor = NodePath("../../Environment/MapFloor")
 [node name="TurnManager" type="Node" parent="Systems" unique_id=1069557217 groups=["turn_manager"]]
 script = ExtResource("8_butv0")
 
-[node name="ObjectiveManager" type="Node" parent="Systems" groups=["objective_manager"]]
+[node name="ObjectiveManager" type="Node" parent="Systems" unique_id=715340915 groups=["objective_manager"]]
 script = ExtResource("28_objectives")
-
 
 [node name="Environment" type="Node3D" parent="." unique_id=1970157743]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environment" unique_id=18979429]
-rotation_degrees = Vector3(-55, -35, 0)
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
 light_color = Color(1, 0.93, 0.82, 1)
 light_energy = 1.15
 shadow_enabled = true
@@ -124,7 +120,6 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=371801750]
 environment = SubResource("Environment_8x357")
 camera_attributes = SubResource("CameraAttributesPractical_ebqvm")
-compositor = SubResource("Compositor_ytady")
 
 [node name="MapFloor" type="CSGBox3D" parent="Environment" unique_id=584320246]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -140,10 +135,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, 2.5)
 use_collision = true
 material = SubResource("StandardMaterial3D_ebqvm")
 script = ExtResource("21_terrain")
-size = Vector3(1, 1, 1)
 cover_type = 1
 cover_height = 1.0
-blocks_line_of_sight = false
 movement_cost = 2
 
 [node name="WestLowNorth" type="CSGBox3D" parent="Environment/Obstacles" unique_id=928162335]
@@ -166,8 +159,8 @@ cover_type = 1
 cover_height = 1.0
 movement_cost = 2
 
-[node name="EastLowNorth" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(6.5, 0.5, -4.5)
+[node name="EastLowNorth" type="CSGBox3D" parent="Environment/Obstacles" unique_id=667962285]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, -4.5)
 use_collision = true
 size = Vector3(5, 1, 1)
 material = SubResource("StandardMaterial3D_ebqvm")
@@ -176,8 +169,8 @@ cover_type = 1
 cover_height = 1.0
 movement_cost = 2
 
-[node name="EastLowSouth" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(6.5, 0.5, 3.5)
+[node name="EastLowSouth" type="CSGBox3D" parent="Environment/Obstacles" unique_id=54003166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, 3.5)
 use_collision = true
 size = Vector3(5, 1, 1)
 material = SubResource("StandardMaterial3D_ebqvm")
@@ -186,18 +179,17 @@ cover_type = 1
 cover_height = 1.0
 movement_cost = 2
 
-[node name="CentralLowWest" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-2.5, 0.5, 0.5)
+[node name="CentralLowWest" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1760156994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 0.5)
 use_collision = true
-size = Vector3(1, 1, 1)
 material = SubResource("StandardMaterial3D_ebqvm")
 script = ExtResource("21_terrain")
 cover_type = 1
 cover_height = 1.0
 movement_cost = 2
 
-[node name="NorthGateWall" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(0.5, 1, -5.5)
+[node name="NorthGateWall" type="CSGBox3D" parent="Environment/Obstacles" unique_id=68396458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, -5.5)
 use_collision = true
 size = Vector3(1, 2, 7)
 material = SubResource("StandardMaterial3D_full")
@@ -206,8 +198,8 @@ cover_type = 2
 cover_height = 2.0
 blocks_line_of_sight = true
 
-[node name="SouthGateWall" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(0.5, 1, 5.5)
+[node name="SouthGateWall" type="CSGBox3D" parent="Environment/Obstacles" unique_id=528284866]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, 5.5)
 use_collision = true
 size = Vector3(1, 2, 7)
 material = SubResource("StandardMaterial3D_full")
@@ -216,8 +208,8 @@ cover_type = 2
 cover_height = 2.0
 blocks_line_of_sight = true
 
-[node name="WestGatePillar" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-3.5, 1, -1)
+[node name="WestGatePillar" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1139129306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -1)
 use_collision = true
 size = Vector3(1, 2, 2)
 material = SubResource("StandardMaterial3D_full")
@@ -226,8 +218,8 @@ cover_type = 2
 cover_height = 2.0
 blocks_line_of_sight = true
 
-[node name="EastGatePillar" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(4.5, 1, 1)
+[node name="EastGatePillar" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1316293455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1, 1)
 use_collision = true
 size = Vector3(1, 2, 2)
 material = SubResource("StandardMaterial3D_full")
@@ -236,8 +228,78 @@ cover_type = 2
 cover_height = 2.0
 blocks_line_of_sight = true
 
-[node name="NorthwestPlatform" type="CSGBox3D" parent="Environment"]
-position = Vector3(-8, 1, -8.5)
+[node name="WestFlankPillar" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1030082670]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1, 1)
+use_collision = true
+size = Vector3(1, 2, 4)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="EastFlankPillar" type="CSGBox3D" parent="Environment/Obstacles" unique_id=527514438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1, -1)
+use_collision = true
+size = Vector3(1, 2, 4)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="SouthVaultWest" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1721965577]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 8.5)
+use_collision = true
+size = Vector3(6, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="SouthVaultCenter" type="CSGBox3D" parent="Environment/Obstacles" unique_id=2072850733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 9.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="SouthVaultEast" type="CSGBox3D" parent="Environment/Obstacles" unique_id=669263914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.5, 8.5)
+use_collision = true
+size = Vector3(6, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthLowWest" type="CSGBox3D" parent="Environment/Obstacles" unique_id=1555020642]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.5, -10.5)
+use_collision = true
+size = Vector3(4, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthLowEast" type="CSGBox3D" parent="Environment/Obstacles" unique_id=542255850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.5, -10.5)
+use_collision = true
+size = Vector3(4, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthwestPlatform" type="CSGBox3D" parent="Environment" unique_id=97886093]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -8.5)
 use_collision = true
 collision_layer = 3
 collision_mask = 3
@@ -246,43 +308,43 @@ material = SubResource("StandardMaterial3D_platform")
 script = ExtResource("23_surface")
 elevation_level = 2
 
-[node name="NorthwestLadder" type="Node3D" parent="Environment"]
+[node name="NorthwestLadder" type="Node3D" parent="Environment" unique_id=1980801434]
 script = ExtResource("24_link")
 from_cell = Vector3i(7, 0, 6)
 to_cell = Vector3i(7, 2, 5)
 
-[node name="LeftRail" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.8, 1, -5.92)
+[node name="LeftRail" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=1041394031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.8, 1, -5.92)
 size = Vector3(0.08, 2, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="RightRail" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.2, 1, -5.92)
+[node name="RightRail" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=1831913203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 1, -5.92)
 size = Vector3(0.08, 2, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung1" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.5, 0.35, -5.92)
+[node name="Rung1" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=788559276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.35, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung2" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.5, 0.85, -5.92)
+[node name="Rung2" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=1040731306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.85, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung3" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.5, 1.35, -5.92)
+[node name="Rung3" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=87453466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.35, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung4" type="CSGBox3D" parent="Environment/NorthwestLadder"]
-position = Vector3(-8.5, 1.85, -5.92)
+[node name="Rung4" type="CSGBox3D" parent="Environment/NorthwestLadder" unique_id=194829671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.85, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="NortheastPlatform" type="CSGBox3D" parent="Environment"]
-position = Vector3(8, 1, -8.5)
+[node name="NortheastPlatform" type="CSGBox3D" parent="Environment" unique_id=86520186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, -8.5)
 use_collision = true
 collision_layer = 3
 collision_mask = 3
@@ -291,113 +353,43 @@ material = SubResource("StandardMaterial3D_platform")
 script = ExtResource("23_surface")
 elevation_level = 2
 
-[node name="NortheastLadder" type="Node3D" parent="Environment"]
+[node name="NortheastLadder" type="Node3D" parent="Environment" unique_id=1634897913]
 script = ExtResource("24_link")
 from_cell = Vector3i(24, 0, 6)
 to_cell = Vector3i(24, 2, 5)
 
-[node name="LeftRail" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.2, 1, -5.92)
+[node name="LeftRail" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=466604920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.2, 1, -5.92)
 size = Vector3(0.08, 2, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="RightRail" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.8, 1, -5.92)
+[node name="RightRail" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=889449585]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.8, 1, -5.92)
 size = Vector3(0.08, 2, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung1" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.5, 0.35, -5.92)
+[node name="Rung1" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=1654499800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.35, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung2" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.5, 0.85, -5.92)
+[node name="Rung2" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=1741696147]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.85, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung3" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.5, 1.35, -5.92)
+[node name="Rung3" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=1044223588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.35, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung4" type="CSGBox3D" parent="Environment/NortheastLadder"]
-position = Vector3(8.5, 1.85, -5.92)
+[node name="Rung4" type="CSGBox3D" parent="Environment/NortheastLadder" unique_id=901049170]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.85, -5.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="WestFlankPillar" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-10.5, 1, 1)
-use_collision = true
-size = Vector3(1, 2, 4)
-material = SubResource("StandardMaterial3D_full")
-script = ExtResource("21_terrain")
-cover_type = 2
-cover_height = 2.0
-blocks_line_of_sight = true
-
-[node name="EastFlankPillar" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(10.5, 1, -1)
-use_collision = true
-size = Vector3(1, 2, 4)
-material = SubResource("StandardMaterial3D_full")
-script = ExtResource("21_terrain")
-cover_type = 2
-cover_height = 2.0
-blocks_line_of_sight = true
-
-[node name="SouthVaultWest" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-10, 0.5, 8.5)
-use_collision = true
-size = Vector3(6, 1, 1)
-material = SubResource("StandardMaterial3D_ebqvm")
-script = ExtResource("21_terrain")
-cover_type = 1
-cover_height = 1.0
-movement_cost = 2
-
-[node name="SouthVaultCenter" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-2.5, 0.5, 9.5)
-use_collision = true
-size = Vector3(5, 1, 1)
-material = SubResource("StandardMaterial3D_ebqvm")
-script = ExtResource("21_terrain")
-cover_type = 1
-cover_height = 1.0
-movement_cost = 2
-
-[node name="SouthVaultEast" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(6, 0.5, 8.5)
-use_collision = true
-size = Vector3(6, 1, 1)
-material = SubResource("StandardMaterial3D_ebqvm")
-script = ExtResource("21_terrain")
-cover_type = 1
-cover_height = 1.0
-movement_cost = 2
-
-[node name="NorthLowWest" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(-13, 0.5, -10.5)
-use_collision = true
-size = Vector3(4, 1, 1)
-material = SubResource("StandardMaterial3D_ebqvm")
-script = ExtResource("21_terrain")
-cover_type = 1
-cover_height = 1.0
-movement_cost = 2
-
-[node name="NorthLowEast" type="CSGBox3D" parent="Environment/Obstacles"]
-position = Vector3(13, 0.5, -10.5)
-use_collision = true
-size = Vector3(4, 1, 1)
-material = SubResource("StandardMaterial3D_ebqvm")
-script = ExtResource("21_terrain")
-cover_type = 1
-cover_height = 1.0
-movement_cost = 2
-
-[node name="HighPlatform" type="CSGBox3D" parent="Environment"]
-position = Vector3(0, 2, -8.5)
+[node name="HighPlatform" type="CSGBox3D" parent="Environment" unique_id=714100362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -8.5)
 use_collision = true
 collision_layer = 3
 collision_mask = 3
@@ -406,118 +398,110 @@ material = SubResource("StandardMaterial3D_platform")
 script = ExtResource("23_surface")
 elevation_level = 4
 
-[node name="HighPlatformLadder" type="Node3D" parent="Environment"]
+[node name="HighPlatformLadder" type="Node3D" parent="Environment" unique_id=1848003151]
 script = ExtResource("24_link")
 from_cell = Vector3i(16, 0, 0)
 to_cell = Vector3i(16, 4, 1)
 
-[node name="LeftRail" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.2, 2, -11.08)
+[node name="LeftRail" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=1270947139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 2, -11.08)
 size = Vector3(0.08, 4, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="RightRail" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.8, 2, -11.08)
+[node name="RightRail" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=1227309191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2, -11.08)
 size = Vector3(0.08, 4, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung1" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 0.35, -11.08)
+[node name="Rung1" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=908479836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.35, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung2" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 0.85, -11.08)
+[node name="Rung2" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=848252859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.85, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung3" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 1.35, -11.08)
+[node name="Rung3" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=1102389742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.35, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung4" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 1.85, -11.08)
+[node name="Rung4" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=1153945006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.85, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung5" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 2.35, -11.08)
+[node name="Rung5" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=2028161924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 2.35, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung6" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 2.85, -11.08)
+[node name="Rung6" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=1139925095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 2.85, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung7" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 3.35, -11.08)
+[node name="Rung7" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=2110185289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 3.35, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung8" type="CSGBox3D" parent="Environment/HighPlatformLadder"]
-position = Vector3(0.5, 3.85, -11.08)
+[node name="Rung8" type="CSGBox3D" parent="Environment/HighPlatformLadder" unique_id=743422992]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 3.85, -11.08)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="HighPlatformRamp" type="Node3D" parent="Environment"]
+[node name="HighPlatformRamp" type="Node3D" parent="Environment" unique_id=1863001145]
 script = ExtResource("25_elevation_path")
 start_cell = Vector3i(14, 0, 8)
-direction = Vector3i(0, 0, -1)
-step_count = 4
-start_elevation = 1
 
-[node name="RampMesh" type="CSGBox3D" parent="Environment/HighPlatformRamp"]
-position = Vector3(-1.5, 2.5, -5)
-rotation_degrees = Vector3(45, 0, 0)
+[node name="RampMesh" type="CSGBox3D" parent="Environment/HighPlatformRamp" unique_id=1320687392]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, -1.5, 2.5, -5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
 size = Vector3(1, 0.18, 5.65)
 material = SubResource("StandardMaterial3D_platform")
 
-[node name="HighPlatformStairs" type="Node3D" parent="Environment"]
+[node name="HighPlatformStairs" type="Node3D" parent="Environment" unique_id=839402653]
 script = ExtResource("25_elevation_path")
 start_cell = Vector3i(18, 0, 8)
-direction = Vector3i(0, 0, -1)
-step_count = 4
-start_elevation = 1
 
-[node name="Step1" type="CSGBox3D" parent="Environment/HighPlatformStairs"]
-position = Vector3(2.5, 0.5, -3.5)
+[node name="Step1" type="CSGBox3D" parent="Environment/HighPlatformStairs" unique_id=1156316725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, -3.5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
-size = Vector3(1, 1, 1)
 material = SubResource("StandardMaterial3D_platform")
 
-[node name="Step2" type="CSGBox3D" parent="Environment/HighPlatformStairs"]
-position = Vector3(2.5, 1, -4.5)
+[node name="Step2" type="CSGBox3D" parent="Environment/HighPlatformStairs" unique_id=886290764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1, -4.5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
 size = Vector3(1, 2, 1)
 material = SubResource("StandardMaterial3D_platform")
 
-[node name="Step3" type="CSGBox3D" parent="Environment/HighPlatformStairs"]
-position = Vector3(2.5, 1.5, -5.5)
+[node name="Step3" type="CSGBox3D" parent="Environment/HighPlatformStairs" unique_id=969931842]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.5, -5.5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
 size = Vector3(1, 3, 1)
 material = SubResource("StandardMaterial3D_platform")
 
-[node name="Step4" type="CSGBox3D" parent="Environment/HighPlatformStairs"]
-position = Vector3(2.5, 2, -6.5)
+[node name="Step4" type="CSGBox3D" parent="Environment/HighPlatformStairs" unique_id=2081209011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 2, -6.5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
 size = Vector3(1, 4, 1)
 material = SubResource("StandardMaterial3D_platform")
 
-[node name="NorthwestUpperDeck" type="CSGBox3D" parent="Environment"]
-position = Vector3(-8, 4.85, -8.5)
+[node name="NorthwestUpperDeck" type="CSGBox3D" parent="Environment" unique_id=585558150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 4.85, -8.5)
 use_collision = true
 collision_layer = 2
 collision_mask = 2
@@ -527,48 +511,48 @@ script = ExtResource("23_surface")
 elevation_level = 5
 blocks_ground = false
 
-[node name="UpperDeckLadder" type="Node3D" parent="Environment"]
+[node name="UpperDeckLadder" type="Node3D" parent="Environment" unique_id=595838170]
 script = ExtResource("24_link")
 from_cell = Vector3i(7, 2, 5)
 to_cell = Vector3i(7, 5, 4)
 
-[node name="LeftRail" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.8, 3.5, -6.92)
+[node name="LeftRail" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=1593439955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.8, 3.5, -6.92)
 size = Vector3(0.08, 3, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="RightRail" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.2, 3.5, -6.92)
+[node name="RightRail" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=965322018]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 3.5, -6.92)
 size = Vector3(0.08, 3, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung1" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 2.35, -6.92)
+[node name="Rung1" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=483468376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 2.35, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung2" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 2.85, -6.92)
+[node name="Rung2" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=1845896940]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 2.85, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung3" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 3.35, -6.92)
+[node name="Rung3" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=74662308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 3.35, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung4" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 3.85, -6.92)
+[node name="Rung4" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=2089628291]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 3.85, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung5" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 4.35, -6.92)
+[node name="Rung5" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=53500734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.35, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Rung6" type="CSGBox3D" parent="Environment/UpperDeckLadder"]
-position = Vector3(-8.5, 4.85, -6.92)
+[node name="Rung6" type="CSGBox3D" parent="Environment/UpperDeckLadder" unique_id=343310590]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.85, -6.92)
 size = Vector3(0.68, 0.08, 0.08)
 material = SubResource("StandardMaterial3D_ladder")
 
@@ -578,68 +562,68 @@ material = SubResource("StandardMaterial3D_ladder")
 
 [node name="EnemyUnits" type="Node3D" parent="Units" unique_id=1196483931]
 
-[node name="AlliedUnits" type="Node3D" parent="Units"]
+[node name="AlliedUnits" type="Node3D" parent="Units" unique_id=1697856806]
 
-[node name="ObjectiveUnits" type="Node3D" parent="Units"]
+[node name="ObjectiveUnits" type="Node3D" parent="Units" unique_id=660629521]
 
-[node name="SpawnZones" type="Node3D" parent="."]
+[node name="SpawnZones" type="Node3D" parent="." unique_id=101480334]
 
-[node name="PlayerSpawnZone" type="Node3D" parent="SpawnZones"]
+[node name="PlayerSpawnZone" type="Node3D" parent="SpawnZones" unique_id=905509298]
 script = ExtResource("17_zone")
 faction = 0
 
-[node name="Point1" type="Marker3D" parent="SpawnZones/PlayerSpawnZone"]
-position = Vector3(-14.5, 1, -3.5)
+[node name="Point1" type="Marker3D" parent="SpawnZones/PlayerSpawnZone" unique_id=401961414]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.5, 1, -3.5)
 
-[node name="Point2" type="Marker3D" parent="SpawnZones/PlayerSpawnZone"]
-position = Vector3(-14.5, 1, -1.5)
+[node name="Point2" type="Marker3D" parent="SpawnZones/PlayerSpawnZone" unique_id=324018380]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.5, 1, -1.5)
 
-[node name="Point3" type="Marker3D" parent="SpawnZones/PlayerSpawnZone"]
-position = Vector3(-14.5, 1, 0.5)
+[node name="Point3" type="Marker3D" parent="SpawnZones/PlayerSpawnZone" unique_id=1619511065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.5, 1, 0.5)
 
-[node name="Point4" type="Marker3D" parent="SpawnZones/PlayerSpawnZone"]
-position = Vector3(-12.5, 1, 2.5)
+[node name="Point4" type="Marker3D" parent="SpawnZones/PlayerSpawnZone" unique_id=1067680574]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 1, 2.5)
 
-[node name="Point5" type="Marker3D" parent="SpawnZones/PlayerSpawnZone"]
-position = Vector3(-12.5, 1, 4.5)
+[node name="Point5" type="Marker3D" parent="SpawnZones/PlayerSpawnZone" unique_id=1411903413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 1, 4.5)
 
-[node name="EnemySpawnZone" type="Node3D" parent="SpawnZones"]
+[node name="EnemySpawnZone" type="Node3D" parent="SpawnZones" unique_id=473279731]
 script = ExtResource("17_zone")
 faction = 1
 
-[node name="Point1" type="Marker3D" parent="SpawnZones/EnemySpawnZone"]
-position = Vector3(14.5, 1, 3.5)
+[node name="Point1" type="Marker3D" parent="SpawnZones/EnemySpawnZone" unique_id=53599809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 1, 3.5)
 
-[node name="Point2" type="Marker3D" parent="SpawnZones/EnemySpawnZone"]
-position = Vector3(14.5, 1, 1.5)
+[node name="Point2" type="Marker3D" parent="SpawnZones/EnemySpawnZone" unique_id=1690625754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 1, 1.5)
 
-[node name="Point3" type="Marker3D" parent="SpawnZones/EnemySpawnZone"]
-position = Vector3(14.5, 1, -0.5)
+[node name="Point3" type="Marker3D" parent="SpawnZones/EnemySpawnZone" unique_id=577204390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 1, -0.5)
 
-[node name="Point4" type="Marker3D" parent="SpawnZones/EnemySpawnZone"]
-position = Vector3(12.5, 1, -2.5)
+[node name="Point4" type="Marker3D" parent="SpawnZones/EnemySpawnZone" unique_id=207262562]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 1, -2.5)
 
-[node name="Point5" type="Marker3D" parent="SpawnZones/EnemySpawnZone"]
-position = Vector3(12.5, 1, -4.5)
+[node name="Point5" type="Marker3D" parent="SpawnZones/EnemySpawnZone" unique_id=292855535]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 1, -4.5)
 
-[node name="AllySpawnZone" type="Node3D" parent="SpawnZones"]
+[node name="AllySpawnZone" type="Node3D" parent="SpawnZones" unique_id=382657118]
 script = ExtResource("17_zone")
 faction = 2
 
-[node name="Point1" type="Marker3D" parent="SpawnZones/AllySpawnZone"]
-position = Vector3(-13.5, 1, -4.5)
+[node name="Point1" type="Marker3D" parent="SpawnZones/AllySpawnZone" unique_id=526555546]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, -4.5)
 
-[node name="Point2" type="Marker3D" parent="SpawnZones/AllySpawnZone"]
-position = Vector3(-13.5, 1, -2.5)
+[node name="Point2" type="Marker3D" parent="SpawnZones/AllySpawnZone" unique_id=651675396]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, -2.5)
 
-[node name="Point3" type="Marker3D" parent="SpawnZones/AllySpawnZone"]
-position = Vector3(-13.5, 1, -0.5)
+[node name="Point3" type="Marker3D" parent="SpawnZones/AllySpawnZone" unique_id=468821850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, -0.5)
 
-[node name="Point4" type="Marker3D" parent="SpawnZones/AllySpawnZone"]
-position = Vector3(-13.5, 1, 1.5)
+[node name="Point4" type="Marker3D" parent="SpawnZones/AllySpawnZone" unique_id=1705089375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, 1.5)
 
-[node name="Point5" type="Marker3D" parent="SpawnZones/AllySpawnZone"]
-position = Vector3(-13.5, 1, 3.5)
+[node name="Point5" type="Marker3D" parent="SpawnZones/AllySpawnZone" unique_id=926564327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, 3.5)
 
 [node name="Visualizers" type="Node3D" parent="." unique_id=1615445199]
 
@@ -649,9 +633,8 @@ mesh = SubResource("PlaceholderMesh_8x357")
 script = ExtResource("4_q85eh")
 target_floor = NodePath("../../Environment/MapFloor")
 
-[node name="GridCursor" type="Decal" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager")]
+[node name="GridCursor" type="MeshInstance3D" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager")]
 layers = 2
-texture_albedo = SubResource("CompressedTexture2D_ebqvm")
 script = ExtResource("5_q85eh")
 grid_manager = NodePath("../../Systems/GridManager")
 highlight_color = Color(0.9999594, 0.122358926, 0.10734794, 0.8)
@@ -660,19 +643,24 @@ highlight_color = Color(0.9999594, 0.122358926, 0.10734794, 0.8)
 script = ExtResource("6_8rqs0")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="CoverVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+[node name="CoverVisualizer" type="Node3D" parent="Visualizers" unique_id=1588388241 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("22_cover")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="ObjectiveZoneVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+[node name="ObjectiveZoneVisualizer" type="Node3D" parent="Visualizers" unique_id=1703581440 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("29_objective_zones")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="ShotTrajectoryVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+[node name="ShotTrajectoryVisualizer" type="Node3D" parent="Visualizers" unique_id=1439917441 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("27_shot_trajectory")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="UnitSelectionVisualizer" type="Node" parent="Visualizers" node_paths=PackedStringArray("turn_manager", "battle_controller")]
+[node name="ShotResultFeedback" type="Node3D" parent="Visualizers" unique_id=796711139 node_paths=PackedStringArray("battle_controller", "ui_layer")]
+script = ExtResource("32_shot_result")
+battle_controller = NodePath("../../Systems/BattleController")
+ui_layer = NodePath("../BattleUI")
+
+[node name="UnitSelectionVisualizer" type="Node" parent="Visualizers" unique_id=450518144 node_paths=PackedStringArray("turn_manager", "battle_controller")]
 script = ExtResource("20_selection")
 turn_manager = NodePath("../../Systems/TurnManager")
 battle_controller = NodePath("../../Systems/BattleController")
@@ -717,7 +705,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "defend_button")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "end_unit_button")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -726,7 +714,7 @@ script = ExtResource("13_q7tb2")
 battle_controller = NodePath("../../../Systems/BattleController")
 move_button = NodePath("ActionBar/MoveButton")
 attack_button = NodePath("ActionBar/AttackButton")
-defend_button = NodePath("ActionBar/DefendButton")
+end_unit_button = NodePath("ActionBar/EndUnitButton")
 
 [node name="ActionBar" type="HBoxContainer" parent="Visualizers/BattleUI/ActionHUDController" unique_id=1879535380]
 layout_mode = 0
@@ -743,11 +731,11 @@ text = "Move"
 layout_mode = 2
 text = "Attack"
 
-[node name="DefendButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
+[node name="EndUnitButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
 layout_mode = 2
-text = "Defend"
+text = "Skip"
 
-[node name="ObjectiveHUD" type="VBoxContainer" parent="Visualizers/BattleUI" node_paths=PackedStringArray("objective_manager", "objective_label", "end_mission_button")]
+[node name="ObjectiveHUD" type="VBoxContainer" parent="Visualizers/BattleUI" unique_id=2811396 node_paths=PackedStringArray("objective_manager", "objective_label", "end_mission_button")]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -761,21 +749,22 @@ objective_manager = NodePath("../../../Systems/ObjectiveManager")
 objective_label = NodePath("ObjectiveLabel")
 end_mission_button = NodePath("EndMissionButton")
 
-[node name="ObjectiveLabel" type="Label" parent="Visualizers/BattleUI/ObjectiveHUD"]
+[node name="ObjectiveLabel" type="Label" parent="Visualizers/BattleUI/ObjectiveHUD" unique_id=991930085]
 layout_mode = 2
-text = "OBJECTIVE: NONE"
-horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.85, 0.75, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
+text = "OBJECTIVE: NONE"
+horizontal_alignment = 2
 
-[node name="EndMissionButton" type="Button" parent="Visualizers/BattleUI/ObjectiveHUD"]
+[node name="EndMissionButton" type="Button" parent="Visualizers/BattleUI/ObjectiveHUD" unique_id=1141929480]
+visible = false
 layout_mode = 2
 text = "END MISSION — LEAVE OTHERS BEHIND"
-visible = false
 
-[node name="UnitPortraitBar" type="Control" parent="Visualizers/BattleUI" node_paths=PackedStringArray("turn_manager", "battle_controller", "portraits_container")]
+[node name="UnitPortraitBar" type="Control" parent="Visualizers/BattleUI" unique_id=887133846 node_paths=PackedStringArray("turn_manager", "battle_controller", "portraits_container")]
+visible = false
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
@@ -794,7 +783,7 @@ battle_controller = NodePath("../../../Systems/BattleController")
 portraits_container = NodePath("Panel/Margin/Portraits")
 portrait_scene = ExtResource("19_portrait")
 
-[node name="Panel" type="PanelContainer" parent="Visualizers/BattleUI/UnitPortraitBar"]
+[node name="Panel" type="PanelContainer" parent="Visualizers/BattleUI/UnitPortraitBar" unique_id=928803108]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -802,19 +791,19 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="Visualizers/BattleUI/UnitPortraitBar/Panel"]
+[node name="Margin" type="MarginContainer" parent="Visualizers/BattleUI/UnitPortraitBar/Panel" unique_id=246463233]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 4
 
-[node name="Portraits" type="HBoxContainer" parent="Visualizers/BattleUI/UnitPortraitBar/Panel/Margin"]
+[node name="Portraits" type="HBoxContainer" parent="Visualizers/BattleUI/UnitPortraitBar/Panel/Margin" unique_id=748511100]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager")]
+[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" unique_id=60364855 node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager", "presentation_root")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -826,8 +815,9 @@ script = ExtResource("26_debug_tools")
 battle_controller = NodePath("../../../Systems/BattleController")
 turn_manager = NodePath("../../../Systems/TurnManager")
 grid_manager = NodePath("../../../Systems/GridManager")
+presentation_root = NodePath("../..")
 
-[node name="BattlePauseMenu" type="Control" parent="Visualizers/BattleUI" node_paths=PackedStringArray("debug_tools")]
+[node name="BattlePauseMenu" type="Control" parent="Visualizers/BattleUI" unique_id=1956238595 node_paths=PackedStringArray("debug_tools")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

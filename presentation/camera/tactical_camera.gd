@@ -1,19 +1,24 @@
 class_name TacticalCamera
 extends Node3D
 
+@export_group("References")
 @export var map_floor: CSGBox3D
 @export var camera: Camera3D
-@export var pan_speed: float = 12.0
-@export var edge_margin: float = 36.0
-@export var outside_edge_tolerance: float = 72.0
-@export var map_margin: float = 2.0
-@export var rotation_speed: float = 90.0
-@export var drag_sensitivity: float = 0.3
-@export var min_zoom: float = 4.0
-@export var max_zoom: float = 56.0
-@export var zoom_step: float = 3.0
 @export var turn_manager: TurnManager
-@export var height_follow_speed: float = 8.0
+@export_group("Pan & Rotate")
+@export_range(1.0, 50.0, 0.5, "suffix:m/s") var pan_speed: float = 12.0
+@export_range(0.0, 200.0, 1.0, "suffix:px") var edge_margin: float = 36.0
+@export_range(0.0, 300.0, 1.0, "suffix:px") var outside_edge_tolerance: float = 72.0
+@export_range(0.0, 20.0, 0.1, "suffix:m") var map_margin: float = 2.0
+@export_range(10.0, 360.0, 1.0, "suffix:°/s") var rotation_speed: float = 90.0
+@export_range(0.01, 2.0, 0.01) var drag_sensitivity: float = 0.3
+@export_group("Zoom")
+@export_range(1.0, 80.0, 0.5, "suffix:m") var min_zoom: float = 4.0
+@export_range(1.0, 120.0, 0.5, "suffix:m") var max_zoom: float = 56.0
+@export_range(0.1, 12.0, 0.1, "suffix:m") var zoom_step: float = 3.0
+@export_group("Height Follow")
+@export_range(0.1, 30.0, 0.1) var height_follow_speed: float = 8.0
+@export_group("")
 
 var _transitioning := false
 var _transition_tween: Tween

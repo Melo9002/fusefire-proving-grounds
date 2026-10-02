@@ -2,7 +2,7 @@ class_name ObjectiveManager
 extends Node
 
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
-const RescueActionData = preload("res://scripts/actions/rescue_action.gd")
+const RescueActionData = preload("res://systems/actions/rescue_action.gd")
 
 signal mission_loaded(mission: MissionDefinition)
 signal objective_progress_changed(state: MissionObjectiveState)
@@ -165,6 +165,8 @@ func should_seek_extraction(unit: TacticalUnit) -> bool:
 	return mission.mission_id != &"prototype_survive" or get_objective(&"survive").is_completed()
 
 func try_extract(unit: TacticalUnit) -> bool:
+	if get_tree().paused:
+		return false
 	if _battle_controller and _battle_controller.is_action_in_progress:
 		return false
 	if not can_extract(unit):
@@ -178,7 +180,7 @@ func try_extract(unit: TacticalUnit) -> bool:
 		camera_presented = await _battle_controller.action_camera_director.present(unit, &"extract", unit.global_position + facing * 3.0, unit.stats.current_ap, true)
 	if unit.visual_adapter:
 		unit.visual_adapter.present_boarding()
-		await get_tree().create_timer(0.6).timeout
+		await get_tree().create_timer(0.6, false).timeout
 	var succeeded := ExtractAction.new(unit, self).execute()
 	if succeeded and _battle_controller:
 		_battle_controller.record_replay_action("extract", unit)
@@ -201,6 +203,8 @@ func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	return CombatRules.can_reach_adjacent(_grid_manager.get_unit_grid(rescuer), _grid_manager.get_unit_grid(target), _grid_manager)
 
 func try_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
+	if get_tree().paused:
+		return false
 	var target_name := String(target.name) if is_instance_valid(target) else ""
 	if not can_rescue(rescuer, target):
 		return false
@@ -212,7 +216,7 @@ func try_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	if succeeded and _battle_controller:
 		_battle_controller.record_replay_action("rescue", rescuer, {"target": target_name})
 	if camera_presented:
-		await get_tree().create_timer(0.3).timeout
+		await get_tree().create_timer(0.3, false).timeout
 		await _battle_controller.action_camera_director.finish_live_presentation(true)
 	if _battle_controller:
 		_battle_controller.is_action_in_progress = false
@@ -276,6 +280,8 @@ func get_units_left_behind() -> int:
 	return _turn_manager.player_units.size() + _turn_manager.allied_units.size() if _turn_manager else 0
 
 func end_mission_early() -> bool:
+	if get_tree().paused:
+		return false
 	if not can_end_mission_early(): return false
 	if _battle_controller and _battle_controller.is_action_in_progress: return false
 	# Departure stores its pre-action fingerprint; playback validates it before
@@ -367,6 +373,8 @@ func _complete_state(state: MissionObjectiveState) -> void:
 	_evaluate_outcome.call_deferred()
 
 func _evaluate_outcome() -> void:
+	if get_tree().paused:
+		await get_tree().create_timer(0.0, false).timeout
 	if not _turn_manager or _turn_manager.battle_result != TurnManager.BattleResult.ONGOING: return
 	if has_required_objective_failed():
 		_turn_manager.finish_battle(TurnManager.BattleResult.DEFEAT)

@@ -5,6 +5,8 @@ var round_number := -1
 var reserved_destinations: Dictionary = {}
 var intended_targets: Dictionary[StringName, int] = {}
 var objective_handlers: Dictionary[StringName, Array] = {}
+var reserved_corridor: Dictionary = {}
+var corridor_owner: StringName = &""
 var _actor_destinations: Dictionary[StringName, Vector3i] = {}
 var _actor_targets: Dictionary[StringName, StringName] = {}
 var _actor_objectives: Dictionary[StringName, StringName] = {}
@@ -16,6 +18,8 @@ func begin_round(current_round: int) -> void:
 	reserved_destinations.clear()
 	intended_targets.clear()
 	objective_handlers.clear()
+	reserved_corridor.clear()
+	corridor_owner = &""
 	_actor_destinations.clear()
 	_actor_targets.clear()
 	_actor_objectives.clear()
@@ -42,6 +46,8 @@ func reserve_destination(actor: TacticalUnit, cell: Vector3i) -> void:
 	_actor_destinations[actor_id] = cell
 
 func destination_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
+	if reserved_corridor.has(cell) and corridor_owner != StringName(actor.name):
+		return -1000.0
 	if reserved_destinations.has(cell) and reserved_destinations[cell] != StringName(actor.name):
 		return -1000.0
 	var adjustment := 0.0
@@ -49,6 +55,13 @@ func destination_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
 		if reserved_destinations[reserved_cell] != StringName(actor.name) and cell.distance_to(reserved_cell) <= 1.0:
 			adjustment -= 12.0
 	return adjustment
+
+func reserve_corridor(actor: TacticalUnit, cells: Dictionary) -> void:
+	reserved_corridor = cells.duplicate()
+	corridor_owner = StringName(actor.name)
+
+func is_reserved_for_other(actor: TacticalUnit, cell: Vector3i) -> bool:
+	return reserved_corridor.has(cell) and corridor_owner != StringName(actor.name)
 
 func reserve_target(actor: TacticalUnit, target: TacticalUnit) -> void:
 	var actor_id := StringName(actor.name)

@@ -2,7 +2,7 @@ extends Node3D
 class_name BattleController
 
 const SquadContextData = preload("res://systems/ai/squad_context.gd")
-const ActionCameraDirectorData = preload("res://systems/camera/action_camera_director.gd")
+const ActionCameraDirectorData = preload("res://presentation/camera/action_camera_director.gd")
 
 signal move_mode_toggled(is_active: bool)
 signal attack_mode_toggled(is_active: bool)
@@ -88,7 +88,7 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 		pathfinder.clear()
 		MapBuilder.build(grid_manager, pathfinder)
 		# Let CSG collision bodies enter the physics world before scanning.
-		await get_tree().create_timer(0.05).timeout
+		await get_tree().create_timer(0.05, false).timeout
 		MapBuilder.scan_obstacles(get_world_3d(), grid_manager, pathfinder)
 	MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
 	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
@@ -337,11 +337,11 @@ func get_squad_context(unit: TacticalUnit) -> SquadContext:
 	context.begin_round(turn_manager.current_round)
 	return context
 
-func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = []) -> void:
+func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = [], context: Dictionary = {}) -> void:
 	var actor_name := "Unknown"
 	if is_instance_valid(actor):
 		actor_name = String(actor.name)
-	ai_decision_recorded.emit({
+	var record := {
 		"actor": actor_name,
 		"action": action,
 		"subject": subject,
@@ -354,9 +354,13 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 		"position_candidates": position_candidates.duplicate(true),
 		"target_candidates": target_candidates.duplicate(true),
 		"difficulty": AIDifficultyPolicy.get_label(ai_difficulty),
-	})
+	}
+	record.merge(context, true)
+	ai_decision_recorded.emit(record)
 
 func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
+	if get_tree().paused:
+		return false
 	if is_action_in_progress or not turn_manager.can_unit_act(attacker):
 		return false
 	var evaluation = evaluate_attack(attacker, target)
@@ -390,12 +394,15 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	is_attack_mode_active = false
 	is_move_mode_active = false
 	if camera_presented:
-		await get_tree().create_timer(0.42).timeout
+		await get_tree().create_timer(0.42, false).timeout
 		await action_camera_director.finish_live_presentation(true)
 	is_action_in_progress = false
 	return true
 
 func try_defend(unit: TacticalUnit) -> bool:
+	# Legacy replay compatibility. Prototype 1 gameplay uses try_end_unit_turn().
+	if get_tree().paused:
+		return false
 	if is_action_in_progress or not turn_manager.can_unit_act(unit):
 		return false
 	var action = DefendAction.new(unit, UNIFORM_AP_COST)
@@ -413,12 +420,31 @@ func try_defend(unit: TacticalUnit) -> bool:
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	if camera_presented:
-		await get_tree().create_timer(0.25).timeout
+		await get_tree().create_timer(0.25, false).timeout
 		await action_camera_director.finish_live_presentation(true)
 	is_action_in_progress = false
 	return true
 
+func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available.") -> bool:
+	if get_tree().paused:
+		return false
+	if is_action_in_progress or not turn_manager.can_unit_act(unit):
+		return false
+	if not unit.stats or unit.stats.current_ap <= 0:
+		return false
+	is_action_in_progress = true
+	var spent_ap := unit.stats.current_ap
+	unit.stats.current_ap = 0
+	record_replay_action("wait", unit, {"reason": reason, "spent_ap": spent_ap})
+	is_move_mode_active = false
+	is_attack_mode_active = false
+	print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, reason])
+	is_action_in_progress = false
+	return true
+
 func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
+	if get_tree().paused:
+		return false
 	if is_action_in_progress or not turn_manager.can_unit_act(unit):
 		return false
 	var movement_budget = unit.stats.speed if unit.stats else 0

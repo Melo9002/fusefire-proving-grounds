@@ -1,7 +1,13 @@
-extends "res://art/characters/vroid_proof/demo/vroid_weapon_ik_demo.gd"
+extends "res://art/characters/vroid_proof/runtime/character_rig.gd"
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
+
+const TeamPaletteData := preload("res://presentation/team_presentation_palette.gd")
+
+@export_group("Team Presentation")
+## Shared faction colors and ground-ring appearance.
+@export var team_palette: TeamPaletteData = preload("res://presentation/team_presentation_palette.tres")
 
 @export_group("Camera Anchors")
 @export var camera_focus_anchor := Vector3(0.0, 1.05, 0.0)
@@ -12,6 +18,16 @@ signal presentation_state_changed(state_name: StringName)
 @export_range(90.0, 1080.0) var turn_speed_degrees := 360.0
 ## Metres travelled per full left/right step cycle. Tune alongside the move clip.
 @export_range(0.5, 4.0) var stride_length := 1.6
+@export_group("Action Timing")
+## Delay before pickup returns to the appropriate idle pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var pickup_return_seconds := 0.6
+## Delay before traversal landing returns to locomotion or idle.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var landing_return_seconds := 0.3
+## Delay before a shot returns to the appropriate ready pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var shoot_return_seconds := 0.34
+## Delay before hit reaction returns to the appropriate ready pose.
+@export_range(0.0, 3.0, 0.01, "suffix:s") var hit_return_seconds := 0.58
+@export_group("")
 
 func get_camera_focus() -> Vector3:
 	return to_global(camera_focus_anchor)
@@ -38,7 +54,7 @@ func present_pickup() -> void:
 		character_root.add_child(_passenger)
 		_passenger.position = passenger_position
 	_play(&"pickup")
-	_return_to_idle_after(0.6)
+	_return_to_idle_after(pickup_return_seconds)
 
 func present_boarding() -> void:
 	_return_generation += 1
@@ -54,22 +70,17 @@ const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 var _return_generation := 0
 var _team_accent: MeshInstance3D
 
-const PLAYER_ACCENT := Color(0.05, 0.65, 1.0, 1.0)
-const ALLY_ACCENT := Color(0.2, 1.0, 0.35, 1.0)
-const ENEMY_ACCENT := Color(1.0, 0.12, 0.08, 1.0)
-const NEUTRAL_ACCENT := Color(0.85, 0.85, 0.85, 1.0)
-
 func _ready() -> void:
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
 	_build_animation_controller()
 	_build_team_accent()
-	skeleton.skeleton_updated.connect(_align_weapon_to_demo_aim)
+	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_align_weapon_to_demo_aim()
+	_align_weapon_to_aim()
 
 func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit
@@ -80,12 +91,12 @@ func _build_team_accent() -> void:
 	_team_accent = MeshInstance3D.new()
 	_team_accent.name = "TeamAccentRing"
 	var ring := TorusMesh.new()
-	ring.inner_radius = 0.31
-	ring.outer_radius = 0.37
-	ring.rings = 12
-	ring.ring_segments = 24
+	ring.inner_radius = team_palette.inner_radius
+	ring.outer_radius = team_palette.outer_radius
+	ring.rings = team_palette.radial_segments
+	ring.ring_segments = team_palette.ring_segments
 	_team_accent.mesh = ring
-	_team_accent.position = Vector3(0.0, 0.025, 0.0)
+	_team_accent.position = Vector3(0.0, team_palette.height, 0.0)
 	_team_accent.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_team_accent)
 	_apply_team_accent()
@@ -93,25 +104,25 @@ func _build_team_accent() -> void:
 func _apply_team_accent() -> void:
 	if not is_instance_valid(_team_accent):
 		return
-	var accent := NEUTRAL_ACCENT
+	var accent: Color = team_palette.neutral
 	if is_instance_valid(tactical_unit):
 		match tactical_unit.faction:
-			TacticalUnit.Faction.PLAYER: accent = PLAYER_ACCENT
-			TacticalUnit.Faction.ALLY: accent = ALLY_ACCENT
-			TacticalUnit.Faction.ENEMY: accent = ENEMY_ACCENT
+			TacticalUnit.Faction.PLAYER: accent = team_palette.player
+			TacticalUnit.Faction.ALLY: accent = team_palette.ally
+			TacticalUnit.Faction.ENEMY: accent = team_palette.enemy
 	var material := StandardMaterial3D.new()
 	material.albedo_color = accent
 	material.emission_enabled = true
 	material.emission = accent
-	material.emission_energy_multiplier = 2.2
+	material.emission_energy_multiplier = team_palette.emission_energy
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_team_accent.material_override = material
 
 func _exit_tree() -> void:
 	# Skeleton modifiers can emit once more while their hierarchy is being
 	# removed. Disconnect before descendants lose legal global transforms.
-	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_demo_aim):
-		skeleton.skeleton_updated.disconnect(_align_weapon_to_demo_aim)
+	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
+		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
 
 func present_move() -> void:
 	_return_generation += 1
@@ -126,14 +137,14 @@ func present_path_segment(state_name: StringName) -> void:
 	_return_generation += 1
 	if was_traversing and state_name == &"move":
 		_play(&"land")
-		_return_to_idle_after(0.3)
+		_return_to_idle_after(landing_return_seconds)
 	else:
 		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
 
 func present_movement_end() -> void:
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
-		_return_to_idle_after(0.3)
+		_return_to_idle_after(landing_return_seconds)
 	else:
 		present_idle()
 
@@ -171,11 +182,11 @@ func present_attack(target_world_position: Vector3) -> void:
 		# Visual lean only; the combat evaluator has already resolved the shot.
 		shot = &"shoot_left" if global_basis.x.dot(cover.direction) >= 0.0 else &"shoot_right"
 	_play(shot)
-	_return_to_idle_after(0.34)
+	_return_to_idle_after(shoot_return_seconds)
 
 func present_hit() -> void:
 	_play(&"hit")
-	_return_to_idle_after(0.58)
+	_return_to_idle_after(hit_return_seconds)
 
 func present_defeat() -> void:
 	_return_generation += 1
@@ -201,9 +212,9 @@ func _update_weapon_pose() -> void:
 	if _carrying(): return
 	super._update_weapon_pose()
 
-func _align_weapon_to_demo_aim() -> void:
+func _align_weapon_to_aim() -> void:
 	if _carrying(): return
-	super._align_weapon_to_demo_aim()
+	super._align_weapon_to_aim()
 
 func _play(state_name: StringName) -> void:
 	if is_instance_valid(animation_controller):
@@ -212,7 +223,7 @@ func _play(state_name: StringName) -> void:
 func _return_to_idle_after(seconds: float) -> void:
 	_return_generation += 1
 	var generation := _return_generation
-	await get_tree().create_timer(seconds).timeout
+	await get_tree().create_timer(seconds, false).timeout
 	if generation != _return_generation:
 		return
 	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:

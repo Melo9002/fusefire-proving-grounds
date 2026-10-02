@@ -18,6 +18,9 @@ func _run() -> void:
 	await create_timer(0.25).timeout
 	level.battle_controller.ai_decision_recorded.connect(_capture_scored_record)
 	var debug_tools := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
+	debug_tools.set_panel_open(true)
+	check(debug_tools._seed_label.text.contains("MATCH SEED: 24104") and debug_tools._seed_label.text.contains("GENERATED_COVER (24104)"), "F3 preserves generated match and map seeds")
+	debug_tools.set_panel_open(false)
 	debug_tools.set_auto_battle(true)
 	for tick in 140:
 		if not scored_record.is_empty():
@@ -37,7 +40,13 @@ func _run() -> void:
 		debug_tools._set_ai_scoring_visible(true)
 		debug_tools._ai_scoring_overlay.display(scored_record)
 		await process_frame
-		check(debug_tools._ai_scoring_overlay._score_labels.get_child_count() == legal.size(), "Overlay displays one numeric label per legal movement tile")
+		check(debug_tools._ai_scoring_overlay._position_mesh.mesh != null, "Overlay displays movement scores as a tile heatmap")
+		check(debug_tools._ai_scoring_overlay._score_labels.get_child_count() == 0, "Heatmap defaults to an uncluttered board without numeric world labels")
+		debug_tools._ai_scoring_overlay.show_numeric_labels = true
+		debug_tools._ai_scoring_overlay.display(scored_record)
+		await process_frame
+		check(debug_tools._ai_scoring_overlay._score_labels.get_child_count() == mini(legal.size(), debug_tools._ai_scoring_overlay.max_score_labels), "Overlay limits numeric labels to a readable top-candidate set")
+		check(debug_tools._ai_scoring_overlay._score_labels.get_children().any(func(label: Label3D): return label.modulate == Color(0.15, 1.0, 1.0)), "Optional numeric mode keeps the chosen movement tile labelled")
 		check(debug_tools._ai_scoring_label.text.contains("CHOSEN") and debug_tools._ai_scoring_label.text.contains("Movement:"), "F3 details identify the chosen plan and movement totals")
 	print("AI scoring overlay smoke: %d failure(s)" % failures)
 	level.queue_free()

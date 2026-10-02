@@ -1,6 +1,8 @@
 class_name MatchSetup
 extends Control
 
+const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
 @export var ally_count: SpinBox
@@ -17,6 +19,8 @@ var difficulty_option: OptionButton
 var deployment_summary: Label
 var compatibility_toggle: CheckButton
 var compatibility_status: Label
+var randomize_seed_button: Button
+var copy_seed_button: Button
 var _seed_rng := RandomNumberGenerator.new()
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
@@ -25,9 +29,10 @@ const COMPATIBILITY_KEY := "compatibility_mode"
 const RESTART_MARKER := "--fusefire-renderer-restart"
 
 func _ready() -> void:
-	_build_vip_setup()
 	_build_objective_setup()
+	_build_vip_setup()
 	_build_compatibility_setup()
+	_build_seed_actions()
 	_build_deployment_summary()
 	_seed_rng.randomize()
 	_prepare_new_seed()
@@ -44,6 +49,7 @@ func _ready() -> void:
 	ally_count.value_changed.connect(_update_summary)
 	generated_map_toggle.toggled.connect(_on_generation_toggled)
 	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	auto_seed_toggle.toggled.connect(_on_auto_seed_toggled)
 	seed_input.value_changed.connect(_update_summary)
 	_refresh_seed_controls()
@@ -63,9 +69,7 @@ func _build_compatibility_setup() -> void:
 	compatibility_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(compatibility_toggle)
 	box.add_child(compatibility_status)
-	var setup_box := $CenterContainer/Panel/Margin/VBox
-	setup_box.add_child(box)
-	setup_box.move_child(box, setup_box.get_child_count() - 2)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(box)
 	compatibility_toggle.set_pressed_no_signal(_saved_compatibility_preference())
 	compatibility_toggle.toggled.connect(_on_compatibility_toggled)
 	_refresh_compatibility_status()
@@ -157,14 +161,11 @@ func _build_vip_setup() -> void:
 	)
 	box.add_child(vip_toggle)
 	box.add_child(vip_behavior)
-	$CenterContainer/Panel/Margin/VBox.add_child(box)
-	$CenterContainer/Panel/Margin/VBox.move_child(box, 3)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Mission.add_child(box)
 
 func _build_objective_setup() -> void:
-	var box := HBoxContainer.new()
-	box.name = "ObjectiveSetup"
-	box.add_theme_constant_override("separation", 16)
 	var objective_box := VBoxContainer.new()
+	objective_box.name = "ObjectiveSetup"
 	objective_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var label := Label.new()
 	label.text = "MISSION OBJECTIVE"
@@ -175,8 +176,9 @@ func _build_objective_setup() -> void:
 	objective_option.item_selected.connect(_on_objective_selected)
 	objective_box.add_child(label)
 	objective_box.add_child(objective_option)
-	box.add_child(objective_box)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Mission.add_child(objective_box)
 	var difficulty_box := VBoxContainer.new()
+	difficulty_box.name = "DifficultySetup"
 	difficulty_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var difficulty_label := Label.new()
 	difficulty_label.text = "AI DIFFICULTY"
@@ -187,38 +189,69 @@ func _build_objective_setup() -> void:
 	difficulty_option.select(AIDifficultyPolicy.Tier.NORMAL)
 	difficulty_box.add_child(difficulty_label)
 	difficulty_box.add_child(difficulty_option)
-	box.add_child(difficulty_box)
-	$CenterContainer/Panel/Margin/VBox.add_child(box)
-	$CenterContainer/Panel/Margin/VBox.move_child(box, 4)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(difficulty_box)
+
+func _build_seed_actions() -> void:
+	var actions := HBoxContainer.new()
+	actions.name = "SeedActions"
+	actions.add_theme_constant_override("separation", 8)
+	randomize_seed_button = Button.new()
+	randomize_seed_button.name = "RandomizeSeedButton"
+	randomize_seed_button.text = "NEW SEED"
+	randomize_seed_button.tooltip_text = "Generate another seed for the next battle."
+	randomize_seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	randomize_seed_button.pressed.connect(_prepare_new_seed)
+	copy_seed_button = Button.new()
+	copy_seed_button.name = "CopySeedButton"
+	copy_seed_button.text = "COPY SEED"
+	copy_seed_button.tooltip_text = "Copy this seed so the battle can be reproduced later."
+	copy_seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy_seed_button.pressed.connect(_copy_seed)
+	actions.add_child(randomize_seed_button)
+	actions.add_child(copy_seed_button)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation.add_child(actions)
+
+func _copy_seed() -> void:
+	DisplayServer.clipboard_set(str(int(seed_input.value)))
+	copy_seed_button.text = "COPIED"
+	get_tree().create_timer(1.2).timeout.connect(func():
+		if is_instance_valid(copy_seed_button):
+			copy_seed_button.text = "COPY SEED"
+	)
 
 func _build_deployment_summary() -> void:
 	deployment_summary = Label.new()
 	deployment_summary.name = "DeploymentSummary"
-	deployment_summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	deployment_summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deployment_summary.add_theme_color_override("font_color", Color(0.55, 0.86, 1.0))
-	var box := $CenterContainer/Panel/Margin/VBox
-	box.add_child(deployment_summary)
-	box.move_child(deployment_summary, box.get_child_count() - 2)
+	deployment_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	$CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox.add_child(deployment_summary)
+	$CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox.move_child(deployment_summary, 2)
 
 func _on_objective_selected(index: int) -> void:
 	var needs_vip := index == MissionObjectiveDefinition.Kind.PROTECT
 	vip_toggle.disabled = needs_vip
 	if needs_vip:
 		vip_toggle.button_pressed = true
+	else:
+		vip_toggle.button_pressed = false
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:
-	var map_label := "REFINERY" if generated_map_toggle.button_pressed and map_size_option.selected == 3 else ("GENERATED" if generated_map_toggle.button_pressed else "HANDMADE")
+	var map_label := "HANDMADE"
+	if generated_map_toggle.button_pressed:
+		map_label = "REFINERY" if map_size_option.selected == 3 else "GENERATED — %s" % map_size_option.get_item_text(map_size_option.selected)
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
 	var player_vip := 1 if has_vip and vip_behavior.selected == MissionActor.VIPBehavior.PLAYER_CONTROLLED else 0
 	var ai_vip := 1 if has_vip and vip_behavior.selected != MissionActor.VIPBehavior.PLAYER_CONTROLLED else 0
 	var player_controlled := int(player_count.value) + player_vip
 	var ai_controlled := int(ally_count.value) + ai_vip
-	var friendly_total := player_controlled + ai_controlled
 	if deployment_summary:
-		deployment_summary.text = "DEPLOYMENT — Player-controlled: %d | AI allies: %d | Enemies: %d\nTotal friendly actors: %d%s" % [player_controlled, ai_controlled, int(enemy_count.value), friendly_total, " (includes 1 additional VIP)" if has_vip else ""]
-	start_button.text = "START %d FRIENDLY VS %d ENEMIES — %s — %s — SEED %d" % [friendly_total, int(enemy_count.value), map_label, objective_label.to_upper(), int(seed_input.value)]
+		var difficulty_label := difficulty_option.get_item_text(difficulty_option.selected) if difficulty_option else "Normal"
+		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
+		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d\n\nAI DIFFICULTY\n%s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), difficulty_label]
+	start_button.text = "START BATTLE"
 
 func _on_generation_toggled(enabled: bool) -> void:
 	map_size_option.disabled = not enabled
@@ -240,19 +273,19 @@ func _refresh_seed_controls() -> void:
 
 func _start_battle() -> void:
 	var battle = battle_scene.instantiate() as BattleLevel
-	battle.configure(
-		int(player_count.value),
-		int(enemy_count.value),
-		generated_map_toggle.button_pressed,
-		int(seed_input.value),
-		int(ally_count.value),
-		Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected],
-		vip_toggle.button_pressed,
-		vip_behavior.selected,
-		MissionCatalog.create_mission(objective_option.selected, int(enemy_count.value), vip_toggle.button_pressed),
-		difficulty_option.selected,
-		map_size_option.selected == 3
-	)
+	var config := BattleConfigurationData.new()
+	config.player_count = int(player_count.value)
+	config.enemy_count = int(enemy_count.value)
+	config.generated_map = generated_map_toggle.button_pressed
+	config.battle_seed = int(seed_input.value)
+	config.ally_count = int(ally_count.value)
+	config.map_size = Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
+	config.include_vip = vip_toggle.button_pressed
+	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
+	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
+	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
+	config.refinery = map_size_option.selected == 3
+	battle.configure_battle(config)
 	get_tree().root.add_child(battle)
 	get_tree().current_scene = battle
 	queue_free()

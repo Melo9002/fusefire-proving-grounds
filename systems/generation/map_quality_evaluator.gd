@@ -121,9 +121,11 @@ static func _largest_region(open_cells: Dictionary[Vector3i, bool], pathfinder: 
 			continue
 		var size := 0
 		var frontier: Array[Vector3i] = [start]
+		var head := 0
 		visited[start] = true
-		while not frontier.is_empty():
-			var current: Vector3i = frontier.pop_front()
+		while head < frontier.size():
+			var current: Vector3i = frontier[head]
+			head += 1
 			size += 1
 			var current_id: int = pathfinder.grid_to_id_map.get(current, -1)
 			if current_id < 0:

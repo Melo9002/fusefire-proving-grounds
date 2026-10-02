@@ -10,11 +10,11 @@ systems/              Battle interaction, turns, and combat rules
 systems/grid/         Terrain graph, map setup, occupancy, mouse rays
 systems/generation/   Seeded producers of runtime MapData
 systems/spawning/     Reusable spawn-zone data
-scripts/actions/      Move, Attack, and Defend operations
-scripts/components/   UnitStats: HP, AP, defense, player movement budget
+systems/actions/      Move, Attack, and Defend operations
+units/components/   UnitStats: HP, AP, defense, player movement budget
 units/                Unit scene, movement animation, enemy decisions
 ui/                   Buttons, turn/AP display, floating health bars
-visualizers/          Grid lines, cursor, paths, and range tiles
+presentation/overlays/          Grid lines, cursor, paths, and range tiles
 tests/                Repeatable check using the actual battle scene
 ```
 

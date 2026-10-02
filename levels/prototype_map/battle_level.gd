@@ -4,7 +4,8 @@ extends Node3D
 const ReplayRecorderData := preload("res://systems/replay/battle_replay_recorder.gd")
 const ReplayPlayerData := preload("res://systems/replay/battle_replay_player.gd")
 const ReplaySessionData := preload("res://systems/replay/battle_replay_session.gd")
-const ActionCameraDirectorData := preload("res://systems/camera/action_camera_director.gd")
+const ActionCameraDirectorData := preload("res://presentation/camera/action_camera_director.gd")
+const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
@@ -40,44 +41,58 @@ var _replay_recorder
 var action_camera_director: Node
 
 func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false) -> void:
-	generated_size = map_size if FlatMapGenerator.MAP_SIZES.has(map_size) else Vector2i(32, 24)
-	player_unit_count = clampi(player_count, 1, 5)
-	enemy_unit_count = clampi(enemy_count, 1, 5)
-	allied_unit_count = clampi(ally_count, 0, 5)
-	use_generated_map = generate_map
-	use_refinery_map = refinery
-	battle_seed = match_seed
-	generation_seed = match_seed
-	include_vip = add_vip
-	vip_behavior = behavior
-	mission_definition = selected_mission
-	ai_difficulty = selected_difficulty
-	battle_controller.ai_difficulty = selected_difficulty
-	battle_controller.battle_seed = match_seed
-	battle_controller.ai_decision_seed = match_seed
-	_replay_configuration = {
-		"player_count": player_unit_count,
-		"enemy_count": enemy_unit_count,
-		"generated_map": use_generated_map,
-		"seed": battle_seed,
-		"ally_count": allied_unit_count,
-		"map_size": generated_size,
-		"include_vip": include_vip,
-		"vip_behavior": vip_behavior,
-		"mission": mission_definition.duplicate(true) if mission_definition else null,
-		"difficulty": ai_difficulty,
-		"refinery": use_refinery_map,
-	}
+	var config := BattleConfigurationData.new()
+	config.player_count = player_count
+	config.enemy_count = enemy_count
+	config.generated_map = generate_map
+	config.battle_seed = match_seed
+	config.ally_count = ally_count
+	config.map_size = map_size
+	config.include_vip = add_vip
+	config.vip_behavior = behavior
+	config.mission = selected_mission
+	config.difficulty = selected_difficulty
+	config.refinery = refinery
+	configure_battle(config)
+
+
+## Preferred human-readable entry point. The positional configure() wrapper is
+## retained for existing Prototype 1 scripts and external callers.
+func configure_battle(config: BattleConfigurationData) -> void:
+	generated_size = config.map_size if FlatMapGenerator.MAP_SIZES.has(config.map_size) else Vector2i(32, 24)
+	player_unit_count = clampi(config.player_count, 1, 5)
+	enemy_unit_count = clampi(config.enemy_count, 1, 5)
+	allied_unit_count = clampi(config.ally_count, 0, 5)
+	use_generated_map = config.generated_map
+	use_refinery_map = config.refinery
+	battle_seed = config.battle_seed
+	generation_seed = config.battle_seed
+	include_vip = config.include_vip
+	vip_behavior = config.vip_behavior
+	mission_definition = config.mission
+	ai_difficulty = config.difficulty
+	battle_controller.ai_difficulty = config.difficulty
+	battle_controller.battle_seed = config.battle_seed
+	battle_controller.ai_decision_seed = config.battle_seed
+	var normalized := BattleConfigurationData.new()
+	normalized.player_count = player_unit_count
+	normalized.enemy_count = enemy_unit_count
+	normalized.ally_count = allied_unit_count
+	normalized.generated_map = use_generated_map
+	normalized.battle_seed = battle_seed
+	normalized.map_size = generated_size
+	normalized.include_vip = include_vip
+	normalized.vip_behavior = vip_behavior
+	normalized.mission = mission_definition
+	normalized.difficulty = ai_difficulty
+	normalized.refinery = use_refinery_map
+	_replay_configuration = normalized.to_replay()
 
 func configure_replay(recording) -> void:
 	pending_replay = recording
-	var config: Dictionary = recording.configuration
-	configure(
-		config.player_count, config.enemy_count, config.generated_map, config.seed,
-		config.ally_count, config.map_size, config.include_vip, config.vip_behavior,
-		config.mission.duplicate(true) if config.mission else null,
-		config.difficulty, config.refinery
-	)
+	var config := BattleConfigurationData.new()
+	config.apply_replay(recording.configuration)
+	configure_battle(config)
 	battle_controller.replay_mode = true
 
 func _ready() -> void:
@@ -134,7 +149,7 @@ func _initialize_replay_support() -> void:
 		player.begin(self, pending_replay)
 		return
 	_replay_recorder = ReplayRecorderData.new()
-	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager)
+	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager)
 
 func _configure_replay_presentation() -> void:
 	var hidden_paths := [
@@ -221,6 +236,7 @@ func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node
 		unit.mission_actor.mission_id = StringName(unit_name)
 	parent.add_child(unit)
 	var ai := AIController.new()
+	ai.objective_manager = objective_manager
 	ai.name = "%sAI" % unit_name
 	ai.unit = unit
 	ai.turn_manager = turn_manager

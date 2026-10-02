@@ -55,7 +55,12 @@ func _run() -> void:
 	await process_frame
 	var objective_option := setup.objective_option
 	var setup_panel := setup.get_node("CenterContainer/Panel") as PanelContainer
+	var setup_tabs := setup.get_node("CenterContainer/Panel/Margin/VBox/Body/SetupTabs") as TabContainer
 	check(setup_panel.global_position.y >= 0.0 and setup_panel.global_position.y + setup_panel.size.y <= setup.size.y, "Match setup fits inside the 720p reference viewport")
+	check(setup_tabs.get_tab_count() == 4, "Match setup groups choices into four focused tabs")
+	check(setup_tabs.get_tab_title(0) == "Mission" and setup_tabs.get_tab_title(1) == "Forces" and setup_tabs.get_tab_title(2) == "Battlefield" and setup_tabs.get_tab_title(3) == "Settings", "Match setup tabs use clear responsibility names")
+	check(setup.start_button.text == "START BATTLE", "The primary action remains concise while the briefing carries configuration details")
+	check(setup.randomize_seed_button != null and setup.copy_seed_button != null, "Battlefield seed actions are easy to discover")
 	check(setup.auto_seed_toggle.button_pressed and setup.seed_input.value >= 1, "A fresh setup prepares a valid automatic seed")
 	setup.generated_map_toggle.button_pressed = true
 	setup.auto_seed_toggle.button_pressed = false
@@ -65,13 +70,20 @@ func _run() -> void:
 	check(not setup.seed_input.editable and setup.seed_input.value >= 1, "Automatic seed mode locks the generated value")
 	check(objective_option.item_count == MissionCatalog.PRESETS.size(), "Match setup offers every objective preset")
 	check(objective_option.get_item_text(MissionObjectiveDefinition.Kind.EXTRACT) == "Extract", "Objective choices retain their readable names")
+	setup._on_objective_selected(MissionObjectiveDefinition.Kind.PROTECT)
+	check(setup.vip_toggle.button_pressed and setup.vip_toggle.disabled, "Protect requires and locks its friendly VIP")
+	setup._on_objective_selected(MissionObjectiveDefinition.Kind.ELIMINATE)
+	check(not setup.vip_toggle.button_pressed and not setup.vip_toggle.disabled, "Leaving Protect restores the optional VIP to its off default")
 	setup.vip_toggle.button_pressed = true
 	setup.vip_behavior.select(MissionActor.VIPBehavior.PLAYER_CONTROLLED)
 	setup._update_summary(0.0)
-	check(setup.deployment_summary.text.contains("Player-controlled: 3 | AI allies: 0 | Enemies: 2"), "Setup summary counts a player-controlled VIP separately from combatants")
+	check(setup.deployment_summary.text.contains("Player-controlled: 3\nAI allies: 0\nEnemies: 2"), "Setup summary counts a player-controlled VIP separately from combatants")
 	setup.vip_behavior.select(MissionActor.VIPBehavior.FOLLOW_ESCORT)
 	setup._update_summary(0.0)
-	check(setup.deployment_summary.text.contains("Player-controlled: 2 | AI allies: 1 | Enemies: 2"), "Setup summary follows the selected VIP controller")
+	check(setup.deployment_summary.text.contains("Player-controlled: 2\nAI allies: 1\nEnemies: 2"), "Setup summary follows the selected VIP controller")
+	setup.difficulty_option.select(AIDifficultyPolicy.Tier.HARD)
+	setup.difficulty_option.item_selected.emit(AIDifficultyPolicy.Tier.HARD)
+	check(setup.deployment_summary.text.contains("AI DIFFICULTY\nHard"), "Setup briefing follows the selected AI difficulty")
 	setup.queue_free()
 	await process_frame
 

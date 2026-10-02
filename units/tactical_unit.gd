@@ -7,14 +7,22 @@ signal movement_finished
 signal defeated(unit: TacticalUnit)
 signal attack_presented(target_world_position: Vector3)
 
-@export var movement_speed: float = 5.0
-@export var standing_height: float = 1.0
-@export var attack_range: int = 3
+@export_group("Gameplay")
+## Presentation speed in world metres per second. Movement range is UnitStats.speed.
+@export_range(0.1, 30.0, 0.1, "suffix:m/s") var movement_speed: float = 5.0
+## Feet-to-origin offset used when placing the unit on a grid cell.
+@export_range(0.0, 5.0, 0.01, "suffix:m") var standing_height: float = 1.0
+## Maximum grid distance for the equipped Prototype 1 weapon.
+@export_range(1, 30, 1, "suffix:cells") var attack_range: int = 3
+@export_group("Identity")
 @export var faction: Faction = Faction.PLAYER
+@export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
+@export_group("Presentation")
 @export var unit_hud_scene: PackedScene = preload("res://ui/unit_world_bar.tscn")
 @export var visual_adapter: UnitVisualAdapter
+@export_group("")
 
 var current_path: PackedVector3Array = PackedVector3Array()
 var grid_position: Vector3i = Vector3i.ZERO
@@ -114,7 +122,7 @@ func finish_defeat_presentation() -> void:
 	# long enough for its one-shot defeat pose to be readable.
 	collision_layer = 0
 	collision_mask = 0
-	await get_tree().create_timer(1.25).timeout
+	await get_tree().create_timer(1.25, false).timeout
 	if is_instance_valid(self):
 		queue_free()
 

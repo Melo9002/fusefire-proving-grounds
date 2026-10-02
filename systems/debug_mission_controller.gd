@@ -72,6 +72,8 @@ func teleport_actor(actor: TacticalUnit, destination: Vector3i) -> bool:
 func force_extract(actor: TacticalUnit) -> bool:
 	if not is_instance_valid(actor) or not objective_manager or not objective_manager.mission:
 		return _reject("Force extraction rejected: actor or mission is unavailable.")
+	# Successful extraction may free the actor before its presentation await returns.
+	var actor_name := String(actor.name)
 	var extraction := _find_extraction_objective(actor)
 	if not extraction:
 		return _reject("Force extraction rejected: %s has no active extraction objective." % actor.name)
@@ -90,8 +92,8 @@ func force_extract(actor: TacticalUnit) -> bool:
 		if is_instance_valid(actor) and origin != destination:
 			grid_manager.update_unit_position(actor, destination, origin)
 			actor.global_position = grid_manager.get_cell_data(origin).world_position + Vector3.UP * actor.standing_height
-		return _reject("Force extraction rejected by mission rules for %s." % actor.name)
-	return _accept("Forced extraction: %s via %s." % [actor.name, zone_id])
+		return _reject("Force extraction rejected by mission rules for %s." % actor_name)
+	return _accept("Forced extraction: %s via %s." % [actor_name, zone_id])
 
 func _find_extraction_objective(actor: TacticalUnit) -> MissionObjectiveState:
 	for state in objective_manager.get_objectives():

@@ -1,6 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://art/characters/vroid_proof/demo/vroid_weapon_ik_demo.gd" id="1_script"]
+[ext_resource type="Script" path="res://art/characters/vroid_proof/runtime/character_animation_controller.gd" id="2_animation"]
 
 [sub_resource type="Environment" id="Environment_demo"]
 background_mode = 1
@@ -30,6 +31,9 @@ emission_energy_multiplier = 1.8
 
 [node name="VRoidWeaponIKDemo" type="Node3D"]
 script = ExtResource("1_script")
+
+[node name="VerticalSliceController" type="Node" parent="."]
+script = ExtResource("2_animation")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_demo")

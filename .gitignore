@@ -1,6 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+/build/
 
 # Godot interrupted scene-save files
 *.tscn*.tmp

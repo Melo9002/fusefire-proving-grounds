@@ -5,8 +5,8 @@ extends Node3D
 @export var mouse_raycaster: MouseRaycaster
 
 var inspection_enabled := false
-var show_zones := true
-var show_traversal_links := true
+var show_zones := false
+var show_traversal_links := false
 var hovered_cell: MapCellData
 var _zone_mesh := MeshInstance3D.new()
 var _link_mesh := MeshInstance3D.new()

@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.gd" id="1_adapter"]
+[ext_resource type="Script" path="res://art/characters/vroid_proof/runtime/character_animation_controller.gd" id="2_animation"]
 
 [sub_resource type="SphereMesh" id="Sphere_target"]
 radius = 0.018
@@ -9,6 +10,9 @@ height = 0.036
 [node name="UnitVisualAdapter" type="Node3D"]
 position = Vector3(0, -1, 0)
 script = ExtResource("1_adapter")
+
+[node name="VerticalSliceController" type="Node" parent="."]
+script = ExtResource("2_animation")
 
 [node name="Character" type="Node3D" parent="."]
 

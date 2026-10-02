@@ -23,14 +23,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_setup")
-player_count = NodePath("CenterContainer/Panel/Margin/VBox/Teams/PlayerSide/PlayerCount")
-enemy_count = NodePath("CenterContainer/Panel/Margin/VBox/Teams/EnemySide/EnemyCount")
-ally_count = NodePath("CenterContainer/Panel/Margin/VBox/Teams/AllySide/AllyCount")
-start_button = NodePath("CenterContainer/Panel/Margin/VBox/StartButton")
-generated_map_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Generation/GeneratedMapToggle")
-auto_seed_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Generation/AutoSeedToggle")
-seed_input = NodePath("CenterContainer/Panel/Margin/VBox/Generation/SeedInput")
-map_size_option = NodePath("CenterContainer/Panel/Margin/VBox/Generation/MapSize")
+player_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/PlayerSide/PlayerCount")
+enemy_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/EnemySide/EnemyCount")
+ally_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/AllySide/AllyCount")
+start_button = NodePath("CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox/StartButton")
+generated_map_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/GeneratedMapToggle")
+auto_seed_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/AutoSeedToggle")
+seed_input = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/SeedInput")
+map_size_option = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/MapSize")
 battle_scene = ExtResource("2_battle")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1602293690]
@@ -52,7 +52,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="CenterContainer" unique_id=121042542]
-custom_minimum_size = Vector2(720, 410)
+custom_minimum_size = Vector2(900, 500)
 layout_mode = 2
 theme_override_styles/panel = SubResource("Style_panel")
 
@@ -79,77 +79,107 @@ layout_mode = 2
 text = "Choose combatants and mission actors independently"
 horizontal_alignment = 1
 
-[node name="Teams" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox" unique_id=249553472]
+[node name="Body" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 390)
 layout_mode = 2
-theme_override_constants/separation = 28
+theme_override_constants/separation = 20
+
+[node name="SetupTabs" type="TabContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
+custom_minimum_size = Vector2(570, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Mission" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Forces" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="ForcesHelp" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces"]
+layout_mode = 2
+text = "Choose who deploys. Mission actors are configured separately."
+autowrap_mode = 2
+
+[node name="Teams" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces" unique_id=249553472]
+layout_mode = 2
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="PlayerSide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Teams" unique_id=1103620986]
+[node name="PlayerSide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams" unique_id=1103620986]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="PlayerLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Teams/PlayerSide" unique_id=1058558184]
+[node name="PlayerLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/PlayerSide" unique_id=1058558184]
 layout_mode = 2
 text = "PLAYER COMBATANTS"
 horizontal_alignment = 1
 
-[node name="PlayerCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Teams/PlayerSide" unique_id=1875269286]
-custom_minimum_size = Vector2(150, 44)
+[node name="PlayerCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/PlayerSide" unique_id=1875269286]
+custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 min_value = 1.0
 max_value = 5.0
 value = 2.0
 
-[node name="EnemySide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Teams" unique_id=1059294906]
+[node name="EnemySide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams" unique_id=1059294906]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="EnemyLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Teams/EnemySide" unique_id=420599681]
+[node name="EnemyLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/EnemySide" unique_id=420599681]
 layout_mode = 2
 text = "ENEMY COMBATANTS"
 horizontal_alignment = 1
 
-[node name="EnemyCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Teams/EnemySide" unique_id=1742091726]
-custom_minimum_size = Vector2(150, 44)
+[node name="EnemyCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/EnemySide" unique_id=1742091726]
+custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 min_value = 1.0
 max_value = 5.0
 value = 2.0
 
-[node name="AllySide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Teams" unique_id=1324318632]
+[node name="AllySide" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams" unique_id=1324318632]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="AllyLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Teams/AllySide" unique_id=1129641953]
+[node name="AllyLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/AllySide" unique_id=1129641953]
 layout_mode = 2
 text = "AI ALLIED COMBATANTS"
 horizontal_alignment = 1
 
-[node name="AllyCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Teams/AllySide" unique_id=1585273729]
-custom_minimum_size = Vector2(150, 44)
+[node name="AllyCount" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/AllySide" unique_id=1585273729]
+custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 max_value = 5.0
 
-[node name="Generation" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox" unique_id=1977919735]
+[node name="Battlefield" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs"]
+layout_mode = 2
+
+[node name="Generation" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield" unique_id=1977919735]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="GeneratedMapToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Generation" unique_id=1903544636]
+[node name="GeneratedMapToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=1903544636]
 layout_mode = 2
 button_pressed = true
 text = "USE GENERATED MAP"
 
-[node name="AutoSeedToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Generation" unique_id=551290734]
+[node name="AutoSeedToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=551290734]
 layout_mode = 2
 tooltip_text = "Prepare a fresh battle seed whenever this setup screen opens. Disable to reproduce AI and combat randomness; generated maps also reproduce their layout."
+button_pressed = true
 text = "AUTOMATIC NEW SEED"
 
-[node name="SeedLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Generation" unique_id=550372902]
+[node name="SeedLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=550372902]
 layout_mode = 2
 text = "NEXT BATTLE SEED"
 
-[node name="MapSize" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/Generation" unique_id=515929907]
+[node name="MapSize" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=515929907]
 layout_mode = 2
 tooltip_text = "Generated battlefield size"
 
-[node name="SeedInput" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Generation" unique_id=1816408605]
+[node name="SeedInput" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=1816408605]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 min_value = 1.0
@@ -157,7 +187,34 @@ max_value = 999999999.0
 value = 12345.0
 update_on_text_changed = true
 
-[node name="StartButton" type="Button" parent="CenterContainer/Panel/Margin/VBox" unique_id=635533766]
+[node name="Settings" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Briefing" type="PanelContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "BATTLE BRIEFING"
+
+[node name="Rule" type="HSeparator" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox" unique_id=635533766]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-text = "START 2 VS 2 — HANDMADE"
+text = "START BATTLE"

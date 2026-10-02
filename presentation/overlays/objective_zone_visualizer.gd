@@ -30,7 +30,7 @@ func show_mission(mission: MissionDefinition) -> void:
 	add_child(mesh_instance)
 	if is_extraction:
 		var cells := grid_manager.map_data.get_objective_zone(zone_id)
-		var transport := preload("res://visualizers/extraction_transport.gd").new()
+		var transport := preload("res://presentation/overlays/extraction_transport.gd").new()
 		transport.name = "ExtractionTransport"
 		add_child(transport)
 		transport.setup(grid_manager, cells, enemy_owned, grid_manager.map_data.transport_footprints.get(zone_id, []))

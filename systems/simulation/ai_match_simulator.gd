@@ -1,6 +1,8 @@
 class_name AIMatchSimulator
 extends Node
 
+const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 
 var _decision_count := 0
@@ -35,12 +37,19 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	result.mission_id = mission.mission_id
 	result.mission_title = mission.title
 	var level := BATTLE_SCENE.instantiate() as BattleLevel
-	level.configure(
-		player_count, enemy_count, generated_map, result.seed, ally_count,
-		config.get("map_size", Vector2i(32, 24)), include_vip,
-		config.get("vip_behavior", MissionActor.VIPBehavior.FOLLOW_ESCORT),
-		mission, result.difficulty, config.get("refinery", false)
-	)
+	var battle_config := BattleConfigurationData.new()
+	battle_config.player_count = player_count
+	battle_config.enemy_count = enemy_count
+	battle_config.generated_map = generated_map
+	battle_config.battle_seed = result.seed
+	battle_config.ally_count = ally_count
+	battle_config.map_size = config.get("map_size", Vector2i(32, 24))
+	battle_config.include_vip = include_vip
+	battle_config.vip_behavior = config.get("vip_behavior", MissionActor.VIPBehavior.FOLLOW_ESCORT)
+	battle_config.mission = mission
+	battle_config.difficulty = result.difficulty
+	battle_config.refinery = config.get("refinery", false)
+	level.configure_battle(battle_config)
 	add_child(level)
 	var setup_deadline := Time.get_ticks_msec() + 10000
 	while level.turn_manager.current_round == 0 and Time.get_ticks_msec() < setup_deadline:
