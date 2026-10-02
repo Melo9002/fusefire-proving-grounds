@@ -38,12 +38,25 @@ func _run() -> void:
 		_check(replay_camera.process_mode == Node.PROCESS_MODE_ALWAYS, "Replay camera remains interactive during pause")
 		_check(not replay.get_node("Visualizers/BattleUI/UnitPortraitBar").visible, "Replay hides the tactical portrait bar")
 		_check(not replay.get_node("Visualizers/BattleUI/ObjectiveHUD").visible, "Replay hides the tactical objective HUD")
+		var pause_menu := replay.get_node("Visualizers/BattleUI/BattlePauseMenu") as BattlePauseMenu
+		_check(not pause_menu.action_camera_option.visible, "Replay pause menu leaves camera selection to replay controls")
+		pause_menu.set_open(true)
+		_check(replay_player.playback_paused and paused, "Esc menu pauses the replay player and tactical simulation together")
+		var menu_paused_at: int = replay_player.verified_actions
+		for _frame in 8:
+			await process_frame
+		_check(replay_player.verified_actions == menu_paused_at, "Esc menu holds the replay action index")
+		pause_menu.set_open(false)
+		_check(not replay_player.playback_paused and not paused, "Closing Esc menu resumes replay playback")
 		replay_player.set_playback_paused(true)
 		var paused_at: int = replay_player.verified_actions
 		_check(paused, "Replay pause uses authoritative SceneTree pause")
 		for _frame in 8:
 			await process_frame
 		_check(replay_player.verified_actions == paused_at, "Pause holds replay between authoritative actions")
+		pause_menu.set_open(true)
+		pause_menu.set_open(false)
+		_check(replay_player.playback_paused and paused, "Esc menu preserves an existing replay pause")
 		replay_player.set_playback_paused(false)
 		_check(not paused, "Replay play resumes the SceneTree")
 		var moving_unit := await _wait_for_moving_unit(replay, 5.0)

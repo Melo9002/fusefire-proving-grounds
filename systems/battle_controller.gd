@@ -400,6 +400,7 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	return true
 
 func try_defend(unit: TacticalUnit) -> bool:
+	# Legacy replay compatibility. Prototype 1 gameplay uses try_end_unit_turn().
 	if get_tree().paused:
 		return false
 	if is_action_in_progress or not turn_manager.can_unit_act(unit):
@@ -421,6 +422,23 @@ func try_defend(unit: TacticalUnit) -> bool:
 	if camera_presented:
 		await get_tree().create_timer(0.25, false).timeout
 		await action_camera_director.finish_live_presentation(true)
+	is_action_in_progress = false
+	return true
+
+func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available.") -> bool:
+	if get_tree().paused:
+		return false
+	if is_action_in_progress or not turn_manager.can_unit_act(unit):
+		return false
+	if not unit.stats or unit.stats.current_ap <= 0:
+		return false
+	is_action_in_progress = true
+	var spent_ap := unit.stats.current_ap
+	unit.stats.current_ap = 0
+	record_replay_action("wait", unit, {"reason": reason, "spent_ap": spent_ap})
+	is_move_mode_active = false
+	is_attack_mode_active = false
+	print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, reason])
 	is_action_in_progress = false
 	return true
 

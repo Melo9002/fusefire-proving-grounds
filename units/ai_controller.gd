@@ -2,7 +2,7 @@ extends Node
 class_name AIController
 
 ## Repeated low-value turns gradually loosen movement conservatism so a battle
-## cannot remain in a perfect Defend loop. These limits deliberately preserve
+## cannot remain in a passive wait loop. These limits deliberately preserve
 ## caution for carriers, VIPs, and critically injured units.
 const URGENCY_START_ACTIONS := 3
 const URGENCY_PER_ACTION := 3.0
@@ -31,11 +31,13 @@ var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
 var _last_position_candidates: Array[Dictionary] = []
 var _last_target_candidates: Array[Dictionary] = []
+var _committed_carrier_route: Array[Vector3i] = []
 var _last_hold_score := NAN
 var _last_move_threshold := NAN
 var _last_urgency_bonus := 0.0
 var _last_route_corridor := ROUTE_CORRIDOR_BASE
 var _consecutive_low_value_actions := 0
+var _movement_preview_pending_completion := false
 var current_mission_intent := MissionIntentData.new()
 
 enum MissionStepResult {
@@ -75,9 +77,12 @@ func _on_active_unit_changed(new_active_unit: TacticalUnit) -> void:
 
 	if not _should_control_unit():
 		return
-	current_mission_intent = _objective_manager.get_mission_intent(unit) if _objective_manager else MissionIntentData.new()
+	current_mission_intent = _get_ai_mission_intent()
 	_squad_context = battle_controller.get_squad_context(unit)
 	_squad_context.begin_unit(unit)
+	var active_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+	if active_carrier:
+		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier))
 	_squad_notes.clear()
 	_last_position_scores = "None"
 	_last_position_candidates.clear()
@@ -108,7 +113,7 @@ func _execute_turn() -> void:
 		_is_executing = false
 		return
 	var has_moved := false
-	current_mission_intent = _objective_manager.get_mission_intent(unit) if _objective_manager else MissionIntentData.new()
+	current_mission_intent = _get_ai_mission_intent()
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
 		if await _try_mission_step(false) == MissionStepResult.EXTRACTED:
 			_is_executing = false
@@ -116,7 +121,18 @@ func _execute_turn() -> void:
 	while is_instance_valid(unit) and unit.stats.current_ap > 0 \
 		and turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
 		and _should_control_unit():
-		current_mission_intent = _objective_manager.get_mission_intent(unit) if _objective_manager else MissionIntentData.new()
+		current_mission_intent = _get_ai_mission_intent()
+		var escorted_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+		# An escort already clear of the evacuation lane may engage immediate
+		# threats before repositioning. A blocker clears the lane first.
+		if escorted_carrier and escorted_carrier != unit and not _carrier_route(escorted_carrier).has(unit.grid_position):
+			var escort_target := _find_attack_target()
+			if escort_target and await battle_controller.try_attack(unit, escort_target):
+				if is_instance_valid(escort_target):
+					_squad_context.reserve_target(unit, escort_target)
+				_record_ai_decision("Attack", String(escort_target.name) if is_instance_valid(escort_target) else "defeated target", "Protected the VIP carrier from a legal threat.", "Clear route, Reposition, Wait")
+				await get_tree().create_timer(0.25, false).timeout
+				continue
 		var mission_step := await _try_mission_step(has_moved)
 		if mission_step == MissionStepResult.EXTRACTED:
 			_is_executing = false
@@ -128,8 +144,7 @@ func _execute_turn() -> void:
 			continue
 		if unit.is_carrying_unit():
 			# Never chase hostiles when the casualty cannot reach an exit this AP.
-			await battle_controller.try_defend(unit)
-			_record_ai_decision("Defend", unit.name, "The carrier cannot reach extraction this AP and will not abandon the evacuation route to chase enemies.", "Move, Attack")
+			_wait_for_next_turn(_movement_wait_reason("Carrier cannot advance toward extraction."), "Move")
 			break
 		var attack_target = _find_attack_target()
 		if attack_target and await battle_controller.try_attack(unit, attack_target):
@@ -138,29 +153,37 @@ func _execute_turn() -> void:
 			if is_instance_valid(attack_target):
 				_squad_context.reserve_target(unit, attack_target)
 			if not _pending_target_note.is_empty(): _squad_notes.append(_pending_target_note)
-			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Defend")
+			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Wait")
 			await get_tree().create_timer(0.25, false).timeout
 			continue
 		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
-			await battle_controller.try_defend(unit)
-			_record_ai_decision("Defend", unit.name, "Hold the objective route when no useful advance or supporting shot is available; do not chase enemies.", "Move, Attack")
+			_wait_for_next_turn(_movement_wait_reason("No useful objective advance or supporting shot."), "Move, Attack")
 			break
 		var movement_target = _find_nearest_hostile()
 		var protected_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		if protected_carrier and protected_carrier != unit:
-			await battle_controller.try_defend(unit)
-			_record_ai_decision("Defend", protected_carrier.name, "Hold escort position rather than abandon the carrier to chase enemies.", "Move, Extract")
+			if not has_moved and await _clear_carrier_route(protected_carrier):
+				has_moved = true
+				continue
+			if not has_moved and _grid_distance_to(protected_carrier) > 5 \
+			and await _move_toward_range(protected_carrier, 4):
+				has_moved = true
+				_record_ai_decision("Support", protected_carrier.name, "Closed into escort range while respecting the carrier corridor.", "Attack, Clear route, Wait")
+				continue
+			if not has_moved and await _move_to_escort_position(protected_carrier):
+				has_moved = true
+				continue
+			_wait_for_next_turn(_movement_wait_reason("No useful escort move or legal shot."), "Move, Extract")
 			break
 		if not has_moved and movement_target and await _move_toward(movement_target):
 			has_moved = true
-			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; approached the nearest hostile unit.", "Attack, Defend")
+			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; approached the nearest hostile unit.", "Attack, Wait")
 			continue
 		if has_moved and await _try_safe_second_advance(movement_target):
-			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Defend")
+			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Wait")
 			continue
-		if await battle_controller.try_defend(unit):
-			var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
-			_record_ai_decision("Defend", unit.name, reason, "Attack, Move")
+		var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
+		_wait_for_next_turn(_movement_wait_reason(reason), "Attack, Move")
 		break
 
 	var should_advance := _should_control_unit()
@@ -179,24 +202,24 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 	if current_mission_intent.kind == MissionIntentData.Kind.RESCUE:
 		var rescue_target := _objective_manager.find_mission_actor(current_mission_intent.target_ids)
 		if rescue_target and _objective_manager.can_rescue(unit, rescue_target):
-			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Defend")
+			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Wait")
 			if await _objective_manager.try_rescue(unit, rescue_target):
 				return MissionStepResult.INTERACTED
 		if not has_moved and rescue_target and await _move_toward(rescue_target):
-			_record_ai_decision("Move", str(_last_move_destination), "Approached the rescue target.", "Attack, Defend")
+			_record_ai_decision("Move", str(_last_move_destination), "Approached the rescue target.", "Attack, Wait")
 			return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.PROTECT:
 		var protected_actor := _objective_manager.find_mission_actor(current_mission_intent.target_ids)
 		if not has_moved and protected_actor and _grid_distance_to(protected_actor) > 3 and await _move_toward_range(protected_actor, 3):
-			_record_ai_decision("Move", str(_last_move_destination), "Returned to the protected actor's escort radius.", "Attack, Defend")
+			_record_ai_decision("Move", str(_last_move_destination), "Returned to the protected actor's escort radius.", "Attack, Wait")
 			return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.SURVIVE:
 		if not has_moved:
 			var survival_position := _best_survival_position()
 			if survival_position.x >= 0 and await _move_toward_cell(survival_position):
-				_record_ai_decision("Move", str(_last_move_destination), "Improved cover and separation while the survival timer is active.", "Attack, Defend")
+				_record_ai_decision("Move", str(_last_move_destination), "Improved cover and separation while the survival timer is active.", "Attack, Wait")
 				return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
@@ -204,7 +227,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		if carrier and carrier != unit:
 			if await _clear_carrier_route(carrier): return MissionStepResult.MOVED
 			return MissionStepResult.NONE
-		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Defend")
+		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Wait")
 		if await _objective_manager.try_extract(unit):
 			await get_tree().process_frame
 			if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
@@ -219,17 +242,22 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			if await _clear_carrier_route(rescue_carrier): return MissionStepResult.MOVED
 			if _grid_distance_to(rescue_carrier) > 2 and await _move_toward_range(rescue_carrier, 2):
 				_squad_notes.append("Mobile objective support: +30")
-				_record_ai_decision("Support", rescue_carrier.name, "Escorted the teammate carrying the rescued VIP.", "Attack, Extract, Defend")
+				_record_ai_decision("Support", rescue_carrier.name, "Escorted the teammate carrying the rescued VIP.", "Attack, Extract, Wait")
+				return MissionStepResult.MOVED
+			if await _move_to_escort_position(rescue_carrier):
 				return MissionStepResult.MOVED
 			return MissionStepResult.NONE
 
 	var destination := _nearest_reachable_zone_cell(current_mission_intent.zone_id)
 	if destination.x < 0:
 		return MissionStepResult.NONE
-	if await _move_toward_cell(destination, has_moved):
-		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Defend")
+	var moved_toward_objective := await _move_carrier_along_committed_route(has_moved) \
+		if unit.is_carrying_unit() and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT \
+		else await _move_toward_cell(destination, has_moved)
+	if moved_toward_objective:
+		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Wait")
 		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
-			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Defend")
+			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Wait")
 			if await _objective_manager.try_extract(unit):
 				await get_tree().process_frame
 				if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
@@ -241,25 +269,157 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		return MissionStepResult.MOVED
 	return MissionStepResult.NONE
 
+func _get_ai_mission_intent() -> MissionIntentData:
+	if not _objective_manager:
+		return MissionIntentData.new()
+	var intent := _objective_manager.get_mission_intent(unit)
+	var carrier := _objective_manager.find_rescue_carrier(unit.faction)
+	if carrier and carrier != unit and intent.kind == MissionIntentData.Kind.EXTRACT:
+		# Boarding remains available to human-controlled escorts, but automated
+		# escorts protect the required payload instead of racing it to the exit.
+		return MissionIntentData.new()
+	return intent
+
 func _carrier_route(carrier: TacticalUnit) -> Dictionary:
+	if not is_instance_valid(carrier):
+		return {}
+	if carrier != unit and _squad_context \
+	and _squad_context.corridor_owner == StringName(carrier.name) \
+	and not _squad_context.reserved_corridor.is_empty():
+		return _squad_context.reserved_corridor.duplicate()
+	var carrier_cell := battle_controller.grid_manager.get_unit_grid(carrier)
+	if carrier == unit and _committed_carrier_route.has(carrier_cell):
+		var reached_index := _committed_carrier_route.find(carrier_cell)
+		if reached_index > 0:
+			_committed_carrier_route = _committed_carrier_route.slice(reached_index)
+		return _route_dictionary(_committed_carrier_route)
 	var reserved := {}
 	var best := PackedVector3Array()
 	for destination in battle_controller.grid_manager.map_data.get_objective_zone(&"extract"):
-		var path := battle_controller.pathfinder.calculate_3d_path(carrier.grid_position, destination)
+		var path := battle_controller.pathfinder.calculate_3d_path(carrier_cell, destination)
 		if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
 	for point in best:
-		reserved[battle_controller.world_to_grid(point)] = true
+		var route_cell := battle_controller.world_to_grid(point)
+		reserved[route_cell] = true
+	if carrier == unit:
+		_committed_carrier_route.clear()
+		for point in best:
+			_committed_carrier_route.append(battle_controller.world_to_grid(point))
 	return reserved
+
+func _route_dictionary(route: Array[Vector3i]) -> Dictionary:
+	var cells := {}
+	for route_cell in route:
+		cells[route_cell] = true
+	return cells
+
+func _move_carrier_along_committed_route(safe_only: bool) -> bool:
+	_carrier_route(unit)
+	if _committed_carrier_route.size() <= 1:
+		return false
+	var path := PackedVector3Array()
+	for route_cell in _committed_carrier_route:
+		var cell := battle_controller.grid_manager.get_cell_data(route_cell)
+		if not cell:
+			_committed_carrier_route.clear()
+			return false
+		path.append(cell.world_position)
+	return await _move_along_goal_path(
+		path,
+		battle_controller.grid_manager.get_unit_grid(unit),
+		_committed_carrier_route[-1],
+		safe_only
+	)
 
 func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 	var route := _carrier_route(carrier)
-	if not route.has(unit.grid_position): return false
+	var start := battle_controller.grid_manager.get_unit_grid(unit)
+	if not route.has(start): return false
+	var grid := battle_controller.grid_manager
+	var hostiles := _get_hostile_units()
+	var best := Vector3i(-1, -1, -1)
+	var best_score := -INF
+	var fallback := Vector3i(-1, -1, -1)
+	var fallback_score := -INF
+	var start_carrier_distance := start.distance_to(carrier.grid_position)
+	_last_position_candidates.clear()
 	for candidate in battle_controller.pathfinder.get_reachable_cells(unit.grid_position, unit.stats.speed):
-		if not route.has(candidate) and candidate.distance_to(carrier.grid_position) <= 3.0 and battle_controller.grid_manager.can_unit_occupy_cell(unit, candidate):
-			if await battle_controller.try_move(unit, candidate):
-				_record_ai_decision("Support", carrier.name, "Cleared the carrier's evacuation route.", "Attack, Defend")
-				return true
-	return false
+		if candidate == start or not grid.can_unit_occupy_cell(unit, candidate):
+			continue
+		var remains_on_route := route.has(candidate)
+		# Some stairs and bridges have no side tile within one move. In that case
+		# the blocker may continue ahead through the bottleneck, creating room for
+		# the carrier behind it. A real off-route clearing position always wins.
+		if remains_on_route and candidate.distance_to(carrier.grid_position) <= start_carrier_distance + 0.5:
+			continue
+		if candidate.distance_to(carrier.grid_position) > 6.0:
+			if not remains_on_route:
+				continue
+		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
+		var score: float = scored.total - candidate.distance_to(carrier.grid_position)
+		var summary := "%s; %s" % [scored.summary, "bottleneck advance" if remains_on_route else "route clearance"]
+		_last_position_candidates.append({"cell": candidate, "score": score, "status": "considered", "summary": summary})
+		if remains_on_route and score > fallback_score:
+			fallback_score = score
+			fallback = candidate
+		elif not remains_on_route and score > best_score:
+			best_score = score
+			best = candidate
+	if best.x < 0:
+		best = fallback
+		best_score = fallback_score
+	for candidate_record in _last_position_candidates:
+		candidate_record["chosen"] = candidate_record.cell == best
+	if best.x < 0:
+		return false
+	_publish_movement_preview(best, "Carrier route clearance %.1f" % best_score)
+	if not await battle_controller.try_move(unit, best):
+		_movement_preview_pending_completion = false
+		return false
+	_movement_preview_pending_completion = false
+	_recent_move_origins.append(start)
+	if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
+	_last_move_destination = best
+	_reserve_destination(best, _squad_context.destination_adjustment(unit, best) if _squad_context else 0.0)
+	_record_ai_decision("Support", carrier.name, "Cleared the carrier's reserved evacuation route.", "Attack, Wait")
+	return true
+
+func _move_to_escort_position(carrier: TacticalUnit) -> bool:
+	var grid := battle_controller.grid_manager
+	var start := grid.get_unit_grid(unit)
+	var route := _carrier_route(carrier)
+	var hostiles := _get_hostile_units()
+	var best := Vector3i(-1, -1, -1)
+	var best_score := -INF
+	_last_position_candidates.clear()
+	for candidate in battle_controller.pathfinder.get_reachable_cells(start, unit.stats.speed):
+		if candidate == start or route.has(candidate) or not grid.can_unit_occupy_cell(unit, candidate):
+			continue
+		var carrier_distance := candidate.distance_to(carrier.grid_position)
+		if carrier_distance < 2.0 or carrier_distance > 5.0:
+			continue
+		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
+		var score: float = scored.total - absf(carrier_distance - 3.0) * 2.0
+		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": "%s; escort spacing %+.0f" % [scored.summary, -absf(carrier_distance - 3.0) * 2.0]}
+		_last_position_candidates.append(candidate_record)
+		if score > best_score:
+			best_score = score
+			best = candidate
+	for candidate_record in _last_position_candidates:
+		candidate_record["chosen"] = candidate_record.cell == best
+	if best.x < 0:
+		return false
+	_publish_movement_preview(best, "Escort position %.1f" % best_score)
+	if not await battle_controller.try_move(unit, best):
+		_movement_preview_pending_completion = false
+		return false
+	_movement_preview_pending_completion = false
+	_recent_move_origins.append(start)
+	if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
+	_last_move_destination = best
+	_reserve_destination(best, _squad_context.destination_adjustment(unit, best) if _squad_context else 0.0)
+	_record_ai_decision("Support", carrier.name, "Spread into a useful escort position while keeping the carrier route clear.", "Attack, Extract, Wait")
+	return true
 
 func _on_debug_enemy_control_changed(enabled: bool) -> void:
 	if not enabled and turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN \
@@ -289,10 +449,9 @@ func _execute_vip_turn() -> void:
 		var escorts := turn_manager.player_units.filter(func(candidate: TacticalUnit): return candidate.mission_actor == null or not candidate.mission_actor.is_vip())
 		if not escorts.is_empty():
 			if await _move_toward(escorts[0]):
-				_record_ai_decision("Move", str(_last_move_destination), "Followed the nearest available escort.", "Defend")
+				_record_ai_decision("Move", str(_last_move_destination), "Followed the nearest available escort.", "Wait")
 	if unit.stats.current_ap > 0:
-		if await battle_controller.try_defend(unit):
-			_record_ai_decision("Defend", unit.name, "Stayed with the escort when no useful follow movement remained.", "Move")
+		_wait_for_next_turn("VIP has no useful follow movement.", "Move")
 	if _should_control_unit():
 		turn_manager.end_current_turn()
 
@@ -385,7 +544,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
 	_last_hold_score = hold.total
 	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
-	best_score = _last_move_threshold
+	best_score = -INF if unit.is_carrying_unit() else _last_move_threshold
 	_last_position_candidates.clear()
 	for candidate in reachable:
 		if candidate == start_cell: continue
@@ -423,7 +582,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 			if scored.has(component):
 				candidate_record[component] = scored[component]
-		if score > _last_move_threshold:
+		# A carrier must be allowed to take the least-bad valid route step. Stairs,
+		# platforms, and congestion can require a locally negative detour even while
+		# the complete path still leads toward extraction.
+		if score > _last_move_threshold or unit.is_carrying_unit():
 			options.append({"cell": candidate, "score": score, "scored": scored})
 		else:
 			candidate_record.status = "rejected"
@@ -434,6 +596,19 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_adjustment = _squad_context.destination_adjustment(unit, candidate) if _squad_context else 0.0
 			best_score = score
 			best_summary = scored.summary
+	# Prefer actual progress for the carrier. Negative-progress detours remain
+	# available only when congestion or level geometry leaves no forward option.
+	if unit.is_carrying_unit():
+		var forward_options: Array[Dictionary] = options.filter(
+			func(option: Dictionary) -> bool: return float(option.scored.progress) > 0.01
+		)
+		if not forward_options.is_empty():
+			forward_options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
+			var selected_forward: Dictionary = forward_options[0]
+			best_candidate = selected_forward.cell
+			best_adjustment = _squad_context.destination_adjustment(unit, best_candidate) if _squad_context else 0.0
+			best_score = selected_forward.score
+			best_summary = "%s; carrier forward progress required" % selected_forward.scored.summary
 	if options.size() > 1 and best_candidate != goal_cell and not unit.is_carrying_unit():
 		options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 		var scores: Array[float] = [options[0].score]
@@ -452,6 +627,8 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_summary = "%s; %s lapse: near-best tile %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
 	for candidate_record in _last_position_candidates:
 		candidate_record["chosen"] = candidate_record.get("cell", Vector3i(-1, -1, -1)) == best_candidate
+	if best_candidate.x >= 0:
+		_publish_movement_preview(best_candidate, best_summary)
 	if best_candidate.x >= 0 and await battle_controller.try_move(unit, best_candidate):
 		_recent_move_origins.append(start_cell)
 		if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
@@ -459,9 +636,15 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		_last_position_scores = best_summary
 		_reserve_destination(best_candidate, best_adjustment)
 		return true
+	_movement_preview_pending_completion = false
 	return false
 
 func _get_movement_urgency_bonus() -> float:
+	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+	if carrier and carrier != unit and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT:
+		# Extraction escorts cannot spend several exposed rounds waiting for a
+		# perfect tile. Each previous wait progressively accepts a worse move.
+		return minf(URGENCY_MAX_SCORE, float(_consecutive_low_value_actions + 1) * 6.0)
 	if _consecutive_low_value_actions < URGENCY_START_ACTIONS:
 		return 0.0
 	if unit.is_carrying_unit() or (unit.mission_actor and unit.mission_actor.is_vip()):
@@ -592,12 +775,58 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 		_squad_notes.append("Destination reserved for later allies")
 
 func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
-	if action == "Defend":
+	if action == "Wait":
 		_consecutive_low_value_actions += 1
 	elif action in ["Move", "Attack", "Rescue", "Extract", "Support"]:
 		_consecutive_low_value_actions = 0
+	# Movement scoring is published as soon as the destination is selected so the
+	# heatmap appears with the first movement frame. Avoid publishing it again after
+	# the movement coroutine completes.
+	if action == "Move" and _movement_preview_pending_completion:
+		_movement_preview_pending_completion = false
+		return
 	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
-	var context := {
+	var context := _decision_context()
+	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates, context)
+
+func _publish_movement_preview(destination: Vector3i, summary: String) -> void:
+	_last_position_scores = summary
+	_movement_preview_pending_completion = true
+	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
+	battle_controller.record_ai_decision(unit, "Move", str(destination), "Selected destination; movement is beginning.", "Attack, Wait", current_mission_intent.get_debug_label(), notes, _last_position_scores, "None", _last_position_candidates, _last_target_candidates, _decision_context())
+
+func _wait_for_next_turn(reason: String, alternatives: String) -> bool:
+	_record_ai_decision("Wait", unit.name, reason, alternatives)
+	return battle_controller.try_end_unit_turn(unit, reason)
+
+func _movement_wait_reason(prefix: String) -> String:
+	var occupied_by: Array[String] = []
+	var outside_route := 0
+	var unsafe := 0
+	var below_threshold := 0
+	for candidate in _last_position_candidates:
+		if candidate.get("status", "") != "rejected":
+			continue
+		var reason := String(candidate.get("reason", ""))
+		if reason.begins_with("Occupied by "):
+			var blocker := reason.trim_prefix("Occupied by ")
+			if not occupied_by.has(blocker): occupied_by.append(blocker)
+		elif reason == "Outside useful route":
+			outside_route += 1
+		elif reason == "Unsafe second advance":
+			unsafe += 1
+		else:
+			below_threshold += 1
+	var details: Array[String] = []
+	if not occupied_by.is_empty(): details.append("route blocked by %s" % ", ".join(occupied_by.slice(0, 3)))
+	if outside_route > 0: details.append("%d cells outside route" % outside_route)
+	if unsafe > 0: details.append("%d unsafe cells" % unsafe)
+	if below_threshold > 0: details.append("%d moves below threshold" % below_threshold)
+	if details.is_empty(): details.append("no reachable legal destination")
+	return "%s %s" % [prefix, "; ".join(details)]
+
+func _decision_context() -> Dictionary:
+	return {
 		"grid_position": unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1),
 		"remaining_ap": unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1,
 		"recent_move_origins": _recent_move_origins.duplicate(),
@@ -607,7 +836,6 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 		"urgency_bonus": _last_urgency_bonus,
 		"route_corridor": _last_route_corridor,
 	}
-	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates, context)
 
 func _optional_score(value: float) -> Variant:
 	if is_nan(value):

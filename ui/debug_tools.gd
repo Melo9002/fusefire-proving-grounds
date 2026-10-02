@@ -41,7 +41,7 @@ var _ai_scoring_overlay: Node3D
 var _ai_scoring_toggle: CheckButton
 var _ai_scoring_label: Label
 var _inspected_destination := Vector3i(-1, -1, -1)
-var _show_ai_decisions: bool = true
+var _show_ai_decisions: bool = false
 var _latest_ai_decision: Dictionary = {}
 
 func _ready() -> void:
@@ -56,7 +56,7 @@ func _ready() -> void:
 	_build_mission_controller()
 	battle_controller.ai_decision_recorded.connect(_on_ai_decision_recorded)
 	visible = debug_tools_enabled and not battle_controller.replay_mode
-	_set_shot_trajectories_visible(debug_tools_enabled)
+	_set_shot_trajectories_visible(false)
 	if debug_tools_enabled:
 		_set_overlay_visible(overlay_visible_at_start)
 
@@ -159,10 +159,16 @@ func _build_interface() -> void:
 
 	_ai_scoring_label = Label.new()
 	_ai_scoring_label.name = "AIScoringDetails"
-	_ai_scoring_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_ai_scoring_label.position = Vector2(-540, 300)
-	_ai_scoring_label.custom_minimum_size = Vector2(520, 0)
+	_ai_scoring_label.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	_ai_scoring_label.offset_left = -560
+	_ai_scoring_label.offset_top = 260
+	_ai_scoring_label.offset_right = -20
+	_ai_scoring_label.offset_bottom = -24
 	_ai_scoring_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ai_scoring_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_ai_scoring_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_ai_scoring_label.clip_text = true
+	_ai_scoring_label.add_theme_font_size_override("font_size", 13)
 	_ai_scoring_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.48))
 	_ai_scoring_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	_ai_scoring_label.add_theme_constant_override("shadow_offset_x", 2)
@@ -242,13 +248,13 @@ func _build_interface() -> void:
 
 	_shot_trajectory_toggle = CheckButton.new()
 	_shot_trajectory_toggle.text = "Show shot trajectories"
-	_shot_trajectory_toggle.button_pressed = true
+	_shot_trajectory_toggle.button_pressed = false
 	_shot_trajectory_toggle.toggled.connect(_set_shot_trajectories_visible)
 	diagnostics.add_child(_shot_trajectory_toggle)
 
 	_ai_decision_toggle = CheckButton.new()
 	_ai_decision_toggle.text = "Show AI decision explanations"
-	_ai_decision_toggle.button_pressed = true
+	_ai_decision_toggle.button_pressed = false
 	_ai_decision_toggle.toggled.connect(_set_ai_decisions_visible)
 	diagnostics.add_child(_ai_decision_toggle)
 
@@ -259,20 +265,20 @@ func _build_interface() -> void:
 
 	_zone_toggle = CheckButton.new()
 	_zone_toggle.text = "Show all map zones"
-	_zone_toggle.button_pressed = true
+	_zone_toggle.button_pressed = false
 	_zone_toggle.toggled.connect(_set_map_zones_visible)
 	diagnostics.add_child(_zone_toggle)
 
 	_traversal_toggle = CheckButton.new()
 	_traversal_toggle.text = "Show traversal links"
-	_traversal_toggle.button_pressed = true
+	_traversal_toggle.button_pressed = false
 	_traversal_toggle.toggled.connect(_set_traversal_links_visible)
 	diagnostics.add_child(_traversal_toggle)
 
 
 	_ai_scoring_toggle = CheckButton.new()
 	_ai_scoring_toggle.text = "Show AI scoring overlay"
-	_ai_scoring_toggle.tooltip_text = "Shows numeric movement scores, rejected cells, targets, and the chosen plan."
+	_ai_scoring_toggle.tooltip_text = "Shows a movement-score heatmap, considered targets, and the chosen plan. Rejected reasons remain in the details panel."
 	_ai_scoring_toggle.toggled.connect(_set_ai_scoring_visible)
 	diagnostics.add_child(_ai_scoring_toggle)
 
@@ -406,19 +412,20 @@ func _update_ai_scoring_details(record: Dictionary) -> void:
 	var rejected_positions: Array = positions.filter(func(candidate: Dictionary): return candidate.get("status", "") == "rejected")
 	var lines: Array[String] = [
 		"AI SCORING — %s [%s]" % [record.get("actor", "Unknown"), record.get("difficulty", "Normal")],
+		"HEATMAP — violet: lower | amber: higher | yellow: chosen",
 		"CHOSEN — %s %s" % [record.get("action", "Unknown"), record.get("subject", "")],
-		"Cell %s | AP %s | Hold %s | Move threshold %s | Urgency %+.1f | Defend streak %s" % [record.get("grid_position", "?"), record.get("remaining_ap", "?"), _format_optional_score(record.get("hold_score")), _format_optional_score(record.get("move_acceptance_threshold")), float(record.get("urgency_bonus", 0.0)), record.get("consecutive_low_value_actions", 0)],
+		"Cell %s | AP %s | Hold %s | Move threshold %s | Urgency %+.1f | Wait streak %s" % [record.get("grid_position", "?"), record.get("remaining_ap", "?"), _format_optional_score(record.get("hold_score")), _format_optional_score(record.get("move_acceptance_threshold")), float(record.get("urgency_bonus", 0.0)), record.get("consecutive_low_value_actions", 0)],
 		"Route corridor: %.1f" % float(record.get("route_corridor", 2.0)),
 		"Recent move origins: %s" % str(record.get("recent_move_origins", [])),
 		"Movement: %d scored | %d rejected" % [legal_positions.size(), rejected_positions.size()],
 	]
-	for candidate in legal_positions.slice(0, 8):
+	for candidate in legal_positions.slice(0, 5):
 		lines.append("%s %+.1f%s — %s" % [candidate.cell, float(candidate.score), "  CHOSEN" if candidate.get("chosen", false) else "", candidate.get("summary", "")])
-	for candidate in rejected_positions.slice(0, 4):
+	for candidate in rejected_positions.slice(0, 2):
 		lines.append("%s REJECTED — %s" % [candidate.get("cell", "?"), candidate.get("reason", "No score")])
 	if not targets.is_empty():
 		lines.append("Targets:")
-		for candidate in targets.slice(0, 6):
+		for candidate in targets.slice(0, 4):
 			if candidate.get("status", "") == "rejected":
 				lines.append("%s REJECTED — %s" % [candidate.get("target", "?"), candidate.get("reason", "Illegal attack")])
 			else:

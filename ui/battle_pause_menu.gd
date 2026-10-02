@@ -7,6 +7,7 @@ const ActionCameraDirectorData := preload("res://presentation/camera/action_came
 @export var debug_tools: DebugTools
 var is_open := false
 var action_camera_option: OptionButton
+var _replay_was_paused := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -23,9 +24,19 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func set_open(open: bool) -> void:
+	if is_open == open:
+		return
 	is_open = open
 	visible = open
-	get_tree().paused = open
+	var replay_player := _get_replay_player()
+	if replay_player:
+		if open:
+			_replay_was_paused = replay_player.playback_paused
+			replay_player.set_playback_paused(true)
+		else:
+			replay_player.set_playback_paused(_replay_was_paused)
+	else:
+		get_tree().paused = open
 	if open:
 		var resume := get_node("Dimmer/Center/Panel/Margin/Options/ResumeButton") as Button
 		resume.grab_focus()
@@ -73,6 +84,7 @@ func _build_interface() -> void:
 	options.add_child(title)
 
 	var camera_label := Label.new()
+	camera_label.name = "ActionCameraLabel"
 	camera_label.text = "ACTION CAMERA"
 	options.add_child(camera_label)
 	action_camera_option = OptionButton.new()
@@ -80,6 +92,10 @@ func _build_interface() -> void:
 	for label in ["Off", "Final Actions", "Combat Only", "All Actions"]:
 		action_camera_option.add_item(label)
 	options.add_child(action_camera_option)
+	var battle_level := get_node_or_null("../../..") as BattleLevel
+	if battle_level and battle_level.battle_controller.replay_mode:
+		camera_label.hide()
+		action_camera_option.hide()
 	_bind_action_camera_option.call_deferred()
 
 	var resume := Button.new()
@@ -101,9 +117,22 @@ func _build_interface() -> void:
 	options.add_child(hint)
 
 func _bind_action_camera_option() -> void:
-	var director := get_tree().get_first_node_in_group("action_camera_director")
-	if not director:
+	if _get_replay_player():
+		# Replay has its own Free/Follow/Cinematic selector in the playback bar.
+		action_camera_option.hide()
+		get_node("Dimmer/Center/Panel/Margin/Options/ActionCameraLabel").hide()
+		return
+	var director := get_node_or_null("../../../ActionCameraDirector") as ActionCameraDirector
+	if not is_instance_valid(director):
 		action_camera_option.disabled = true
 		return
 	action_camera_option.select(int(director.frequency))
-	action_camera_option.item_selected.connect(func(index: int): director.set_frequency(index))
+	action_camera_option.item_selected.connect(_on_action_camera_selected)
+
+func _on_action_camera_selected(index: int) -> void:
+	var director := get_node_or_null("../../../ActionCameraDirector") as ActionCameraDirector
+	if is_instance_valid(director):
+		director.set_frequency(index as ActionCameraDirector.Frequency)
+
+func _get_replay_player() -> BattleReplayPlayer:
+	return get_node_or_null("../../../BattleReplayPlayer") as BattleReplayPlayer

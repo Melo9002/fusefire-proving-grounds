@@ -2,7 +2,7 @@ class_name ShotTrajectoryVisualizer
 extends Node3D
 
 @export_range(0.01, 0.15, 0.005) var radius: float = 0.035
-@export var debug_enabled: bool = true
+@export var debug_enabled: bool = false
 @export var grid_manager: GridManager
 
 var mesh_instance: MeshInstance3D

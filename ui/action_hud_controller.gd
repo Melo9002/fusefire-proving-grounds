@@ -6,7 +6,7 @@ class_name ActionHUDController
 @export_group("Action Buttons")
 @export var move_button: Button
 @export var attack_button: Button
-@export var defend_button: Button
+@export var end_unit_button: Button
 
 var _tracked_stats: UnitStats
 
@@ -18,8 +18,8 @@ func _ready() -> void:
 		move_button.pressed.connect(_on_move_pressed)
 	if attack_button:
 		attack_button.pressed.connect(_on_attack_pressed)
-	if defend_button:
-		defend_button.pressed.connect(_on_defend_pressed)
+	if end_unit_button:
+		end_unit_button.pressed.connect(_on_end_unit_pressed)
 	battle_controller.move_mode_toggled.connect(_on_move_mode_toggled)
 	battle_controller.attack_mode_toggled.connect(_on_attack_mode_toggled)
 	battle_controller.attack_preview_changed.connect(_on_attack_preview_changed)
@@ -56,11 +56,11 @@ func _on_move_pressed() -> void:
 func _on_attack_pressed() -> void:
 	battle_controller.toggle_attack_mode()
 
-func _on_defend_pressed() -> void:
+func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
 	if not active_unit:
 		return
-	await battle_controller.try_defend(active_unit)
+	battle_controller.try_end_unit_turn(active_unit, "Skipped manually by the player.")
 
 func _on_action_state_changed(_is_busy: bool) -> void:
 	_update_button_states()
@@ -104,10 +104,10 @@ func _update_button_states() -> void:
 	if attack_button:
 		attack_button.disabled = not has_ap or unit.is_carrying_unit()
 		attack_button.tooltip_text = "Cannot shoot while carrying a rescued unit" if unit.is_carrying_unit() else ""
-	if defend_button:
-		defend_button.disabled = not has_ap
+	if end_unit_button:
+		end_unit_button.disabled = not has_ap
 
 func _disable_all_buttons() -> void:
 	if move_button: move_button.disabled = true
 	if attack_button: attack_button.disabled = true
-	if defend_button: defend_button.disabled = true
+	if end_unit_button: end_unit_button.disabled = true

@@ -655,9 +655,10 @@ grid_manager = NodePath("../../Systems/GridManager")
 script = ExtResource("27_shot_trajectory")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="ShotResultFeedback" type="Node3D" parent="Visualizers" unique_id=796711139 node_paths=PackedStringArray("battle_controller")]
+[node name="ShotResultFeedback" type="Node3D" parent="Visualizers" unique_id=796711139 node_paths=PackedStringArray("battle_controller", "ui_layer")]
 script = ExtResource("32_shot_result")
 battle_controller = NodePath("../../Systems/BattleController")
+ui_layer = NodePath("../BattleUI")
 
 [node name="UnitSelectionVisualizer" type="Node" parent="Visualizers" unique_id=450518144 node_paths=PackedStringArray("turn_manager", "battle_controller")]
 script = ExtResource("20_selection")
@@ -704,7 +705,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "defend_button")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "end_unit_button")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -713,7 +714,7 @@ script = ExtResource("13_q7tb2")
 battle_controller = NodePath("../../../Systems/BattleController")
 move_button = NodePath("ActionBar/MoveButton")
 attack_button = NodePath("ActionBar/AttackButton")
-defend_button = NodePath("ActionBar/DefendButton")
+end_unit_button = NodePath("ActionBar/EndUnitButton")
 
 [node name="ActionBar" type="HBoxContainer" parent="Visualizers/BattleUI/ActionHUDController" unique_id=1879535380]
 layout_mode = 0
@@ -730,9 +731,9 @@ text = "Move"
 layout_mode = 2
 text = "Attack"
 
-[node name="DefendButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
+[node name="EndUnitButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
 layout_mode = 2
-text = "Defend"
+text = "Skip"
 
 [node name="ObjectiveHUD" type="VBoxContainer" parent="Visualizers/BattleUI" unique_id=2811396 node_paths=PackedStringArray("objective_manager", "objective_label", "end_mission_button")]
 anchors_preset = 1

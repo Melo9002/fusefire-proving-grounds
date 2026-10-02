@@ -2,6 +2,26 @@ class_name AIScoringOverlay
 extends Node3D
 
 @export var grid_manager: GridManager
+@export_group("Heatmap")
+## Lowest legal movement scores. Violet avoids movement-range cyan and attack red.
+@export var cold_color := Color(0.18, 0.08, 0.42, 0.42)
+@export var middle_color := Color(0.62, 0.16, 0.62, 0.58)
+## Highest legal movement scores.
+@export var hot_color := Color(1.0, 0.55, 0.06, 0.82)
+@export var chosen_color := Color(1.0, 0.92, 0.25, 0.96)
+@export var rejected_color := Color(0.20, 0.16, 0.26, 0.24)
+## Rejected cells are normally omitted for faster, clearer large-map diagnostics.
+@export var show_rejected_cells := false
+@export_group("Score Labels")
+## Optional exact values for close inspection. The heatmap is the readable default.
+@export var show_numeric_labels := false
+## Maximum legal destinations labelled at once. The chosen destination is always included.
+@export_range(1, 20, 1) var max_score_labels := 8
+## High resolution keeps labels sharp; Pixel Size controls their apparent size.
+@export_range(24, 128, 1) var label_font_resolution := 64
+@export_range(0.0005, 0.005, 0.0001, "suffix:m/px") var label_pixel_size := 0.0010
+@export_range(0, 16, 1) var label_outline_size := 5
+@export_group("")
 
 var overlay_enabled := false
 var latest_record: Dictionary = {}
@@ -29,7 +49,9 @@ func set_overlay_enabled(enabled: bool) -> void:
 		clear()
 
 func display(record: Dictionary) -> void:
-	latest_record = record.duplicate(true)
+	# BattleController already emits an owned diagnostic snapshot. Retaining it avoids
+	# another deep copy of hundreds of candidate dictionaries on large maps.
+	latest_record = record
 	if not overlay_enabled or not grid_manager:
 		return
 	var position_candidates: Array = record.get("position_candidates", [])
@@ -49,6 +71,8 @@ func _build_position_mesh(candidates: Array) -> ArrayMesh:
 	for candidate in candidates:
 		if not candidate.has("cell"):
 			continue
+		if candidate.get("status", "") == "rejected" and not show_rejected_cells:
+			continue
 		var cell := grid_manager.get_cell_data(candidate.cell)
 		if not cell:
 			continue
@@ -59,9 +83,23 @@ func _build_position_mesh(candidates: Array) -> ArrayMesh:
 
 func _build_score_labels(candidates: Array) -> void:
 	_clear_score_labels()
+	if not show_numeric_labels:
+		return
+	var labelled: Array = candidates.filter(func(candidate: Dictionary):
+		return candidate.get("status", "") != "rejected" and candidate.has("score") and candidate.has("cell")
+	)
+	labelled.sort_custom(func(a: Dictionary, b: Dictionary): return float(a.score) > float(b.score))
+	labelled = labelled.slice(0, max_score_labels)
+	var chosen: Dictionary = {}
 	for candidate in candidates:
-		if candidate.get("status", "") == "rejected" or not candidate.has("score") or not candidate.has("cell"):
-			continue
+		if candidate.get("chosen", false):
+			chosen = candidate
+			break
+	if not chosen.is_empty() and chosen not in labelled:
+		if labelled.size() >= max_score_labels:
+			labelled.pop_back()
+		labelled.append(chosen)
+	for candidate in labelled:
 		var cell := grid_manager.get_cell_data(candidate.cell)
 		if not cell:
 			continue
@@ -70,8 +108,9 @@ func _build_score_labels(candidates: Array) -> void:
 		label.position = cell.world_position + Vector3.UP * 0.3
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		label.fixed_size = true
-		label.font_size = 30
-		label.outline_size = 8
+		label.font_size = label_font_resolution
+		label.pixel_size = label_pixel_size
+		label.outline_size = label_outline_size
 		label.modulate = Color(0.15, 1.0, 1.0) if candidate.get("chosen", false) else Color.WHITE
 		label.no_depth_test = true
 		_score_labels.add_child(label)
@@ -87,6 +126,8 @@ func _build_target_mesh(candidates: Array) -> ArrayMesh:
 	for candidate in candidates:
 		if not candidate.has("cell"):
 			continue
+		if candidate.get("status", "") == "rejected" and not show_rejected_cells:
+			continue
 		var cell := grid_manager.get_cell_data(candidate.cell)
 		if not cell:
 			continue
@@ -98,12 +139,14 @@ func _build_target_mesh(candidates: Array) -> ArrayMesh:
 
 func _candidate_color(candidate: Dictionary, score_range: Vector2) -> Color:
 	if candidate.get("chosen", false):
-		return Color(0.15, 1.0, 1.0, 0.9)
+		return chosen_color
 	if candidate.get("status", "") == "rejected":
-		return Color(1.0, 0.12, 0.12, 0.48)
+		return rejected_color
 	var score := float(candidate.get("score", 0.0))
 	var ratio := 0.5 if is_equal_approx(score_range.x, score_range.y) else inverse_lerp(score_range.x, score_range.y, score)
-	return Color(1.0 - ratio * 0.7, 0.25 + ratio * 0.75, 0.12, 0.58)
+	if ratio < 0.5:
+		return cold_color.lerp(middle_color, ratio * 2.0)
+	return middle_color.lerp(hot_color, (ratio - 0.5) * 2.0)
 
 func _score_range(candidates: Array) -> Vector2:
 	var minimum := INF

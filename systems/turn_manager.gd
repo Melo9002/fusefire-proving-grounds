@@ -186,6 +186,7 @@ func _finish_battle(result: BattleResult) -> void:
 
 func _start_player_turn_phase() -> void:
 	current_phase = TurnPhase.PLAYER_TURN
+	_prioritize_carrier(player_units)
 	for unit in player_units:
 		if is_instance_valid(unit) and unit.stats:
 			unit.stats.reset_turn()
@@ -213,6 +214,7 @@ func _start_ally_turn_phase() -> void:
 		_start_enemy_turn_phase()
 		return
 	current_phase = TurnPhase.ALLY_TURN
+	_prioritize_carrier(allied_units)
 	for unit_item in allied_units:
 		if is_instance_valid(unit_item) and unit_item.stats:
 			unit_item.stats.reset_turn()
@@ -246,3 +248,12 @@ func _end_round() -> void:
 func _set_active_unit(unit: TacticalUnit) -> void:
 	active_unit = unit
 	active_unit_changed.emit(active_unit)
+
+func _prioritize_carrier(roster: Array[TacticalUnit]) -> void:
+	for index in roster.size():
+		var candidate := roster[index]
+		if is_instance_valid(candidate) and candidate.is_carrying_unit():
+			if index > 0:
+				roster.remove_at(index)
+				roster.push_front(candidate)
+			return

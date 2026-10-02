@@ -23,12 +23,15 @@ func _run() -> void:
 	check(level.battle_controller.attack_resolved.is_connected(feedback._on_attack_resolved), "Feedback listens to the shared attack result")
 	feedback._on_attack_resolved(attacker, target, false, 50)
 	check(feedback.last_result_text == "MISS", "Misses create an explicit result")
-	check(feedback.get_child_count() == 1 and feedback.get_child(0).text == "MISS", "Miss cue appears beside the target")
+	check(feedback._active_cues.size() == 1 and feedback._active_cues[0]["label"].text == "MISS", "Miss cue appears beside the target")
 	feedback._on_attack_resolved(attacker, target, true, 50)
 	check(feedback.last_result_text == "HIT", "Hits create an explicit result")
-	check(feedback.get_child_count() == 2 and feedback.get_child(1).text == "HIT", "Hit cue uses the same presentation path")
+	check(feedback._active_cues.size() == 2 and feedback._active_cues[1]["label"].text == "HIT", "Hit cue uses the same presentation path")
+	level.battle_controller.replay_mode = true
+	feedback._on_attack_resolved(attacker, target, true, 50)
+	check(feedback._active_cues.size() == 2, "Replay hides shot feedback by default")
 	await create_timer(feedback.lifetime_seconds + 0.1).timeout
-	check(feedback.get_child_count() == 0, "Shot result cues clean themselves up")
+	check(feedback._active_cues.is_empty(), "Shot result cues clean themselves up")
 	level.queue_free()
 	await process_frame
 	print("Shot result feedback: %d failure(s)" % failures)

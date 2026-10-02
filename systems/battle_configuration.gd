@@ -8,7 +8,7 @@ var player_count: int = 2
 var enemy_count: int = 2
 var ally_count: int = 0
 var generated_map := false
-var seed: int = 1
+var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
 var include_vip := false
 var vip_behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED
@@ -22,7 +22,7 @@ func apply_replay(data: Dictionary) -> void:
 	enemy_count = data.get("enemy_count", 2)
 	ally_count = data.get("ally_count", 0)
 	generated_map = data.get("generated_map", false)
-	seed = data.get("seed", 1)
+	battle_seed = data.get("seed", 1)
 	map_size = data.get("map_size", Vector2i(32, 24))
 	include_vip = data.get("include_vip", false)
 	vip_behavior = data.get("vip_behavior", MissionActor.VIPBehavior.PLAYER_CONTROLLED)
@@ -37,7 +37,7 @@ func to_replay() -> Dictionary:
 		"player_count": player_count,
 		"enemy_count": enemy_count,
 		"generated_map": generated_map,
-		"seed": seed,
+		"seed": battle_seed,
 		"ally_count": ally_count,
 		"map_size": map_size,
 		"include_vip": include_vip,

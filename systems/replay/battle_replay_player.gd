@@ -198,6 +198,8 @@ func _execute(record: Dictionary) -> bool:
 			return await level.battle_controller.try_attack(actor, target)
 		"defend":
 			return await level.battle_controller.try_defend(actor)
+		"wait":
+			return level.battle_controller.try_end_unit_turn(actor, record.get("reason", "Replay wait"))
 		"rescue":
 			var target: TacticalUnit = _find_unit(record.get("target", ""))
 			return is_instance_valid(target) and await level.objective_manager.try_rescue(actor, target)

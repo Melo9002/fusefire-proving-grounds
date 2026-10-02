@@ -5,6 +5,7 @@ This directory contains the project documentation intended for developers, desig
 ## Guides
 
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
+- [Prototype 1 release](prototype-1-release.md) — release scope, known limits, packaging checks, and maintainer entry points.
 
 - [Prototype 1 27A recovery audit](prototype-1-audit-27a.md) — canonical verified findings, protected invariants, optimization targets, and the recovery sequence.
 

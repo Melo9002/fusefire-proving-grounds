@@ -277,13 +277,13 @@ func _start_battle() -> void:
 	config.player_count = int(player_count.value)
 	config.enemy_count = int(enemy_count.value)
 	config.generated_map = generated_map_toggle.button_pressed
-	config.seed = int(seed_input.value)
+	config.battle_seed = int(seed_input.value)
 	config.ally_count = int(ally_count.value)
 	config.map_size = Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
 	config.include_vip = vip_toggle.button_pressed
-	config.vip_behavior = vip_behavior.selected
+	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
-	config.difficulty = difficulty_option.selected
+	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.refinery = map_size_option.selected == 3
 	battle.configure_battle(config)
 	get_tree().root.add_child(battle)

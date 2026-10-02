@@ -41,7 +41,7 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.player_count = player_count
 	battle_config.enemy_count = enemy_count
 	battle_config.generated_map = generated_map
-	battle_config.seed = result.seed
+	battle_config.battle_seed = result.seed
 	battle_config.ally_count = ally_count
 	battle_config.map_size = config.get("map_size", Vector2i(32, 24))
 	battle_config.include_vip = include_vip

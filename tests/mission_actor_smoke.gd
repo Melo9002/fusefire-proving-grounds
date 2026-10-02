@@ -51,7 +51,7 @@ func _run() -> void:
 	check(vip_level.turn_manager.player_units.size() == 2, "VIP does not replace a selected player combatant")
 	vip_level.turn_manager.end_current_turn()
 	await create_timer(1.5).timeout
-	check(vip.grid_position == vip_start and vip.stats.is_defending, "Hold-position VIP stays put and defends")
+	check(vip.grid_position == vip_start and vip.stats.current_ap == 0 and not vip.stats.is_defending, "Hold-position VIP stays put and ends its activation")
 	vip_level.queue_free()
 	await process_frame
 
