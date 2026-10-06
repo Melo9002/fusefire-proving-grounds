@@ -6,13 +6,15 @@ This directory contains the project documentation intended for developers, desig
 
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
 - [Prototype 1 release](prototype-1-release.md) — release scope, known limits, packaging checks, and maintainer entry points.
+- [Prototype 2 idea vault](prototype-2/idea-vault.md) — wishes, experiments, dependencies, external resources, and scope boundaries for the next prototype.
+- [Pre-production workshop](prototype-2/preproduction-plan.md) — start-now proofs, incubation work packages, task cards, decision gates, and parked ideas.
+- [Prototype 2 experiment notebook](prototype-2/experiments/README.md) — protected P1 baseline, reusable experiment record, outcomes, and minimum regression checks.
+- [External resource ledger](prototype-2/external-resources.md) — dependency candidates, licenses, risks, removal paths, and decisions.
+- [Animation source survey](prototype-2/animation-source-survey.md) — free motion sources, Godot 4.7 retargeting, candidate tools, and the first clip test.
 
 - [Prototype 1 27A recovery audit](prototype-1-audit-27a.md) — canonical verified findings, protected invariants, optimization targets, and the recovery sequence.
 
 - [Code organization](code-organization.md) — current folder responsibilities, dependency wiring and migration notes.
-
-- [Maintainability audit](maintainability-audit.md) — concrete coupling, obsolete helpers, ownership, documentation drift, and validation limits.
-- [Optimization audit](repository-audit.md) — performance findings, preservation requirements, and implementation progress.
 
 - [Architecture](architecture.md) — ownership boundaries, combat flow, objectives, AI, generation, validation, and known limits.
 - [Simulation and reproducibility](simulation.md) — AI-versus-AI batches, seeds, map sizes, output interpretation, and deterministic checks.

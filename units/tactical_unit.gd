@@ -22,6 +22,9 @@ signal attack_presented(target_world_position: Vector3)
 @export_group("Presentation")
 @export var unit_hud_scene: PackedScene = preload("res://ui/unit_world_bar.tscn")
 @export var visual_adapter: UnitVisualAdapter
+## Show the original Prototype 1 Bean instead of the current character rig.
+## Kept as a debug fallback and a tiny piece of FuseFire archaeology.
+@export var use_legacy_bean := false
 @export_group("")
 
 var current_path: PackedVector3Array = PackedVector3Array()
@@ -57,12 +60,21 @@ func can_extract_others() -> bool:
 	return mission_actor != null and mission_actor.can_extract_others()
 
 func _ready() -> void:
+	_apply_character_presentation()
 	if stats:
 		stats.defeated.connect(_on_stats_defeated)
 		stats.hp_changed.connect(_on_hp_changed)
-	if visual_adapter:
+	if visual_adapter and not use_legacy_bean:
 		visual_adapter.setup(self)
 	_spawn_world_hud()
+
+func _apply_character_presentation() -> void:
+	var bean := get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if bean:
+		bean.visible = use_legacy_bean
+	if visual_adapter:
+		visual_adapter.visible = not use_legacy_bean
+		visual_adapter.process_mode = Node.PROCESS_MODE_DISABLED if use_legacy_bean else Node.PROCESS_MODE_INHERIT
 
 func _on_stats_defeated() -> void:
 	if visual_adapter:

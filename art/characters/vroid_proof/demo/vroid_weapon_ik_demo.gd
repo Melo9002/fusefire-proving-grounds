@@ -1,3 +1,4 @@
+@tool
 extends "res://art/characters/vroid_proof/runtime/character_rig.gd"
 
 @onready var status_label: Label = get_node_or_null("UI/Status") as Label
@@ -26,6 +27,12 @@ func _ready() -> void:
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
+	if Engine.is_editor_hint():
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_align_weapon_to_aim()
+		_update_weapon_pose()
+		return
 	_build_animation_controller()
 	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	camera.look_at(Vector3(0.42, 0.72, 0.0), Vector3.UP)
@@ -146,6 +153,8 @@ func _update_status() -> void:
 
 
 func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if preview_turning and animation_controller.current_state == &"move":
 		_preview_turn_time += _delta
 		var target_yaw := PI if int(_preview_turn_time / 2.0) % 2 == 0 else 0.0

@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://25dujwsjlfdo"]
+
+[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.gd" id="1_adapter"]
+[ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://art/characters/vroid_proof/runtime/character_animation_controller.gd" id="2_animation"]
+[ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
+
+[sub_resource type="SphereMesh" id="Sphere_target"]
+radius = 0.018
+height = 0.036
+
+[node name="Mira0UnitVisual" type="Node3D" unique_id=1680858322]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+script = ExtResource("1_adapter")
+camera_focus_anchor = Vector3(0, 0.98, 0)
+camera_eye_anchor = Vector3(0, 1.48, 0)
+character_scene = ExtResource("3_model")
+character_scale = 1.6
+right_arm_bones = Array[StringName]([&"mixamorig_RightArm", &"mixamorig_RightForeArm", &"mixamorig_RightHand"])
+left_arm_bones = Array[StringName]([&"mixamorig_LeftArm", &"mixamorig_LeftForeArm", &"mixamorig_LeftHand"])
+clip_library = null
+grip_offset = Vector3(0, 0.035, 0.025)
+
+[node name="VerticalSliceController" type="Node" parent="." unique_id=1993812038]
+script = ExtResource("2_animation")
+
+[node name="Character" type="Node3D" parent="." unique_id=991362236]
+
+[node name="IKTargets" type="Node3D" parent="Character" unique_id=631873967]
+
+[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets" unique_id=344191419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 1.12, 0.19)
+
+[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget" unique_id=1694427233]
+visible = false
+mesh = SubResource("Sphere_target")
+
+[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets" unique_id=1183020262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48, 1.03, 0.02)
+
+[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets" unique_id=130846089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.48, 1.04, 0.05)

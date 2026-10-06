@@ -15,6 +15,9 @@ func _run() -> void:
 	root.add_child(level)
 	await create_timer(0.15).timeout
 	var battle: BattleController = level.get_node("Systems/BattleController")
+	# This test asserts intermediate action state immediately. Keep its timing
+	# independent from the player's saved cinematic-camera preference.
+	battle.action_camera_director.frequency = ActionCameraDirector.Frequency.OFF
 	var turns: TurnManager = battle.turn_manager
 	var grid: GridManager = battle.grid_manager
 	var player: TacticalUnit = turns.player_units[0]

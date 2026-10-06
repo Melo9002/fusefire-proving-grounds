@@ -1,15 +1,21 @@
+@tool
 extends Node3D
 
 const ANIMATION_CONTROLLER_FALLBACK := preload("res://art/characters/vroid_proof/runtime/character_animation_controller.gd")
 
-const RIGHT_ARM := [&"J_Bip_R_UpperArm", &"J_Bip_R_LowerArm", &"J_Bip_R_Hand"]
-const LEFT_ARM := [&"J_Bip_L_UpperArm", &"J_Bip_L_LowerArm", &"J_Bip_L_Hand"]
-
 @export_group("Model Assets")
-## Character model to assemble. It must contain a Skeleton3D using the J_Bip VRoid bone names.
+## Character model to assemble. It must contain a Skeleton3D.
 @export var character_scene: PackedScene = preload("res://art/characters/vroid_proof/models/vroid_test_runtime.glb")
+## Uniform correction applied to imported models whose source units are not metres.
+@export_range(0.1, 4.0, 0.01) var character_scale := 1.0
 ## Weapon model to attach. It must contain SupportHandTarget and MuzzleSocket nodes.
 @export var weapon_scene: PackedScene = preload("res://art/weapons/aug/models/aug_runtime_socketed.glb")
+
+@export_group("Skeleton Bone Map")
+## Upper arm, forearm, and hand used by the firing-hand IK chain.
+@export var right_arm_bones: Array[StringName] = [&"J_Bip_R_UpperArm", &"J_Bip_R_LowerArm", &"J_Bip_R_Hand"]
+## Upper arm, forearm, and hand used by the support-hand IK chain.
+@export var left_arm_bones: Array[StringName] = [&"J_Bip_L_UpperArm", &"J_Bip_L_LowerArm", &"J_Bip_L_Hand"]
 
 @onready var character_root: Node3D = $Character
 @onready var right_hand_target: Marker3D = $Character/IKTargets/RightHandTarget
@@ -47,6 +53,14 @@ var stock_marker: Marker3D
 var shoulder_marker: Marker3D
 var sight_marker: Marker3D
 var support_ik_target: Marker3D
+## Fine adjustment for where the support hand meets the rifle fore-end.
+@export var support_hand_adjustment := Vector3.ZERO
+@export_group("Arm IK")
+## Elbow guide positions in Character-local metres.
+@export var right_elbow_ready := Vector3(-0.26, 0.93, -0.04)
+@export var right_elbow_aim := Vector3(-0.42, 1.18, -0.08)
+@export var left_elbow_ready := Vector3(0.27, 0.94, 0.10)
+@export var left_elbow_aim := Vector3(0.38, 1.03, 0.08)
 @export_group("Low Ready")
 @export var carry_angles_degrees := Vector3(35, 40, -8)
 @export var carry_grip_position := Vector3(-0.08, 1.16, 0.15)
@@ -67,15 +81,17 @@ func _rifle_local_basis() -> Basis:
 func _build_character() -> void:
 	assert(character_scene != null, "Character scene is required")
 	var model := character_scene.instantiate() as Node3D
+	model.scale = Vector3.ONE * character_scale
 	character_root.add_child(model)
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
-	assert(skeleton != null, "VRoid runtime model must contain Skeleton3D")
+	assert(skeleton != null, "Character model must contain Skeleton3D")
+	assert(right_arm_bones.size() == 3 and left_arm_bones.size() == 3, "Arm bone maps require upper arm, forearm, and hand")
 
 
 func _build_weapon_attachment() -> void:
 	weapon_attachment = BoneAttachment3D.new()
 	weapon_attachment.name = "RightHandWeaponSocket"
-	weapon_attachment.bone_name = RIGHT_ARM[2]
+	weapon_attachment.bone_name = right_arm_bones[2]
 	skeleton.add_child(weapon_attachment)
 
 	assert(weapon_scene != null, "Weapon scene is required")
@@ -131,8 +147,8 @@ func _build_arm_ik() -> void:
 	support_ik_target = Marker3D.new()
 	support_ik_target.name = "SupportIKTarget"
 	character_root.add_child(support_ik_target)
-	_configure_chain(0, RIGHT_ARM, right_hand_target, right_elbow_pole)
-	_configure_chain(1, LEFT_ARM, support_ik_target, left_elbow_pole)
+	_configure_chain(0, right_arm_bones, right_hand_target, right_elbow_pole)
+	_configure_chain(1, left_arm_bones, support_ik_target, left_elbow_pole)
 	arm_ik.active = true
 
 
@@ -180,12 +196,16 @@ func _update_weapon_pose() -> void:
 		return
 	# Use the animated shoulder origin (unaffected by the arm IK rotations).
 	# The chest's shot animation therefore carries the rifle through recoil.
-	var shoulder_index := skeleton.find_bone(RIGHT_ARM[0])
+	var shoulder_index := skeleton.find_bone(right_arm_bones[0])
 	var shoulder_world := skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin
 	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
 	stock_marker.position = stock_contact_offset
 	var aimed_grip := shoulder_marker.position - stock_contact_offset - grip_offset
-	var moving: bool = is_instance_valid(animation_controller) and animation_controller.current_state in [&"move", &"carry_move"]
+	var moving := false
+	# Non-tool animation controllers intentionally do not expose runtime state
+	# while this rig is drawing its editor preview.
+	if not Engine.is_editor_hint() and is_instance_valid(animation_controller):
+		moving = animation_controller.current_state in [&"move", &"carry_move"]
 	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, get_process_delta_time() * 5.0)
 	_carry_phase += get_process_delta_time() * TAU * 2.0
 	var ready_grip := carry_grip_position + Vector3(0, 0.035, -0.02) * carry_motion_blend
@@ -193,13 +213,13 @@ func _update_weapon_pose() -> void:
 	# Only a few millimetres of stock compression; avoid the old 6.5 cm slide
 	# through the shoulder. Upper-body animation supplies the visible kick.
 	right_hand_target.position = ready_grip.lerp(aimed_grip, aim_blend) + Vector3(0, 0, -recoil * 0.08)
-	right_elbow_pole.position = Vector3(-0.26, 0.93, -0.04).lerp(Vector3(-0.42, 1.18, -0.08), aim_blend)
-	left_elbow_pole.position = Vector3(0.27, 0.94, 0.10).lerp(Vector3(0.38, 1.03, 0.08), aim_blend)
+	right_elbow_pole.position = right_elbow_ready.lerp(right_elbow_aim, aim_blend)
+	left_elbow_pole.position = left_elbow_ready.lerp(left_elbow_aim, aim_blend)
 	# Predict the support marker in the current pose before solving either arm.
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):
 		var support_offset := weapon.to_local(support_hand_target.global_position)
-		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_offset)
+		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_offset + support_hand_adjustment)
 
 
 func _play_shot_feedback() -> void:
@@ -221,5 +241,3 @@ func _on_animation_state_changed(state_name: StringName) -> void:
 	_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot", &"shoot_left", &"shoot_right"] else 0.0, 0.28)
 	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
 		_play_shot_feedback()
-
-

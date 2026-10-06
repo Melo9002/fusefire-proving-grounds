@@ -115,7 +115,7 @@ func _build_animation_player() -> void:
 		library.add_animation(pose, _fallbacks._make_tactical_pose(pose))
 	for side in [-1, 1]:
 		var shot: Animation = _fallbacks._make_shoot()
-		_fallbacks._add_position(shot, HIPS, [0.0, 0.07, 0.32], [Vector3(side * 0.10, -0.03, 0), Vector3(side * 0.14, -0.03, 0), Vector3(side * 0.10, -0.03, 0)])
+		_fallbacks._add_position(shot, _fallbacks.hips, [0.0, 0.07, 0.32], [Vector3(side * 0.10, -0.03, 0), Vector3(side * 0.14, -0.03, 0), Vector3(side * 0.10, -0.03, 0)])
 		library.add_animation(&"shoot_left" if side < 0 else &"shoot_right", shot)
 	# Saved clips are authoritative; builders remain a fallback for missing clips.
 	if clip_library:
