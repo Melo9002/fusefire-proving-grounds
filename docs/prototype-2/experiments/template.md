@@ -21,9 +21,9 @@ not describe a direct copy of the source implementation.
 
 **Rule IDs:** Link any entries in a research ledger.
 
-**Borrowed local placeholders:** For each ignored proprietary animation used in
-private study, record its source package/name, purpose, release-safe fallback,
-and replacement task. Write `none` when the experiment uses none.
+**Borrowed local placeholders:** Link each ignored proprietary animation or
+untextured reference asset in the Operation XCOM placeholder manifest. Write
+`none` when the experiment uses none.
 
 ## Problem and question
 

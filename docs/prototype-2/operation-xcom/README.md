@@ -28,17 +28,21 @@ remove each experiment.
    names, useful editor exposure where appropriate, and short guidance.
 7. **Record failures.** A discarded idea can be valuable if its evidence and
    reason remain searchable.
-8. **Keep proprietary material local.** XCOM animations may be copied into the
-   ignored `research/xcom-local/` area as private placeholders for study and
-   local experiments. Never commit, push, package, distribute, or release XCOM
-   code, packages, animations, meshes, audio, textures, or extracted derivatives.
-9. **Track every borrowed placeholder.** A local XCOM animation used in an
-   experiment needs its source, purpose, FuseFire fallback, and replacement task
-   recorded in that experiment note. Do not let a useful placeholder disappear
-   into the project as if it were production content.
-10. **Make our own release content.** Every borrowed animation must be replaced
-   by an original or properly licensed FuseFire animation before distribution.
-   We may reproduce useful animation roles and workflow ideas in our own work.
+8. **Keep proprietary material local.** XCOM animations and untextured reference
+   assets may be copied into the ignored `research/xcom-local/` area as private
+   placeholders for study and local experiments. Remove or omit textures when a
+   mesh is used to describe proportions, sockets, modular boundaries, collision,
+   or another production target. Never commit, push, package, distribute, or
+   release XCOM code, packages, animations, meshes, audio, textures, or extracted
+   derivatives. Removing textures does not make an extracted asset releasable.
+9. **Track every borrowed placeholder.** A local XCOM asset used in an experiment
+   needs its source, purpose, visible identifying label, FuseFire fallback, and
+   replacement task recorded in the [placeholder manifest](placeholder-manifest.md).
+   Do not let a useful placeholder disappear into the project as if it were
+   production content.
+10. **Make our own release content.** Every borrowed asset must be replaced by
+   original or properly licensed FuseFire content before distribution. We may
+   reproduce useful functional roles and workflow ideas in our own work.
 11. **Have fun on purpose.** Prefer experiments that are satisfying to inspect,
     change, and play. Research should make the project livelier, not bury it.
 
@@ -74,14 +78,18 @@ These paths are local evidence locations and must not be copied into Git.
 6. Observe it, run focused regression checks, and record editing friction.
 7. Close it deliberately: Adopt, Revise, Archive, or Discard.
 
-## Borrowed animation placeholder checklist
+## Borrowed placeholder checklist
 
 Use this only for private local experiments:
 
 - [ ] Store the copied asset under ignored `research/xcom-local/`.
-- [ ] Record its original package and animation name in the experiment note.
+- [ ] Remove or omit textures from copied reference meshes.
+- [ ] Give the runtime placeholder an unmistakable `XCOM REFERENCE` label.
+- [ ] Record its package/object or animation name in the
+  [placeholder manifest](placeholder-manifest.md).
 - [ ] State what question the placeholder is answering.
 - [ ] Keep a release-safe FuseFire fallback available.
-- [ ] Add a named replacement task for an original or properly licensed clip.
+- [ ] Add a named replacement task describing the FuseFire asset Pedro needs to
+  create: role, scale, contacts, modular boundaries, motion, and acceptance test.
 - [ ] Verify that Git, exported builds, screenshots intended for publication,
   and release packages contain none of the borrowed data.
