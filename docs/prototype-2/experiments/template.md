@@ -21,6 +21,10 @@ not describe a direct copy of the source implementation.
 
 **Rule IDs:** Link any entries in a research ledger.
 
+**Borrowed local placeholders:** For each ignored proprietary animation used in
+private study, record its source package/name, purpose, release-safe fallback,
+and replacement task. Write `none` when the experiment uses none.
+
 ## Problem and question
 
 **Problem:** What player, creator, or engineering problem are we observing?

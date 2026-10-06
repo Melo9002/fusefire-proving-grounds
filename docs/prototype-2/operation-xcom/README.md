@@ -9,6 +9,11 @@ Start with the [research ledger](research-ledger.md). It records what we actuall
 saw, what we only infer, what FuseFire rule might be worth testing, and how to
 remove each experiment.
 
+## Research passes
+
+- [OX-02 — Animation inventory](animation-inventory.md): human animation
+  packages, naming grammar, sockets, IK, notifies, and FuseFire opportunities.
+
 ## Working rules
 
 1. **Observe before designing.** Record exact evidence before proposing a rule.
@@ -23,12 +28,18 @@ remove each experiment.
    names, useful editor exposure where appropriate, and short guidance.
 7. **Record failures.** A discarded idea can be valuable if its evidence and
    reason remain searchable.
-8. **Keep proprietary material local.** Never commit or distribute XCOM code,
-   packages, animations, meshes, audio, textures, or extracted derivatives.
-   Local extraction work belongs in ignored `research/xcom-local/`.
-9. **Make our own release content.** Any temporary private animation study must
-   end in an original or properly licensed FuseFire asset before distribution.
-10. **Have fun on purpose.** Prefer experiments that are satisfying to inspect,
+8. **Keep proprietary material local.** XCOM animations may be copied into the
+   ignored `research/xcom-local/` area as private placeholders for study and
+   local experiments. Never commit, push, package, distribute, or release XCOM
+   code, packages, animations, meshes, audio, textures, or extracted derivatives.
+9. **Track every borrowed placeholder.** A local XCOM animation used in an
+   experiment needs its source, purpose, FuseFire fallback, and replacement task
+   recorded in that experiment note. Do not let a useful placeholder disappear
+   into the project as if it were production content.
+10. **Make our own release content.** Every borrowed animation must be replaced
+   by an original or properly licensed FuseFire animation before distribution.
+   We may reproduce useful animation roles and workflow ideas in our own work.
+11. **Have fun on purpose.** Prefer experiments that are satisfying to inspect,
     change, and play. Research should make the project livelier, not bury it.
 
 ## Status flow
@@ -62,3 +73,15 @@ These paths are local evidence locations and must not be copied into Git.
 5. Build the smallest proof behind a clear activation point.
 6. Observe it, run focused regression checks, and record editing friction.
 7. Close it deliberately: Adopt, Revise, Archive, or Discard.
+
+## Borrowed animation placeholder checklist
+
+Use this only for private local experiments:
+
+- [ ] Store the copied asset under ignored `research/xcom-local/`.
+- [ ] Record its original package and animation name in the experiment note.
+- [ ] State what question the placeholder is answering.
+- [ ] Keep a release-safe FuseFire fallback available.
+- [ ] Add a named replacement task for an original or properly licensed clip.
+- [ ] Verify that Git, exported builds, screenshots intended for publication,
+  and release packages contain none of the borrowed data.
