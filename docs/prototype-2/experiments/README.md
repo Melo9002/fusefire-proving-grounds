@@ -4,6 +4,13 @@ Every experiment begins by copying [`template.md`](template.md). Keep its scope
 small enough to remove cleanly. Screenshots, measurements, test seeds, and brief
 observations belong with the experiment note rather than in somebody's memory.
 
+Research and implementation are separate decisions. An observed technique is
+evidence, not an instruction to reproduce another game's architecture. Record
+the source, the inference, and the proposed FuseFire rule before changing code.
+
+Operation XCOM uses the [research ledger](../operation-xcom/research-ledger.md)
+to turn SDK observations into small, reversible FuseFire experiments.
+
 ## Active experiments
 
 - [EXP-001 — MIRA-0 asset intake and clean round-trip](exp-001-mira-0-intake.md)
@@ -45,6 +52,24 @@ cross-cutting experiment.
    not change accidentally.
 6. `BattleLevel` remains the composition root unless a separately reviewed
    experiment proves that ownership inadequate.
+7. Human editing remains a design constraint: important rules and tunables must
+   have a discoverable owner, useful name, and practical edit path.
+8. A prototype should remain enjoyable to build and test. Complexity must earn
+   its cost through clearer behavior, better tools, or meaningful play.
+
+## Evidence and reversibility rules
+
+- Label claims as **observed**, **inferred**, or **tested in FuseFire**.
+- Cite an exact local file, class, package, scene, recording, seed, or profiler
+  capture whenever one exists.
+- Keep proprietary reference assets outside Git. Operation XCOM local exports
+  belong under ignored `research/xcom-local/` and must never ship.
+- Give every code experiment a narrow activation point and a written removal
+  path before implementation.
+- Record baseline behavior before changing a rule that affects simulation,
+  replay, AI, input commitment, or animation-event timing.
+- Do not let a successful technical proof silently become final game design.
+  Close the experiment with an explicit outcome.
 
 ## Outcomes
 

@@ -5,3 +5,7 @@
 
 # Godot interrupted scene-save files
 *.tscn*.tmp
+
+# Local proprietary reference exports used for Operation XCOM research.
+# Notes and original FuseFire experiments belong in Git; extracted assets do not.
+/research/xcom-local/

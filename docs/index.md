@@ -9,6 +9,7 @@ This directory contains the project documentation intended for developers, desig
 - [Prototype 2 idea vault](prototype-2/idea-vault.md) — wishes, experiments, dependencies, external resources, and scope boundaries for the next prototype.
 - [Pre-production workshop](prototype-2/preproduction-plan.md) — start-now proofs, incubation work packages, task cards, decision gates, and parked ideas.
 - [Prototype 2 experiment notebook](prototype-2/experiments/README.md) — protected P1 baseline, reusable experiment record, outcomes, and minimum regression checks.
+- [Operation XCOM research ledger](prototype-2/operation-xcom/research-ledger.md) — sourced observations, FuseFire hypotheses, experiment status, and rollback notes.
 - [External resource ledger](prototype-2/external-resources.md) — dependency candidates, licenses, risks, removal paths, and decisions.
 - [Animation source survey](prototype-2/animation-source-survey.md) — free motion sources, Godot 4.7 retargeting, candidate tools, and the first clip test.
 
