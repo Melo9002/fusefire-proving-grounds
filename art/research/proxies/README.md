@@ -15,6 +15,8 @@ texture, audio, or code.
 - `source/fusefire_proxy_kit.blend` — editable source containing both assets.
 - `source/build_proxy_kit.py` — deterministic Blender generator.
 - `source/PROXY_KIT_REPORT.json` — dimensions, bones, contacts, and output paths.
+- `demo/proxy_pose_workbench.tscn` — runnable Godot pose, IK, weapon, camera,
+  cover, traversal, and rescue preview.
 
 The source folder contains `.gdignore` so Godot does not try to import the
 editable `.blend`; the generated GLBs remain available under `models/`.
@@ -37,6 +39,24 @@ Validate the generated Godot contract with:
 ```powershell
 godot_console --headless --path . -s tests/proxy_kit_test.gd
 ```
+
+## Visual test
+
+Open `demo/proxy_pose_workbench.tscn` and press **F6**. The controls are shown in
+the upper-left corner. Useful starting inputs:
+
+- **1–6:** idle, move, aim, shoot, hit, defeat;
+- **arrow keys:** forward, backward, and strafe previews;
+- **7–0:** low/high cover and left/right exposure shots;
+- **V/B/N/L:** vault, climb, descend, and land;
+- **R/P/M/E:** pickup, carry idle, carry move, and boarding;
+- **right mouse drag:** orbit camera;
+- **I:** toggle arm IK;
+- **Space:** play the automatic sequence;
+- **Esc:** close.
+
+The animations are FuseFire's procedural fallbacks. Their roughness is useful:
+this scene tests contracts and makes missing production animation obvious.
 
 ## Human editing
 
