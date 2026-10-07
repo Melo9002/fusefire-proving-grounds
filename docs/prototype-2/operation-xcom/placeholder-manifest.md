@@ -5,6 +5,11 @@ This file records proprietary reference assets used privately under ignored
 Every row is also a production brief for an original or properly licensed
 FuseFire replacement.
 
+MIRA-0, the AUG, and the existing FuseFire animation library are not placeholders
+in this table. Keep using them unless a specific experiment proves that a new
+asset role is missing. Original blockouts are for those missing roles, not for
+rebuilding working FuseFire content in cube form.
+
 ## Active placeholders
 
 | ID | Local type | XCOM source package/object | Experiment and question | FuseFire asset to produce | Required measurements and contacts | Release-safe fallback | Replacement status |
@@ -46,8 +51,3 @@ packages, public screenshots, recordings intended for publication, and releases
 A mechanic may survive after its borrowed placeholder is removed. A release
 cannot depend on the borrowed file. Replace the content, switch back to the
 FuseFire fallback, or remove the experiment before distributing a build.
-
-The committed [FuseFire original proxy kit](../../../art/research/proxies/README.md)
-is the preferred fallback for cross-computer experiments. Because those block
-assets are original project content, they do not belong in this borrowed-assets
-table.
