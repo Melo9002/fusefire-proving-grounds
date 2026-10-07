@@ -46,3 +46,8 @@ packages, public screenshots, recordings intended for publication, and releases
 A mechanic may survive after its borrowed placeholder is removed. A release
 cannot depend on the borrowed file. Replace the content, switch back to the
 FuseFire fallback, or remove the experiment before distributing a build.
+
+The committed [FuseFire original proxy kit](../../../art/research/proxies/README.md)
+is the preferred fallback for cross-computer experiments. Because those block
+assets are original project content, they do not belong in this borrowed-assets
+table.

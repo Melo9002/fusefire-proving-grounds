@@ -13,6 +13,8 @@ remove each experiment.
 
 - [OX-02 — Animation inventory](animation-inventory.md): human animation
   packages, naming grammar, sockets, IK, notifies, and FuseFire opportunities.
+- [Original proxy kit](../../../art/research/proxies/README.md): committed block
+  mannequin and rifle contracts for work-safe experiments on every computer.
 
 ## Working rules
 
