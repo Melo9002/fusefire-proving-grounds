@@ -73,6 +73,13 @@ In `vroid_weapon_ik_demo.tscn`, use **7/8** for low/high cover, **9/0** for left
 
 `tactical_pose_context.gd` derives presentation cues from adjacent cover and the original grid path. The visual adapter chooses nearby cover most aligned with facing, faces its normal on settling, and returns to that stance after a shot. High-cover exposure is a small body offset, not a guarantee that a hand or muzzle clears scenery. Vault/climb/descent loops follow existing path translation and finish with a landing pose. These are blocking clips: ladder-hand contacts, obstacle-sized vault arcs, foot-lock IK, and polished timing remain manual refinement work. The rifle remains held during traversal.
 
+Live tactical path following currently means **turn and advance**, so it keeps
+the forward locomotion clip while the character rotates toward each segment.
+Backward and strafe clips remain available in the workbench and are reserved for
+future actions that explicitly request those movement styles; they are not
+selected merely because a gradual turn temporarily makes velocity look sideways
+in character-local space.
+
 Edit `_make_tactical_pose()` and the exposure clips in `character_animation_controller.gd`. An explicit RESET animation restores bones unused by subsequent clips, preventing a crouch from persisting into idle. Presentation does not change cover bonuses, AP, collision, or shot evaluation.
 
 ## 26F locomotion tuning

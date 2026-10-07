@@ -171,8 +171,11 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 		return
 	var desired_yaw := atan2(flat.x, flat.z)
 	global_rotation.y = rotate_toward(global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
-	var local_velocity := global_basis.inverse() * flat
-	animation_controller.set_locomotion(Vector2(local_velocity.x, local_velocity.z).normalized(), flat.length() / stride_length)
+	# Tactical paths currently mean "turn and advance." Choosing a clip from the
+	# partially rotated local basis made an ordinary forward run briefly select a
+	# strafe clip during turns. Keep directional clips available for explicit
+	# future movement styles and the workbench; path-following intent is forward.
+	animation_controller.set_locomotion(Vector2(0.0, 1.0), flat.length() / stride_length)
 
 func present_attack(target_world_position: Vector3) -> void:
 	var cover := _cover_context()

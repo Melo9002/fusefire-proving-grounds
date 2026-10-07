@@ -24,12 +24,12 @@ func run() -> void:
 	check(visual.rotation.y > 0.0 and visual.rotation.y < PI / 2, "Turn must be gradual")
 	var controller = visual.animation_controller
 	var direction: Vector2 = controller.animation_tree.get("parameters/move/Direction/blend_position")
-	check(direction.x > 0.5, "Sideways travel must select strafing while turning")
+	check(direction.y > 0.9 and absf(direction.x) < 0.01, "Path following must keep the forward clip while turning")
 	check(is_equal_approx(controller.animation_tree.get("parameters/move/Pace/scale"), 5.0 / visual.stride_length), "Cadence must match travel speed")
 	visual.rotation.y = 0.0
 	visual.update_locomotion(Vector3(0, 0, -2), 0.01)
 	direction = controller.animation_tree.get("parameters/move/Direction/blend_position")
-	check(direction.y < -0.9, "Reverse travel must select backward steps")
+	check(direction.y > 0.9, "Path reversal must turn and continue using the forward clip")
 	unit.move_along_path(PackedVector3Array([Vector3.ZERO, Vector3(1, 0, 1), Vector3(2, 0, 1)]))
 	await unit.movement_finished
 	check(unit.global_position.is_equal_approx(Vector3(2, 0, 1)), "Diagonal and corner path must reach exact destination")
