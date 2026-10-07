@@ -14,7 +14,13 @@ file/class/package, scene, seed, capture, or other evidence.
 
 **Evidence level:** observed / inferred / tested in FuseFire
 
-**Hypothesis:** Why might this behavior or structure be useful?
+**Hypothesis:** What testable claim explains the observation or predicts a useful result?
+
+**Alternative explanation:** What else could produce the observation?
+
+**Pass/fail criteria:** What repeatable scenario and observable result would support or disprove the claim?
+
+**Tool and sample scope:** Versions, exact source objects, and samples inspected; write none when irrelevant.
 
 **FuseFire translation:** State the smallest FuseFire-native rule to test. Do
 not describe a direct copy of the source implementation.

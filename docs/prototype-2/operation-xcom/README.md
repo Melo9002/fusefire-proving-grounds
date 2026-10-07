@@ -11,6 +11,9 @@ remove each experiment.
 
 ## Research passes
 
+- [OX-01 — Research rules](research-rules.md): experiment records, restart
+  corrections, acceptance checks, human editing paths, and rollback requirements.
+
 - [OX-02 — Animation inventory](animation-inventory.md): human animation
   packages, naming grammar, sockets, IK, notifies, and FuseFire opportunities.
 
