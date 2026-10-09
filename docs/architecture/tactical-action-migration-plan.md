@@ -3,7 +3,7 @@
 **Plan date:** 2026-10-08  
 **Roadmap milestone:** Task 01.1  
 **Starting branch:** `p2-foundation` at baseline commit `53e429f`  
-**Status:** proposal for review; no gameplay code changed
+**Status:** Task 01 implemented on `p2-foundation` through commit `a315a96`; this document retains the original audit and records the final architecture below
 
 ## Purpose
 
@@ -867,4 +867,51 @@ Recommendation: increment one battle revision for every committed tactical actio
 
 ## Approval boundary
 
-No implementation follows automatically from this document. Approval of the architecture should first authorize milestones 01.2 and 01.3: the contract/identity skeleton and Attack vertical migration. Later action migrations should use what the Attack experiment teaches rather than assuming every sketch above survives contact with the code unchanged.
+## 10. Implementation record — Task 01 complete
+
+The migration was implemented incrementally rather than reproducing every proposed class boundary. The resulting pipeline is:
+
+> **Query → Validate → Resolve → Commit → Present**
+
+`TacticalActionService` is the battle-scoped transaction coordinator. Stable `tactical_id` values are resolved through `TacticalActorRegistry`; typed requests carry expected revisions and source identities; typed results become schema-versioned replay records. Queries and rejected requests do not consume combat RNG or mutate tactical state. A successful commit increments one shared action revision before presentation, emits one committed result, and remains busy until presentation completes or is explicitly suppressed.
+
+### Implemented actions
+
+| Action | Authoritative rules and commit | Presentation | Replay result |
+| --- | --- | --- | --- |
+| Attack | Service validates activation and `CombatRules`, consumes seeded combat RNG only after final validation, then commits AP, damage, defeat, roster, and objective consequences synchronously. | `BattleController` consumes `AttackActionResult` for camera, attack, impact, defeat, and feedback. | Hit chance, roll, damage, AP/HP, defeat, objectives, and battle result. |
+| Move | Service re-queries pathfinding and destination occupancy immediately before commit, then commits AP and destination reservation before traversal. | `BattleController` derives and plays the existing traversal path/pose segments. Suppressed presentation snaps to the committed destination. | Origin/destination, AP, objective changes, and carried actor resulting from Reach or automatic Rescue consequences. |
+| Wait / Skip | Service validates the acting unit and commits remaining AP to zero. | A lightweight result presenter logs the reason; selection and phase progression remain in `TurnManager` behind the service busy barrier. | AP before/after and defending state. |
+| Defend | Service retains the old one-AP defensive state transition solely for legacy replay compatibility. The obsolete `DefendAction` class was removed. | Existing short defensive camera presentation remains available to old recordings. | AP and defending state. |
+| Rescue | Service validates revision and single-flight state, while `ObjectiveManager.can_rescue` remains the mission-domain rule. Commit removes target occupancy, attaches the carried actor, and completes the objective. | `BattleController` presents the result after commit. | Objective state and mission counters with stable actor/target IDs. |
+| Extract | Service applies the explicit zero-AP, non-active-unit policy through `ObjectiveManager.can_extract`. Commit updates objectives/counters and removes occupancy/roster membership before boarding presentation. | Actor registry identity and the visual node survive until boarding finishes; final unregister/free is presentation cleanup. Suppression cleans up immediately. | Objective state, mission counters, and roster removal. |
+
+The former `AttackAction`, `MoveAction`, `DefendAction`, `RescueAction`, and `ExtractAction` mutation wrappers were removed. Player, AI, replay, debug extraction, and headless callers now converge on the same submission paths. `ObjectiveManager.try_rescue` and `try_extract` remain thin public adapters because mission UI and AI already depend on that domain-facing API; they contain no action mutation or presentation logic.
+
+### Authority boundaries
+
+- `TacticalActionService` owns single-flight submission, stale-request rejection, deterministic resolution, transaction/revision identity, commit lifecycle, and committed/presented signals. It coordinates real action paths directly instead of introducing a speculative handler registry.
+- `CombatRules`, pathfinding, and `GridManager` remain rule/space collaborators. The service does not duplicate their algorithms.
+- `ObjectiveManager` owns mission legality, progress, counters, and outcome rules. Rescue and Extract are action transactions whose domain commit calls this owner.
+- `BattleController` adapts input and owns cameras, animation, feedback, and final visual disposal. Presentation cannot decide whether a commit succeeds.
+- `TurnManager` remains the authority for activation queues, phase transitions, round progression, and battle completion. Turn records are dedicated commands, not synthetic unit actions.
+- `end_mission_early` remains a dedicated mission command. Turn and departure commands advance the shared revision so old previews become stale without forcing these operations into an unsuitable action abstraction.
+- Automatic Reach and Rescue remain deterministic consequences of a committed Move. They are captured in the Move result and fingerprint, never recorded as duplicate nested actions.
+- Round-based Survive progress and defeat-driven objective changes remain consequences of their authoritative turn/attack events. Debug objective mutation remains an explicit developer command outside normal gameplay.
+
+### Deliberate differences from the proposal
+
+The implementation did not create a generic `TacticalActionHandler` hierarchy. Attack, Move, simple activation actions, and mission interactions have materially different collaborators and activation policies; typed service entry points and injected mission callbacks provide clearer ownership with less indirection at the current scale. A handler registry can be reconsidered when weapon/equipment abilities produce enough concrete action kinds to justify it.
+
+Cancellation remains pre-commit only. Accepted Prototype 1 actions are short, deterministic transactions whose authoritative mutation completes synchronously. Camera or animation completion may be awaited, but it cannot roll back or alter the result.
+
+### Validation added during migration
+
+`tactical_action_service_test.gd` covers stable IDs, read-only/RNG-safe queries, stale and duplicate rejection, one-time commit/revision behavior, deterministic attack reconstruction, normal versus suppressed presentation, movement occupancy and AP, and Wait lifecycle behavior. Existing battle, objective, AI, traversal, camera, dependency, and replay suites verify the integrated paths. The final release validation matrix remains the release gate rather than a substitute for these focused contract tests.
+
+### Remaining concerns
+
+- Movement pose data is still derived from `art/characters/vroid_proof/runtime/tactical_pose_context.gd`; moving this neutral traversal contract is character-pipeline work rather than action authority work.
+- Defend is intentionally a compatibility behavior, not an approved current mechanic. Replay schema migration policy should decide when old Defend support can be removed.
+- Action result classes share small serialization patterns. Their explicit forms are currently easier to inspect than a generic envelope; consolidate only if future ability work demonstrates repeated maintenance cost.
+- `TacticalActionService` currently contains the four proven orchestration paths. New abilities should first test whether a small handler abstraction reduces real duplication before adding a general framework.

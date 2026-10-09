@@ -28,11 +28,18 @@ func _run() -> void:
 	_check(service.get_combat_rng_state() == rng_before, "Rejected request does not consume combat RNG")
 
 	var commits := [0]
+	var reentrant_codes: Array[StringName] = []
 	service.action_committed.connect(func(_result): commits[0] += 1)
+	service.action_committed.connect(func(_result):
+		var nested := service.make_simple_request(&"wait", attacker, TacticalActionRequest.Source.SYSTEM)
+		Callable(service, "submit_simple").call(nested, true)
+		reentrant_codes.append(service.last_rejection.code)
+	, CONNECT_ONE_SHOT)
 	var request := service.make_attack_request(attacker, target, TacticalActionRequest.Source.PLAYER)
 	var result := await service.submit_attack(request, true)
 	_check(result != null and result.presentation_suppressed and result.presentation_completed, "Suppressed presentation still completes the action lifecycle")
 	_check(commits[0] == 1 and service.state_revision == 1 and result.transaction_id == 1, "Attack commits exactly once with one revision and transaction")
+	_check(reentrant_codes == [&"action_busy"], "Synchronous commit observers cannot submit a reentrant action")
 	_check(result.did_hit and result.target_defeated, "Deterministic attack fixture resolves hit and defeat")
 	_check(first.turn_manager.enemy_units.is_empty(), "Defeat consequence removes target from the roster")
 	_check(first.objective_manager.get_objective(&"eliminate").progress == 1, "Defeat consequence advances the objective once")
