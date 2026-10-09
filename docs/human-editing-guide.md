@@ -14,6 +14,9 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Tune shot, hit, landing, or pickup return timing | **Action Timing** on the adapter root | `tests/unit_visual_adapter_test.gd` |
 | Change movement range, HP, or AP | `units/tactical_unit.tscn` → `UnitStats` | Core battle/objective smoke tests |
 | Change weapon range or world movement speed | `units/tactical_unit.tscn` root → **Gameplay** | `tests/battle_smoke.gd` |
+| Change Attack legality, cover, obstruction, range, or hit chance | `systems/combat_rules.gd`; activation/AP/revision checks remain in `systems/actions/runtime/tactical_action_service.gd` | `tests/tactical_action_service_test.gd` and combat cover/elevation/trajectory tests |
+| Change the prediction facts available to UI and AI | `systems/actions/runtime/attack_query_result.gd`, populated by `TacticalActionService.query_attack()` | `tests/tactical_action_service_test.gd` |
+| Change attack-preview wording or AI preference | UI text: `BattleController._update_attack_preview`; button state: `ui/action_hud_controller.gd`; AI preference: `systems/ai/ai_target_scorer.gd` | Battle smoke plus AI target/determinism tests |
 | Tune tactical camera movement and zoom | `levels/prototype_map/prototype_map.tscn` → `CameraRig` | `tests/action_camera_director_test.gd`, `tests/camera_obstruction_test.gd`, and manual close/far zoom |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |

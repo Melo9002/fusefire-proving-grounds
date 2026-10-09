@@ -875,6 +875,8 @@ The migration was implemented incrementally rather than reproducing every propos
 
 `TacticalActionService` is the battle-scoped transaction coordinator. Stable `tactical_id` values are resolved through `TacticalActorRegistry`; typed requests carry expected revisions and source identities; typed results become schema-versioned replay records. Queries and rejected requests do not consume combat RNG or mutate tactical state. A successful commit increments one shared action revision before presentation, emits one committed result, and remains busy until presentation completes or is explicitly suppressed.
 
+Task 01.6 completed the Attack query boundary. Targeted and targetless queries now expose the same structured legality and prediction facts to player hover, HUD availability, and AI candidate discovery. Targetless queries retain both legal IDs and rejected candidate results. `CombatRules` still owns spatial combat facts, while the action service adds activation, AP, revision, and service lifecycle rules. AI target scoring remains a policy consumer and does not become a second legality authority.
+
 ### Implemented actions
 
 | Action | Authoritative rules and commit | Presentation | Replay result |
