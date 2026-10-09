@@ -13,7 +13,7 @@ func _initialize() -> void:
 func run() -> void:
 	var unit := TacticalUnit.new()
 	unit.unit_hud_scene = null
-	var visual = load("res://art/characters/vroid_proof/runtime/unit_visual_adapter.tscn").instantiate()
+	var visual = load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate()
 	unit.add_child(visual)
 	unit.visual_adapter = visual
 	root.add_child(unit)

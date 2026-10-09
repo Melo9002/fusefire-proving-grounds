@@ -45,6 +45,7 @@ var _squad_contexts: Dictionary[int, SquadContext] = {}
 var replay_mode := false
 var action_camera_director: Node
 var action_service: TacticalActionService
+var action_presenter: TacticalActionPresenter
 var _objective_manager: ObjectiveManager
 var is_action_in_progress: bool = false:
 	set(value):
@@ -139,6 +140,17 @@ func _initialize_action_service() -> void:
 	action_service = TacticalActionService.new()
 	action_service.name = "TacticalActionService"
 	add_child(action_service)
+	action_presenter = TacticalActionPresenter.new()
+	action_presenter.name = "TacticalActionPresenter"
+	add_child(action_presenter)
+	action_presenter.setup(
+		action_service.actor_registry,
+		grid_manager,
+		action_camera_director,
+		func() -> bool: return replay_mode,
+		func(attacker, target, did_hit, hit_chance): attack_resolved.emit(attacker, target, did_hit, hit_chance),
+		finalize_extracted_unit
+	)
 	turn_manager.action_completion_barrier = func() -> bool: return action_service.is_busy
 	_configure_action_service(null)
 	action_service.action_committed.connect(_on_tactical_action_committed)
@@ -149,14 +161,14 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		grid_manager,
 		objectives,
 		ai_decision_seed * 2147483647 + 104729,
-		_present_attack_result,
+		action_presenter.present_attack,
 		_query_move_data,
-		_present_move_result,
+		action_presenter.present_move,
 		_on_movement_committed,
-		_present_simple_result,
+		action_presenter.present_simple,
 		_validate_mission_action,
 		_commit_mission_action,
-		_present_mission_action
+		action_presenter.present_mission
 	)
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
@@ -172,33 +184,6 @@ func _ensure_tactical_id(unit: TacticalUnit) -> void:
 func _on_tactical_action_committed(result) -> void:
 	tactical_action_committed.emit(result)
 
-func _present_attack_result(result: AttackActionResult) -> void:
-	var attacker := action_service.actor_registry.resolve(result.request.actor_id)
-	var target := action_service.actor_registry.resolve(result.request.target_id)
-	if not is_instance_valid(attacker):
-		result.presentation_error = "Attacker no longer exists"
-		return
-	if result.presentation_suppressed:
-		if result.target_defeated and is_instance_valid(target):
-			target.queue_free()
-		return
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		camera_presented = await action_camera_director.present(
-			attacker, &"attack", result.target_position,
-			result.actor_ap_after, result.target_defeated
-		)
-	attacker.present_attack(result.target_position)
-	if result.did_hit and is_instance_valid(target):
-		target.present_attack_impact(result.target_defeated)
-		if result.target_defeated:
-			target.finish_defeat_presentation()
-	# Keep the Prototype 1 feedback signal as a presentation-only adapter.
-	attack_resolved.emit(attacker, target, result.did_hit, result.hit_chance)
-	if camera_presented:
-		await get_tree().create_timer(0.42, false).timeout
-		await action_camera_director.finish_live_presentation(true)
-
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
 	var movement_budget := unit.stats.speed if unit.stats else 0
@@ -207,37 +192,10 @@ func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var path := pathfinder.calculate_3d_path(start_cell, target_cell)
 	if path.is_empty() or not grid_manager.can_unit_occupy_cell(unit, target_cell):
 		return {"accepted": false, "code": "occupied", "message": "Destination cannot be occupied"}
-	return {"accepted": true, "path": path, "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
+	return {"accepted": true, "path": path, "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/characters/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
 
 func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
 	unit_moved.emit(unit, start_cell, target_cell)
-
-func _present_move_result(result: MoveActionResult) -> void:
-	var unit := action_service.actor_registry.resolve(result.request.actor_id)
-	if not is_instance_valid(unit): return
-	if result.presentation_suppressed:
-		if not result.presentation_path.is_empty(): unit.global_position = result.presentation_path[-1]
-		return
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(result.target_cell), result.actor_ap_after)
-	unit.move_along_path(result.presentation_path, result.visual_segments)
-	await unit.movement_finished
-	if camera_presented: await action_camera_director.finish_live_presentation(true)
-
-func _present_simple_result(result: SimpleActionResult) -> void:
-	var unit := action_service.actor_registry.resolve(result.request.actor_id)
-	if not is_instance_valid(unit) or result.presentation_suppressed: return
-	if result.request.kind == &"wait":
-		print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, result.request.details.get("reason", "No useful action available.")])
-		return
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
-		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, result.actor_ap_after)
-	if camera_presented:
-		await get_tree().create_timer(0.25, false).timeout
-		await action_camera_director.finish_live_presentation(true)
 
 func _validate_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit, revision: int) -> ActionValidationResult:
 	if not is_instance_valid(_objective_manager):
@@ -252,27 +210,6 @@ func _commit_mission_action(kind: StringName, actor: TacticalUnit, target: Tacti
 	if kind == &"rescue": return _objective_manager.complete_rescue(actor, target)
 	if kind == &"extract": return _objective_manager.complete_extraction(actor)
 	return false
-
-func _present_mission_action(result: MissionActionResult, actor: TacticalUnit, target: TacticalUnit) -> void:
-	if result.request.kind == &"extract":
-		if not result.presentation_suppressed and is_instance_valid(actor):
-			var camera_presented := false
-			if not replay_mode and action_camera_director:
-				var facing := actor.visual_adapter.global_basis.z if is_instance_valid(actor.visual_adapter) else Vector3.FORWARD
-				camera_presented = await action_camera_director.present(actor, &"extract", actor.global_position + facing * 3.0, actor.stats.current_ap, true)
-			if actor.visual_adapter:
-				actor.visual_adapter.present_boarding()
-				await get_tree().create_timer(0.6, false).timeout
-			if camera_presented: await action_camera_director.finish_live_presentation(true)
-		finalize_extracted_unit(actor)
-		return
-	if result.presentation_suppressed or not is_instance_valid(actor): return
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		camera_presented = await action_camera_director.present(actor, &"rescue", result.target_position, actor.stats.current_ap, true)
-	if camera_presented:
-		await get_tree().create_timer(0.3, false).timeout
-		await action_camera_director.finish_live_presentation(true)
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
 	# Generated deployments have no authored facing. Use the opposing team's

@@ -4,9 +4,10 @@ Use this page when you know what you want to change but not where FuseFire owns 
 
 | Goal | Edit here | Verify with |
 | --- | --- | --- |
-| Replace the character or weapon | Open `art/characters/vroid_proof/runtime/unit_visual_adapter.tscn`; change **Model Assets** on its root | `tests/unit_visual_adapter_test.gd` and a local battle |
-| Edit animation clips | `art/characters/vroid_proof/animations/animation_workbench.tscn` and `prototype_clips.tres` | Animation workbench, then `tests/unit_visual_adapter_test.gd` |
-| Tune hands, sight, stock, shoulder, or carry offsets | **Weapon Contact**, **Low Ready**, and **Rescue Carry** on the adapter root | `art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn` |
+| Replace the character or weapon | Open `art/characters/mira_0/runtime/mira_0_unit_visual.tscn`; change **Model Assets** on its root | `tests/unit_visual_adapter_test.gd` and a local battle |
+| Edit animation clips | Assign a library under **Model Assets → Clip Library** on the MIRA runtime scene | Animation workbench, then `tests/unit_visual_adapter_test.gd` |
+| Tune hands, sight, stock, shoulder, or carry offsets | **Weapon Contact**, **Low Ready**, and **Rescue Carry** on the adapter root | `art/characters/mira_0/demo/mira_0_pose_workbench.tscn` |
+| Change Attack, Move, Wait/Defend, Rescue, or Extract sequencing | The matching plainly named method in `presentation/actions/tactical_action_presenter.gd` | `tests/tactical_action_presenter_test.gd` plus the relevant replay test |
 | Change friendly, ally, enemy, or neutral accents | `presentation/team_presentation_palette.tres` | `tests/unit_visual_adapter_test.gd` and a local battle |
 | Change cursor, movement/path, cover, objective, shot, or selection markings | `levels/prototype_map/prototype_map.tscn` → **Visualizers**; each visualizer exposes its colors and dimensions | `tests/battle_smoke.gd` and a local battle |
 | Match foot speed to a new walk cycle | **Locomotion → Stride Length** on the adapter; **Gameplay → Movement Speed** on the unit | Locomotion demo and a local battle |

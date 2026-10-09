@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3]
 
-[ext_resource type="Script" path="res://art/characters/vroid_proof/demo/vroid_weapon_ik_demo.gd" id="1_script"]
-[ext_resource type="Script" path="res://art/characters/vroid_proof/runtime/character_animation_controller.gd" id="2_animation"]
+[ext_resource type="Script" path="res://art/characters/mira_0/demo/mira_0_pose_workbench.gd" id="1_script"]
+[ext_resource type="Script" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 
 [sub_resource type="Environment" id="Environment_demo"]

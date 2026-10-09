@@ -18,6 +18,7 @@ var presentation_path := PackedVector3Array()
 var visual_segments: Array[StringName] = []
 var presentation_suppressed := false
 var presentation_completed := false
+var presentation_error := ""
 
 func to_replay_record() -> Dictionary:
 	return {"schema_version": SCHEMA_VERSION, "kind": "move", "actor": String(request.actor_id), "transaction_id": transaction_id, "request": request.to_dictionary(), "resolved": resolved_dictionary()}

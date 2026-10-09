@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://25dujwsjlfdo"]
 
-[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://art/characters/vroid_proof/runtime/unit_visual_adapter.gd" id="1_adapter"]
-[ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://art/characters/vroid_proof/runtime/character_animation_controller.gd" id="2_animation"]
+[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://presentation/characters/runtime/unit_visual_adapter.gd" id="1_adapter"]
+[ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 
 [sub_resource type="SphereMesh" id="Sphere_target"]

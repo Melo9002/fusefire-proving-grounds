@@ -12,6 +12,7 @@ var defending_before := false
 var defending_after := false
 var presentation_suppressed := false
 var presentation_completed := false
+var presentation_error := ""
 
 func to_replay_record() -> Dictionary:
 	return {"schema_version": SCHEMA_VERSION, "kind": String(request.kind), "actor": String(request.actor_id), "transaction_id": transaction_id, "request": request.to_dictionary(), "resolved": resolved_dictionary()}

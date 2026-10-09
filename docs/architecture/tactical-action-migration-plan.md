@@ -911,7 +911,34 @@ Cancellation remains pre-commit only. Accepted Prototype 1 actions are short, de
 
 ### Remaining concerns
 
-- Movement pose data is still derived from `art/characters/vroid_proof/runtime/tactical_pose_context.gd`; moving this neutral traversal contract is character-pipeline work rather than action authority work.
+- Movement pose data remains an explicit presentation contract in `presentation/characters/runtime/tactical_pose_context.gd`, shared by MIRA Zero and the action presenter without a character-specific asset dependency.
 - Defend is intentionally a compatibility behavior, not an approved current mechanic. Replay schema migration policy should decide when old Defend support can be removed.
 - Action result classes share small serialization patterns. Their explicit forms are currently easier to inspect than a generic envelope; consolidate only if future ability work demonstrates repeated maintenance cost.
 - `TacticalActionService` currently contains the four proven orchestration paths. New abilities should first test whether a small handler abstraction reduces real duplication before adding a general framework.
+
+## 11. Presentation separation — Task 01.4
+
+### Audit
+
+The action service already committed every gameplay outcome before invoking presentation, and suppressed/headless calls already used the same typed result contracts. The remaining coupling was concentrated in `BattleController`: it selected action cameras, drove unit animation, waited for pacing, emitted attack feedback, and disposed extracted visuals. Movement pose selection also depended on a neutral script stored under the retired VRoid proof asset.
+
+### Implemented ownership
+
+`presentation/actions/tactical_action_presenter.gd` is the small battle-scoped coordinator for committed results. Its plainly named `present_attack`, `present_move`, `present_simple`, and `present_mission` methods compose the existing `ActionCameraDirector` and `UnitVisualAdapter`. It can change cameras, transforms, animation, and feedback only. `BattleController` retains player/AI adapters, move path queries, mission-domain callbacks, and battle signals; it no longer contains action-specific visual sequences.
+
+`TacticalActionService` remains the lifecycle owner. It keeps the action barrier active from accepted submission through presenter completion, marks presentation complete once, and releases the barrier afterward. Missing actors produce `presentation_error` diagnostics and return safely. Suppressed Move snaps the actor to the committed destination. Movement presentation watches actor lifetime and has a bounded recovery path so teardown cannot hold the action barrier forever. Presentation errors never undo a committed result.
+
+### Character presentation ownership
+
+MIRA Zero is the supported runtime path. Reusable character presentation scripts now live under `presentation/characters/runtime/`; the MIRA runtime scene and pose workbench reference them directly. The VRoid model, scenes, generated clips, review artifacts, import scripts, and VRoid-only tests were removed. Fallback animations remain available to MIRA until authored clips are assigned.
+
+### Human editability
+
+| Action | Primary presentation method | Other systems normally touched |
+| --- | --- | --- |
+| Attack | `TacticalActionPresenter.present_attack` | Unit adapter for pose/effects; camera director for shot framing |
+| Move | `TacticalActionPresenter.present_move` | Unit adapter for traversal; pose context for cover/elevation states |
+| Wait / Defend | `TacticalActionPresenter.present_simple` | Camera director only for legacy Defend framing |
+| Rescue / Extract | `TacticalActionPresenter.present_mission` | Unit adapter for pickup/boarding; camera director for framing |
+
+Ordinary sequencing changes therefore start in one file and usually require at most one action-specific collaborator. Tactical rules, objective commits, and replay serialization do not need editing for a visual timing change.

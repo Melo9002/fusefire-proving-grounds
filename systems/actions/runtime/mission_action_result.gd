@@ -16,6 +16,7 @@ var mission_counters_after: Dictionary = {}
 var actor_removed_from_roster := false
 var presentation_suppressed := false
 var presentation_completed := false
+var presentation_error := ""
 
 func to_replay_record() -> Dictionary:
 	return {"schema_version": SCHEMA_VERSION, "kind": String(request.kind), "actor": String(request.actor_id), "target": String(request.target_id), "transaction_id": transaction_id, "request": request.to_dictionary(), "resolved": resolved_dictionary()}

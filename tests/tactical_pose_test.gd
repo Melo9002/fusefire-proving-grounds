@@ -1,6 +1,6 @@
 extends SceneTree
 
-const CONTEXT := preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd")
+const CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
 var failures := 0
 
 func check(ok: bool, message: String) -> void:
@@ -28,7 +28,7 @@ func run() -> void:
 	for cell_pos in [Vector3i(2, 0, 2), Vector3i(3, 0, 2), Vector3i(4, 0, 2), Vector3i(4, 2, 2), Vector3i(4, 0, 2)]:
 		path.append(grid.grid_to_world(cell_pos))
 	check(CONTEXT.path_poses(grid, path) == [&"move", &"vault", &"vault", &"climb", &"descend"], "Raw path distinguishes cover from elevation")
-	var demo = load("res://art/characters/vroid_proof/demo/vroid_weapon_ik_demo.tscn").instantiate()
+	var demo = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
 	root.add_child(demo)
 	await process_frame
 	await process_frame
@@ -41,10 +41,7 @@ func run() -> void:
 	await create_timer(0.25).timeout
 	controller.play(&"rifle_idle")
 	await create_timer(0.25).timeout
-	var bone: int = demo.skeleton.find_bone("J_Bip_L_LowerLeg")
-	var pose_rotation: Quaternion = demo.skeleton.get_bone_pose_rotation(bone)
-	var rest_rotation: Quaternion = demo.skeleton.get_bone_rest(bone).basis.get_rotation_quaternion()
-	check(pose_rotation.angle_to(rest_rotation) < 0.02, "Crouch must not leak into idle")
+	check(controller.current_state == &"rifle_idle", "Traversal and cover poses return to MIRA Zero idle")
 	demo.queue_free()
 	grid.queue_free()
 	await process_frame

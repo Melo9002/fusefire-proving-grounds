@@ -15,6 +15,8 @@
 | `units/` | Unit composition, movement/presentation orchestration and AI execution |
 | `presentation/overlays/` | Grid, cursor, path, cover, selection, objectives and debugging visualizations; extraction transport is retained here for now |
 | `presentation/camera/` | Tactical camera movement and action-camera direction |
+| `presentation/actions/` | Result-driven action camera, animation, feedback, and visual cleanup sequencing |
+| `presentation/characters/runtime/` | Reusable character rig, animation adapter, traversal poses, IK, and fallback clips |
 | `presentation/team_presentation_palette.tres` | Shared faction colors and tactical unit ground-ring appearance |
 | `ui/` | Screen controls, HUDs and input forwarding |
 | `levels/` | Scene composition and explicit dependency wiring |
@@ -39,9 +41,9 @@ Remaining extractions are explicit follow-up work: battle-local service lookup; 
 
 ## Shared character presentation
 
-`art/characters/vroid_proof/runtime/character_rig.gd` owns model/weapon construction, contact settings, arm IK, aiming and shot feedback. Both the demo and UnitVisualAdapter inherit it. The rig has no demo input or camera controls. `runtime/character_animation_controller.gd` owns animation state, library loading and fallback clips; the workbench exporter loads it directly. Its original script UID is preserved.
+`presentation/characters/runtime/character_rig.gd` owns model/weapon construction, contact settings, arm IK, aiming and shot feedback. Both the MIRA workbench and UnitVisualAdapter inherit it. The rig has no demo input or camera controls. `presentation/characters/runtime/character_animation_controller.gd` owns animation state, library loading and fallback clips. Its original script UID is preserved.
 
-`demo/vroid_weapon_ik_demo.gd` owns keyboard input, orbit camera, status labels, locomotion previews and the preview rescue passenger. UnitVisualAdapter owns tactical presentation and the gameplay passenger. Exported contact/clip settings remain inherited under their existing names, so saved scene values are preserved.
+`art/characters/mira_0/demo/mira_0_pose_workbench.gd` owns keyboard input, orbit camera, status labels, locomotion previews and the preview rescue passenger. UnitVisualAdapter owns tactical presentation and the gameplay passenger. `TacticalActionPresenter` coordinates action-specific camera and adapter calls after authoritative commit. Exported contact and clip settings remain visible on the MIRA scene.
 
 ## Validation of this pass
 
