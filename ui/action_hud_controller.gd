@@ -98,12 +98,19 @@ func _update_button_states() -> void:
 		return
 
 	var has_ap = stats.current_ap >= 1 and not battle_controller.is_action_in_progress
+	var attack_query := battle_controller.query_attack(unit)
+	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
 		move_button.disabled = not has_ap
 	if attack_button:
-		attack_button.disabled = not has_ap or unit.is_carrying_unit()
-		attack_button.tooltip_text = "Cannot shoot while carrying a rescued unit" if unit.is_carrying_unit() else ""
+		attack_button.disabled = not attack_available
+		if not attack_query.is_legal():
+			attack_button.tooltip_text = attack_query.reason
+		elif not attack_query.has_legal_targets():
+			attack_button.tooltip_text = "No legal targets"
+		else:
+			attack_button.tooltip_text = ""
 	if end_unit_button:
 		end_unit_button.disabled = not has_ap
 

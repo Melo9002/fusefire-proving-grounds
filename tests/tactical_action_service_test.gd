@@ -18,9 +18,47 @@ func _run() -> void:
 	_check(stable_ids == [&"EnemyUnit1", &"PlayerUnit1"], "Battle actors receive deterministic stable IDs")
 
 	var rng_before := service.get_combat_rng_state()
+	var revision_before := service.state_revision
+	var ap_before := attacker.stats.current_ap
+	var hp_before := target.stats.current_hp
+	var state_before := BattleStateFingerprint.capture(first.turn_manager, first.battle_controller.grid_manager, first.objective_manager)
 	var query := first.battle_controller.query_attack(attacker, target)
 	_check(query.is_legal() and query.state_revision == 0, "Attack query returns a revision-stamped legal preview")
+	_check(query.cost.ap == 1 and query.actor_ap_before == 2 and query.actor_ap_after == 1, "Attack prediction exposes authoritative AP cost and remaining AP")
+	_check(query.damage_on_hit == 25 and query.minimum_damage == 0 and query.maximum_damage == 25, "Attack prediction exposes the current damage contract")
+	_check(is_equal_approx(query.expected_damage, float(query.hit_chance) * 0.25), "Expected damage is derived from the authoritative hit chance")
+	_check(query.distance <= attacker.attack_range and query.visibility_fraction > 0.0, "Attack prediction exposes range and visibility facts")
+	var inventory := first.battle_controller.query_attack(attacker)
+	var inventory_target := inventory.get_candidate(target.tactical_id)
+	_check(inventory.is_legal() and inventory.has_legal_targets() and inventory.legal_target_ids.has(target.tactical_id), "Targetless query inventories legal targets")
+	_check(inventory_target != null and inventory_target.hit_chance == query.hit_chance and inventory_target.expected_damage == query.expected_damage, "Inventory, UI-style hover, and AI-style candidate lookup agree")
+	var action_hud := first.get_node("Visualizers/BattleUI/ActionHUDController") as ActionHUDController
+	action_hud.call("_update_button_states")
+	_check(not action_hud.attack_button.disabled and action_hud.attack_button.tooltip_text.is_empty(), "Player Attack availability consumes the shared legal-target inventory")
+	var self_query := first.battle_controller.query_attack(attacker, attacker)
+	_check(not self_query.is_legal() and self_query.validation.code == &"target_not_hostile", "Invalid target returns a structured eligibility reason")
+	var missing_query := service.query_attack(attacker.tactical_id, &"missing-target")
+	_check(not missing_query.is_legal() and missing_query.validation.code == &"target_missing", "Missing target is rejected without an unstructured failure")
+	var missing_actor := service.query_attack(&"missing-actor", target.tactical_id)
+	_check(not missing_actor.is_legal() and missing_actor.validation.code == &"actor_missing", "Missing actor is rejected through the shared contract")
+	target.stats.current_hp = 0
+	target.stats.is_defeated = true
+	var defeated_target := first.battle_controller.query_attack(attacker, target)
+	_check(not defeated_target.is_legal() and defeated_target.validation.code == &"unit_defeated", "Defeated target is ineligible through the shared contract")
+	target.stats.current_hp = hp_before
+	target.stats.is_defeated = false
+	var repeated := first.battle_controller.query_attack(attacker, target)
+	_check(repeated.hit_chance == query.hit_chance and repeated.cover_type == query.cover_type and repeated.obstruction == query.obstruction, "Repeated unchanged queries return equivalent predictions")
 	_check(service.get_combat_rng_state() == rng_before, "Attack query does not consume combat RNG")
+	_check(service.state_revision == revision_before and attacker.stats.current_ap == ap_before and target.stats.current_hp == hp_before, "Attack queries do not mutate revision, AP, or HP")
+	_check(BattleStateFingerprint.capture(first.turn_manager, first.battle_controller.grid_manager, first.objective_manager) == state_before, "Attack queries leave the complete authoritative fingerprint unchanged")
+	attacker.stats.current_ap = 0
+	var no_ap := first.battle_controller.query_attack(attacker, target)
+	_check(not no_ap.is_legal() and no_ap.validation.code == &"insufficient_ap", "Insufficient AP uses the shared structured validation")
+	action_hud.call("_update_button_states")
+	_check(action_hud.attack_button.disabled and action_hud.attack_button.tooltip_text == no_ap.reason, "Player Attack tooltip presents the shared rejection reason")
+	attacker.stats.current_ap = ap_before
+	action_hud.call("_update_button_states")
 	var stale := service.make_attack_request(attacker, target, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
 	var stale_result := await service.submit_attack(stale, true)
@@ -41,6 +79,7 @@ func _run() -> void:
 	_check(commits[0] == 1 and service.state_revision == 1 and result.transaction_id == 1, "Attack commits exactly once with one revision and transaction")
 	_check(reentrant_codes == [&"action_busy"], "Synchronous commit observers cannot submit a reentrant action")
 	_check(result.did_hit and result.target_defeated, "Deterministic attack fixture resolves hit and defeat")
+	_check(result.hit_chance == query.hit_chance, "Committed attack uses the same hit-chance rules as its prediction")
 	_check(first.turn_manager.enemy_units.is_empty(), "Defeat consequence removes target from the roster")
 	_check(first.objective_manager.get_objective(&"eliminate").progress == 1, "Defeat consequence advances the objective once")
 	var hp_after := result.target_hp_after

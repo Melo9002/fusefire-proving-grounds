@@ -20,7 +20,7 @@ func _run() -> void:
 	var recording = ReplaySession.last_recording
 	if recording:
 		_check(recording.actions.any(func(action: Dictionary): return String(action.get("expected_state", "")).contains("RescueTarget")), "Replay captures the rescued VIP state")
-		var previous_state := recording.initial_state_fingerprint
+		var previous_state: String = recording.initial_state_fingerprint
 		for record: Dictionary in recording.actions:
 			_check(record.get("expected_state", "") != previous_state, "Automatic mission consequences are recorded once with their parent action")
 			previous_state = record.get("expected_state", "")

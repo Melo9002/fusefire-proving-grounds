@@ -9,7 +9,8 @@ static func evaluate(
 	objectives: ObjectiveManager,
 	grid: GridManager,
 	policy: AIDifficultyPolicy,
-	squad: SquadContext
+	squad: SquadContext,
+	attack_prediction: AttackQueryResult = null
 ) -> Dictionary:
 	var missing_hp := target.stats.max_hp - target.stats.current_hp
 	var vulnerability := float(missing_hp) * policy.wounded_target_weight
@@ -28,6 +29,10 @@ static func evaluate(
 		"threat": threat,
 		"mission": mission,
 		"focus_count": int(-focus_adjustment / 15.0),
+		# Tactical facts remain visible to AI diagnostics without becoming a new
+		# doctrine or silently changing Prototype 1 target preferences.
+		"hit_chance": attack_prediction.hit_chance if attack_prediction != null else 0,
+		"expected_damage": attack_prediction.expected_damage if attack_prediction != null else 0.0,
 		"summary": "vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f" % [vulnerability, vip, threat, mission, focus],
 	}
 

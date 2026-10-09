@@ -69,6 +69,14 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 	query.state_revision = state_revision
 	query.cost = ActionCost.new(ATTACK_AP_COST)
 	var actor := actor_registry.resolve(actor_id)
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		query.actor_ap_after = maxi(0, actor.stats.current_ap - ATTACK_AP_COST)
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		query.reason = service_check.message
+		return query
 	if target_id.is_empty():
 		var actor_check := _validate_actor(actor)
 		query.validation = actor_check
@@ -79,23 +87,34 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 			if candidate_id == actor_id:
 				continue
 			var candidate_query := query_attack(actor_id, candidate_id)
+			query.candidate_results[candidate_id] = candidate_query
 			if candidate_query.is_legal():
 				query.legal_target_ids.append(candidate_id)
 		query.validation = ActionValidationResult.allow(state_revision)
 		return query
 	var target := actor_registry.resolve(target_id)
-	var validation := _validate_attack(actor, target)
+	var evaluation: CombatRules.AttackEvaluation
+	if is_instance_valid(actor) and is_instance_valid(target):
+		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
+	var validation := _validate_attack(actor, target, evaluation)
 	query.validation = validation
 	query.reason = validation.message
 	if not is_instance_valid(actor) or not is_instance_valid(target):
 		return query
-	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
 	query.evaluation = evaluation
 	query.hit_chance = evaluation.hit_chance
+	query.damage_on_hit = ATTACK_DAMAGE
+	query.minimum_damage = 0
+	query.maximum_damage = ATTACK_DAMAGE
+	query.expected_damage = float(ATTACK_DAMAGE) * float(evaluation.hit_chance) / 100.0
+	query.distance = CombatRules.attack_distance(_grid_manager.get_unit_grid(actor), _grid_manager.get_unit_grid(target), _grid_manager)
 	query.cover_type = evaluation.cover_type
-	query.reason = evaluation.reason
+	query.reason = evaluation.reason if validation.accepted else validation.message
 	query.aim_point = evaluation.aim_point
 	query.obstruction = evaluation.obstruction
+	query.visibility_fraction = evaluation.visibility_fraction
+	if evaluation.blocking_cell:
+		query.blocking_cell = evaluation.blocking_cell.grid_position
 	return query
 
 func submit_attack(request: TacticalActionRequest, suppress_presentation := false) -> AttackActionResult:
@@ -106,7 +125,8 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	# No await, signal, or random draw occurs before this final validation.
 	var actor := actor_registry.resolve(request.actor_id)
 	var target := actor_registry.resolve(request.target_id)
-	validation = _validate_attack(actor, target)
+	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d()) if is_instance_valid(actor) and is_instance_valid(target) else null
+	validation = _validate_attack(actor, target, evaluation)
 	if not validation.accepted:
 		_reject(validation)
 		return null
@@ -114,7 +134,6 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	is_busy = true
 	is_committing = true
 	last_transaction_id += 1
-	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
 	var result := AttackActionResult.new()
 	result.transaction_id = last_transaction_id
 	result.base_revision = state_revision
@@ -341,12 +360,18 @@ func advance_external_revision() -> int:
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
 	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"rescue", &"extract"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		return service_check
+	if request.expected_revision != state_revision:
+		return ActionValidationResult.reject(&"stale_revision", "Action preview is stale", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _validate_action_window() -> ActionValidationResult:
 	if get_tree().paused:
 		return ActionValidationResult.reject(&"paused", "Battle is paused", state_revision)
 	if is_busy or is_committing:
 		return ActionValidationResult.reject(&"action_busy", "Another action is already being resolved or presented", state_revision)
-	if request.expected_revision != state_revision:
-		return ActionValidationResult.reject(&"stale_revision", "Action preview is stale", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
 func _capture_mission_counters() -> Dictionary:
@@ -367,13 +392,14 @@ func _validate_actor(actor: TacticalUnit) -> ActionValidationResult:
 		return ActionValidationResult.reject(&"insufficient_ap", "Not enough AP", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
-func _validate_attack(actor: TacticalUnit, target: TacticalUnit) -> ActionValidationResult:
+func _validate_attack(actor: TacticalUnit, target: TacticalUnit, evaluation: CombatRules.AttackEvaluation = null) -> ActionValidationResult:
 	var actor_result := _validate_actor(actor)
 	if not actor_result.accepted:
 		return actor_result
 	if not is_instance_valid(target) or not target.stats:
 		return ActionValidationResult.reject(&"target_missing", "Target is unavailable", state_revision)
-	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
+	if evaluation == null:
+		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
 	if evaluation.is_legal:
 		return ActionValidationResult.allow(state_revision)
 	return ActionValidationResult.reject(_code_for_reason(evaluation.reason), evaluation.reason, state_revision)
