@@ -2,7 +2,6 @@ class_name ObjectiveManager
 extends Node
 
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
-const RescueActionData = preload("res://systems/actions/rescue_action.gd")
 
 signal mission_loaded(mission: MissionDefinition)
 signal objective_progress_changed(state: MissionObjectiveState)
@@ -165,30 +164,7 @@ func should_seek_extraction(unit: TacticalUnit) -> bool:
 	return mission.mission_id != &"prototype_survive" or get_objective(&"survive").is_completed()
 
 func try_extract(unit: TacticalUnit) -> bool:
-	if get_tree().paused:
-		return false
-	if _battle_controller and _battle_controller.is_action_in_progress:
-		return false
-	if not can_extract(unit):
-		return false
-	if _battle_controller:
-		_battle_controller.is_action_in_progress = true
-	var camera_presented := false
-	if _battle_controller and not _battle_controller.replay_mode and _battle_controller.action_camera_director:
-		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
-		_battle_controller.is_action_in_progress = true
-		camera_presented = await _battle_controller.action_camera_director.present(unit, &"extract", unit.global_position + facing * 3.0, unit.stats.current_ap, true)
-	if unit.visual_adapter:
-		unit.visual_adapter.present_boarding()
-		await get_tree().create_timer(0.6, false).timeout
-	var succeeded := ExtractAction.new(unit, self).execute()
-	if succeeded and _battle_controller:
-		_battle_controller.record_replay_action("extract", unit)
-	if camera_presented:
-		await _battle_controller.action_camera_director.finish_live_presentation(true)
-	if _battle_controller:
-		_battle_controller.is_action_in_progress = false
-	return succeeded
+	return is_instance_valid(_battle_controller) and await _battle_controller.try_mission_action(&"extract", unit)
 
 func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	var rescue := get_objective(&"rescue")
@@ -203,24 +179,7 @@ func can_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	return CombatRules.can_reach_adjacent(_grid_manager.get_unit_grid(rescuer), _grid_manager.get_unit_grid(target), _grid_manager)
 
 func try_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
-	if get_tree().paused:
-		return false
-	var target_name := String(target.name) if is_instance_valid(target) else ""
-	if not can_rescue(rescuer, target):
-		return false
-	var camera_presented := false
-	if _battle_controller and not _battle_controller.replay_mode and _battle_controller.action_camera_director:
-		_battle_controller.is_action_in_progress = true
-		camera_presented = await _battle_controller.action_camera_director.present(rescuer, &"rescue", target.global_position, rescuer.stats.current_ap, true)
-	var succeeded := RescueActionData.new(rescuer, target, self).execute()
-	if succeeded and _battle_controller:
-		_battle_controller.record_replay_action("rescue", rescuer, {"target": target_name})
-	if camera_presented:
-		await get_tree().create_timer(0.3, false).timeout
-		await _battle_controller.action_camera_director.finish_live_presentation(true)
-	if _battle_controller:
-		_battle_controller.is_action_in_progress = false
-	return succeeded
+	return is_instance_valid(_battle_controller) and await _battle_controller.try_mission_action(&"rescue", rescuer, target)
 
 func complete_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	if not can_rescue(rescuer, target):
@@ -257,7 +216,7 @@ func complete_extraction(unit: TacticalUnit) -> bool:
 		add_progress(&"enemy_escape")
 		fail_objective(&"stop_enemy_evacuation")
 		mission_report_changed.emit()
-		_battle_controller.extract_unit(unit)
+		_battle_controller.extract_unit(unit, false)
 		return true
 	if unit.is_carrying_unit():
 		_record_vip_extraction(unit.carried_unit)
@@ -269,8 +228,8 @@ func complete_extraction(unit: TacticalUnit) -> bool:
 		var squad := get_objective(&"extract_units")
 		if squad and squad.is_active(): add_progress(&"extract_units")
 	mission_report_changed.emit()
-	_battle_controller.extract_unit(unit)
-	_evaluate_outcome.call_deferred()
+	_battle_controller.extract_unit(unit, false)
+	evaluate_outcome_after_action_commit()
 	return true
 
 func can_end_mission_early() -> bool:
@@ -289,6 +248,8 @@ func end_mission_early() -> bool:
 	_battle_controller.record_replay_action("depart", null)
 	left_behind = get_units_left_behind()
 	_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
+	if is_instance_valid(_battle_controller.action_service):
+		_battle_controller.action_service.advance_external_revision()
 	mission_report_changed.emit()
 	return true
 

@@ -45,6 +45,7 @@ var _squad_contexts: Dictionary[int, SquadContext] = {}
 var replay_mode := false
 var action_camera_director: Node
 var action_service: TacticalActionService
+var _objective_manager: ObjectiveManager
 var is_action_in_progress: bool = false:
 	set(value):
 		if is_action_in_progress != value:
@@ -76,6 +77,7 @@ func _ready() -> void:
 		return
 
 	turn_manager.turn_phase_changed.connect(_on_turn_phase_changed)
+	turn_manager.turn_ended.connect(_on_authoritative_turn_ended)
 	turn_manager.active_unit_changed.connect(_on_active_unit_changed)
 	mouse_raycaster.floor_clicked.connect(_on_floor_clicked)
 	mouse_raycaster.unit_clicked.connect(_on_unit_clicked)
@@ -151,10 +153,14 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		_query_move_data,
 		_present_move_result,
 		_on_movement_committed,
-		_present_simple_result
+		_present_simple_result,
+		_validate_mission_action,
+		_commit_mission_action,
+		_present_mission_action
 	)
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
+	_objective_manager = manager
 	if not is_instance_valid(action_service):
 		_initialize_action_service()
 	_configure_action_service(manager)
@@ -231,6 +237,41 @@ func _present_simple_result(result: SimpleActionResult) -> void:
 		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, result.actor_ap_after)
 	if camera_presented:
 		await get_tree().create_timer(0.25, false).timeout
+		await action_camera_director.finish_live_presentation(true)
+
+func _validate_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit, revision: int) -> ActionValidationResult:
+	if not is_instance_valid(_objective_manager):
+		return ActionValidationResult.reject(&"mission_unavailable", "Mission rules are unavailable", revision)
+	if kind == &"rescue":
+		return ActionValidationResult.allow(revision) if _objective_manager.can_rescue(actor, target) else ActionValidationResult.reject(&"illegal_rescue", "Rescue target is not currently reachable", revision)
+	if kind == &"extract":
+		return ActionValidationResult.allow(revision) if _objective_manager.can_extract(actor) else ActionValidationResult.reject(&"illegal_extract", "Unit cannot extract now", revision)
+	return ActionValidationResult.reject(&"unsupported_action", "Unknown mission action", revision)
+
+func _commit_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit) -> bool:
+	if kind == &"rescue": return _objective_manager.complete_rescue(actor, target)
+	if kind == &"extract": return _objective_manager.complete_extraction(actor)
+	return false
+
+func _present_mission_action(result: MissionActionResult, actor: TacticalUnit, target: TacticalUnit) -> void:
+	if result.request.kind == &"extract":
+		if not result.presentation_suppressed and is_instance_valid(actor):
+			var camera_presented := false
+			if not replay_mode and action_camera_director:
+				var facing := actor.visual_adapter.global_basis.z if is_instance_valid(actor.visual_adapter) else Vector3.FORWARD
+				camera_presented = await action_camera_director.present(actor, &"extract", actor.global_position + facing * 3.0, actor.stats.current_ap, true)
+			if actor.visual_adapter:
+				actor.visual_adapter.present_boarding()
+				await get_tree().create_timer(0.6, false).timeout
+			if camera_presented: await action_camera_director.finish_live_presentation(true)
+		finalize_extracted_unit(actor)
+		return
+	if result.presentation_suppressed or not is_instance_valid(actor): return
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		camera_presented = await action_camera_director.present(actor, &"rescue", result.target_position, actor.stats.current_ap, true)
+	if camera_presented:
+		await get_tree().create_timer(0.3, false).timeout
 		await action_camera_director.finish_live_presentation(true)
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
@@ -349,6 +390,9 @@ func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 	if not is_player_control:
 		is_move_mode_active = false
 		is_attack_mode_active = false
+
+func _on_authoritative_turn_ended(_record: Dictionary) -> void:
+	if is_instance_valid(action_service): action_service.advance_external_revision()
 
 func _on_active_unit_changed(unit: TacticalUnit) -> void:
 	tactical_unit = unit
@@ -510,6 +554,13 @@ func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available
 	is_action_in_progress = false
 	return result != null
 
+func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
+	if not is_instance_valid(action_service): return false
+	is_action_in_progress = true
+	var result := await action_service.submit_mission(action_service.make_mission_request(kind, actor, target, _action_source()))
+	is_action_in_progress = false
+	return result != null
+
 func _action_source() -> TacticalActionRequest.Source:
 	if replay_mode: return TacticalActionRequest.Source.REPLAY
 	return TacticalActionRequest.Source.PLAYER if is_current_phase_manually_controlled() else TacticalActionRequest.Source.AI
@@ -568,11 +619,15 @@ func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> void:
 	grid_manager.register_unit(unit, grid_position)
 	unit.defeated.connect(_on_unit_defeated)
 
-func extract_unit(unit: TacticalUnit) -> void:
+func extract_unit(unit: TacticalUnit, finalize_visual := true) -> void:
 	if not is_instance_valid(unit):
 		return
 	grid_manager.unregister_unit_at(grid_manager.get_unit_grid(unit))
+	turn_manager.remove_extracted_unit(unit)
+	if finalize_visual: finalize_extracted_unit(unit)
+
+func finalize_extracted_unit(unit: TacticalUnit) -> void:
+	if not is_instance_valid(unit): return
 	if is_instance_valid(action_service):
 		action_service.unregister_actor(unit)
-	turn_manager.remove_extracted_unit(unit)
 	unit.queue_free()

@@ -37,6 +37,9 @@ static func simple(kind_value: StringName, actor: StringName, revision: int, req
 	request.details = request_details.duplicate(true)
 	return request
 
+static func mission(kind_value: StringName, actor: StringName, target: StringName, revision: int, request_source: Source) -> TacticalActionRequest:
+	return TacticalActionRequest.new(kind_value, actor, target, revision, request_source)
+
 func to_dictionary() -> Dictionary:
 	return {
 		"kind": String(kind),

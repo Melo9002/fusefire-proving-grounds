@@ -177,7 +177,7 @@ func _execute(record: Dictionary) -> bool:
 		return false
 	# Zero-AP extraction is legal for exhausted/non-active units as well.
 	if kind == "extract":
-		return await level.objective_manager.try_extract(actor)
+		return await _replay_mission(record, actor)
 	if not _activate(actor):
 		print("[Replay] ACTOR REJECTED — wanted %s | active %s | phase %s" % [
 			actor.name,
@@ -227,10 +227,7 @@ func _execute(record: Dictionary) -> bool:
 		"wait":
 			return await _replay_simple(record)
 		"rescue":
-			var target: TacticalUnit = _find_unit(record.get("target", ""))
-			return is_instance_valid(target) and await level.objective_manager.try_rescue(actor, target)
-		"extract":
-			return await level.objective_manager.try_extract(actor)
+			return await _replay_mission(record, actor)
 	return false
 
 func _replay_simple(record: Dictionary) -> bool:
@@ -240,6 +237,30 @@ func _replay_simple(record: Dictionary) -> bool:
 	var result := await level.battle_controller.action_service.submit_simple(request)
 	if result == null: return false
 	var difference := result.compare_resolved(record.get("resolved", {}))
+	if not difference.is_empty():
+		push_error("Replay %s result diverged: %s" % [request.kind, difference])
+		return false
+	return true
+
+func _replay_mission(record: Dictionary, actor: TacticalUnit) -> bool:
+	var request_data: Dictionary = record.get("request", {})
+	# Prototype 1 recordings predate versioned mission requests.
+	var request: TacticalActionRequest
+	if request_data.is_empty():
+		var target := _find_unit(record.get("target", ""))
+		request = level.battle_controller.action_service.make_mission_request(StringName(record.get("kind", "")), actor, target, TacticalActionRequest.Source.REPLAY)
+	else:
+		request = TacticalActionRequest.from_dictionary(request_data)
+		request.source = TacticalActionRequest.Source.REPLAY
+		request.expected_revision = level.battle_controller.action_service.state_revision
+	var result := await level.battle_controller.action_service.submit_mission(request)
+	if result == null:
+		var rejection := level.battle_controller.action_service.last_rejection
+		push_error("Replay mission action rejected [%s]: %s" % [rejection.code, rejection.message])
+		return false
+	var expected: Dictionary = record.get("resolved", {})
+	if expected.is_empty(): return true
+	var difference := result.compare_resolved(expected)
 	if not difference.is_empty():
 		push_error("Replay %s result diverged: %s" % [request.kind, difference])
 		return false

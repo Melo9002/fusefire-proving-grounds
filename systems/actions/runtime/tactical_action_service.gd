@@ -25,6 +25,9 @@ var _query_move: Callable
 var _present_move: Callable
 var _movement_committed: Callable
 var _present_simple: Callable
+var _validate_mission: Callable
+var _commit_mission: Callable
+var _present_mission: Callable
 
 func setup(
 	turn_manager: TurnManager,
@@ -35,7 +38,10 @@ func setup(
 	query_move: Callable = Callable(),
 	present_move: Callable = Callable(),
 	movement_committed: Callable = Callable(),
-	present_simple: Callable = Callable()
+	present_simple: Callable = Callable(),
+	validate_mission: Callable = Callable(),
+	commit_mission: Callable = Callable(),
+	present_mission: Callable = Callable()
 ) -> void:
 	_turn_manager = turn_manager
 	_grid_manager = grid_manager
@@ -46,6 +52,9 @@ func setup(
 	_present_move = present_move
 	_movement_committed = movement_committed
 	_present_simple = present_simple
+	_validate_mission = validate_mission
+	_commit_mission = commit_mission
+	_present_mission = present_mission
 
 func register_actor(actor: TacticalUnit) -> bool:
 	return actor_registry.register_actor(actor)
@@ -197,6 +206,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.presentation_path = query.presentation_path
 	result.visual_segments = query.visual_segments
 	result.actor_ap_before = actor.stats.current_ap
+	result.objective_state_before = _capture_objectives()
 	actor.stats.consume_ap(result.cost.ap)
 	_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
 	result.actor_ap_after = actor.stats.current_ap
@@ -204,6 +214,8 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.committed_revision = state_revision
 	is_committing = false
 	if _movement_committed.is_valid(): _movement_committed.call(actor, result.start_cell, result.target_cell)
+	result.objective_state_after = _capture_objectives()
+	result.carried_actor_id = actor.carried_unit.tactical_id if actor.is_carrying_unit() else &""
 	action_committed.emit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_move.is_valid(): await _present_move.call(result)
@@ -225,6 +237,9 @@ func make_move_request(actor: TacticalUnit, target_cell: Vector3i, source: Tacti
 
 func make_simple_request(kind: StringName, actor: TacticalUnit, source: TacticalActionRequest.Source, details: Dictionary = {}) -> TacticalActionRequest:
 	return TacticalActionRequest.simple(kind, actor.tactical_id if is_instance_valid(actor) else &"", state_revision, source, details)
+
+func make_mission_request(kind: StringName, actor: TacticalUnit, target: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", target.tactical_id if is_instance_valid(target) else &"", state_revision, source)
 
 func submit_simple(request: TacticalActionRequest, suppress_presentation := false) -> SimpleActionResult:
 	var validation := _validate_request(request)
@@ -266,11 +281,65 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	is_busy = false
 	return result
 
+func submit_mission(request: TacticalActionRequest, suppress_presentation := false) -> MissionActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind not in [&"rescue", &"extract"] or not _validate_mission.is_valid() or not _commit_mission.is_valid():
+		validation = ActionValidationResult.reject(&"unsupported_action", "Mission action is unavailable", state_revision)
+		_reject(validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	var target := actor_registry.resolve(request.target_id) if not request.target_id.is_empty() else null
+	validation = _validate_mission.call(request.kind, actor, target, state_revision)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	is_busy = true
+	is_committing = true
+	last_transaction_id += 1
+	var result := MissionActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.actor_position = actor.global_position
+	result.target_position = target.global_position if is_instance_valid(target) else actor.global_position
+	result.objective_state_before = _capture_objectives()
+	result.mission_counters_before = _capture_mission_counters()
+	if not _commit_mission.call(request.kind, actor, target):
+		is_committing = false
+		is_busy = false
+		validation = ActionValidationResult.reject(&"commit_failed", "Mission action failed during authoritative commit", state_revision)
+		_reject(validation)
+		return null
+	result.objective_state_after = _capture_objectives()
+	result.mission_counters_after = _capture_mission_counters()
+	result.actor_removed_from_roster = not _actor_is_in_roster(actor)
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	action_committed.emit(result)
+	result.presentation_suppressed = suppress_presentation
+	if _present_mission.is_valid(): await _present_mission.call(result, actor, target)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	is_busy = false
+	return result
+
 func get_combat_rng_state() -> int:
 	return _combat_rng.state
 
+## Dedicated authoritative systems use this when a turn or mission command
+## changes legality without being a unit action. It invalidates old queries
+## without forcing those systems into the action-handler abstraction.
+func advance_external_revision() -> int:
+	if not is_committing:
+		state_revision += 1
+	return state_revision
+
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"rescue", &"extract"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	if get_tree().paused:
 		return ActionValidationResult.reject(&"paused", "Battle is paused", state_revision)
@@ -279,6 +348,13 @@ func _validate_request(request: TacticalActionRequest) -> ActionValidationResult
 	if request.expected_revision != state_revision:
 		return ActionValidationResult.reject(&"stale_revision", "Action preview is stale", state_revision)
 	return ActionValidationResult.allow(state_revision)
+
+func _capture_mission_counters() -> Dictionary:
+	if not is_instance_valid(_objective_manager): return {}
+	return {"extracted_vips": _objective_manager.extracted_vips, "extracted_units": _objective_manager.extracted_units, "escaped_enemies": _objective_manager.escaped_enemies, "left_behind": _objective_manager.left_behind}
+
+func _actor_is_in_roster(actor: TacticalUnit) -> bool:
+	return is_instance_valid(actor) and is_instance_valid(_turn_manager) and (_turn_manager.player_units.has(actor) or _turn_manager.allied_units.has(actor) or _turn_manager.enemy_units.has(actor))
 
 func _validate_actor(actor: TacticalUnit) -> ActionValidationResult:
 	if not is_instance_valid(actor) or not actor.stats:

@@ -8,6 +8,7 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	await _check_move_and_wait_pipeline()
 	var first := await _create_battle()
 	var first_setup := _prepare_attack(first)
 	var service: TacticalActionService = first.battle_controller.action_service
@@ -74,6 +75,36 @@ func _run() -> void:
 
 	print("Tactical action service: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _check_move_and_wait_pipeline() -> void:
+	var level := await _create_battle()
+	var actor: TacticalUnit = level.turn_manager.player_units[0]
+	var service: TacticalActionService = level.battle_controller.action_service
+	var grid := level.battle_controller.grid_manager
+	var start := grid.get_unit_grid(actor)
+	var destination := Vector3i(-1, -1, -1)
+	for candidate: Vector3i in level.battle_controller.pathfinder.get_reachable_cells(start, actor.stats.speed):
+		if candidate != start and grid.can_unit_occupy_cell(actor, candidate):
+			destination = candidate
+			break
+	_check(destination.x >= 0, "Movement fixture finds a legal destination")
+	var query := service.query_move(actor.tactical_id, destination)
+	_check(query.is_legal() and query.state_revision == 0, "Move query is read-only and revision stamped")
+	var stale := service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER)
+	stale.expected_revision = -1
+	_check(await service.submit_move(stale, true) == null and service.last_rejection.code == &"stale_revision", "Stale movement is rejected before occupancy changes")
+	_check(grid.get_unit_at(start) == actor and grid.get_unit_at(destination) == null, "Rejected movement preserves occupancy")
+	var move := await service.submit_move(service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER), true)
+	_check(move != null and grid.get_unit_at(start) == null and grid.get_unit_at(destination) == actor, "Move commits occupancy before suppressed presentation completes")
+	_check(actor.stats.current_ap == 1 and service.state_revision == 1, "Move spends one AP and advances one shared revision")
+	var duplicate := await service.submit_move(move.request, true)
+	_check(duplicate == null and grid.get_unit_at(destination) == actor and actor.stats.current_ap == 1, "Duplicate Move cannot spend AP or move twice")
+	var wait := await service.submit_simple(service.make_simple_request(&"wait", actor, TacticalActionRequest.Source.PLAYER), true)
+	_check(wait != null and actor.stats.current_ap == 0 and service.state_revision == 2, "Wait exhausts AP and advances the shared revision")
+	_check(wait.presentation_suppressed and wait.presentation_completed, "Suppressed Wait still completes its lifecycle")
+	level.queue_free()
+	await process_frame
+	await process_frame
 
 func _create_battle() -> BattleLevel:
 	var level := BATTLE_SCENE.instantiate() as BattleLevel
