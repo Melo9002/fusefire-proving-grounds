@@ -187,19 +187,23 @@ func _execute(record: Dictionary) -> bool:
 		return false
 	match kind:
 		"move":
-			var destination := _array_to_cell(record.get("to", []))
+			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
+			request.source = TacticalActionRequest.Source.REPLAY
+			request.expected_revision = level.battle_controller.action_service.state_revision
 			var original_movement_speed := actor.movement_speed
 			actor.movement_speed = original_movement_speed * playback_speed
-			var moved := await level.battle_controller.try_move(actor, destination)
+			var result := await level.battle_controller.action_service.submit_move(request)
 			if is_instance_valid(actor):
 				actor.movement_speed = original_movement_speed
-			if not moved:
-				print("[Replay] MOVE REJECTED — actor %s at %s | destination %s | active %s | phase %s | AP %d" % [
-					actor.name, level.battle_controller.grid_manager.get_unit_grid(actor), destination,
-					_active_unit_name(),
-					TurnManager.TurnPhase.keys()[level.turn_manager.current_phase], actor.stats.current_ap,
-				])
-			return moved
+			if result == null:
+				var rejection := level.battle_controller.action_service.last_rejection
+				push_error("Replay move rejected [%s]: %s" % [rejection.code, rejection.message])
+				return false
+			var difference := result.compare_resolved(record.get("resolved", {}))
+			if not difference.is_empty():
+				push_error("Replay move result diverged: %s" % difference)
+				return false
+			return true
 		"attack":
 			var request_data: Dictionary = record.get("request", {})
 			if request_data.is_empty():

@@ -28,7 +28,7 @@ func _on_action_committed(record: Dictionary) -> void:
 	recorded["expected_state"] = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager)
 	recording.append_action(recorded)
 
-func _on_tactical_action_committed(result: AttackActionResult) -> void:
+func _on_tactical_action_committed(result) -> void:
 	_on_action_committed(result.to_replay_record())
 
 func _on_battle_ended(result: TurnManager.BattleResult) -> void:

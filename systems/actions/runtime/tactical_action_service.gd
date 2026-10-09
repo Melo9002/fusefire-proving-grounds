@@ -1,8 +1,8 @@
 class_name TacticalActionService
 extends Node
 
-signal action_committed(result: AttackActionResult)
-signal action_presented(result: AttackActionResult)
+signal action_committed(result)
+signal action_presented(result)
 signal action_rejected(validation: ActionValidationResult)
 
 const ATTACK_AP_COST := 1
@@ -21,19 +21,28 @@ var _grid_manager: GridManager
 var _objective_manager: ObjectiveManager
 var _combat_rng := RandomNumberGenerator.new()
 var _present_attack: Callable
+var _query_move: Callable
+var _present_move: Callable
+var _movement_committed: Callable
 
 func setup(
 	turn_manager: TurnManager,
 	grid_manager: GridManager,
 	objective_manager: ObjectiveManager,
 	combat_seed: int,
-	present_attack: Callable
+	present_attack: Callable,
+	query_move: Callable = Callable(),
+	present_move: Callable = Callable(),
+	movement_committed: Callable = Callable()
 ) -> void:
 	_turn_manager = turn_manager
 	_grid_manager = grid_manager
 	_objective_manager = objective_manager
 	_combat_rng.seed = combat_seed
 	_present_attack = present_attack
+	_query_move = query_move
+	_present_move = present_move
+	_movement_committed = movement_committed
 
 func register_actor(actor: TacticalUnit) -> bool:
 	return actor_registry.register_actor(actor)
@@ -137,6 +146,69 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	is_busy = false
 	return result
 
+func query_move(actor_id: StringName, target_cell: Vector3i) -> MoveQueryResult:
+	var query := MoveQueryResult.new()
+	query.actor_id = actor_id
+	query.target_cell = target_cell
+	query.state_revision = state_revision
+	var actor := actor_registry.resolve(actor_id)
+	query.validation = _validate_actor(actor)
+	if not query.validation.accepted: return query
+	query.start_cell = _grid_manager.get_unit_grid(actor)
+	if not _query_move.is_valid():
+		query.validation = ActionValidationResult.reject(&"service_unavailable", "Movement query is unavailable", state_revision)
+		return query
+	var data: Dictionary = _query_move.call(actor, target_cell)
+	if not data.get("accepted", false):
+		query.validation = ActionValidationResult.reject(StringName(data.get("code", "illegal_move")), data.get("message", "Illegal move"), state_revision)
+		return query
+	query.path = data["path"]
+	query.presentation_path = data["presentation_path"]
+	query.visual_segments.assign(data["visual_segments"])
+	query.validation = ActionValidationResult.allow(state_revision)
+	return query
+
+func submit_move(request: TacticalActionRequest, suppress_presentation := false) -> MoveActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind != &"move":
+		validation = ActionValidationResult.reject(&"unsupported_action", "Expected a move request", state_revision)
+		_reject(validation)
+		return null
+	var query := query_move(request.actor_id, request.destination)
+	if not query.is_legal():
+		_reject(query.validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	is_busy = true
+	is_committing = true
+	last_transaction_id += 1
+	var result := MoveActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.start_cell = query.start_cell
+	result.target_cell = query.target_cell
+	result.presentation_path = query.presentation_path
+	result.visual_segments = query.visual_segments
+	result.actor_ap_before = actor.stats.current_ap
+	actor.stats.consume_ap(result.cost.ap)
+	_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
+	result.actor_ap_after = actor.stats.current_ap
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	if _movement_committed.is_valid(): _movement_committed.call(actor, result.start_cell, result.target_cell)
+	action_committed.emit(result)
+	result.presentation_suppressed = suppress_presentation
+	if _present_move.is_valid(): await _present_move.call(result)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	is_busy = false
+	return result
+
 func make_attack_request(actor: TacticalUnit, target: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.attack(
 		actor.tactical_id if is_instance_valid(actor) else &"",
@@ -145,12 +217,15 @@ func make_attack_request(actor: TacticalUnit, target: TacticalUnit, source: Tact
 		source
 	)
 
+func make_move_request(actor: TacticalUnit, target_cell: Vector3i, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell, state_revision, source)
+
 func get_combat_rng_state() -> int:
 	return _combat_rng.state
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind != &"attack":
-		return ActionValidationResult.reject(&"unsupported_action", "Attack service received an unsupported request", state_revision)
+	if request == null or request.kind not in [&"attack", &"move"]:
+		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	if get_tree().paused:
 		return ActionValidationResult.reject(&"paused", "Battle is paused", state_revision)
 	if is_busy or is_committing:

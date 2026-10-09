@@ -16,7 +16,7 @@ signal ai_decision_recorded(record: Dictionary)
 signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
 signal replay_action_committed(record: Dictionary)
-signal tactical_action_committed(result: AttackActionResult)
+signal tactical_action_committed(result)
 
 @export var tactical_unit: TacticalUnit
 @export var mouse_raycaster: MouseRaycaster
@@ -147,7 +147,10 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		grid_manager,
 		objectives,
 		ai_decision_seed * 2147483647 + 104729,
-		_present_attack_result
+		_present_attack_result,
+		_query_move_data,
+		_present_move_result,
+		_on_movement_committed
 	)
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
@@ -159,7 +162,7 @@ func _ensure_tactical_id(unit: TacticalUnit) -> void:
 	if unit.tactical_id.is_empty():
 		unit.tactical_id = StringName(unit.name)
 
-func _on_tactical_action_committed(result: AttackActionResult) -> void:
+func _on_tactical_action_committed(result) -> void:
 	tactical_action_committed.emit(result)
 
 func _present_attack_result(result: AttackActionResult) -> void:
@@ -188,6 +191,32 @@ func _present_attack_result(result: AttackActionResult) -> void:
 	if camera_presented:
 		await get_tree().create_timer(0.42, false).timeout
 		await action_camera_director.finish_live_presentation(true)
+
+func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
+	var start_cell := grid_manager.get_unit_grid(unit)
+	var movement_budget := unit.stats.speed if unit.stats else 0
+	if not pathfinder.get_reachable_cells(start_cell, movement_budget).has(target_cell):
+		return {"accepted": false, "code": "unreachable", "message": "Destination is unreachable"}
+	var path := pathfinder.calculate_3d_path(start_cell, target_cell)
+	if path.is_empty() or not grid_manager.can_unit_occupy_cell(unit, target_cell):
+		return {"accepted": false, "code": "occupied", "message": "Destination cannot be occupied"}
+	return {"accepted": true, "path": path, "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
+
+func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
+	unit_moved.emit(unit, start_cell, target_cell)
+
+func _present_move_result(result: MoveActionResult) -> void:
+	var unit := action_service.actor_registry.resolve(result.request.actor_id)
+	if not is_instance_valid(unit): return
+	if result.presentation_suppressed:
+		if not result.presentation_path.is_empty(): unit.global_position = result.presentation_path[-1]
+		return
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(result.target_cell), result.actor_ap_after)
+	unit.move_along_path(result.presentation_path, result.visual_segments)
+	await unit.movement_finished
+	if camera_presented: await action_camera_director.finish_live_presentation(true)
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
 	# Generated deployments have no authored facing. Use the opposing team's
@@ -493,40 +522,16 @@ func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available
 	return true
 
 func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
-	if get_tree().paused:
-		return false
-	if is_action_in_progress or not turn_manager.can_unit_act(unit):
-		return false
-	var movement_budget = unit.stats.speed if unit.stats else 0
-	var start_cell = grid_manager.get_unit_grid(unit)
-	if not pathfinder.get_reachable_cells(start_cell, movement_budget).has(target_cell):
-		return false
-	var path = pathfinder.calculate_3d_path(start_cell, target_cell)
-	if path.is_empty():
-		return false
-	var action = MoveAction.new(unit, target_cell, _build_movement_path(unit, path), grid_manager, UNIFORM_AP_COST)
-	action.visual_segments = preload("res://art/characters/vroid_proof/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)
-	if not action.is_valid():
+	if not is_instance_valid(action_service):
 		return false
 	is_action_in_progress = true
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(target_cell), unit.stats.current_ap - UNIFORM_AP_COST)
-	if not action.execute():
-		is_action_in_progress = false
-		return false
-	await unit.movement_finished
-	unit_moved.emit(unit, start_cell, target_cell)
-	record_replay_action("move", unit, {
-		"from": [start_cell.x, start_cell.y, start_cell.z],
-		"to": [target_cell.x, target_cell.y, target_cell.z],
-	})
-	if camera_presented:
-		await action_camera_director.finish_live_presentation(true)
+	var source := TacticalActionRequest.Source.REPLAY if replay_mode else TacticalActionRequest.Source.AI
+	if is_current_phase_manually_controlled(): source = TacticalActionRequest.Source.PLAYER
+	var result := await action_service.submit_move(action_service.make_move_request(unit, target_cell, source))
 	is_action_in_progress = false
-	return true
+	return result != null
 
 func record_replay_action(kind: String, actor: TacticalUnit, details: Dictionary = {}) -> void:
 	var record := {
