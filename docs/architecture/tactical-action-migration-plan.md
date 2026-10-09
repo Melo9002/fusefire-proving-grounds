@@ -924,6 +924,14 @@ Cancellation remains pre-commit only. Accepted Prototype 1 actions are short, de
 
 The action service already committed every gameplay outcome before invoking presentation, and suppressed/headless calls already used the same typed result contracts. The remaining coupling was concentrated in `BattleController`: it selected action cameras, drove unit animation, waited for pacing, emitted attack feedback, and disposed extracted visuals. Movement pose selection also depended on a neutral script stored under the retired VRoid proof asset.
 
+## Task 01.7 implemented movement contract
+
+Movement now follows the shared query pattern established for Attack. A targetless `MoveQueryResult` inventories deterministically ordered legal stopping cells. A targeted query adds the current route, weighted route cost, movement budget, AP prediction, elevation delta, traversal pose sequence, revision, and structured occupancy rejection. Both forms are read-only and observe the action lifecycle barrier.
+
+Player range display, hover paths, click confirmation, and AI active-turn destination enumeration consume this shared contract. The AI retains raw pathfinding for long-range goals because a hypothetical route is not an assertion that a tile is legal during the current activation; mission intent and `AIPositionScorer` remain preference owners.
+
+`Pathfinder` owns connectivity, deterministic reachability order, route construction, and weighted cost. `GridManager` owns occupancy. `TacticalActionService` reruns the targeted query, commits AP and destination occupancy once, captures automatic objective consequences in the parent transaction, and produces the result. `TacticalActionPresenter` consumes the committed path without recalculating it. New Move records include the accepted grid path as an additive schema-2 field; older schema-2 records remain compatible because their expected resolved fields are compared as an explicit subset.
+
 ### Implemented ownership
 
 `presentation/actions/tactical_action_presenter.gd` is the small battle-scoped coordinator for committed results. Its plainly named `present_attack`, `present_move`, `present_simple`, and `present_mission` methods compose the existing `ActionCameraDirector` and `UnitVisualAdapter`. It can change cameras, transforms, animation, and feedback only. `BattleController` retains player/AI adapters, move path queries, mission-domain callbacks, and battle signals; it no longer contains action-specific visual sequences.

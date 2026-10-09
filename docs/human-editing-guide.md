@@ -17,6 +17,11 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change Attack legality, cover, obstruction, range, or hit chance | `systems/combat_rules.gd`; activation/AP/revision checks remain in `systems/actions/runtime/tactical_action_service.gd` | `tests/tactical_action_service_test.gd` and combat cover/elevation/trajectory tests |
 | Change the prediction facts available to UI and AI | `systems/actions/runtime/attack_query_result.gd`, populated by `TacticalActionService.query_attack()` | `tests/tactical_action_service_test.gd` |
 | Change attack-preview wording or AI preference | UI text: `BattleController._update_attack_preview`; button state: `ui/action_hud_controller.gd`; AI preference: `systems/ai/ai_target_scorer.gd` | Battle smoke plus AI target/determinism tests |
+| Change movement legality or AP/revision checks | `TacticalActionService.query_move()` and `BattleController._query_move_data()` | `tests/tactical_action_service_test.gd` plus movement smoke tests |
+| Change reachability, route cost, diagonal, or corner rules | `systems/grid/pathfinder.gd`; terrain stoppability and traversal links come from map data | Diagonal, elevation, vault, and vertical traversal tests |
+| Change occupancy commitment | `systems/grid/grid_manager.gd`; Move commits through `TacticalActionService.submit_move()` | Tactical action service and replay tests |
+| Change player path/range display | `BattleController.update_unit_movement_zone()` and `_update_movement_preview()` consume the shared Move query | `tests/battle_smoke.gd` |
+| Change AI movement preference | `units/ai_controller.gd` and `systems/ai/ai_position_scorer.gd`; legal active-turn destinations come from the shared Move query | AI determinism, mission AI, and evacuation tests |
 | Tune tactical camera movement and zoom | `levels/prototype_map/prototype_map.tscn` → `CameraRig` | `tests/action_camera_director_test.gd`, `tests/camera_obstruction_test.gd`, and manual close/far zoom |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
@@ -25,8 +30,8 @@ Use this page when you know what you want to change but not where FuseFire owns 
 
 ## Asset contracts
 
-A replacement humanoid must contain a `Skeleton3D` with the current VRoid
-`J_Bip_*` bone names. A replacement weapon must contain `SupportHandTarget` and
+A replacement humanoid must contain a `Skeleton3D` compatible with the current
+MIRA Zero humanoid mapping. A replacement weapon must contain `SupportHandTarget` and
 `MuzzleSocket` nodes. These contracts are checked when the runtime rig assembles.
 
 The detailed model and animation procedures remain in `asset-import.md` and

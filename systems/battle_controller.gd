@@ -187,12 +187,25 @@ func _on_tactical_action_committed(result) -> void:
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
 	var movement_budget := unit.stats.speed if unit.stats else 0
-	if not pathfinder.get_reachable_cells(start_cell, movement_budget).has(target_cell):
+	var reachable := pathfinder.get_reachable_cells(start_cell, movement_budget)
+	var legal_destinations: Array[Vector3i] = []
+	for candidate in reachable:
+		if grid_manager.can_unit_occupy_cell(unit, candidate):
+			legal_destinations.append(candidate)
+	if target_cell == Vector3i(-1, -1, -1):
+		return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations}
+	if not reachable.has(target_cell):
 		return {"accepted": false, "code": "unreachable", "message": "Destination is unreachable"}
+	if not grid_manager.can_unit_occupy_cell(unit, target_cell):
+		var blocker := grid_manager.get_unit_at(target_cell)
+		return {"accepted": false, "code": "occupied", "message": "Destination cannot be occupied", "blocking_actor_id": String(blocker.tactical_id) if is_instance_valid(blocker) else ""}
 	var path := pathfinder.calculate_3d_path(start_cell, target_cell)
-	if path.is_empty() or not grid_manager.can_unit_occupy_cell(unit, target_cell):
-		return {"accepted": false, "code": "occupied", "message": "Destination cannot be occupied"}
-	return {"accepted": true, "path": path, "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/characters/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
+	if path.is_empty():
+		return {"accepted": false, "code": "path_unavailable", "message": "No path reaches the destination"}
+	var path_cells: Array[Vector3i] = []
+	for point in path:
+		path_cells.append(world_to_grid(point))
+	return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations, "path_cells": path_cells, "path": path, "path_cost": pathfinder.get_path_cost(path, world_to_grid), "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/characters/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
 
 func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
 	unit_moved.emit(unit, start_cell, target_cell)
@@ -266,9 +279,9 @@ func _update_movement_preview(floor_hit: Dictionary) -> void:
 	if not floor_hit.is_empty():
 		var hover_grid = world_to_grid(floor_hit.position)
 		if current_movement_zone.has(hover_grid):
-			var path = _get_path_to_position(floor_hit.position)
-			if path.size() > 1:
-				path_visualizer.draw_path(path, Color(0.0, 0.5, 1.0, 0.4))
+			var query := query_move(tactical_unit, hover_grid)
+			if query.is_legal() and query.path.size() > 1:
+				path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
 				return
 	path_visualizer.clear_path()
 
@@ -315,8 +328,7 @@ func _on_floor_clicked(raw_position: Vector3) -> void:
 	if not current_movement_zone.has(clicked_grid):
 		return
 
-	var path = _get_path_to_position(raw_position)
-	if path.is_empty():
+	if not query_move(tactical_unit, clicked_grid).is_legal():
 		return
 
 	await try_move(tactical_unit, clicked_grid)
@@ -340,16 +352,10 @@ func update_unit_movement_zone() -> void:
 	if not tactical_unit or tactical_unit.is_moving:
 		return
 
-	var movement_budget = tactical_unit.stats.speed if tactical_unit.stats else 6
-	var unit_grid = grid_manager.get_unit_grid(tactical_unit)
-	var raw_reachable = pathfinder.get_reachable_cells(unit_grid, movement_budget)
-
-	current_movement_zone = raw_reachable.filter(
-		func(cell: Vector3i) -> bool:
-			if cell == unit_grid:
-				return true
-			return grid_manager.can_unit_occupy_cell(tactical_unit, cell)
-	)
+	var query := query_move(tactical_unit)
+	current_movement_zone.clear()
+	if query.is_legal():
+		current_movement_zone.assign(query.legal_destination_cells)
 
 	path_visualizer.draw_range_zone(current_movement_zone)
 	cover_visualizer.draw_for_cells(current_movement_zone)
@@ -376,11 +382,6 @@ func update_attack_range() -> void:
 
 	path_visualizer.draw_range_zone(current_attack_zone, Color(0.95, 0.2, 0.2, 0.3))
 
-func _get_path_to_position(target_world_pos: Vector3) -> PackedVector3Array:
-	var start_grid = grid_manager.get_unit_grid(tactical_unit)
-	var end_grid = world_to_grid(target_world_pos)
-	return pathfinder.calculate_3d_path(start_grid, end_grid)
-
 func world_to_grid(pos: Vector3) -> Vector3i:
 	return grid_manager.world_to_grid(pos)
 
@@ -399,6 +400,13 @@ func query_attack(attacker: TacticalUnit, target: TacticalUnit = null) -> Attack
 		attacker.tactical_id if is_instance_valid(attacker) else &"",
 		target.tactical_id if is_instance_valid(target) else &""
 	)
+
+func query_move(actor: TacticalUnit, target_cell := Vector3i(-1, -1, -1)) -> MoveQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := MoveQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell)
 
 func set_debug_enemy_control(enabled: bool) -> void:
 	if debug_enemy_control == enabled:

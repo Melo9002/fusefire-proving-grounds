@@ -14,6 +14,7 @@ var actor_ap_after: int
 var objective_state_before: Dictionary = {}
 var objective_state_after: Dictionary = {}
 var carried_actor_id: StringName = &""
+var path_cells: Array[Vector3i] = []
 var presentation_path := PackedVector3Array()
 var visual_segments: Array[StringName] = []
 var presentation_suppressed := false
@@ -24,7 +25,10 @@ func to_replay_record() -> Dictionary:
 	return {"schema_version": SCHEMA_VERSION, "kind": "move", "actor": String(request.actor_id), "transaction_id": transaction_id, "base_revision": base_revision, "committed_revision": committed_revision, "request": request.to_dictionary(), "resolved": resolved_dictionary()}
 
 func resolved_dictionary() -> Dictionary:
-	return {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id)}
+	var serialized_path: Array[Array] = []
+	for cell in path_cells:
+		serialized_path.append([cell.x, cell.y, cell.z])
+	return {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "path": serialized_path, "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id)}
 
 func compare_resolved(expected: Dictionary) -> String:
 	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")

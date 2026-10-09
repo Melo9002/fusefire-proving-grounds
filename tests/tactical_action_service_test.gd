@@ -128,20 +128,36 @@ func _check_move_and_wait_pipeline() -> void:
 	var service: TacticalActionService = level.battle_controller.action_service
 	var grid := level.battle_controller.grid_manager
 	var start := grid.get_unit_grid(actor)
-	var destination := Vector3i(-1, -1, -1)
-	for candidate: Vector3i in level.battle_controller.pathfinder.get_reachable_cells(start, actor.stats.speed):
-		if candidate != start and grid.can_unit_occupy_cell(actor, candidate):
-			destination = candidate
-			break
+	var fingerprint_before := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
+	var rng_before := service.get_combat_rng_state()
+	var inventory := service.query_move(actor.tactical_id)
+	var destination := inventory.legal_destination_cells[0] if not inventory.legal_destination_cells.is_empty() else Vector3i(-1, -1, -1)
 	_check(destination.x >= 0, "Movement fixture finds a legal destination")
 	var query := service.query_move(actor.tactical_id, destination)
 	_check(query.is_legal() and query.state_revision == 0, "Move query is read-only and revision stamped")
+	_check(inventory.is_legal() and inventory.legal_destination_cells.has(destination), "Targetless Move query inventories legal destinations")
+	_check(query.path_cells[0] == start and query.path_cells[-1] == destination and query.path_cost > 0.0 and query.path_cost <= query.movement_budget, "Move prediction exposes the authoritative path, cost, and budget")
+	_check(query.actor_ap_before == 2 and query.actor_ap_after == 1, "Move prediction exposes AP cost and remaining AP")
+	_check(query.elevation_change == destination.y - start.y and query.visual_segments.size() == query.path.size(), "Move prediction exposes elevation and traversal presentation facts")
+	var repeated := service.query_move(actor.tactical_id, destination)
+	_check(repeated.path == query.path and repeated.path_cost == query.path_cost and service.state_revision == 0, "Repeated Move queries are deterministic and do not advance revision")
+	_check(service.get_combat_rng_state() == rng_before and BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager) == fingerprint_before, "Move queries consume no RNG and mutate no tactical state")
+	var blocker: TacticalUnit = level.turn_manager.enemy_units[0]
+	grid.occupancy_map[destination] = blocker
+	var occupied := service.query_move(actor.tactical_id, destination)
+	_check(not occupied.is_legal() and occupied.validation.code == &"occupied" and occupied.blocking_actor_id == blocker.tactical_id, "Occupied Move destination reports the blocking actor")
+	grid.occupancy_map.erase(destination)
 	var stale := service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
 	_check(await service.submit_move(stale, true) == null and service.last_rejection.code == &"stale_revision", "Stale movement is rejected before occupancy changes")
 	_check(grid.get_unit_at(start) == actor and grid.get_unit_at(destination) == null, "Rejected movement preserves occupancy")
+	var preview_then_block := service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER)
+	grid.occupancy_map[destination] = blocker
+	_check(await service.submit_move(preview_then_block, true) == null and service.last_rejection.code == &"occupied", "Move submission revalidates occupancy after preview")
+	grid.occupancy_map.erase(destination)
 	var move := await service.submit_move(service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER), true)
 	_check(move != null and grid.get_unit_at(start) == null and grid.get_unit_at(destination) == actor, "Move commits occupancy before suppressed presentation completes")
+	_check(move.path_cells == query.path_cells and move.resolved_dictionary().path.size() == query.path_cells.size(), "Committed and replay Move results retain the validated authoritative path")
 	_check(actor.stats.current_ap == 1 and service.state_revision == 1, "Move spends one AP and advances one shared revision")
 	var duplicate := await service.submit_move(move.request, true)
 	_check(duplicate == null and grid.get_unit_at(destination) == actor and actor.stats.current_ap == 1, "Duplicate Move cannot spend AP or move twice")

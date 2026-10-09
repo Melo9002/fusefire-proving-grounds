@@ -177,12 +177,20 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	is_busy = false
 	return result
 
-func query_move(actor_id: StringName, target_cell: Vector3i) -> MoveQueryResult:
+func query_move(actor_id: StringName, target_cell := Vector3i(-1, -1, -1)) -> MoveQueryResult:
 	var query := MoveQueryResult.new()
 	query.actor_id = actor_id
 	query.target_cell = target_cell
 	query.state_revision = state_revision
 	var actor := actor_registry.resolve(actor_id)
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		query.actor_ap_after = maxi(0, actor.stats.current_ap - query.cost.ap)
+		query.movement_budget = actor.stats.speed
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
 	query.validation = _validate_actor(actor)
 	if not query.validation.accepted: return query
 	query.start_cell = _grid_manager.get_unit_grid(actor)
@@ -192,10 +200,17 @@ func query_move(actor_id: StringName, target_cell: Vector3i) -> MoveQueryResult:
 	var data: Dictionary = _query_move.call(actor, target_cell)
 	if not data.get("accepted", false):
 		query.validation = ActionValidationResult.reject(StringName(data.get("code", "illegal_move")), data.get("message", "Illegal move"), state_revision)
+		query.blocking_actor_id = StringName(data.get("blocking_actor_id", ""))
 		return query
-	query.path = data["path"]
-	query.presentation_path = data["presentation_path"]
-	query.visual_segments.assign(data["visual_segments"])
+	query.movement_budget = data.get("movement_budget", query.movement_budget)
+	query.legal_destination_cells.assign(data.get("legal_destinations", []))
+	if query.has_destination():
+		query.path_cells.assign(data["path_cells"])
+		query.path = data["path"]
+		query.presentation_path = data["presentation_path"]
+		query.visual_segments.assign(data["visual_segments"])
+		query.path_cost = data.get("path_cost", 0.0)
+		query.elevation_change = target_cell.y - query.start_cell.y
 	query.validation = ActionValidationResult.allow(state_revision)
 	return query
 
@@ -222,6 +237,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.request = request
 	result.start_cell = query.start_cell
 	result.target_cell = query.target_cell
+	result.path_cells.assign(query.path_cells)
 	result.presentation_path = query.presentation_path
 	result.visual_segments = query.visual_segments
 	result.actor_ap_before = actor.stats.current_ap

@@ -167,6 +167,10 @@ An authored `ElevatedSurface` contributes regular `MapCellData` records at its d
 
 Movement distinguishes crossing a cell from ending on it. Floor cells cost one movement point and accept units. Low cover stays connected, costs two points, and cannot be a destination; the movement path raises the unit by the declared cover height while crossing it. Full cover is disconnected. Every completed Move action still costs one AP.
 
+Movement facts have one read-only contract. `TacticalActionService.query_move(actor_id)` returns the current legal-destination inventory; supplying a destination returns its authoritative path, path cost, budget, predicted AP, elevation change, and traversal presentation segments. Player range/hover code and AI active-turn candidate scoring consume this contract. AI may still use unrestricted pathfinding for long-range hypothetical planning and owns the strategic value of a destination.
+
+Submission always reruns the targeted query against the current revision and occupancy. A successful commit spends AP and moves grid occupancy synchronously, so the committed destination itself is the reservation while animation is running. `TacticalActionPresenter` only animates the committed result and snaps the visual to that destination when presentation is suppressed or interrupted.
+
 `CoverVisualizer` draws a short edge inside each reachable destination beside cover while Move mode is active. The edge faces the obstacle, matching directional combat cover. Low and full cover use separate materials, and leaving Move mode clears both.
 
 ## Follow one move

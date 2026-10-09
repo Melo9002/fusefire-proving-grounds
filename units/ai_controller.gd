@@ -343,8 +343,8 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 	var fallback_score := -INF
 	var start_carrier_distance := start.distance_to(carrier.grid_position)
 	_last_position_candidates.clear()
-	for candidate in battle_controller.pathfinder.get_reachable_cells(unit.grid_position, unit.stats.speed):
-		if candidate == start or not grid.can_unit_occupy_cell(unit, candidate):
+	for candidate in _legal_move_destinations():
+		if candidate == start:
 			continue
 		var remains_on_route := route.has(candidate)
 		# Some stairs and bridges have no side tile within one move. In that case
@@ -392,8 +392,8 @@ func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 	var best := Vector3i(-1, -1, -1)
 	var best_score := -INF
 	_last_position_candidates.clear()
-	for candidate in battle_controller.pathfinder.get_reachable_cells(start, unit.stats.speed):
-		if candidate == start or route.has(candidate) or not grid.can_unit_occupy_cell(unit, candidate):
+	for candidate in _legal_move_destinations():
+		if candidate == start or route.has(candidate):
 			continue
 		var carrier_distance := candidate.distance_to(carrier.grid_position)
 		if carrier_distance < 2.0 or carrier_distance > 5.0:
@@ -527,7 +527,7 @@ func _move_toward_cell(target_cell: Vector3i, safe_only := false) -> bool:
 	return await _move_along_goal_path(path, start_cell, target_cell, safe_only)
 
 func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_cell: Vector3i, safe_only: bool) -> bool:
-	var reachable := battle_controller.pathfinder.get_reachable_cells(start_cell, unit.stats.speed)
+	var reachable := _legal_move_destinations()
 	var best_candidate := Vector3i(-1, -1, -1)
 	var best_adjustment := 0.0
 	var best_score := -INF
@@ -549,10 +549,6 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	for candidate in reachable:
 		if candidate == start_cell: continue
 		if escort_route.has(candidate): continue
-		if not battle_controller.grid_manager.can_unit_occupy_cell(unit, candidate):
-			var occupant := battle_controller.grid_manager.get_unit_at(candidate)
-			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Occupied by %s" % occupant.name if is_instance_valid(occupant) else "Illegal stopping cell"})
-			continue
 		if safe_only and not _is_safe_advance_cell(candidate):
 			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Unsafe second advance"})
 			continue
@@ -654,10 +650,14 @@ func _get_movement_urgency_bonus() -> float:
 	return minf(URGENCY_MAX_SCORE, float(_consecutive_low_value_actions - URGENCY_START_ACTIONS + 1) * URGENCY_PER_ACTION)
 
 func _route_cost(path: PackedVector3Array) -> float:
-	var cost := 0.0
-	for index in range(1, path.size()):
-		cost += battle_controller.pathfinder.get_step_cost(battle_controller.world_to_grid(path[index - 1]), battle_controller.world_to_grid(path[index]))
-	return cost
+	return battle_controller.pathfinder.get_path_cost(path, battle_controller.world_to_grid)
+
+func _legal_move_destinations() -> Array[Vector3i]:
+	var query := battle_controller.query_move(unit)
+	var destinations: Array[Vector3i] = []
+	if query.is_legal():
+		destinations.assign(query.legal_destination_cells)
+	return destinations
 
 func _nearest_reachable_zone_cell(zone_id: StringName) -> Vector3i:
 	var grid := battle_controller.grid_manager
@@ -682,9 +682,7 @@ func _best_survival_position() -> Vector3i:
 	var start := grid.get_unit_grid(unit)
 	var best := start
 	var best_score := _survival_position_score(start, start)
-	for candidate in battle_controller.pathfinder.get_reachable_cells(start, unit.stats.speed):
-		if candidate != start and not grid.can_unit_occupy_cell(unit, candidate):
-			continue
+	for candidate in _legal_move_destinations():
 		var score := _survival_position_score(candidate, start)
 		if score > best_score:
 			best_score = score

@@ -91,6 +91,16 @@ func _refresh_diagonals_near(changed: Vector3i) -> void:
 func get_step_cost(from_cell: Vector3i, to_cell: Vector3i) -> float:
 	return astar._compute_cost(grid_to_id_map[from_cell], grid_to_id_map[to_cell]) * float(movement_costs.get(to_cell, 1))
 
+func get_path_cost(path: PackedVector3Array, world_to_grid: Callable) -> float:
+	var cost := 0.0
+	for index in range(1, path.size()):
+		var from_cell: Vector3i = world_to_grid.call(path[index - 1])
+		var to_cell: Vector3i = world_to_grid.call(path[index])
+		if not grid_to_id_map.has(from_cell) or not grid_to_id_map.has(to_cell):
+			return INF
+		cost += get_step_cost(from_cell, to_cell)
+	return cost
+
 func connect_cells(from_cell: Vector3i, to_cell: Vector3i, bidirectional: bool = true) -> bool:
 	if not grid_to_id_map.has(from_cell) or not grid_to_id_map.has(to_cell):
 		return false
@@ -141,4 +151,10 @@ func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Ve
 			best_cost[neighbor] = new_cost
 			frontier.append([neighbor, new_cost])
 
+	reachable.sort_custom(_cell_less)
 	return reachable
+
+func _cell_less(first: Vector3i, second: Vector3i) -> bool:
+	if first.x != second.x: return first.x < second.x
+	if first.y != second.y: return first.y < second.y
+	return first.z < second.z
