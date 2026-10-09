@@ -21,14 +21,10 @@ var presentation_completed := false
 var presentation_error := ""
 
 func to_replay_record() -> Dictionary:
-	return {"schema_version": SCHEMA_VERSION, "kind": "move", "actor": String(request.actor_id), "transaction_id": transaction_id, "request": request.to_dictionary(), "resolved": resolved_dictionary()}
+	return {"schema_version": SCHEMA_VERSION, "kind": "move", "actor": String(request.actor_id), "transaction_id": transaction_id, "base_revision": base_revision, "committed_revision": committed_revision, "request": request.to_dictionary(), "resolved": resolved_dictionary()}
 
 func resolved_dictionary() -> Dictionary:
 	return {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id)}
 
 func compare_resolved(expected: Dictionary) -> String:
-	var actual := resolved_dictionary()
-	for key in actual:
-		if not expected.has(key): return "missing resolved field '%s'" % key
-		if expected[key] != actual[key]: return "resolved field '%s' differs: expected %s, got %s" % [key, expected[key], actual[key]]
-	return ""
+	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")

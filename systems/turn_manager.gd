@@ -48,7 +48,7 @@ func end_current_turn() -> void:
 	print_rich("[color=yellow][TURN][/color] end_current_turn() called. Current Phase: ", current_phase)
 	var turn_record := {
 		"kind": "end_turn",
-		"actor": String(active_unit.name) if is_instance_valid(active_unit) else "",
+		"actor": String(active_unit.tactical_id) if is_instance_valid(active_unit) else "",
 		"round": current_round,
 		"phase": int(current_phase),
 	}
@@ -86,7 +86,7 @@ func advance_automated_player(finished_unit: TacticalUnit) -> void:
 			return
 	var turn_record := {
 		"kind": "end_turn",
-		"actor": String(finished_unit.name) if is_instance_valid(finished_unit) else "",
+		"actor": String(finished_unit.tactical_id) if is_instance_valid(finished_unit) else "",
 		"round": current_round,
 		"phase": int(current_phase),
 	}

@@ -1,6 +1,8 @@
 class_name TacticalActionRequest
 extends RefCounted
 
+const SCHEMA_VERSION := 1
+
 enum Source { PLAYER, AI, REPLAY, SYSTEM, DEBUG }
 
 var kind: StringName
@@ -42,6 +44,7 @@ static func mission(kind_value: StringName, actor: StringName, target: StringNam
 
 func to_dictionary() -> Dictionary:
 	return {
+		"schema_version": SCHEMA_VERSION,
 		"kind": String(kind),
 		"actor_id": String(actor_id),
 		"target_id": String(target_id),

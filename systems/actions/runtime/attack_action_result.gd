@@ -58,11 +58,5 @@ func resolved_dictionary() -> Dictionary:
 	}
 
 func compare_resolved(expected: Dictionary) -> String:
-	var actual := resolved_dictionary()
-	for key in actual:
-		if not expected.has(key):
-			return "missing resolved field '%s'" % key
-		if expected[key] != actual[key]:
-			return "resolved field '%s' differs: expected %s, got %s" % [key, expected[key], actual[key]]
-	return ""
+	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")
 

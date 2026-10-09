@@ -17,6 +17,7 @@ func begin(configuration: Dictionary, battle_controller: BattleController, turn_
 	_battle_controller = battle_controller
 	_turn_manager = turn_manager
 	_objective_manager = objective_manager
+	recording.initial_state_fingerprint = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager)
 	battle_controller.replay_action_committed.connect(_on_action_committed)
 	if is_instance_valid(battle_controller.action_service):
 		battle_controller.action_service.action_committed.connect(_on_tactical_action_committed)
@@ -25,6 +26,14 @@ func begin(configuration: Dictionary, battle_controller: BattleController, turn_
 
 func _on_action_committed(record: Dictionary) -> void:
 	var recorded := record.duplicate(true)
+	recorded["record_index"] = recording.actions.size()
+	if not recorded.has("schema_version"):
+		recorded["schema_version"] = 1
+	if not recorded.has("transaction_id"):
+		recorded["transaction_id"] = "command-%06d" % recording.actions.size()
+	if not recorded.has("committed_revision") and is_instance_valid(_battle_controller.action_service):
+		recorded["committed_revision"] = _battle_controller.action_service.state_revision
+		recorded["base_revision"] = maxi(0, int(recorded["committed_revision"]) - 1)
 	recorded["expected_state"] = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager)
 	recording.append_action(recorded)
 

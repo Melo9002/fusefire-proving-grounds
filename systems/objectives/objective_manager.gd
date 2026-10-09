@@ -243,13 +243,13 @@ func end_mission_early() -> bool:
 		return false
 	if not can_end_mission_early(): return false
 	if _battle_controller and _battle_controller.is_action_in_progress: return false
-	# Departure stores its pre-action fingerprint; playback validates it before
-	# applying this terminal command, then checks the final battle result.
-	_battle_controller.record_replay_action("depart", null)
 	left_behind = get_units_left_behind()
 	_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
 	if is_instance_valid(_battle_controller.action_service):
 		_battle_controller.action_service.advance_external_revision()
+	# Record the committed command and its final fingerprint. Replay invokes the
+	# same mission command, then verifies this post-commit state.
+	_battle_controller.record_replay_action("depart", null)
 	mission_report_changed.emit()
 	return true
 

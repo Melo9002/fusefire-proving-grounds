@@ -19,6 +19,7 @@ var playback_paused := false
 var playback_speed := 1.0
 var camera_mode: CameraMode = CameraMode.FREE
 var _controls: Control
+var last_divergence := ""
 
 func begin(p_level: BattleLevel, p_recording) -> void:
 	# The player and its controls must remain responsive while the tactical tree is
@@ -26,11 +27,10 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	level = p_level
 	recording = p_recording
-	if recording == null or recording.schema_version != BattleReplayRecording.CURRENT_SCHEMA_VERSION:
-		push_error("Replay schema is unsupported: expected %d, got %s" % [
-			BattleReplayRecording.CURRENT_SCHEMA_VERSION,
-			str(recording.schema_version) if recording != null else "missing",
-		])
+	var validation: String = "Replay recording is missing" if recording == null else recording.validation_message()
+	if not validation.is_empty():
+		last_divergence = "reconstruction: %s" % validation
+		push_error("[Replay] %s" % last_divergence)
 		playback_complete = true
 		playback_succeeded = false
 		playback_finished.emit(false)
@@ -45,22 +45,31 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 
 func _play() -> void:
 	print("[Replay] PLAYBACK — %d actions" % recording.actions.size())
+	var initial_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
+	if recording.schema_version >= 3 and not recording.initial_state_fingerprint.is_empty() and initial_state != recording.initial_state_fingerprint:
+		_fail("reconstruction", -1, {}, "initial state fingerprint differs\nExpected: %s\nActual:   %s" % [recording.initial_state_fingerprint, initial_state])
+		return
 	for index in recording.actions.size():
+		last_divergence = ""
 		await _wait_until_playing()
 		if level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 			break
 		var record: Dictionary = recording.actions[index]
+		var record_issue := ReplayRecordTools.validate_action_record(record, recording.schema_version)
+		if not record_issue.is_empty():
+			_fail("reconstruction", index, record, record_issue)
+			return
+		if recording.schema_version >= 3:
+			var actual_revision := level.battle_controller.action_service.state_revision
+			if int(record.get("base_revision", -1)) != actual_revision:
+				_fail("validation", index, record, "base_revision differs: expected %s, got %d" % [record.get("base_revision"), actual_revision])
+				return
 		var expected_state: String = record.get("expected_state", "")
 		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
-		if record.get("kind", "") == "depart" and not expected_state.is_empty() and state_before != expected_state:
-			push_error("Replay departure state diverged")
-			playback_complete = true
-			playback_finished.emit(false)
-			return
 		# Some gameplay signals commit an automatic action while their enclosing action is
 		# still finishing. If the earlier replayed action already produced this exact
 		# authoritative state, the nested record has already been applied.
-		if record.get("kind", "") != "depart" and not expected_state.is_empty() and state_before == expected_state:
+		if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION and record.get("kind", "") != "depart" and not expected_state.is_empty() and state_before == expected_state:
 			verified_actions += 1
 			playback_progressed.emit(verified_actions, recording.actions.size())
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
@@ -69,15 +78,16 @@ func _play() -> void:
 		await _focus_action(record)
 		await _wait_until_playing()
 		if not await _execute(record):
-			push_error("Replay diverged at action %d: %s" % [index, record])
-			playback_complete = true
-			playback_finished.emit(false)
+			_fail("resolution", index, record, last_divergence if not last_divergence.is_empty() else "authoritative execution rejected the record")
 			return
+		if recording.schema_version >= 3:
+			var committed_revision := level.battle_controller.action_service.state_revision
+			if int(record.get("committed_revision", -1)) != committed_revision:
+				_fail("commit", index, record, "committed_revision differs: expected %s, got %d" % [record.get("committed_revision"), committed_revision])
+				return
 		var actual_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
-		if record.get("kind", "") != "depart" and not expected_state.is_empty() and actual_state != expected_state:
-			push_error("Replay state diverged at action %d (%s by %s).\nExpected: %s\nActual:   %s" % [index, record.get("kind", "unknown"), record.get("actor", ""), expected_state, actual_state])
-			playback_complete = true
-			playback_finished.emit(false)
+		if not expected_state.is_empty() and actual_state != expected_state:
+			_fail("comparison", index, record, "state fingerprint differs\nExpected: %s\nActual:   %s" % [expected_state, actual_state])
 			return
 		verified_actions += 1
 		playback_progressed.emit(verified_actions, recording.actions.size())
@@ -189,7 +199,7 @@ func _execute(record: Dictionary) -> bool:
 		"move":
 			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
 			request.source = TacticalActionRequest.Source.REPLAY
-			request.expected_revision = level.battle_controller.action_service.state_revision
+			if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
 			var original_movement_speed := actor.movement_speed
 			actor.movement_speed = original_movement_speed * playback_speed
 			var result := await level.battle_controller.action_service.submit_move(request)
@@ -197,11 +207,13 @@ func _execute(record: Dictionary) -> bool:
 				actor.movement_speed = original_movement_speed
 			if result == null:
 				var rejection := level.battle_controller.action_service.last_rejection
-				push_error("Replay move rejected [%s]: %s" % [rejection.code, rejection.message])
+				last_divergence = "move rejected [%s]: %s" % [rejection.code, rejection.message]
 				return false
+			var identity_difference := _compare_result_identity(result, record)
+			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
 			var difference := result.compare_resolved(record.get("resolved", {}))
 			if not difference.is_empty():
-				push_error("Replay move result diverged: %s" % difference)
+				last_divergence = difference
 				return false
 			return true
 		"attack":
@@ -211,15 +223,17 @@ func _execute(record: Dictionary) -> bool:
 				return false
 			var request := TacticalActionRequest.from_dictionary(request_data)
 			request.source = TacticalActionRequest.Source.REPLAY
-			request.expected_revision = level.battle_controller.action_service.state_revision
+			if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
 			var result := await level.battle_controller.action_service.submit_attack(request)
 			if result == null:
 				var rejection := level.battle_controller.action_service.last_rejection
-				push_error("Replay attack rejected [%s]: %s" % [rejection.code, rejection.message])
+				last_divergence = "attack rejected [%s]: %s" % [rejection.code, rejection.message]
 				return false
+			var identity_difference := _compare_result_identity(result, record)
+			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
 			var difference := result.compare_resolved(record.get("resolved", {}))
 			if not difference.is_empty():
-				push_error("Replay attack result diverged at transaction %s: %s" % [record.get("transaction_id", "?"), difference])
+				last_divergence = difference
 				return false
 			return true
 		"defend":
@@ -233,12 +247,17 @@ func _execute(record: Dictionary) -> bool:
 func _replay_simple(record: Dictionary) -> bool:
 	var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
 	request.source = TacticalActionRequest.Source.REPLAY
-	request.expected_revision = level.battle_controller.action_service.state_revision
+	if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
 	var result := await level.battle_controller.action_service.submit_simple(request)
-	if result == null: return false
+	if result == null:
+		var rejection := level.battle_controller.action_service.last_rejection
+		last_divergence = "%s rejected [%s]: %s" % [request.kind, rejection.code, rejection.message]
+		return false
+	var identity_difference := _compare_result_identity(result, record)
+	if not identity_difference.is_empty(): last_divergence = identity_difference; return false
 	var difference := result.compare_resolved(record.get("resolved", {}))
 	if not difference.is_empty():
-		push_error("Replay %s result diverged: %s" % [request.kind, difference])
+		last_divergence = difference
 		return false
 	return true
 
@@ -252,17 +271,19 @@ func _replay_mission(record: Dictionary, actor: TacticalUnit) -> bool:
 	else:
 		request = TacticalActionRequest.from_dictionary(request_data)
 		request.source = TacticalActionRequest.Source.REPLAY
-		request.expected_revision = level.battle_controller.action_service.state_revision
+		if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
 	var result := await level.battle_controller.action_service.submit_mission(request)
 	if result == null:
 		var rejection := level.battle_controller.action_service.last_rejection
-		push_error("Replay mission action rejected [%s]: %s" % [rejection.code, rejection.message])
+		last_divergence = "mission action rejected [%s]: %s" % [rejection.code, rejection.message]
 		return false
+	var identity_difference := _compare_result_identity(result, record)
+	if not identity_difference.is_empty(): last_divergence = identity_difference; return false
 	var expected: Dictionary = record.get("resolved", {})
 	if expected.is_empty(): return true
 	var difference := result.compare_resolved(expected)
 	if not difference.is_empty():
-		push_error("Replay %s result diverged: %s" % [request.kind, difference])
+		last_divergence = difference
 		return false
 	return true
 
@@ -291,3 +312,25 @@ func _array_to_cell(value: Variant) -> Vector3i:
 	if value is Array and value.size() == 3:
 		return Vector3i(int(value[0]), int(value[1]), int(value[2]))
 	return Vector3i(-1, -1, -1)
+
+func _compare_result_identity(result, record: Dictionary) -> String:
+	if recording.schema_version < 3: return ""
+	var expected := {
+		"transaction_id": record.get("transaction_id"),
+		"base_revision": record.get("base_revision"),
+		"committed_revision": record.get("committed_revision"),
+	}
+	var actual := {
+		"transaction_id": result.transaction_id,
+		"base_revision": result.base_revision,
+		"committed_revision": result.committed_revision,
+	}
+	return ReplayRecordTools.compare_fields(expected, actual)
+
+func _fail(stage: String, index: int, record: Dictionary, reason: String) -> void:
+	var context := ReplayRecordTools.context(index, record) if index >= 0 else "initial battle"
+	last_divergence = "%s at %s: %s" % [stage, context, reason]
+	push_error("[Replay] %s" % last_divergence)
+	playback_complete = true
+	playback_succeeded = false
+	playback_finished.emit(false)

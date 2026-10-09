@@ -20,6 +20,12 @@ func _run() -> void:
 	var recording = ReplaySession.last_recording
 	if recording:
 		_check(not recording.actions.is_empty(), "Replay contains authoritative actions")
+		_check(recording.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Replay uses the current explicit envelope schema")
+		_check(not recording.initial_state_fingerprint.is_empty(), "Replay captures the reconstructed initial state")
+		for index in recording.actions.size():
+			var record: Dictionary = recording.actions[index]
+			_check(record.get("record_index", -1) == index, "Replay record index preserves total ordering")
+			_check(record.has("base_revision") and record.has("committed_revision"), "Replay record preserves revision ordering")
 		_check(recording.actions.any(func(action: Dictionary): return action.kind == "move"), "Replay records movement")
 		_check(recording.actions.any(func(action: Dictionary): return action.kind == "attack"), "Replay records attacks")
 	var original_result := original.turn_manager.battle_result

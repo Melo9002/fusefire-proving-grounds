@@ -517,7 +517,7 @@ func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 func record_replay_action(kind: String, actor: TacticalUnit, details: Dictionary = {}) -> void:
 	var record := {
 		"kind": kind,
-		"actor": String(actor.name) if is_instance_valid(actor) else "",
+		"actor": String(actor.tactical_id) if is_instance_valid(actor) else "",
 		"round": turn_manager.current_round if turn_manager else 0,
 		"phase": int(turn_manager.current_phase) if turn_manager else -1,
 	}
