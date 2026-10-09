@@ -797,7 +797,7 @@ func _publish_movement_preview(destination: Vector3i, summary: String) -> void:
 
 func _wait_for_next_turn(reason: String, alternatives: String) -> bool:
 	_record_ai_decision("Wait", unit.name, reason, alternatives)
-	return battle_controller.try_end_unit_turn(unit, reason)
+	return await battle_controller.try_end_unit_turn(unit, reason)
 
 func _movement_wait_reason(prefix: String) -> String:
 	var occupied_by: Array[String] = []

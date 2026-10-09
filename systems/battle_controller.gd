@@ -150,7 +150,8 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		_present_attack_result,
 		_query_move_data,
 		_present_move_result,
-		_on_movement_committed
+		_on_movement_committed,
+		_present_simple_result
 	)
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
@@ -217,6 +218,20 @@ func _present_move_result(result: MoveActionResult) -> void:
 	unit.move_along_path(result.presentation_path, result.visual_segments)
 	await unit.movement_finished
 	if camera_presented: await action_camera_director.finish_live_presentation(true)
+
+func _present_simple_result(result: SimpleActionResult) -> void:
+	var unit := action_service.actor_registry.resolve(result.request.actor_id)
+	if not is_instance_valid(unit) or result.presentation_suppressed: return
+	if result.request.kind == &"wait":
+		print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, result.request.details.get("reason", "No useful action available.")])
+		return
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, result.actor_ap_after)
+	if camera_presented:
+		await get_tree().create_timer(0.25, false).timeout
+		await action_camera_director.finish_live_presentation(true)
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
 	# Generated deployments have no authored facing. Use the opposing team's
@@ -480,46 +495,24 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 
 func try_defend(unit: TacticalUnit) -> bool:
 	# Legacy replay compatibility. Prototype 1 gameplay uses try_end_unit_turn().
-	if get_tree().paused:
-		return false
-	if is_action_in_progress or not turn_manager.can_unit_act(unit):
-		return false
-	var action = DefendAction.new(unit, UNIFORM_AP_COST)
-	if not action.is_valid():
-		return false
 	is_action_in_progress = true
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
-		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, unit.stats.current_ap - UNIFORM_AP_COST)
-	if not action.execute():
-		is_action_in_progress = false
-		return false
-	record_replay_action("defend", unit)
+	var result := await action_service.submit_simple(action_service.make_simple_request(&"defend", unit, _action_source()))
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	if camera_presented:
-		await get_tree().create_timer(0.25, false).timeout
-		await action_camera_director.finish_live_presentation(true)
 	is_action_in_progress = false
-	return true
+	return result != null
 
 func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available.") -> bool:
-	if get_tree().paused:
-		return false
-	if is_action_in_progress or not turn_manager.can_unit_act(unit):
-		return false
-	if not unit.stats or unit.stats.current_ap <= 0:
-		return false
 	is_action_in_progress = true
-	var spent_ap := unit.stats.current_ap
-	unit.stats.current_ap = 0
-	record_replay_action("wait", unit, {"reason": reason, "spent_ap": spent_ap})
+	var result := await action_service.submit_simple(action_service.make_simple_request(&"wait", unit, _action_source(), {"reason": reason}))
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, reason])
 	is_action_in_progress = false
-	return true
+	return result != null
+
+func _action_source() -> TacticalActionRequest.Source:
+	if replay_mode: return TacticalActionRequest.Source.REPLAY
+	return TacticalActionRequest.Source.PLAYER if is_current_phase_manually_controlled() else TacticalActionRequest.Source.AI
 
 func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	if not is_instance_valid(action_service):

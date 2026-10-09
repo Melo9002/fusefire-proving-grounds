@@ -32,6 +32,11 @@ static func move(actor: StringName, target_cell: Vector3i, revision: int, reques
 	request.destination = target_cell
 	return request
 
+static func simple(kind_value: StringName, actor: StringName, revision: int, request_source: Source, request_details: Dictionary = {}) -> TacticalActionRequest:
+	var request := TacticalActionRequest.new(kind_value, actor, &"", revision, request_source)
+	request.details = request_details.duplicate(true)
+	return request
+
 func to_dictionary() -> Dictionary:
 	return {
 		"kind": String(kind),

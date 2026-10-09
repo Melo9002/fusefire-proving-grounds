@@ -60,7 +60,7 @@ func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
 	if not active_unit:
 		return
-	battle_controller.try_end_unit_turn(active_unit, "Skipped manually by the player.")
+	await battle_controller.try_end_unit_turn(active_unit, "Skipped manually by the player.")
 
 func _on_action_state_changed(_is_busy: bool) -> void:
 	_update_button_states()

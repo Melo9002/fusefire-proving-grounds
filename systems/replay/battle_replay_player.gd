@@ -223,15 +223,27 @@ func _execute(record: Dictionary) -> bool:
 				return false
 			return true
 		"defend":
-			return await level.battle_controller.try_defend(actor)
+			return await _replay_simple(record)
 		"wait":
-			return level.battle_controller.try_end_unit_turn(actor, record.get("reason", "Replay wait"))
+			return await _replay_simple(record)
 		"rescue":
 			var target: TacticalUnit = _find_unit(record.get("target", ""))
 			return is_instance_valid(target) and await level.objective_manager.try_rescue(actor, target)
 		"extract":
 			return await level.objective_manager.try_extract(actor)
 	return false
+
+func _replay_simple(record: Dictionary) -> bool:
+	var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
+	request.source = TacticalActionRequest.Source.REPLAY
+	request.expected_revision = level.battle_controller.action_service.state_revision
+	var result := await level.battle_controller.action_service.submit_simple(request)
+	if result == null: return false
+	var difference := result.compare_resolved(record.get("resolved", {}))
+	if not difference.is_empty():
+		push_error("Replay %s result diverged: %s" % [request.kind, difference])
+		return false
+	return true
 
 func _activate(actor: TacticalUnit) -> bool:
 	if level.turn_manager.active_unit == actor:
