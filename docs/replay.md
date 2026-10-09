@@ -1,54 +1,90 @@
 # Battle replay
 
-Fuse Fire records successful authoritative actions during a battle. When the battle
-ends, **Replay Battle** rebuilds the same seeded match and submits those actions through
-the ordinary gameplay APIs. **Return to Match Setup** starts a blank setup screen.
+FuseFire replay is a deterministic verification journal. It rebuilds the recorded battle and submits each recorded decision through the same authoritative action, turn, and mission systems used during play. Cameras and animation present the newly committed results; they are never replay authority.
 
-## Recorded information
+## Where the system lives
 
-The in-memory `BattleReplayRecording` contains the complete battle configuration and an
-ordered action list. Each action identifies its actor, round, and phase. It also carries
-an authoritative post-action fingerprint containing the phase, active unit, battle
-result, every remaining unit's cell, HP, AP, defense and carried actor, objective
-progress, and extraction totals. Depending on
-the action, it also records movement cells, an attack target and outcome, a rescue
-target, extraction, defense, or a phase advance.
+| Responsibility | File |
+| --- | --- |
+| Versioned envelope, JSON conversion, compatibility | `systems/replay/battle_replay_recording.gd` |
+| Observing committed events | `systems/replay/battle_replay_recorder.gd` |
+| Reconstruction, submission, and verification | `systems/replay/battle_replay_player.gd` |
+| Canonical post-commit state | `systems/replay/battle_state_fingerprint.gd` |
+| Field comparison and record validation | `systems/replay/replay_record_tools.gd` |
+| Current in-memory recording and file helpers | `systems/replay/battle_replay_session.gd` |
+| Pause, speed, and camera controls | `ui/replay_controls.gd` |
 
-The main participants are:
+## Schema 3
 
-- `BattleReplayRecorder`: observes successful actions without choosing or executing them.
-- `BattleReplaySession`: retains the latest completed battle while the game is running.
-- `BattleReplayPlayer`: rebuilds the match, disables normal input and AI, and executes the log.
-- `BattleLevel`: creates the recorder or player and owns the end-screen navigation.
+A current recording contains:
 
-Movement, attacks, defense, rescue, extraction, and turn advancement still use
-`BattleController`, `ObjectiveManager`, and `TurnManager`. Replay therefore detects
-rule or determinism drift instead of concealing it with a visual-only reenactment.
+- `schema_version` and `simulation_version`;
+- the complete normalized battle configuration and generation seed;
+- an initial authoritative fingerprint;
+- the expected final battle result;
+- ordered records with a stable `record_index`;
+- action/command schema, transaction identity, base revision, and committed revision;
+- a typed request and resolved result for unit actions;
+- a post-commit state fingerprint.
 
-## Testing
+Requests use stable tactical actor IDs. Attack results include the deterministic roll, hit chance, damage, AP/HP changes, defeat, and battle result. Move results include origin, destination, AP, objective state, and carried actor. Mission results include objectives, extraction counters, and roster removal. Turn and departure records remain commands because they do not have unit-action target and cost semantics.
 
-Play any battle through victory or defeat. The result UI should expose both buttons.
-Press **Replay Battle** and confirm the HUD says `REPLAY`, the same map and actors are
-created, ordinary controls stay disabled, and the same result is reached. The console
-prints the number of recorded actions followed by `COMPLETED` or `DIVERGED`.
-`COMPLETED` also reports how many action fingerprints matched. A mismatch prints the
-first divergent action plus its expected and actual states.
+Camera position, animation state, interpolation, particles, and UI are intentionally absent.
 
-Replay uses a dedicated bottom bar. **Pause/Play** stops between complete authoritative
-actions, speed choices from 0.5× to 4× adjust movement and action pacing, and the camera
-can remain **Free** or **Follow Action** by centering on each acting unit. The bar also
-shows action progress and can return directly to Match Setup. Tactical action, AP,
-portrait, objective, world-bar, and debug UI is hidden during playback.
+## Playback and divergence
 
-Run the automated end-to-end check with:
+Playback first verifies the envelope and initial reconstructed state. Before each schema-3 record it verifies the base revision. Tactical requests retain their recorded revision and pass through `TacticalActionService`; playback does not repair stale data. After commit it compares transaction/revision identity, resolved fields, committed revision, and the full state fingerprint.
 
-```powershell
-godot_console --headless --path . --script res://tests/battle_replay_smoke.gd
+The first failure stops playback and reports its stage:
+
+- **reconstruction** — envelope, record, initial map, roster, or objective state;
+- **validation** — stale revision or illegal request;
+- **resolution** — rejection, RNG outcome, cost, target, or action result;
+- **commit** — transaction/revision ordering;
+- **comparison** — resulting battle fingerprint.
+
+Diagnostics include record index, kind, transaction, revisions, actor/target, and expected versus actual field values.
+
+## Saving and loading
+
+Recordings remain in memory for the end-screen Replay button. Tools and tests can also persist readable JSON:
+
+```gdscript
+var error := BattleReplaySession.save_last("user://replays/my_battle.json")
+var recording := BattleReplaySession.load_recording("user://replays/my_battle.json")
+if not recording.is_playable():
+	push_error(recording.validation_error)
 ```
 
-## Current boundary
+The JSON contains plain arrays, dictionaries, numbers, strings, and booleans. Mission Resources and `Vector2i` values are converted explicitly at the envelope boundary.
 
-The recording currently lives in memory and replays sequentially. It does not yet
-provide saved replay files, rewind/timeline scrubbing, pseudo-real-time reconstruction,
-smooth cinematic tracking, or a camera mode that follows only the final mover in an
-activation.
+## Compatibility policy
+
+- **Schema 3** is the production format.
+- **Schema 2** is supported as a narrow Prototype 1 in-memory compatibility path. Missing revisions are normalized at playback, and the old already-applied consequence coalescing behavior remains limited to this schema.
+- Other envelope versions fail before playback with a message naming the supported versions.
+- Defend retains its original one-AP behavior for legacy records. It is never silently translated to Wait.
+- Action payload schema numbers remain explicit. Breaking a payload requires either a small documented reader or a clear rejection.
+
+Compatibility is intentionally finite. There is no promise that every development recording will remain playable forever.
+
+## Presentation controls
+
+The replay bar supports pause/play, 0.5×–4× pacing, and Free, Follow Action, or Cinematic camera modes. Pausing freezes tactical progression and in-progress movement while leaving the inspection camera responsive. Presentation can be suppressed in headless tests without changing RNG, transactions, fingerprints, or mission outcome.
+
+## XCOM history lesson and future rewind
+
+XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.
+
+A future rewind should restore a recorded snapshot or reconstruct from the initial configuration through a chosen `record_index`, then resume forward presentation. It should not reverse animations or invent inverse actions. Snapshot cadence, branching history, and timeline UI are outside Prototype 1.5.
+
+## Tests
+
+```powershell
+godot_console --headless --path . --script tests/replay_schema_test.gd
+godot_console --headless --path . --script tests/battle_replay_smoke.gd
+godot_console --headless --path . --script tests/rescue_battle_replay_smoke.gd
+godot_console --headless --path . --script tests/departure_replay_smoke.gd
+```
+
+The complete release gate also runs action-service, AI determinism, objective, evacuation, traversal, dependency-isolation, and Prototype 1 milestone suites.
