@@ -16,6 +16,8 @@ signal attack_presented(target_world_position: Vector3)
 @export_range(1, 30, 1, "suffix:cells") var attack_range: int = 3
 @export_group("Identity")
 @export var faction: Faction = Faction.PLAYER
+## Stable battle-local identity used by actions and replay. Display/node names may change.
+@export var tactical_id: StringName
 @export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
@@ -31,6 +33,8 @@ var current_path: PackedVector3Array = PackedVector3Array()
 var grid_position: Vector3i = Vector3i.ZERO
 var current_waypoint_idx: int = 0
 var is_moving: bool = false
+## Suppresses automatic poses while an action service commits authoritative stats.
+var defer_stat_presentation := false
 var _visual_segments: Array[StringName] = []
 var _visual_waypoint := -1
 var carried_unit: TacticalUnit
@@ -77,12 +81,20 @@ func _apply_character_presentation() -> void:
 		visual_adapter.process_mode = Node.PROCESS_MODE_DISABLED if use_legacy_bean else Node.PROCESS_MODE_INHERIT
 
 func _on_stats_defeated() -> void:
-	if visual_adapter:
+	if visual_adapter and not defer_stat_presentation:
 		visual_adapter.present_defeat()
 	defeated.emit(self)
 
 func _on_hp_changed(_current: int, _maximum: int) -> void:
-	if visual_adapter and stats and not stats.is_defeated:
+	if visual_adapter and stats and not stats.is_defeated and not defer_stat_presentation:
+		visual_adapter.present_hit()
+
+func present_attack_impact(defeated_by_attack: bool) -> void:
+	if not visual_adapter:
+		return
+	if defeated_by_attack:
+		visual_adapter.present_defeat()
+	else:
 		visual_adapter.present_hit()
 
 func _process(delta: float) -> void:

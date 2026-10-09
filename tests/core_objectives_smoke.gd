@@ -94,7 +94,7 @@ func _check_rescue() -> void:
 	check(carrier.is_carrying_unit() and carrier.stats.speed == original_speed - 2, "The rescuer carries the VIP with reduced movement")
 	check(not target.visible, "A carried VIP no longer remains visible at the pickup cell")
 	var enemy := level.turn_manager.enemy_units[0]
-	check(not AttackAction.new(carrier, enemy).is_valid(), "Carrier cannot bypass shooting restriction with a direct action")
+	check(not level.battle_controller.query_attack(carrier, enemy).is_legal(), "Carrier is rejected by the shared action query")
 	check(not level.battle_controller.evaluate_attack(carrier, enemy).is_legal, "Carrier cannot preview a legal shot")
 	if carrier.visual_adapter:
 		check(not carrier.visual_adapter.arm_ik.active, "Carrier disables weapon IK")

@@ -22,6 +22,10 @@ var active_unit_index: int = 0
 var current_round: int = 0
 var battle_result: BattleResult = BattleResult.ONGOING
 var automatic_annihilation_results := true
+## Optional presentation barrier supplied by the battle action service.
+## Authoritative AP may already be committed, but selection waits until the
+## action lifecycle has completed its blocking presentation.
+var action_completion_barrier: Callable
 
 func start_battle() -> void:
 	battle_result = BattleResult.ONGOING
@@ -145,6 +149,8 @@ func _on_player_ap_changed(current: int, _maximum: int, unit: TacticalUnit) -> v
 func _advance_selection_if_needed(exhausted_unit_id: int) -> void:
 	if get_tree().paused:
 		await get_tree().create_timer(0.0, false).timeout
+	while action_completion_barrier.is_valid() and action_completion_barrier.call():
+		await get_tree().process_frame
 	var exhausted_unit := instance_from_id(exhausted_unit_id) as TacticalUnit
 	if not is_instance_valid(exhausted_unit):
 		return

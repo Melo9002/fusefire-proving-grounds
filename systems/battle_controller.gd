@@ -16,6 +16,7 @@ signal ai_decision_recorded(record: Dictionary)
 signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
 signal replay_action_committed(record: Dictionary)
+signal tactical_action_committed(result: AttackActionResult)
 
 @export var tactical_unit: TacticalUnit
 @export var mouse_raycaster: MouseRaycaster
@@ -40,10 +41,10 @@ var debug_player_ai: bool = false
 var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var battle_seed: int = 1
 var ai_decision_seed: int = 1
-var _combat_rng := RandomNumberGenerator.new()
 var _squad_contexts: Dictionary[int, SquadContext] = {}
 var replay_mode := false
 var action_camera_director: Node
+var action_service: TacticalActionService
 var is_action_in_progress: bool = false:
 	set(value):
 		if is_action_in_progress != value:
@@ -80,7 +81,6 @@ func _ready() -> void:
 	mouse_raycaster.unit_clicked.connect(_on_unit_clicked)
 
 func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition = null) -> bool:
-	_combat_rng.seed = ai_decision_seed * 2147483647 + 104729
 	if prebuilt_map:
 		grid_manager.map_data = prebuilt_map
 		MapGraphBuilder.build(prebuilt_map, pathfinder)
@@ -117,7 +117,11 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 	])
 
 	var battle_units: Array[TacticalUnit] = turn_manager.player_units + turn_manager.allied_units + turn_manager.enemy_units
+	_initialize_action_service()
 	for unit_item in battle_units:
+		_ensure_tactical_id(unit_item)
+		if not action_service.register_actor(unit_item):
+			return false
 		var start_grid = world_to_grid(unit_item.global_position - Vector3.UP * unit_item.standing_height)
 		grid_manager.register_unit(unit_item, start_grid)
 		unit_item.defeated.connect(_on_unit_defeated)
@@ -126,6 +130,64 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 
 	turn_manager.start_battle()
 	return true
+
+func _initialize_action_service() -> void:
+	if is_instance_valid(action_service):
+		return
+	action_service = TacticalActionService.new()
+	action_service.name = "TacticalActionService"
+	add_child(action_service)
+	turn_manager.action_completion_barrier = func() -> bool: return action_service.is_busy
+	_configure_action_service(null)
+	action_service.action_committed.connect(_on_tactical_action_committed)
+
+func _configure_action_service(objectives: ObjectiveManager) -> void:
+	action_service.setup(
+		turn_manager,
+		grid_manager,
+		objectives,
+		ai_decision_seed * 2147483647 + 104729,
+		_present_attack_result
+	)
+
+func bind_objective_manager(manager: ObjectiveManager) -> void:
+	if not is_instance_valid(action_service):
+		_initialize_action_service()
+	_configure_action_service(manager)
+
+func _ensure_tactical_id(unit: TacticalUnit) -> void:
+	if unit.tactical_id.is_empty():
+		unit.tactical_id = StringName(unit.name)
+
+func _on_tactical_action_committed(result: AttackActionResult) -> void:
+	tactical_action_committed.emit(result)
+
+func _present_attack_result(result: AttackActionResult) -> void:
+	var attacker := action_service.actor_registry.resolve(result.request.actor_id)
+	var target := action_service.actor_registry.resolve(result.request.target_id)
+	if not is_instance_valid(attacker):
+		result.presentation_error = "Attacker no longer exists"
+		return
+	if result.presentation_suppressed:
+		if result.target_defeated and is_instance_valid(target):
+			target.queue_free()
+		return
+	var camera_presented := false
+	if not replay_mode and action_camera_director:
+		camera_presented = await action_camera_director.present(
+			attacker, &"attack", result.target_position,
+			result.actor_ap_after, result.target_defeated
+		)
+	attacker.present_attack(result.target_position)
+	if result.did_hit and is_instance_valid(target):
+		target.present_attack_impact(result.target_defeated)
+		if result.target_defeated:
+			target.finish_defeat_presentation()
+	# Keep the Prototype 1 feedback signal as a presentation-only adapter.
+	attack_resolved.emit(attacker, target, result.did_hit, result.hit_chance)
+	if camera_presented:
+		await get_tree().create_timer(0.42, false).timeout
+		await action_camera_director.finish_live_presentation(true)
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
 	# Generated deployments have no authored facing. Use the opposing team's
@@ -194,15 +256,15 @@ func _update_attack_preview() -> void:
 	if is_attack_mode_active and is_instance_valid(tactical_unit):
 		var hovered = mouse_raycaster.get_unit_under_mouse()
 		if is_instance_valid(hovered) and hovered != tactical_unit:
-			var evaluation = evaluate_attack(tactical_unit, hovered)
-			preview = "%d%% HIT" % evaluation.hit_chance if evaluation.is_legal else evaluation.reason.to_upper()
-			if evaluation.is_legal and evaluation.obstruction != "Clear":
-				preview += " — %s" % evaluation.obstruction.to_upper()
-			if shot_trajectory_visualizer:
+			var query := query_attack(tactical_unit, hovered)
+			preview = "%d%% HIT" % query.hit_chance if query.is_legal() else query.reason.to_upper()
+			if query.is_legal() and query.obstruction != "Clear":
+				preview += " — %s" % query.obstruction.to_upper()
+			if shot_trajectory_visualizer and query.evaluation != null:
 				shot_trajectory_visualizer.draw_trajectory(
 					CombatRules.get_shot_origin(tactical_unit, grid_manager),
-					evaluation.aim_point,
-					evaluation
+					query.aim_point,
+					query.evaluation
 				)
 				trajectory_drawn = true
 	if not trajectory_drawn and shot_trajectory_visualizer:
@@ -303,6 +365,16 @@ func can_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit) -> CombatRules.AttackEvaluation:
 	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d())
 
+func query_attack(attacker: TacticalUnit, target: TacticalUnit = null) -> AttackQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := AttackQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_attack(
+		attacker.tactical_id if is_instance_valid(attacker) else &"",
+		target.tactical_id if is_instance_valid(target) else &""
+	)
+
 func set_debug_enemy_control(enabled: bool) -> void:
 	if debug_enemy_control == enabled:
 		return
@@ -359,45 +431,23 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 	ai_decision_recorded.emit(record)
 
 func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
-	if get_tree().paused:
+	if not is_instance_valid(action_service):
 		return false
-	if is_action_in_progress or not turn_manager.can_unit_act(attacker):
-		return false
-	var evaluation = evaluate_attack(attacker, target)
+	var query := query_attack(attacker, target)
 	if debug_shots:
-		var blocker = evaluation.blocking_cell
-		print("[Shot] ", attacker.name, " ", grid_manager.get_unit_grid(attacker), " -> ", target.name, " ", grid_manager.get_unit_grid(target), " legal=", evaluation.is_legal, " chance=", evaluation.hit_chance, " visibility=", evaluation.obstruction, " reason=", evaluation.reason)
-		if blocker:
-			print("[Shot] blocker=", blocker.grid_position, " cover=", blocker.cover_type, " height=", blocker.cover_height, " walkable=", blocker.walkable)
-	if not evaluation.is_legal:
+		print("[Shot] ", attacker.name, " -> ", target.name, " legal=", query.is_legal(), " chance=", query.hit_chance, " visibility=", query.obstruction, " reason=", query.reason)
+	if not query.is_legal():
 		return false
-
-	var attack_cmd = AttackAction.new(attacker, target, UNIFORM_AP_COST, evaluation.hit_chance, _combat_rng.randf() * 100.0)
-	if not attack_cmd.is_valid():
-		return false
-	var will_defeat: bool = attack_cmd.roll_override < float(attack_cmd.hit_chance) and target.stats.current_hp <= 25
 	is_action_in_progress = true
-	var camera_presented := false
-	if not replay_mode and action_camera_director:
-		camera_presented = await action_camera_director.present(attacker, &"attack", target.global_position, attacker.stats.current_ap - UNIFORM_AP_COST, will_defeat)
-	if not attack_cmd.execute():
-		is_action_in_progress = false
-		return false
-	attacker.present_attack(target.global_position)
-	attack_resolved.emit(attacker, target, attack_cmd.did_hit, evaluation.hit_chance)
-	record_replay_action("attack", attacker, {
-		"target": String(target.name),
-		"did_hit": attack_cmd.did_hit,
-		"hit_chance": evaluation.hit_chance,
-	})
-
+	var source := TacticalActionRequest.Source.REPLAY if replay_mode else TacticalActionRequest.Source.AI
+	if is_current_phase_manually_controlled():
+		source = TacticalActionRequest.Source.PLAYER
+	var request := action_service.make_attack_request(attacker, target, source)
+	var result := await action_service.submit_attack(request)
 	is_attack_mode_active = false
 	is_move_mode_active = false
-	if camera_presented:
-		await get_tree().create_timer(0.42, false).timeout
-		await action_camera_director.finish_live_presentation(true)
 	is_action_in_progress = false
-	return true
+	return result != null
 
 func try_defend(unit: TacticalUnit) -> bool:
 	# Legacy replay compatibility. Prototype 1 gameplay uses try_end_unit_turn().
@@ -510,9 +560,13 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 		tactical_unit = null
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	unit.finish_defeat_presentation()
+	if not unit.defer_stat_presentation:
+		unit.finish_defeat_presentation()
 
 func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> void:
+	_ensure_tactical_id(unit)
+	if is_instance_valid(action_service):
+		action_service.register_actor(unit)
 	grid_manager.register_unit(unit, grid_position)
 	unit.defeated.connect(_on_unit_defeated)
 
@@ -520,5 +574,7 @@ func extract_unit(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit):
 		return
 	grid_manager.unregister_unit_at(grid_manager.get_unit_grid(unit))
+	if is_instance_valid(action_service):
+		action_service.unregister_actor(unit)
 	turn_manager.remove_extracted_unit(unit)
 	unit.queue_free()

@@ -184,6 +184,7 @@ func _initialize_objectives() -> void:
 	if mission_definition == null:
 		return
 	objective_manager.begin_tracking(turn_manager, battle_controller, battle_controller.grid_manager)
+	battle_controller.bind_objective_manager(objective_manager)
 	if objective_manager.get_objective(&"rescue"):
 		_spawn_rescue_target()
 	objective_zone_visualizer.show_mission(mission_definition)
@@ -196,6 +197,7 @@ func _spawn_rescue_target() -> void:
 		return
 	var unit := unit_scene.instantiate() as TacticalUnit
 	unit.name = "RescueTarget"
+	unit.tactical_id = &"RescueTarget"
 	unit.faction = TacticalUnit.Faction.NEUTRAL
 	unit.mission_actor.mission_id = &"RescueTarget"
 	unit.mission_actor.kind = MissionActor.Kind.RESCUABLE
@@ -230,6 +232,7 @@ func _spawn_generated_team(count: int, faction: TacticalUnit.Faction, parent: No
 func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node3D) -> TacticalUnit:
 	var unit = unit_scene.instantiate() as TacticalUnit
 	unit.name = unit_name
+	unit.tactical_id = StringName(unit_name)
 	unit.faction = faction
 	unit.attack_range = test_battle_attack_range
 	if unit.mission_actor:

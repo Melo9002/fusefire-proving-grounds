@@ -375,6 +375,17 @@ func _complete_state(state: MissionObjectiveState) -> void:
 func _evaluate_outcome() -> void:
 	if get_tree().paused:
 		await get_tree().create_timer(0.0, false).timeout
+	_evaluate_outcome_rules()
+
+## Called inside the non-awaiting action commit after synchronous lifecycle
+## signals have updated objective state. Deferred listeners may call the same
+## rules later; the ongoing-result guard makes that harmless.
+func evaluate_outcome_after_action_commit() -> void:
+	if get_tree().paused:
+		return
+	_evaluate_outcome_rules()
+
+func _evaluate_outcome_rules() -> void:
 	if not _turn_manager or _turn_manager.battle_result != TurnManager.BattleResult.ONGOING: return
 	if has_required_objective_failed():
 		_turn_manager.finish_battle(TurnManager.BattleResult.DEFEAT)

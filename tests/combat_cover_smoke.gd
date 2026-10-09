@@ -22,6 +22,7 @@ func _run() -> void:
 	var battle: BattleController = level.get_node("Systems/BattleController")
 	var grid = battle.grid_manager
 	var trajectory := level.get_node("Visualizers/ShotTrajectoryVisualizer") as ShotTrajectoryVisualizer
+	trajectory.set_debug_enabled(true)
 	var attacker = battle.turn_manager.player_units[0]
 	var target = battle.turn_manager.enemy_units[0]
 	check(attacker.attack_range == 10, "Friendly units use the configured test range")
@@ -119,7 +120,9 @@ func _run() -> void:
 	check(trajectory.mesh_instance.mesh != null and trajectory.last_reason == "Blocked", "Debug trajectory draws even when a shot is illegal")
 	check(trajectory.last_origin.is_equal_approx(CombatRules.get_shot_origin(attacker, grid)), "Debug trajectory shares the combat-rule origin")
 	check(trajectory.blocker_marker.mesh != null, "Blocked shots highlight the responsible LOS cell")
-	check(trajectory.last_blocking_cell.grid_position == Vector3i(16, 0, 8), "LOS highlight reports the blocking cell coordinate")
+	check(trajectory.last_blocking_cell != null, "Blocked shots retain the responsible LOS cell")
+	if trajectory.last_blocking_cell != null:
+		check(trajectory.last_blocking_cell.grid_position == Vector3i(16, 0, 8), "LOS highlight reports the blocking cell coordinate")
 
 	place(attacker, Vector3i(14, 0, 11), grid)
 	place(target, Vector3i(18, 0, 11), grid)
@@ -129,16 +132,8 @@ func _run() -> void:
 	check(trajectory.mesh_instance.mesh == null, "Debug trajectory can be cleared with attack mode")
 	check(trajectory.blocker_marker.mesh == null and trajectory.last_blocking_cell == null, "Clearing the shot also clears its blocker highlight")
 
-	attacker.stats.current_ap = attacker.stats.max_ap
-	small_block.blocks_line_of_sight = false
-	grid.map_data.rebuild_los_index()
-	target.stats.current_hp = target.stats.max_hp
-	var forced_miss = AttackAction.new(attacker, target, 1, 50, 75.0)
-	check(forced_miss.execute() and not forced_miss.did_hit, "A failed hit roll performs a miss")
-	check(target.stats.current_hp == target.stats.max_hp and attacker.stats.current_ap == 1, "A miss deals no damage and spends AP")
-	var forced_hit = AttackAction.new(attacker, target, 1, 50, 25.0)
-	check(forced_hit.execute() and forced_hit.did_hit, "A successful hit roll performs a hit")
-	check(target.stats.current_hp == target.stats.max_hp - 25 and attacker.stats.current_ap == 0, "A hit deals full damage and spends AP")
+	check(not AttackActionResult.roll_hits(75.0, 50), "A roll above hit chance resolves as a miss")
+	check(AttackActionResult.roll_hits(25.0, 50), "A roll below hit chance resolves as a hit")
 
 	level.queue_free()
 	await process_frame

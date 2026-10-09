@@ -26,6 +26,15 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	level = p_level
 	recording = p_recording
+	if recording == null or recording.schema_version != BattleReplayRecording.CURRENT_SCHEMA_VERSION:
+		push_error("Replay schema is unsupported: expected %d, got %s" % [
+			BattleReplayRecording.CURRENT_SCHEMA_VERSION,
+			str(recording.schema_version) if recording != null else "missing",
+		])
+		playback_complete = true
+		playback_succeeded = false
+		playback_finished.emit(false)
+		return
 	var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera
 	if replay_camera:
 		# Replay pause doubles as an inspection/photo mode. Normal battle cameras
@@ -192,10 +201,23 @@ func _execute(record: Dictionary) -> bool:
 				])
 			return moved
 		"attack":
-			var target: TacticalUnit = _find_unit(record.get("target", ""))
-			if not is_instance_valid(target):
+			var request_data: Dictionary = record.get("request", {})
+			if request_data.is_empty():
+				push_error("Replay attack is missing its versioned request")
 				return false
-			return await level.battle_controller.try_attack(actor, target)
+			var request := TacticalActionRequest.from_dictionary(request_data)
+			request.source = TacticalActionRequest.Source.REPLAY
+			request.expected_revision = level.battle_controller.action_service.state_revision
+			var result := await level.battle_controller.action_service.submit_attack(request)
+			if result == null:
+				var rejection := level.battle_controller.action_service.last_rejection
+				push_error("Replay attack rejected [%s]: %s" % [rejection.code, rejection.message])
+				return false
+			var difference := result.compare_resolved(record.get("resolved", {}))
+			if not difference.is_empty():
+				push_error("Replay attack result diverged at transaction %s: %s" % [record.get("transaction_id", "?"), difference])
+				return false
+			return true
 		"defend":
 			return await level.battle_controller.try_defend(actor)
 		"wait":
@@ -216,6 +238,10 @@ func _activate(actor: TacticalUnit) -> bool:
 
 func _find_unit(unit_name: String) -> TacticalUnit:
 	if unit_name.is_empty(): return null
+	if is_instance_valid(level) and is_instance_valid(level.battle_controller.action_service):
+		var registered := level.battle_controller.action_service.actor_registry.resolve(StringName(unit_name))
+		if is_instance_valid(registered):
+			return registered
 	var candidate := level.find_child(unit_name, true, false)
 	return candidate as TacticalUnit
 

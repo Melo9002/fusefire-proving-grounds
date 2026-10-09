@@ -724,17 +724,17 @@ func _find_attack_target() -> TacticalUnit:
 	if carrier and carrier != unit:
 		var threats: Array[TacticalUnit] = []
 		for hostile in targets:
-			if battle_controller.evaluate_attack(unit, hostile).is_legal and battle_controller.evaluate_attack(hostile, carrier).is_legal:
+			if battle_controller.query_attack(unit, hostile).is_legal() and battle_controller.evaluate_attack(hostile, carrier).is_legal:
 				threats.append(hostile)
 		if not threats.is_empty(): targets = threats
 	for candidate in targets:
 		if not is_instance_valid(candidate) or not candidate.stats or candidate.stats.is_defeated:
 			continue
-		var attack_evaluation := battle_controller.evaluate_attack(unit, candidate)
-		if attack_evaluation.is_legal:
+		var attack_query := battle_controller.query_attack(unit, candidate)
+		if attack_query.is_legal():
 			var scored := AITargetScorer.evaluate(unit, candidate, friendlies, current_mission_intent, _objective_manager, battle_controller.grid_manager, _policy, _squad_context)
 			var score: float = scored.total
-			var target_record := {"target": String(candidate.name), "cell": candidate.grid_position, "score": score, "status": "considered", "summary": scored.summary, "hit_chance": attack_evaluation.hit_chance}
+			var target_record := {"target": String(candidate.name), "cell": candidate.grid_position, "score": score, "status": "considered", "summary": scored.summary, "hit_chance": attack_query.hit_chance}
 			for component in ["vulnerability", "focus", "vip", "threat", "mission", "focus_count"]:
 				target_record[component] = scored[component]
 			_last_target_candidates.append(target_record)
@@ -745,7 +745,7 @@ func _find_attack_target() -> TacticalUnit:
 				_pending_target_note = "Target focus: %+.0f (%d allies engaged)" % [scored.focus, scored.focus_count]
 				_pending_target_scores = scored.summary
 		else:
-			_last_target_candidates.append({"target": String(candidate.name), "cell": candidate.grid_position, "status": "rejected", "reason": attack_evaluation.reason})
+			_last_target_candidates.append({"target": String(candidate.name), "cell": candidate.grid_position, "status": "rejected", "reason": attack_query.reason})
 	if options.size() > 1:
 		options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 		var scores: Array[float] = [options[0].score]
