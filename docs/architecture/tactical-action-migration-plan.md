@@ -978,3 +978,9 @@ Extraction ownership is split at the commit/presentation boundary. `ObjectiveMan
 Turn progression remains owned by `TurnManager`. Player AP exhaustion schedules one controller selection check after the service barrier releases; the active-unit guard prevents a second advancement. Automated action completion clears the AI execution guard before asking the turn manager to choose the next activation, and extraction checks whether roster removal already changed the active unit. A focused two-player Wait fixture verifies that the first action selects exactly one successor and the second emits exactly one end-turn prompt.
 
 Compatibility retained intentionally: the controller's read-only preview helpers, explicit action entry points, and computed busy property remain widely used by tests and Godot-facing UI. Legacy Defend stays in the schema-2 replay path. Defeat cleanup remains battle orchestration because it handles defeat sources beyond Attack and delegates roster state to `TurnManager`.
+
+## Roadmap clarification after Task 01.9
+
+The former Task 01.10 integration/regression milestone is deferred and merged into the comprehensive Goal 01 stabilization and architectural audit after Task 01.13. Targeted regression remains mandatory during every intervening implementation slice.
+
+Task 01.11 is planned in `docs/architecture/tactical-abilities-reactions-plan.md` as seven independently testable slices: shot resource and Reload; Aim and explicit tactical state; ordinary defensive stance; shield capability and stance; Overwatch simulation/reactions; a mission-terminal interaction; and cross-mechanic AI integration. Phase A is research and planning only and does not mark Task 01.11 complete.
