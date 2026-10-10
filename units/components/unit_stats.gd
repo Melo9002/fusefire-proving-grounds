@@ -6,6 +6,7 @@ extends Node
 
 signal hp_changed(current: int, max_hp: int)
 signal ap_changed(current: int, max_ap: int)
+signal supply_points_changed(current: int, maximum: int)
 signal status_changed
 signal defeated
 
@@ -35,6 +36,21 @@ var current_ap: int = 2:
 			current_ap = clamped_val
 			ap_changed.emit(current_ap, max_ap)
 
+@export_group("Supply Points (SP)")
+## Prototype attack supply capacity. This is intentionally unit-level until
+## FuseFire has a concrete weapon/equipment model.
+@export_range(1, 99, 1) var max_supply_points: int = 4:
+	set(value):
+		max_supply_points = max(1, value)
+		current_supply_points = min(current_supply_points, max_supply_points)
+
+var current_supply_points: int = 4:
+	set(value):
+		var clamped_value := clampi(value, 0, max_supply_points)
+		if current_supply_points != clamped_value:
+			current_supply_points = clamped_value
+			supply_points_changed.emit(current_supply_points, max_supply_points)
+
 var is_defending: bool = false:
 	set(value):
 		if is_defending != value:
@@ -46,6 +62,7 @@ var is_defeated: bool = false
 func _ready() -> void:
 	current_hp = max_hp
 	current_ap = max_ap
+	current_supply_points = max_supply_points
 
 func has_enough_ap(amount: int) -> bool:
 	return current_ap >= amount
@@ -55,6 +72,17 @@ func consume_ap(amount: int) -> void:
 
 func reset_ap() -> void:
 	current_ap = max_ap
+
+func has_supply_points(amount: int) -> bool:
+	return current_supply_points >= amount
+
+func consume_supply_points(amount: int) -> void:
+	current_supply_points -= amount
+
+func reload_supply_points() -> int:
+	var restored := max_supply_points - current_supply_points
+	current_supply_points = max_supply_points
+	return restored
 
 func take_damage(amount: int) -> void:
 	if is_defeated:

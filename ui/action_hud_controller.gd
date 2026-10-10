@@ -6,7 +6,9 @@ class_name ActionHUDController
 @export_group("Action Buttons")
 @export var move_button: Button
 @export var attack_button: Button
+@export var reload_button: Button
 @export var end_unit_button: Button
+@export var supply_points_label: Label
 
 var _tracked_stats: UnitStats
 
@@ -18,6 +20,8 @@ func _ready() -> void:
 		move_button.pressed.connect(_on_move_pressed)
 	if attack_button:
 		attack_button.pressed.connect(_on_attack_pressed)
+	if reload_button:
+		reload_button.pressed.connect(_on_reload_pressed)
 	if end_unit_button:
 		end_unit_button.pressed.connect(_on_end_unit_pressed)
 	battle_controller.move_mode_toggled.connect(_on_move_mode_toggled)
@@ -39,9 +43,12 @@ func _on_active_unit_changed(new_unit: TacticalUnit) -> void:
 	if is_instance_valid(_tracked_stats):
 		if _tracked_stats.ap_changed.is_connected(_on_resource_changed):
 			_tracked_stats.ap_changed.disconnect(_on_resource_changed)
+		if _tracked_stats.supply_points_changed.is_connected(_on_resource_changed):
+			_tracked_stats.supply_points_changed.disconnect(_on_resource_changed)
 	if is_instance_valid(new_unit) and new_unit.stats:
 		_tracked_stats = new_unit.stats
 		_tracked_stats.ap_changed.connect(_on_resource_changed)
+		_tracked_stats.supply_points_changed.connect(_on_resource_changed)
 	else:
 		_tracked_stats = null
 
@@ -55,6 +62,11 @@ func _on_move_pressed() -> void:
 
 func _on_attack_pressed() -> void:
 	battle_controller.toggle_attack_mode()
+
+func _on_reload_pressed() -> void:
+	var active_unit := battle_controller.tactical_unit
+	if is_instance_valid(active_unit):
+		await battle_controller.try_reload(active_unit)
 
 func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
@@ -100,6 +112,7 @@ func _update_button_states() -> void:
 	var has_ap = stats.current_ap >= 1 and not battle_controller.is_action_in_progress
 	var attack_query := battle_controller.query_attack(unit)
 	var wait_query := battle_controller.query_simple(&"wait", unit)
+	var reload_query := battle_controller.query_reload(unit)
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
@@ -112,6 +125,12 @@ func _update_button_states() -> void:
 			attack_button.tooltip_text = "No legal targets"
 		else:
 			attack_button.tooltip_text = ""
+	if reload_button:
+		reload_button.disabled = not reload_query.is_legal()
+		reload_button.tooltip_text = "Restore SP to %d" % reload_query.max_supply_points if reload_query.is_legal() else reload_query.reason()
+		reload_button.text = "Reload (1 AP)"
+	if supply_points_label:
+		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if end_unit_button:
 		end_unit_button.disabled = not wait_query.is_legal()
 		end_unit_button.tooltip_text = "" if wait_query.is_legal() else wait_query.reason()
@@ -119,4 +138,6 @@ func _update_button_states() -> void:
 func _disable_all_buttons() -> void:
 	if move_button: move_button.disabled = true
 	if attack_button: attack_button.disabled = true
+	if reload_button: reload_button.disabled = true
 	if end_unit_button: end_unit_button.disabled = true
+	if supply_points_label: supply_points_label.text = "SP —"

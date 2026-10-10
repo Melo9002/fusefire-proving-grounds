@@ -48,6 +48,22 @@ func present_attack(result: AttackActionResult) -> void:
 		await _safe_delay(0.42)
 		await _finish_camera(true)
 
+func present_reload(result: ReloadActionResult) -> void:
+	var unit := _actor(result.request.actor_id)
+	if not is_instance_valid(unit):
+		result.presentation_error = "Reload presenter could not find actor '%s'" % result.request.actor_id
+		return
+	if result.presentation_suppressed:
+		return
+	var camera_presented := false
+	if _camera_available():
+		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		camera_presented = await action_camera_director.present(unit, &"reload", unit.global_position + facing * 3.0, result.actor_ap_after)
+	print_rich("[color=light_blue][Reload][/color] %s restores %d SP (%d/%d)" % [unit.name, result.supply_points_restored, result.supply_points_after, result.max_supply_points])
+	if camera_presented:
+		await _safe_delay(0.25)
+		await _finish_camera(true)
+
 func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not is_instance_valid(unit):

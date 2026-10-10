@@ -1,7 +1,7 @@
 class_name BattleStateFingerprint
 extends RefCounted
 
-static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager) -> String:
+static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager, include_supply_points := true) -> String:
 	var active_id := "none"
 	if is_instance_valid(turn_manager.active_unit):
 		active_id = _unit_id(turn_manager.active_unit)
@@ -22,13 +22,24 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 		var carried_id := "none"
 		if unit.is_carrying_unit():
 			carried_id = _unit_id(unit.carried_unit)
-		parts.append("unit=%s,%d,%d,%d,%d,%d,%d,%d,%s" % [
-			_unit_id(unit), unit.faction, cell.x, cell.y, cell.z,
-			unit.stats.current_hp if unit.stats else -1,
-			unit.stats.current_ap if unit.stats else -1,
-			int(unit.stats.is_defending) if unit.stats else 0,
-			carried_id,
-		])
+		if include_supply_points:
+			parts.append("unit=%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s" % [
+				_unit_id(unit), unit.faction, cell.x, cell.y, cell.z,
+				unit.stats.current_hp if unit.stats else -1,
+				unit.stats.current_ap if unit.stats else -1,
+				unit.stats.current_supply_points if unit.stats else -1,
+				unit.stats.max_supply_points if unit.stats else -1,
+				int(unit.stats.is_defending) if unit.stats else 0,
+				carried_id,
+			])
+		else:
+			parts.append("unit=%s,%d,%d,%d,%d,%d,%d,%d,%s" % [
+				_unit_id(unit), unit.faction, cell.x, cell.y, cell.z,
+				unit.stats.current_hp if unit.stats else -1,
+				unit.stats.current_ap if unit.stats else -1,
+				int(unit.stats.is_defending) if unit.stats else 0,
+				carried_id,
+			])
 	if objectives and objectives.mission:
 		for state in objectives.get_objectives():
 			parts.append("objective=%s,%d,%d" % [state.definition.objective_id, state.status, state.progress])

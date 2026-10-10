@@ -37,15 +37,19 @@ func _test_catalog_and_independent_state() -> void:
 	shield.apply_starting_configuration(second)
 	check(first.stats != second.stats, "Spawned units own independent runtime stats")
 	first.stats.current_hp = 1
+	first.stats.current_supply_points = 0
 	first.shield_capable = false
 	check(second.stats.current_hp != 1, "Changing one unit's HP does not affect another")
+	check(second.stats.current_supply_points == 4 and shield.max_supply_points == 4, "Runtime Supply Points stay independent and never mutate the shared archetype")
 	check(second.shield_capable and shield.shield_capable, "Runtime capability changes do not mutate shared Resources")
 	var override := TacticalArchetype.new()
 	override.max_hp = 140
 	override.max_ap = 3
+	override.max_supply_points = 7
 	override.apply_starting_configuration(first)
 	check(first.stats.current_hp == 140 and first.stats.max_hp == 140, "HP overrides initialize both current and maximum HP")
 	check(first.stats.current_ap == 3 and first.stats.max_ap == 3, "AP overrides initialize both current and maximum AP")
+	check(first.stats.current_supply_points == 7 and first.stats.max_supply_points == 7, "Inspector-authored SP capacity initializes both current and maximum Supply Points")
 	first.free()
 	second.free()
 

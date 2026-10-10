@@ -29,8 +29,14 @@ static func validate_action_record(record: Dictionary, envelope_version: int) ->
 		if record.get("kind", "") not in ["end_turn", "depart"]:
 			if not record.has("request") or not record.has("resolved"):
 				return "tactical action is missing request or resolved result"
-			if int(record.get("schema_version", -1)) != 2:
-				return "unsupported action payload schema %s (expected 2)" % record.get("schema_version")
+			var payload_version := int(record.get("schema_version", -1))
+			var kind := String(record.get("kind", ""))
+			if kind == "attack" and payload_version not in [2, 3]:
+				return "unsupported Attack payload schema %s (expected 2 or 3)" % payload_version
+			if kind == "reload" and payload_version != 3:
+				return "unsupported Reload payload schema %s (expected 3)" % payload_version
+			if kind not in ["attack", "reload"] and payload_version != 2:
+				return "unsupported action payload schema %s (expected 2)" % payload_version
 			if int(record.get("request", {}).get("schema_version", -1)) != TacticalActionRequest.SCHEMA_VERSION:
 				return "unsupported request payload schema %s (expected %d)" % [record.get("request", {}).get("schema_version"), TacticalActionRequest.SCHEMA_VERSION]
 		elif int(record.get("schema_version", -1)) != 1:

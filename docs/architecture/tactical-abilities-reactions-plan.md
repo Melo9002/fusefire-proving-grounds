@@ -181,7 +181,9 @@ Implemented as the prerequisite authoring slice. `TacticalArchetype` Resources d
 
 ### 1. Shot resource and Reload
 
-Add resource state; make Attack consume it; add typed Reload query/result, presentation, UI, AI, fingerprint and replay. Test full/empty/AP/stale/reentrant/RNG cases. Exclude weapons, inventory, upgrades, and selectable amounts.
+**Implemented in 01.11.1.** `UnitStats` owns independent runtime Supply Points initialized from the archetype's Inspector-authored `max_supply_points`. Attack consumes one SP at commit, and typed Reload query/result contracts restore the reserve for one AP without consuming RNG. The existing HUD, presenter, AI loop, fingerprints, and replay player all consume the same authoritative facts. Full/empty/AP/stale/reentrant/presentation/replay cases have focused coverage. Weapons, inventory, upgrades, supply transfer, and selectable reload amounts remain excluded.
+
+Historical recordings without an explicit `supply_points_enabled` configuration flag retain pre-SP semantics: their payload-v2 Attacks consume no SP and their fingerprints use the pre-SP unit layout. New recordings opt into SP explicitly, use Attack/Reload payload schema 3, and compare SP fields normally. The replay envelope remains schema 3.
 
 ### 2. Aim and explicit tactical state
 

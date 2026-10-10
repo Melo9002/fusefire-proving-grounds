@@ -1,4 +1,4 @@
-class_name AttackActionResult
+class_name ReloadActionResult
 extends RefCounted
 
 const SCHEMA_VERSION := 3
@@ -8,37 +8,21 @@ var base_revision: int
 var committed_revision: int
 var request: TacticalActionRequest
 var cost := ActionCost.new(1)
-var hit_chance: int
-var roll: float
-var did_hit: bool
-var damage: int
-var actor_ap_before: int
-var actor_ap_after: int
+var actor_ap_before := 0
+var actor_ap_after := 0
 var supply_points_before := 0
 var max_supply_points := 0
-var supply_points_cost := 0
 var supply_points_after := 0
-var target_hp_before: int
-var target_hp_after: int
-var target_defeated: bool
-var battle_result_before: int
-var battle_result_after: int
-var target_position := Vector3.ZERO
-var objective_state_before: Dictionary = {}
-var objective_state_after: Dictionary = {}
-var presentation_completed := false
+var supply_points_restored := 0
 var presentation_suppressed := false
+var presentation_completed := false
 var presentation_error := ""
-
-static func roll_hits(roll_value: float, chance: int) -> bool:
-	return roll_value < float(clampi(chance, 0, 100))
 
 func to_replay_record() -> Dictionary:
 	return {
 		"schema_version": SCHEMA_VERSION,
-		"kind": "attack",
+		"kind": "reload",
 		"actor": String(request.actor_id),
-		"target": String(request.target_id),
 		"transaction_id": transaction_id,
 		"base_revision": base_revision,
 		"committed_revision": committed_revision,
@@ -48,23 +32,13 @@ func to_replay_record() -> Dictionary:
 
 func resolved_dictionary() -> Dictionary:
 	return {
-		"hit_chance": hit_chance,
-		"roll_milli": roundi(roll * 1000.0),
-		"did_hit": did_hit,
-		"damage": damage,
 		"actor_ap_before": actor_ap_before,
 		"actor_ap_after": actor_ap_after,
 		"supply_points_before": supply_points_before,
 		"max_supply_points": max_supply_points,
-		"supply_points_cost": supply_points_cost,
 		"supply_points_after": supply_points_after,
-		"target_hp_before": target_hp_before,
-		"target_hp_after": target_hp_after,
-		"target_defeated": target_defeated,
-		"battle_result_before": battle_result_before,
-		"battle_result_after": battle_result_after,
+		"supply_points_restored": supply_points_restored,
 	}
 
 func compare_resolved(expected: Dictionary) -> String:
 	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")
-

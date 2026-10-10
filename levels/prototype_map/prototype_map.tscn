@@ -705,7 +705,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "end_unit_button")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "end_unit_button", "supply_points_label")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -714,7 +714,9 @@ script = ExtResource("13_q7tb2")
 battle_controller = NodePath("../../../Systems/BattleController")
 move_button = NodePath("ActionBar/MoveButton")
 attack_button = NodePath("ActionBar/AttackButton")
+reload_button = NodePath("ActionBar/ReloadButton")
 end_unit_button = NodePath("ActionBar/EndUnitButton")
+supply_points_label = NodePath("ActionBar/SupplyPointsLabel")
 
 [node name="ActionBar" type="HBoxContainer" parent="Visualizers/BattleUI/ActionHUDController" unique_id=1879535380]
 layout_mode = 0
@@ -730,6 +732,14 @@ text = "Move"
 [node name="AttackButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=329368629]
 layout_mode = 2
 text = "Attack"
+
+[node name="ReloadButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+layout_mode = 2
+text = "Reload (1 AP)"
+
+[node name="SupplyPointsLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+layout_mode = 2
+text = "SP 4/4"
 
 [node name="EndUnitButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
 layout_mode = 2

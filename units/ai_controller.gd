@@ -156,6 +156,9 @@ func _execute_turn() -> void:
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Wait")
 			await get_tree().create_timer(0.25, false).timeout
 			continue
+		if await _try_reload_if_useful():
+			_record_ai_decision("Reload", "%d/%d SP" % [unit.stats.current_supply_points, unit.stats.max_supply_points], "Restored attack supply through the authoritative Reload query.", "Move, Wait")
+			continue
 		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
 			_wait_for_next_turn(_movement_wait_reason("No useful objective advance or supporting shot."), "Move, Attack")
 			break
@@ -273,6 +276,18 @@ func _can_use_mission_action(kind: StringName, actor: TacticalUnit, target: Tact
 	if not is_instance_valid(battle_controller):
 		return false
 	return battle_controller.query_mission(kind, actor, target).is_legal()
+
+func _try_reload_if_useful() -> bool:
+	if not is_instance_valid(unit) or not unit.stats:
+		return false
+	if unit.stats.current_supply_points >= unit.stats.max_supply_points:
+		return false
+	# Depleted units always restore their attack supply. A unit on its final AP
+	# may also top up a nearly empty reserve instead of entering a Wait loop.
+	if unit.stats.current_supply_points > 0 and not (unit.stats.current_supply_points <= 1 and unit.stats.current_ap == 1):
+		return false
+	var query := battle_controller.query_reload(unit)
+	return query.is_legal() and await battle_controller.try_reload(unit)
 
 func _get_ai_mission_intent() -> MissionIntentData:
 	if not _objective_manager:
@@ -537,6 +552,9 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var best_adjustment := 0.0
 	var best_score := -INF
 	var best_summary := "None"
+	var best_route_candidate := Vector3i(-1, -1, -1)
+	var best_route_score := -INF
+	var best_route_summary := "None"
 	var options: Array[Dictionary] = []
 	var hostiles := _get_hostile_units()
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
@@ -579,6 +597,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		scored.total -= revisit_penalty
 		scored.summary += "; revisit %+.0f" % -revisit_penalty
 		var score: float = scored.total
+		if score > best_route_score:
+			best_route_candidate = candidate
+			best_route_score = score
+			best_route_summary = scored.summary
 		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": scored.summary}
 		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 			if scored.has(component):
@@ -597,6 +619,15 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_adjustment = _squad_context.destination_adjustment(unit, candidate) if _squad_context else 0.0
 			best_score = score
 			best_summary = scored.summary
+	# Mission movement must eventually accept the least-bad valid route step.
+	# This only applies after the ordinary urgency ramp has reached its cap;
+	# immediate and cautious choices still use the normal position threshold.
+	if best_candidate.x < 0 and objective_route and not safe_only \
+	and _last_urgency_bonus >= URGENCY_MAX_SCORE and best_route_candidate.x >= 0:
+		best_candidate = best_route_candidate
+		best_adjustment = _squad_context.destination_adjustment(unit, best_candidate) if _squad_context else 0.0
+		best_score = best_route_score
+		best_summary = "%s; maximum mission urgency accepted least-bad route step" % best_route_summary
 	# Prefer actual progress for the carrier. Negative-progress detours remain
 	# available only when congestion or level geometry leaves no forward option.
 	if unit.is_carrying_unit():

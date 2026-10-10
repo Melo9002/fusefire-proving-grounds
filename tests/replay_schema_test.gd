@@ -29,6 +29,7 @@ func _run() -> void:
 	check(rebuilt.is_playable(), "Current replay schema round trip is playable")
 	check(rebuilt.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Envelope version survives round trip")
 	check(rebuilt.configuration.seed == 733578405 and rebuilt.configuration.map_size == Vector2i(32, 24), "Seed and map size survive round trip")
+	check(not rebuilt.configuration.supply_points_enabled, "A replay configuration without an SP rules flag remains explicitly historical after round trip")
 	check(rebuilt.configuration.mission is MissionDefinition and rebuilt.configuration.mission.objectives.size() == mission.objectives.size(), "Mission definition survives round trip")
 	check(rebuilt.actions[0].request.actor_id == "PlayerUnit1", "Stable tactical actor ID remains human-readable")
 

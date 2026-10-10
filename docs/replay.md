@@ -27,7 +27,7 @@ A current recording contains:
 - a typed request and resolved result for unit actions;
 - a post-commit state fingerprint.
 
-Requests use stable tactical actor IDs. Attack results include the deterministic roll, hit chance, damage, AP/HP changes, defeat, and battle result. Move results include origin, destination, AP, objective state, and carried actor. Mission results include objectives, extraction counters, and roster removal. Turn and departure records remain commands because they do not have unit-action target and cost semantics.
+Requests use stable tactical actor IDs. Current Attack results include the deterministic roll, hit chance, damage, AP/HP changes, Supply Points before/cost/after, defeat, and battle result. Reload records AP and Supply Points before/after and consumes no combat RNG. Move results include origin, destination, AP, objective state, and carried actor. Mission results include objectives, extraction counters, and roster removal. Turn and departure records remain commands because they do not have unit-action target and cost semantics.
 
 Camera position, animation state, interpolation, particles, and UI are intentionally absent.
 
@@ -64,7 +64,8 @@ The JSON contains plain arrays, dictionaries, numbers, strings, and booleans. Mi
 - **Schema 2** is supported as a narrow Prototype 1 in-memory compatibility path. Missing revisions are normalized at playback, and the old already-applied consequence coalescing behavior remains limited to this schema.
 - Other envelope versions fail before playback with a message naming the supported versions.
 - Defend retains its original one-AP behavior for legacy records. It is never silently translated to Wait.
-- Action payload schema numbers remain explicit. Breaking a payload requires either a small documented reader or a clear rejection.
+- Action payload schema numbers remain explicit. Attack and Reload use payload schema 3; other current action payloads remain at their established versions.
+- Recordings created before Supply Points lack `supply_points_enabled`. Playback treats those recordings as pre-SP rules: payload-v2 Attacks do not consume SP, and their state fingerprints omit SP fields. New configurations write `supply_points_enabled = true`, use payload-v3 Attack/Reload facts, and verify current/max SP. This preserves historical meaning instead of silently applying a new resource rule to old decisions.
 
 Compatibility is intentionally finite. There is no promise that every development recording will remain playable forever.
 

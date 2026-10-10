@@ -12,6 +12,7 @@ extends Resource
 ## Zero keeps the TacticalUnit scene's current value.
 @export_range(0, 999, 1) var max_hp := 0
 @export_range(0, 20, 1) var max_ap := 0
+@export_range(1, 99, 1, "suffix:SP") var max_supply_points := 4
 @export_range(0, 30, 1) var movement_range := 0
 @export_range(0, 30, 1) var attack_range := 0
 
@@ -37,5 +38,7 @@ func apply_starting_configuration(unit: TacticalUnit) -> void:
 	if max_ap > 0:
 		unit.stats.max_ap = max_ap
 		unit.stats.current_ap = max_ap
+	unit.stats.max_supply_points = max_supply_points
+	unit.stats.current_supply_points = max_supply_points
 	if movement_range > 0: unit.stats.speed = movement_range
 	if attack_range > 0: unit.attack_range = attack_range
