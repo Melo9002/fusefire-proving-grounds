@@ -22,6 +22,8 @@ signal attack_presented(target_world_position: Vector3)
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
 @export_group("Presentation")
+## Disable for isolated presentation tools or fixtures that intentionally have no battle UI layer.
+@export var show_world_hud := true
 @export var unit_hud_scene: PackedScene = preload("res://ui/unit_world_bar.tscn")
 @export var visual_adapter: UnitVisualAdapter
 ## Show the original Prototype 1 Bean instead of the current character rig.
@@ -70,7 +72,8 @@ func _ready() -> void:
 		stats.hp_changed.connect(_on_hp_changed)
 	if visual_adapter and not use_legacy_bean:
 		visual_adapter.setup(self)
-	_spawn_world_hud()
+	if show_world_hud:
+		_spawn_world_hud()
 
 func _apply_character_presentation() -> void:
 	var bean := get_node_or_null("MeshInstance3D") as MeshInstance3D

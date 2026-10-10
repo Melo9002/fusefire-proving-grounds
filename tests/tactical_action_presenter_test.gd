@@ -21,7 +21,7 @@ func run() -> void:
 
 	var unit := UNIT_SCENE.instantiate() as TacticalUnit
 	unit.tactical_id = &"mira"
-	unit.unit_hud_scene = null
+	unit.show_world_hud = false
 	root.add_child(unit)
 	await process_frame
 	await process_frame

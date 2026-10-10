@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 func run() -> void:
 	var unit := TacticalUnit.new()
-	unit.unit_hud_scene = null
+	unit.show_world_hud = false
 	var visual = load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate()
 	unit.add_child(visual)
 	unit.visual_adapter = visual

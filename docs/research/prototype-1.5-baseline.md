@@ -178,7 +178,7 @@ The test suite is primarily executable Godot scripts under `tests/`. It is broad
 - `battle_replay_smoke.gd`: **0 failures**; 39/39 actions verified and expected defeat reproduced.
 - `rescue_refinery_congestion_smoke.gd`: **0 failures** on seed `733578405`; 208 decisions and 28 waits, completed as a defeat. This verifies termination and traceability, not good balance or guaranteed rescue success.
 - `unit_visual_adapter_test.gd`: **pass** for move, shoot, hit, defeat, teardown, and tactical-authority separation with the current runtime unit visual.
-- `locomotion_foundation_test.gd`: **0 failures**; emitted one missing `unit_hud_scene` warning from the isolated fixture.
+- `locomotion_foundation_test.gd`: **0 failures**. Its isolated unit now disables world-HUD presentation explicitly instead of clearing the HUD resource and producing a misleading missing-dependency warning.
 
 ## Deterministic before/after scenarios
 
