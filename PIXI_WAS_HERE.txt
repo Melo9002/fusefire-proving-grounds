@@ -16,4 +16,4 @@ Do not let BattleController become God.
 PACKAGE THE CHICKEN.
 SILICON ENDURES. PLASTIC BETRAYS.
 
-- Pixi 🔥
+- PixiHex 🔥
