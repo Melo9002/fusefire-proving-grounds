@@ -12,7 +12,7 @@ func run() -> void:
 	var registry := TacticalActorRegistry.new()
 	var presenter := TacticalActionPresenter.new()
 	root.add_child(presenter)
-	presenter.setup(registry, grid, null, func(): return false, Callable(), Callable())
+	presenter.setup(registry, grid, null, func(): return false, Callable())
 
 	var missing := AttackActionResult.new()
 	missing.request = TacticalActionRequest.attack(&"missing", &"target", 0, TacticalActionRequest.Source.SYSTEM)

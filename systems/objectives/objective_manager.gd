@@ -8,6 +8,7 @@ signal objective_progress_changed(state: MissionObjectiveState)
 signal objective_completed(state: MissionObjectiveState)
 signal objective_failed(state: MissionObjectiveState)
 signal mission_report_changed
+signal authoritative_command_committed(record: Dictionary)
 
 @export var mission: MissionDefinition
 var _states: Dictionary[StringName, MissionObjectiveState] = {}
@@ -216,7 +217,7 @@ func complete_extraction(unit: TacticalUnit) -> bool:
 		add_progress(&"enemy_escape")
 		fail_objective(&"stop_enemy_evacuation")
 		mission_report_changed.emit()
-		_battle_controller.extract_unit(unit, false)
+		_remove_extracted_unit(unit)
 		return true
 	if unit.is_carrying_unit():
 		_record_vip_extraction(unit.carried_unit)
@@ -228,7 +229,7 @@ func complete_extraction(unit: TacticalUnit) -> bool:
 		var squad := get_objective(&"extract_units")
 		if squad and squad.is_active(): add_progress(&"extract_units")
 	mission_report_changed.emit()
-	_battle_controller.extract_unit(unit, false)
+	_remove_extracted_unit(unit)
 	evaluate_outcome_after_action_commit()
 	return true
 
@@ -249,9 +250,18 @@ func end_mission_early() -> bool:
 		_battle_controller.action_service.advance_external_revision()
 	# Record the committed command and its final fingerprint. Replay invokes the
 	# same mission command, then verifies this post-commit state.
-	_battle_controller.record_replay_action("depart", null)
+	authoritative_command_committed.emit({
+		"kind": "depart",
+		"actor": "",
+		"round": _turn_manager.current_round,
+		"phase": int(_turn_manager.current_phase),
+	})
 	mission_report_changed.emit()
 	return true
+
+func _remove_extracted_unit(unit: TacticalUnit) -> void:
+	_grid_manager.unregister_unit_at(_grid_manager.get_unit_grid(unit))
+	_turn_manager.remove_extracted_unit(unit)
 
 func get_result_report() -> String:
 	if mission and mission.mission_id == &"prototype_enemy_evacuation":

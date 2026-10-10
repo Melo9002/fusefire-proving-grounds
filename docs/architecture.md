@@ -24,7 +24,7 @@ Keep this layout while the prototype is small. Add folders when they group a rea
 
 | Script | Responsibility | Change it when… |
 | --- | --- | --- |
-| `BattleController` | Input, action modes, previews, action requests, defeat cleanup | Changing what clicking or choosing an action does |
+| `BattleController` | Player input, action modes, previews, request submission, and battle-level coordination | Changing how player intent becomes an authoritative action request |
 | `TurnManager` | Phases, active unit, rosters, rounds | Changing whose turn it is or when AP resets |
 | `MapBuilder` | Converts authored geometry into map cells and paths | Changing how a scene or future generator supplies terrain |
 | `MapData` / `MapCellData` | Terrain, elevation, cover, LOS, and traversal facts | Asking what a battlefield cell contains |
@@ -47,7 +47,7 @@ Keep this layout while the prototype is small. Add folders when they group a rea
 | `MissionActor` | Stable mission identity, actor role, and extraction capability | Defining who objectives refer to |
 | `MissionDefinition` / `MissionObjectiveDefinition` | Saved mission and objective design data | Declaring objectives, targets, requirements, and progress totals |
 | `MissionObjectiveState` | Runtime progress and active/completed/failed status | Reading what happened to one objective during a battle |
-| `ObjectiveManager` | Creates objective state, applies updates, and emits objective signals | Connecting future mission events and UI to objective progress |
+| `ObjectiveManager` | Owns objective legality/state, extraction roster consequences, mission outcomes, and authoritative mission-command events | Connecting future mission events and UI to objective progress |
 | `TacticalUnit` | Path animation, defeat relay, health-display creation | Changing unit movement or presentation |
 | `AIController` | Chooses among legal attacks, movement, and defense | Changing enemy priorities or difficulty |
 | `SquadContext` | Shares current-round reservations and intentions within one AI team | Adding small coordination score adjustments |
@@ -79,7 +79,7 @@ Unit coordinates do not live in spawning code. Handmade `SpawnZone` markers are 
 
 Objectives use three layers. `MissionObjectiveDefinition` and `MissionDefinition` are Resources containing reusable design data. `MissionObjectiveState` holds the mutable progress and status for one battle. `ObjectiveManager` builds those states, rejects malformed IDs, exposes progress/complete/fail commands, and announces changes through signals so later UI does not need to own mission rules.
 
-`ObjectiveManager` observes the controller's completed movement and defeat events plus the turn manager's round events. It translates them into eliminate, protect, rescue, reach, survive, and extract state changes, then resolves the mission from its required objectives. It never performs combat or movement itself; it requests extraction through `BattleController` and reports the final result through `TurnManager`.
+`ObjectiveManager` observes committed movement and defeat events plus the turn manager's round events. It translates them into eliminate, protect, rescue, reach, survive, and extract state changes, then resolves the mission from its required objectives. It never performs combat or movement itself. Extraction commits objective counters and removes grid occupancy and turn-roster membership through those systems' public boundaries. The visual actor remains registered until `TacticalActionPresenter` finishes boarding, then presentation performs visual cleanup.
 
 `MissionCatalog` supplies the seven prototype presets shown by match setup. The menu creates the chosen Resource and passes it through `BattleLevel.configure()`; the level loads it into `ObjectiveManager` before map construction. The manager logs the active definitions and every later state change.
 

@@ -15,8 +15,6 @@ signal debug_player_ai_changed(enabled: bool)
 signal ai_decision_recorded(record: Dictionary)
 signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
-signal replay_action_committed(record: Dictionary)
-signal tactical_action_committed(result)
 
 @export var tactical_unit: TacticalUnit
 @export var mouse_raycaster: MouseRaycaster
@@ -47,11 +45,8 @@ var action_camera_director: Node
 var action_service: TacticalActionService
 var action_presenter: TacticalActionPresenter
 var _objective_manager: ObjectiveManager
-var is_action_in_progress: bool = false:
-	set(value):
-		if is_action_in_progress != value:
-			is_action_in_progress = value
-			action_state_changed.emit(value)
+var is_action_in_progress: bool:
+	get: return is_instance_valid(action_service) and action_service.is_busy
 var is_move_mode_active: bool = false:
 	set(value):
 		if is_move_mode_active != value:
@@ -148,12 +143,11 @@ func _initialize_action_service() -> void:
 		grid_manager,
 		action_camera_director,
 		func() -> bool: return replay_mode,
-		func(attacker, target, did_hit, hit_chance): attack_resolved.emit(attacker, target, did_hit, hit_chance),
-		finalize_extracted_unit
+		func(attacker, target, did_hit, hit_chance): attack_resolved.emit(attacker, target, did_hit, hit_chance)
 	)
 	turn_manager.action_completion_barrier = func() -> bool: return action_service.is_busy
 	_configure_action_service(null)
-	action_service.action_committed.connect(_on_tactical_action_committed)
+	action_service.busy_changed.connect(_on_action_service_busy_changed)
 
 func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.setup(
@@ -181,8 +175,8 @@ func _ensure_tactical_id(unit: TacticalUnit) -> void:
 	if unit.tactical_id.is_empty():
 		unit.tactical_id = StringName(unit.name)
 
-func _on_tactical_action_committed(result) -> void:
-	tactical_action_committed.emit(result)
+func _on_action_service_busy_changed(is_busy: bool) -> void:
+	action_state_changed.emit(is_busy)
 
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
@@ -485,39 +479,29 @@ func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 		print("[Shot] ", attacker.name, " -> ", target.name, " legal=", query.is_legal(), " chance=", query.hit_chance, " visibility=", query.obstruction, " reason=", query.reason)
 	if not query.is_legal():
 		return false
-	is_action_in_progress = true
-	var source := TacticalActionRequest.Source.REPLAY if replay_mode else TacticalActionRequest.Source.AI
-	if is_current_phase_manually_controlled():
-		source = TacticalActionRequest.Source.PLAYER
+	var source := _action_source()
 	var request := action_service.make_attack_request(attacker, target, source)
 	var result := await action_service.submit_attack(request)
 	is_attack_mode_active = false
 	is_move_mode_active = false
-	is_action_in_progress = false
 	return result != null
 
 func try_defend(unit: TacticalUnit) -> bool:
 	# Legacy replay compatibility. Prototype 1 gameplay uses try_end_unit_turn().
-	is_action_in_progress = true
 	var result := await action_service.submit_simple(action_service.make_simple_request(&"defend", unit, _action_source()))
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	is_action_in_progress = false
 	return result != null
 
 func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available.") -> bool:
-	is_action_in_progress = true
 	var result := await action_service.submit_simple(action_service.make_simple_request(&"wait", unit, _action_source(), {"reason": reason}))
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	is_action_in_progress = false
 	return result != null
 
 func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
 	if not is_instance_valid(action_service): return false
-	is_action_in_progress = true
 	var result := await action_service.submit_mission(action_service.make_mission_request(kind, actor, target, _action_source()))
-	is_action_in_progress = false
 	return result != null
 
 func _action_source() -> TacticalActionRequest.Source:
@@ -527,25 +511,11 @@ func _action_source() -> TacticalActionRequest.Source:
 func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	if not is_instance_valid(action_service):
 		return false
-	is_action_in_progress = true
 	is_move_mode_active = false
 	is_attack_mode_active = false
-	var source := TacticalActionRequest.Source.REPLAY if replay_mode else TacticalActionRequest.Source.AI
-	if is_current_phase_manually_controlled(): source = TacticalActionRequest.Source.PLAYER
+	var source := _action_source()
 	var result := await action_service.submit_move(action_service.make_move_request(unit, target_cell, source))
-	is_action_in_progress = false
 	return result != null
-
-func record_replay_action(kind: String, actor: TacticalUnit, details: Dictionary = {}) -> void:
-	var record := {
-		"kind": kind,
-		"actor": String(actor.tactical_id) if is_instance_valid(actor) else "",
-		"round": turn_manager.current_round if turn_manager else 0,
-		"phase": int(turn_manager.current_phase) if turn_manager else -1,
-	}
-	for key in details:
-		record[key] = details[key]
-	replay_action_committed.emit(record)
 
 func _build_movement_path(unit: TacticalUnit, path: PackedVector3Array) -> PackedVector3Array:
 	var animated_path := PackedVector3Array()
@@ -577,16 +547,3 @@ func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> void:
 		action_service.register_actor(unit)
 	grid_manager.register_unit(unit, grid_position)
 	unit.defeated.connect(_on_unit_defeated)
-
-func extract_unit(unit: TacticalUnit, finalize_visual := true) -> void:
-	if not is_instance_valid(unit):
-		return
-	grid_manager.unregister_unit_at(grid_manager.get_unit_grid(unit))
-	turn_manager.remove_extracted_unit(unit)
-	if finalize_visual: finalize_extracted_unit(unit)
-
-func finalize_extracted_unit(unit: TacticalUnit) -> void:
-	if not is_instance_valid(unit): return
-	if is_instance_valid(action_service):
-		action_service.unregister_actor(unit)
-	unit.queue_free()

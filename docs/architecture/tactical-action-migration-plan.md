@@ -962,3 +962,17 @@ Wait, legacy Defend, Rescue, and Extract were already authoritative typed transa
 Turn progression and mission departure remain dedicated authoritative commands. They advance the shared revision through the established external-command bridge, but are not forced into unit action target/cost semantics. The two current mission interactions do not justify a generic interaction registry; doors, terminals, or mission equipment should trigger a fresh review once they reveal concrete repeated contracts.
 
 Defend remains explicit schema-2 replay compatibility. Current gameplay and AI author Wait instead. XCOM's Hunker Down, reserve-action Overwatch, Reload, and reaction listeners demonstrate useful future separation between availability, costs, persistent effects, triggers, state commitment, and visualization, but FuseFire does not yet have approved mechanics requiring those systems.
+
+## Task 01.9 controller decomposition
+
+`BattleController` now coordinates action input without maintaining a second action lifecycle. `TacticalActionService.busy_changed` is the single source for the input/presentation barrier, while the controller's public `is_action_in_progress` property is a read-only compatibility view used by UI, AI, pause, and objective callers. The service emits lifecycle changes once per accepted transaction, including failed mission commits, so synchronous Godot signals cannot leave a stale controller flag behind.
+
+The controller retains explicit `try_attack`, `try_move`, `try_simple_action`, and `try_mission_action` entry points. They make player and AI call sites easy to trace and preserve action-specific UI semantics; replacing them with a handler registry would only move a small readable switch. They construct typed requests and delegate to the service. They do not spend AP, roll combat, move occupancy, or mutate objectives.
+
+Two wrong-direction bridges were removed. The unused `tactical_action_committed` relay no longer duplicates the service signal. Mission departure records now travel from `ObjectiveManager.authoritative_command_committed` directly to `BattleReplayRecorder`, without routing an authoritative mission command through the input controller.
+
+Extraction ownership is split at the commit/presentation boundary. `ObjectiveManager` applies objective counters, grid removal, and turn-roster removal during the authoritative mission commit. `TacticalActionPresenter` retains the actor registry entry long enough to animate boarding, then unregisters and disposes the visual actor. Suppressed presentation follows the same committed result and performs the same cleanup immediately.
+
+Turn progression remains owned by `TurnManager`. Player AP exhaustion schedules one controller selection check after the service barrier releases; the active-unit guard prevents a second advancement. Automated action completion clears the AI execution guard before asking the turn manager to choose the next activation, and extraction checks whether roster removal already changed the active unit. A focused two-player Wait fixture verifies that the first action selects exactly one successor and the second emits exactly one end-turn prompt.
+
+Compatibility retained intentionally: the controller's read-only preview helpers, explicit action entry points, and computed busy property remain widely used by tests and Godot-facing UI. Legacy Defend stays in the schema-2 replay path. Defeat cleanup remains battle orchestration because it handles defeat sources beyond Attack and delegates roster state to `TurnManager`.

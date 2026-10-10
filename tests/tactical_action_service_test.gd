@@ -9,6 +9,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	await _check_move_and_wait_pipeline()
+	await _check_turn_progression_once()
 	var first := await _create_battle()
 	var first_setup := _prepare_attack(first)
 	var service: TacticalActionService = first.battle_controller.action_service
@@ -126,6 +127,10 @@ func _check_move_and_wait_pipeline() -> void:
 	var level := await _create_battle()
 	var actor: TacticalUnit = level.turn_manager.player_units[0]
 	var service: TacticalActionService = level.battle_controller.action_service
+	var service_busy_events: Array[bool] = []
+	var controller_busy_events: Array[bool] = []
+	service.busy_changed.connect(func(value: bool): service_busy_events.append(value))
+	level.battle_controller.action_state_changed.connect(func(value: bool): controller_busy_events.append(value))
 	var grid := level.battle_controller.grid_manager
 	var start := grid.get_unit_grid(actor)
 	var fingerprint_before := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
@@ -164,6 +169,8 @@ func _check_move_and_wait_pipeline() -> void:
 	grid.occupancy_map.erase(destination)
 	var move := await service.submit_move(service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER), true)
 	_check(move != null and grid.get_unit_at(start) == null and grid.get_unit_at(destination) == actor, "Move commits occupancy before suppressed presentation completes")
+	_check(service_busy_events == [true, false] and controller_busy_events == service_busy_events, "Controller action lock mirrors the service lifecycle exactly once")
+	_check(not level.battle_controller.is_action_in_progress, "Controller exposes the completed service lifecycle without retaining a second busy flag")
 	_check(move.path_cells == query.path_cells and move.resolved_dictionary().path.size() == query.path_cells.size(), "Committed and replay Move results retain the validated authoritative path")
 	_check(actor.stats.current_ap == 1 and service.state_revision == 1, "Move spends one AP and advances one shared revision")
 	var duplicate := await service.submit_move(move.request, true)
@@ -173,6 +180,37 @@ func _check_move_and_wait_pipeline() -> void:
 	_check(wait.presentation_suppressed and wait.presentation_completed, "Suppressed Wait still completes its lifecycle")
 	var exhausted_wait := service.query_simple(&"wait", actor.tactical_id)
 	_check(not exhausted_wait.is_legal() and exhausted_wait.validation.code == &"insufficient_ap", "Wait availability uses the same final AP validation as submission")
+	level.queue_free()
+	await process_frame
+	await process_frame
+
+func _check_turn_progression_once() -> void:
+	var level := BATTLE_SCENE.instantiate() as BattleLevel
+	level.configure(
+		2, 1, false, 1, 0, Vector2i(32, 24), false,
+		MissionActor.VIPBehavior.PLAYER_CONTROLLED,
+		MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 1, false)
+	)
+	root.add_child(level)
+	while level.turn_manager.current_round == 0:
+		await process_frame
+	level.action_camera_director.frequency = ActionCameraDirector.Frequency.OFF
+	var first: TacticalUnit = level.turn_manager.player_units[0]
+	var second: TacticalUnit = level.turn_manager.player_units[1]
+	var selected_ids: Array[StringName] = []
+	var exhausted_events := [0]
+	level.turn_manager.active_unit_changed.connect(func(active: TacticalUnit):
+		if is_instance_valid(active): selected_ids.append(active.tactical_id)
+	)
+	level.turn_manager.player_actions_exhausted.connect(func(): exhausted_events[0] += 1)
+	_check(await level.battle_controller.try_end_unit_turn(first, "Turn progression fixture"), "First Wait commits through the controller adapter")
+	await process_frame
+	await process_frame
+	_check(level.turn_manager.active_unit == second and selected_ids.count(second.tactical_id) == 1, "AP exhaustion selects the next player exactly once after presentation")
+	_check(await level.battle_controller.try_end_unit_turn(second, "Turn progression fixture"), "Second Wait commits through the same adapter")
+	await process_frame
+	await process_frame
+	_check(exhausted_events[0] == 1 and level.turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN, "Final player exhaustion emits one manual end-turn prompt without a second phase advance")
 	level.queue_free()
 	await process_frame
 	await process_frame

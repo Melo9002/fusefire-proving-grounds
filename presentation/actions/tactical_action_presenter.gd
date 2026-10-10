@@ -9,22 +9,19 @@ var grid_manager: GridManager
 var action_camera_director: ActionCameraDirector
 var replay_mode_provider: Callable
 var attack_feedback: Callable
-var extracted_actor_cleanup: Callable
 
 func setup(
 	registry: TacticalActorRegistry,
 	grid: GridManager,
 	camera_director: ActionCameraDirector,
 	is_replay_mode: Callable,
-	attack_feedback_callback: Callable,
-	extraction_cleanup_callback: Callable
+	attack_feedback_callback: Callable
 ) -> void:
 	actor_registry = registry
 	grid_manager = grid
 	action_camera_director = camera_director
 	replay_mode_provider = is_replay_mode
 	attack_feedback = attack_feedback_callback
-	extracted_actor_cleanup = extraction_cleanup_callback
 
 func present_attack(result: AttackActionResult) -> void:
 	var attacker := _actor(result.request.actor_id)
@@ -92,7 +89,7 @@ func present_simple(result: SimpleActionResult) -> void:
 func present_mission(result: MissionActionResult, actor: TacticalUnit, _target: TacticalUnit) -> void:
 	if result.request.kind == &"extract":
 		await _present_extract(result, actor)
-		if extracted_actor_cleanup.is_valid(): extracted_actor_cleanup.call(actor)
+		_cleanup_extracted_actor(actor)
 		return
 	if result.presentation_suppressed: return
 	if not is_instance_valid(actor):
@@ -117,6 +114,13 @@ func _present_extract(result: MissionActionResult, actor: TacticalUnit) -> void:
 		actor.visual_adapter.present_boarding()
 		await _safe_delay(0.6)
 	await _finish_camera(camera_presented)
+
+func _cleanup_extracted_actor(actor: TacticalUnit) -> void:
+	if not is_instance_valid(actor):
+		return
+	if is_instance_valid(actor_registry):
+		actor_registry.unregister_actor(actor)
+	actor.queue_free()
 
 func _snap_to_committed_destination(unit: TacticalUnit, result: MoveActionResult) -> void:
 	if not result.presentation_path.is_empty(): unit.global_position = result.presentation_path[-1]

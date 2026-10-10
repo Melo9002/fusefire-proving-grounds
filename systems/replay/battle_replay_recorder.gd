@@ -18,9 +18,10 @@ func begin(configuration: Dictionary, battle_controller: BattleController, turn_
 	_turn_manager = turn_manager
 	_objective_manager = objective_manager
 	recording.initial_state_fingerprint = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager)
-	battle_controller.replay_action_committed.connect(_on_action_committed)
 	if is_instance_valid(battle_controller.action_service):
 		battle_controller.action_service.action_committed.connect(_on_tactical_action_committed)
+	if is_instance_valid(objective_manager):
+		objective_manager.authoritative_command_committed.connect(_on_action_committed)
 	turn_manager.turn_ended.connect(_on_action_committed)
 	turn_manager.battle_ended.connect(_on_battle_ended)
 

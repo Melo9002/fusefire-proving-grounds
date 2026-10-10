@@ -4,6 +4,7 @@ extends Node
 signal action_committed(result)
 signal action_presented(result)
 signal action_rejected(validation: ActionValidationResult)
+signal busy_changed(is_busy: bool)
 
 const ATTACK_AP_COST := 1
 const ATTACK_DAMAGE := 25
@@ -58,6 +59,12 @@ func setup(
 
 func register_actor(actor: TacticalUnit) -> bool:
 	return actor_registry.register_actor(actor)
+
+func _set_busy(value: bool) -> void:
+	if is_busy == value:
+		return
+	is_busy = value
+	busy_changed.emit(value)
 
 func unregister_actor(actor: TacticalUnit) -> void:
 	actor_registry.unregister_actor(actor)
@@ -131,7 +138,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(validation)
 		return null
 
-	is_busy = true
+	_set_busy(true)
 	is_committing = true
 	last_transaction_id += 1
 	var result := AttackActionResult.new()
@@ -174,7 +181,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		await _present_attack.call(result)
 	result.presentation_completed = true
 	action_presented.emit(result)
-	is_busy = false
+	_set_busy(false)
 	return result
 
 func query_move(actor_id: StringName, target_cell := Vector3i(-1, -1, -1)) -> MoveQueryResult:
@@ -228,7 +235,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	is_busy = true
+	_set_busy(true)
 	is_committing = true
 	last_transaction_id += 1
 	var result := MoveActionResult.new()
@@ -256,7 +263,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	if _present_move.is_valid(): await _present_move.call(result)
 	result.presentation_completed = true
 	action_presented.emit(result)
-	is_busy = false
+	_set_busy(false)
 	return result
 
 func make_attack_request(actor: TacticalUnit, target: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
@@ -344,7 +351,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	is_busy = true
+	_set_busy(true)
 	is_committing = true
 	last_transaction_id += 1
 	var result := SimpleActionResult.new()
@@ -367,7 +374,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	if _present_simple.is_valid(): await _present_simple.call(result)
 	result.presentation_completed = true
 	action_presented.emit(result)
-	is_busy = false
+	_set_busy(false)
 	return result
 
 func submit_mission(request: TacticalActionRequest, suppress_presentation := false) -> MissionActionResult:
@@ -385,7 +392,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	if not validation.accepted:
 		_reject(validation)
 		return null
-	is_busy = true
+	_set_busy(true)
 	is_committing = true
 	last_transaction_id += 1
 	var result := MissionActionResult.new()
@@ -398,7 +405,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	result.mission_counters_before = _capture_mission_counters()
 	if not _commit_mission.call(request.kind, actor, target):
 		is_committing = false
-		is_busy = false
+		_set_busy(false)
 		validation = ActionValidationResult.reject(&"commit_failed", "Mission action failed during authoritative commit", state_revision)
 		_reject(validation)
 		return null
@@ -413,7 +420,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	if _present_mission.is_valid(): await _present_mission.call(result, actor, target)
 	result.presentation_completed = true
 	action_presented.emit(result)
-	is_busy = false
+	_set_busy(false)
 	return result
 
 func get_combat_rng_state() -> int:
