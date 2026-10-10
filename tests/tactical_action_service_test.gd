@@ -203,6 +203,16 @@ func _check_turn_progression_once() -> void:
 		if is_instance_valid(active): selected_ids.append(active.tactical_id)
 	)
 	level.turn_manager.player_actions_exhausted.connect(func(): exhausted_events[0] += 1)
+	var turn_records := [0]
+	level.turn_manager.turn_ended.connect(func(_record: Dictionary): turn_records[0] += 1)
+	var phase_before := level.turn_manager.current_phase
+	level.battle_controller.action_service._set_busy(true)
+	level.turn_manager.end_current_turn()
+	_check(level.turn_manager.current_phase == phase_before and turn_records[0] == 0, "Turn command cannot advance while an action lifecycle is busy")
+	var turn_hud := level.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
+	_check(turn_hud.end_turn_button.disabled, "End Turn UI mirrors the action lifecycle barrier")
+	level.battle_controller.action_service._set_busy(false)
+	_check(not turn_hud.end_turn_button.disabled, "End Turn UI restores its phase-appropriate state after presentation")
 	_check(await level.battle_controller.try_end_unit_turn(first, "Turn progression fixture"), "First Wait commits through the controller adapter")
 	await process_frame
 	await process_frame

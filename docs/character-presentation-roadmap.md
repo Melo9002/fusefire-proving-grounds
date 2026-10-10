@@ -1,5 +1,7 @@
 # Character Presentation Roadmap
 
+> **Historical Prototype 1 roadmap.** The VRoid proof path described below was retired during Prototype 1.5. MIRA Zero is the supported runtime character path; use `docs/human-editing-guide.md` and `docs/animation-editing-guide.md` for current work.
+
 This roadmap replaces the Bean presentation in stages while preserving FuseFire's tactical rules, deterministic replay, AI, and debug tools. Prototype 1 begins with one fixed VRoid humanoid and the existing licensed AUG. The Bean remains available as a debug model and future easter egg.
 
 The VRoid character is a proof asset, not the foundation of the final character creator. Final customization will use original or explicitly licensed meshes, textures, clothing, and modular parts. FuseFire must eventually support multiple body families rather than assuming every actor shares one humanoid skeleton.

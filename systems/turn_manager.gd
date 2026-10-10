@@ -41,6 +41,9 @@ func start_battle() -> void:
 func end_current_turn() -> void:
 	if get_tree().paused:
 		return
+	if action_completion_barrier.is_valid() and action_completion_barrier.call():
+		print_rich("[color=yellow][TurnManager][/color] Cannot end turn: An action is still being presented.")
+		return
 	if battle_result != BattleResult.ONGOING or is_any_unit_moving():
 		print_rich("[color=yellow][TurnManager][/color] Cannot end turn: Unit is still moving!")
 		return

@@ -18,6 +18,7 @@ func _ready() -> void:
 	turn_manager.player_actions_exhausted.connect(_on_player_actions_exhausted)
 	battle_controller.debug_enemy_control_changed.connect(_on_debug_enemy_control_changed)
 	battle_controller.debug_player_ai_changed.connect(_on_debug_player_ai_changed)
+	battle_controller.action_state_changed.connect(_on_action_state_changed)
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	_build_battle_end_buttons()
 
@@ -75,6 +76,12 @@ func _on_debug_enemy_control_changed(_enabled: bool) -> void:
 	_on_turn_phase_changed(turn_manager.current_phase)
 
 func _on_debug_player_ai_changed(_enabled: bool) -> void:
+	_on_turn_phase_changed(turn_manager.current_phase)
+
+func _on_action_state_changed(is_busy: bool) -> void:
+	if is_busy:
+		end_turn_button.disabled = true
+		return
 	_on_turn_phase_changed(turn_manager.current_phase)
 
 func _on_battle_ended(result: TurnManager.BattleResult) -> void:

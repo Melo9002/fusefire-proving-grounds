@@ -1,5 +1,7 @@
 # FuseFire Prototype 1.5 — Tactical Action Architecture and Migration Plan
 
+> **Historical plan with an implementation record.** Sections before the implementation record describe the pre-migration system and the proposal used to guide Goal 01. They remain as design history, not current editing instructions. For current ownership, use `docs/architecture.md` and `docs/human-editing-guide.md`.
+
 **Plan date:** 2026-10-08  
 **Roadmap milestone:** Task 01.1  
 **Starting branch:** `p2-foundation` at baseline commit `53e429f`  
