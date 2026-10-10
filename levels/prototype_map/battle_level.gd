@@ -26,6 +26,9 @@ const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 var player_unit_count: int = 2
 var enemy_unit_count: int = 2
 var allied_unit_count: int = 0
+var player_archetypes: Array[StringName] = []
+var enemy_archetypes: Array[StringName] = []
+var ally_archetypes: Array[StringName] = []
 var use_generated_map: bool = false
 var battle_seed: int = 1
 var generation_seed: int = 1
@@ -59,10 +62,14 @@ func configure(player_count: int, enemy_count: int, generate_map: bool = false, 
 ## Preferred human-readable entry point. The positional configure() wrapper is
 ## retained for existing Prototype 1 scripts and external callers.
 func configure_battle(config: BattleConfigurationData) -> void:
+	config.normalize_rosters()
 	generated_size = config.map_size if FlatMapGenerator.MAP_SIZES.has(config.map_size) else Vector2i(32, 24)
 	player_unit_count = clampi(config.player_count, 1, 5)
 	enemy_unit_count = clampi(config.enemy_count, 1, 5)
 	allied_unit_count = clampi(config.ally_count, 0, 5)
+	player_archetypes = TacticalArchetypeCatalog.normalize_ids(config.player_archetypes, player_unit_count)
+	enemy_archetypes = TacticalArchetypeCatalog.normalize_ids(config.enemy_archetypes, enemy_unit_count)
+	ally_archetypes = TacticalArchetypeCatalog.normalize_ids(config.ally_archetypes, allied_unit_count)
 	use_generated_map = config.generated_map
 	use_refinery_map = config.refinery
 	battle_seed = config.battle_seed
@@ -78,6 +85,9 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.player_count = player_unit_count
 	normalized.enemy_count = enemy_unit_count
 	normalized.ally_count = allied_unit_count
+	normalized.player_archetypes = player_archetypes.duplicate()
+	normalized.enemy_archetypes = enemy_archetypes.duplicate()
+	normalized.ally_archetypes = ally_archetypes.duplicate()
 	normalized.generated_map = use_generated_map
 	normalized.battle_seed = battle_seed
 	normalized.map_size = generated_size
@@ -215,7 +225,7 @@ func _spawn_team(count: int, zone: SpawnZone, parent: Node3D, _add_ai: bool) -> 
 		return
 
 	for index in count:
-		var unit := _create_unit("%sUnit%d" % [_faction_name(zone.faction), index + 1], zone.faction, parent)
+		var unit := _create_unit("%sUnit%d" % [_faction_name(zone.faction), index + 1], zone.faction, parent, _archetype_for_slot(zone.faction, index))
 		unit.global_transform = spawn_transforms[index]
 		_register_team_unit(unit)
 
@@ -225,16 +235,17 @@ func _spawn_generated_team(count: int, faction: TacticalUnit.Faction, parent: No
 		push_error("Generated map has insufficient faction %s spawns" % faction)
 		return
 	for index in count:
-		var unit := _create_unit("%sUnit%d" % [_faction_name(faction), index + 1], faction, parent)
+		var unit := _create_unit("%sUnit%d" % [_faction_name(faction), index + 1], faction, parent, _archetype_for_slot(faction, index))
 		unit.global_position = map_data.get_cell(spawn_cells[index]).world_position + Vector3.UP * unit.standing_height
 		_register_team_unit(unit)
 
-func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node3D) -> TacticalUnit:
+func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node3D, archetype_id: StringName = TacticalArchetypeCatalog.GENERIC_ID) -> TacticalUnit:
 	var unit = unit_scene.instantiate() as TacticalUnit
 	unit.name = unit_name
 	unit.tactical_id = StringName(unit_name)
 	unit.faction = faction
 	unit.attack_range = test_battle_attack_range
+	TacticalArchetypeCatalog.resolve_or_generic(archetype_id).apply_starting_configuration(unit)
 	if unit.mission_actor:
 		unit.mission_actor.mission_id = StringName(unit_name)
 	parent.add_child(unit)
@@ -246,6 +257,12 @@ func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node
 	ai.battle_controller = battle_controller
 	parent.add_child(ai)
 	return unit
+
+func _archetype_for_slot(faction: TacticalUnit.Faction, slot: int) -> StringName:
+	var roster := player_archetypes
+	if faction == TacticalUnit.Faction.ENEMY: roster = enemy_archetypes
+	elif faction == TacticalUnit.Faction.ALLY: roster = ally_archetypes
+	return roster[slot] if slot >= 0 and slot < roster.size() else TacticalArchetypeCatalog.GENERIC_ID
 
 func _register_team_unit(unit: TacticalUnit) -> void:
 	if unit.mission_actor and unit.mission_actor.is_vip():

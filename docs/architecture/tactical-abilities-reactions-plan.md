@@ -4,7 +4,7 @@
 
 **Baseline:** `p2-foundation` at `b3e2e8f` (`clear the turn lane`)
 
-**Status:** research and implementation plan; no gameplay mechanics implemented
+**Status:** Phase A approved; Task 01.11.0 archetype laboratory implemented as the prerequisite slice
 
 ## 1. Current baseline
 
@@ -21,7 +21,7 @@ Verified gaps:
 - Move commits final occupancy before presentation; there is no authoritative checkpoint where a reaction can shorten its path.
 - current action payloads use schema 2 and fixed result shapes.
 
-`PROTOTYPE_1_CURRENT_STATE.md` and `docs/architecture.md` confirm the old SP/resupply experiment was removed. There is no SP behavior to preserve. Reload must introduce a deliberately defined resource.
+`PROTOTYPE_1_CURRENT_STATE.md` and `docs/architecture.md` confirm the old SP/resupply experiment was removed. Management has now approved **Supply Points (SP)** as the new tactical resource, with initial capacity 4. Its gameplay begins in 01.11.1.
 
 ## 2. XCOM 2 SDK findings
 
@@ -46,13 +46,13 @@ No standard XCOM action matching the proposed spend-AP-for-next-shot Aim was ver
 
 ## 3. Proposed gameplay contracts
 
-These values are proposed defaults, not implemented behavior. Section 12 lists decisions requiring confirmation.
+The gameplay/testing values in this section are approved initial values, not permanent balance commitments. They remain unimplemented during 01.11.0.
 
 ### Reload
 
-Add Inspector-authored `max_shot_points` and runtime `current_shot_points` to `UnitStats`, default capacity 3. Normal Attack consumes 1. Reload costs 1 AP and fills to maximum. Reload while partly depleted is supported; choosing an amount is not. Full resource rejects with `resource_full`; insufficient AP rejects normally.
+Add Inspector-authored `max_supply_points` and runtime `current_supply_points` to `UnitStats`, default capacity 4. Normal Attack consumes 1 SP. Reload costs 1 AP and fills to maximum. Reload while partly depleted is supported; choosing an amount is not. Full resource rejects with `resource_full`; insufficient AP rejects normally.
 
-This treats SP as ammunition for the current single attack profile. If SP is intended as broader energy/stamina, it needs a separate name and contract. No weapon object is added. Typed Reload query/result records AP and resource before/after. Attack query/result gains resource cost and before/after. Fingerprints include both values. AI scores need versus exposure and available targets while legality stays authoritative.
+SP means **Supply Points**: a broader tactical supply resource currently consumed by the single prototype attack profile. No weapon object is added. Typed Reload query/result records AP and SP before/after. Attack query/result gains SP cost and before/after. Fingerprints include both values. AI scores need versus exposure and available targets while legality stays authoritative.
 
 ### Aim
 
@@ -102,7 +102,7 @@ Each action exposes a typed read-only query. Existing `AIController` gathers leg
 | Separate linked transactions | Individual action records | Exposes partially committed Move/reservation and complicates replay/rollback | Reject initially |
 | Animation callback | Easy timing | Makes presentation authoritative and breaks headless/replay | Reject |
 
-Registration consumes all remaining AP (minimum 1) and requires at least one shot point. It does not spend the shot point; the first eligible reaction consumes both armed state and 1 shot point. A voluntary committed action, Wait/next activation, defeat, or extraction clears it.
+Registration consumes all remaining AP (minimum 1) and requires at least 1 SP. It does not spend SP; the first eligible reaction consumes both armed state and 1 SP. A voluntary committed action, Wait/next activation, defeat, or extraction clears it.
 
 Before Move commits occupancy, resolve the validated path cell by cell:
 
@@ -175,6 +175,10 @@ Use activation serials, never frame time/timers. Fingerprints include active sta
 
 ## 8. Implementation slices
 
+### 0. Tactical archetype laboratory and Match Setup roster editor
+
+Implemented as the prerequisite authoring slice. `TacticalArchetype` Resources define stable IDs, descriptions, baseline stat overrides, and the currently demonstrated shield capability declaration. The existing Forces tab edits independent Player, Enemy, and AI Ally slots. `BattleConfiguration` and replay data carry per-slot IDs; spawning applies each preset before the unit enters the scene tree. Generic preserves count-only setups, and mission actors remain outside the roster.
+
 ### 1. Shot resource and Reload
 
 Add resource state; make Attack consume it; add typed Reload query/result, presentation, UI, AI, fingerprint and replay. Test full/empty/AP/stale/reentrant/RNG cases. Exclude weapons, inventory, upgrades, and selectable amounts.
@@ -232,18 +236,19 @@ Do not create ability registries, factories, generic effect stacks, event buses,
 
 ## 11. Definition of Done
 
-01.11 is done only after all seven slices leave a working project; every mechanic has shared read-only queries and one authoritative commit; Move reactions resolve deterministically before presentation; resources/state are fingerprinted and replayed; schema-2 Defend stays explicit; normal/suppressed/headless results match; AI uses every mechanic without competing legality; MIRA presentation consumes committed results; Inspector tuning and docs are current; focused and full regressions pass without hidden warnings. The comprehensive Goal 01 audit after 01.13 remains separate.
+01.11 is done only after the prerequisite laboratory and all seven gameplay slices leave a working project; every mechanic has shared read-only queries and one authoritative commit; Move reactions resolve deterministically before presentation; resources/state are fingerprinted and replayed; schema-2 Defend stays explicit; normal/suppressed/headless results match; AI uses every mechanic without competing legality; MIRA presentation consumes committed results; Inspector tuning and docs are current; focused and full regressions pass without hidden warnings. The comprehensive Goal 01 audit after 01.13 remains separate.
 
-## 12. Decisions requiring confirmation
+## 12. Approved initial decisions
 
-1. Resource meaning/name: approve per-unit `shot_points` ammunition, or define SP as a broader energy resource.
-2. Numeric defaults: capacity 3; Reload 1 AP; Aim +15; reaction -15; defense 50%; shield 120°, 0.35 damage, -20 accuracy.
-3. Aim expiry/cancellation rules.
-4. Overwatch consumes all remaining AP at registration and ammo only when firing.
-5. Interrupted Move still pays full Move AP.
-6. Reactor order is faction phase then tactical actor ID.
-7. Attacks and Reload are unavailable while shielding.
-8. Mission terminal is the first interaction example.
-9. Replay payload version: raise the shared action payload above 2 or use per-action versions while preserving envelope schema 3. Decide with Slice 1 fixtures.
+- SP means **Supply Points**; initial capacity is 4.
+- Reload costs 1 AP and refills to capacity.
+- Aim costs 1 AP and adds 15 percentage points.
+- Ordinary defense costs 1 AP and reduces incoming damage by 50%.
+- Shield Stance costs 1 AP, protects a 120° frontal arc, applies 0.35 incoming damage and -20 percentage points to incoming accuracy.
+- Overwatch consumes all remaining AP when registered, applies -15 reaction accuracy, and consumes 1 SP only when firing.
+- Interrupted Move retains its normal 1 AP cost.
+- Reactions order by faction phase, then tactical actor ID.
+- The mission terminal is the first interaction example.
+- Replay uses the smallest compatible version change justified by Slice 1 fixtures.
 
-These choices are intentionally visible. None requires replacing the proven authority model.
+Exact cancellation details not enumerated above remain governed by the contracts in this plan and should be verified by their implementation fixtures.

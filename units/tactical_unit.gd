@@ -18,6 +18,10 @@ signal attack_presented(target_world_position: Vector3)
 @export var faction: Faction = Faction.PLAYER
 ## Stable battle-local identity used by actions and replay. Display/node names may change.
 @export var tactical_id: StringName
+## Starting preset selected by Match Setup. Mechanics query capabilities, not this ID.
+@export var archetype_id: StringName = &"generic"
+## Prepared for 01.11.4; grants no defensive benefit by itself.
+@export var shield_capable := false
 @export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor

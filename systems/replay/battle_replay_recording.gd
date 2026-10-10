@@ -83,6 +83,9 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"player_count": int(source.get("player_count", 2)),
 		"enemy_count": int(source.get("enemy_count", 2)),
 		"ally_count": int(source.get("ally_count", 0)),
+		"player_archetypes": _string_array(source.get("player_archetypes", [])),
+		"enemy_archetypes": _string_array(source.get("enemy_archetypes", [])),
+		"ally_archetypes": _string_array(source.get("ally_archetypes", [])),
 		"generated_map": bool(source.get("generated_map", false)),
 		"seed": int(source.get("seed", 1)),
 		"map_size": [size.x, size.y],
@@ -102,6 +105,9 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"player_count": int(data.get("player_count", 2)),
 		"enemy_count": int(data.get("enemy_count", 2)),
 		"ally_count": int(data.get("ally_count", 0)),
+		"player_archetypes": _name_array(data.get("player_archetypes", [])),
+		"enemy_archetypes": _name_array(data.get("enemy_archetypes", [])),
+		"ally_archetypes": _name_array(data.get("ally_archetypes", [])),
 		"generated_map": bool(data.get("generated_map", false)),
 		"seed": int(data.get("seed", 1)),
 		"map_size": Vector2i(int(raw_size[0]), int(raw_size[1])) if raw_size.size() == 2 else Vector2i(32, 24),
@@ -111,6 +117,18 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"difficulty": int(data.get("difficulty", AIDifficultyPolicy.Tier.NORMAL)),
 		"refinery": bool(data.get("refinery", false)),
 	}
+
+static func _string_array(values: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if values is Array:
+		for value in values: result.append(String(value))
+	return result
+
+static func _name_array(values: Variant) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if values is Array:
+		for value in values: result.append(StringName(value))
+	return result
 
 static func _mission_to_data(mission: MissionDefinition) -> Variant:
 	if mission == null: return null

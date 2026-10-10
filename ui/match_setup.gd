@@ -21,6 +21,12 @@ var compatibility_toggle: CheckButton
 var compatibility_status: Label
 var randomize_seed_button: Button
 var copy_seed_button: Button
+var roster_side_option: OptionButton
+var roster_entries: VBoxContainer
+var reset_roster_button: Button
+var player_archetypes: Array[StringName] = []
+var enemy_archetypes: Array[StringName] = []
+var ally_archetypes: Array[StringName] = []
 var _seed_rng := RandomNumberGenerator.new()
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
@@ -34,6 +40,7 @@ func _ready() -> void:
 	_build_compatibility_setup()
 	_build_seed_actions()
 	_build_deployment_summary()
+	_build_roster_editor()
 	_seed_rng.randomize()
 	_prepare_new_seed()
 	var size_names := ["Small", "Medium", "Large"]
@@ -44,9 +51,9 @@ func _ready() -> void:
 	map_size_option.select(1)
 	map_size_option.disabled = not generated_map_toggle.button_pressed
 	start_button.pressed.connect(_start_battle)
-	player_count.value_changed.connect(_update_summary)
-	enemy_count.value_changed.connect(_update_summary)
-	ally_count.value_changed.connect(_update_summary)
+	player_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.PLAYER))
+	enemy_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ENEMY))
+	ally_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ALLY))
 	generated_map_toggle.toggled.connect(_on_generation_toggled)
 	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
@@ -55,6 +62,129 @@ func _ready() -> void:
 	_refresh_seed_controls()
 	_update_summary(0.0)
 	_apply_saved_renderer_preference()
+
+func _build_roster_editor() -> void:
+	player_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(player_count.value))
+	enemy_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(enemy_count.value))
+	ally_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(ally_count.value))
+	var forces := $CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces as VBoxContainer
+	var toolbar := HBoxContainer.new()
+	toolbar.name = "RosterToolbar"
+	var label := Label.new()
+	label.text = "EDIT ROSTER"
+	toolbar.add_child(label)
+	roster_side_option = OptionButton.new()
+	roster_side_option.name = "RosterSideOption"
+	roster_side_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for side_name in ["Player", "Enemy", "AI Ally"]: roster_side_option.add_item(side_name)
+	roster_side_option.item_selected.connect(func(_index: int): _rebuild_roster_entries())
+	toolbar.add_child(roster_side_option)
+	reset_roster_button = Button.new()
+	reset_roster_button.name = "ResetRosterButton"
+	reset_roster_button.text = "RESET TO GENERIC"
+	reset_roster_button.tooltip_text = "Reset only the currently displayed combatant roster."
+	reset_roster_button.pressed.connect(_reset_visible_roster)
+	toolbar.add_child(reset_roster_button)
+	forces.add_child(toolbar)
+	var scroll := ScrollContainer.new()
+	scroll.name = "RosterScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	roster_entries = VBoxContainer.new()
+	roster_entries.name = "RosterEntries"
+	roster_entries.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roster_entries.add_theme_constant_override("separation", 8)
+	scroll.add_child(roster_entries)
+	forces.add_child(scroll)
+	_rebuild_roster_entries()
+
+func _on_force_count_changed(_value: float, faction: TacticalUnit.Faction) -> void:
+	match faction:
+		TacticalUnit.Faction.PLAYER:
+			player_archetypes = TacticalArchetypeCatalog.normalize_ids(player_archetypes, int(player_count.value))
+		TacticalUnit.Faction.ENEMY:
+			enemy_archetypes = TacticalArchetypeCatalog.normalize_ids(enemy_archetypes, int(enemy_count.value))
+		TacticalUnit.Faction.ALLY:
+			ally_archetypes = TacticalArchetypeCatalog.normalize_ids(ally_archetypes, int(ally_count.value))
+	_update_summary(0.0)
+	_rebuild_roster_entries()
+
+func _visible_faction() -> TacticalUnit.Faction:
+	match roster_side_option.selected:
+		1: return TacticalUnit.Faction.ENEMY
+		2: return TacticalUnit.Faction.ALLY
+		_: return TacticalUnit.Faction.PLAYER
+
+func _roster_for(faction: TacticalUnit.Faction) -> Array[StringName]:
+	match faction:
+		TacticalUnit.Faction.ENEMY: return enemy_archetypes
+		TacticalUnit.Faction.ALLY: return ally_archetypes
+		_: return player_archetypes
+
+func _set_roster_for(faction: TacticalUnit.Faction, roster: Array[StringName]) -> void:
+	match faction:
+		TacticalUnit.Faction.ENEMY: enemy_archetypes = roster
+		TacticalUnit.Faction.ALLY: ally_archetypes = roster
+		_: player_archetypes = roster
+
+func _rebuild_roster_entries() -> void:
+	if not roster_entries: return
+	for child in roster_entries.get_children(): child.free()
+	var faction := _visible_faction()
+	var roster := _roster_for(faction)
+	if roster.is_empty():
+		var empty := Label.new()
+		empty.text = "No AI allied combatants configured." if faction == TacticalUnit.Faction.ALLY else "No combatants configured."
+		empty.modulate = Color(0.65, 0.72, 0.8)
+		roster_entries.add_child(empty)
+		return
+	for slot in roster.size():
+		roster_entries.add_child(_create_roster_row(faction, slot, roster[slot]))
+
+func _create_roster_row(faction: TacticalUnit.Faction, slot: int, archetype_id: StringName) -> Control:
+	var row := HBoxContainer.new()
+	row.name = "RosterEntry%d" % (slot + 1)
+	row.add_theme_constant_override("separation", 10)
+	var slot_label := Label.new()
+	slot_label.custom_minimum_size.x = 58
+	slot_label.text = "UNIT %d" % (slot + 1)
+	row.add_child(slot_label)
+	var details := VBoxContainer.new()
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var selector := OptionButton.new()
+	selector.name = "ArchetypeOption"
+	selector.tooltip_text = "Starting configuration preset; faction and mission role are unchanged."
+	var selected_index := 0
+	var definitions := TacticalArchetypeCatalog.all()
+	for index in definitions.size():
+		selector.add_item(definitions[index].display_name)
+		selector.set_item_metadata(index, definitions[index].archetype_id)
+		if definitions[index].archetype_id == archetype_id: selected_index = index
+	selector.select(selected_index)
+	var description := Label.new()
+	description.name = "Description"
+	description.modulate = Color(0.66, 0.76, 0.86)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.text = definitions[selected_index].description
+	selector.item_selected.connect(_on_archetype_selected.bind(faction, slot, selector, description))
+	details.add_child(selector)
+	details.add_child(description)
+	row.add_child(details)
+	return row
+
+func _on_archetype_selected(option_index: int, faction: TacticalUnit.Faction, slot: int, selector: OptionButton, description: Label) -> void:
+	var selected_id := StringName(selector.get_item_metadata(option_index))
+	var roster := _roster_for(faction).duplicate()
+	if slot >= roster.size(): return
+	roster[slot] = selected_id
+	_set_roster_for(faction, roster)
+	description.text = TacticalArchetypeCatalog.resolve_or_generic(selected_id, false).description
+
+func _reset_visible_roster() -> void:
+	var faction := _visible_faction()
+	var roster := _roster_for(faction)
+	_set_roster_for(faction, TacticalArchetypeCatalog.normalize_ids([], roster.size()))
+	_rebuild_roster_entries()
 
 func _build_compatibility_setup() -> void:
 	var box := VBoxContainer.new()
@@ -279,6 +409,9 @@ func _start_battle() -> void:
 	config.generated_map = generated_map_toggle.button_pressed
 	config.battle_seed = int(seed_input.value)
 	config.ally_count = int(ally_count.value)
+	config.player_archetypes = player_archetypes.duplicate()
+	config.enemy_archetypes = enemy_archetypes.duplicate()
+	config.ally_archetypes = ally_archetypes.duplicate()
 	config.map_size = Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior

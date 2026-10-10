@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="TacticalArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/archetypes/tactical_archetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+archetype_id = &"marksman"
+display_name = "Marksman"
+description = "Aim experiment preset. Aim is not implemented until 01.11.2."

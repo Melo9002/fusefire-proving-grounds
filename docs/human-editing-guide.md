@@ -53,8 +53,22 @@ or generated import files.
 
 Use `systems/battle_configuration.gd` when a menu, simulation, or tool starts a
 battle. Its named fields make team counts, map settings, mission, difficulty,
-and seed visible at the call site. `BattleLevel.configure()` remains only as a
+seed, and per-slot archetypes visible at the call site. `BattleLevel.configure()` remains only as a
 compatibility wrapper for older Prototype 1 scripts.
+
+## Tactical archetypes and the roster laboratory
+
+Testing archetypes live in `units/archetypes/` as ordinary `.tres` Resources. Open one in Godot to edit its display name, description, starting stat overrides, or demonstrated capability fields. `generic.tres` preserves the existing baseline; Shieldbearer, Marksman, Sentinel, and Support are laboratory presets rather than permanent classes. Only Shieldbearer currently declares a capability, and that declaration grants no defensive bonus before Task 01.11.4.
+
+To add another test archetype:
+
+1. Duplicate one of the `.tres` definitions and give it a unique `archetype_id`, name, and truthful description.
+2. Add the Resource to `TacticalArchetypeCatalog.DEFINITIONS` in `units/archetypes/tactical_archetype_catalog.gd`.
+3. Add focused catalog, configuration, and spawn coverage. Do not store current HP, AP, or tactical state in the shared Resource.
+
+The existing Match Setup **Forces** tab owns roster selection. Its three counts synchronize the Player, Enemy, and AI Ally arrays in `ui/match_setup.gd`; new slots start Generic and removed slots come from the end. `BattleConfiguration` carries those IDs through replay reconstruction, and `BattleLevel._create_unit()` resolves and applies the preset before adding the unit to the scene tree. Faction, AI ownership, stable tactical ID, and mission roles remain separate concerns.
+
+Future mechanics should query a concrete capability on the unit, never compare the archetype ID. Add capability data only when its mechanic is implemented. The proposed drone-swarm archetype is a future idea and is not part of the current catalog.
 
 ## What remains runtime-built
 
