@@ -80,6 +80,8 @@ func _run() -> void:
 	_check(commits[0] == 1 and service.state_revision == 1 and result.transaction_id == 1, "Attack commits exactly once with one revision and transaction")
 	_check(reentrant_codes == [&"action_busy"], "Synchronous commit observers cannot submit a reentrant action")
 	_check(result.did_hit and result.target_defeated, "Deterministic attack fixture resolves hit and defeat")
+	var terminal_hud := first.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
+	_check(terminal_hud.turn_label.text.begins_with("VICTORY"), "Action barrier release cannot overwrite the terminal battle banner")
 	_check(result.hit_chance == query.hit_chance, "Committed attack uses the same hit-chance rules as its prediction")
 	_check(first.turn_manager.enemy_units.is_empty(), "Defeat consequence removes target from the roster")
 	_check(first.objective_manager.get_objective(&"eliminate").progress == 1, "Defeat consequence advances the objective once")

@@ -38,6 +38,12 @@ func _build_battle_end_buttons() -> void:
 	container.add_child(setup_button)
 
 func _on_turn_phase_changed(new_phase: TurnManager.TurnPhase) -> void:
+	# Battle completion can occur while an action is still inside its presentation
+	# barrier. Later busy-state refreshes must not replace the terminal result with
+	# the underlying TRANSITION phase label.
+	if turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
+		_show_battle_result(turn_manager.battle_result)
+		return
 	if battle_controller.replay_mode and new_phase != TurnManager.TurnPhase.TRANSITION:
 		turn_label.text = "REPLAY — ROUND %d" % turn_manager.current_round
 		turn_label.modulate = Color(0.55, 0.86, 1.0)
@@ -85,6 +91,9 @@ func _on_action_state_changed(is_busy: bool) -> void:
 	_on_turn_phase_changed(turn_manager.current_phase)
 
 func _on_battle_ended(result: TurnManager.BattleResult) -> void:
+	_show_battle_result(result)
+
+func _show_battle_result(result: TurnManager.BattleResult) -> void:
 	end_turn_button.disabled = true
 	if result == TurnManager.BattleResult.VICTORY:
 		turn_label.text = "VICTORY"
@@ -94,8 +103,8 @@ func _on_battle_ended(result: TurnManager.BattleResult) -> void:
 		turn_label.modulate = Color.RED
 	if objective_manager and objective_manager.mission:
 		turn_label.text += "\n" + objective_manager.get_result_report()
-	replay_button.visible = true
-	setup_button.visible = true
+	if replay_button: replay_button.visible = true
+	if setup_button: setup_button.visible = true
 
 func _on_replay_pressed() -> void:
 	var level := _find_battle_level()

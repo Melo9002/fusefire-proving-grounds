@@ -21,8 +21,8 @@ func unregister_actor(actor: TacticalUnit) -> void:
 func resolve(actor_id: StringName) -> TacticalUnit:
 	if actor_id.is_empty() or not _actors.has(actor_id):
 		return null
-	var reference: WeakRef = _actors[actor_id]
-	var actor := reference.get_ref() as TacticalUnit
+	var actor_reference: WeakRef = _actors[actor_id]
+	var actor := actor_reference.get_ref() as TacticalUnit
 	if not is_instance_valid(actor):
 		_actors.erase(actor_id)
 		return null
@@ -35,4 +35,3 @@ func get_ids() -> Array[StringName]:
 			result.append(actor_id)
 	result.sort()
 	return result
-

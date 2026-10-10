@@ -47,7 +47,7 @@ func setup(
 	present_attack: Callable,
 	present_reload: Callable = Callable(),
 	present_aim: Callable = Callable(),
-	query_move: Callable = Callable(),
+	move_query_callback: Callable = Callable(),
 	present_move: Callable = Callable(),
 	movement_committed: Callable = Callable(),
 	present_simple: Callable = Callable(),
@@ -62,7 +62,7 @@ func setup(
 	_present_attack = present_attack
 	_present_reload = present_reload
 	_present_aim = present_aim
-	_query_move = query_move
+	_query_move = move_query_callback
 	_present_move = present_move
 	_movement_committed = movement_committed
 	_present_simple = present_simple

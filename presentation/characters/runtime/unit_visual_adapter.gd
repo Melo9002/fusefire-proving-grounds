@@ -1,3 +1,4 @@
+@tool
 extends "res://presentation/characters/runtime/character_rig.gd"
 class_name UnitVisualAdapter
 
