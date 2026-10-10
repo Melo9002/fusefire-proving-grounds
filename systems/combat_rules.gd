@@ -30,7 +30,7 @@ class AttackEvaluation:
 		obstruction = obstruction_label
 		blocking_cell = blocker
 
-static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D) -> AttackEvaluation:
+static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	var default_aim := get_shot_destination(target, grid)
@@ -54,7 +54,7 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 	var cover_penalty := 50 if cover != MapCellData.CoverType.NONE else 0
 	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
 	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
-	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty), 5, 100)
+	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus, 5, 100)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker)
 

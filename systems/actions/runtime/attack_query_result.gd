@@ -7,6 +7,9 @@ var actor_id: StringName
 var target_id: StringName
 var state_revision: int
 var hit_chance := 0
+var base_hit_chance := 0
+var aim_bonus := 0
+var aim_applied := false
 var damage_on_hit := 0
 var minimum_damage := 0
 var maximum_damage := 0

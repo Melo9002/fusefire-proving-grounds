@@ -56,11 +56,15 @@ SP means **Supply Points**: a broader tactical supply resource currently consume
 
 ### Aim
 
-Add a small explicit `TacticalUnitState` simulation component, initially with Aim and later approved stance/reaction fields. Aim costs 1 AP, grants +15 percentage points to the next eligible normal Attack, does not stack, and expires at the start of the actor's next activation if unused.
+**Implemented in 01.11.2.** Each unit owns a compact `TacticalState` node. Aim costs 1 AP, grants +15 percentage points to the next eligible normal Attack, does not stack, and expires at the start of the actor's next activation if unused.
 
 A rejected Attack does not consume Aim. Any committed normal Attack consumes it, hit or miss. Move, Reload, defense, Shield Stance, Overwatch, Wait, Rescue, or Extract cancels it. Defeat/removal clears it. Aim is actor-bound, not target-bound. Results record applied/cancelled state.
 
-`CombatRules` receives a small immutable modifier input assembled by the query/service. Attack queries expose base chance and named modifiers. This is readable and prepares for shield/conditions without a generic modifier framework.
+`CombatRules.evaluate_attack()` receives the explicit accuracy bonus assembled by the action service. Attack queries expose base chance, Aim bonus, and final chance. This remains readable and prepares for named shield/condition inputs without introducing a generic modifier framework.
+
+FuseFire maps an activation to the first time a unit becomes active in a `(round, faction phase)` pair. Re-selecting a player in the same phase does not begin another activation. `TurnManager` calls `TacticalState.begin_activation()` before emitting `active_unit_changed`, so expiry occurs before UI or AI queries. Defeat and roster removal clear Aim explicitly.
+
+New recordings opt into Aim through `BattleConfiguration.aim_enabled`, include Aim in unit fingerprints, record Aim payload schema 4, and use Attack payload schema 4. Recordings without the flag retain their old accuracy, payload comparison, and fingerprint layout. The replay envelope remains schema 3 and pre-SP compatibility remains unchanged.
 
 ### Ordinary defensive stance
 
@@ -187,7 +191,7 @@ Historical recordings without an explicit `supply_points_enabled` configuration 
 
 ### 2. Aim and explicit tactical state
 
-Add the concrete state component and named attack modifiers. Implement 1 AP Aim and all cancellation/expiry rules. Test preview-resolution agreement and replay/headless parity. Exclude generic effects, target lock, and stacking.
+**Implemented in 01.11.2.** `TacticalState`, typed Aim query/result contracts, the action HUD, presenter, replay path, fingerprinting, and a conservative AI Aim-then-Attack policy use the existing authoritative pipeline. Accepted Attack consumes Aim; accepted Move, Reload, Wait/Defend, Rescue, and Extract cancel it. Rejected actions preserve it. Focused coverage verifies cost, RNG independence, accuracy, cancellation, activation expiry, defeat, HUD, AI, and compatibility. Generic effects, target lock, stacking, defense, shield, and reactions remain excluded.
 
 ### 3. Current defensive stance
 
@@ -218,7 +222,7 @@ This order deliberately establishes resources, lifetime state, and modifier cont
 | Tune capacity/Aim/defense/shield | Inspector fields on `UnitStats` or `ShieldCapability.tres` |
 | Change legality/cost/transition | named query/submit method in `TacticalActionService` |
 | Change attack math/modifiers | `systems/combat_rules.gd` |
-| Change state lifetime | `TacticalUnitState` activation methods |
+| Change Aim state lifetime | `units/components/tactical_state.gd` and `TurnManager._set_active_unit()` |
 | Change reaction order/checkpoints | one focused movement-reaction resolver |
 | Change camera/animation/feedback | action-specific presenter and visual-adapter methods |
 | Change AI preference | focused scorer consuming query results |
@@ -235,6 +239,17 @@ Do not create ability registries, factories, generic effect stacks, event buses,
 - path-mutating doors, hacking minigame, inventories, weapon swaps, reload upgrades;
 - suppression, Kill Zone, return fire, reaction chains, rollback/rewind;
 - universal ability templates, ECS, event bus, generic effect framework, networking.
+
+### Movement-planning debt exposed during 01.11.2
+
+AI hypothetical continuation paths currently evaluate the real occupancy map, so
+an actor's present tile can obstruct a route calculated from a proposed future
+tile in a one-cell passage. Maximum-urgency movement has a deterministic fallback
+that scores an already-legal first step by geometric progress; permanent fixtures
+cover extraction seed `25005` and refinery elimination seed `25100`. Before or
+during Overwatch integration, evaluate a focused Pathfinder API that can ignore
+the planning actor's origin without mutating authoritative occupancy. Reaction
+checkpoints and committed movement must continue to use real authoritative state.
 
 ## 11. Definition of Done
 

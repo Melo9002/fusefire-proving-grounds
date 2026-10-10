@@ -17,7 +17,7 @@ func begin(configuration: Dictionary, battle_controller: BattleController, turn_
 	_battle_controller = battle_controller
 	_turn_manager = turn_manager
 	_objective_manager = objective_manager
-	recording.initial_state_fingerprint = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager, bool(configuration.get("supply_points_enabled", false)))
+	recording.initial_state_fingerprint = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager, bool(configuration.get("supply_points_enabled", false)), bool(configuration.get("aim_enabled", false)))
 	if is_instance_valid(battle_controller.action_service):
 		battle_controller.action_service.action_committed.connect(_on_tactical_action_committed)
 	if is_instance_valid(objective_manager):
@@ -35,7 +35,7 @@ func _on_action_committed(record: Dictionary) -> void:
 	if not recorded.has("committed_revision") and is_instance_valid(_battle_controller.action_service):
 		recorded["committed_revision"] = _battle_controller.action_service.state_revision
 		recorded["base_revision"] = maxi(0, int(recorded["committed_revision"]) - 1)
-	recorded["expected_state"] = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager, bool(recording.configuration.get("supply_points_enabled", false)))
+	recorded["expected_state"] = StateFingerprint.capture(_turn_manager, _battle_controller.grid_manager, _objective_manager, bool(recording.configuration.get("supply_points_enabled", false)), bool(recording.configuration.get("aim_enabled", false)))
 	recording.append_action(recorded)
 
 func _on_tactical_action_committed(result) -> void:

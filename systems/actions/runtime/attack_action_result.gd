@@ -1,7 +1,7 @@
 class_name AttackActionResult
 extends RefCounted
 
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 
 var transaction_id: int
 var base_revision: int
@@ -9,6 +9,10 @@ var committed_revision: int
 var request: TacticalActionRequest
 var cost := ActionCost.new(1)
 var hit_chance: int
+var base_hit_chance := 0
+var aim_bonus := 0
+var aim_applied := false
+var aiming_after := false
 var roll: float
 var did_hit: bool
 var damage: int
@@ -49,6 +53,10 @@ func to_replay_record() -> Dictionary:
 func resolved_dictionary() -> Dictionary:
 	return {
 		"hit_chance": hit_chance,
+		"base_hit_chance": base_hit_chance,
+		"aim_bonus": aim_bonus,
+		"aim_applied": aim_applied,
+		"aiming_after": aiming_after,
 		"roll_milli": roundi(roll * 1000.0),
 		"did_hit": did_hit,
 		"damage": damage,

@@ -110,6 +110,8 @@ func can_unit_act(unit: TacticalUnit) -> bool:
 	return false
 
 func remove_unit(unit: TacticalUnit) -> void:
+	if is_instance_valid(unit) and unit.tactical_state:
+		unit.tactical_state.clear_aim()
 	player_units.erase(unit)
 	allied_units.erase(unit)
 	enemy_units.erase(unit)
@@ -118,6 +120,8 @@ func remove_unit(unit: TacticalUnit) -> void:
 	_check_battle_result()
 
 func remove_extracted_unit(unit: TacticalUnit) -> void:
+	if is_instance_valid(unit) and unit.tactical_state:
+		unit.tactical_state.clear_aim()
 	var was_active := active_unit == unit
 	var was_ally := allied_units.has(unit)
 	var was_enemy := enemy_units.has(unit)
@@ -255,6 +259,8 @@ func _end_round() -> void:
 	_start_player_turn_phase()
 
 func _set_active_unit(unit: TacticalUnit) -> void:
+	if is_instance_valid(unit) and unit.tactical_state:
+		unit.tactical_state.begin_activation(current_round, int(current_phase))
 	active_unit = unit
 	active_unit_changed.emit(active_unit)
 

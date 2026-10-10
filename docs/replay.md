@@ -64,7 +64,7 @@ The JSON contains plain arrays, dictionaries, numbers, strings, and booleans. Mi
 - **Schema 2** is supported as a narrow Prototype 1 in-memory compatibility path. Missing revisions are normalized at playback, and the old already-applied consequence coalescing behavior remains limited to this schema.
 - Other envelope versions fail before playback with a message naming the supported versions.
 - Defend retains its original one-AP behavior for legacy records. It is never silently translated to Wait.
-- Action payload schema numbers remain explicit. Attack and Reload use payload schema 3; other current action payloads remain at their established versions.
+- Action payload schema numbers remain explicit. Reload uses payload schema 3; current Attack and Aim use payload schema 4. Historical Attack payload schemas 2 and 3 remain accepted and are interpreted through the recording's trusted SP/Aim feature flags.
 - Recordings created before Supply Points lack `supply_points_enabled`. Playback treats those recordings as pre-SP rules: payload-v2 Attacks do not consume SP, and their state fingerprints omit SP fields. New configurations write `supply_points_enabled = true`, use payload-v3 Attack/Reload facts, and verify current/max SP. This preserves historical meaning instead of silently applying a new resource rule to old decisions.
 
 Compatibility is intentionally finite. There is no promise that every development recording will remain playable forever.

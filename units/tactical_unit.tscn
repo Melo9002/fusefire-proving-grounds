@@ -1,20 +1,22 @@
-[gd_scene load_steps=6 format=3 uid="uid://c7nrcruyj4khu"]
+[gd_scene load_steps=7 format=3 uid="uid://c7nrcruyj4khu"]
 
 [ext_resource type="Script" uid="uid://dbww1fki3xm5f" path="res://units/tactical_unit.gd" id="1_bwycf"]
 [ext_resource type="Script" uid="uid://bkh6dyrmx6y7k" path="res://units/components/unit_stats.gd" id="2_2equr"]
 [ext_resource type="Script" path="res://units/components/mission_actor.gd" id="3_mission_actor"]
 [ext_resource type="PackedScene" path="res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn" id="4_visual"]
+[ext_resource type="Script" path="res://units/components/tactical_state.gd" id="5_tactical_state"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_8x357"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_8x357"]
 
-[node name="TacticalUnit" type="CharacterBody3D" unique_id=225498665 node_paths=PackedStringArray("stats", "mission_actor", "visual_adapter")]
+[node name="TacticalUnit" type="CharacterBody3D" unique_id=225498665 node_paths=PackedStringArray("stats", "mission_actor", "tactical_state", "visual_adapter")]
 collision_layer = 4
 collision_mask = 3
 script = ExtResource("1_bwycf")
 stats = NodePath("UnitStats")
 mission_actor = NodePath("MissionActor")
+tactical_state = NodePath("TacticalState")
 visual_adapter = NodePath("UnitVisualAdapter")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1078393390]
@@ -29,5 +31,8 @@ script = ExtResource("2_2equr")
 
 [node name="MissionActor" type="Node" parent="."]
 script = ExtResource("3_mission_actor")
+
+[node name="TacticalState" type="Node" parent="."]
+script = ExtResource("5_tactical_state")
 
 [node name="UnitVisualAdapter" parent="." instance=ExtResource("4_visual")]

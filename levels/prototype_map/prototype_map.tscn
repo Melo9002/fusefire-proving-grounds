@@ -705,7 +705,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "end_unit_button", "supply_points_label")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "aim_button", "end_unit_button", "supply_points_label", "tactical_state_label")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -715,8 +715,10 @@ battle_controller = NodePath("../../../Systems/BattleController")
 move_button = NodePath("ActionBar/MoveButton")
 attack_button = NodePath("ActionBar/AttackButton")
 reload_button = NodePath("ActionBar/ReloadButton")
+aim_button = NodePath("ActionBar/AimButton")
 end_unit_button = NodePath("ActionBar/EndUnitButton")
 supply_points_label = NodePath("ActionBar/SupplyPointsLabel")
+tactical_state_label = NodePath("ActionBar/TacticalStateLabel")
 
 [node name="ActionBar" type="HBoxContainer" parent="Visualizers/BattleUI/ActionHUDController" unique_id=1879535380]
 layout_mode = 0
@@ -737,9 +739,17 @@ text = "Attack"
 layout_mode = 2
 text = "Reload (1 AP)"
 
+[node name="AimButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+layout_mode = 2
+text = "Aim (1 AP)"
+
 [node name="SupplyPointsLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2
 text = "SP 4/4"
+
+[node name="TacticalStateLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 
 [node name="EndUnitButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar" unique_id=1002343883]
 layout_mode = 2

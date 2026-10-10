@@ -147,6 +147,9 @@ func _execute_turn() -> void:
 			_wait_for_next_turn(_movement_wait_reason("Carrier cannot advance toward extraction."), "Move")
 			break
 		var attack_target = _find_attack_target()
+		if attack_target and await _try_aim_for_attack(attack_target):
+			_record_ai_decision("Aim", attack_target.name, "Improved a legal shot through the authoritative Aim query.", "Attack, Move, Wait")
+			continue
 		if attack_target and await battle_controller.try_attack(unit, attack_target):
 			# A cinematic kill can keep this coroutine suspended until the defeated
 			# target has finished its presentation and left the tree.
@@ -288,6 +291,18 @@ func _try_reload_if_useful() -> bool:
 		return false
 	var query := battle_controller.query_reload(unit)
 	return query.is_legal() and await battle_controller.try_reload(unit)
+
+func _try_aim_for_attack(target: TacticalUnit) -> bool:
+	if not is_instance_valid(unit) or not is_instance_valid(target) or not unit.stats:
+		return false
+	var aim_query := battle_controller.query_aim(unit)
+	if not aim_query.is_legal():
+		return false
+	var attack_query := battle_controller.query_attack(unit, target)
+	if unit.stats.current_ap < aim_query.cost.ap + attack_query.cost.ap \
+	or not attack_query.is_legal() or attack_query.hit_chance >= 100:
+		return false
+	return await battle_controller.try_aim(unit)
 
 func _get_ai_mission_intent() -> MissionIntentData:
 	if not _objective_manager:
@@ -565,6 +580,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, objective_route, hostiles, battle_controller.grid_manager, _policy, null)
 	_last_urgency_bonus = _get_movement_urgency_bonus()
 	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
+	# Once repeated waits reach maximum urgency, the corridor may no longer veto
+	# every pathfinder-valid detour. A second advance still has to pass the
+	# exposure check above, so this relaxes route shape without relaxing safety.
+	var allow_route_detour := _last_urgency_bonus >= URGENCY_MAX_SCORE
 	_last_hold_score = hold.total
 	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
 	best_score = -INF if unit.is_carrying_unit() else _last_move_threshold
@@ -583,12 +602,21 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			if distance <= _last_route_corridor and (distance < route_distance or (is_equal_approx(distance, route_distance) and index > route_index)):
 				route_distance = distance
 				route_index = index
-		if route_index < 0:
+		if route_index < 0 and not allow_route_detour:
 			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Outside useful route"})
 			continue
 		var remaining := battle_controller.pathfinder.calculate_3d_path(candidate, route_end)
-		if remaining.is_empty(): continue
-		var progress := initial_cost - _route_cost(remaining)
+		if remaining.is_empty() and not allow_route_detour:
+			continue
+		# A hypothetical route from the candidate can be cut off by the actor's
+		# still-occupied origin in a one-cell passage. At maximum urgency, score the
+		# already-legal first step by geometric progress so the actor can leave the
+		# pocket; the committed Move still uses its authoritative path from origin.
+		var progress := (
+			float(start_cell.distance_to(goal_cell) - candidate.distance_to(goal_cell))
+			if remaining.is_empty()
+			else initial_cost - _route_cost(remaining)
+		)
 		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, objective_route, hostiles, battle_controller.grid_manager, _policy, _squad_context)
 		var revisit_penalty := 0.0
 		for index in _recent_move_origins.size():
@@ -597,6 +625,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		scored.total -= revisit_penalty
 		scored.summary += "; revisit %+.0f" % -revisit_penalty
 		var score: float = scored.total
+		if route_index < 0:
+			scored.summary += "; maximum urgency allowed route detour"
+		if remaining.is_empty():
+			scored.summary += "; occupied-origin recovery estimate"
 		if score > best_route_score:
 			best_route_candidate = candidate
 			best_route_score = score

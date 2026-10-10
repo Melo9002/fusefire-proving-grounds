@@ -64,6 +64,15 @@ func present_reload(result: ReloadActionResult) -> void:
 		await _safe_delay(0.25)
 		await _finish_camera(true)
 
+func present_aim(result: AimActionResult) -> void:
+	var unit := _actor(result.request.actor_id)
+	if not is_instance_valid(unit):
+		result.presentation_error = "Aim presenter could not find actor '%s'" % result.request.actor_id
+		return
+	if result.presentation_suppressed:
+		return
+	print_rich("[color=gold][Aim][/color] %s prepares the next shot (+%d)" % [unit.name, result.accuracy_bonus])
+
 func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not is_instance_valid(unit):

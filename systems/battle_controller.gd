@@ -43,6 +43,8 @@ var _squad_contexts: Dictionary[int, SquadContext] = {}
 var replay_mode := false
 ## Disabled only when reconstructing recordings made before Supply Points.
 var supply_points_enabled := true
+## Disabled only when reconstructing recordings made before Aim.
+var aim_enabled := true
 var action_camera_director: Node
 var action_service: TacticalActionService
 var action_presenter: TacticalActionPresenter
@@ -159,6 +161,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		ai_decision_seed * 2147483647 + 104729,
 		action_presenter.present_attack,
 		action_presenter.present_reload,
+		action_presenter.present_aim,
 		_query_move_data,
 		action_presenter.present_move,
 		_on_movement_committed,
@@ -168,6 +171,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		action_presenter.present_mission
 	)
 	action_service.supply_points_enabled = supply_points_enabled
+	action_service.aim_enabled = aim_enabled
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
@@ -389,7 +393,8 @@ func can_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	return evaluate_attack(attacker, target).is_legal
 
 func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit) -> CombatRules.AttackEvaluation:
-	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d())
+	var bonus := TacticalState.AIM_ACCURACY_BONUS if aim_enabled and is_instance_valid(attacker) and attacker.tactical_state and attacker.tactical_state.is_aiming else 0
+	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d(), bonus)
 
 func query_attack(attacker: TacticalUnit, target: TacticalUnit = null) -> AttackQueryResult:
 	if not is_instance_valid(action_service):
@@ -414,6 +419,13 @@ func query_reload(actor: TacticalUnit) -> ReloadQueryResult:
 		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
 		return unavailable
 	return action_service.query_reload(actor.tactical_id if is_instance_valid(actor) else &"")
+
+func query_aim(actor: TacticalUnit) -> AimQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := AimQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_aim(actor.tactical_id if is_instance_valid(actor) else &"")
 
 func query_simple(kind: StringName, actor: TacticalUnit) -> SimpleActionQueryResult:
 	if not is_instance_valid(action_service):
@@ -503,6 +515,14 @@ func try_reload(unit: TacticalUnit) -> bool:
 	if not is_instance_valid(action_service):
 		return false
 	var result := await action_service.submit_reload(action_service.make_reload_request(unit, _action_source()))
+	is_attack_mode_active = false
+	is_move_mode_active = false
+	return result != null
+
+func try_aim(unit: TacticalUnit) -> bool:
+	if not is_instance_valid(action_service):
+		return false
+	var result := await action_service.submit_aim(action_service.make_aim_request(unit, _action_source()))
 	is_attack_mode_active = false
 	is_move_mode_active = false
 	return result != null

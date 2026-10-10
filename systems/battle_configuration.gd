@@ -12,6 +12,8 @@ var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
 ## Old replay configurations omit this and retain pre-SP attack semantics.
 var supply_points_enabled := true
+## Old replay configurations omit this and retain pre-Aim accuracy/fingerprints.
+var aim_enabled := true
 var generated_map := false
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
@@ -30,6 +32,7 @@ func apply_replay(data: Dictionary) -> void:
 	enemy_archetypes = _ids_from_data(data.get("enemy_archetypes", []))
 	ally_archetypes = _ids_from_data(data.get("ally_archetypes", []))
 	supply_points_enabled = bool(data.get("supply_points_enabled", false))
+	aim_enabled = bool(data.get("aim_enabled", false))
 	normalize_rosters()
 	generated_map = data.get("generated_map", false)
 	battle_seed = data.get("seed", 1)
@@ -54,6 +57,7 @@ func to_replay() -> Dictionary:
 		"enemy_archetypes": enemy_archetypes.duplicate(),
 		"ally_archetypes": ally_archetypes.duplicate(),
 		"supply_points_enabled": supply_points_enabled,
+		"aim_enabled": aim_enabled,
 		"map_size": map_size,
 		"include_vip": include_vip,
 		"vip_behavior": vip_behavior,

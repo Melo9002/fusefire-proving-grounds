@@ -7,10 +7,13 @@ class_name ActionHUDController
 @export var move_button: Button
 @export var attack_button: Button
 @export var reload_button: Button
+@export var aim_button: Button
 @export var end_unit_button: Button
 @export var supply_points_label: Label
+@export var tactical_state_label: Label
 
 var _tracked_stats: UnitStats
+var _tracked_tactical_state: TacticalState
 
 func _ready() -> void:
 	if not battle_controller:
@@ -22,6 +25,8 @@ func _ready() -> void:
 		attack_button.pressed.connect(_on_attack_pressed)
 	if reload_button:
 		reload_button.pressed.connect(_on_reload_pressed)
+	if aim_button:
+		aim_button.pressed.connect(_on_aim_pressed)
 	if end_unit_button:
 		end_unit_button.pressed.connect(_on_end_unit_pressed)
 	battle_controller.move_mode_toggled.connect(_on_move_mode_toggled)
@@ -51,6 +56,11 @@ func _on_active_unit_changed(new_unit: TacticalUnit) -> void:
 		_tracked_stats.supply_points_changed.connect(_on_resource_changed)
 	else:
 		_tracked_stats = null
+	if is_instance_valid(_tracked_tactical_state) and _tracked_tactical_state.changed.is_connected(_update_button_states):
+		_tracked_tactical_state.changed.disconnect(_update_button_states)
+	_tracked_tactical_state = new_unit.tactical_state if is_instance_valid(new_unit) else null
+	if is_instance_valid(_tracked_tactical_state):
+		_tracked_tactical_state.changed.connect(_update_button_states)
 
 	_update_button_states()
 
@@ -67,6 +77,11 @@ func _on_reload_pressed() -> void:
 	var active_unit := battle_controller.tactical_unit
 	if is_instance_valid(active_unit):
 		await battle_controller.try_reload(active_unit)
+
+func _on_aim_pressed() -> void:
+	var active_unit := battle_controller.tactical_unit
+	if is_instance_valid(active_unit):
+		await battle_controller.try_aim(active_unit)
 
 func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
@@ -113,6 +128,7 @@ func _update_button_states() -> void:
 	var attack_query := battle_controller.query_attack(unit)
 	var wait_query := battle_controller.query_simple(&"wait", unit)
 	var reload_query := battle_controller.query_reload(unit)
+	var aim_query := battle_controller.query_aim(unit)
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
@@ -129,8 +145,14 @@ func _update_button_states() -> void:
 		reload_button.disabled = not reload_query.is_legal()
 		reload_button.tooltip_text = "Restore SP to %d" % reload_query.max_supply_points if reload_query.is_legal() else reload_query.reason()
 		reload_button.text = "Reload (1 AP)"
+	if aim_button:
+		aim_button.disabled = not aim_query.is_legal()
+		aim_button.tooltip_text = "Prepare the next Attack (+%d accuracy)" % aim_query.accuracy_bonus if aim_query.is_legal() else aim_query.reason()
+		aim_button.text = "Aim (1 AP)"
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
+	if tactical_state_label:
+		tactical_state_label.text = "AIMED +%d" % TacticalState.AIM_ACCURACY_BONUS if unit.tactical_state and unit.tactical_state.is_aiming else ""
 	if end_unit_button:
 		end_unit_button.disabled = not wait_query.is_legal()
 		end_unit_button.tooltip_text = "" if wait_query.is_legal() else wait_query.reason()
@@ -139,5 +161,7 @@ func _disable_all_buttons() -> void:
 	if move_button: move_button.disabled = true
 	if attack_button: attack_button.disabled = true
 	if reload_button: reload_button.disabled = true
+	if aim_button: aim_button.disabled = true
 	if end_unit_button: end_unit_button.disabled = true
 	if supply_points_label: supply_points_label.text = "SP —"
+	if tactical_state_label: tactical_state_label.text = ""

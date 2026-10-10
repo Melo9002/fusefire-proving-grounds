@@ -20,6 +20,10 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change Attack SP cost or Reload legality/AP cost | Named `query_attack()`, `submit_attack()`, `query_reload()`, and `submit_reload()` paths in `systems/actions/runtime/tactical_action_service.gd` | `tests/supply_reload_test.gd` plus battle replay and AI determinism |
 | Change Reload camera/animation/feedback | `TacticalActionPresenter.present_reload()`; it receives committed AP/SP facts and must not mutate them | `tests/supply_reload_test.gd` and `tests/tactical_action_presenter_test.gd` |
 | Change Reload HUD wording or basic AI preference | `ui/action_hud_controller.gd` for display; `AIController._try_reload_if_useful()` for preference | `tests/supply_reload_test.gd` and AI determinism |
+| Change Aim cost, legality, or cancellation | `TacticalActionService.query_aim()` / `submit_aim()` and the small `_cancel_aim()` commit helper | `tests/aim_tactical_state_test.gd` |
+| Change Aim bonus or its attack calculation | `TacticalState.AIM_ACCURACY_BONUS`; `TacticalActionService.query_attack()` passes it once to `CombatRules.evaluate_attack()` | Aim test plus combat cover/elevation tests |
+| Change Aim lifetime | `units/components/tactical_state.gd`; `TurnManager._set_active_unit()` supplies the round/phase activation token | Aim test plus replay and AI determinism |
+| Change Aim HUD, presentation, or AI preference | `ui/action_hud_controller.gd`, `TacticalActionPresenter.present_aim()`, and `AIController._try_aim_for_attack()` | Aim test, presenter test, and AI determinism |
 | Change the prediction facts available to UI and AI | `systems/actions/runtime/attack_query_result.gd`, populated by `TacticalActionService.query_attack()` | `tests/tactical_action_service_test.gd` |
 | Change attack-preview wording or AI preference | UI text: `BattleController._update_attack_preview`; button state: `ui/action_hud_controller.gd`; AI preference: `systems/ai/ai_target_scorer.gd` | Battle smoke plus AI target/determinism tests |
 | Change movement legality or AP/revision checks | `TacticalActionService.query_move()` and `BattleController._query_move_data()` | `tests/tactical_action_service_test.gd` plus movement smoke tests |
@@ -71,6 +75,8 @@ To add another test archetype:
 3. Add focused catalog, configuration, and spawn coverage. Do not store current HP, AP, SP, or tactical state in the shared Resource.
 
 Supply Points are the prototype's limited normal-attack supply, not a general energy or stamina pool. The current defaults are 4 maximum/current SP, 1 SP per normal Attack, and a 1 AP Reload that restores the reserve to maximum. Runtime values live on the unit's `UnitStats`; changing one unit cannot mutate its shared archetype Resource. The action HUD reads the same Attack and Reload queries used by AI, while committed changes come only from `TacticalActionService`.
+
+Aim is independent per-unit runtime state in the `TacticalState` child of `TacticalUnit`. It costs 1 AP and adds 15 percentage points before the existing accuracy clamp. The next accepted normal Attack consumes it on hit or miss; accepted Move, Reload, Wait/Defend, Rescue, or Extract cancels it. Rejected actions leave it untouched. Aim survives AP exhaustion and expires immediately before that actor's first action query in its next round/faction-phase activation. The component is the discoverable home for future explicit stance fields, but it is intentionally not a generic effect system.
 
 The existing Match Setup **Forces** tab owns roster selection. Its three counts synchronize the Player, Enemy, and AI Ally arrays in `ui/match_setup.gd`; new slots start Generic and removed slots come from the end. `BattleConfiguration` carries those IDs through replay reconstruction, and `BattleLevel._create_unit()` resolves and applies the preset before adding the unit to the scene tree. Faction, AI ownership, stable tactical ID, and mission roles remain separate concerns.
 

@@ -10,6 +10,7 @@ const ATTACK_AP_COST := 1
 const ATTACK_DAMAGE := 25
 const ATTACK_SUPPLY_COST := 1
 const RELOAD_AP_COST := 1
+const AIM_AP_COST := 1
 
 var actor_registry := TacticalActorRegistry.new()
 var state_revision := 0
@@ -20,6 +21,8 @@ var is_busy := false
 var is_committing := false
 ## False only while reproducing recordings created before Supply Points existed.
 var supply_points_enabled := true
+## False only while reproducing recordings created before Aim existed.
+var aim_enabled := true
 
 var _turn_manager: TurnManager
 var _grid_manager: GridManager
@@ -27,6 +30,7 @@ var _objective_manager: ObjectiveManager
 var _combat_rng := RandomNumberGenerator.new()
 var _present_attack: Callable
 var _present_reload: Callable
+var _present_aim: Callable
 var _query_move: Callable
 var _present_move: Callable
 var _movement_committed: Callable
@@ -42,6 +46,7 @@ func setup(
 	combat_seed: int,
 	present_attack: Callable,
 	present_reload: Callable = Callable(),
+	present_aim: Callable = Callable(),
 	query_move: Callable = Callable(),
 	present_move: Callable = Callable(),
 	movement_committed: Callable = Callable(),
@@ -56,6 +61,7 @@ func setup(
 	_combat_rng.seed = combat_seed
 	_present_attack = present_attack
 	_present_reload = present_reload
+	_present_aim = present_aim
 	_query_move = query_move
 	_present_move = present_move
 	_movement_committed = movement_committed
@@ -117,7 +123,11 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 	var target := actor_registry.resolve(target_id)
 	var evaluation: CombatRules.AttackEvaluation
 	if is_instance_valid(actor) and is_instance_valid(target):
-		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
+		var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
+		query.base_hit_chance = base_evaluation.hit_chance
+		query.aim_bonus = _aim_bonus(actor)
+		query.aim_applied = query.aim_bonus > 0
+		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus)
 	var validation := _validate_attack(actor, target, evaluation, supply_points_enabled)
 	query.validation = validation
 	query.reason = validation.message
@@ -147,7 +157,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	# No await, signal, or random draw occurs before this final validation.
 	var actor := actor_registry.resolve(request.actor_id)
 	var target := actor_registry.resolve(request.target_id)
-	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d()) if is_instance_valid(actor) and is_instance_valid(target) else null
+	var aim_bonus := _aim_bonus(actor)
+	var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d()) if is_instance_valid(actor) and is_instance_valid(target) else null
+	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), aim_bonus) if is_instance_valid(actor) and is_instance_valid(target) else null
 	# Supply semantics belong to the reconstructed battle rules, never to caller-
 	# controlled request details. Historical replay setup disables them globally.
 	var uses_supply := supply_points_enabled
@@ -165,6 +177,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.request = request
 	result.cost = ActionCost.new(ATTACK_AP_COST)
 	result.hit_chance = evaluation.hit_chance
+	result.base_hit_chance = base_evaluation.hit_chance
+	result.aim_bonus = aim_bonus
+	result.aim_applied = aim_bonus > 0
 	result.roll = _combat_rng.randf() * 100.0
 	result.did_hit = AttackActionResult.roll_hits(result.roll, result.hit_chance)
 	result.damage = ATTACK_DAMAGE if result.did_hit else 0
@@ -182,6 +197,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	actor.stats.consume_ap(ATTACK_AP_COST)
 	if uses_supply:
 		actor.stats.consume_supply_points(ATTACK_SUPPLY_COST)
+	if result.aim_applied:
+		actor.tactical_state.clear_aim()
+	result.aiming_after = actor.tactical_state.is_aiming if actor.tactical_state else false
 	if result.did_hit:
 		target.defer_stat_presentation = true
 		target.stats.take_damage(ATTACK_DAMAGE)
@@ -228,6 +246,62 @@ func query_reload(actor_id: StringName) -> ReloadQueryResult:
 	query.validation = _validate_reload(actor)
 	return query
 
+func query_aim(actor_id: StringName) -> AimQueryResult:
+	var query := AimQueryResult.new()
+	query.actor_id = actor_id
+	query.state_revision = state_revision
+	query.cost = ActionCost.new(AIM_AP_COST)
+	var actor := actor_registry.resolve(actor_id)
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		query.actor_ap_after = maxi(0, actor.stats.current_ap - AIM_AP_COST)
+		query.aiming_before = actor.tactical_state.is_aiming if actor.tactical_state else false
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	query.validation = _validate_aim(actor)
+	return query
+
+func submit_aim(request: TacticalActionRequest, suppress_presentation := false) -> AimActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind != &"aim":
+		validation = ActionValidationResult.reject(&"unsupported_action", "Expected an Aim request", state_revision)
+		_reject(validation)
+		return null
+	var query := query_aim(request.actor_id)
+	if not query.is_legal():
+		_reject(query.validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	_set_busy(true)
+	is_committing = true
+	last_transaction_id += 1
+	var result := AimActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.cost = ActionCost.new(AIM_AP_COST)
+	result.actor_ap_before = actor.stats.current_ap
+	result.aiming_before = actor.tactical_state.is_aiming
+	actor.stats.consume_ap(AIM_AP_COST)
+	actor.tactical_state.establish_aim()
+	result.actor_ap_after = actor.stats.current_ap
+	result.aiming_after = actor.tactical_state.is_aiming
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	action_committed.emit(result)
+	result.presentation_suppressed = suppress_presentation
+	if _present_aim.is_valid(): await _present_aim.call(result)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	_set_busy(false)
+	return result
+
 func submit_reload(request: TacticalActionRequest, suppress_presentation := false) -> ReloadActionResult:
 	var validation := _validate_request(request)
 	if not validation.accepted:
@@ -255,6 +329,7 @@ func submit_reload(request: TacticalActionRequest, suppress_presentation := fals
 	result.max_supply_points = actor.stats.max_supply_points
 	actor.stats.consume_ap(RELOAD_AP_COST)
 	result.supply_points_restored = actor.stats.reload_supply_points()
+	_cancel_aim(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.supply_points_after = actor.stats.current_supply_points
 	state_revision += 1
@@ -335,6 +410,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.objective_state_before = _capture_objectives()
 	actor.stats.consume_ap(result.cost.ap)
 	_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
+	_cancel_aim(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	state_revision += 1
 	result.committed_revision = state_revision
@@ -360,6 +436,9 @@ func make_attack_request(actor: TacticalUnit, target: TacticalUnit, source: Tact
 
 func make_reload_request(actor: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.simple(&"reload", actor.tactical_id if is_instance_valid(actor) else &"", state_revision, source)
+
+func make_aim_request(actor: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.simple(&"aim", actor.tactical_id if is_instance_valid(actor) else &"", state_revision, source)
 
 func make_move_request(actor: TacticalUnit, target_cell: Vector3i, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell, state_revision, source)
@@ -451,6 +530,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	else:
 		actor.stats.consume_ap(ATTACK_AP_COST)
 		actor.stats.is_defending = true
+	_cancel_aim(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.defending_after = actor.stats.is_defending
 	state_revision += 1
@@ -496,6 +576,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 		validation = ActionValidationResult.reject(&"commit_failed", "Mission action failed during authoritative commit", state_revision)
 		_reject(validation)
 		return null
+	_cancel_aim(actor)
 	result.objective_state_after = _capture_objectives()
 	result.mission_counters_after = _capture_mission_counters()
 	result.actor_removed_from_roster = not _actor_is_in_roster(actor)
@@ -522,7 +603,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"rescue", &"extract"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"rescue", &"extract"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -579,6 +660,26 @@ func _validate_reload(actor: TacticalUnit) -> ActionValidationResult:
 	if actor.stats.current_supply_points >= actor.stats.max_supply_points:
 		return ActionValidationResult.reject(&"resource_full", "Supply Points are already full", state_revision)
 	return ActionValidationResult.allow(state_revision)
+
+func _validate_aim(actor: TacticalUnit) -> ActionValidationResult:
+	if not aim_enabled:
+		return ActionValidationResult.reject(&"unsupported_action", "Aim is unavailable in this historical replay", state_revision)
+	var actor_result := _validate_actor(actor)
+	if not actor_result.accepted:
+		return actor_result
+	if not actor.tactical_state:
+		return ActionValidationResult.reject(&"state_unavailable", "Actor has no tactical-state component", state_revision)
+	if actor.tactical_state.is_aiming:
+		return ActionValidationResult.reject(&"already_aiming", "Actor is already Aimed", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _aim_bonus(actor: TacticalUnit) -> int:
+	if not aim_enabled or not is_instance_valid(actor) or not actor.tactical_state:
+		return 0
+	return TacticalState.AIM_ACCURACY_BONUS if actor.tactical_state.is_aiming else 0
+
+func _cancel_aim(actor: TacticalUnit) -> bool:
+	return actor.tactical_state.clear_aim() if is_instance_valid(actor) and actor.tactical_state else false
 
 func _code_for_reason(reason: String) -> StringName:
 	match reason:

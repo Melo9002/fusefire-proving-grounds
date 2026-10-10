@@ -25,6 +25,7 @@ signal attack_presented(target_world_position: Vector3)
 @export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
+@export var tactical_state: TacticalState
 @export_group("Presentation")
 ## Disable for isolated presentation tools or fixtures that intentionally have no battle UI layer.
 @export var show_world_hud := true
@@ -88,6 +89,8 @@ func _apply_character_presentation() -> void:
 		visual_adapter.process_mode = Node.PROCESS_MODE_DISABLED if use_legacy_bean else Node.PROCESS_MODE_INHERIT
 
 func _on_stats_defeated() -> void:
+	if tactical_state:
+		tactical_state.clear_aim()
 	if visual_adapter and not defer_stat_presentation:
 		visual_adapter.present_defeat()
 	defeated.emit(self)
