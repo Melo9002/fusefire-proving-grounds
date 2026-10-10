@@ -17,21 +17,25 @@ extends Resource
 @export_range(0, 30, 1) var attack_range := 0
 
 @export_group("Capabilities")
-## Declares future shield availability. Directional shield gameplay begins in 01.11.4.
-@export var shield_capable := false
+## Missing capability means this archetype cannot enter Shield Stance.
+@export var shield_capability: ShieldCapability
 
 func validation_message() -> String:
 	if archetype_id.is_empty():
 		return "Archetype ID cannot be empty"
 	if display_name.strip_edges().is_empty():
 		return "Archetype '%s' needs a display name" % archetype_id
+	if shield_capability:
+		var capability_error := shield_capability.validation_message()
+		if not capability_error.is_empty():
+			return "Archetype '%s' has an invalid shield capability: %s" % [archetype_id, capability_error]
 	return ""
 
 func apply_starting_configuration(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit) or not unit.stats:
 		return
 	unit.archetype_id = archetype_id
-	unit.shield_capable = shield_capable
+	unit.shield_capability = shield_capability
 	if max_hp > 0:
 		unit.stats.max_hp = max_hp
 		unit.stats.current_hp = max_hp

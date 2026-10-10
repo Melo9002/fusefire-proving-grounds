@@ -1,7 +1,7 @@
 class_name AttackActionResult
 extends RefCounted
 
-const SCHEMA_VERSION := 4
+const SCHEMA_VERSION := 5
 
 var transaction_id: int
 var base_revision: int
@@ -16,6 +16,10 @@ var aiming_after := false
 var roll: float
 var did_hit: bool
 var damage: int
+var environmental_cover := MapCellData.CoverType.NONE
+var shield_applied := false
+var shield_accuracy_modifier := 0
+var shield_damage_multiplier := 1.0
 var actor_ap_before: int
 var actor_ap_after: int
 var supply_points_before := 0
@@ -60,6 +64,10 @@ func resolved_dictionary() -> Dictionary:
 		"roll_milli": roundi(roll * 1000.0),
 		"did_hit": did_hit,
 		"damage": damage,
+		"environmental_cover": int(environmental_cover),
+		"shield_applied": shield_applied,
+		"shield_accuracy_modifier": shield_accuracy_modifier,
+		"shield_damage_multiplier_milli": roundi(shield_damage_multiplier * 1000.0),
 		"actor_ap_before": actor_ap_before,
 		"actor_ap_after": actor_ap_after,
 		"supply_points_before": supply_points_before,

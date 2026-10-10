@@ -6,6 +6,7 @@ const ActionCameraDirectorData = preload("res://presentation/camera/action_camer
 
 signal move_mode_toggled(is_active: bool)
 signal attack_mode_toggled(is_active: bool)
+signal shield_mode_toggled(is_active: bool)
 signal attack_preview_changed(text: String)
 signal attack_resolved(attacker: TacticalUnit, target: TacticalUnit, did_hit: bool, hit_chance: int)
 signal action_state_changed(is_busy: bool)
@@ -45,6 +46,7 @@ var replay_mode := false
 var supply_points_enabled := true
 ## Disabled only when reconstructing recordings made before Aim.
 var aim_enabled := true
+var shield_enabled := true
 var action_camera_director: Node
 var action_service: TacticalActionService
 var action_presenter: TacticalActionPresenter
@@ -70,6 +72,12 @@ var is_attack_mode_active: bool = false:
 				path_visualizer.clear_range_zone()
 				if shot_trajectory_visualizer:
 					shot_trajectory_visualizer.clear()
+
+var is_shield_mode_active := false:
+	set(value):
+		if is_shield_mode_active == value: return
+		is_shield_mode_active = value
+		shield_mode_toggled.emit(value)
 
 func _ready() -> void:
 	if not mouse_raycaster or not grid_manager or not grid_manager.map_floor or not path_visualizer or not cover_visualizer or not turn_manager or not grid_cursor:
@@ -162,6 +170,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		action_presenter.present_attack,
 		action_presenter.present_reload,
 		action_presenter.present_aim,
+		action_presenter.present_shield,
 		_query_move_data,
 		action_presenter.present_move,
 		_on_movement_committed,
@@ -172,6 +181,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 	)
 	action_service.supply_points_enabled = supply_points_enabled
 	action_service.aim_enabled = aim_enabled
+	action_service.shield_enabled = shield_enabled
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
@@ -246,6 +256,7 @@ func toggle_move_mode() -> void:
 		is_move_mode_active = not is_move_mode_active
 		if is_move_mode_active:
 			is_attack_mode_active = false
+			is_shield_mode_active = false
 			update_unit_movement_zone()
 
 func toggle_attack_mode() -> void:
@@ -262,8 +273,19 @@ func toggle_attack_mode() -> void:
 
 	if is_move_mode_active:
 		is_move_mode_active = false
+	is_shield_mode_active = false
 	is_attack_mode_active = true
 	update_attack_range()
+
+func toggle_shield_mode() -> void:
+	if not is_current_phase_manually_controlled() or is_action_in_progress or not is_instance_valid(tactical_unit):
+		return
+	if not tactical_unit.shield_capability:
+		return
+	is_shield_mode_active = not is_shield_mode_active
+	if is_shield_mode_active:
+		is_move_mode_active = false
+		is_attack_mode_active = false
 
 func _process(_delta: float) -> void:
 	if not turn_manager or not is_current_phase_manually_controlled():
@@ -319,10 +341,15 @@ func _on_unit_clicked(unit: TacticalUnit) -> void:
 		and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
 		await try_attack(tactical_unit, unit)
 		return
+	if is_shield_mode_active and is_instance_valid(tactical_unit) \
+		and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
+		await try_shield(tactical_unit, unit)
+		return
 
 	if not debug_player_ai and turn_manager.select_player_unit(unit):
 		is_move_mode_active = false
 		is_attack_mode_active = false
+		is_shield_mode_active = false
 
 func _on_floor_clicked(raw_position: Vector3) -> void:
 	if is_action_in_progress or not is_move_mode_active or not is_instance_valid(tactical_unit):
@@ -343,6 +370,7 @@ func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 	if not is_player_control:
 		is_move_mode_active = false
 		is_attack_mode_active = false
+		is_shield_mode_active = false
 
 func _on_authoritative_turn_ended(_record: Dictionary) -> void:
 	if is_instance_valid(action_service): action_service.advance_external_revision()
@@ -351,6 +379,7 @@ func _on_active_unit_changed(unit: TacticalUnit) -> void:
 	tactical_unit = unit
 	is_move_mode_active = false
 	is_attack_mode_active = false
+	is_shield_mode_active = false
 
 func update_unit_movement_zone() -> void:
 	if not tactical_unit or tactical_unit.is_moving:
@@ -394,7 +423,7 @@ func can_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 
 func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit) -> CombatRules.AttackEvaluation:
 	var bonus := TacticalState.AIM_ACCURACY_BONUS if aim_enabled and is_instance_valid(attacker) and attacker.tactical_state and attacker.tactical_state.is_aiming else 0
-	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d(), bonus)
+	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d(), bonus, shield_enabled)
 
 func query_attack(attacker: TacticalUnit, target: TacticalUnit = null) -> AttackQueryResult:
 	if not is_instance_valid(action_service):
@@ -426,6 +455,13 @@ func query_aim(actor: TacticalUnit) -> AimQueryResult:
 		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
 		return unavailable
 	return action_service.query_aim(actor.tactical_id if is_instance_valid(actor) else &"")
+
+func query_shield(actor: TacticalUnit, threat: TacticalUnit = null) -> ShieldQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := ShieldQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_shield(actor.tactical_id if is_instance_valid(actor) else &"", threat.tactical_id if is_instance_valid(threat) else &"")
 
 func query_simple(kind: StringName, actor: TacticalUnit) -> SimpleActionQueryResult:
 	if not is_instance_valid(action_service):
@@ -525,6 +561,15 @@ func try_aim(unit: TacticalUnit) -> bool:
 	var result := await action_service.submit_aim(action_service.make_aim_request(unit, _action_source()))
 	is_attack_mode_active = false
 	is_move_mode_active = false
+	return result != null
+
+func try_shield(unit: TacticalUnit, threat: TacticalUnit) -> bool:
+	if not is_instance_valid(action_service):
+		return false
+	var result := await action_service.submit_shield(action_service.make_shield_request(unit, threat, _action_source()))
+	is_attack_mode_active = false
+	is_move_mode_active = false
+	is_shield_mode_active = false
 	return result != null
 
 func try_defend(unit: TacticalUnit) -> bool:

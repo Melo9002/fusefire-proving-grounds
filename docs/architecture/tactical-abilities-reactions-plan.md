@@ -195,11 +195,13 @@ Historical recordings without an explicit `supply_points_enabled` configuration 
 
 ### 3. Current defensive stance
 
-Add `defensive_stance`, isolate schema-2 Defend, and make damage modification explicit. Test old replay compatibility, lifetime, fingerprint, shared query, and AI use. Exclude shield and generalized conditions.
+**Retired from new gameplay design.** Environmental cover applies automatically, so a universal Take Cover action would add input without a distinct tactical decision. The old Defend payload remains only at its explicit replay-compatibility boundary. It must not be silently reinterpreted as Shield Stance.
 
 ### 4. Shield capability and stance
 
-Add `ShieldCapability`, facing contracts, arc math, HUD coverage, presentation, and AI facing score. Test shieldless defense, arc edges, cover composition, replay, and shared queries. Exclude ally cover, durability, classes, and equipment framework.
+**Implemented in 01.11.4.** Shieldbearer references the Inspector-authored `physical_shield.tres`; runtime stance and its normalized facing live on each unit's `TacticalState`. The player activates the existing HUD action and deliberately chooses a hostile threat, while AI and replay submit the same typed request. The resulting fixed direction protects an inclusive 120-degree frontal arc until that actor's next activation. `CombatRules` reports environmental cover and shield contributions separately, applies the -20 accuracy modifier before clamping, and rounds `25 × 0.35` to 9 damage with the existing one-damage minimum. Attack and Reload reject while shielding. Move, Aim, Wait/legacy Defend, Rescue, and Extract cancel the stance.
+
+The implementation deliberately adds no capability registry, equipment hierarchy, effect stack, or global facing control. New recordings set `shield_enabled`, use action payload schema 5, and include stance/facing in fingerprints. Recordings without that flag retain their historical combat and fingerprint layouts.
 
 ### 5. Overwatch simulation and reactions
 
@@ -260,7 +262,7 @@ checkpoints and committed movement must continue to use real authoritative state
 - SP means **Supply Points**; initial capacity is 4.
 - Reload costs 1 AP and refills to capacity.
 - Aim costs 1 AP and adds 15 percentage points.
-- Ordinary defense costs 1 AP and reduces incoming damage by 50%.
+- Ordinary Defend is retired from new gameplay; legacy replay compatibility remains explicit.
 - Shield Stance costs 1 AP, protects a 120° frontal arc, applies 0.35 incoming damage and -20 percentage points to incoming accuracy.
 - Overwatch consumes all remaining AP when registered, applies -15 reaction accuracy, and consumes 1 SP only when firing.
 - Interrupted Move retains its normal 1 AP cost.

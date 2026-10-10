@@ -10,6 +10,9 @@ class AttackEvaluation:
 	var visibility_fraction: float
 	var obstruction: String
 	var blocking_cell: MapCellData
+	var shield_applied := false
+	var shield_accuracy_modifier := 0
+	var shield_damage_multiplier := 1.0
 
 	func _init(
 		legal: bool,
@@ -19,7 +22,10 @@ class AttackEvaluation:
 		point := Vector3.ZERO,
 		visible_fraction := 0.0,
 		obstruction_label := "Blocked",
-		blocker: MapCellData = null
+		blocker: MapCellData = null,
+		p_shield_applied := false,
+		p_shield_accuracy_modifier := 0,
+		p_shield_damage_multiplier := 1.0
 	) -> void:
 		is_legal = legal
 		hit_chance = chance
@@ -29,8 +35,11 @@ class AttackEvaluation:
 		visibility_fraction = visible_fraction
 		obstruction = obstruction_label
 		blocking_cell = blocker
+		shield_applied = p_shield_applied
+		shield_accuracy_modifier = p_shield_accuracy_modifier
+		shield_damage_multiplier = p_shield_damage_multiplier
 
-static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0) -> AttackEvaluation:
+static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	var default_aim := get_shot_destination(target, grid)
@@ -54,9 +63,35 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 	var cover_penalty := 50 if cover != MapCellData.CoverType.NONE else 0
 	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
 	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
-	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus, 5, 100)
+	var shield := get_shield_protection(attacker, target, grid) if allow_shield else {}
+	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
+	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus + shield_accuracy, 5, 100)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
-	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker)
+	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+
+static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
+	if not is_instance_valid(attacker) or not is_instance_valid(target) or not target.tactical_state \
+		or not target.tactical_state.is_shielding or not target.shield_capability:
+		return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
+	var attacker_cell := grid.get_unit_grid(attacker)
+	var target_cell := grid.get_unit_grid(target)
+	var incoming := Vector2(float(attacker_cell.x - target_cell.x), float(attacker_cell.z - target_cell.z))
+	var applied := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
+	return {
+		"applied": applied,
+		"accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0,
+		"damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0,
+	}
+
+## The boundary is inclusive. An attacker exactly half the arc away from the
+## committed facing receives protection; epsilon absorbs floating-point noise.
+static func is_within_protected_arc(facing: Vector2, incoming: Vector2, arc_degrees: float) -> bool:
+	if facing.is_zero_approx() or incoming.is_zero_approx():
+		return false
+	if arc_degrees >= 360.0:
+		return true
+	var threshold := cos(deg_to_rad(clampf(arc_degrees, 0.0, 360.0) * 0.5))
+	return facing.normalized().dot(incoming.normalized()) + 0.00001 >= threshold
 
 static func can_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, world: World3D) -> bool:
 	return evaluate_attack(attacker, target, grid, world).is_legal

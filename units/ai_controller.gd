@@ -304,6 +304,14 @@ func _try_aim_for_attack(target: TacticalUnit) -> bool:
 		return false
 	return await battle_controller.try_aim(unit)
 
+## Policy integration is intentionally deferred to 01.11.7. This adapter keeps
+## AI legality and orientation on the same authoritative path as player input.
+func _try_shield_against(threat: TacticalUnit) -> bool:
+	if not is_instance_valid(unit) or not is_instance_valid(threat):
+		return false
+	var query := battle_controller.query_shield(unit, threat)
+	return query.is_legal() and await battle_controller.try_shield(unit, threat)
+
 func _get_ai_mission_intent() -> MissionIntentData:
 	if not _objective_manager:
 		return MissionIntentData.new()

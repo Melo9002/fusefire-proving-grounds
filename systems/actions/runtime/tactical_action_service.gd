@@ -23,6 +23,7 @@ var is_committing := false
 var supply_points_enabled := true
 ## False only while reproducing recordings created before Aim existed.
 var aim_enabled := true
+var shield_enabled := true
 
 var _turn_manager: TurnManager
 var _grid_manager: GridManager
@@ -31,6 +32,7 @@ var _combat_rng := RandomNumberGenerator.new()
 var _present_attack: Callable
 var _present_reload: Callable
 var _present_aim: Callable
+var _present_shield: Callable
 var _query_move: Callable
 var _present_move: Callable
 var _movement_committed: Callable
@@ -47,6 +49,7 @@ func setup(
 	present_attack: Callable,
 	present_reload: Callable = Callable(),
 	present_aim: Callable = Callable(),
+	present_shield: Callable = Callable(),
 	move_query_callback: Callable = Callable(),
 	present_move: Callable = Callable(),
 	movement_committed: Callable = Callable(),
@@ -62,6 +65,7 @@ func setup(
 	_present_attack = present_attack
 	_present_reload = present_reload
 	_present_aim = present_aim
+	_present_shield = present_shield
 	_query_move = move_query_callback
 	_present_move = present_move
 	_movement_committed = movement_committed
@@ -123,11 +127,11 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 	var target := actor_registry.resolve(target_id)
 	var evaluation: CombatRules.AttackEvaluation
 	if is_instance_valid(actor) and is_instance_valid(target):
-		var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d())
+		var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), 0, shield_enabled)
 		query.base_hit_chance = base_evaluation.hit_chance
 		query.aim_bonus = _aim_bonus(actor)
 		query.aim_applied = query.aim_bonus > 0
-		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus)
+		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus, shield_enabled)
 	var validation := _validate_attack(actor, target, evaluation, supply_points_enabled)
 	query.validation = validation
 	query.reason = validation.message
@@ -135,12 +139,15 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 		return query
 	query.evaluation = evaluation
 	query.hit_chance = evaluation.hit_chance
-	query.damage_on_hit = ATTACK_DAMAGE
+	query.damage_on_hit = maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
 	query.minimum_damage = 0
-	query.maximum_damage = ATTACK_DAMAGE
-	query.expected_damage = float(ATTACK_DAMAGE) * float(evaluation.hit_chance) / 100.0
+	query.maximum_damage = query.damage_on_hit
+	query.expected_damage = float(query.damage_on_hit) * float(evaluation.hit_chance) / 100.0
 	query.distance = CombatRules.attack_distance(_grid_manager.get_unit_grid(actor), _grid_manager.get_unit_grid(target), _grid_manager)
 	query.cover_type = evaluation.cover_type
+	query.shield_applied = evaluation.shield_applied
+	query.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
+	query.shield_damage_multiplier = evaluation.shield_damage_multiplier
 	query.reason = evaluation.reason if validation.accepted else validation.message
 	query.aim_point = evaluation.aim_point
 	query.obstruction = evaluation.obstruction
@@ -158,8 +165,8 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	var actor := actor_registry.resolve(request.actor_id)
 	var target := actor_registry.resolve(request.target_id)
 	var aim_bonus := _aim_bonus(actor)
-	var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d()) if is_instance_valid(actor) and is_instance_valid(target) else null
-	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), aim_bonus) if is_instance_valid(actor) and is_instance_valid(target) else null
+	var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), 0, shield_enabled) if is_instance_valid(actor) and is_instance_valid(target) else null
+	var evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), aim_bonus, shield_enabled) if is_instance_valid(actor) and is_instance_valid(target) else null
 	# Supply semantics belong to the reconstructed battle rules, never to caller-
 	# controlled request details. Historical replay setup disables them globally.
 	var uses_supply := supply_points_enabled
@@ -182,7 +189,11 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.aim_applied = aim_bonus > 0
 	result.roll = _combat_rng.randf() * 100.0
 	result.did_hit = AttackActionResult.roll_hits(result.roll, result.hit_chance)
-	result.damage = ATTACK_DAMAGE if result.did_hit else 0
+	result.environmental_cover = evaluation.cover_type
+	result.shield_applied = evaluation.shield_applied
+	result.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
+	result.shield_damage_multiplier = evaluation.shield_damage_multiplier
+	result.damage = maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier)) if result.did_hit else 0
 	result.actor_ap_before = actor.stats.current_ap
 	result.supply_points_before = actor.stats.current_supply_points
 	result.max_supply_points = actor.stats.max_supply_points
@@ -202,7 +213,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.aiming_after = actor.tactical_state.is_aiming if actor.tactical_state else false
 	if result.did_hit:
 		target.defer_stat_presentation = true
-		target.stats.take_damage(ATTACK_DAMAGE)
+		target.stats.take_damage(result.damage)
 		target.defer_stat_presentation = false
 	if _objective_manager:
 		_objective_manager.evaluate_outcome_after_action_commit()
@@ -263,6 +274,90 @@ func query_aim(actor_id: StringName) -> AimQueryResult:
 	query.validation = _validate_aim(actor)
 	return query
 
+func query_shield(actor_id: StringName, threat_id: StringName = &"") -> ShieldQueryResult:
+	var query := ShieldQueryResult.new()
+	query.actor_id = actor_id
+	query.threat_id = threat_id
+	query.state_revision = state_revision
+	var actor := actor_registry.resolve(actor_id)
+	var threat := actor_registry.resolve(threat_id) if not threat_id.is_empty() else null
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		if actor.shield_capability:
+			query.cost = ActionCost.new(actor.shield_capability.stance_ap_cost)
+			query.actor_ap_after = maxi(0, actor.stats.current_ap - query.cost.ap)
+			query.protected_arc_degrees = actor.shield_capability.protected_arc_degrees
+			query.accuracy_modifier = actor.shield_capability.accuracy_modifier
+			query.damage_multiplier = actor.shield_capability.damage_multiplier
+		if is_instance_valid(threat):
+			var actor_cell := _grid_manager.get_unit_grid(actor)
+			var threat_cell := _grid_manager.get_unit_grid(threat)
+			query.facing = Vector2(float(threat_cell.x - actor_cell.x), float(threat_cell.z - actor_cell.z)).normalized()
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	if threat_id.is_empty():
+		query.validation = _validate_shield_actor(actor)
+		if not query.validation.accepted:
+			return query
+		for candidate_id in actor_registry.get_ids():
+			if candidate_id == actor_id: continue
+			var candidate_query := query_shield(actor_id, candidate_id)
+			query.candidate_results[candidate_id] = candidate_query
+			if candidate_query.is_legal(): query.legal_threat_ids.append(candidate_id)
+		if query.legal_threat_ids.is_empty():
+			query.validation = ActionValidationResult.reject(&"no_hostile_targets", "No living hostile is available to face", state_revision)
+		return query
+	query.validation = _validate_shield(actor, threat)
+	return query
+
+func submit_shield(request: TacticalActionRequest, suppress_presentation := false) -> ShieldActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind != &"shield":
+		validation = ActionValidationResult.reject(&"unsupported_action", "Expected a Shield Stance request", state_revision)
+		_reject(validation)
+		return null
+	var query := query_shield(request.actor_id, request.target_id)
+	if not query.is_legal():
+		_reject(query.validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	_set_busy(true)
+	is_committing = true
+	last_transaction_id += 1
+	var result := ShieldActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.cost = query.cost
+	result.actor_ap_before = actor.stats.current_ap
+	result.aiming_before = actor.tactical_state.is_aiming
+	result.shielding_before = actor.tactical_state.is_shielding
+	result.facing = query.facing
+	result.protected_arc_degrees = query.protected_arc_degrees
+	result.accuracy_modifier = query.accuracy_modifier
+	result.damage_multiplier = query.damage_multiplier
+	actor.stats.consume_ap(query.cost.ap)
+	actor.tactical_state.clear_aim()
+	actor.tactical_state.establish_shield(query.facing)
+	result.actor_ap_after = actor.stats.current_ap
+	result.aiming_after = actor.tactical_state.is_aiming
+	result.shielding_after = actor.tactical_state.is_shielding
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	action_committed.emit(result)
+	result.presentation_suppressed = suppress_presentation
+	if _present_shield.is_valid(): await _present_shield.call(result)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	_set_busy(false)
+	return result
+
 func submit_aim(request: TacticalActionRequest, suppress_presentation := false) -> AimActionResult:
 	var validation := _validate_request(request)
 	if not validation.accepted:
@@ -288,6 +383,7 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	result.actor_ap_before = actor.stats.current_ap
 	result.aiming_before = actor.tactical_state.is_aiming
 	actor.stats.consume_ap(AIM_AP_COST)
+	_cancel_shield(actor)
 	actor.tactical_state.establish_aim()
 	result.actor_ap_after = actor.stats.current_ap
 	result.aiming_after = actor.tactical_state.is_aiming
@@ -411,6 +507,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	actor.stats.consume_ap(result.cost.ap)
 	_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
 	_cancel_aim(actor)
+	_cancel_shield(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	state_revision += 1
 	result.committed_revision = state_revision
@@ -439,6 +536,9 @@ func make_reload_request(actor: TacticalUnit, source: TacticalActionRequest.Sour
 
 func make_aim_request(actor: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.simple(&"aim", actor.tactical_id if is_instance_valid(actor) else &"", state_revision, source)
+
+func make_shield_request(actor: TacticalUnit, threat: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.new(&"shield", actor.tactical_id if is_instance_valid(actor) else &"", threat.tactical_id if is_instance_valid(threat) else &"", state_revision, source)
 
 func make_move_request(actor: TacticalUnit, target_cell: Vector3i, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell, state_revision, source)
@@ -531,6 +631,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 		actor.stats.consume_ap(ATTACK_AP_COST)
 		actor.stats.is_defending = true
 	_cancel_aim(actor)
+	_cancel_shield(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.defending_after = actor.stats.is_defending
 	state_revision += 1
@@ -577,6 +678,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 		_reject(validation)
 		return null
 	_cancel_aim(actor)
+	_cancel_shield(actor)
 	result.objective_state_after = _capture_objectives()
 	result.mission_counters_after = _capture_mission_counters()
 	result.actor_removed_from_roster = not _actor_is_in_roster(actor)
@@ -603,7 +705,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"rescue", &"extract"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"rescue", &"extract"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -641,6 +743,8 @@ func _validate_attack(actor: TacticalUnit, target: TacticalUnit, evaluation: Com
 	var actor_result := _validate_actor(actor)
 	if not actor_result.accepted:
 		return actor_result
+	if shield_enabled and actor.tactical_state and actor.tactical_state.is_shielding and actor.shield_capability and not actor.shield_capability.attacks_allowed:
+		return ActionValidationResult.reject(&"shield_stance_restriction", "Cannot Attack while Shield Stance is active", state_revision)
 	if require_supply and not actor.stats.has_supply_points(ATTACK_SUPPLY_COST):
 		return ActionValidationResult.reject(&"insufficient_supply_points", "Not enough Supply Points", state_revision)
 	if not is_instance_valid(target) or not target.stats:
@@ -657,6 +761,8 @@ func _validate_reload(actor: TacticalUnit) -> ActionValidationResult:
 	var actor_result := _validate_actor(actor)
 	if not actor_result.accepted:
 		return actor_result
+	if shield_enabled and actor.tactical_state and actor.tactical_state.is_shielding and actor.shield_capability and not actor.shield_capability.reload_allowed:
+		return ActionValidationResult.reject(&"shield_stance_restriction", "Cannot Reload while Shield Stance is active", state_revision)
 	if actor.stats.current_supply_points >= actor.stats.max_supply_points:
 		return ActionValidationResult.reject(&"resource_full", "Supply Points are already full", state_revision)
 	return ActionValidationResult.allow(state_revision)
@@ -673,6 +779,37 @@ func _validate_aim(actor: TacticalUnit) -> ActionValidationResult:
 		return ActionValidationResult.reject(&"already_aiming", "Actor is already Aimed", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
+func _validate_shield(actor: TacticalUnit, threat: TacticalUnit) -> ActionValidationResult:
+	var actor_result := _validate_shield_actor(actor)
+	if not actor_result.accepted:
+		return actor_result
+	if not is_instance_valid(threat) or not threat.stats or threat.stats.is_defeated:
+		return ActionValidationResult.reject(&"target_missing", "Choose a living hostile to face", state_revision)
+	if not FactionRules.are_hostile(actor.faction, threat.faction):
+		return ActionValidationResult.reject(&"target_not_hostile", "Shield Stance must face a hostile threat", state_revision)
+	if _grid_manager.get_unit_grid(actor) == _grid_manager.get_unit_grid(threat):
+		return ActionValidationResult.reject(&"invalid_direction", "Shield direction could not be determined", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _validate_shield_actor(actor: TacticalUnit) -> ActionValidationResult:
+	if not shield_enabled:
+		return ActionValidationResult.reject(&"unsupported_action", "Shield Stance is unavailable in this historical replay", state_revision)
+	var actor_result := _validate_actor(actor)
+	if not actor_result.accepted:
+		return actor_result
+	if not actor.shield_capability:
+		return ActionValidationResult.reject(&"missing_capability", "Unit has no shield capability", state_revision)
+	var capability_error := actor.shield_capability.validation_message()
+	if not capability_error.is_empty():
+		return ActionValidationResult.reject(&"invalid_capability", capability_error, state_revision)
+	if actor.stats.current_ap < actor.shield_capability.stance_ap_cost:
+		return ActionValidationResult.reject(&"insufficient_ap", "Not enough AP", state_revision)
+	if not actor.tactical_state:
+		return ActionValidationResult.reject(&"state_unavailable", "Actor has no tactical-state component", state_revision)
+	if actor.tactical_state.is_shielding:
+		return ActionValidationResult.reject(&"already_shielding", "Shield Stance is already active", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
 func _aim_bonus(actor: TacticalUnit) -> int:
 	if not aim_enabled or not is_instance_valid(actor) or not actor.tactical_state:
 		return 0
@@ -680,6 +817,9 @@ func _aim_bonus(actor: TacticalUnit) -> int:
 
 func _cancel_aim(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_aim() if is_instance_valid(actor) and actor.tactical_state else false
+
+func _cancel_shield(actor: TacticalUnit) -> bool:
+	return actor.tactical_state.clear_shield() if shield_enabled and is_instance_valid(actor) and actor.tactical_state else false
 
 func _code_for_reason(reason: String) -> StringName:
 	match reason:

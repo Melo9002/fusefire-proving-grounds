@@ -73,6 +73,21 @@ func present_aim(result: AimActionResult) -> void:
 		return
 	print_rich("[color=gold][Aim][/color] %s prepares the next shot (+%d)" % [unit.name, result.accuracy_bonus])
 
+func present_shield(result: ShieldActionResult) -> void:
+	var unit := _actor(result.request.actor_id)
+	if not is_instance_valid(unit):
+		result.presentation_error = "Shield presenter could not find actor '%s'" % result.request.actor_id
+		return
+	if result.presentation_suppressed:
+		return
+	var threat := _actor(result.request.target_id)
+	if is_instance_valid(threat):
+		unit.face_world_position(threat.global_position)
+	# Shield-specific animation is deferred. Authoritative state remains visible
+	# in the HUD and combat diagnostics while the normal idle pose is safe.
+	print_rich("[color=cyan][Shield][/color] %s protects a %.0f degree arc" % [unit.name, result.protected_arc_degrees])
+	await _safe_delay(0.2)
+
 func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not is_instance_valid(unit):

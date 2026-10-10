@@ -24,10 +24,10 @@ func _test_catalog_and_independent_state() -> void:
 	check(TacticalArchetypeCatalog.validate_catalog().is_empty(), "Archetype catalog definitions are valid and unique")
 	check(TacticalArchetypeCatalog.all().size() == 5, "Laboratory exposes five initial archetypes")
 	var shield := TacticalArchetypeCatalog.get_definition(&"shieldbearer")
-	check(shield != null and shield.shield_capable, "Shieldbearer declares shield capability")
+	check(shield != null and shield.shield_capability != null, "Shieldbearer declares shield capability")
 	for definition in TacticalArchetypeCatalog.all():
 		if definition.archetype_id != &"shieldbearer":
-			check(not definition.shield_capable, "%s does not advertise a shield" % definition.display_name)
+			check(definition.shield_capability == null, "%s does not advertise a shield" % definition.display_name)
 
 	var first := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit
 	var second := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit
@@ -38,10 +38,10 @@ func _test_catalog_and_independent_state() -> void:
 	check(first.stats != second.stats, "Spawned units own independent runtime stats")
 	first.stats.current_hp = 1
 	first.stats.current_supply_points = 0
-	first.shield_capable = false
+	first.shield_capability = null
 	check(second.stats.current_hp != 1, "Changing one unit's HP does not affect another")
 	check(second.stats.current_supply_points == 4 and shield.max_supply_points == 4, "Runtime Supply Points stay independent and never mutate the shared archetype")
-	check(second.shield_capable and shield.shield_capable, "Runtime capability changes do not mutate shared Resources")
+	check(second.shield_capability != null and shield.shield_capability != null, "Runtime capability changes do not mutate shared Resources")
 	var override := TacticalArchetype.new()
 	override.max_hp = 140
 	override.max_ap = 3

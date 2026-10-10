@@ -48,7 +48,7 @@ func _test_aim_contract_and_attack() -> void:
 	var attack := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(attack != null and attack.aim_applied and attack.aim_bonus == 15 and not actor.tactical_state.is_aiming, "Committed Attack consumes Aim on its seeded outcome")
 	check(actor.stats.current_supply_points == 0 and attack.supply_points_cost == 1, "Aimed Attack consumes exactly one SP")
-	check(attack.to_replay_record().schema_version == 4, "Aimed Attack uses the explicit payload schema extension")
+	check(attack.to_replay_record().schema_version == 5, "Current Attack uses the shield-aware payload schema extension")
 	level.queue_free()
 	await process_frame
 	await process_frame

@@ -89,6 +89,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		# A missing flag identifies a configuration authored before SP existed.
 		"supply_points_enabled": bool(source.get("supply_points_enabled", false)),
 		"aim_enabled": bool(source.get("aim_enabled", false)),
+		"shield_enabled": bool(source.get("shield_enabled", false)),
 		"generated_map": bool(source.get("generated_map", false)),
 		"seed": int(source.get("seed", 1)),
 		"map_size": [size.x, size.y],
@@ -113,6 +114,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"ally_archetypes": _name_array(data.get("ally_archetypes", [])),
 		"supply_points_enabled": bool(data.get("supply_points_enabled", false)),
 		"aim_enabled": bool(data.get("aim_enabled", false)),
+		"shield_enabled": bool(data.get("shield_enabled", false)),
 		"generated_map": bool(data.get("generated_map", false)),
 		"seed": int(data.get("seed", 1)),
 		"map_size": Vector2i(int(raw_size[0]), int(raw_size[1])) if raw_size.size() == 2 else Vector2i(32, 24),

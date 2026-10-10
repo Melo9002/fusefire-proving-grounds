@@ -24,6 +24,10 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change Aim bonus or its attack calculation | `TacticalState.AIM_ACCURACY_BONUS`; `TacticalActionService.query_attack()` passes it once to `CombatRules.evaluate_attack()` | Aim test plus combat cover/elevation tests |
 | Change Aim lifetime | `units/components/tactical_state.gd`; `TurnManager._set_active_unit()` supplies the round/phase activation token | Aim test plus replay and AI determinism |
 | Change Aim HUD, presentation, or AI preference | `ui/action_hud_controller.gd`, `TacticalActionPresenter.present_aim()`, and `AIController._try_aim_for_attack()` | Aim test, presenter test, and AI determinism |
+| Tune Shield Stance cost, arc, accuracy, or damage | Open `units/capabilities/physical_shield.tres`; assign or remove it from an archetype's **Shield Capability** field | `tests/shield_stance_test.gd` plus cover/diagonal/elevation tests |
+| Change Shield Stance legality, lifetime, or committed direction | `TacticalActionService.query_shield()` / `submit_shield()` and the explicit shield fields in `units/components/tactical_state.gd` | `tests/shield_stance_test.gd` |
+| Change directional shield combat math | `CombatRules.get_shield_protection()` and `is_within_protected_arc()`; environmental cover remains in its existing cover functions | Shield test plus combat cover/trajectory tests |
+| Change Shield HUD or presentation | `ui/action_hud_controller.gd` and `TacticalActionPresenter.present_shield()`; the existing hostile-unit click chooses the protected direction | Shield test, presenter test, and a local battle |
 | Change the prediction facts available to UI and AI | `systems/actions/runtime/attack_query_result.gd`, populated by `TacticalActionService.query_attack()` | `tests/tactical_action_service_test.gd` |
 | Change attack-preview wording or AI preference | UI text: `BattleController._update_attack_preview`; button state: `ui/action_hud_controller.gd`; AI preference: `systems/ai/ai_target_scorer.gd` | Battle smoke plus AI target/determinism tests |
 | Change movement legality or AP/revision checks | `TacticalActionService.query_move()` and `BattleController._query_move_data()` | `tests/tactical_action_service_test.gd` plus movement smoke tests |
@@ -66,7 +70,7 @@ compatibility wrapper for older Prototype 1 scripts.
 
 ## Tactical archetypes and the roster laboratory
 
-Testing archetypes live in `units/archetypes/` as ordinary `.tres` Resources. Open one in Godot to edit its display name, description, starting stat overrides, or demonstrated capability fields. `generic.tres` preserves the existing baseline; Shieldbearer, Marksman, Sentinel, and Support are laboratory presets rather than permanent classes. Only Shieldbearer currently declares a capability, and that declaration grants no defensive bonus before Task 01.11.4.
+Testing archetypes live in `units/archetypes/` as ordinary `.tres` Resources. Open one in Godot to edit its display name, description, starting stat overrides, or demonstrated capability fields. `generic.tres` preserves the existing baseline; Shieldbearer, Marksman, Sentinel, and Support are laboratory presets rather than permanent classes. Shieldbearer references `units/capabilities/physical_shield.tres`; other archetypes have no shield capability.
 
 To add another test archetype:
 
@@ -77,6 +81,8 @@ To add another test archetype:
 Supply Points are the prototype's limited normal-attack supply, not a general energy or stamina pool. The current defaults are 4 maximum/current SP, 1 SP per normal Attack, and a 1 AP Reload that restores the reserve to maximum. Runtime values live on the unit's `UnitStats`; changing one unit cannot mutate its shared archetype Resource. The action HUD reads the same Attack and Reload queries used by AI, while committed changes come only from `TacticalActionService`.
 
 Aim is independent per-unit runtime state in the `TacticalState` child of `TacticalUnit`. It costs 1 AP and adds 15 percentage points before the existing accuracy clamp. The next accepted normal Attack consumes it on hit or miss; accepted Move, Reload, Wait/Defend, Rescue, or Extract cancels it. Rejected actions leave it untouched. Aim survives AP exhaustion and expires immediately before that actor's first action query in its next round/faction-phase activation. The component is the discoverable home for future explicit stance fields, but it is intentionally not a generic effect system.
+
+Shield Stance costs 1 AP. In the action HUD, select **SHIELD — 1 AP**, then click the hostile unit whose direction should be protected. The committed direction stays fixed even if that threat later moves; ordinary movement never asks for facing input. Attacks arriving within the inclusive 120-degree arc receive the Resource's separate accuracy and damage modifiers. The stance expires at the start of the unit's next activation, and accepted Move, Aim, Wait/legacy Defend, Rescue, or Extract cancels it. Attack and Reload are unavailable while it is active. Runtime stance state belongs to the unit, never to the shared Resource.
 
 The existing Match Setup **Forces** tab owns roster selection. Its three counts synchronize the Player, Enemy, and AI Ally arrays in `ui/match_setup.gd`; new slots start Generic and removed slots come from the end. `BattleConfiguration` carries those IDs through replay reconstruction, and `BattleLevel._create_unit()` resolves and applies the preset before adding the unit to the scene tree. Faction, AI ownership, stable tactical ID, and mission roles remain separate concerns.
 

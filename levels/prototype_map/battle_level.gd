@@ -40,6 +40,7 @@ var mission_definition: MissionDefinition
 var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var supply_points_enabled := true
 var aim_enabled := true
+var shield_enabled := true
 var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
@@ -82,11 +83,13 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	ai_difficulty = config.difficulty
 	supply_points_enabled = config.supply_points_enabled
 	aim_enabled = config.aim_enabled
+	shield_enabled = config.shield_enabled
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed
 	battle_controller.supply_points_enabled = supply_points_enabled
 	battle_controller.aim_enabled = aim_enabled
+	battle_controller.shield_enabled = shield_enabled
 	var normalized := BattleConfigurationData.new()
 	normalized.player_count = player_unit_count
 	normalized.enemy_count = enemy_unit_count
@@ -103,6 +106,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.difficulty = ai_difficulty
 	normalized.supply_points_enabled = supply_points_enabled
 	normalized.aim_enabled = aim_enabled
+	normalized.shield_enabled = shield_enabled
 	normalized.refinery = use_refinery_map
 	_replay_configuration = normalized.to_replay()
 

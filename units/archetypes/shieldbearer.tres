@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="TacticalArchetype" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="TacticalArchetype" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://units/archetypes/tactical_archetype.gd" id="1"]
+[ext_resource type="Resource" path="res://units/capabilities/physical_shield.tres" id="2"]
 
 [resource]
 script = ExtResource("1")
 archetype_id = &"shieldbearer"
 display_name = "Shieldbearer"
-description = "Shield-capable test preset. Directional shield gameplay arrives in 01.11.4."
-shield_capable = true
+description = "Carries a physical shield and can commit to a directional Shield Stance."
+shield_capability = ExtResource("2")

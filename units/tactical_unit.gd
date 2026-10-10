@@ -21,7 +21,7 @@ signal attack_presented(target_world_position: Vector3)
 ## Starting preset selected by Match Setup. Mechanics query capabilities, not this ID.
 @export var archetype_id: StringName = &"generic"
 ## Prepared for 01.11.4; grants no defensive benefit by itself.
-@export var shield_capable := false
+@export var shield_capability: ShieldCapability
 @export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
@@ -90,7 +90,7 @@ func _apply_character_presentation() -> void:
 
 func _on_stats_defeated() -> void:
 	if tactical_state:
-		tactical_state.clear_aim()
+		tactical_state.reset()
 	if visual_adapter and not defer_stat_presentation:
 		visual_adapter.present_defeat()
 	defeated.emit(self)
