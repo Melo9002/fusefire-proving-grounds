@@ -89,6 +89,10 @@ func _check_rescue() -> void:
 	var carrier := level.turn_manager.player_units[0]
 	var original_speed := carrier.stats.speed
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, approach)
+	var rescue_query := level.battle_controller.query_mission(&"rescue", carrier, target)
+	var rescue_inventory := level.battle_controller.query_mission(&"rescue", carrier)
+	check(rescue_query.is_legal() and rescue_inventory.legal_target_ids.has(target.tactical_id), "Rescue query and target inventory expose the same eligible mission actor")
+	check(rescue_query.cost.ap == 0, "Rescue query preserves the existing zero-AP interaction cost")
 	level.battle_controller.unit_moved.emit(carrier, approach + Vector3i.LEFT, approach)
 	check(level.objective_manager.get_objective(&"rescue").is_completed(), "Rescue completes beside its neutral target")
 	check(carrier.is_carrying_unit() and carrier.stats.speed == original_speed - 2, "The rescuer carries the VIP with reduced movement")
@@ -140,6 +144,8 @@ func _check_extract() -> void:
 	exhausted.stats.current_ap = 0
 	level.battle_controller.grid_manager.update_unit_position(exhausted, exhausted.grid_position, destinations[0])
 	check(level.objective_manager.can_extract(exhausted), "An exhausted non-active unit may use the zero-AP Extract action")
+	var extract_query := level.battle_controller.query_mission(&"extract", exhausted)
+	check(extract_query.is_legal() and extract_query.cost.ap == 0, "Shared Extract query preserves exhausted-unit and zero-AP semantics")
 	var world_bar := _world_bar_for(level, exhausted)
 	check(world_bar != null, "An eligible unit has a world-space action bar")
 	if world_bar:

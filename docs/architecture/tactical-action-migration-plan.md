@@ -952,3 +952,13 @@ MIRA Zero is the supported runtime path. Reusable character presentation scripts
 | Rescue / Extract | `TacticalActionPresenter.present_mission` | Unit adapter for pickup/boarding; camera director for framing |
 
 Ordinary sequencing changes therefore start in one file and usually require at most one action-specific collaborator. Tactical rules, objective commits, and replay serialization do not need editing for a visual timing change.
+
+## Task 01.8 implemented remaining-action queries
+
+Wait, legacy Defend, Rescue, and Extract were already authoritative typed transactions when this milestone began. The missing boundary was read-only availability: the HUD and AI still inferred Wait from AP or called objective predicates directly. `SimpleActionQueryResult` now exposes legality, AP cost/prediction, activation-ending behavior, and revision. `MissionActionQueryResult` exposes legality, zero-AP cost, revision, and a deterministic Rescue target inventory. Submission re-runs these queries immediately before commit.
+
+`ObjectiveManager` remains the discoverable owner of Rescue and Extract domain rules and mutations. `TacticalActionService` owns lifecycle, revisions, transaction identity, and replay-visible results. `UnitWorldBar` and `AIController` consume `query_mission()` for tactical facts; the AI still owns preference and routing. Automatic Reach/Rescue remains a synchronous consequence of Move and therefore produces no nested replay action.
+
+Turn progression and mission departure remain dedicated authoritative commands. They advance the shared revision through the established external-command bridge, but are not forced into unit action target/cost semantics. The two current mission interactions do not justify a generic interaction registry; doors, terminals, or mission equipment should trigger a fresh review once they reveal concrete repeated contracts.
+
+Defend remains explicit schema-2 replay compatibility. Current gameplay and AI author Wait instead. XCOM's Hunker Down, reserve-action Overwatch, Reload, and reaction listeners demonstrate useful future separation between availability, costs, persistent effects, triggers, state commitment, and visualization, but FuseFire does not yet have approved mechanics requiring those systems.

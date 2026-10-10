@@ -99,6 +99,7 @@ func _update_button_states() -> void:
 
 	var has_ap = stats.current_ap >= 1 and not battle_controller.is_action_in_progress
 	var attack_query := battle_controller.query_attack(unit)
+	var wait_query := battle_controller.query_simple(&"wait", unit)
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
@@ -112,7 +113,8 @@ func _update_button_states() -> void:
 		else:
 			attack_button.tooltip_text = ""
 	if end_unit_button:
-		end_unit_button.disabled = not has_ap
+		end_unit_button.disabled = not wait_query.is_legal()
+		end_unit_button.tooltip_text = "" if wait_query.is_legal() else wait_query.reason()
 
 func _disable_all_buttons() -> void:
 	if move_button: move_button.disabled = true

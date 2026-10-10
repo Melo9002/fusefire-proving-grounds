@@ -124,9 +124,11 @@ func _refresh_extract_button() -> void:
 		var manually_controlled_enemy := _turn_manager != null and _battle_controller != null \
 			and _turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN \
 			and _turn_manager.active_unit == _target_unit and _battle_controller.debug_enemy_control
-		extract_button.visible = _objective_manager != null \
+		var extract_query := _battle_controller.query_mission(&"extract", _target_unit as TacticalUnit) if _battle_controller else null
+		extract_button.visible = extract_query != null \
 			and (player_controlled or manually_controlled_enemy) \
-			and _objective_manager.can_extract(_target_unit as TacticalUnit)
+			and extract_query.is_legal()
+		extract_button.tooltip_text = "" if extract_query == null or extract_query.is_legal() else extract_query.reason()
 		extract_button.disabled = not extract_button.visible
 
 func _refresh_carry_label() -> void:

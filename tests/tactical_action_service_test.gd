@@ -130,6 +130,13 @@ func _check_move_and_wait_pipeline() -> void:
 	var start := grid.get_unit_grid(actor)
 	var fingerprint_before := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
 	var rng_before := service.get_combat_rng_state()
+	var wait_query := service.query_simple(&"wait", actor.tactical_id)
+	var defend_query := service.query_simple(&"defend", actor.tactical_id)
+	_check(wait_query.is_legal() and wait_query.cost.spend_all_remaining_ap and wait_query.cost.ends_activation and wait_query.actor_ap_after == 0, "Wait query exposes its existing spend-all and activation-ending semantics")
+	_check(defend_query.is_legal() and defend_query.cost.ap == 1 and defend_query.actor_ap_after == 1, "Legacy Defend query exposes its one-AP cost")
+	_check(service.state_revision == 0 and service.get_combat_rng_state() == rng_before, "Simple-action queries consume no RNG and advance no revision")
+	var unsupported_simple := service.query_simple(&"reload", actor.tactical_id)
+	_check(not unsupported_simple.is_legal() and unsupported_simple.validation.code == &"unsupported_action", "Unknown simple actions return a structured rejection")
 	var inventory := service.query_move(actor.tactical_id)
 	var destination := inventory.legal_destination_cells[0] if not inventory.legal_destination_cells.is_empty() else Vector3i(-1, -1, -1)
 	_check(destination.x >= 0, "Movement fixture finds a legal destination")
@@ -164,6 +171,8 @@ func _check_move_and_wait_pipeline() -> void:
 	var wait := await service.submit_simple(service.make_simple_request(&"wait", actor, TacticalActionRequest.Source.PLAYER), true)
 	_check(wait != null and actor.stats.current_ap == 0 and service.state_revision == 2, "Wait exhausts AP and advances the shared revision")
 	_check(wait.presentation_suppressed and wait.presentation_completed, "Suppressed Wait still completes its lifecycle")
+	var exhausted_wait := service.query_simple(&"wait", actor.tactical_id)
+	_check(not exhausted_wait.is_legal() and exhausted_wait.validation.code == &"insufficient_ap", "Wait availability uses the same final AP validation as submission")
 	level.queue_free()
 	await process_frame
 	await process_frame

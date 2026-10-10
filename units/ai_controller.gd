@@ -114,7 +114,7 @@ func _execute_turn() -> void:
 		return
 	var has_moved := false
 	current_mission_intent = _get_ai_mission_intent()
-	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
+	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
 		if await _try_mission_step(false) == MissionStepResult.EXTRACTED:
 			_is_executing = false
 			return
@@ -201,7 +201,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.RESCUE:
 		var rescue_target := _objective_manager.find_mission_actor(current_mission_intent.target_ids)
-		if rescue_target and _objective_manager.can_rescue(unit, rescue_target):
+		if rescue_target and _can_use_mission_action(&"rescue", unit, rescue_target):
 			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Wait")
 			if await _objective_manager.try_rescue(unit, rescue_target):
 				return MissionStepResult.INTERACTED
@@ -222,7 +222,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 				_record_ai_decision("Move", str(_last_move_destination), "Improved cover and separation while the survival timer is active.", "Attack, Wait")
 				return MissionStepResult.MOVED
 		return MissionStepResult.NONE
-	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
+	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
 		var carrier := _objective_manager.find_rescue_carrier(unit.faction)
 		if carrier and carrier != unit:
 			if await _clear_carrier_route(carrier): return MissionStepResult.MOVED
@@ -256,7 +256,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		else await _move_toward_cell(destination, has_moved)
 	if moved_toward_objective:
 		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Wait")
-		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _objective_manager.can_extract(unit):
+		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
 			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Wait")
 			if await _objective_manager.try_extract(unit):
 				await get_tree().process_frame
@@ -268,6 +268,11 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			await get_tree().process_frame
 		return MissionStepResult.MOVED
 	return MissionStepResult.NONE
+
+func _can_use_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
+	if not is_instance_valid(battle_controller):
+		return false
+	return battle_controller.query_mission(kind, actor, target).is_legal()
 
 func _get_ai_mission_intent() -> MissionIntentData:
 	if not _objective_manager:

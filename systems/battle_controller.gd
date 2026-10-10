@@ -408,6 +408,20 @@ func query_move(actor: TacticalUnit, target_cell := Vector3i(-1, -1, -1)) -> Mov
 		return unavailable
 	return action_service.query_move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell)
 
+func query_simple(kind: StringName, actor: TacticalUnit) -> SimpleActionQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := SimpleActionQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_simple(kind, actor.tactical_id if is_instance_valid(actor) else &"")
+
+func query_mission(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> MissionActionQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := MissionActionQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", target.tactical_id if is_instance_valid(target) else &"")
+
 func set_debug_enemy_control(enabled: bool) -> void:
 	if debug_enemy_control == enabled:
 		return

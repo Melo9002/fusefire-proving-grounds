@@ -276,20 +276,74 @@ func make_simple_request(kind: StringName, actor: TacticalUnit, source: Tactical
 func make_mission_request(kind: StringName, actor: TacticalUnit, target: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", target.tactical_id if is_instance_valid(target) else &"", state_revision, source)
 
+func query_simple(kind: StringName, actor_id: StringName) -> SimpleActionQueryResult:
+	var query := SimpleActionQueryResult.new()
+	query.kind = kind
+	query.actor_id = actor_id
+	query.state_revision = state_revision
+	var actor := actor_registry.resolve(actor_id)
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		query.cost = ActionCost.new(
+			actor.stats.current_ap if kind == &"wait" else ATTACK_AP_COST,
+			kind == &"wait",
+			kind == &"wait"
+		)
+		query.actor_ap_after = 0 if kind == &"wait" else maxi(0, actor.stats.current_ap - ATTACK_AP_COST)
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	if kind not in [&"wait", &"defend"]:
+		query.validation = ActionValidationResult.reject(&"unsupported_action", "Expected Wait or Defend", state_revision)
+		return query
+	query.validation = _validate_actor(actor)
+	return query
+
+func query_mission(kind: StringName, actor_id: StringName, target_id: StringName = &"") -> MissionActionQueryResult:
+	var query := MissionActionQueryResult.new()
+	query.kind = kind
+	query.actor_id = actor_id
+	query.target_id = target_id
+	query.state_revision = state_revision
+	query.cost = ActionCost.new(0, false, false, false)
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	if kind not in [&"rescue", &"extract"] or not _validate_mission.is_valid():
+		query.validation = ActionValidationResult.reject(&"unsupported_action", "Mission action is unavailable", state_revision)
+		return query
+	var actor := actor_registry.resolve(actor_id)
+	if not is_instance_valid(actor) or not actor.stats:
+		query.validation = ActionValidationResult.reject(&"actor_missing", "Acting unit is unavailable", state_revision)
+		return query
+	if actor.stats.is_defeated:
+		query.validation = ActionValidationResult.reject(&"actor_defeated", "Acting unit is defeated", state_revision)
+		return query
+	if kind == &"rescue" and target_id.is_empty():
+		for candidate_id in actor_registry.get_ids():
+			if candidate_id == actor_id: continue
+			var candidate_query := query_mission(kind, actor_id, candidate_id)
+			query.candidate_results[candidate_id] = candidate_query
+			if candidate_query.is_legal(): query.legal_target_ids.append(candidate_id)
+		query.validation = ActionValidationResult.allow(state_revision)
+		return query
+	var target := actor_registry.resolve(target_id) if not target_id.is_empty() else null
+	query.validation = _validate_mission.call(kind, actor, target, state_revision)
+	return query
+
 func submit_simple(request: TacticalActionRequest, suppress_presentation := false) -> SimpleActionResult:
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
 		return null
-	if request.kind not in [&"wait", &"defend"]:
-		validation = ActionValidationResult.reject(&"unsupported_action", "Expected Wait or Defend", state_revision)
-		_reject(validation)
-		return null
-	var actor := actor_registry.resolve(request.actor_id)
-	validation = _validate_actor(actor)
+	var query := query_simple(request.kind, request.actor_id)
+	validation = query.validation
 	if not validation.accepted:
 		_reject(validation)
 		return null
+	var actor := actor_registry.resolve(request.actor_id)
 	is_busy = true
 	is_committing = true
 	last_transaction_id += 1
@@ -321,13 +375,13 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	if not validation.accepted:
 		_reject(validation)
 		return null
-	if request.kind not in [&"rescue", &"extract"] or not _validate_mission.is_valid() or not _commit_mission.is_valid():
+	if not _commit_mission.is_valid():
 		validation = ActionValidationResult.reject(&"unsupported_action", "Mission action is unavailable", state_revision)
 		_reject(validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
 	var target := actor_registry.resolve(request.target_id) if not request.target_id.is_empty() else null
-	validation = _validate_mission.call(request.kind, actor, target, state_revision)
+	validation = query_mission(request.kind, request.actor_id, request.target_id).validation
 	if not validation.accepted:
 		_reject(validation)
 		return null

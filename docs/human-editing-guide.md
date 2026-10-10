@@ -18,6 +18,9 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change the prediction facts available to UI and AI | `systems/actions/runtime/attack_query_result.gd`, populated by `TacticalActionService.query_attack()` | `tests/tactical_action_service_test.gd` |
 | Change attack-preview wording or AI preference | UI text: `BattleController._update_attack_preview`; button state: `ui/action_hud_controller.gd`; AI preference: `systems/ai/ai_target_scorer.gd` | Battle smoke plus AI target/determinism tests |
 | Change movement legality or AP/revision checks | `TacticalActionService.query_move()` and `BattleController._query_move_data()` | `tests/tactical_action_service_test.gd` plus movement smoke tests |
+| Change Wait or legacy Defend availability and AP behavior | `TacticalActionService.query_simple()` / `submit_simple()` | `tests/tactical_action_service_test.gd` |
+| Change Rescue or Extract eligibility and objective effects | Domain rules: `systems/objectives/objective_manager.gd`; shared availability/transaction boundary: `TacticalActionService.query_mission()` / `submit_mission()` | `tests/core_objectives_smoke.gd` plus rescue, departure, and battle replay tests |
+| Change which mission interactions AI prefers | `units/ai_controller.gd`; it consumes `BattleController.query_mission()` for legality | Mission AI and evacuation tests |
 | Change reachability, route cost, diagonal, or corner rules | `systems/grid/pathfinder.gd`; terrain stoppability and traversal links come from map data | Diagonal, elevation, vault, and vertical traversal tests |
 | Change occupancy commitment | `systems/grid/grid_manager.gd`; Move commits through `TacticalActionService.submit_move()` | Tactical action service and replay tests |
 | Change player path/range display | `BattleController.update_unit_movement_zone()` and `_update_movement_preview()` consume the shared Move query | `tests/battle_smoke.gd` |
