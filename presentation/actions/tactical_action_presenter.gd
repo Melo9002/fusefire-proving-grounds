@@ -180,6 +180,16 @@ func present_simple(result: SimpleActionResult) -> void:
 		await _finish_camera(true)
 
 func present_mission(result: MissionActionResult, actor: TacticalUnit, _target: TacticalUnit) -> void:
+	if result.request.kind == &"interact_terminal":
+		if result.presentation_suppressed: return
+		if not is_instance_valid(actor):
+			result.presentation_error = "Terminal presenter could not find actor '%s'" % result.request.actor_id
+			return
+		var camera_presented := false
+		if _camera_available(): camera_presented = await action_camera_director.present(actor, &"interact_terminal", result.target_position, actor.stats.current_ap, true)
+		await _safe_delay(0.25)
+		await _finish_camera(camera_presented)
+		return
 	if result.request.kind == &"extract":
 		await _present_extract(result, actor)
 		_cleanup_extracted_actor(actor)

@@ -9,6 +9,11 @@ var cost := ActionCost.new()
 var state_revision: int
 var legal_target_ids: Array[StringName] = []
 var candidate_results: Dictionary[StringName, MissionActionQueryResult] = {}
+var actor_ap_before := 0
+var actor_ap_after := 0
+var terminal_position := Vector3i(-1, -1, -1)
+var terminal_activated := false
+var objective_id: StringName
 
 func is_legal() -> bool:
 	return validation != null and validation.accepted

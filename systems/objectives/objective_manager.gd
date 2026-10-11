@@ -9,9 +9,12 @@ signal objective_completed(state: MissionObjectiveState)
 signal objective_failed(state: MissionObjectiveState)
 signal mission_report_changed
 signal authoritative_command_committed(record: Dictionary)
+signal terminals_initialized
+signal terminal_state_changed(state: MissionTerminalState)
 
 @export var mission: MissionDefinition
 var _states: Dictionary[StringName, MissionObjectiveState] = {}
+var _terminal_states: Dictionary[StringName, MissionTerminalState] = {}
 var _turn_manager: TurnManager
 var _battle_controller: BattleController
 var _grid_manager: GridManager
@@ -29,8 +32,11 @@ func load_mission(definition: MissionDefinition) -> bool:
 	if not _is_valid_definition(definition): return false
 	mission = definition
 	_states.clear()
+	_terminal_states.clear()
 	for objective in mission.objectives:
 		_states[objective.objective_id] = MissionObjectiveState.new(objective)
+	for terminal in mission.terminals:
+		_terminal_states[terminal.terminal_id] = MissionTerminalState.new(terminal)
 	mission_loaded.emit(mission)
 	_print_active_objectives()
 	return true
@@ -38,6 +44,7 @@ func load_mission(definition: MissionDefinition) -> bool:
 func clear_mission() -> void:
 	mission = null
 	_states.clear()
+	_terminal_states.clear()
 
 func begin_tracking(turn_manager: TurnManager, battle_controller: BattleController, grid_manager: GridManager) -> void:
 	_turn_manager = turn_manager
@@ -48,6 +55,75 @@ func begin_tracking(turn_manager: TurnManager, battle_controller: BattleControll
 	battle_controller.unit_moved.connect(_on_unit_moved)
 	battle_controller.unit_defeated_in_battle.connect(_on_unit_defeated)
 	_initialize_extraction_totals()
+
+func initialize_terminals(pathfinder: Pathfinder) -> void:
+	if not mission or not _grid_manager: return
+	var fallback_cells := _grid_manager.map_data.get_objective_zone(&"reach")
+	for state in _terminal_states.values():
+		var cell: Vector3i = state.definition.grid_position
+		if not _grid_manager.map_data.has_cell(cell):
+			for candidate in fallback_cells:
+				if not _grid_manager.is_cell_occupied(candidate):
+					cell = candidate
+					break
+			state.definition.grid_position = cell
+		var data := _grid_manager.get_cell_data(cell)
+		if not data or _grid_manager.is_cell_occupied(cell):
+			push_error("Mission terminal '%s' has no valid battlefield cell." % state.definition.terminal_id)
+			continue
+		data.walkable = false
+		data.can_stop = false
+		pathfinder.configure_cell(cell, false, false, data.movement_cost)
+	terminals_initialized.emit()
+
+func get_terminal_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for terminal in mission.terminals if mission else []: result.append(terminal.terminal_id)
+	return result
+
+func get_terminal_state(terminal_id: StringName) -> MissionTerminalState:
+	return _terminal_states.get(terminal_id) as MissionTerminalState
+
+func capture_terminal_states() -> Dictionary:
+	var result := {}
+	for terminal_id in get_terminal_ids():
+		var state := get_terminal_state(terminal_id)
+		if state: result[String(terminal_id)] = state.to_dictionary()
+	return result
+
+func can_activate_terminal(actor: TacticalUnit, terminal_id: StringName) -> ActionValidationResult:
+	if not mission or not _grid_manager:
+		return ActionValidationResult.reject(&"terminal_unavailable", "Mission terminal is unavailable", 0)
+	var terminal := get_terminal_state(terminal_id)
+	if not terminal:
+		return ActionValidationResult.reject(&"terminal_missing", "Mission terminal does not exist", 0)
+	if terminal.is_activated:
+		return ActionValidationResult.reject(&"terminal_activated", "Mission terminal is already activated", 0)
+	if not is_instance_valid(actor) or not actor.stats:
+		return ActionValidationResult.reject(&"actor_missing", "Acting unit is unavailable", 0)
+	if actor.stats.is_defeated:
+		return ActionValidationResult.reject(&"actor_defeated", "Acting unit is defeated", 0)
+	var objective := get_objective(terminal.definition.objective_id)
+	if not objective or not objective.is_active():
+		return ActionValidationResult.reject(&"objective_inactive", "Terminal objective is not active", 0)
+	if not objective.definition.is_pursued_by(actor.faction):
+		return ActionValidationResult.reject(&"wrong_faction", "This faction cannot activate the terminal", 0)
+	var actor_cell := _grid_manager.get_unit_grid(actor)
+	if not CombatRules.can_reach_adjacent(actor_cell, terminal.definition.grid_position, _grid_manager):
+		return ActionValidationResult.reject(&"out_of_range", "Unit must stand adjacent to the terminal", 0)
+	return ActionValidationResult.allow(0)
+
+func activate_terminal(actor: TacticalUnit, terminal_id: StringName) -> bool:
+	if not can_activate_terminal(actor, terminal_id).accepted:
+		return false
+	var terminal := get_terminal_state(terminal_id)
+	terminal.is_activated = true
+	if not add_progress(terminal.definition.objective_id):
+		terminal.is_activated = false
+		return false
+	terminal_state_changed.emit(terminal)
+	mission_report_changed.emit()
+	return true
 
 func get_objective(id: StringName) -> MissionObjectiveState:
 	return _states.get(id) as MissionObjectiveState
@@ -384,6 +460,10 @@ func _is_valid_definition(candidate: MissionDefinition) -> bool:
 	for objective in candidate.objectives:
 		if not objective or objective.objective_id.is_empty() or objective.target_amount < 1 or ids.has(objective.objective_id): return false
 		ids[objective.objective_id] = true
+	var terminal_ids: Dictionary[StringName, bool] = {}
+	for terminal in candidate.terminals:
+		if not terminal or terminal.terminal_id.is_empty() or terminal_ids.has(terminal.terminal_id) or not ids.has(terminal.objective_id): return false
+		terminal_ids[terminal.terminal_id] = true
 	return true
 
 func _print_active_objectives() -> void:

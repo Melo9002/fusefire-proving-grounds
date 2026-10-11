@@ -9,6 +9,7 @@ const PRESETS := [
 	{"title": "Survive", "description": "Keep the squad alive for three rounds.", "kind": MissionObjectiveDefinition.Kind.SURVIVE},
 	{"title": "Extract", "description": "Bring the mission target to extraction.", "kind": MissionObjectiveDefinition.Kind.EXTRACT},
 	{"title": "Enemy Evacuation", "description": "Defeat every enemy before any can escape.", "kind": MissionObjectiveDefinition.Kind.ENEMY_EVACUATION},
+	{"title": "Terminal", "description": "Reach and activate the mission terminal.", "kind": MissionObjectiveDefinition.Kind.INTERACT_TERMINAL},
 ]
 
 static func get_preset_names() -> Array[String]:
@@ -43,6 +44,13 @@ static func create_mission(preset_index: int, enemy_count: int, include_vip := f
 			enemy_escape.zone_id = &"enemy_extract"
 			enemy_escape.pursuing_factions = 1 << TacticalUnit.Faction.ENEMY
 			mission.objectives = [stop_escape, enemy_escape]
+		MissionObjectiveDefinition.Kind.INTERACT_TERMINAL:
+			var objective := _objective(&"activate_terminal", MissionObjectiveDefinition.Kind.INTERACT_TERMINAL, "Activate Terminal", 1, [&"main_terminal"])
+			var terminal := MissionTerminalDefinition.new()
+			terminal.terminal_id = &"main_terminal"
+			terminal.objective_id = objective.objective_id
+			mission.objectives = [objective]
+			mission.terminals = [terminal]
 		_:
 			var target := enemy_count if preset.kind == MissionObjectiveDefinition.Kind.ELIMINATE else 1
 			var ids: Array[StringName] = []

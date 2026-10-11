@@ -153,6 +153,8 @@ Overwatch is a typed tactical action, while reaction resolution belongs to the p
 
 A direct hostile attack against an Overwatch unit can consume the same single reservation as retaliation. The initiating shot resolves first; a surviving, capable watcher then returns fire through ordinary attack geometry. This nested event remains part of the initiating Attack transaction and cannot provoke another reaction.
 
+Mission terminals use the existing typed mission-action boundary. `MissionDefinition` owns Inspector-authored terminal identity, placement, and objective linkage; `ObjectiveManager` owns runtime activation. `interact_terminal` is a free objective interaction like Rescue and Extract: an active eligible actor may use it at zero AP from a legal adjacent cell. When a Move spends the actor's last AP beside an available terminal, `TurnManager` keeps that actor selected until the explicit free interaction is used; no proximity callback activates it automatically. `TacticalActionService` commits terminal and objective state in one transaction/revision, while `MissionTerminalPresenter` and the HUD only display the committed state.
+
 Exhausted and dead portraits remain visible but cannot be selected. A dead portrait remains as a record after its world unit leaves the active roster.
 
 `UnitSelectionVisualizer` listens to the same `active_unit_changed` signal and applies a thin material overlay to every mesh below the selected friendly. It clears the previous overlay before applying the next one and does not outline AI units during the enemy phase. This keeps selection feedback separate from unit rules and supports future unit scenes with multiple meshes.

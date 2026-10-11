@@ -29,6 +29,9 @@ var automatic_annihilation_results := true
 ## Authoritative AP may already be committed, but selection waits until the
 ## action lifecycle has completed its blocking presentation.
 var action_completion_barrier: Callable
+## Optional read-only rule for a free objective interaction that an exhausted
+## active unit may still perform before selection advances.
+var zero_ap_continuation_available: Callable
 
 func start_battle() -> void:
 	battle_result = BattleResult.ONGOING
@@ -170,7 +173,15 @@ func _advance_selection_if_needed(exhausted_unit_id: int) -> void:
 		return
 	if not is_instance_valid(exhausted_unit) or not exhausted_unit.stats or exhausted_unit.stats.current_ap > 0:
 		return
+	if zero_ap_continuation_available.is_valid() and zero_ap_continuation_available.call(exhausted_unit):
+		return
+	_advance_from_exhausted_player(exhausted_unit)
 
+func complete_free_objective_action(unit: TacticalUnit) -> void:
+	if is_instance_valid(unit) and unit.stats and unit.stats.current_ap <= 0:
+		_advance_selection_if_needed.call_deferred(unit.get_instance_id())
+
+func _advance_from_exhausted_player(exhausted_unit: TacticalUnit) -> void:
 	var start_index = player_units.find(exhausted_unit)
 	for offset in range(1, player_units.size() + 1):
 		var candidate = player_units[(start_index + offset) % player_units.size()]

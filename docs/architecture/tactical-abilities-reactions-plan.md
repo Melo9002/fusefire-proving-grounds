@@ -92,7 +92,7 @@ Add a narrow concrete-node contract:
 
 `InteractionOption` contains stable option ID, label, AP cost, range rule, and optional objective tag. A separate small registry maps stable interaction IDs to nodes. `TacticalActionService` owns revision/AP/transaction/busy behavior and calls the target once during commit.
 
-First example: a mission terminal with `inactive → activated`, one-grid-step adjacency, 1 AP, idempotent rejection after activation, an ObjectiveManager event during commit, and a simple presenter cue. A door would also require path-graph mutation, so it is not the first proof.
+First example: a mission terminal with `inactive → activated`, one-grid-step adjacency, zero AP, idempotent rejection after activation, an ObjectiveManager event during commit, and a simple presenter cue. Terminal activation follows Rescue and Extract as a free objective interaction; it still requires the current eligible actor and a legal adjacent cell. A door would also require path-graph mutation, so it is not the first proof.
 
 ### AI integration
 
@@ -215,7 +215,9 @@ The prerequisite planning fix is also implemented as `Pathfinder.calculate_path_
 
 ### 6. Mission terminal interaction
 
-Add the minimal option/target contract, stable registry, terminal example, service transaction, objective hook, presentation, and AI mission score. Test discovery, adjacency, AP, idempotency, missing targets, mission completion, and replay. Exclude doors and hacking minigames.
+**Implemented in 01.11.6.** `MissionDefinition.terminals` is the Inspector-authored terminal list, while `ObjectiveManager` owns each terminal's runtime activation state and its objective link. There is no generic interactable registry: the explicit `interact_terminal` mission action queries stable terminal IDs, validates same-elevation/corner-safe adjacency and faction ownership, commits activation plus objective progress once, and presents the committed result.
+
+Activation costs zero AP and zero SP, matching Rescue and Extract. A zero-AP active actor remains eligible, but defeated, inactive, wrong-faction, stale, busy, distant, blocked-corner, missing, and already-activated requests are rejected without mutation. Schema-8 mission payloads record terminal position, before/after activation, AP evidence, objective state, transaction, and revision; historical schema-2 Rescue/Extract records remain unchanged. The Terminal mission preset supplies one authored example. AI policy for seeking or activating it remains deferred to 01.11.7.
 
 ### 7. Cross-mechanic AI and integration
 
@@ -234,7 +236,7 @@ This order deliberately establishes resources, lifetime state, and modifier cont
 | Change reaction order/checkpoints | one focused movement-reaction resolver |
 | Change camera/animation/feedback | action-specific presenter and visual-adapter methods |
 | Change AI preference | focused scorer consuming query results |
-| Change terminal behavior | terminal script implementing the small interaction contract |
+| Change terminal authoring or mission linkage | `MissionTerminalDefinition`, `MissionDefinition.terminals`, and `ObjectiveManager` terminal methods |
 | Diagnose replay | typed serializer plus existing replay diagnostics |
 
 Do not create ability registries, factories, generic effect stacks, event buses, or equipment hierarchies. If the service becomes hard to navigate, extract cohesive action-specific rule helpers while its public query/submit map stays explicit.

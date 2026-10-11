@@ -210,6 +210,7 @@ func _initialize_objectives() -> void:
 	if mission_definition == null:
 		return
 	objective_manager.begin_tracking(turn_manager, battle_controller, battle_controller.grid_manager)
+	objective_manager.initialize_terminals(battle_controller.pathfinder)
 	battle_controller.bind_objective_manager(objective_manager)
 	if objective_manager.get_objective(&"rescue"):
 		_spawn_rescue_target()

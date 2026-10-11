@@ -30,6 +30,7 @@
 [ext_resource type="Script" uid="uid://c8a8mxj62ynma" path="res://ui/objective_hud.gd" id="30_objective_hud"]
 [ext_resource type="Script" uid="uid://dtndlvy51i1x4" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
 [ext_resource type="Script" uid="uid://dw8rxo54ggelm" path="res://presentation/overlays/shot_result_feedback.gd" id="32_shot_result"]
+[ext_resource type="Script" path="res://presentation/objectives/mission_terminal_presenter.gd" id="34_terminal_presenter"]
 
 [sub_resource type="Environment" id="Environment_8x357"]
 background_mode = 1
@@ -657,6 +658,11 @@ grid_manager = NodePath("../../Systems/GridManager")
 script = ExtResource("29_objective_zones")
 grid_manager = NodePath("../../Systems/GridManager")
 
+[node name="MissionTerminalPresenter" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("objective_manager", "grid_manager")]
+script = ExtResource("34_terminal_presenter")
+objective_manager = NodePath("../../Systems/ObjectiveManager")
+grid_manager = NodePath("../../Systems/GridManager")
+
 [node name="ShotTrajectoryVisualizer" type="Node3D" parent="Visualizers" unique_id=1439917441 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("27_shot_trajectory")
 grid_manager = NodePath("../../Systems/GridManager")
@@ -711,7 +717,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "aim_button", "shield_button", "overwatch_button", "end_unit_button", "supply_points_label", "tactical_state_label")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "aim_button", "shield_button", "overwatch_button", "interact_button", "end_unit_button", "supply_points_label", "tactical_state_label")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -724,6 +730,7 @@ reload_button = NodePath("ActionBar/ReloadButton")
 aim_button = NodePath("ActionBar/AimButton")
 shield_button = NodePath("ActionBar/ShieldButton")
 overwatch_button = NodePath("ActionBar/OverwatchButton")
+interact_button = NodePath("ActionBar/InteractButton")
 end_unit_button = NodePath("ActionBar/EndUnitButton")
 supply_points_label = NodePath("ActionBar/SupplyPointsLabel")
 tactical_state_label = NodePath("ActionBar/TacticalStateLabel")
@@ -758,6 +765,10 @@ text = "Shield (1 AP)"
 [node name="OverwatchButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2
 text = "Overwatch (Ends Activation)"
+
+[node name="InteractButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+layout_mode = 2
+text = "Interact (Free)"
 
 [node name="SupplyPointsLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2

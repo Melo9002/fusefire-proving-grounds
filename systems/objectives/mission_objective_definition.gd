@@ -9,6 +9,7 @@ enum Kind {
 	SURVIVE,
 	EXTRACT,
 	ENEMY_EVACUATION,
+	INTERACT_TERMINAL,
 }
 
 @export var objective_id: StringName

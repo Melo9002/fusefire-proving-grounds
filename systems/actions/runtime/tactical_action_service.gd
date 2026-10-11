@@ -629,6 +629,9 @@ func make_simple_request(kind: StringName, actor: TacticalUnit, source: Tactical
 func make_mission_request(kind: StringName, actor: TacticalUnit, target: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", target.tactical_id if is_instance_valid(target) else &"", state_revision, source)
 
+func make_terminal_request(actor: TacticalUnit, terminal_id: StringName, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.mission(&"interact_terminal", actor.tactical_id if is_instance_valid(actor) else &"", terminal_id, state_revision, source)
+
 func query_simple(kind: StringName, actor_id: StringName) -> SimpleActionQueryResult:
 	var query := SimpleActionQueryResult.new()
 	query.kind = kind
@@ -664,7 +667,7 @@ func query_mission(kind: StringName, actor_id: StringName, target_id: StringName
 	if not service_check.accepted:
 		query.validation = service_check
 		return query
-	if kind not in [&"rescue", &"extract"] or not _validate_mission.is_valid():
+	if kind not in [&"rescue", &"extract", &"interact_terminal"] or not _validate_mission.is_valid():
 		query.validation = ActionValidationResult.reject(&"unsupported_action", "Mission action is unavailable", state_revision)
 		return query
 	var actor := actor_registry.resolve(actor_id)
@@ -673,6 +676,27 @@ func query_mission(kind: StringName, actor_id: StringName, target_id: StringName
 		return query
 	if actor.stats.is_defeated:
 		query.validation = ActionValidationResult.reject(&"actor_defeated", "Acting unit is defeated", state_revision)
+		return query
+	query.actor_ap_before = actor.stats.current_ap
+	query.actor_ap_after = query.actor_ap_before
+	if kind == &"interact_terminal":
+		var actor_check := _validate_free_objective_actor(actor)
+		if not actor_check.accepted:
+			query.validation = actor_check
+			return query
+		if target_id.is_empty():
+			for candidate_id in _objective_manager.get_terminal_ids() if is_instance_valid(_objective_manager) else []:
+				var candidate_query := query_mission(kind, actor_id, candidate_id)
+				query.candidate_results[candidate_id] = candidate_query
+				if candidate_query.is_legal(): query.legal_target_ids.append(candidate_id)
+			query.validation = ActionValidationResult.allow(state_revision) if not query.legal_target_ids.is_empty() else ActionValidationResult.reject(&"no_terminal_in_range", "No inactive terminal is in interaction range", state_revision)
+			return query
+		var terminal := _objective_manager.get_terminal_state(target_id) if is_instance_valid(_objective_manager) else null
+		if terminal:
+			query.terminal_position = terminal.definition.grid_position
+			query.terminal_activated = terminal.is_activated
+			query.objective_id = terminal.definition.objective_id
+		query.validation = _validate_mission.call(kind, actor, null, state_revision, target_id)
 		return query
 	if kind == &"rescue" and target_id.is_empty():
 		for candidate_id in actor_registry.get_ids():
@@ -683,7 +707,7 @@ func query_mission(kind: StringName, actor_id: StringName, target_id: StringName
 		query.validation = ActionValidationResult.allow(state_revision)
 		return query
 	var target := actor_registry.resolve(target_id) if not target_id.is_empty() else null
-	query.validation = _validate_mission.call(kind, actor, target, state_revision)
+	query.validation = _validate_mission.call(kind, actor, target, state_revision, target_id)
 	return query
 
 func submit_simple(request: TacticalActionRequest, suppress_presentation := false) -> SimpleActionResult:
@@ -750,9 +774,16 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	result.request = request
 	result.actor_position = actor.global_position
 	result.target_position = target.global_position if is_instance_valid(target) else actor.global_position
+	result.actor_ap_before = actor.stats.current_ap
+	if request.kind == &"interact_terminal":
+		var terminal_before := _objective_manager.get_terminal_state(request.target_id) if is_instance_valid(_objective_manager) else null
+		if terminal_before:
+			result.terminal_position = terminal_before.definition.grid_position
+			result.target_position = _grid_manager.grid_to_world(result.terminal_position)
+			result.terminal_activated_before = terminal_before.is_activated
 	result.objective_state_before = _capture_objectives()
 	result.mission_counters_before = _capture_mission_counters()
-	if not _commit_mission.call(request.kind, actor, target):
+	if not _commit_mission.call(request.kind, actor, target, request.target_id):
 		is_committing = false
 		_set_busy(false)
 		validation = ActionValidationResult.reject(&"commit_failed", "Mission action failed during authoritative commit", state_revision)
@@ -764,6 +795,10 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	result.objective_state_after = _capture_objectives()
 	result.mission_counters_after = _capture_mission_counters()
 	result.actor_removed_from_roster = not _actor_is_in_roster(actor)
+	result.actor_ap_after = actor.stats.current_ap
+	if request.kind == &"interact_terminal":
+		var terminal_after := _objective_manager.get_terminal_state(request.target_id) if is_instance_valid(_objective_manager) else null
+		result.terminal_activated_after = terminal_after.is_activated if terminal_after else false
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
@@ -787,7 +822,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"rescue", &"extract"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"rescue", &"extract", &"interact_terminal"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -819,6 +854,15 @@ func _validate_actor(actor: TacticalUnit) -> ActionValidationResult:
 		return ActionValidationResult.reject(&"wrong_activation", "Unit is not allowed to act now", state_revision)
 	if not actor.stats.has_enough_ap(ATTACK_AP_COST):
 		return ActionValidationResult.reject(&"insufficient_ap", "Not enough AP", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _validate_free_objective_actor(actor: TacticalUnit) -> ActionValidationResult:
+	if not is_instance_valid(actor) or not actor.stats:
+		return ActionValidationResult.reject(&"actor_missing", "Acting unit is unavailable", state_revision)
+	if actor.stats.is_defeated:
+		return ActionValidationResult.reject(&"actor_defeated", "Acting unit is defeated", state_revision)
+	if not _turn_manager or not _turn_manager.can_unit_act(actor):
+		return ActionValidationResult.reject(&"wrong_activation", "Unit is not allowed to act now", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
 func _validate_attack(actor: TacticalUnit, target: TacticalUnit, evaluation: CombatRules.AttackEvaluation = null, require_supply := true) -> ActionValidationResult:

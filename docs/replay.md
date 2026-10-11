@@ -77,6 +77,8 @@ New recordings explicitly set `overwatch_enabled`. Overwatch registration is one
 
 Schema-7 Attack payloads may likewise contain one retaliation event when the target was on Overwatch. The original shot resolves first and the surviving target's response remains inside the same transaction/revision. Older Attack schemas remain accepted and omit the field.
 
+Mission terminal activation uses payload schema 8. The record identifies the actor and terminal, preserves the authored terminal cell, AP before/after (normally unchanged because interaction is free), activation before/after, objective state, transaction, revision, and expected post-commit fingerprint. Playback resubmits the same `interact_terminal` request through `TacticalActionService`. Terminal state appears in fingerprints only when a mission defines terminals, so historical missions and schema-2 Rescue/Extract recordings retain their original fingerprints and payload meaning.
+
 ## XCOM history lesson and future rewind
 
 XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.

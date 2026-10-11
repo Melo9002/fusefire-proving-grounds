@@ -79,6 +79,11 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 	if objectives and objectives.mission:
 		for state in objectives.get_objectives():
 			parts.append("objective=%s,%d,%d" % [state.definition.objective_id, state.status, state.progress])
+		for terminal_id in objectives.get_terminal_ids():
+			var terminal := objectives.get_terminal_state(terminal_id)
+			if terminal:
+				var cell := terminal.definition.grid_position
+				parts.append("terminal=%s,%d,%d,%d,%d" % [terminal_id, cell.x, cell.y, cell.z, int(terminal.is_activated)])
 		parts.append("extraction=%d,%d,%d" % [objectives.extracted_vips, objectives.extracted_units, objectives.escaped_enemies])
 	return "|".join(parts)
 

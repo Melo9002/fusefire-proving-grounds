@@ -205,6 +205,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
+	turn_manager.zero_ap_continuation_available = _has_free_terminal_interaction
 	if not is_instance_valid(action_service):
 		_initialize_action_service()
 	_configure_action_service(manager)
@@ -264,18 +265,25 @@ func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
 	unit_moved.emit(unit, start_cell, target_cell)
 
-func _validate_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit, revision: int) -> ActionValidationResult:
+func _validate_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit, revision: int, target_id: StringName = &"") -> ActionValidationResult:
 	if not is_instance_valid(_objective_manager):
 		return ActionValidationResult.reject(&"mission_unavailable", "Mission rules are unavailable", revision)
 	if kind == &"rescue":
 		return ActionValidationResult.allow(revision) if _objective_manager.can_rescue(actor, target) else ActionValidationResult.reject(&"illegal_rescue", "Rescue target is not currently reachable", revision)
 	if kind == &"extract":
 		return ActionValidationResult.allow(revision) if _objective_manager.can_extract(actor) else ActionValidationResult.reject(&"illegal_extract", "Unit cannot extract now", revision)
+	if kind == &"interact_terminal":
+		var validation := _objective_manager.can_activate_terminal(actor, target_id)
+		return ActionValidationResult.allow(revision) if validation.accepted else ActionValidationResult.reject(validation.code, validation.message, revision)
 	return ActionValidationResult.reject(&"unsupported_action", "Unknown mission action", revision)
 
-func _commit_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit) -> bool:
+func _commit_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit, target_id: StringName = &"") -> bool:
 	if kind == &"rescue": return _objective_manager.complete_rescue(actor, target)
 	if kind == &"extract": return _objective_manager.complete_extraction(actor)
+	if kind == &"interact_terminal":
+		var committed := _objective_manager.activate_terminal(actor, target_id)
+		if committed: _objective_manager.evaluate_outcome_after_action_commit()
+		return committed
 	return false
 
 func _orient_units_toward_opposition(units: Array[TacticalUnit]) -> void:
@@ -541,6 +549,13 @@ func query_mission(kind: StringName, actor: TacticalUnit, target: TacticalUnit =
 		return unavailable
 	return action_service.query_mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", target.tactical_id if is_instance_valid(target) else &"")
 
+func query_terminal(actor: TacticalUnit, terminal_id: StringName = &"") -> MissionActionQueryResult:
+	if not is_instance_valid(action_service):
+		var unavailable := MissionActionQueryResult.new()
+		unavailable.validation = ActionValidationResult.reject(&"service_unavailable", "Action service is unavailable", 0)
+		return unavailable
+	return action_service.query_mission(&"interact_terminal", actor.tactical_id if is_instance_valid(actor) else &"", terminal_id)
+
 func set_debug_enemy_control(enabled: bool) -> void:
 	if debug_enemy_control == enabled:
 		return
@@ -666,6 +681,17 @@ func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalU
 	if not is_instance_valid(action_service): return false
 	var result := await action_service.submit_mission(action_service.make_mission_request(kind, actor, target, _action_source()))
 	return result != null
+
+func try_terminal(actor: TacticalUnit, terminal_id: StringName) -> bool:
+	if not is_instance_valid(action_service): return false
+	var request := action_service.make_terminal_request(actor, terminal_id, _action_source())
+	var result := await action_service.submit_mission(request)
+	if result != null and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
+		turn_manager.complete_free_objective_action(actor)
+	return result != null
+
+func _has_free_terminal_interaction(actor: TacticalUnit) -> bool:
+	return is_instance_valid(action_service) and query_terminal(actor).is_legal()
 
 func _action_source() -> TacticalActionRequest.Source:
 	if replay_mode: return TacticalActionRequest.Source.REPLAY

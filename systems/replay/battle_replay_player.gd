@@ -306,6 +306,8 @@ func _execute(record: Dictionary) -> bool:
 			return await _replay_simple(record)
 		"rescue":
 			return await _replay_mission(record, actor)
+		"interact_terminal":
+			return await _replay_mission(record, actor)
 	return false
 
 func _replay_simple(record: Dictionary) -> bool:
