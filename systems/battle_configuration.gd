@@ -16,6 +16,8 @@ var supply_points_enabled := true
 var aim_enabled := true
 ## Old replay configurations omit this and retain pre-Shield semantics.
 var shield_enabled := true
+## Old replay configurations omit this and retain pre-Overwatch semantics.
+var overwatch_enabled := true
 var generated_map := false
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
@@ -36,6 +38,7 @@ func apply_replay(data: Dictionary) -> void:
 	supply_points_enabled = bool(data.get("supply_points_enabled", false))
 	aim_enabled = bool(data.get("aim_enabled", false))
 	shield_enabled = bool(data.get("shield_enabled", false))
+	overwatch_enabled = bool(data.get("overwatch_enabled", false))
 	normalize_rosters()
 	generated_map = data.get("generated_map", false)
 	battle_seed = data.get("seed", 1)
@@ -62,6 +65,7 @@ func to_replay() -> Dictionary:
 		"supply_points_enabled": supply_points_enabled,
 		"aim_enabled": aim_enabled,
 		"shield_enabled": shield_enabled,
+		"overwatch_enabled": overwatch_enabled,
 		"map_size": map_size,
 		"include_vip": include_vip,
 		"vip_behavior": vip_behavior,

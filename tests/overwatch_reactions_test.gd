@@ -1,0 +1,168 @@
+extends SceneTree
+
+const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
+var failures := 0
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+func check(condition: bool, message: String) -> void:
+	if not condition:
+		failures += 1
+		push_error(message)
+
+func _run() -> void:
+	await _check_registration_and_multiple_watchers()
+	await _check_lethal_interruption()
+	_check_hypothetical_occupancy()
+	var legacy := BattleConfiguration.new()
+	legacy.apply_replay({"player_count": 1, "enemy_count": 1, "supply_points_enabled": true, "aim_enabled": true, "shield_enabled": true})
+	check(not legacy.overwatch_enabled, "Historical replay configuration retains pre-Overwatch semantics")
+	check(BattleConfiguration.new().to_replay().overwatch_enabled, "New battles record Overwatch semantics explicitly")
+	print("Overwatch reactions: %d failure(s)" % failures)
+	quit(1 if failures else 0)
+
+func _check_registration_and_multiple_watchers() -> void:
+	var level := await _create_battle(2)
+	var service := level.battle_controller.action_service
+	var first: TacticalUnit = level.turn_manager.player_units[0]
+	var second: TacticalUnit = level.turn_manager.player_units[1]
+	var mover: TacticalUnit = level.turn_manager.enemy_units[0]
+	_clear_shot_geometry(level)
+	first.attack_range = 100
+	second.attack_range = 100
+	var rng_before := service.get_combat_rng_state()
+	var query := service.query_overwatch(first.tactical_id)
+	check(query.is_legal() and query.cost.spend_all_remaining_ap and query.actor_ap_after == 0, "Overwatch query exposes all-remaining-AP cost")
+	check(query.supply_points_before == 4 and service.get_combat_rng_state() == rng_before, "Overwatch query is read-only and requires available SP")
+	first.stats.current_supply_points = 0
+	check(service.query_overwatch(first.tactical_id).validation.code == &"insufficient_supply_points", "Overwatch requires one available SP without consuming it")
+	first.stats.current_supply_points = 4
+	service._set_busy(true)
+	check(service.query_overwatch(first.tactical_id).validation.code == &"action_busy", "Busy action service rejects Overwatch")
+	service._set_busy(false)
+	var stale := service.make_overwatch_request(first, TacticalActionRequest.Source.PLAYER)
+	stale.expected_revision = -1
+	check(await service.submit_overwatch(stale, true) == null and service.last_rejection.code == &"stale_revision", "Stale Overwatch is rejected without mutation")
+	first.tactical_state.establish_shield(Vector2.RIGHT)
+	check(service.query_overwatch(first.tactical_id).validation.code == &"shield_stance_restriction", "Shield and Overwatch cannot stack")
+	first.tactical_state.clear_shield()
+	first.tactical_state.establish_aim()
+	var armed_first := await service.submit_overwatch(service.make_overwatch_request(first, TacticalActionRequest.Source.PLAYER), true)
+	check(armed_first != null and first.stats.current_ap == 0 and first.stats.current_supply_points == 4 and first.tactical_state.is_overwatching and not first.tactical_state.is_aiming, "Registration spends all AP, preserves SP, cancels Aim, and arms one reaction")
+	first.stats.current_ap = 1
+	check(service.query_overwatch(first.tactical_id).validation.code == &"already_overwatching", "Duplicate Overwatch registration is rejected")
+	first.stats.current_ap = 0
+	level.turn_manager.call("_set_active_unit", second)
+	second.stats.is_defeated = true
+	check(service.query_overwatch(second.tactical_id).validation.code == &"actor_defeated", "Defeated actor cannot register Overwatch")
+	second.stats.is_defeated = false
+	var armed_second := await service.submit_overwatch(service.make_overwatch_request(second, TacticalActionRequest.Source.PLAYER), true)
+	check(armed_second != null and second.tactical_state.is_overwatching, "A second watcher registers through the same action path")
+	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
+	level.turn_manager.call("_set_active_unit", mover)
+	var move_query := service.query_move(mover.tactical_id)
+	var destination := _destination_with_path(service, mover, move_query.legal_destination_cells)
+	check(destination.x >= 0, "Reaction fixture finds a multi-cell legal move")
+	var revision_before := service.state_revision
+	var move := await service.submit_move(service.make_move_request(mover, destination, TacticalActionRequest.Source.AI), true)
+	check(move != null and move.reaction_events.size() == 2, "One Move resolves both eligible watchers as nested events")
+	if move and move.reaction_events.size() == 2:
+		check(move.reaction_events[0].watcher_id == first.tactical_id and move.reaction_events[1].watcher_id == second.tactical_id, "Multiple reactions use stable tactical actor ordering")
+	check(first.stats.current_supply_points == 3 and second.stats.current_supply_points == 3, "Each committed reaction consumes exactly one SP")
+	check(not first.tactical_state.is_overwatching and not second.tactical_state.is_overwatching, "Each registration is consumed after one shot")
+	check(service.state_revision == revision_before + 1 and move.committed_revision == service.state_revision, "Nested reactions retain one parent Move revision")
+	check(level.battle_controller.grid_manager.get_unit_at(move.target_cell) == mover, "Surviving mover commits final occupancy exactly once")
+	var move_record: Dictionary = level._replay_recorder.recording.actions[-1]
+	check(move_record.get("kind") == "move" and move_record.get("schema_version") == MoveActionResult.SCHEMA_VERSION, "Replay records the reactive movement as one typed parent action")
+	check(move_record.get("resolved", {}).get("reaction_events", []).size() == 2, "Replay keeps ordered reaction outcomes inside the parent Move payload")
+	check(ReplayRecordTools.validate_action_record(move_record, BattleReplayRecording.CURRENT_SCHEMA_VERSION).is_empty(), "Reactive Move payload passes replay schema validation")
+	level.queue_free()
+	await process_frame
+	await process_frame
+
+func _check_lethal_interruption() -> void:
+	var level := await _create_battle(1)
+	var service := level.battle_controller.action_service
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	var mover: TacticalUnit = level.turn_manager.enemy_units[0]
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	check(await service.submit_overwatch(service.make_overwatch_request(watcher, TacticalActionRequest.Source.PLAYER), true) != null, "Lethal fixture registers Overwatch")
+	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
+	level.turn_manager.call("_set_active_unit", mover)
+	var inventory := service.query_move(mover.tactical_id)
+	var destination := _destination_with_path(service, mover, inventory.legal_destination_cells)
+	var preview := service.query_move(mover.tactical_id, destination)
+	mover.shield_capability = preload("res://units/capabilities/physical_shield.tres")
+	var checkpoint := preview.path_cells[1]
+	var watcher_cell := level.battle_controller.grid_manager.get_unit_grid(watcher)
+	mover.tactical_state.establish_shield(Vector2(watcher_cell.x - checkpoint.x, watcher_cell.z - checkpoint.z))
+	mover.stats.current_hp = 9
+	service._combat_rng.seed = _seed_for_hit(85)
+	var move := await service.submit_move(service.make_move_request(mover, destination, TacticalActionRequest.Source.AI), true)
+	check(move != null and move.movement_interrupted and move.reaction_events.size() == 1 and move.reaction_events[0].target_defeated, "Lethal reaction interrupts movement at its checkpoint")
+	if move:
+		check(move.reaction_events[0].shield_applied and move.reaction_events[0].damage == 9, "Reaction fire uses ordinary directional shield protection and damage rounding")
+		check(move.target_cell == move.reaction_events[0].checkpoint_cell and move.path_cells.size() < preview.path_cells.size(), "Interrupted Move shortens its authoritative path to the lethal checkpoint")
+		check(level.battle_controller.grid_manager.get_unit_at(move.start_cell) == null and level.battle_controller.grid_manager.get_unit_at(move.target_cell) == null, "Defeated mover leaves no ghost occupancy at origin or checkpoint")
+	check(watcher.stats.current_supply_points == 3 and not watcher.tactical_state.is_overwatching, "Lethal reaction consumes its SP and registration once")
+	level.queue_free()
+	await process_frame
+	await process_frame
+
+func _check_hypothetical_occupancy() -> void:
+	var pathfinder := Pathfinder.new()
+	for x in 3: pathfinder.add_walkable_cell(Vector3i(x, 0, 0), Vector3(x, 0, 0))
+	var grid := GridManager.new()
+	var actor := TacticalUnit.new()
+	var blocker := TacticalUnit.new()
+	grid.occupancy_map[Vector3i(1, 0, 0)] = actor
+	var before := grid.occupancy_map.duplicate()
+	var path := pathfinder.calculate_path_with_occupancy(Vector3i(2, 0, 0), Vector3i(0, 0, 0), grid, actor)
+	check(path.size() == 3 and grid.occupancy_map == before, "Hypothetical path treats the planning actor's origin as vacated without mutation")
+	grid.occupancy_map[Vector3i(1, 0, 0)] = blocker
+	check(pathfinder.calculate_path_with_occupancy(Vector3i(2, 0, 0), Vector3i(0, 0, 0), grid, actor).is_empty(), "Other actors still block hypothetical paths")
+	actor.free()
+	blocker.free()
+	grid.free()
+	var state := TacticalState.new()
+	state.begin_activation(1, 0)
+	state.establish_overwatch()
+	check(not state.begin_activation(1, 0) and state.is_overwatching, "Reselecting within one activation preserves Overwatch")
+	state.begin_activation(2, 0)
+	check(not state.is_overwatching, "Unused Overwatch expires at the next activation")
+	state.free()
+
+func _destination_with_path(service: TacticalActionService, mover: TacticalUnit, destinations: Array[Vector3i]) -> Vector3i:
+	for cell in destinations:
+		var query := service.query_move(mover.tactical_id, cell)
+		if query.is_legal() and query.path_cells.size() >= 3: return cell
+	return destinations[0] if not destinations.is_empty() else Vector3i(-1, -1, -1)
+
+func _seed_for_hit(chance: int) -> int:
+	for seed in range(1000):
+		var candidate := RandomNumberGenerator.new()
+		candidate.seed = seed
+		if candidate.randf() * 100.0 < chance: return seed
+	return 0
+
+func _clear_shot_geometry(level: BattleLevel) -> void:
+	for data: MapCellData in level.battle_controller.grid_manager.map_data.cells.values():
+		data.cover_type = MapCellData.CoverType.NONE
+		data.cover_height = 0.0
+		data.blocks_line_of_sight = false
+	level.battle_controller.grid_manager.map_data.rebuild_los_index()
+
+func _create_battle(player_count: int) -> BattleLevel:
+	var config := BattleConfiguration.new()
+	config.player_count = player_count
+	config.enemy_count = 1
+	config.battle_seed = 11505 + player_count
+	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 1, false)
+	var level := BATTLE_SCENE.instantiate() as BattleLevel
+	level.configure_battle(config)
+	root.add_child(level)
+	while level.turn_manager.current_round == 0: await process_frame
+	level.action_camera_director.frequency = ActionCameraDirector.Frequency.OFF
+	return level

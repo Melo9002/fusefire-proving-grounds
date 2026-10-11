@@ -88,6 +88,15 @@ func present_shield(result: ShieldActionResult) -> void:
 	print_rich("[color=cyan][Shield][/color] %s protects a %.0f degree arc" % [unit.name, result.protected_arc_degrees])
 	await _safe_delay(0.2)
 
+func present_overwatch(result: OverwatchActionResult) -> void:
+	var unit := _actor(result.request.actor_id)
+	if not is_instance_valid(unit):
+		result.presentation_error = "Overwatch presenter could not find actor '%s'" % result.request.actor_id
+		return
+	if result.presentation_suppressed: return
+	print_rich("[color=orange][Overwatch][/color] %s reserves a reaction shot (%d SP ready)" % [unit.name, result.supply_points_before])
+	await _safe_delay(0.2)
+
 func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not is_instance_valid(unit):
@@ -103,11 +112,36 @@ func present_move(result: MoveActionResult) -> void:
 		result.presentation_error = "Move actor left the scene before traversal"
 		await _finish_camera(camera_presented)
 		return
-	unit.move_along_path(result.presentation_path, result.visual_segments)
-	await _wait_for_movement(unit, result)
+	if result.reaction_events.is_empty():
+		unit.move_along_path(result.presentation_path, result.visual_segments)
+		await _wait_for_movement(unit, result)
+	else:
+		await _present_reactive_move(unit, result)
 	if is_instance_valid(unit): _snap_to_committed_destination(unit, result)
 	else: result.presentation_error = "Move actor left the scene during traversal"
 	await _finish_camera(camera_presented)
+
+func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> void:
+	var reactions_by_checkpoint := {}
+	for event in result.reaction_events:
+		if not reactions_by_checkpoint.has(event.checkpoint_index): reactions_by_checkpoint[event.checkpoint_index] = []
+		reactions_by_checkpoint[event.checkpoint_index].append(event)
+	for index in range(1, result.presentation_path.size()):
+		if not is_instance_valid(unit): return
+		var segment := PackedVector3Array([unit.global_position, result.presentation_path[index]])
+		var pose: StringName = result.visual_segments[index] if index < result.visual_segments.size() else &"move"
+		unit.move_along_path(segment, [&"move", pose])
+		await _wait_for_movement(unit, result)
+		for event in reactions_by_checkpoint.get(index, []):
+			var watcher := _actor(event.watcher_id)
+			if is_instance_valid(watcher): watcher.present_attack(unit.global_position)
+			if event.did_hit and is_instance_valid(unit):
+				unit.present_attack_impact(event.target_defeated)
+			print_rich("[color=orange][Overwatch][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
+			if event.target_defeated and is_instance_valid(unit):
+				unit.finish_defeat_presentation()
+				return
+			await _safe_delay(0.18)
 
 func present_simple(result: SimpleActionResult) -> void:
 	var unit := _actor(result.request.actor_id)

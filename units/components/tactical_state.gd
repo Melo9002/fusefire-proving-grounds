@@ -7,6 +7,7 @@ const AIM_ACCURACY_BONUS := 15
 
 var is_aiming := false
 var is_shielding := false
+var is_overwatching := false
 ## Normalized X/Z grid direction selected when Shield Stance commits.
 var shield_facing := Vector2.ZERO
 var activation_round := -1
@@ -22,6 +23,7 @@ func begin_activation(round_number: int, phase: int) -> bool:
 	activation_phase = phase
 	var changed_state := clear_aim()
 	changed_state = clear_shield() or changed_state
+	changed_state = clear_overwatch() or changed_state
 	return changed_state
 
 
@@ -56,10 +58,25 @@ func clear_shield() -> bool:
 	changed.emit()
 	return true
 
+func establish_overwatch() -> bool:
+	if is_overwatching:
+		return false
+	is_overwatching = true
+	changed.emit()
+	return true
+
+func clear_overwatch() -> bool:
+	if not is_overwatching:
+		return false
+	is_overwatching = false
+	changed.emit()
+	return true
+
 
 func reset() -> void:
 	is_aiming = false
 	is_shielding = false
+	is_overwatching = false
 	shield_facing = Vector2.ZERO
 	activation_round = -1
 	activation_phase = -1

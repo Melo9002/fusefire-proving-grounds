@@ -73,6 +73,8 @@ Compatibility is intentionally finite. There is no promise that every developmen
 
 The replay bar supports pause/play, 0.5×–4× pacing, and Free, Selection Focus, or Cinematic camera modes. Selection Focus uses `TacticalCamera.focus_unit_smoothly()`, including the same Inspector-authored transition duration and comfortable viewport margin used by live unit selection. It waits for that short transition before playing the action, while manual pan, drag, rotation, or zoom can interrupt it immediately. Pausing freezes tactical progression and in-progress movement while leaving the inspection camera responsive. Presentation can be suppressed in headless tests without changing RNG, transactions, fingerprints, or mission outcome.
 
+New recordings explicitly set `overwatch_enabled`. Overwatch registration is one schema-6 action record. Reaction shots are ordered dictionaries nested in the parent schema-6 Move result, including checkpoint, watcher ID, roll, hit chance, HP/SP deltas, cover, and shield facts. Replay resubmits registration and Move through the normal service, reruns checkpoint resolution, and compares the nested fields and post-commit fingerprint. Recordings without the flag use their historical fingerprints and accept the older schema-2 Move payload.
+
 ## XCOM history lesson and future rewind
 
 XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.

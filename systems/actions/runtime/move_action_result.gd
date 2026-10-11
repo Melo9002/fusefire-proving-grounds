@@ -1,7 +1,7 @@
 class_name MoveActionResult
 extends RefCounted
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 6
 var transaction_id: int
 var base_revision: int
 var committed_revision: int
@@ -17,6 +17,8 @@ var carried_actor_id: StringName = &""
 var path_cells: Array[Vector3i] = []
 var presentation_path := PackedVector3Array()
 var visual_segments: Array[StringName] = []
+var reaction_events: Array[OverwatchReactionEvent] = []
+var movement_interrupted := false
 var presentation_suppressed := false
 var presentation_completed := false
 var presentation_error := ""
@@ -28,7 +30,9 @@ func resolved_dictionary() -> Dictionary:
 	var serialized_path: Array[Array] = []
 	for cell in path_cells:
 		serialized_path.append([cell.x, cell.y, cell.z])
-	return {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "path": serialized_path, "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id)}
+	var serialized_reactions: Array[Dictionary] = []
+	for event in reaction_events: serialized_reactions.append(event.to_dictionary())
+	return {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "path": serialized_path, "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id), "reaction_events": serialized_reactions, "movement_interrupted": movement_interrupted}
 
 func compare_resolved(expected: Dictionary) -> String:
 	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")

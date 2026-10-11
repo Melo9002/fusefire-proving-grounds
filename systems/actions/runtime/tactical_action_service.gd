@@ -11,6 +11,8 @@ const ATTACK_DAMAGE := 25
 const ATTACK_SUPPLY_COST := 1
 const RELOAD_AP_COST := 1
 const AIM_AP_COST := 1
+const OVERWATCH_SUPPLY_COST := 1
+const OVERWATCH_ACCURACY_MODIFIER := -15
 
 var actor_registry := TacticalActorRegistry.new()
 var state_revision := 0
@@ -24,6 +26,8 @@ var supply_points_enabled := true
 ## False only while reproducing recordings created before Aim existed.
 var aim_enabled := true
 var shield_enabled := true
+## False only while reproducing recordings created before Overwatch existed.
+var overwatch_enabled := true
 
 var _turn_manager: TurnManager
 var _grid_manager: GridManager
@@ -33,6 +37,7 @@ var _present_attack: Callable
 var _present_reload: Callable
 var _present_aim: Callable
 var _present_shield: Callable
+var _present_overwatch: Callable
 var _query_move: Callable
 var _present_move: Callable
 var _movement_committed: Callable
@@ -50,6 +55,7 @@ func setup(
 	present_reload: Callable = Callable(),
 	present_aim: Callable = Callable(),
 	present_shield: Callable = Callable(),
+	present_overwatch: Callable = Callable(),
 	move_query_callback: Callable = Callable(),
 	present_move: Callable = Callable(),
 	movement_committed: Callable = Callable(),
@@ -66,6 +72,7 @@ func setup(
 	_present_reload = present_reload
 	_present_aim = present_aim
 	_present_shield = present_shield
+	_present_overwatch = present_overwatch
 	_query_move = move_query_callback
 	_present_move = present_move
 	_movement_committed = movement_committed
@@ -210,6 +217,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		actor.stats.consume_supply_points(ATTACK_SUPPLY_COST)
 	if result.aim_applied:
 		actor.tactical_state.clear_aim()
+	_cancel_overwatch(actor)
 	result.aiming_after = actor.tactical_state.is_aiming if actor.tactical_state else false
 	if result.did_hit:
 		target.defer_stat_presentation = true
@@ -343,6 +351,7 @@ func submit_shield(request: TacticalActionRequest, suppress_presentation := fals
 	result.damage_multiplier = query.damage_multiplier
 	actor.stats.consume_ap(query.cost.ap)
 	actor.tactical_state.clear_aim()
+	actor.tactical_state.clear_overwatch()
 	actor.tactical_state.establish_shield(query.facing)
 	result.actor_ap_after = actor.stats.current_ap
 	result.aiming_after = actor.tactical_state.is_aiming
@@ -353,6 +362,66 @@ func submit_shield(request: TacticalActionRequest, suppress_presentation := fals
 	action_committed.emit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_shield.is_valid(): await _present_shield.call(result)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	_set_busy(false)
+	return result
+
+func query_overwatch(actor_id: StringName) -> OverwatchQueryResult:
+	var query := OverwatchQueryResult.new()
+	query.actor_id = actor_id
+	query.state_revision = state_revision
+	var actor := actor_registry.resolve(actor_id)
+	if is_instance_valid(actor) and actor.stats:
+		query.actor_ap_before = actor.stats.current_ap
+		query.actor_ap_after = 0
+		query.cost = ActionCost.new(actor.stats.current_ap, true, true)
+		query.supply_points_before = actor.stats.current_supply_points
+		query.overwatching_before = actor.tactical_state.is_overwatching if actor.tactical_state else false
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	query.validation = _validate_overwatch(actor)
+	return query
+
+func submit_overwatch(request: TacticalActionRequest, suppress_presentation := false) -> OverwatchActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind != &"overwatch":
+		validation = ActionValidationResult.reject(&"unsupported_action", "Expected an Overwatch request", state_revision)
+		_reject(validation)
+		return null
+	var query := query_overwatch(request.actor_id)
+	if not query.is_legal():
+		_reject(query.validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	_set_busy(true)
+	is_committing = true
+	last_transaction_id += 1
+	var result := OverwatchActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.cost = query.cost
+	result.actor_ap_before = actor.stats.current_ap
+	result.supply_points_before = actor.stats.current_supply_points
+	result.overwatching_before = actor.tactical_state.is_overwatching
+	actor.stats.current_ap = 0
+	_cancel_aim(actor)
+	_cancel_shield(actor)
+	actor.tactical_state.establish_overwatch()
+	result.actor_ap_after = actor.stats.current_ap
+	result.overwatching_after = actor.tactical_state.is_overwatching
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	action_committed.emit(result)
+	result.presentation_suppressed = suppress_presentation
+	if _present_overwatch.is_valid(): await _present_overwatch.call(result)
 	result.presentation_completed = true
 	action_presented.emit(result)
 	_set_busy(false)
@@ -384,6 +453,7 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	result.aiming_before = actor.tactical_state.is_aiming
 	actor.stats.consume_ap(AIM_AP_COST)
 	_cancel_shield(actor)
+	_cancel_overwatch(actor)
 	actor.tactical_state.establish_aim()
 	result.actor_ap_after = actor.stats.current_ap
 	result.aiming_after = actor.tactical_state.is_aiming
@@ -426,6 +496,7 @@ func submit_reload(request: TacticalActionRequest, suppress_presentation := fals
 	actor.stats.consume_ap(RELOAD_AP_COST)
 	result.supply_points_restored = actor.stats.reload_supply_points()
 	_cancel_aim(actor)
+	_cancel_overwatch(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.supply_points_after = actor.stats.current_supply_points
 	state_revision += 1
@@ -505,14 +576,19 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.actor_ap_before = actor.stats.current_ap
 	result.objective_state_before = _capture_objectives()
 	actor.stats.consume_ap(result.cost.ap)
-	_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
+	_resolve_overwatch_reactions(actor, result)
+	if not actor.stats.is_defeated:
+		_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
+	else:
+		actor.grid_position = result.target_cell
 	_cancel_aim(actor)
 	_cancel_shield(actor)
+	_cancel_overwatch(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	if _movement_committed.is_valid(): _movement_committed.call(actor, result.start_cell, result.target_cell)
+	if not actor.stats.is_defeated and _movement_committed.is_valid(): _movement_committed.call(actor, result.start_cell, result.target_cell)
 	result.objective_state_after = _capture_objectives()
 	result.carried_actor_id = actor.carried_unit.tactical_id if actor.is_carrying_unit() else &""
 	action_committed.emit(result)
@@ -539,6 +615,9 @@ func make_aim_request(actor: TacticalUnit, source: TacticalActionRequest.Source)
 
 func make_shield_request(actor: TacticalUnit, threat: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.new(&"shield", actor.tactical_id if is_instance_valid(actor) else &"", threat.tactical_id if is_instance_valid(threat) else &"", state_revision, source)
+
+func make_overwatch_request(actor: TacticalUnit, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.simple(&"overwatch", actor.tactical_id if is_instance_valid(actor) else &"", state_revision, source)
 
 func make_move_request(actor: TacticalUnit, target_cell: Vector3i, source: TacticalActionRequest.Source) -> TacticalActionRequest:
 	return TacticalActionRequest.move(actor.tactical_id if is_instance_valid(actor) else &"", target_cell, state_revision, source)
@@ -632,6 +711,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 		actor.stats.is_defending = true
 	_cancel_aim(actor)
 	_cancel_shield(actor)
+	_cancel_overwatch(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.defending_after = actor.stats.is_defending
 	state_revision += 1
@@ -679,6 +759,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 		return null
 	_cancel_aim(actor)
 	_cancel_shield(actor)
+	_cancel_overwatch(actor)
 	result.objective_state_after = _capture_objectives()
 	result.mission_counters_after = _capture_mission_counters()
 	result.actor_removed_from_roster = not _actor_is_in_roster(actor)
@@ -705,7 +786,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"rescue", &"extract"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"rescue", &"extract"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -808,6 +889,24 @@ func _validate_shield_actor(actor: TacticalUnit) -> ActionValidationResult:
 		return ActionValidationResult.reject(&"state_unavailable", "Actor has no tactical-state component", state_revision)
 	if actor.tactical_state.is_shielding:
 		return ActionValidationResult.reject(&"already_shielding", "Shield Stance is already active", state_revision)
+	if actor.tactical_state.is_overwatching:
+		return ActionValidationResult.reject(&"overwatch_restriction", "Cannot enter Shield Stance while Overwatch is active", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _validate_overwatch(actor: TacticalUnit) -> ActionValidationResult:
+	if not overwatch_enabled:
+		return ActionValidationResult.reject(&"unsupported_action", "Overwatch is unavailable in this historical replay", state_revision)
+	var actor_result := _validate_actor(actor)
+	if not actor_result.accepted:
+		return actor_result
+	if not actor.tactical_state:
+		return ActionValidationResult.reject(&"state_unavailable", "Actor has no tactical-state component", state_revision)
+	if actor.tactical_state.is_overwatching:
+		return ActionValidationResult.reject(&"already_overwatching", "Overwatch is already active", state_revision)
+	if actor.tactical_state.is_shielding:
+		return ActionValidationResult.reject(&"shield_stance_restriction", "Cannot enter Overwatch while Shield Stance is active", state_revision)
+	if not actor.stats.has_supply_points(OVERWATCH_SUPPLY_COST):
+		return ActionValidationResult.reject(&"insufficient_supply_points", "Overwatch requires at least 1 Supply Point", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
 func _aim_bonus(actor: TacticalUnit) -> int:
@@ -820,6 +919,73 @@ func _cancel_aim(actor: TacticalUnit) -> bool:
 
 func _cancel_shield(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_shield() if shield_enabled and is_instance_valid(actor) and actor.tactical_state else false
+
+func _cancel_overwatch(actor: TacticalUnit) -> bool:
+	return actor.tactical_state.clear_overwatch() if overwatch_enabled and is_instance_valid(actor) and actor.tactical_state else false
+
+func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult) -> void:
+	if not overwatch_enabled or result.path_cells.size() <= 1:
+		return
+	var watcher_ids := actor_registry.get_ids()
+	watcher_ids.sort_custom(func(first: StringName, second: StringName) -> bool:
+		var a := actor_registry.resolve(first)
+		var b := actor_registry.resolve(second)
+		var faction_a := int(a.faction) if is_instance_valid(a) else 999
+		var faction_b := int(b.faction) if is_instance_valid(b) else 999
+		return String(first) < String(second) if faction_a == faction_b else faction_a < faction_b
+	)
+	var final_index := result.path_cells.size() - 1
+	for checkpoint_index in range(1, result.path_cells.size()):
+		var checkpoint := result.path_cells[checkpoint_index]
+		for watcher_id in watcher_ids:
+			var watcher := actor_registry.resolve(watcher_id)
+			if not _watcher_can_react(watcher, mover):
+				continue
+			var evaluation := CombatRules.evaluate_attack_at_cell(watcher, mover, checkpoint, _grid_manager, mover.get_world_3d(), OVERWATCH_ACCURACY_MODIFIER, shield_enabled)
+			if not evaluation.is_legal:
+				continue
+			var event := OverwatchReactionEvent.new()
+			event.watcher_id = watcher.tactical_id
+			event.checkpoint_cell = checkpoint
+			event.checkpoint_index = checkpoint_index
+			event.hit_chance = evaluation.hit_chance
+			event.roll = _combat_rng.randf() * 100.0
+			event.did_hit = AttackActionResult.roll_hits(event.roll, event.hit_chance)
+			event.environmental_cover = evaluation.cover_type
+			event.shield_applied = evaluation.shield_applied
+			event.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
+			event.shield_damage_multiplier = evaluation.shield_damage_multiplier
+			event.supply_points_before = watcher.stats.current_supply_points
+			event.target_hp_before = mover.stats.current_hp
+			watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
+			watcher.tactical_state.clear_overwatch()
+			if event.did_hit:
+				var requested_damage := maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
+				mover.defer_stat_presentation = true
+				mover.stats.take_damage(requested_damage)
+				mover.defer_stat_presentation = false
+			event.supply_points_after = watcher.stats.current_supply_points
+			event.target_hp_after = mover.stats.current_hp
+			event.damage = event.target_hp_before - event.target_hp_after
+			event.target_defeated = mover.stats.is_defeated
+			result.reaction_events.append(event)
+			if event.target_defeated:
+				final_index = checkpoint_index
+				result.movement_interrupted = true
+				break
+		if result.movement_interrupted:
+			break
+	if final_index < result.path_cells.size() - 1:
+		result.path_cells = result.path_cells.slice(0, final_index + 1)
+		result.presentation_path = result.presentation_path.slice(0, final_index + 1)
+		result.visual_segments = result.visual_segments.slice(0, final_index + 1)
+		result.target_cell = result.path_cells[-1]
+
+func _watcher_can_react(watcher: TacticalUnit, mover: TacticalUnit) -> bool:
+	return is_instance_valid(watcher) and watcher != mover and watcher.stats and not watcher.stats.is_defeated \
+		and watcher.tactical_state and watcher.tactical_state.is_overwatching \
+		and watcher.stats.has_supply_points(OVERWATCH_SUPPLY_COST) \
+		and FactionRules.are_hostile(watcher.faction, mover.faction)
 
 func _code_for_reason(reason: String) -> StringName:
 	match reason:

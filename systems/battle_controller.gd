@@ -47,6 +47,7 @@ var supply_points_enabled := true
 ## Disabled only when reconstructing recordings made before Aim.
 var aim_enabled := true
 var shield_enabled := true
+var overwatch_enabled := true
 var action_camera_director: Node
 var action_service: TacticalActionService
 var action_presenter: TacticalActionPresenter
@@ -171,6 +172,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 		action_presenter.present_reload,
 		action_presenter.present_aim,
 		action_presenter.present_shield,
+		action_presenter.present_overwatch,
 		_query_move_data,
 		action_presenter.present_move,
 		_on_movement_committed,
@@ -182,6 +184,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.supply_points_enabled = supply_points_enabled
 	action_service.aim_enabled = aim_enabled
 	action_service.shield_enabled = shield_enabled
+	action_service.overwatch_enabled = overwatch_enabled
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
@@ -463,6 +466,9 @@ func query_shield(actor: TacticalUnit, threat: TacticalUnit = null) -> ShieldQue
 		return unavailable
 	return action_service.query_shield(actor.tactical_id if is_instance_valid(actor) else &"", threat.tactical_id if is_instance_valid(threat) else &"")
 
+func query_overwatch(actor: TacticalUnit) -> OverwatchQueryResult:
+	return action_service.query_overwatch(actor.tactical_id if is_instance_valid(actor) else &"")
+
 func query_simple(kind: StringName, actor: TacticalUnit) -> SimpleActionQueryResult:
 	if not is_instance_valid(action_service):
 		var unavailable := SimpleActionQueryResult.new()
@@ -567,6 +573,14 @@ func try_shield(unit: TacticalUnit, threat: TacticalUnit) -> bool:
 	if not is_instance_valid(action_service):
 		return false
 	var result := await action_service.submit_shield(action_service.make_shield_request(unit, threat, _action_source()))
+	is_attack_mode_active = false
+	is_move_mode_active = false
+	is_shield_mode_active = false
+	return result != null
+
+func try_overwatch(unit: TacticalUnit) -> bool:
+	if not is_instance_valid(action_service): return false
+	var result := await action_service.submit_overwatch(action_service.make_overwatch_request(unit, _action_source()))
 	is_attack_mode_active = false
 	is_move_mode_active = false
 	is_shield_mode_active = false

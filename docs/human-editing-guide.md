@@ -47,6 +47,10 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Tune selection camera timing or comfortable viewport margin | `levels/prototype_map/prototype_map.tscn` → `CameraRig` → **Selection Focus** | `tests/tactical_camera_selection_test.gd`, portrait-bar test, and a local battle |
 | Change which selection events request camera focus | `TurnManager.select_player_unit()` and `_set_active_unit()` emit the shared `selection_focus_requested` hint; motion remains in `TacticalCamera` | Tactical camera selection and turn-progression tests |
 | Tune live-selection and replay Selection Focus camera motion | `TacticalCamera.selection_focus_duration` and `comfortable_viewport_margin` in the CameraRig Inspector; both modes call `focus_unit_smoothly()` | Tactical camera selection and battle replay smoke tests |
+| Change Overwatch registration cost or legality | Named `query_overwatch()` / `submit_overwatch()` methods and constants in `TacticalActionService`; HUD wiring is in `ActionHUDController` | `overwatch_reactions_test.gd` and tactical action service tests |
+| Change reaction checkpoint/order rules | `_resolve_overwatch_reactions()` in `TacticalActionService`; checkpoint geometry is the pure `CombatRules.evaluate_attack_at_cell()` path | Overwatch reaction, combat cover, diagonal, and elevation tests |
+| Change Overwatch movement/shot feedback | `TacticalActionPresenter._present_reactive_move()`; it consumes committed `MoveActionResult.reaction_events` | Overwatch reaction and tactical action presenter tests |
+| Change hypothetical continuation occupancy | `Pathfinder.calculate_path_with_occupancy()` and its single AI call in `_move_along_goal_path()` | Overwatch reaction fixture and stalemate seeds 25005/25100 |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
 | Start a battle from code | Fill a `BattleConfiguration`, then call `BattleLevel.configure_battle()` | `tests/match_setup_smoke.gd` and `tests/battle_replay_smoke.gd` |

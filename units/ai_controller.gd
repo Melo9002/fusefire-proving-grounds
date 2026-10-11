@@ -613,7 +613,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		if route_index < 0 and not allow_route_detour:
 			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Outside useful route"})
 			continue
-		var remaining := battle_controller.pathfinder.calculate_3d_path(candidate, route_end)
+		var remaining := battle_controller.pathfinder.calculate_path_with_occupancy(candidate, route_end, battle_controller.grid_manager, unit)
 		if remaining.is_empty() and not allow_route_detour:
 			continue
 		# A hypothetical route from the candidate can be cut off by the actor's

@@ -205,7 +205,11 @@ The implementation deliberately adds no capability registry, equipment hierarchy
 
 ### 5. Overwatch simulation and reactions
 
-Add registration, pre-commit checkpoint resolver, nested events, movement presentation sequencing, and AI threat facts. Test deterministic multi-reactor order, final occupancy, objective timing, one record/revision, barriers, and all presentation modes. Exclude suppression, Kill Zone, return fire, and generic reactions.
+**Implemented in 01.11.5.** Overwatch registration is an explicit typed action that spends all remaining AP, requires but does not spend one SP, cancels Aim, and cannot coexist with Shield Stance. `TacticalState` expires unused registration at the actor's next activation. The Move resolver checks each entered cell after the origin, evaluates armed hostile watchers by faction then stable tactical actor ID, and uses pure checkpoint-cell combat geometry with the approved -15 accuracy modifier. Each legal shot consumes one SP and its registration. A lethal reaction truncates the authoritative path at that checkpoint.
+
+Reaction events live inside the parent `MoveActionResult`: one mover AP charge, one transaction/revision, and one final occupancy decision. Presentation walks the committed path checkpoint by checkpoint and displays the already-resolved shots without owning damage or interruption. New recordings opt into `overwatch_enabled`, payload schema 6 stores registration and nested reaction facts, and old recordings omit the flag to retain pre-Overwatch fingerprints and movement payloads. AI movement triggers reactions now; choosing Overwatch remains intentionally deferred to 01.11.7.
+
+The prerequisite planning fix is also implemented as `Pathfinder.calculate_path_with_occupancy()`. It performs a read-only deterministic search that treats only the planning actor's occupied origin as vacated and leaves both `GridManager.occupancy_map` and the live AStar graph untouched. The maximum-urgency fallback remains as defense in depth.
 
 ### 6. Mission terminal interaction
 

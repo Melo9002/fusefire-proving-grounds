@@ -5,6 +5,7 @@ extends Control
 @export var hp_bar: ProgressBar
 @export var ap_label: Label
 @export var carry_label: Label
+@export var tactical_state_label: Label
 @export var extract_button: Button
 
 @export_group("3D Tracking Settings")
@@ -45,6 +46,10 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 
 		_on_hp_changed(_stats.current_hp, _stats.max_hp)
 		_on_ap_changed(_stats.current_ap, _stats.max_ap)
+	if unit is TacticalUnit and (unit as TacticalUnit).tactical_state:
+		var state := (unit as TacticalUnit).tactical_state
+		if not state.changed.is_connected(_refresh_tactical_state): state.changed.connect(_refresh_tactical_state)
+	_refresh_tactical_state()
 	_refresh_extract_button()
 
 func _process(_delta: float) -> void:
@@ -134,3 +139,12 @@ func _refresh_extract_button() -> void:
 func _refresh_carry_label() -> void:
 	if carry_label:
 		carry_label.visible = _target_unit is TacticalUnit and (_target_unit as TacticalUnit).is_carrying_unit()
+
+func _refresh_tactical_state() -> void:
+	if not tactical_state_label: return
+	tactical_state_label.visible = false
+	if not _target_unit is TacticalUnit: return
+	var state := (_target_unit as TacticalUnit).tactical_state
+	if state and state.is_overwatching:
+		tactical_state_label.text = "OVERWATCH"
+		tactical_state_label.visible = true

@@ -9,6 +9,7 @@ class_name ActionHUDController
 @export var reload_button: Button
 @export var aim_button: Button
 @export var shield_button: Button
+@export var overwatch_button: Button
 @export var end_unit_button: Button
 @export var supply_points_label: Label
 @export var tactical_state_label: Label
@@ -30,6 +31,8 @@ func _ready() -> void:
 		aim_button.pressed.connect(_on_aim_pressed)
 	if shield_button:
 		shield_button.pressed.connect(_on_shield_pressed)
+	if overwatch_button:
+		overwatch_button.pressed.connect(_on_overwatch_pressed)
 	battle_controller.shield_mode_toggled.connect(_on_shield_mode_toggled)
 	if end_unit_button:
 		end_unit_button.pressed.connect(_on_end_unit_pressed)
@@ -90,6 +93,10 @@ func _on_aim_pressed() -> void:
 func _on_shield_pressed() -> void:
 	battle_controller.toggle_shield_mode()
 
+func _on_overwatch_pressed() -> void:
+	var active_unit := battle_controller.tactical_unit
+	if is_instance_valid(active_unit): await battle_controller.try_overwatch(active_unit)
+
 func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
 	if not active_unit:
@@ -141,6 +148,7 @@ func _update_button_states() -> void:
 	var reload_query := battle_controller.query_reload(unit)
 	var aim_query := battle_controller.query_aim(unit)
 	var shield_query := battle_controller.query_shield(unit)
+	var overwatch_query := battle_controller.query_overwatch(unit)
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
@@ -166,10 +174,16 @@ func _update_button_states() -> void:
 		shield_button.disabled = not shield_query.is_legal() or not shield_query.has_legal_threats()
 		shield_button.tooltip_text = "Choose a hostile to face; protects a %.0f° arc" % shield_query.protected_arc_degrees if shield_query.is_legal() else shield_query.reason()
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
+	if overwatch_button:
+		overwatch_button.disabled = not overwatch_query.is_legal()
+		overwatch_button.tooltip_text = "Reserve one reaction shot; spends all remaining AP" if overwatch_query.is_legal() else overwatch_query.reason()
+		overwatch_button.text = "Overwatch (All AP)"
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:
-		if unit.tactical_state and unit.tactical_state.is_shielding:
+		if unit.tactical_state and unit.tactical_state.is_overwatching:
+			tactical_state_label.text = "OVERWATCH"
+		elif unit.tactical_state and unit.tactical_state.is_shielding:
 			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y]
 		else:
 			tactical_state_label.text = "AIMED +%d" % TacticalState.AIM_ACCURACY_BONUS if unit.tactical_state and unit.tactical_state.is_aiming else ""
@@ -183,6 +197,7 @@ func _disable_all_buttons() -> void:
 	if reload_button: reload_button.disabled = true
 	if aim_button: aim_button.disabled = true
 	if shield_button: shield_button.disabled = true
+	if overwatch_button: overwatch_button.disabled = true
 	if end_unit_button: end_unit_button.disabled = true
 	if supply_points_label: supply_points_label.text = "SP —"
 	if tactical_state_label: tactical_state_label.text = ""

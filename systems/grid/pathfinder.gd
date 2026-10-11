@@ -117,6 +117,78 @@ func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector
 	var end_id = grid_to_id_map[end_grid]
 	return astar.get_point_path(start_id, end_id)
 
+## Read-only planning path. Occupied cells remain blocked except for the named
+## actor's live origin, which is treated as vacated when planning from a future
+## candidate. This never changes occupancy_map or AStar disabled points.
+func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit = null) -> PackedVector3Array:
+	var path := calculate_3d_path(start_grid, end_grid)
+	if not path.is_empty() and _path_respects_hypothetical_occupancy(path, start_grid, grid, ignored_actor):
+		return path
+	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor)
+
+func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> bool:
+	for point in path:
+		var cell: Vector3i = id_to_grid_map.get(astar.get_closest_point(point), Vector3i(-1, -1, -1))
+		var occupant := grid.get_unit_at(cell)
+		if is_instance_valid(occupant) and occupant != ignored_actor and cell != start_grid:
+			return false
+	return true
+
+## The normal path is native and fast. This fallback is needed only when live
+## AStar disabling hides the planning actor's origin or its first route crosses
+## another occupant. It searches the existing graph without mutating it.
+func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> PackedVector3Array:
+	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
+		return PackedVector3Array()
+	var start_id: int = grid_to_id_map[start_grid]
+	var end_id: int = grid_to_id_map[end_grid]
+	var open_ids: Array[int] = [start_id]
+	var came_from := {}
+	var costs := {start_id: 0.0}
+	var estimates := {start_id: astar.get_point_position(start_id).distance_to(astar.get_point_position(end_id))}
+	while not open_ids.is_empty():
+		var best_index := 0
+		for index in range(1, open_ids.size()):
+			var candidate_id := open_ids[index]
+			var best_id := open_ids[best_index]
+			var candidate_score: float = estimates.get(candidate_id, INF)
+			var best_score: float = estimates.get(best_id, INF)
+			if candidate_score < best_score or (is_equal_approx(candidate_score, best_score) and candidate_id < best_id):
+				best_index = index
+		var current_id: int = open_ids.pop_at(best_index)
+		if current_id == end_id:
+			return _reconstruct_hypothetical_path(came_from, current_id)
+		for neighbor_id in astar.get_point_connections(current_id):
+			var neighbor_cell: Vector3i = id_to_grid_map.get(neighbor_id, Vector3i(-1, -1, -1))
+			if neighbor_cell == Vector3i(-1, -1, -1):
+				continue
+			var occupant := grid.get_unit_at(neighbor_cell)
+			if is_instance_valid(occupant) and occupant != ignored_actor:
+				continue
+			if astar.is_point_disabled(neighbor_id) and occupant != ignored_actor:
+				continue
+			var step := astar.get_point_position(current_id).distance_to(astar.get_point_position(neighbor_id))
+			var new_cost: float = costs[current_id] + step
+			if new_cost >= float(costs.get(neighbor_id, INF)):
+				continue
+			came_from[neighbor_id] = current_id
+			costs[neighbor_id] = new_cost
+			estimates[neighbor_id] = new_cost + astar.get_point_position(neighbor_id).distance_to(astar.get_point_position(end_id))
+			if neighbor_id not in open_ids:
+				open_ids.append(neighbor_id)
+	return PackedVector3Array()
+
+func _reconstruct_hypothetical_path(came_from: Dictionary, end_id: int) -> PackedVector3Array:
+	var ids: Array[int] = [end_id]
+	var current_id := end_id
+	while came_from.has(current_id):
+		current_id = int(came_from[current_id])
+		ids.push_front(current_id)
+	var result := PackedVector3Array()
+	for point_id in ids:
+		result.append(astar.get_point_position(point_id))
+	return result
+
 func disable_cell(grid_pos: Vector3i) -> void:
 	configure_cell(grid_pos, false, false)
 

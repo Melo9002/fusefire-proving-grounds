@@ -69,6 +69,35 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
 
+## Pure checkpoint evaluation used by movement reactions. The target node and
+## live occupancy remain untouched; geometry is evaluated as though the target
+## occupied target_cell.
+static func evaluate_attack_at_cell(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
+	if not is_instance_valid(attacker) or not is_instance_valid(target):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	var attacker_cell := grid.get_unit_grid(attacker)
+	var default_aim := _shot_destination_at(target, target_cell, grid)
+	if attacker.is_carrying_unit():
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Cannot shoot while carrying", default_aim)
+	if not attacker.stats or not target.stats or attacker.stats.is_defeated or target.stats.is_defeated:
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Unit defeated", default_aim)
+	if not FactionRules.are_hostile(attacker.faction, target.faction):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Not hostile", default_aim)
+	if attack_distance(attacker_cell, target_cell, grid) > attacker.attack_range:
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
+	var visibility := _evaluate_target_visibility_at(attacker, target, target_cell, grid)
+	if visibility.visible_count == 0:
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.FULL, "Blocked", visibility.aim_point, 0.0, "Blocked", visibility.blocker)
+	var cover := get_directional_cover(attacker_cell, target_cell, grid)
+	var cover_penalty := 50 if cover != MapCellData.CoverType.NONE else 0
+	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
+	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
+	var shield := get_shield_protection_at_cells(attacker_cell, target, target_cell) if allow_shield else {}
+	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
+	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus + shield_accuracy, 5, 100)
+	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
+	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+
 static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
 	if not is_instance_valid(attacker) or not is_instance_valid(target) or not target.tactical_state \
 		or not target.tactical_state.is_shielding or not target.shield_capability:
@@ -82,6 +111,13 @@ static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, 
 		"accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0,
 		"damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0,
 	}
+
+static func get_shield_protection_at_cells(attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i) -> Dictionary:
+	if not is_instance_valid(target) or not target.tactical_state or not target.tactical_state.is_shielding or not target.shield_capability:
+		return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
+	var incoming := Vector2(float(attacker_cell.x - target_cell.x), float(attacker_cell.z - target_cell.z))
+	var applied := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
+	return {"applied": applied, "accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0, "damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0}
 
 ## The boundary is inclusive. An attacker exactly half the arc away from the
 ## committed facing receives protection; epsilon absorbs floating-point noise.
@@ -156,6 +192,35 @@ static func _evaluate_target_visibility(attacker: TacticalUnit, target: Tactical
 		"aim_point": visible[0] if not visible.is_empty() else center,
 		"blocker": first_blocker,
 	}
+
+static func _evaluate_target_visibility_at(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Dictionary:
+	var attacker_cell := grid.get_unit_grid(attacker)
+	var origin := get_shot_origin(attacker, grid)
+	var center := _shot_destination_at(target, target_cell, grid)
+	var horizontal := center - origin
+	horizontal.y = 0.0
+	var side := Vector3.RIGHT
+	if not horizontal.is_zero_approx(): side = Vector3(-horizontal.z, 0.0, horizontal.x).normalized()
+	var base := grid.grid_to_world(target_cell)
+	var samples: Array[Vector3] = [
+		base + Vector3.UP * target.standing_height * 1.2,
+		base + Vector3.UP * target.standing_height * 1.75,
+		base + Vector3.UP * target.standing_height * 0.9 + side * grid.cell_size * 0.28,
+		base + Vector3.UP * target.standing_height * 0.9 - side * grid.cell_size * 0.28,
+		base + Vector3.UP * target.standing_height * 0.5,
+	]
+	var visible: Array[Vector3] = []
+	var first_blocker: MapCellData = null
+	var ignored_cells: Array[Vector3i] = [attacker_cell, target_cell]
+	for sample in samples:
+		var blocker := _get_geometry_between(origin, sample, grid, false, ignored_cells)
+		if blocker:
+			if not first_blocker: first_blocker = blocker
+		else: visible.append(sample)
+	return {"visible_count": visible.size(), "sample_count": samples.size(), "aim_point": visible[0] if not visible.is_empty() else center, "blocker": first_blocker}
+
+static func _shot_destination_at(target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Vector3:
+	return grid.grid_to_world(target_cell) + Vector3.UP * target.standing_height
 
 static func _obstruction_label(visible: int, total: int) -> String:
 	if visible <= 0: return "Blocked"
