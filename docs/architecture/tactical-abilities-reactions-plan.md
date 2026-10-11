@@ -209,6 +209,8 @@ The implementation deliberately adds no capability registry, equipment hierarchy
 
 Reaction events live inside the parent `MoveActionResult`: one mover AP charge, one transaction/revision, and one final occupancy decision. Presentation walks the committed path checkpoint by checkpoint and displays the already-resolved shots without owning damage or interruption. New recordings opt into `overwatch_enabled`, payload schema 6 stores registration and nested reaction facts, and old recordings omit the flag to retain pre-Overwatch fingerprints and movement payloads. AI movement triggers reactions now; choosing Overwatch remains intentionally deferred to 01.11.7.
 
+The first playtest broadened the trigger without increasing the reservation: a hostile direct attack against the watcher also provokes the same one reaction, after the initiating attack resolves and only if both actors remain valid and capable. The retaliation is nested in the parent schema-7 Attack result, commits under its single revision, and cannot start a reaction chain. Attacks against allies do not trigger it.
+
 The prerequisite planning fix is also implemented as `Pathfinder.calculate_path_with_occupancy()`. It performs a read-only deterministic search that treats only the planning actor's occupied origin as vacated and leaves both `GridManager.occupancy_map` and the live AStar graph untouched. The maximum-urgency fallback remains as defense in depth.
 
 ### 6. Mission terminal interaction

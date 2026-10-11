@@ -75,6 +75,8 @@ The replay bar supports pause/play, 0.5×–4× pacing, and Free, Selection Focu
 
 New recordings explicitly set `overwatch_enabled`. Overwatch registration is one schema-6 action record. Reaction shots are ordered dictionaries nested in the parent schema-6 Move result, including checkpoint, watcher ID, roll, hit chance, HP/SP deltas, cover, and shield facts. Replay resubmits registration and Move through the normal service, reruns checkpoint resolution, and compares the nested fields and post-commit fingerprint. Recordings without the flag use their historical fingerprints and accept the older schema-2 Move payload.
 
+Schema-7 Attack payloads may likewise contain one retaliation event when the target was on Overwatch. The original shot resolves first and the surviving target's response remains inside the same transaction/revision. Older Attack schemas remain accepted and omit the field.
+
 ## XCOM history lesson and future rewind
 
 XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.

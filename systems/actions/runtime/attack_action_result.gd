@@ -1,7 +1,7 @@
 class_name AttackActionResult
 extends RefCounted
 
-const SCHEMA_VERSION := 5
+const SCHEMA_VERSION := 7
 
 var transaction_id: int
 var base_revision: int
@@ -34,6 +34,7 @@ var battle_result_after: int
 var target_position := Vector3.ZERO
 var objective_state_before: Dictionary = {}
 var objective_state_after: Dictionary = {}
+var reaction_events: Array[OverwatchReactionEvent] = []
 var presentation_completed := false
 var presentation_suppressed := false
 var presentation_error := ""
@@ -55,6 +56,8 @@ func to_replay_record() -> Dictionary:
 	}
 
 func resolved_dictionary() -> Dictionary:
+	var serialized_reactions: Array[Dictionary] = []
+	for event in reaction_events: serialized_reactions.append(event.to_dictionary())
 	return {
 		"hit_chance": hit_chance,
 		"base_hit_chance": base_hit_chance,
@@ -79,6 +82,7 @@ func resolved_dictionary() -> Dictionary:
 		"target_defeated": target_defeated,
 		"battle_result_before": battle_result_before,
 		"battle_result_after": battle_result_after,
+		"reaction_events": serialized_reactions,
 	}
 
 func compare_resolved(expected: Dictionary) -> String:

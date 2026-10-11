@@ -176,8 +176,8 @@ func _update_button_states() -> void:
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "Reserve one reaction shot; spends all remaining AP" if overwatch_query.is_legal() else overwatch_query.reason()
-		overwatch_button.text = "Overwatch (All AP)"
+		overwatch_button.tooltip_text = "End this unit's activation. Reserve one reaction against hostile movement or a direct attack." if overwatch_query.is_legal() else overwatch_query.reason()
+		overwatch_button.text = "Overwatch (Ends Activation)"
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:

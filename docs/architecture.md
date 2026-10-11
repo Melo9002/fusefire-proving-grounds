@@ -151,6 +151,8 @@ After units are registered, `BattleController.units_registered` gives the portra
 
 Overwatch is a typed tactical action, while reaction resolution belongs to the parent Move transaction. `TacticalActionService` evaluates each entered path cell using `CombatRules.evaluate_attack_at_cell()`, consumes armed hostile reactions in deterministic faction/actor-ID order, and commits the shortened path, HP/SP changes, and final occupancy once. `MoveActionResult.reaction_events` is the presentation and replay record; no animation callback submits an Attack. Historical recordings without `overwatch_enabled` retain their prior fingerprints and movement semantics.
 
+A direct hostile attack against an Overwatch unit can consume the same single reservation as retaliation. The initiating shot resolves first; a surviving, capable watcher then returns fire through ordinary attack geometry. This nested event remains part of the initiating Attack transaction and cannot provoke another reaction.
+
 Exhausted and dead portraits remain visible but cannot be selected. A dead portrait remains as a record after its world unit leaves the active roster.
 
 `UnitSelectionVisualizer` listens to the same `active_unit_changed` signal and applies a thin material overlay to every mesh below the selected friendly. It clears the previous overlay before applying the next one and does not outline AI units during the enemy phase. This keeps selection feedback separate from unit rules and supports future unit scenes with multiple meshes.

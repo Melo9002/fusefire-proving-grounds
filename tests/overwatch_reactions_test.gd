@@ -14,6 +14,8 @@ func check(condition: bool, message: String) -> void:
 func _run() -> void:
 	await _check_registration_and_multiple_watchers()
 	await _check_lethal_interruption()
+	await _check_direct_attack_retaliation()
+	await _check_defeated_watcher_cannot_retaliate()
 	_check_hypothetical_occupancy()
 	var legacy := BattleConfiguration.new()
 	legacy.apply_replay({"player_count": 1, "enemy_count": 1, "supply_points_enabled": true, "aim_enabled": true, "shield_enabled": true})
@@ -107,6 +109,55 @@ func _check_lethal_interruption() -> void:
 		check(move.target_cell == move.reaction_events[0].checkpoint_cell and move.path_cells.size() < preview.path_cells.size(), "Interrupted Move shortens its authoritative path to the lethal checkpoint")
 		check(level.battle_controller.grid_manager.get_unit_at(move.start_cell) == null and level.battle_controller.grid_manager.get_unit_at(move.target_cell) == null, "Defeated mover leaves no ghost occupancy at origin or checkpoint")
 	check(watcher.stats.current_supply_points == 3 and not watcher.tactical_state.is_overwatching, "Lethal reaction consumes its SP and registration once")
+	level.queue_free()
+	await process_frame
+
+func _check_direct_attack_retaliation() -> void:
+	var level := await _create_battle(1)
+	var service := level.battle_controller.action_service
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	var attacker: TacticalUnit = level.turn_manager.enemy_units[0]
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	attacker.attack_range = 100
+	check(await service.submit_overwatch(service.make_overwatch_request(watcher, TacticalActionRequest.Source.PLAYER), true) != null, "Return-fire fixture registers Overwatch")
+	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
+	level.turn_manager.call("_set_active_unit", attacker)
+	var watcher_hp_before := watcher.stats.current_hp
+	var watcher_sp_before := watcher.stats.current_supply_points
+	var revision_before := service.state_revision
+	var attack := await service.submit_attack(service.make_attack_request(attacker, watcher, TacticalActionRequest.Source.AI), true)
+	check(attack != null and attack.reaction_events.size() == 1, "A direct attack against a surviving watcher triggers one retaliation")
+	check(watcher.stats.current_hp <= watcher_hp_before and watcher.stats.current_supply_points == watcher_sp_before - 1, "The original attack resolves first and retaliation consumes one SP")
+	check(not watcher.tactical_state.is_overwatching and service.state_revision == revision_before + 1, "Attack retaliation consumes the reservation inside one parent revision")
+	if attack and not attack.reaction_events.is_empty():
+		check(attack.reaction_events[0].watcher_id == watcher.tactical_id, "Nested retaliation preserves the watching actor identity")
+	var attack_record: Dictionary = level._replay_recorder.recording.actions[-1]
+	check(attack_record.get("kind") == "attack" and attack_record.get("resolved", {}).get("reaction_events", []).size() == 1, "Replay nests retaliation inside the initiating Attack record")
+	check(ReplayRecordTools.validate_action_record(attack_record, BattleReplayRecording.CURRENT_SCHEMA_VERSION).is_empty(), "Retaliating Attack payload passes replay schema validation")
+	level.queue_free()
+	await process_frame
+	await process_frame
+	await process_frame
+
+func _check_defeated_watcher_cannot_retaliate() -> void:
+	var level := await _create_battle(1)
+	var service := level.battle_controller.action_service
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	var attacker: TacticalUnit = level.turn_manager.enemy_units[0]
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	attacker.attack_range = 100
+	check(await service.submit_overwatch(service.make_overwatch_request(watcher, TacticalActionRequest.Source.PLAYER), true) != null, "Defeated-watcher fixture registers Overwatch")
+	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
+	level.turn_manager.call("_set_active_unit", attacker)
+	watcher.stats.current_hp = 1
+	var watcher_sp_before := watcher.stats.current_supply_points
+	service._combat_rng.seed = _seed_for_hit(100)
+	var attack := await service.submit_attack(service.make_attack_request(attacker, watcher, TacticalActionRequest.Source.AI), true)
+	check(attack != null and attack.target_defeated, "The initiating attack defeats the watcher before retaliation eligibility is checked")
+	check(attack != null and attack.reaction_events.is_empty(), "A watcher defeated by the initiating attack cannot retaliate")
+	check(watcher.stats.current_supply_points == watcher_sp_before and not watcher.tactical_state.is_overwatching, "A defeated watcher spends no SP and clears its unused reaction state")
 	level.queue_free()
 	await process_frame
 	await process_frame

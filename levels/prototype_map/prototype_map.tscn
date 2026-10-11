@@ -751,7 +751,7 @@ text = "Shield (1 AP)"
 
 [node name="OverwatchButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2
-text = "Overwatch (All AP)"
+text = "Overwatch (Ends Activation)"
 
 [node name="SupplyPointsLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2

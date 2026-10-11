@@ -31,6 +31,10 @@ func present_attack(result: AttackActionResult) -> void:
 		return
 	if result.presentation_suppressed:
 		if result.target_defeated and is_instance_valid(target): target.queue_free()
+		for event in result.reaction_events:
+			if event.target_defeated and is_instance_valid(attacker):
+				attacker.queue_free()
+				break
 		return
 	var camera_presented := false
 	if _camera_available():
@@ -44,6 +48,14 @@ func present_attack(result: AttackActionResult) -> void:
 		target.present_attack_impact(result.target_defeated)
 		if result.target_defeated: target.finish_defeat_presentation()
 	if attack_feedback.is_valid(): attack_feedback.call(attacker, target, result.did_hit, result.hit_chance)
+	for event in result.reaction_events:
+		if not is_instance_valid(target): break
+		target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position)
+		if event.did_hit and is_instance_valid(attacker):
+			attacker.present_attack_impact(event.target_defeated)
+			if event.target_defeated: attacker.finish_defeat_presentation()
+		print_rich("[color=orange][Overwatch Return][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
+		await _safe_delay(0.18)
 	if camera_presented:
 		await _safe_delay(0.42)
 		await _finish_camera(true)

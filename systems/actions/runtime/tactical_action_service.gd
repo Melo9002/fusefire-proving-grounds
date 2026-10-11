@@ -223,6 +223,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		target.defer_stat_presentation = true
 		target.stats.take_damage(result.damage)
 		target.defer_stat_presentation = false
+	_resolve_attack_retaliation(actor, target, result)
 	if _objective_manager:
 		_objective_manager.evaluate_outcome_after_action_commit()
 	result.actor_ap_after = actor.stats.current_ap
@@ -980,6 +981,37 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 		result.presentation_path = result.presentation_path.slice(0, final_index + 1)
 		result.visual_segments = result.visual_segments.slice(0, final_index + 1)
 		result.target_cell = result.path_cells[-1]
+
+func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, result: AttackActionResult) -> void:
+	if not overwatch_enabled or not _watcher_can_react(watcher, attacker):
+		return
+	var evaluation := CombatRules.evaluate_attack(watcher, attacker, _grid_manager, watcher.get_world_3d(), OVERWATCH_ACCURACY_MODIFIER, shield_enabled)
+	if not evaluation.is_legal:
+		return
+	var event := OverwatchReactionEvent.new()
+	event.watcher_id = watcher.tactical_id
+	event.checkpoint_cell = _grid_manager.get_unit_grid(attacker)
+	event.hit_chance = evaluation.hit_chance
+	event.roll = _combat_rng.randf() * 100.0
+	event.did_hit = AttackActionResult.roll_hits(event.roll, event.hit_chance)
+	event.environmental_cover = evaluation.cover_type
+	event.shield_applied = evaluation.shield_applied
+	event.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
+	event.shield_damage_multiplier = evaluation.shield_damage_multiplier
+	event.supply_points_before = watcher.stats.current_supply_points
+	event.target_hp_before = attacker.stats.current_hp
+	watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
+	watcher.tactical_state.clear_overwatch()
+	if event.did_hit:
+		var requested_damage := maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
+		attacker.defer_stat_presentation = true
+		attacker.stats.take_damage(requested_damage)
+		attacker.defer_stat_presentation = false
+	event.supply_points_after = watcher.stats.current_supply_points
+	event.target_hp_after = attacker.stats.current_hp
+	event.damage = event.target_hp_before - event.target_hp_after
+	event.target_defeated = attacker.stats.is_defeated
+	result.reaction_events.append(event)
 
 func _watcher_can_react(watcher: TacticalUnit, mover: TacticalUnit) -> bool:
 	return is_instance_valid(watcher) and watcher != mover and watcher.stats and not watcher.stats.is_defeated \
