@@ -147,6 +147,8 @@ Every battle has a battle seed even when its map is authored. Generated battlefi
 
 After units are registered, `BattleController.units_registered` gives the portrait bar the current friendly roster. Each portrait observes its own unit's HP, AP, and defeat signals. Portrait clicks ask `TurnManager` to select the unit; battlefield clicks use that same method. Both paths are reflected back through `active_unit_changed`, so the UI never keeps a separate selection.
 
+`TurnManager.selection_focus_requested` is the single presentation hint for manual selection, portrait selection, automatic cycling, and phase-start selection. `TacticalCamera` consumes it only during the manually controlled player phase. Explicit selection requests a recenter; automatic selection skips motion when the unit is already inside the camera's comfortable viewport margin. The short pivot tween preserves zoom and angle and yields immediately to keyboard pan, edge pan, mouse drag, rotation, or zoom. Replay and action cinematics retain their own camera ownership.
+
 Exhausted and dead portraits remain visible but cannot be selected. A dead portrait remains as a record after its world unit leaves the active roster.
 
 `UnitSelectionVisualizer` listens to the same `active_unit_changed` signal and applies a thin material overlay to every mesh below the selected friendly. It clears the previous overlay before applying the next one and does not outline AI units during the enemy phase. This keeps selection feedback separate from unit rules and supports future unit scenes with multiple meshes.
@@ -237,6 +239,8 @@ Physics collision layers are separate from visual render layers. Map setup waits
 ## Camera
 
 `TacticalCamera` is a pivot above the map. Moving changes the pivot's X/Z position, rotation turns the pivot around its center, and zoom changes the child camera's distance. The pivot is clamped to the floor bounds plus a small margin, so the camera can reveal tiles behind UI without wandering far away.
+
+Selection focus moves only this pivot, preserving the player's zoom and view angle. Hostile clicks do not add a second focus-and-return sequence: clicked targets are already visible, Attack uses the established action camera after commitment, and Shield targeting remains immediate. This avoids camera ping-pong and mandatory targeting delays while ensuring that the acting unit was made visible when selection changed.
 
 ## Known limits to playtest next
 

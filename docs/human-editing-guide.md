@@ -44,6 +44,8 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change player path/range display | `BattleController.update_unit_movement_zone()` and `_update_movement_preview()` consume the shared Move query | `tests/battle_smoke.gd` |
 | Change AI movement preference | `units/ai_controller.gd` and `systems/ai/ai_position_scorer.gd`; legal active-turn destinations come from the shared Move query | AI determinism, mission AI, and evacuation tests |
 | Tune tactical camera movement and zoom | `levels/prototype_map/prototype_map.tscn` → `CameraRig` | `tests/action_camera_director_test.gd`, `tests/camera_obstruction_test.gd`, and manual close/far zoom |
+| Tune selection camera timing or comfortable viewport margin | `levels/prototype_map/prototype_map.tscn` → `CameraRig` → **Selection Focus** | `tests/tactical_camera_selection_test.gd`, portrait-bar test, and a local battle |
+| Change which selection events request camera focus | `TurnManager.select_player_unit()` and `_set_active_unit()` emit the shared `selection_focus_requested` hint; motion remains in `TacticalCamera` | Tactical camera selection and turn-progression tests |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
 | Start a battle from code | Fill a `BattleConfiguration`, then call `BattleLevel.configure_battle()` | `tests/match_setup_smoke.gd` and `tests/battle_replay_smoke.gd` |

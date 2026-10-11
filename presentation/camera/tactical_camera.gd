@@ -18,11 +18,15 @@ extends Node3D
 @export_range(0.1, 12.0, 0.1, "suffix:m") var zoom_step: float = 3.0
 @export_group("Height Follow")
 @export_range(0.1, 30.0, 0.1) var height_follow_speed: float = 8.0
+@export_group("Selection Focus")
+@export_range(0.05, 1.0, 0.05, "suffix:s") var selection_focus_duration := 0.35
+@export_range(0.0, 0.4, 0.01) var comfortable_viewport_margin := 0.16
 @export_group("")
 
 var _transitioning := false
 var _transition_tween: Tween
 var _transition_veil: ColorRect
+var _selection_focus_tween: Tween
 
 var _tactical_fov := 25.70093
 var _zoom: float = 42.0
@@ -43,6 +47,8 @@ func _ready() -> void:
 		return
 	_tactical_fov = camera.fov
 	_set_zoom(camera.position.z)
+	if turn_manager and not turn_manager.selection_focus_requested.is_connected(_on_selection_focus_requested):
+		turn_manager.selection_focus_requested.connect(_on_selection_focus_requested)
 
 func _process(delta: float) -> void:
 	if _transitioning:
@@ -93,6 +99,7 @@ func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_E) or Input.is_key_pressed(KEY_PAGEDOWN):
 		turn_direction += 1.0
 	if turn_direction != 0.0:
+		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-turn_direction * rotation_speed * delta))
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -103,8 +110,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_MIDDLE:
+			if event.pressed: _cancel_selection_focus()
 			_rotating = event.pressed
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.pressed: _cancel_selection_focus()
 			_dragging = event.pressed
 			if _dragging:
 				var point = _ground_point(event.position)
@@ -112,10 +121,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				if _dragging:
 					_drag_anchor = point
 		elif event.pressed and not event.alt_pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_cancel_selection_focus()
 			_set_zoom(_zoom - minf(zoom_step, _zoom * 0.15))
 		elif event.pressed and not event.alt_pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_cancel_selection_focus()
 			_set_zoom(_zoom + minf(zoom_step, _zoom * 0.15))
 	elif event is InputEventMouseMotion and _rotating:
+		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-event.relative.x * drag_sensitivity))
 	elif event is InputEventMouseMotion and _dragging:
 		var point = _ground_point(event.position)
@@ -139,14 +151,44 @@ func focus_selected_unit() -> void:
 	if unit:
 		focus_position(unit.global_position)
 
+func focus_selected_unit_smoothly(force_recenter := true) -> bool:
+	var unit := _selected_unit()
+	return focus_unit_smoothly(unit, force_recenter) if unit else false
+
+func focus_unit_smoothly(unit: TacticalUnit, force_recenter := false) -> bool:
+	if not is_instance_valid(unit) or _cinematic_active or _transitioning:
+		return false
+	if not force_recenter and is_point_comfortably_visible(unit.global_position):
+		return false
+	_cancel_selection_focus()
+	var destination := _clamped_focus_position(unit.global_position)
+	if global_position.distance_squared_to(destination) < 0.0001:
+		return false
+	_selection_focus_tween = create_tween()
+	_selection_focus_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_selection_focus_tween.tween_property(self, "global_position", destination, selection_focus_duration)
+	_selection_focus_tween.tween_callback(func(): _selection_focus_tween = null)
+	return true
+
+func is_point_comfortably_visible(point: Vector3) -> bool:
+	if not is_instance_valid(camera) or camera.is_position_behind(point):
+		return false
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return false
+	var margin := Vector2(viewport_size.x, viewport_size.y) * comfortable_viewport_margin
+	var comfortable_rect := Rect2(margin, viewport_size - margin * 2.0)
+	return comfortable_rect.has_point(camera.unproject_position(point))
+
 func focus_position(point: Vector3) -> void:
+	_cancel_selection_focus()
 	clear_cinematic_view()
-	global_position = point
-	_clamp_to_map()
+	global_position = _clamped_focus_position(point)
 
 func frame_cinematic_action(actor: TacticalUnit, focus_point: Vector3) -> void:
 	if not is_instance_valid(actor) or not is_instance_valid(camera):
 		return
+	_cancel_selection_focus()
 	_cancel_camera_transition()
 	var previous_transform := camera.global_transform
 	var previous_fov := camera.fov
@@ -206,6 +248,22 @@ func _cancel_camera_transition() -> void:
 	if is_instance_valid(_transition_veil):
 		_transition_veil.color.a = 0.0
 
+func _cancel_selection_focus() -> void:
+	if _selection_focus_tween and _selection_focus_tween.is_valid():
+		_selection_focus_tween.kill()
+	_selection_focus_tween = null
+
+func is_selection_focus_active() -> bool:
+	return _selection_focus_tween != null and _selection_focus_tween.is_valid()
+
+func _on_selection_focus_requested(unit: TacticalUnit, force_recenter: bool) -> void:
+	var level := get_parent() as BattleLevel
+	if level and level.battle_controller and level.battle_controller.replay_mode:
+		return
+	if not turn_manager or turn_manager.current_phase != TurnManager.TurnPhase.PLAYER_TURN:
+		return
+	focus_unit_smoothly(unit, force_recenter)
+
 func clear_cinematic_view() -> void:
 	_cancel_camera_transition()
 	if not _cinematic_active:
@@ -220,6 +278,7 @@ func clear_cinematic_view() -> void:
 func return_to_tactical_view() -> void:
 	if not _cinematic_active:
 		return
+	_cancel_selection_focus()
 	_cancel_camera_transition()
 	var previous_transform := camera.global_transform
 	var previous_fov := camera.fov
@@ -319,6 +378,7 @@ func _camera_path_clear(origin: Vector3, destination: Vector3) -> bool:
 	return _safe_camera_position(origin, destination).distance_squared_to(destination) < 0.0001
 
 func _pan(direction: Vector2, delta: float) -> void:
+	_cancel_selection_focus()
 	var right = Vector3.RIGHT.rotated(Vector3.UP, rotation.y)
 	var forward = Vector3.FORWARD.rotated(Vector3.UP, rotation.y)
 	global_position += (right * direction.x + forward * direction.y) * pan_speed * delta
@@ -339,3 +399,13 @@ func _clamp_to_map() -> void:
 	var half_depth = map_floor.size.z * 0.5 + map_margin
 	global_position.x = clampf(global_position.x, center.x - half_width, center.x + half_width)
 	global_position.z = clampf(global_position.z, center.z - half_depth, center.z + half_depth)
+
+func _clamped_focus_position(point: Vector3) -> Vector3:
+	var center := map_floor.global_position
+	var half_width := map_floor.size.x * 0.5 + map_margin
+	var half_depth := map_floor.size.z * 0.5 + map_margin
+	return Vector3(
+		clampf(point.x, center.x - half_width, center.x + half_width),
+		point.y,
+		clampf(point.z, center.z - half_depth, center.z + half_depth)
+	)

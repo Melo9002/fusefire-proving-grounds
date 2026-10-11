@@ -6,6 +6,9 @@ enum BattleResult { ONGOING, VICTORY, DEFEAT }
 
 signal turn_phase_changed(new_phase: TurnPhase)
 signal active_unit_changed(unit: TacticalUnit)
+## Presentation hint emitted from the same selection boundary used by battlefield
+## clicks, portraits, automatic cycling, and phase starts. It never changes turn state.
+signal selection_focus_requested(unit: TacticalUnit, force_recenter: bool)
 signal round_started(round_number: int)
 signal battle_ended(result: BattleResult)
 signal player_actions_exhausted
@@ -71,7 +74,7 @@ func select_player_unit(unit: TacticalUnit) -> bool:
 	if not unit.stats or unit.stats.current_ap <= 0 or unit.is_moving:
 		return false
 
-	_set_active_unit(unit)
+	_set_active_unit(unit, true)
 	return true
 
 func advance_automated_player(finished_unit: TacticalUnit) -> void:
@@ -258,11 +261,12 @@ func _end_round() -> void:
 	round_started.emit(current_round)
 	_start_player_turn_phase()
 
-func _set_active_unit(unit: TacticalUnit) -> void:
+func _set_active_unit(unit: TacticalUnit, force_camera_recenter := false) -> void:
 	if is_instance_valid(unit) and unit.tactical_state:
 		unit.tactical_state.begin_activation(current_round, int(current_phase))
 	active_unit = unit
 	active_unit_changed.emit(active_unit)
+	selection_focus_requested.emit(active_unit, force_camera_recenter)
 
 func _prioritize_carrier(roster: Array[TacticalUnit]) -> void:
 	for index in roster.size():

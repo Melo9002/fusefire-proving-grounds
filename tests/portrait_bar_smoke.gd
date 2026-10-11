@@ -45,7 +45,10 @@ func _run() -> void:
 	battle.try_move(moving_unit, destination)
 	check(turns.active_unit == moving_unit, "Final movement keeps selection until arrival")
 	await moving_unit.movement_finished
-	await process_frame
+	# Selection advances only after the blocking traversal/action-camera
+	# presentation releases the authoritative action barrier.
+	while battle.is_action_in_progress:
+		await process_frame
 	check(bar.portraits[2].display_state == UnitPortrait.DisplayState.EXHAUSTED, "Zero AP shows exhausted state")
 	check(bar.portraits[2].disabled, "Exhausted portrait cannot request selection")
 	check(turns.active_unit == turns.player_units[0], "Zero AP cycles to the next available unit")
