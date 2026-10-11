@@ -51,6 +51,7 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change reaction checkpoint/order rules | `_resolve_overwatch_reactions()` in `TacticalActionService`; checkpoint geometry is the pure `CombatRules.evaluate_attack_at_cell()` path | Overwatch reaction, combat cover, diagonal, and elevation tests |
 | Change direct-attack retaliation | `_resolve_attack_retaliation()` in `TacticalActionService`; the initiating Attack owns the nested result | Overwatch reaction and replay schema tests |
 | Change Overwatch movement/shot feedback | `TacticalActionPresenter._present_reactive_move()`; it consumes committed `MoveActionResult.reaction_events` | Overwatch reaction and tactical action presenter tests |
+| Change the purple Overwatch range overlay | Inspector color/padding on `OverwatchRangeVisualizer`; cell selection is `_refresh_overwatch_range()` in `BattleController` | Overwatch reaction test verifies display, clearing, phase handoff, and real AI continuation |
 | Change hypothetical continuation occupancy | `Pathfinder.calculate_path_with_occupancy()` and its single AI call in `_move_along_goal_path()` | Overwatch reaction fixture and stalemate seeds 25005/25100 |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |

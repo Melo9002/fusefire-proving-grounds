@@ -26,6 +26,7 @@
 [ext_resource type="Script" uid="uid://2jfkea6p7uoh" path="res://presentation/overlays/shot_trajectory_visualizer.gd" id="27_shot_trajectory"]
 [ext_resource type="Script" uid="uid://c3bchoobjde7d" path="res://systems/objectives/objective_manager.gd" id="28_objectives"]
 [ext_resource type="Script" uid="uid://dtrn5ar0jvj61" path="res://presentation/overlays/objective_zone_visualizer.gd" id="29_objective_zones"]
+[ext_resource type="Script" path="res://presentation/overlays/overwatch_range_visualizer.gd" id="33_overwatch_range"]
 [ext_resource type="Script" uid="uid://c8a8mxj62ynma" path="res://ui/objective_hud.gd" id="30_objective_hud"]
 [ext_resource type="Script" uid="uid://dtndlvy51i1x4" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
 [ext_resource type="Script" uid="uid://dw8rxo54ggelm" path="res://presentation/overlays/shot_result_feedback.gd" id="32_shot_result"]
@@ -88,7 +89,7 @@ script = ExtResource("1_822c8")
 camera = NodePath("../../CameraRig/Camera3D")
 grid_manager = NodePath("../GridManager")
 
-[node name="BattleController" type="Node3D" parent="Systems" unique_id=1810984402 node_paths=PackedStringArray("mouse_raycaster", "grid_cursor", "path_visualizer", "cover_visualizer", "shot_trajectory_visualizer", "grid_manager", "turn_manager")]
+[node name="BattleController" type="Node3D" parent="Systems" unique_id=1810984402 node_paths=PackedStringArray("mouse_raycaster", "grid_cursor", "path_visualizer", "cover_visualizer", "shot_trajectory_visualizer", "overwatch_range_visualizer", "grid_manager", "turn_manager")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72652817, -1.000001, -0.05766487)
 script = ExtResource("3_fg2v6")
 mouse_raycaster = NodePath("../MouseRaycaster")
@@ -96,6 +97,7 @@ grid_cursor = NodePath("../../Visualizers/GridCursor")
 path_visualizer = NodePath("../../Visualizers/PathVisualizer")
 cover_visualizer = NodePath("../../Visualizers/CoverVisualizer")
 shot_trajectory_visualizer = NodePath("../../Visualizers/ShotTrajectoryVisualizer")
+overwatch_range_visualizer = NodePath("../../Visualizers/OverwatchRangeVisualizer")
 grid_manager = NodePath("../GridManager")
 turn_manager = NodePath("../TurnManager")
 
@@ -641,6 +643,10 @@ highlight_color = Color(0.9999594, 0.122358926, 0.10734794, 0.8)
 
 [node name="PathVisualizer" type="Node3D" parent="Visualizers" unique_id=916084487 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("6_8rqs0")
+grid_manager = NodePath("../../Systems/GridManager")
+
+[node name="OverwatchRangeVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+script = ExtResource("33_overwatch_range")
 grid_manager = NodePath("../../Systems/GridManager")
 
 [node name="CoverVisualizer" type="Node3D" parent="Visualizers" unique_id=1588388241 node_paths=PackedStringArray("grid_manager")]

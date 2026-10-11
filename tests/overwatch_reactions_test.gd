@@ -16,6 +16,8 @@ func _run() -> void:
 	await _check_lethal_interruption()
 	await _check_direct_attack_retaliation()
 	await _check_defeated_watcher_cannot_retaliate()
+	await _check_player_overwatch_hands_off_turn_and_draws_range()
+	await _check_ai_acts_after_player_overwatch()
 	_check_hypothetical_occupancy()
 	var legacy := BattleConfiguration.new()
 	legacy.apply_replay({"player_count": 1, "enemy_count": 1, "supply_points_enabled": true, "aim_enabled": true, "shield_enabled": true})
@@ -160,6 +162,44 @@ func _check_defeated_watcher_cannot_retaliate() -> void:
 	check(watcher.stats.current_supply_points == watcher_sp_before and not watcher.tactical_state.is_overwatching, "A defeated watcher spends no SP and clears its unused reaction state")
 	level.queue_free()
 	await process_frame
+	await process_frame
+
+func _check_player_overwatch_hands_off_turn_and_draws_range() -> void:
+	var level := await _create_battle(1)
+	var controller := level.battle_controller
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	# Keep the enemy phase under manual debug control so this test observes the
+	# handoff without racing the asynchronous AI activation.
+	controller.set_debug_enemy_control(true)
+	check(await controller.try_overwatch(watcher), "Player can register Overwatch through the ordinary controller entry point")
+	check(level.turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN, "Final-unit Overwatch hands control to the enemy phase instead of waiting at zero AP")
+	var range_visualizer := level.get_node("Visualizers/OverwatchRangeVisualizer") as OverwatchRangeVisualizer
+	check(range_visualizer != null and not range_visualizer.displayed_cells.is_empty(), "Active friendly Overwatch draws a visible guarded range")
+	watcher.tactical_state.clear_overwatch()
+	controller.call("_refresh_overwatch_range")
+	check(range_visualizer.displayed_cells.is_empty(), "Guard range clears when the reservation is removed")
+	level.queue_free()
+	await process_frame
+
+func _check_ai_acts_after_player_overwatch() -> void:
+	var level := await _create_battle(1)
+	var controller := level.battle_controller
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	var transaction_before := controller.action_service.last_transaction_id
+	check(await controller.try_overwatch(watcher), "AI handoff fixture registers player Overwatch")
+	var deadline := Time.get_ticks_msec() + 4000
+	while controller.action_service.last_transaction_id <= transaction_before + 1 \
+	and level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
+	and Time.get_ticks_msec() < deadline:
+		await process_frame
+	check(controller.action_service.last_transaction_id > transaction_before + 1 \
+		or level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING,
+		"Enemy AI performs an authoritative action after player Overwatch hands off the phase")
+	level.queue_free()
 	await process_frame
 
 func _check_hypothetical_occupancy() -> void:

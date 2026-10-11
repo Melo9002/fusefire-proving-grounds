@@ -23,6 +23,7 @@ signal unit_defeated_in_battle(unit: TacticalUnit)
 @export var path_visualizer: PathVisualizer
 @export var cover_visualizer: CoverVisualizer
 @export var shot_trajectory_visualizer: ShotTrajectoryVisualizer
+@export var overwatch_range_visualizer: OverwatchRangeVisualizer
 @export var grid_manager: GridManager
 @export var turn_manager: TurnManager
 @export var debug_shots: bool = false
@@ -161,6 +162,7 @@ func _initialize_action_service() -> void:
 	turn_manager.action_completion_barrier = func() -> bool: return action_service.is_busy
 	_configure_action_service(null)
 	action_service.busy_changed.connect(_on_action_service_busy_changed)
+	action_service.action_committed.connect(_on_action_committed)
 
 func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.setup(
@@ -198,6 +200,27 @@ func _ensure_tactical_id(unit: TacticalUnit) -> void:
 
 func _on_action_service_busy_changed(is_busy: bool) -> void:
 	action_state_changed.emit(is_busy)
+
+func _on_action_committed(_result) -> void:
+	_refresh_overwatch_range()
+
+func _refresh_overwatch_range() -> void:
+	if not is_instance_valid(overwatch_range_visualizer):
+		return
+	var guarded := {}
+	for watcher in turn_manager.player_units + turn_manager.allied_units:
+		if not is_instance_valid(watcher) or not watcher.stats or watcher.stats.is_defeated \
+		or not watcher.tactical_state or not watcher.tactical_state.is_overwatching:
+			continue
+		var watcher_cell := grid_manager.get_unit_grid(watcher)
+		for cell: Vector3i in pathfinder.grid_to_id_map.keys():
+			var distance := CombatRules.attack_distance(watcher_cell, cell, grid_manager)
+			if distance == 0 or distance > watcher.attack_range:
+				continue
+			guarded[cell] = true
+	var cells: Array[Vector3i] = []
+	for cell: Vector3i in guarded.keys(): cells.append(cell)
+	overwatch_range_visualizer.show_cells(cells)
 
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
@@ -374,6 +397,7 @@ func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 		is_move_mode_active = false
 		is_attack_mode_active = false
 		is_shield_mode_active = false
+	_refresh_overwatch_range()
 
 func _on_authoritative_turn_ended(_record: Dictionary) -> void:
 	if is_instance_valid(action_service): action_service.advance_external_revision()
@@ -383,6 +407,7 @@ func _on_active_unit_changed(unit: TacticalUnit) -> void:
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	is_shield_mode_active = false
+	_refresh_overwatch_range()
 
 func update_unit_movement_zone() -> void:
 	if not tactical_unit or tactical_unit.is_moving:
@@ -584,6 +609,10 @@ func try_overwatch(unit: TacticalUnit) -> bool:
 	is_attack_mode_active = false
 	is_move_mode_active = false
 	is_shield_mode_active = false
+	if result != null and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
+	and not turn_manager.player_units.any(func(candidate: TacticalUnit) -> bool:
+		return is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated and candidate.stats.current_ap > 0):
+		turn_manager.end_current_turn()
 	return result != null
 
 func try_defend(unit: TacticalUnit) -> bool:
