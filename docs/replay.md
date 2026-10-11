@@ -71,7 +71,7 @@ Compatibility is intentionally finite. There is no promise that every developmen
 
 ## Presentation controls
 
-The replay bar supports pause/play, 0.5×–4× pacing, and Free, Follow Action, or Cinematic camera modes. Pausing freezes tactical progression and in-progress movement while leaving the inspection camera responsive. Presentation can be suppressed in headless tests without changing RNG, transactions, fingerprints, or mission outcome.
+The replay bar supports pause/play, 0.5×–4× pacing, and Free, Selection Focus, or Cinematic camera modes. Selection Focus uses `TacticalCamera.focus_unit_smoothly()`, including the same Inspector-authored transition duration and comfortable viewport margin used by live unit selection. It waits for that short transition before playing the action, while manual pan, drag, rotation, or zoom can interrupt it immediately. Pausing freezes tactical progression and in-progress movement while leaving the inspection camera responsive. Presentation can be suppressed in headless tests without changing RNG, transactions, fingerprints, or mission outcome.
 
 ## XCOM history lesson and future rewind
 

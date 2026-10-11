@@ -41,6 +41,8 @@ func _run() -> void:
 		var controls := replay.get_node_or_null("Visualizers/BattleUI/ReplayControls")
 		var replay_camera := replay.get_node("CameraRig") as TacticalCamera
 		_check(controls != null, "Replay creates dedicated playback controls")
+		if controls:
+			_check(controls.camera_button.get_item_text(BattleReplayPlayer.CameraMode.SELECTION_FOCUS) == "CAMERA: SELECTION FOCUS", "Replay exposes the shared selection-focus camera mode")
 		_check(replay_camera.process_mode == Node.PROCESS_MODE_ALWAYS, "Replay camera remains interactive during pause")
 		_check(not replay.get_node("Visualizers/BattleUI/UnitPortraitBar").visible, "Replay hides the tactical portrait bar")
 		_check(not replay.get_node("Visualizers/BattleUI/ObjectiveHUD").visible, "Replay hides the tactical objective HUD")

@@ -72,6 +72,20 @@ func _run() -> void:
 	level.turn_manager.call("_set_active_unit", second, true)
 	check(not rig.is_selection_focus_active() and rig.global_position.is_equal_approx(first.global_position), "Replay selection does not override replay camera ownership")
 
+	# Replay mode 1 deliberately invokes that same camera transition directly.
+	# Its wait remains interruptible so replay never traps manual camera input.
+	var replay_player := BattleReplayPlayer.new()
+	replay_player.level = level
+	replay_player.camera_mode = BattleReplayPlayer.CameraMode.SELECTION_FOCUS
+	level.add_child(replay_player)
+	rig.global_position = level.turn_manager.enemy_units[0].global_position
+	replay_player._focus_action.call_deferred({"kind": "wait", "actor": String(second.name)})
+	await process_frame
+	check(rig.is_selection_focus_active(), "Replay selection-focus mode uses the shared smooth transition")
+	rig._pan(Vector2.RIGHT, 0.016)
+	check(not rig.is_selection_focus_active(), "Manual pan interrupts replay selection focus")
+	await process_frame
+
 	level.queue_free()
 	await process_frame
 	await process_frame

@@ -7,7 +7,9 @@ const ReplayControlsData := preload("res://ui/replay_controls.gd")
 signal playback_finished(success: bool)
 signal playback_progressed(completed: int, total: int)
 
-enum CameraMode { FREE, FOLLOW_ACTION, CINEMATIC }
+# Keep these values ordered to match the replay camera OptionButton. Mode 1 now
+# shares TacticalCamera's selection-focus path.
+enum CameraMode { FREE, SELECTION_FOCUS, CINEMATIC }
 
 var recording
 var level: BattleLevel
@@ -146,8 +148,14 @@ func _focus_action(record: Dictionary) -> void:
 		return
 	if camera_mode == CameraMode.FREE:
 		camera.clear_cinematic_view()
-	elif camera_mode == CameraMode.FOLLOW_ACTION:
-		camera.focus_position(actor.global_position)
+	elif camera_mode == CameraMode.SELECTION_FOCUS:
+		camera.clear_cinematic_view()
+		camera.focus_unit_smoothly(actor, false)
+		# Replay action ordering waits for the same short, interruptible transition
+		# used by live selection. Manual camera input cancels the tween and releases
+		# this wait immediately.
+		while is_instance_valid(camera) and camera.is_selection_focus_active():
+			await get_tree().process_frame
 	elif camera_mode == CameraMode.CINEMATIC:
 		var focus_point := _action_focus_point(record, actor)
 		var director := level.action_camera_director

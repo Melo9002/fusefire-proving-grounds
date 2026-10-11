@@ -10,7 +10,7 @@ The normal phase order is player squad, AI allies, enemies, then the next round.
 
 Generated maps include cover formations, containers, buildings, platforms, hills, and vertical traversal. The special refinery uses an authored logical industrial layout inside the procedural map pipeline. All maps are converted into common `MapData`, validated for topology, spawns, traversal, and mission placement, and measured with tactical quality metrics.
 
-Completed battles retain an in-memory action recording. The player can replay the battle from its seed and setup. Replay executes the recorded commands through normal gameplay APIs and checks an authoritative state fingerprint after every action. Playback has pause/play, four speeds, free and action-follow cameras, and a reduced replay UI. It does not yet provide a timeline, rewind, saved replay file, or cinematic camera system.
+Completed battles retain an in-memory action recording. The player can replay the battle from its seed and setup. Replay executes the recorded commands through normal gameplay APIs and checks an authoritative state fingerprint after every action. Playback has pause/play, four speeds, free, shared selection-focus, and cinematic cameras, plus a reduced replay UI. It does not yet provide a timeline, rewind, or saved replay file.
 
 The prototype uses placeholder bean-shaped units and blockout terrain. It proves the combat, AI, objectives, map representation, procedural generation, simulation, deterministic replay, and debug foundations rather than final presentation or content production.
 
@@ -282,7 +282,7 @@ The quality score is diagnostic rather than a generation acceptance threshold. I
 - Pause menu: Esc pauses and offers Resume or Return to Match Setup.
 - Debug UI: F3 exposes map/unit/mission data, AI decisions and scores, AI-vs-AI/manual-enemy controls, and mission manipulation tools. This is intentionally development-facing.
 
-Replay hides the tactical action, AP, portrait, objective, world-bar, and debug UI. Its dedicated bar provides action progress, pause/play, 0.5×–4× speed, Free/Follow Action camera selection, and Return to Setup. This is a clean playback foundation rather than a full photo mode.
+Replay hides the tactical action, AP, portrait, objective, world-bar, and debug UI. Its dedicated bar provides action progress, pause/play, 0.5×–4× speed, Free/Selection Focus/Cinematic camera selection, and Return to Setup. Selection Focus shares the live-selection camera transition and Inspector settings. This is a clean playback foundation rather than a full photo mode.
 
 ## 12. Architecture
 
@@ -386,7 +386,7 @@ No explicit `TODO`, `FIXME`, or `HACK` markers were found in the inspected `.gd`
 
 - Units are placeholder bean models without production humanoid assets or combat animations.
 - Terrain and refinery visuals are blockout geometry generated from boxes/simple meshes.
-- Replay is in memory and sequential. It lacks persistent files, rewind/scrubbing, a timeline, smooth cinematic tracking, a final-mover-only camera, and a full photo interface.
+- Replay is in memory and sequential. It lacks persistent files, rewind/scrubbing, a timeline, a final-mover-only camera, and a full photo interface.
 - The tactical HUD remains visible during replay, although normal gameplay input and AI are disabled.
 - SP, ammunition, reload/resupply, weapons, classes, inventory, injury/incapacitation, and general carrying are absent.
 - There is no fog of war or perception model; AI reads authoritative battle state.
@@ -446,7 +446,7 @@ No additional known runtime bug is asserted here without a reproducible failure 
 | Battle pause and return to setup | IMPLEMENTED | `battle_pause_menu.gd` |
 | End-screen replay/setup buttons | IMPLEMENTED | `turn_hud_controller.gd` |
 | Deterministic verified replay | IMPLEMENTED | `systems/replay/`, replay tests |
-| Replay controls and action-follow camera | IMPLEMENTED | `replay_controls.gd`, `battle_replay_player.gd` |
+| Replay controls and shared selection-focus camera | IMPLEMENTED | `replay_controls.gd`, `battle_replay_player.gd`, `tactical_camera.gd` |
 | Replay timeline/rewind/cinematic cameras | PLACEHOLDER | No runtime system found |
 | Photo mode | PLACEHOLDER | No runtime system found |
 | Production humanoids/animation/art | PLACEHOLDER | Bean and blockout scenes |

@@ -50,7 +50,7 @@ func _build_interface() -> void:
 	camera_button = OptionButton.new()
 	camera_button.name = "ReplayCameraButton"
 	camera_button.add_item("CAMERA: FREE")
-	camera_button.add_item("CAMERA: FOLLOW ACTION")
+	camera_button.add_item("CAMERA: SELECTION FOCUS")
 	camera_button.add_item("CAMERA: CINEMATIC")
 	camera_button.select(0)
 	camera_button.item_selected.connect(_select_camera)
