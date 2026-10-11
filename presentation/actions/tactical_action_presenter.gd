@@ -61,7 +61,7 @@ func present_attack(result: AttackActionResult) -> void:
 			attacker.present_attack_impact(event.target_defeated)
 			if event.target_defeated: attacker.finish_defeat_presentation()
 		if attack_feedback.is_valid(): attack_feedback.call(target, attacker, event.did_hit, event.hit_chance)
-		print_rich("[color=orange][Overwatch Return][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
+		print_rich("[color=orange][Guard Return][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 		await _safe_delay(0.18)
 	if camera_presented:
 		await _safe_delay(0.42)
@@ -110,10 +110,10 @@ func present_shield(result: ShieldActionResult) -> void:
 func present_overwatch(result: OverwatchActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not is_instance_valid(unit):
-		result.presentation_error = "Overwatch presenter could not find actor '%s'" % result.request.actor_id
+		result.presentation_error = "Guard presenter could not find actor '%s'" % result.request.actor_id
 		return
 	if result.presentation_suppressed: return
-	print_rich("[color=orange][Overwatch][/color] %s reserves a reaction shot (%d SP ready)" % [unit.name, result.supply_points_before])
+	print_rich("[color=orange][Guard][/color] %s reserves a reaction shot (%d SP ready)" % [unit.name, result.supply_points_before])
 	await _safe_delay(0.2)
 
 func present_move(result: MoveActionResult) -> void:
@@ -162,7 +162,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> voi
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
 			if attack_feedback.is_valid(): attack_feedback.call(watcher, unit, event.did_hit, event.hit_chance)
-			print_rich("[color=orange][Overwatch][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
+			print_rich("[color=orange][Guard][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 			if event.target_defeated and is_instance_valid(unit):
 				unit.finish_defeat_presentation()
 				return

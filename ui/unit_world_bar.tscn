@@ -37,7 +37,7 @@ text = "CARRYING VIP"
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.55, 0.15, 1)
-text = "OVERWATCH"
+text = "GUARD"
 
 [node name="ExtractButton" type="Button" parent="VBoxContainer" unique_id=928966253]
 visible = false

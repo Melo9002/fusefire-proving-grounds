@@ -766,7 +766,7 @@ text = "Shield (1 AP)"
 
 [node name="OverwatchButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2
-text = "Overwatch (Ends Activation)"
+text = "Guard"
 
 [node name="InteractButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2

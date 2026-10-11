@@ -146,5 +146,5 @@ func _refresh_tactical_state() -> void:
 	if not _target_unit is TacticalUnit: return
 	var state := (_target_unit as TacticalUnit).tactical_state
 	if state and state.is_overwatching:
-		tactical_state_label.text = "OVERWATCH"
+		tactical_state_label.text = "GUARD"
 		tactical_state_label.visible = true

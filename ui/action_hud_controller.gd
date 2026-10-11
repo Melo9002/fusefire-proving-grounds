@@ -195,8 +195,8 @@ func _update_button_states() -> void:
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "Confirm the displayed guarded area and end this unit's activation." if battle_controller.is_overwatch_mode_active else ("Preview the guarded area before reserving one reaction." if overwatch_query.is_legal() else overwatch_query.reason())
-		overwatch_button.text = "CONFIRM" if battle_controller.is_overwatch_mode_active else "Overwatch"
+		overwatch_button.tooltip_text = "Confirm Guard: reserve one reaction against movement or a direct attack, then end this unit's activation." if battle_controller.is_overwatch_mode_active else ("Preview the guarded area before reserving one reaction." if overwatch_query.is_legal() else overwatch_query.reason())
+		overwatch_button.text = "CONFIRM GUARD" if battle_controller.is_overwatch_mode_active else "Guard"
 	if interact_button:
 		interact_button.visible = not terminal_query.candidate_results.is_empty() or not terminal_query.target_id.is_empty()
 		interact_button.disabled = terminal_query.legal_target_ids.is_empty()
@@ -206,7 +206,7 @@ func _update_button_states() -> void:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:
 		if unit.tactical_state and unit.tactical_state.is_overwatching:
-			tactical_state_label.text = "OVERWATCH"
+			tactical_state_label.text = "GUARD"
 		elif unit.tactical_state and unit.tactical_state.is_shielding:
 			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y]
 		else:
