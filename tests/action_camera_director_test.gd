@@ -13,6 +13,8 @@ func _initialize() -> void:
 	director.frequency = director.Frequency.COMBAT_ONLY
 	check(director.should_present(&"attack", 1), "Combat Only presents attacks")
 	check(not director.should_present(&"move", 0), "Combat Only leaves movement tactical")
+	check(director.should_present_for_faction(TacticalUnit.Faction.PLAYER, &"attack", 1), "Player-aligned combat can use the action camera")
+	check(not director.should_present_for_faction(TacticalUnit.Faction.ENEMY, &"attack", 0, true), "Enemy actors are not framed as the cinematic protagonist")
 	director.frequency = director.Frequency.ALL_ACTIONS
 	check(director.should_present(&"move", 1), "All Actions presents movement")
 	director.frequency = director.Frequency.OFF

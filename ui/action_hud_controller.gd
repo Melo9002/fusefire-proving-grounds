@@ -196,12 +196,12 @@ func _update_button_states() -> void:
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
 		overwatch_button.tooltip_text = "Confirm the displayed guarded area and end this unit's activation." if battle_controller.is_overwatch_mode_active else ("Preview the guarded area before reserving one reaction." if overwatch_query.is_legal() else overwatch_query.reason())
-		overwatch_button.text = "CONFIRM OVERWATCH" if battle_controller.is_overwatch_mode_active else "Overwatch (Ends Activation)"
+		overwatch_button.text = "CONFIRM" if battle_controller.is_overwatch_mode_active else "Overwatch"
 	if interact_button:
 		interact_button.visible = not terminal_query.candidate_results.is_empty() or not terminal_query.target_id.is_empty()
 		interact_button.disabled = terminal_query.legal_target_ids.is_empty()
 		interact_button.tooltip_text = "Activate the adjacent mission terminal" if not terminal_query.legal_target_ids.is_empty() else terminal_query.reason()
-		interact_button.text = "Interact (Free)"
+		interact_button.text = "Interact"
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:

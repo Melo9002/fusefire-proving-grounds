@@ -26,6 +26,14 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	registry.register_actor(unit)
+	var enemy := UNIT_SCENE.instantiate() as TacticalUnit
+	enemy.tactical_id = &"enemy"
+	enemy.faction = TacticalUnit.Faction.ENEMY
+	enemy.show_world_hud = false
+	root.add_child(enemy)
+	await process_frame
+	check(presenter._attack_camera_subject(enemy, unit) == unit, "Enemy attacks frame the threatened friendly unit")
+	check(presenter._attack_camera_subject(unit, enemy) == unit, "Friendly attacks frame the friendly attacker")
 	var hp := unit.stats.current_hp
 	var ap := unit.stats.current_ap
 	var move := MoveActionResult.new()
@@ -37,6 +45,7 @@ func run() -> void:
 	check(unit.stats.current_hp == hp and unit.stats.current_ap == ap, "Presentation cannot change HP or AP")
 
 	unit.queue_free()
+	enemy.queue_free()
 	presenter.queue_free()
 	grid.queue_free()
 	await process_frame

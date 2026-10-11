@@ -34,6 +34,16 @@ func _rebuild() -> void:
 		screen.mesh = panel
 		screen.position = Vector3(0.0, 0.86, -0.335)
 		root.add_child(screen)
+		var marker := Label3D.new()
+		marker.name = "ObjectiveMarker"
+		marker.text = "◆  TERMINAL"
+		marker.position = Vector3(0.0, 2.15, 0.0)
+		marker.font_size = 34
+		marker.modulate = Color(0.86, 0.48, 1.0)
+		marker.outline_size = 8
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.no_depth_test = true
+		root.add_child(marker)
 		add_child(root)
 		root.global_position = grid_manager.grid_to_world(state.definition.grid_position)
 		terminal_nodes[terminal_id] = root
@@ -47,8 +57,10 @@ func _apply_state(state: MissionTerminalState) -> void:
 	if not is_instance_valid(root): return
 	var body := root.get_child(0) as MeshInstance3D
 	var screen := root.get_child(1) as MeshInstance3D
+	var marker := root.get_node("ObjectiveMarker") as Label3D
 	body.material_override = _material(Color(0.18, 0.22, 0.3) if not state.is_activated else Color(0.16, 0.42, 0.28))
 	screen.material_override = _material(Color(0.72, 0.26, 0.92) if not state.is_activated else Color(0.28, 1.0, 0.55))
+	marker.visible = not state.is_activated
 
 func _material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

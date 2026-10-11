@@ -36,10 +36,18 @@ func should_present(kind: StringName, ap_after: int, important := false) -> bool
 			return true
 	return false
 
+func should_present_for_faction(faction: TacticalUnit.Faction, kind: StringName, ap_after: int, important := false) -> bool:
+	# Enemy actions may still receive a cinematic, but the presenter frames the
+	# threatened friendly unit. Routine enemy movement and preparation remain in
+	# the tactical view so the camera does not treat both factions as protagonists.
+	if faction not in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY]:
+		return false
+	return should_present(kind, ap_after, important)
+
 func present(actor: TacticalUnit, kind: StringName, focus_point: Vector3, ap_after: int, important := false, force := false) -> bool:
 	if not is_instance_valid(tactical_camera) or not is_instance_valid(actor):
 		return false
-	if not force and not should_present(kind, ap_after, important):
+	if not force and not should_present_for_faction(actor.faction, kind, ap_after, important):
 		return false
 	tactical_camera.frame_cinematic_action(actor, focus_point)
 	while is_instance_valid(tactical_camera) and tactical_camera.is_camera_transitioning():

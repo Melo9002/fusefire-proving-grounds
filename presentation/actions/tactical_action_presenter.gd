@@ -38,7 +38,9 @@ func present_attack(result: AttackActionResult) -> void:
 		return
 	var camera_presented := false
 	if _camera_available():
-		camera_presented = await action_camera_director.present(attacker, &"attack", result.target_position, result.actor_ap_after, result.target_defeated)
+		var camera_subject := _attack_camera_subject(attacker, target)
+		var camera_focus := attacker.global_position if camera_subject == target else result.target_position
+		camera_presented = await action_camera_director.present(camera_subject, &"attack", camera_focus, result.actor_ap_after, result.target_defeated)
 	if not is_instance_valid(attacker):
 		result.presentation_error = "Attack actor left the scene during presentation"
 		await _finish_camera(camera_presented)
@@ -51,7 +53,9 @@ func present_attack(result: AttackActionResult) -> void:
 	for event in result.reaction_events:
 		if not is_instance_valid(target): break
 		if _camera_available():
-			camera_presented = await action_camera_director.present(target, &"attack", attacker.global_position if is_instance_valid(attacker) else result.target_position, 0, true) or camera_presented
+			var return_camera_subject := _attack_camera_subject(target, attacker)
+			var return_camera_focus := target.global_position if return_camera_subject == attacker else (attacker.global_position if is_instance_valid(attacker) else result.target_position)
+			camera_presented = await action_camera_director.present(return_camera_subject, &"attack", return_camera_focus, 0, true) or camera_presented
 		target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position)
 		if event.did_hit and is_instance_valid(attacker):
 			attacker.present_attack_impact(event.target_defeated)
@@ -151,7 +155,9 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> voi
 		for event in reactions_by_checkpoint.get(index, []):
 			var watcher := _actor(event.watcher_id)
 			if not reaction_camera_used and is_instance_valid(watcher) and _camera_available():
-				reaction_camera_used = await action_camera_director.present(watcher, &"attack", unit.global_position, 0, true)
+				var reaction_camera_subject := _attack_camera_subject(watcher, unit)
+				var reaction_camera_focus := watcher.global_position if reaction_camera_subject == unit else unit.global_position
+				reaction_camera_used = await action_camera_director.present(reaction_camera_subject, &"attack", reaction_camera_focus, 0, true)
 			if is_instance_valid(watcher): watcher.present_attack(unit.global_position)
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
@@ -231,6 +237,11 @@ func _snap_to_committed_destination(unit: TacticalUnit, result: MoveActionResult
 
 func _actor(actor_id: StringName) -> TacticalUnit:
 	return actor_registry.resolve(actor_id) if is_instance_valid(actor_registry) else null
+
+func _attack_camera_subject(attacker: TacticalUnit, target: TacticalUnit) -> TacticalUnit:
+	if is_instance_valid(attacker) and attacker.faction == TacticalUnit.Faction.ENEMY and is_instance_valid(target) and target.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY]:
+		return target
+	return attacker
 
 func _camera_available() -> bool:
 	return is_instance_valid(action_camera_director) and not (replay_mode_provider.is_valid() and replay_mode_provider.call())
