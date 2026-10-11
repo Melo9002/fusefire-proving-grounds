@@ -50,10 +50,13 @@ func present_attack(result: AttackActionResult) -> void:
 	if attack_feedback.is_valid(): attack_feedback.call(attacker, target, result.did_hit, result.hit_chance)
 	for event in result.reaction_events:
 		if not is_instance_valid(target): break
+		if _camera_available():
+			camera_presented = await action_camera_director.present(target, &"attack", attacker.global_position if is_instance_valid(attacker) else result.target_position, 0, true) or camera_presented
 		target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position)
 		if event.did_hit and is_instance_valid(attacker):
 			attacker.present_attack_impact(event.target_defeated)
 			if event.target_defeated: attacker.finish_defeat_presentation()
+		if attack_feedback.is_valid(): attack_feedback.call(target, attacker, event.did_hit, event.hit_chance)
 		print_rich("[color=orange][Overwatch Return][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 		await _safe_delay(0.18)
 	if camera_presented:
@@ -138,6 +141,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> voi
 	for event in result.reaction_events:
 		if not reactions_by_checkpoint.has(event.checkpoint_index): reactions_by_checkpoint[event.checkpoint_index] = []
 		reactions_by_checkpoint[event.checkpoint_index].append(event)
+	var reaction_camera_used := false
 	for index in range(1, result.presentation_path.size()):
 		if not is_instance_valid(unit): return
 		var segment := PackedVector3Array([unit.global_position, result.presentation_path[index]])
@@ -146,9 +150,12 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> voi
 		await _wait_for_movement(unit, result)
 		for event in reactions_by_checkpoint.get(index, []):
 			var watcher := _actor(event.watcher_id)
+			if not reaction_camera_used and is_instance_valid(watcher) and _camera_available():
+				reaction_camera_used = await action_camera_director.present(watcher, &"attack", unit.global_position, 0, true)
 			if is_instance_valid(watcher): watcher.present_attack(unit.global_position)
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
+			if attack_feedback.is_valid(): attack_feedback.call(watcher, unit, event.did_hit, event.hit_chance)
 			print_rich("[color=orange][Overwatch][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 			if event.target_defeated and is_instance_valid(unit):
 				unit.finish_defeat_presentation()

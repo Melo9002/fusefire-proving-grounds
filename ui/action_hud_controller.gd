@@ -34,6 +34,7 @@ func _ready() -> void:
 	if overwatch_button:
 		overwatch_button.pressed.connect(_on_overwatch_pressed)
 	battle_controller.shield_mode_toggled.connect(_on_shield_mode_toggled)
+	battle_controller.overwatch_mode_toggled.connect(_on_overwatch_mode_toggled)
 	if end_unit_button:
 		end_unit_button.pressed.connect(_on_end_unit_pressed)
 	battle_controller.move_mode_toggled.connect(_on_move_mode_toggled)
@@ -95,7 +96,11 @@ func _on_shield_pressed() -> void:
 
 func _on_overwatch_pressed() -> void:
 	var active_unit := battle_controller.tactical_unit
-	if is_instance_valid(active_unit): await battle_controller.try_overwatch(active_unit)
+	if not is_instance_valid(active_unit): return
+	if battle_controller.is_overwatch_mode_active:
+		await battle_controller.try_overwatch(active_unit)
+	else:
+		battle_controller.toggle_overwatch_mode()
 
 func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
@@ -117,6 +122,9 @@ func _on_attack_mode_toggled(is_active: bool) -> void:
 func _on_shield_mode_toggled(is_active: bool) -> void:
 	if shield_button:
 		shield_button.text = "Choose Threat" if is_active else "Shield (1 AP)"
+
+func _on_overwatch_mode_toggled(_is_active: bool) -> void:
+	_update_button_states()
 
 func _on_attack_preview_changed(text: String) -> void:
 	if attack_button and battle_controller.is_attack_mode_active:
@@ -176,8 +184,8 @@ func _update_button_states() -> void:
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "End this unit's activation. Reserve one reaction against hostile movement or a direct attack." if overwatch_query.is_legal() else overwatch_query.reason()
-		overwatch_button.text = "Overwatch (Ends Activation)"
+		overwatch_button.tooltip_text = "Confirm the displayed guarded area and end this unit's activation." if battle_controller.is_overwatch_mode_active else ("Preview the guarded area before reserving one reaction." if overwatch_query.is_legal() else overwatch_query.reason())
+		overwatch_button.text = "CONFIRM OVERWATCH" if battle_controller.is_overwatch_mode_active else "Overwatch (Ends Activation)"
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:

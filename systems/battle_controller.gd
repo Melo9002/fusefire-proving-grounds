@@ -7,6 +7,7 @@ const ActionCameraDirectorData = preload("res://presentation/camera/action_camer
 signal move_mode_toggled(is_active: bool)
 signal attack_mode_toggled(is_active: bool)
 signal shield_mode_toggled(is_active: bool)
+signal overwatch_mode_toggled(is_active: bool)
 signal attack_preview_changed(text: String)
 signal attack_resolved(attacker: TacticalUnit, target: TacticalUnit, did_hit: bool, hit_chance: int)
 signal action_state_changed(is_busy: bool)
@@ -58,6 +59,7 @@ var is_action_in_progress: bool:
 var is_move_mode_active: bool = false:
 	set(value):
 		if is_move_mode_active != value:
+			if value: is_overwatch_mode_active = false
 			is_move_mode_active = value
 			move_mode_toggled.emit(is_move_mode_active)
 			if not is_move_mode_active:
@@ -68,6 +70,7 @@ var is_move_mode_active: bool = false:
 var is_attack_mode_active: bool = false:
 	set(value):
 		if is_attack_mode_active != value:
+			if value: is_overwatch_mode_active = false
 			is_attack_mode_active = value
 			attack_mode_toggled.emit(is_attack_mode_active)
 			if not is_attack_mode_active:
@@ -78,8 +81,20 @@ var is_attack_mode_active: bool = false:
 var is_shield_mode_active := false:
 	set(value):
 		if is_shield_mode_active == value: return
+		if value: is_overwatch_mode_active = false
 		is_shield_mode_active = value
 		shield_mode_toggled.emit(value)
+
+var is_overwatch_mode_active := false:
+	set(value):
+		if is_overwatch_mode_active == value: return
+		is_overwatch_mode_active = value
+		if value:
+			is_move_mode_active = false
+			is_attack_mode_active = false
+			is_shield_mode_active = false
+		_refresh_overwatch_range()
+		overwatch_mode_toggled.emit(value)
 
 func _ready() -> void:
 	if not mouse_raycaster or not grid_manager or not grid_manager.map_floor or not path_visualizer or not cover_visualizer or not turn_manager or not grid_cursor:
@@ -208,16 +223,17 @@ func _refresh_overwatch_range() -> void:
 	if not is_instance_valid(overwatch_range_visualizer):
 		return
 	var guarded := {}
-	for watcher in turn_manager.player_units + turn_manager.allied_units:
+	var watchers: Array[TacticalUnit] = []
+	watchers.assign(turn_manager.player_units + turn_manager.allied_units)
+	if is_overwatch_mode_active and is_instance_valid(tactical_unit) and not watchers.has(tactical_unit):
+		watchers.append(tactical_unit)
+	for watcher in watchers:
 		if not is_instance_valid(watcher) or not watcher.stats or watcher.stats.is_defeated \
-		or not watcher.tactical_state or not watcher.tactical_state.is_overwatching:
+		or not watcher.tactical_state \
+		or (not watcher.tactical_state.is_overwatching \
+		and not (is_overwatch_mode_active and watcher == tactical_unit)):
 			continue
-		var watcher_cell := grid_manager.get_unit_grid(watcher)
-		for cell: Vector3i in pathfinder.grid_to_id_map.keys():
-			var distance := CombatRules.attack_distance(watcher_cell, cell, grid_manager)
-			if distance == 0 or distance > watcher.attack_range:
-				continue
-			guarded[cell] = true
+		for cell in _legal_shot_cells(watcher): guarded[cell] = true
 	var cells: Array[Vector3i] = []
 	for cell: Vector3i in guarded.keys(): cells.append(cell)
 	overwatch_range_visualizer.show_cells(cells)
@@ -313,6 +329,13 @@ func toggle_shield_mode() -> void:
 		is_move_mode_active = false
 		is_attack_mode_active = false
 
+func toggle_overwatch_mode() -> void:
+	if not is_current_phase_manually_controlled() or is_action_in_progress or not is_instance_valid(tactical_unit):
+		return
+	if not is_overwatch_mode_active and not query_overwatch(tactical_unit).is_legal():
+		return
+	is_overwatch_mode_active = not is_overwatch_mode_active
+
 func _process(_delta: float) -> void:
 	if not turn_manager or not is_current_phase_manually_controlled():
 		return
@@ -397,6 +420,7 @@ func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 		is_move_mode_active = false
 		is_attack_mode_active = false
 		is_shield_mode_active = false
+		is_overwatch_mode_active = false
 	_refresh_overwatch_range()
 
 func _on_authoritative_turn_ended(_record: Dictionary) -> void:
@@ -407,6 +431,7 @@ func _on_active_unit_changed(unit: TacticalUnit) -> void:
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	is_shield_mode_active = false
+	is_overwatch_mode_active = false
 	_refresh_overwatch_range()
 
 func update_unit_movement_zone() -> void:
@@ -427,21 +452,29 @@ func update_attack_range() -> void:
 		path_visualizer.clear_range_zone()
 		return
 
-	var attacker_grid = grid_manager.get_unit_grid(tactical_unit)
+	current_attack_zone.assign(_legal_shot_cells(tactical_unit))
+	path_visualizer.draw_range_zone(current_attack_zone, Color(0.95, 0.2, 0.2, 0.3))
+
+func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
+	var cells: Array[Vector3i] = []
+	if not is_instance_valid(attacker) or not attacker.stats:
+		return cells
+	var attacker_grid = grid_manager.get_unit_grid(attacker)
 	for grid_pos in pathfinder.grid_to_id_map.keys():
 		var point_id = pathfinder.grid_to_id_map[grid_pos]
 		if pathfinder.astar.is_point_disabled(point_id):
 			continue
 
 		var distance = CombatRules.attack_distance(attacker_grid, grid_pos, grid_manager)
-		if distance == 0 or distance > tactical_unit.attack_range:
+		if distance == 0 or distance > attacker.attack_range:
 			continue
 
 		var world_pos = grid_manager.grid_to_world(grid_pos)
-		if CombatRules.has_line_of_sight_to_position(tactical_unit, world_pos, grid_manager, get_world_3d()):
-			current_attack_zone.append(grid_pos)
-
-	path_visualizer.draw_range_zone(current_attack_zone, Color(0.95, 0.2, 0.2, 0.3))
+		if CombatRules.has_line_of_sight_to_position(attacker, world_pos, grid_manager, get_world_3d()):
+			cells.append(grid_pos)
+	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
+		return a.x < b.x or (a.x == b.x and (a.z < b.z or (a.z == b.z and a.y < b.y))))
+	return cells
 
 func world_to_grid(pos: Vector3) -> Vector3i:
 	return grid_manager.world_to_grid(pos)
@@ -609,6 +642,7 @@ func try_overwatch(unit: TacticalUnit) -> bool:
 	is_attack_mode_active = false
 	is_move_mode_active = false
 	is_shield_mode_active = false
+	is_overwatch_mode_active = false
 	if result != null and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
 	and not turn_manager.player_units.any(func(candidate: TacticalUnit) -> bool:
 		return is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated and candidate.stats.current_ap > 0):

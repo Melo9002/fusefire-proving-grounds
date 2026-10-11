@@ -173,9 +173,14 @@ func _check_player_overwatch_hands_off_turn_and_draws_range() -> void:
 	# Keep the enemy phase under manual debug control so this test observes the
 	# handoff without racing the asynchronous AI activation.
 	controller.set_debug_enemy_control(true)
-	check(await controller.try_overwatch(watcher), "Player can register Overwatch through the ordinary controller entry point")
-	check(level.turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN, "Final-unit Overwatch hands control to the enemy phase instead of waiting at zero AP")
+	var ap_before := watcher.stats.current_ap
+	controller.toggle_overwatch_mode()
 	var range_visualizer := level.get_node("Visualizers/OverwatchRangeVisualizer") as OverwatchRangeVisualizer
+	check(controller.is_overwatch_mode_active and watcher.stats.current_ap == ap_before, "First Overwatch press previews without committing or spending AP")
+	check(range_visualizer != null and range_visualizer.displayed_cells == controller.call("_legal_shot_cells", watcher), "Overwatch preview reuses the exact Attack range and line-of-sight cells")
+	check(await controller.try_overwatch(watcher), "Player can register Overwatch through the ordinary controller entry point")
+	check(not controller.is_overwatch_mode_active, "Confirming Overwatch leaves preview mode")
+	check(level.turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN, "Final-unit Overwatch hands control to the enemy phase instead of waiting at zero AP")
 	check(range_visualizer != null and not range_visualizer.displayed_cells.is_empty(), "Active friendly Overwatch draws a visible guarded range")
 	watcher.tactical_state.clear_overwatch()
 	controller.call("_refresh_overwatch_range")
@@ -199,6 +204,10 @@ func _check_ai_acts_after_player_overwatch() -> void:
 	check(controller.action_service.last_transaction_id > transaction_before + 1 \
 		or level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING,
 		"Enemy AI performs an authoritative action after player Overwatch hands off the phase")
+	while controller.action_service.is_busy and Time.get_ticks_msec() < deadline:
+		await process_frame
+	var feedback = level.get_node("Visualizers/ShotResultFeedback")
+	check(feedback.last_result_text in ["HIT", "MISS"], "Overwatch reaction uses the ordinary visible Attack hit/miss feedback")
 	level.queue_free()
 	await process_frame
 

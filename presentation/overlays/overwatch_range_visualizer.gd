@@ -1,9 +1,8 @@
 extends Node3D
 class_name OverwatchRangeVisualizer
 
-## Read-only presentation of the potential range currently guarded by friendly
-## Overwatch. Cover and line of sight are still evaluated at each real trigger;
-## TacticalActionService remains the authority for whether a reaction is legal.
+## Read-only presentation of the same range and line-of-sight cells used by the
+## Attack preview. TacticalActionService still revalidates every real trigger.
 
 @export var grid_manager: GridManager
 @export var guard_color := Color(0.58, 0.24, 0.88, 0.28)
