@@ -188,6 +188,13 @@ func _execute_turn() -> void:
 		if has_moved and await _try_safe_second_advance(movement_target):
 			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Wait")
 			continue
+		var defensive_threat := _most_relevant_defensive_threat()
+		if unit.stats.current_ap == 1 and defensive_threat and await _try_shield_against(defensive_threat):
+			_record_ai_decision("Shield", defensive_threat.name, "Used the final AP to face a credible hostile threat.", "Guard, Wait")
+			continue
+		if await _try_guard_if_useful():
+			_record_ai_decision("Guard", unit.name, "Reserved a reaction because a hostile can plausibly move or attack.", "Shield, Wait")
+			break
 		var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
 		_wait_for_next_turn(_movement_wait_reason(reason), "Attack, Move")
 		break
@@ -213,6 +220,26 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 				return MissionStepResult.INTERACTED
 		if not has_moved and rescue_target and await _move_toward(rescue_target):
 			_record_ai_decision("Move", str(_last_move_destination), "Approached the rescue target.", "Attack, Wait")
+			return MissionStepResult.MOVED
+		return MissionStepResult.NONE
+	if current_mission_intent.kind == MissionIntentData.Kind.INTERACT_TERMINAL:
+		var terminal := _objective_manager.get_inactive_terminal_for_objective(current_mission_intent.objective_id)
+		if not terminal:
+			return MissionStepResult.NONE
+		var terminal_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
+		if terminal_query.is_legal():
+			if await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
+				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the required adjacent mission terminal.", "Attack, Move, Wait")
+				return MissionStepResult.INTERACTED
+		var approach := _nearest_terminal_approach_cell(terminal)
+		if approach.x >= 0 and await _move_toward_cell(approach, has_moved):
+			_record_ai_decision("Move", str(_last_move_destination), "Approached the required mission terminal.", "Attack, Interact, Wait")
+			# Terminal interactions are free and intentionally remain available at
+			# zero AP. Complete the objective now rather than relying on another loop.
+			var arrived_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
+			if arrived_query.is_legal() and await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
+				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the terminal after the final movement AP.", "Attack, Wait")
+				return MissionStepResult.INTERACTED
 			return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.PROTECT:
@@ -311,6 +338,75 @@ func _try_shield_against(threat: TacticalUnit) -> bool:
 		return false
 	var query := battle_controller.query_shield(unit, threat)
 	return query.is_legal() and await battle_controller.try_shield(unit, threat)
+
+func _try_guard_if_useful() -> bool:
+	if not is_instance_valid(unit) or not unit.stats or _consecutive_low_value_actions > 0:
+		return false
+	var query := battle_controller.query_overwatch(unit)
+	if not query.is_legal() or not _guard_has_plausible_trigger():
+		return false
+	return await battle_controller.try_overwatch(unit)
+
+func _guard_has_plausible_trigger() -> bool:
+	var actor_cell := battle_controller.grid_manager.get_unit_grid(unit)
+	for hostile in _get_hostile_units():
+		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
+			continue
+		if battle_controller.query_attack(unit, hostile).is_legal():
+			return true
+		var hostile_cell := battle_controller.grid_manager.get_unit_grid(hostile)
+		if CombatRules.attack_distance(actor_cell, hostile_cell, battle_controller.grid_manager) <= unit.attack_range + hostile.stats.speed:
+			return true
+	return false
+
+func _most_relevant_defensive_threat() -> TacticalUnit:
+	if not is_instance_valid(unit) or unit.shield_capability == null or _consecutive_low_value_actions > 0:
+		return null
+	var best: TacticalUnit
+	var best_score := -INF
+	for hostile in _get_hostile_units():
+		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
+			continue
+		var incoming := CombatRules.evaluate_attack(hostile, unit, battle_controller.grid_manager, hostile.get_world_3d())
+		if not incoming.is_legal:
+			continue
+		# Current attacks share one prototype damage value, so hit chance is the
+		# meaningful threat discriminator without duplicating service damage rules.
+		var score := float(incoming.hit_chance)
+		if score > best_score or (is_equal_approx(score, best_score) and (best == null or String(hostile.tactical_id) < String(best.tactical_id))):
+			best = hostile
+			best_score = score
+	return best
+
+func _nearest_terminal_approach_cell(terminal: MissionTerminalState) -> Vector3i:
+	if not terminal or not is_instance_valid(battle_controller):
+		return Vector3i(-1, -1, -1)
+	var grid := battle_controller.grid_manager
+	var start := grid.get_unit_grid(unit)
+	var terminal_cell := terminal.definition.grid_position
+	var best := Vector3i(-1, -1, -1)
+	var best_path_size := INF
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var candidate := terminal_cell + Vector3i(x, 0, z)
+			if candidate == terminal_cell or not grid.map_data.has_cell(candidate):
+				continue
+			if candidate != start and not grid.can_unit_occupy_cell(unit, candidate):
+				continue
+			if not CombatRules.can_reach_adjacent(candidate, terminal_cell, grid):
+				continue
+			var path := battle_controller.pathfinder.calculate_3d_path(start, candidate)
+			if candidate == start:
+				return candidate
+			if path.is_empty():
+				continue
+			if path.size() < best_path_size or (path.size() == best_path_size and _cell_less(candidate, best)):
+				best = candidate
+				best_path_size = path.size()
+	return best
+
+func _cell_less(left: Vector3i, right: Vector3i) -> bool:
+	return right.x < 0 or left.x < right.x or (left.x == right.x and (left.y < right.y or (left.y == right.y and left.z < right.z)))
 
 func _get_ai_mission_intent() -> MissionIntentData:
 	if not _objective_manager:
@@ -582,7 +678,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var hostiles := _get_hostile_units()
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
-	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE]
+	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
 	var route_end := battle_controller.world_to_grid(path[path.size() - 1])
 	var initial_cost := _route_cost(path)
 	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, objective_route, hostiles, battle_controller.grid_manager, _policy, null)
@@ -855,8 +951,10 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
 	if action == "Wait":
 		_consecutive_low_value_actions += 1
-	elif action in ["Move", "Attack", "Rescue", "Extract", "Support"]:
+	elif action in ["Move", "Attack", "Rescue", "Extract", "Interact", "Support"]:
 		_consecutive_low_value_actions = 0
+	elif action in ["Guard", "Shield"]:
+		_consecutive_low_value_actions += 1
 	# Movement scoring is published as soon as the destination is selected so the
 	# heatmap appears with the first movement frame. Avoid publishing it again after
 	# the movement coroutine completes.

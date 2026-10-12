@@ -116,14 +116,39 @@ func can_unit_act(unit: TacticalUnit) -> bool:
 	return false
 
 func remove_unit(unit: TacticalUnit) -> void:
+	var was_active := active_unit == unit
+	var was_player := player_units.has(unit)
+	var was_ally := allied_units.has(unit)
+	var was_enemy := enemy_units.has(unit)
 	if is_instance_valid(unit) and unit.tactical_state:
 		unit.tactical_state.reset()
 	player_units.erase(unit)
 	allied_units.erase(unit)
 	enemy_units.erase(unit)
-	if active_unit == unit:
+	if was_active:
 		active_unit = null
 	_check_battle_result()
+	if was_active and battle_result == BattleResult.ONGOING:
+		_continue_after_active_unit_removed.call_deferred(was_player, was_ally, was_enemy)
+
+func _continue_after_active_unit_removed(was_player: bool, was_ally: bool, was_enemy: bool) -> void:
+	while action_completion_barrier.is_valid() and action_completion_barrier.call():
+		await get_tree().process_frame
+	if battle_result != BattleResult.ONGOING or is_instance_valid(active_unit):
+		return
+	if current_phase == TurnPhase.PLAYER_TURN and was_player:
+		for candidate in player_units:
+			if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
+			and candidate.stats.current_ap > 0:
+				_set_active_unit(candidate)
+				return
+		player_actions_exhausted.emit()
+	elif current_phase == TurnPhase.ALLY_TURN and was_ally:
+		active_unit_index -= 1
+		_advance_ally_unit_queue()
+	elif current_phase == TurnPhase.ENEMY_TURN and was_enemy:
+		active_unit_index -= 1
+		_advance_enemy_unit_queue()
 
 func remove_extracted_unit(unit: TacticalUnit) -> void:
 	if is_instance_valid(unit) and unit.tactical_state:

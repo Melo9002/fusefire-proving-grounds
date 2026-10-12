@@ -221,7 +221,11 @@ Activation costs zero AP and zero SP, matching Rescue and Extract. A zero-AP act
 
 ### 7. Cross-mechanic AI and integration
 
-Compare typed legal options in existing AI flow with stable tie-breaking and focused policy weights. Construct cases where AI rationally chooses every new action. Run full regressions without changing unrelated AI architecture.
+**Implemented in 01.11.7.** The existing `AIController` remains the policy owner and submits every choice through the same `BattleController`/`TacticalActionService` query and action paths as the player. Reload and Aim retain their established policies. Shield use is capability-driven, uses the final AP only after useful attacks and objective movement have been considered, and faces the legal hostile with the highest incoming hit chance (stable tactical ID breaks ties). Guard replaces an otherwise unproductive Wait only when a hostile can plausibly move into range or make a direct attack; consecutive low-value tracking prevents repeated Shield/Guard turns.
+
+Terminal objectives now publish an explicit `INTERACT_TERMINAL` mission intent. AI actors deterministically choose the shortest legal adjacent approach cell, use ordinary authoritative Move actions to reach it, and submit the free terminal action immediately even when the final Move spent their last AP. Hostile factions never receive that intent. No general interaction planner or new AI framework was introduced.
+
+Cross-mechanic testing exposed one turn-ownership defect: a Guard reaction could defeat the active rescue carrier and leave `TurnManager.active_unit` empty. `TurnManager.remove_unit()` now waits for the action presentation barrier and advances the appropriate surviving roster exactly once. The permanent seeds 25005 and 25100 pass, the new 25102 rescue-reaction case completes, and the Prototype 1 matrix returns 15/15 with zero issues.
 
 This order deliberately establishes resources, lifetime state, and modifier contracts before Overwatch. Interaction follows the high-risk movement work to keep slices focused.
 

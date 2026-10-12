@@ -8,6 +8,7 @@ enum Kind {
 	EXTRACT,
 	PROTECT,
 	RESCUE,
+	INTERACT_TERMINAL,
 	SURVIVE,
 }
 

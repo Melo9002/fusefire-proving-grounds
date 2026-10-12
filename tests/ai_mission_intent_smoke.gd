@@ -44,6 +44,10 @@ func _run() -> void:
 	manager.load_mission(MissionCatalog.create_mission(0, 2))
 	check(manager.get_mission_intent(friendly).kind == MissionIntentData.Kind.ELIMINATE, "Eliminate exposes the combat mission goal")
 
+	manager.load_mission(MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.INTERACT_TERMINAL, 1, false))
+	check(manager.get_mission_intent(friendly).kind == MissionIntentData.Kind.INTERACT_TERMINAL, "Terminal objectives expose an explicit interaction intent")
+	check(not manager.get_mission_intent(enemy).is_actionable(), "Player-owned terminals never direct hostile AI")
+
 	friendly.free()
 	enemy.free()
 	print("AI mission intent smoke: %d failure(s)" % failures)

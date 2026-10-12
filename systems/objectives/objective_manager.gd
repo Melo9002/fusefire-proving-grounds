@@ -84,6 +84,13 @@ func get_terminal_ids() -> Array[StringName]:
 func get_terminal_state(terminal_id: StringName) -> MissionTerminalState:
 	return _terminal_states.get(terminal_id) as MissionTerminalState
 
+func get_inactive_terminal_for_objective(objective_id: StringName) -> MissionTerminalState:
+	for terminal_id in get_terminal_ids():
+		var terminal := get_terminal_state(terminal_id)
+		if terminal and not terminal.is_activated and terminal.definition.objective_id == objective_id:
+			return terminal
+	return null
+
 func capture_terminal_states() -> Dictionary:
 	var result := {}
 	for terminal_id in get_terminal_ids():
@@ -151,6 +158,9 @@ func get_mission_intent(unit: TacticalUnit) -> MissionIntentData:
 	var reach := _first_active_objective(MissionObjectiveDefinition.Kind.REACH, unit.faction)
 	if reach:
 		return _build_intent(reach, MissionIntentData.Kind.REACH, &"reach", "Reach the mission destination.")
+	var terminal := _first_active_objective(MissionObjectiveDefinition.Kind.INTERACT_TERMINAL, unit.faction)
+	if terminal:
+		return _build_intent(terminal, MissionIntentData.Kind.INTERACT_TERMINAL, &"", "Reach and activate the mission terminal.")
 	var protect := _first_active_objective(MissionObjectiveDefinition.Kind.PROTECT, unit.faction)
 	if protect:
 		return _build_intent(protect, MissionIntentData.Kind.PROTECT, &"", "Keep the protected mission actor alive.")
