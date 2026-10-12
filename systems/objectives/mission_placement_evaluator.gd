@@ -39,6 +39,15 @@ func score_reach(position: Vector3i) -> float:
 	var hostile: float = enemy_distances.get(position, UNREACHABLE)
 	return minf(friendly, hostile) * 3.0 - absf(friendly - hostile) * 1.5 + _tactical_score(position)
 
+## Places an assault objective modestly beyond the midpoint from the player's
+## approach, without pulling it into the hostile deployment area.
+func score_terminal(position: Vector3i) -> float:
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
+	var route_total := maxf(1.0, friendly + hostile)
+	var player_route_fraction := friendly / route_total
+	return -absf(player_route_fraction - 0.60) * 100.0 + _tactical_score(position) + position.y * 2.0
+
 func score_friendly_extract(position: Vector3i) -> float:
 	var friendly: float = player_distances.get(position, UNREACHABLE)
 	var hostile: float = enemy_distances.get(position, UNREACHABLE)
@@ -52,6 +61,13 @@ func score_enemy_extract(position: Vector3i) -> float:
 func is_reach_candidate(position: Vector3i) -> bool:
 	return player_distances.get(position, UNREACHABLE) >= _minimum_route_fraction(0.32) \
 		and enemy_distances.get(position, UNREACHABLE) >= _minimum_route_fraction(0.32)
+
+func is_terminal_candidate(position: Vector3i) -> bool:
+	var friendly: float = player_distances.get(position, UNREACHABLE)
+	var hostile: float = enemy_distances.get(position, UNREACHABLE)
+	return friendly >= _minimum_route_fraction(0.52) \
+		and hostile >= _minimum_route_fraction(0.25) \
+		and hostile < friendly
 
 func is_friendly_extract_candidate(position: Vector3i) -> bool:
 	return player_distances.get(position, UNREACHABLE) >= _minimum_route_fraction(0.62) \

@@ -21,6 +21,14 @@ static func populate_defaults(map_data: MapData, pathfinder: Pathfinder) -> void
 	if rescue.x >= 0:
 		rescue_zone.append(rescue)
 	map_data.set_objective_zone(&"rescue_spawn", rescue_zone)
+	evaluator.reserve(rescue_zone)
+	# Terminal planning comes last so this optional objective cannot shift the
+	# established layouts of missions that do not use a terminal.
+	var terminal := _best_eligible(candidates, evaluator, Callable(evaluator, "score_terminal"), Callable(evaluator, "is_terminal_candidate"))
+	var terminal_zone: Array[Vector3i] = []
+	if terminal.x >= 0:
+		terminal_zone.append(terminal)
+	map_data.set_objective_zone(&"terminal", terminal_zone)
 
 static func find_rescue_cell(map_data: MapData) -> Vector3i:
 	var cells := map_data.get_objective_zone(&"rescue_spawn")
@@ -58,10 +66,13 @@ static func _grow_zone(anchor: Vector3i, candidates: Array[Vector3i], evaluator:
 	return zone
 
 static func _best_available(candidates: Array[Vector3i], evaluator: MissionPlacementEvaluator, scorer: Callable) -> Vector3i:
+	return _best_eligible(candidates, evaluator, scorer, Callable())
+
+static func _best_eligible(candidates: Array[Vector3i], evaluator: MissionPlacementEvaluator, scorer: Callable, eligibility: Callable) -> Vector3i:
 	var best := Vector3i(-1, -1, -1)
 	var best_score := -INF
 	for position in candidates:
-		if evaluator.blocked.has(position):
+		if evaluator.blocked.has(position) or (eligibility.is_valid() and not eligibility.call(position)):
 			continue
 		var score: float = scorer.call(position)
 		if score > best_score or (is_equal_approx(score, best_score) and _comes_first(position, best)):

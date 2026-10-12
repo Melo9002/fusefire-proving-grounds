@@ -58,7 +58,9 @@ func begin_tracking(turn_manager: TurnManager, battle_controller: BattleControll
 
 func initialize_terminals(pathfinder: Pathfinder) -> void:
 	if not mission or not _grid_manager: return
-	var fallback_cells := _grid_manager.map_data.get_objective_zone(&"reach")
+	var fallback_cells := _grid_manager.map_data.get_objective_zone(&"terminal")
+	if fallback_cells.is_empty():
+		fallback_cells = _grid_manager.map_data.get_objective_zone(&"reach")
 	for state in _terminal_states.values():
 		var cell: Vector3i = state.definition.grid_position
 		if not _grid_manager.map_data.has_cell(cell):

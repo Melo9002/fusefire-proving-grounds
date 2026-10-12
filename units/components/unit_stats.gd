@@ -117,17 +117,17 @@ func set_available_ap_for_setup(value: int) -> void:
 	if before != current_ap:
 		ap_changed.emit(current_ap, effective_max_ap)
 
-func configure_base_ap(value: int, refresh_activation := false) -> void:
-	_apply_base_ap(value, refresh_activation)
+func configure_base_ap(value: int, refresh_current_activation := false) -> void:
+	_apply_base_ap(value, refresh_current_activation)
 
-func _apply_base_ap(value: int, refresh_activation: bool) -> void:
+func _apply_base_ap(value: int, refresh_current_activation: bool) -> void:
 	var before_current := current_ap
 	var before_effective := effective_max_ap
 	var normalized := maxi(0, value)
 	if _base_ap != normalized:
 		_base_ap = normalized
 		_ratchet_activation_capacity()
-	if refresh_activation:
+	if refresh_current_activation:
 		activation_capacity_ap = effective_max_ap
 		spent_ap = 0
 	if before_current != current_ap or before_effective != effective_max_ap:

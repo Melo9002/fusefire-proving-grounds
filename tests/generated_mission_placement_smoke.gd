@@ -24,9 +24,9 @@ func _check_map(dimensions: Vector2i, map_seed: int, refinery: bool) -> void:
 	})
 	check(validation.is_valid(), "Seed %d placement validates: %s" % [map_seed, validation.describe()])
 	var used: Dictionary[Vector3i, bool] = {}
-	for zone_id in [&"reach", &"extract", &"enemy_extract", &"rescue_spawn"]:
+	for zone_id in [&"reach", &"terminal", &"extract", &"enemy_extract", &"rescue_spawn"]:
 		var cells := data.get_objective_zone(zone_id)
-		check(cells.size() == (1 if zone_id == &"rescue_spawn" else 4), "Seed %d creates the expected %s zone size" % [map_seed, zone_id])
+		check(cells.size() == (1 if zone_id in [&"terminal", &"rescue_spawn"] else 4), "Seed %d creates the expected %s zone size" % [map_seed, zone_id])
 		for position in cells:
 			check(not used.has(position), "Seed %d keeps mission zones separate" % map_seed)
 			used[position] = true
@@ -34,6 +34,7 @@ func _check_map(dimensions: Vector2i, map_seed: int, refinery: bool) -> void:
 		if not cells.is_empty():
 			match zone_id:
 				&"reach": check(evaluator.is_reach_candidate(cells[0]), "Seed %d keeps Reach away from both deployments" % map_seed)
+				&"terminal": check(evaluator.is_terminal_candidate(cells[0]), "Seed %d places Terminal on the hostile side of the battlefield" % map_seed)
 				&"extract": check(evaluator.is_friendly_extract_candidate(cells[0]), "Seed %d keeps friendly extraction across the battlefield" % map_seed)
 				&"enemy_extract": check(evaluator.is_enemy_extract_candidate(cells[0]), "Seed %d keeps enemy extraction across the battlefield" % map_seed)
 	var rescue := MissionZonePlanner.find_rescue_cell(data)

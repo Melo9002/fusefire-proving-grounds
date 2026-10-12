@@ -350,13 +350,13 @@ func _is_activation_eligible(unit: TacticalUnit) -> bool:
 func _has_free_objective_action(unit: TacticalUnit) -> bool:
 	return free_objective_action_available.is_valid() and free_objective_action_available.call(unit)
 
-func _find_next_eligible(roster: Array[TacticalUnit], after_index: int, wrap: bool) -> TacticalUnit:
+func _find_next_eligible(roster: Array[TacticalUnit], after_index: int, wrap_search: bool) -> TacticalUnit:
 	if roster.is_empty():
 		return null
-	var checks := roster.size() if wrap else roster.size() - after_index - 1
+	var checks := roster.size() if wrap_search else roster.size() - after_index - 1
 	for offset in range(1, checks + 1):
 		var index := after_index + offset
-		if wrap:
+		if wrap_search:
 			index %= roster.size()
 		if index >= roster.size():
 			break

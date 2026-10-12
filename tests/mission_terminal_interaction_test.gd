@@ -121,6 +121,12 @@ func _test_generated_terminal_placement() -> void:
 	var terminal := level.objective_manager.get_terminal_state(&"main_terminal")
 	var data = level.battle_controller.grid_manager.get_cell_data(terminal.definition.grid_position) if terminal else null
 	check(terminal != null and data != null and not data.walkable and not data.can_stop, "Generated Terminal missions choose a deterministic blocked objective cell")
+	if terminal:
+		var player_spawn: Vector3i = level.battle_controller.grid_manager.map_data.get_spawn_cells(TacticalUnit.Faction.PLAYER)[0]
+		var enemy_spawn: Vector3i = level.battle_controller.grid_manager.map_data.get_spawn_cells(TacticalUnit.Faction.ENEMY)[0]
+		var player_distance := player_spawn.distance_squared_to(terminal.definition.grid_position)
+		var enemy_distance := enemy_spawn.distance_squared_to(terminal.definition.grid_position)
+		check(enemy_distance < player_distance, "Generated Terminal missions place the objective closer to hostile deployment than player deployment")
 	check(level.get_node_or_null("Visualizers/MissionTerminalPresenter/main_terminal") != null, "Generated Terminal missions create their visual representation")
 	level.queue_free()
 	await process_frame
