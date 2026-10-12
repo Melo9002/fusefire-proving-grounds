@@ -145,6 +145,13 @@ func _continue_after_active_unit_removed(was_player: bool, was_ally: bool, was_e
 			and candidate.stats.current_ap > 0:
 				_set_active_unit(candidate)
 				return
+		if player_units.is_empty():
+			# Let the committing action capture its stable post-extraction state
+			# before phase continuation. Replay verifies that committed fingerprint
+			# immediately after submit returns.
+			await get_tree().process_frame
+			end_current_turn()
+			return
 		player_actions_exhausted.emit()
 	elif current_phase == TurnPhase.ALLY_TURN and was_ally:
 		active_unit_index -= 1
@@ -157,6 +164,7 @@ func remove_extracted_unit(unit: TacticalUnit) -> void:
 	if is_instance_valid(unit) and unit.tactical_state:
 		unit.tactical_state.reset()
 	var was_active := active_unit == unit
+	var was_player := player_units.has(unit)
 	var was_ally := allied_units.has(unit)
 	var was_enemy := enemy_units.has(unit)
 	player_units.erase(unit)
@@ -166,16 +174,16 @@ func remove_extracted_unit(unit: TacticalUnit) -> void:
 		return
 	active_unit = null
 	active_unit_changed.emit(null)
-	if current_phase == TurnPhase.PLAYER_TURN:
+	# Preserve the established same-phase selection boundary in the committed
+	# extraction fingerprint. Only an empty roster needs barrier-aware phase
+	# continuation.
+	if current_phase == TurnPhase.PLAYER_TURN and was_player:
 		for candidate in player_units:
-			if is_instance_valid(candidate) and candidate.stats.current_ap > 0:
+			if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
+			and candidate.stats.current_ap > 0:
 				_set_active_unit(candidate)
 				return
-		player_actions_exhausted.emit()
-	elif current_phase == TurnPhase.ALLY_TURN and was_ally:
-		active_unit_index -= 1
-	elif current_phase == TurnPhase.ENEMY_TURN and was_enemy:
-		active_unit_index -= 1
+	_continue_after_active_unit_removed.call_deferred(was_player, was_ally, was_enemy)
 
 func is_any_unit_moving() -> bool:
 	for unit in player_units + allied_units + enemy_units:
@@ -247,9 +255,10 @@ func _start_player_turn_phase() -> void:
 		if is_instance_valid(unit) and unit.stats:
 			unit.stats.reset_turn()
 
-	if not player_units.is_empty():
-		_set_active_unit(player_units[0])
-
+	if player_units.is_empty():
+		_start_ally_turn_phase()
+		return
+	_set_active_unit(player_units[0])
 	turn_phase_changed.emit(current_phase)
 
 func _start_enemy_turn_phase() -> void:

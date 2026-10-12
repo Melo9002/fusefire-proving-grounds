@@ -20,6 +20,8 @@ func _initialize() -> void:
 	check(not player.call("_continues_actor_at", 2), "Changing actors restores the normal replay interval")
 	check(not player.call("_continues_actor_at", 3), "End Turn remains a visual sequence boundary")
 	check(not player.call("_continues_actor_at", 4), "The last replay record cannot continue")
+	check(player.call("_same_actor_transition", 0, 1), "Replay identifies a same-actor setup transition")
+	check(not player.call("_same_actor_transition", 2, 3), "Replay identifies a change of cinematic subject")
 	player.free()
 	print("Replay actor continuity: %d failure(s)" % failures)
 	quit(1 if failures else 0)

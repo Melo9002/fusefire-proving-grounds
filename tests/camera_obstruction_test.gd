@@ -43,12 +43,24 @@ func run() -> void:
 	rig._cinematic_look_target = Vector3(0, 1.5, -4)
 	rig._update_camera_occlusion()
 	check(is_zero_approx(wall_mesh.transparency), "Occluder transparency restores when the sightline clears")
+	var actor := TacticalUnit.new()
+	actor.show_world_hud = false
+	root.add_child(actor)
+	actor.global_position = Vector3(0, 0.5, 4)
+	rig._cinematic_actor = actor
+	rig._cinematic_look_target = Vector3(5, 1.5, 4)
+	rig._update_camera_occlusion()
+	check(is_equal_approx(wall_mesh.transparency, rig.occluder_transparency), "Terrain obscuring the filmed actor fades even when the look target remains visible")
+	rig._cinematic_actor = null
+	rig._update_camera_occlusion()
+	check(is_zero_approx(wall_mesh.transparency), "Actor occlusion restores after the cinematic subject clears")
 	rig._cinematic_active = false
 	wall.collision_layer = 4
 	await physics_frame
 	check(rig._camera_path_clear(origin, destination), "Unit collision layer does not obstruct camera")
 	rig.queue_free()
 	wall.queue_free()
+	actor.queue_free()
 	await process_frame
 	print("Camera obstruction: %d failure(s)" % failures)
 	quit(1 if failures else 0)

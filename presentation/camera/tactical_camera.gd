@@ -117,38 +117,46 @@ func _update_camera_occlusion() -> void:
 	if not is_instance_valid(camera) or not is_inside_tree():
 		_restore_faded_occluders({})
 		return
-	var focus: Variant = _camera_occlusion_focus()
-	if focus == null:
+	var focuses := _camera_occlusion_focuses()
+	if focuses.is_empty():
 		_restore_faded_occluders({})
 		return
 	var faded_now := {}
-	var excluded: Array[RID] = []
-	for _index in maximum_faded_occluders:
-		var ray := PhysicsRayQueryParameters3D.create(camera.global_position, focus, 3, excluded)
-		ray.hit_from_inside = true
-		var hit := get_world_3d().direct_space_state.intersect_ray(ray)
-		if hit.is_empty():
-			break
-		var collider := hit.get("collider") as Node
-		if collider and collider.has_method("get_rid"):
-			excluded.append(collider.get_rid())
-		var geometry := _occluder_geometry(collider, int(hit.get("shape", -1)))
-		if geometry and geometry != map_floor:
-			faded_now[geometry] = true
-			if not _faded_occluders.has(geometry):
-				_faded_occluders[geometry] = geometry.transparency
-			geometry.transparency = occluder_transparency
+	for focus in focuses:
+		var excluded: Array[RID] = []
+		for _index in maximum_faded_occluders:
+			var ray := PhysicsRayQueryParameters3D.create(camera.global_position, focus, 3, excluded)
+			ray.hit_from_inside = true
+			var hit := get_world_3d().direct_space_state.intersect_ray(ray)
+			if hit.is_empty():
+				break
+			var collider := hit.get("collider") as Node
+			if collider and collider.has_method("get_rid"):
+				excluded.append(collider.get_rid())
+			var geometry := _occluder_geometry(collider, int(hit.get("shape", -1)))
+			if geometry and geometry != map_floor:
+				faded_now[geometry] = true
+				if not _faded_occluders.has(geometry):
+					_faded_occluders[geometry] = geometry.transparency
+				geometry.transparency = occluder_transparency
 	_restore_faded_occluders(faded_now)
 
-func _camera_occlusion_focus() -> Variant:
+func _camera_occlusion_focuses() -> Array[Vector3]:
 	if _cinematic_active:
-		return _cinematic_look_target
+		var result: Array[Vector3] = [_cinematic_look_target]
+		if is_instance_valid(_cinematic_actor):
+			var actor_focus := _cinematic_actor.global_position + Vector3.UP * _cinematic_actor.standing_height
+			if is_instance_valid(_cinematic_actor.visual_adapter):
+				actor_focus = _cinematic_actor.visual_adapter.get_camera_focus()
+			if actor_focus.distance_squared_to(_cinematic_look_target) > 0.01:
+				result.append(actor_focus)
+		return result
 	if turn_manager and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
 	and is_instance_valid(turn_manager.active_unit):
-		return turn_manager.active_unit.global_position + Vector3.UP * turn_manager.active_unit.standing_height
+		return [turn_manager.active_unit.global_position + Vector3.UP * turn_manager.active_unit.standing_height]
 	# During enemy observation the active unit is deliberately not a camera
 	# protagonist. Fade terrain toward the current tactical pivot instead.
-	return global_position + Vector3.UP
+	return [global_position + Vector3.UP]
 
 func _occluder_geometry(collider: Node, shape_index: int) -> GeometryInstance3D:
 	if collider is GeometryInstance3D:

@@ -66,6 +66,7 @@ func _play() -> void:
 			break
 		var record: Dictionary = recording.actions[index]
 		var continues_actor := _continues_actor_at(index)
+		var continues_from_previous := _same_actor_transition(index - 1, index)
 		var record_issue := ReplayRecordTools.validate_action_record(record, recording.schema_version)
 		if not record_issue.is_empty():
 			_fail("reconstruction", index, record, record_issue)
@@ -86,7 +87,7 @@ func _play() -> void:
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
 			await _action_interval(continues_actor)
 			continue
-		await _focus_action(record)
+		await _focus_action(record, continues_from_previous)
 		await _wait_until_playing()
 		if not await _execute(record):
 			_fail("resolution", index, record, last_divergence if not last_divergence.is_empty() else "authoritative execution rejected the record")
@@ -145,10 +146,13 @@ func _action_interval(continues_actor := false) -> void:
 		await get_tree().create_timer(delay, false).timeout
 
 func _continues_actor_at(index: int) -> bool:
-	if recording == null or index < 0 or index + 1 >= recording.actions.size():
+	return _same_actor_transition(index, index + 1)
+
+func _same_actor_transition(from_index: int, to_index: int) -> bool:
+	if recording == null or from_index < 0 or to_index >= recording.actions.size():
 		return false
-	var current: Dictionary = recording.actions[index]
-	var following: Dictionary = recording.actions[index + 1]
+	var current: Dictionary = recording.actions[from_index]
+	var following: Dictionary = recording.actions[to_index]
 	var actor := String(current.get("actor", ""))
 	if actor.is_empty() or actor != String(following.get("actor", "")):
 		return false
@@ -156,7 +160,7 @@ func _continues_actor_at(index: int) -> bool:
 	# happens to repeat the last actor identifier.
 	return String(following.get("kind", "")) not in ["end_turn", "depart"]
 
-func _focus_action(record: Dictionary) -> void:
+func _focus_action(record: Dictionary, continues_from_previous := false) -> void:
 	if record.get("kind", "") == "end_turn":
 		return
 	var actor := _find_unit(record.get("actor", ""))
@@ -176,6 +180,8 @@ func _focus_action(record: Dictionary) -> void:
 		while is_instance_valid(camera) and camera.is_selection_focus_active():
 			await get_tree().process_frame
 	elif camera_mode == CameraMode.CINEMATIC:
+		if continues_from_previous and String(record.get("kind", "")) in ["aim", "reload", "shield", "overwatch", "emergency_seal", "wait"]:
+			return
 		var focus_point := _action_focus_point(record, actor)
 		var director := level.action_camera_director
 		if director:

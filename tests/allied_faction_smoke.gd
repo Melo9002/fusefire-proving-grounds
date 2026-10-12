@@ -14,6 +14,7 @@ func _run() -> void:
 	await _check_setup_control()
 	await _check_handmade_allied_spawn()
 	await _check_allied_activation()
+	await _check_extracted_player_advances_after_barrier()
 	await _check_battle_results()
 	print("Allied faction smoke: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -69,6 +70,38 @@ func _check_allied_activation() -> void:
 	check(turns.current_round >= 2 and turns.current_phase == TurnManager.TurnPhase.PLAYER_TURN, "Ally and enemy AI complete before the next player round")
 	check(ally.stats.current_ap < ally.stats.max_ap, "Allied AI spends AP through shared actions")
 	level.queue_free()
+	await process_frame
+
+func _check_extracted_player_advances_after_barrier() -> void:
+	var turns := TurnManager.new()
+	var player := TacticalUnit.new()
+	var ally := TacticalUnit.new()
+	player.stats = UnitStats.new()
+	ally.stats = UnitStats.new()
+	player.show_world_hud = false
+	ally.show_world_hud = false
+	player.tactical_id = &"PlayerUnit1"
+	ally.tactical_id = &"AllyUnit1"
+	turns.player_units = [player]
+	turns.allied_units = [ally]
+	turns.automatic_annihilation_results = false
+	root.add_child(turns)
+	root.add_child(player)
+	root.add_child(ally)
+	turns.current_phase = TurnManager.TurnPhase.PLAYER_TURN
+	turns.active_unit = player
+	var barrier := [true]
+	turns.action_completion_barrier = func() -> bool: return barrier[0]
+	turns.remove_extracted_unit(player)
+	await process_frame
+	check(turns.current_phase == TurnManager.TurnPhase.PLAYER_TURN and turns.active_unit == null, "Extraction waits for the action presentation barrier before advancing")
+	barrier[0] = false
+	await process_frame
+	await process_frame
+	check(turns.current_phase == TurnManager.TurnPhase.ALLY_TURN and turns.active_unit == ally, "The last player extraction advances directly to the allied activation")
+	turns.queue_free()
+	player.queue_free()
+	ally.queue_free()
 	await process_frame
 
 func _check_battle_results() -> void:
