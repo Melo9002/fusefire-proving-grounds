@@ -39,7 +39,7 @@ func restricts(action: StringName) -> bool:
 			return true
 	return false
 
-func tick(beat: int) -> Array[Dictionary]:
+func tick(_beat: int) -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
 	var ids: Array[StringName] = []
 	ids.assign(active.keys())

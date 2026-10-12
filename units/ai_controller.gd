@@ -371,7 +371,7 @@ func _guard_has_plausible_trigger() -> bool:
 func _most_relevant_defensive_threat() -> TacticalUnit:
 	if not is_instance_valid(unit) or unit.shield_capability == null or _consecutive_low_value_actions > 0:
 		return null
-	var best: TacticalUnit
+	var best: TacticalUnit = null
 	var best_score := -INF
 	for hostile in _get_hostile_units():
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
