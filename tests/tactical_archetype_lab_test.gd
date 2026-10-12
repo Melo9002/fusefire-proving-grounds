@@ -14,6 +14,7 @@ func check(condition: bool, message: String) -> void:
 
 func _run() -> void:
 	_test_catalog_and_independent_state()
+	_test_base_ap_configuration_and_compatibility()
 	_test_configuration_and_replay_data()
 	await _test_match_setup_roster_editor()
 	await _test_spawned_rosters()
@@ -26,7 +27,7 @@ func _test_catalog_and_independent_state() -> void:
 	var shield := TacticalArchetypeCatalog.get_definition(&"shieldbearer")
 	check(shield != null and shield.shield_capability != null, "Shieldbearer declares shield capability")
 	for definition in TacticalArchetypeCatalog.all():
-		check(definition.max_ap == 3, "%s declares the three-AP MIRA baseline" % definition.display_name)
+		check(definition.base_ap == 3 and definition.configured_base_ap() == 3, "%s declares the three-AP MIRA baseline" % definition.display_name)
 		if definition.archetype_id != &"shieldbearer":
 			check(definition.shield_capability == null, "%s does not advertise a shield" % definition.display_name)
 
@@ -45,7 +46,7 @@ func _test_catalog_and_independent_state() -> void:
 	check(second.shield_capability != null and shield.shield_capability != null, "Runtime capability changes do not mutate shared Resources")
 	var override := TacticalArchetype.new()
 	override.max_hp = 140
-	override.max_ap = 3
+	override.base_ap = 3
 	override.max_supply_points = 7
 	override.apply_starting_configuration(first)
 	check(first.stats.current_hp == 140 and first.stats.max_hp == 140, "HP overrides initialize both current and maximum HP")
@@ -53,6 +54,46 @@ func _test_catalog_and_independent_state() -> void:
 	check(first.stats.current_supply_points == 7 and first.stats.max_supply_points == 7, "Inspector-authored SP capacity initializes both current and maximum Supply Points")
 	first.free()
 	second.free()
+
+func _test_base_ap_configuration_and_compatibility() -> void:
+	var two_ap := TacticalArchetype.new()
+	two_ap.base_ap = 2
+	var four_ap := TacticalArchetype.new()
+	four_ap.base_ap = 4
+	var inherited := TacticalArchetype.new()
+	var two_ap_unit := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit
+	var four_ap_unit := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit
+	var inherited_unit := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit
+	for unit in [two_ap_unit, four_ap_unit, inherited_unit]:
+		unit.show_world_hud = false
+	two_ap.apply_starting_configuration(two_ap_unit)
+	four_ap.apply_starting_configuration(four_ap_unit)
+	var inherited_fallback := inherited_unit.stats.max_ap
+	inherited.apply_starting_configuration(inherited_unit)
+	check(two_ap_unit.stats.max_ap == 2 and two_ap_unit.stats.current_ap == 2, "Inspector base AP configures a two-AP fixture without identity checks")
+	check(four_ap_unit.stats.max_ap == 4 and four_ap_unit.stats.current_ap == 4, "Inspector base AP configures a four-AP fixture without identity checks")
+	check(inherited.configured_base_ap() == 0 and inherited_unit.stats.max_ap == inherited_fallback, "Zero base AP preserves the TacticalUnit scene fallback")
+
+	var legacy := load("res://tests/fixtures/legacy_max_ap_archetype.tres") as TacticalArchetype
+	check(legacy != null and legacy.base_ap == 0 and legacy.max_ap == 2 and legacy.configured_base_ap() == 2, "Legacy serialized max_ap remains readable as a base-AP override")
+	legacy.apply_starting_configuration(inherited_unit)
+	check(inherited_unit.stats.max_ap == 2 and inherited_unit.stats.current_ap == 2, "Legacy max_ap applies through the same runtime configuration path")
+	legacy.base_ap = 4
+	check(legacy.configured_base_ap() == 4, "Visible base_ap takes explicit precedence over legacy max_ap")
+
+	var scene_fixture: Node = load("res://tests/fixtures/scene_authored_ap_fixture.tscn").instantiate()
+	root.add_child(scene_fixture)
+	var scene_stats := scene_fixture.get_node("UnitStats") as UnitStats
+	check(scene_stats.max_ap == 4 and scene_stats.current_ap == 4, "Existing scene-authored runtime max_ap remains unchanged")
+	var property_usage := {}
+	for property in two_ap.get_property_list():
+		property_usage[StringName(property.name)] = int(property.usage)
+	check((int(property_usage.get(&"base_ap", 0)) & PROPERTY_USAGE_EDITOR) != 0, "base_ap is visible in the Inspector")
+	check((int(property_usage.get(&"max_ap", 0)) & PROPERTY_USAGE_STORAGE) != 0 and (int(property_usage.get(&"max_ap", 0)) & PROPERTY_USAGE_EDITOR) == 0, "Legacy max_ap is storage-only and cannot compete in the Inspector")
+
+	for unit in [two_ap_unit, four_ap_unit, inherited_unit]:
+		unit.free()
+	scene_fixture.free()
 
 func _test_configuration_and_replay_data() -> void:
 	var config := BattleConfigurationData.new()

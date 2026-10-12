@@ -11,7 +11,12 @@ extends Resource
 @export_group("Starting Overrides")
 ## Zero keeps the TacticalUnit scene's current value.
 @export_range(0, 999, 1) var max_hp := 0
-@export_range(0, 20, 1) var max_ap := 0
+## Normal AP before future Tactical Tempo modifiers. Zero inherits the
+## TacticalUnit scene fallback.
+@export_range(0, 20, 1, "suffix:AP") var base_ap := 0
+## Legacy serialized archetype property. Kept as storage-only so existing
+## Resources load without exposing a second AP field in the Inspector.
+@export_storage var max_ap := 0
 @export_range(1, 99, 1, "suffix:SP") var max_supply_points := 4
 @export_range(0, 30, 1) var movement_range := 0
 @export_range(0, 30, 1) var attack_range := 0
@@ -35,6 +40,9 @@ func validation_message() -> String:
 			return "Archetype '%s' has an invalid shield capability: %s" % [archetype_id, capability_error]
 	return ""
 
+func configured_base_ap() -> int:
+	return base_ap if base_ap > 0 else max_ap
+
 func apply_starting_configuration(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit) or not unit.stats:
 		return
@@ -46,9 +54,10 @@ func apply_starting_configuration(unit: TacticalUnit) -> void:
 	if max_hp > 0:
 		unit.stats.max_hp = max_hp
 		unit.stats.current_hp = max_hp
-	if max_ap > 0:
-		unit.stats.max_ap = max_ap
-		unit.stats.current_ap = max_ap
+	var starting_ap := configured_base_ap()
+	if starting_ap > 0:
+		unit.stats.max_ap = starting_ap
+		unit.stats.current_ap = starting_ap
 	unit.stats.max_supply_points = max_supply_points
 	unit.stats.current_supply_points = max_supply_points
 	if movement_range > 0: unit.stats.speed = movement_range

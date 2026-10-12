@@ -36,7 +36,7 @@ When the selected unit spends its final AP, selection advances through the frien
 | Alt + mouse wheel | Cycle legal surfaces under the cursor; the floor hint, movement preview and click use the same choice |
 | Q / E or Page Up / Page Down | Rotate the camera with the keyboard |
 
-Units start their phase with 2 AP and have 100 HP. Attacks deal 25 damage. Attack range uses grid distance with diagonal targeting and corner blocking. Every unit uses `UnitStats.speed` for its movement budget. Animation speed is separate.
+Current MIRA archetypes typically start their phase with 3 AP, configured through each archetype's **Base AP** field. The reusable unit scene retains a 2 AP fallback for future configurations; no playable human units exist yet. Units have 100 HP and attacks deal 25 damage. Attack range uses grid distance with diagonal targeting and corner blocking. Every unit uses `UnitStats.speed` for its movement budget. Animation speed is separate.
 
 Camera height gently follows the manually selected unit; selection does not automatically recenter horizontal position. Focus preserves zoom and rotation. Edge scrolling retains a 36-pixel inner band and 72-pixel outside tolerance, and pauses during mouse camera gestures, over UI, or on focus loss. Left click is reserved for selection and orders. The original selection outline is unchanged.
 

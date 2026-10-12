@@ -7,4 +7,4 @@ script = ExtResource("1")
 archetype_id = &"sentinel"
 display_name = "Sentinel"
 description = "Reaction experiment preset. Overwatch is not implemented until 01.11.5."
-max_ap = 3
+base_ap = 3

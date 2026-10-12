@@ -7,4 +7,4 @@ script = ExtResource("1")
 archetype_id = &"marksman"
 display_name = "Marksman"
 description = "Aim experiment preset. Aim is not implemented until 01.11.2."
-max_ap = 3
+base_ap = 3
