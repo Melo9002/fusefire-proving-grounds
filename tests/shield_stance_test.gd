@@ -49,9 +49,9 @@ func _test_capability_action_and_combat() -> void:
 	service.call("_set_busy", true)
 	check(service.query_shield(actor.tactical_id, threat.tactical_id).validation.code == &"action_busy", "Shield query rejects while the service is busy")
 	service.call("_set_busy", false)
-	actor.stats.current_ap = 0
+	actor.stats.set_available_ap_for_setup(0)
 	check(service.query_shield(actor.tactical_id, threat.tactical_id).validation.code == &"insufficient_ap", "Shield query rejects insufficient AP")
-	actor.stats.current_ap = starting_ap
+	actor.stats.set_available_ap_for_setup(starting_ap)
 	var stale := service.make_shield_request(actor, threat, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
 	check(await service.submit_shield(stale, true) == null and actor.stats.current_ap == starting_ap, "Stale Shield request spends no AP")
@@ -82,13 +82,13 @@ func _test_capability_action_and_combat() -> void:
 	cover_data.cover_type = previous_cover
 	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
 	level.turn_manager.active_unit = threat
-	threat.stats.current_ap = 2
+	threat.stats.set_available_ap_for_setup(2)
 	threat.stats.current_supply_points = 4
 	service.set("_combat_rng", _rng_for_outcome(incoming.hit_chance, true))
 	var hp_before := actor.stats.current_hp
 	var hit := await service.submit_attack(service.make_attack_request(threat, actor, TacticalActionRequest.Source.AI), true)
 	check(hit != null and hit.did_hit and hit.damage == 9 and actor.stats.current_hp == hp_before - 9, "Committed attack inside the arc applies rounded shield damage exactly once")
-	threat.stats.current_ap = 2
+	threat.stats.set_available_ap_for_setup(2)
 	service.set("_combat_rng", _rng_for_outcome(incoming.hit_chance, false))
 	hp_before = actor.stats.current_hp
 	var miss := await service.submit_attack(service.make_attack_request(threat, actor, TacticalActionRequest.Source.AI), true)

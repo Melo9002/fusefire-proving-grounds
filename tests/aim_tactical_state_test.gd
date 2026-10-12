@@ -65,7 +65,7 @@ func _test_cancellation_and_activation() -> void:
 	check(await service.submit_reload(stale_reload, true) == null and actor.tactical_state.is_aiming, "Rejected Reload preserves Aim")
 	await service.submit_reload(service.make_reload_request(actor, TacticalActionRequest.Source.PLAYER), true)
 	check(not actor.tactical_state.is_aiming, "Committed Reload cancels Aim")
-	actor.stats.current_ap = 2
+	actor.stats.set_available_ap_for_setup(2)
 	actor.tactical_state.establish_aim()
 	var illegal_move := service.make_move_request(actor, Vector3i(-99, -99, -99), TacticalActionRequest.Source.PLAYER)
 	check(await service.submit_move(illegal_move, true) == null and actor.tactical_state.is_aiming, "Rejected Move preserves Aim")
@@ -74,7 +74,7 @@ func _test_cancellation_and_activation() -> void:
 	if destination == level.battle_controller.grid_manager.get_unit_grid(actor) and move_inventory.legal_destination_cells.size() > 1:
 		destination = move_inventory.legal_destination_cells[1]
 	check(await service.submit_move(service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER), true) != null and not actor.tactical_state.is_aiming, "Committed Move cancels Aim")
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	await service.submit_aim(service.make_aim_request(actor, TacticalActionRequest.Source.PLAYER), true)
 	await process_frame
 	check(actor.tactical_state.is_aiming, "Aim established with the final AP survives exhaustion")

@@ -64,12 +64,12 @@ func _test_terminal_action() -> void:
 		side_data.can_stop = false
 		check(not CombatRules.can_reach_adjacent(diagonal, terminal_cell, level.battle_controller.grid_manager), "Diagonal interaction through a sealed corner is rejected")
 		side_data.can_stop = previous_stop
-	actor.stats.current_ap = 0
+	actor.stats.set_available_ap_for_setup(0)
 	check(level.battle_controller.query_terminal(actor, &"main_terminal").is_legal(), "An active unit may interact with zero AP, matching Rescue and Extract")
 	await process_frame
 	await process_frame
 	check(level.turn_manager.active_unit == actor, "Selection waits when an exhausted unit can still perform a free terminal interaction")
-	actor.stats.current_ap = actor.stats.max_ap
+	actor.stats.set_available_ap_for_setup(actor.stats.max_ap)
 	var ap_before := actor.stats.current_ap
 	var stale := service.make_terminal_request(actor, &"main_terminal", TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1

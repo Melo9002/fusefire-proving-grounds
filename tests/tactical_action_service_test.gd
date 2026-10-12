@@ -54,12 +54,12 @@ func _run() -> void:
 	_check(service.get_combat_rng_state() == rng_before, "Attack query does not consume combat RNG")
 	_check(service.state_revision == revision_before and attacker.stats.current_ap == ap_before and attacker.stats.spent_ap == spent_before and target.stats.current_hp == hp_before, "Attack queries do not mutate revision, AP expenditure, or HP")
 	_check(BattleStateFingerprint.capture(first.turn_manager, first.battle_controller.grid_manager, first.objective_manager) == state_before, "Attack queries leave the complete authoritative fingerprint unchanged")
-	attacker.stats.current_ap = 0
+	attacker.stats.set_available_ap_for_setup(0)
 	var no_ap := first.battle_controller.query_attack(attacker, target)
 	_check(not no_ap.is_legal() and no_ap.validation.code == &"insufficient_ap", "Insufficient AP uses the shared structured validation")
 	action_hud.call("_update_button_states")
 	_check(action_hud.attack_button.disabled and action_hud.attack_button.tooltip_text == no_ap.reason, "Player Attack tooltip presents the shared rejection reason")
-	attacker.stats.current_ap = ap_before
+	attacker.stats.set_available_ap_for_setup(ap_before)
 	action_hud.call("_update_button_states")
 	var stale := service.make_attack_request(attacker, target, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1

@@ -16,7 +16,7 @@ func _run() -> void:
 	_test_zero_capacity_and_overlapping_penalties()
 	_test_capacity_below_expenditure()
 	_test_source_identity_and_canonical_order()
-	_test_legacy_assignment_contract()
+	_test_explicit_setup_contract()
 	print("AP capacity and modifiers: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
@@ -36,7 +36,7 @@ func _test_ordinary_expenditure_and_penalty_ratchet() -> void:
 	check(stats.base_ap == 3 and stats.effective_max_ap == 2 and stats.activation_capacity_ap == 2 and stats.spent_ap == 1 and stats.current_ap == 1, "Mid-activation penalty ratchets capacity while preserving expenditure")
 	check(stats.remove_ap_modifier(&"condition:system_overload"), "Known modifier source can be removed")
 	check(stats.effective_max_ap == 3 and stats.activation_capacity_ap == 2 and stats.spent_ap == 1 and stats.current_ap == 1, "Penalty removal grants no AP in the same activation")
-	stats.reset_ap()
+	stats.refresh_activation_ap()
 	check(stats.activation_capacity_ap == 3 and stats.spent_ap == 0 and stats.current_ap == 3, "Next refresh adopts restored effective maximum")
 	stats.queue_free()
 
@@ -45,7 +45,7 @@ func _test_positive_modifier_waits_for_refresh() -> void:
 	stats.consume_ap(1)
 	check(stats.set_ap_modifier(&"equipment:heavy_processor", 1), "Positive modifier is accepted")
 	check(stats.effective_max_ap == 4 and stats.activation_capacity_ap == 3 and stats.current_ap == 2, "Positive modifier does not grant AP mid-activation")
-	stats.reset_ap()
+	stats.refresh_activation_ap()
 	check(stats.activation_capacity_ap == 4 and stats.spent_ap == 0 and stats.current_ap == 4, "Positive modifier applies at the next refresh")
 	stats.queue_free()
 
@@ -56,7 +56,7 @@ func _test_zero_capacity_and_overlapping_penalties() -> void:
 	check(stats.effective_max_ap == 0 and stats.activation_capacity_ap == 0 and stats.current_ap == 0, "Independent penalties can reduce effective maximum and capacity to zero")
 	check(stats.remove_ap_modifier(&"condition:major"), "One overlapping modifier can be removed independently")
 	check(stats.effective_max_ap == 2 and stats.activation_capacity_ap == 0 and stats.current_ap == 0, "Removing one penalty does not raise capacity during the activation")
-	stats.reset_ap()
+	stats.refresh_activation_ap()
 	check(stats.activation_capacity_ap == 2 and stats.current_ap == 2, "Refresh adopts the remaining modifier")
 	stats.queue_free()
 
@@ -68,7 +68,7 @@ func _test_capacity_below_expenditure() -> void:
 	check(not stats.consume_ap(1) and stats.spent_ap == 3, "Overspending is rejected without altering expenditure")
 	stats.remove_ap_modifier(&"condition:severe")
 	check(stats.effective_max_ap == 4 and stats.activation_capacity_ap == 1 and stats.current_ap == 0, "Penalty removal does not recover availability after capacity fell below expenditure")
-	stats.reset_ap()
+	stats.refresh_activation_ap()
 	check(stats.activation_capacity_ap == 4 and stats.spent_ap == 0 and stats.current_ap == 4, "Refresh clears expenditure and restores capacity")
 	stats.queue_free()
 
@@ -90,15 +90,15 @@ func _test_source_identity_and_canonical_order() -> void:
 	first.queue_free()
 	second.queue_free()
 
-func _test_legacy_assignment_contract() -> void:
+func _test_explicit_setup_contract() -> void:
 	var stats := _stats(3)
 	var movement_budget := stats.speed
-	stats.current_ap = 1
-	check(stats.activation_capacity_ap == 3 and stats.spent_ap == 2 and stats.current_ap == 1, "Legacy current_ap assignment establishes availability through expenditure accounting")
-	stats.current_ap = 3
-	check(stats.spent_ap == 0 and stats.current_ap == 3, "Legacy current_ap assignment explicitly resets fixture availability without a second AP authority")
-	stats.max_ap = 4
-	check(stats.base_ap == 4 and stats.effective_max_ap == 4 and stats.activation_capacity_ap == 3 and stats.current_ap == 3, "Legacy max_ap assignment configures Base AP without granting mid-activation capacity")
+	stats.set_available_ap_for_setup(1)
+	check(stats.activation_capacity_ap == 3 and stats.spent_ap == 2 and stats.current_ap == 1, "Explicit setup establishes availability through expenditure accounting")
+	stats.set_available_ap_for_setup(3)
+	check(stats.spent_ap == 0 and stats.current_ap == 3, "Explicit setup resets fixture availability without a second AP authority")
+	stats.configure_base_ap(4)
+	check(stats.base_ap == 4 and stats.effective_max_ap == 4 and stats.activation_capacity_ap == 3 and stats.current_ap == 3, "Base AP configuration does not grant mid-activation capacity")
 	check(stats.speed == movement_budget, "AP capacity changes do not alter movement range")
 	stats.spend_all_remaining_ap()
 	check(stats.spent_ap == 3 and stats.current_ap == 0, "Spend-all records all remaining AP as expenditure")

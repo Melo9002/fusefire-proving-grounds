@@ -216,7 +216,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
-	turn_manager.zero_ap_continuation_available = _has_free_terminal_interaction
+	turn_manager.free_objective_action_available = _has_free_objective_action
 	if not is_instance_valid(action_service):
 		_initialize_action_service()
 	_configure_action_service(manager)
@@ -703,6 +703,8 @@ func try_emergency_seal(unit: TacticalUnit) -> bool:
 func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
 	if not is_instance_valid(action_service): return false
 	var result := await action_service.submit_mission(action_service.make_mission_request(kind, actor, target, _action_source()))
+	if result != null and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
+		turn_manager.complete_free_objective_action(actor)
 	return result != null
 
 func try_terminal(actor: TacticalUnit, terminal_id: StringName) -> bool:
@@ -713,8 +715,19 @@ func try_terminal(actor: TacticalUnit, terminal_id: StringName) -> bool:
 		turn_manager.complete_free_objective_action(actor)
 	return result != null
 
-func _has_free_terminal_interaction(actor: TacticalUnit) -> bool:
-	return is_instance_valid(action_service) and query_terminal(actor).is_legal()
+func _has_free_objective_action(actor: TacticalUnit) -> bool:
+	if not is_instance_valid(_objective_manager) or not is_instance_valid(actor):
+		return false
+	if _objective_manager.can_extract(actor):
+		return true
+	for terminal_id in _objective_manager.get_terminal_ids():
+		if _objective_manager.can_activate_terminal(actor, terminal_id).accepted:
+			return true
+	var rescue := _objective_manager.get_objective(&"rescue")
+	if rescue and rescue.is_active():
+		var target := _objective_manager.find_mission_actor(rescue.definition.target_ids)
+		return target != null and _objective_manager.can_rescue(actor, target)
+	return false
 
 func _action_source() -> TacticalActionRequest.Source:
 	if replay_mode: return TacticalActionRequest.Source.REPLAY

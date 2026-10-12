@@ -6,4 +6,4 @@
 
 [node name="UnitStats" type="Node" parent="."]
 script = ExtResource("1")
-max_ap = 4
+base_ap = 4

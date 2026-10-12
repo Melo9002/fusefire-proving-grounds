@@ -37,7 +37,7 @@ func _test_attack_supply_contract() -> void:
 	service._combat_rng.seed = _seed_for_outcome(first_query.hit_chance, true)
 	var hit := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(hit != null and hit.did_hit and hit.supply_points_before == 4 and hit.supply_points_after == 3, "A committed hit consumes exactly one SP")
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	actor.stats.current_supply_points = 1
 	target.stats.current_hp = target.stats.max_hp
 	var actor_cell_data := level.battle_controller.grid_manager.get_cell_data(level.battle_controller.grid_manager.get_unit_grid(actor))
@@ -46,7 +46,7 @@ func _test_attack_supply_contract() -> void:
 	service._combat_rng.seed = _seed_for_outcome(miss_query.hit_chance, false)
 	var miss := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(miss != null and not miss.did_hit and miss.supply_points_before == 1 and miss.supply_points_after == 0, "A committed miss consumes the final SP")
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	var exhausted_rng := service.get_combat_rng_state()
 	var exhausted_revision := service.state_revision
 	var exhausted := service.query_attack(actor.tactical_id, target.tactical_id)
@@ -93,9 +93,9 @@ func _test_reload_contract() -> void:
 	check(result.to_replay_record().schema_version == 3 and result.to_replay_record().kind == "reload", "Reload produces a versioned human-readable replay record")
 	check(await service.submit_reload(request, true) == null and service.last_rejection.code == &"stale_revision", "Repeated Reload request cannot commit twice")
 	actor.stats.current_supply_points = 1
-	actor.stats.current_ap = 0
+	actor.stats.set_available_ap_for_setup(0)
 	check(service.query_reload(actor.tactical_id).validation.code == &"insufficient_ap", "Reload rejects insufficient AP")
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	actor.stats.is_defeated = true
 	check(service.query_reload(actor.tactical_id).validation.code == &"actor_defeated", "Reload rejects defeated actors")
 	level.queue_free()
@@ -142,7 +142,7 @@ func _test_ai_reload_policy() -> void:
 	ai.turn_manager = level.turn_manager
 	ai.battle_controller = level.battle_controller
 	actor.stats.current_supply_points = 0
-	actor.stats.current_ap = 2
+	actor.stats.set_available_ap_for_setup(2)
 	check(await ai.call("_try_reload_if_useful"), "AI Reload policy submits the shared authoritative Reload when depleted")
 	check(actor.stats.current_supply_points == 4 and actor.stats.current_ap == 1, "AI Reload receives the same committed SP and AP result as the player")
 	check(not await ai.call("_try_reload_if_useful"), "AI never attempts Reload while SP is full")

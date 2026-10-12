@@ -31,13 +31,11 @@ var _base_ap := 2
 		return _base_ap
 	set(value):
 		_apply_base_ap(value, false)
-## Runtime compatibility alias. Reads return the effective maximum; writes
-## configure Base AP and follow the same no-refund capacity rules as modifiers.
-@export_storage var max_ap: int = 2:
+## Read-only compatibility name used by existing HUD and action code.
+## Authored runtime capacity belongs to base_ap.
+var max_ap: int:
 	get:
 		return effective_max_ap
-	set(value):
-		_apply_base_ap(value, false)
 
 var effective_max_ap: int:
 	get:
@@ -51,15 +49,6 @@ var spent_ap := 0
 var current_ap: int:
 	get:
 		return maxi(0, activation_capacity_ap - spent_ap)
-	set(value):
-		# Compatibility for fixtures/debug setup. Ordinary gameplay spends through
-		# consume_ap() and spend_all_remaining_ap(). This setter intentionally
-		# establishes the requested available AP inside the current capacity.
-		var before := current_ap
-		var requested := clampi(value, 0, activation_capacity_ap)
-		spent_ap = activation_capacity_ap - requested
-		if before != current_ap:
-			ap_changed.emit(current_ap, effective_max_ap)
 
 var _ap_modifiers: Dictionary = {}
 
@@ -88,7 +77,7 @@ var is_defeated: bool = false
 
 func _ready() -> void:
 	current_hp = max_hp
-	reset_ap()
+	refresh_activation_ap()
 	current_supply_points = max_supply_points
 
 func has_enough_ap(amount: int) -> bool:
@@ -110,12 +99,22 @@ func spend_all_remaining_ap() -> int:
 		ap_changed.emit(current_ap, effective_max_ap)
 	return amount
 
-func reset_ap() -> void:
+## Begins a legitimate activation budget. Modifiers persist; expenditure does not.
+func refresh_activation_ap() -> void:
 	var before_current := current_ap
 	var before_capacity := activation_capacity_ap
 	activation_capacity_ap = effective_max_ap
 	spent_ap = 0
 	if before_current != current_ap or before_capacity != activation_capacity_ap:
+		ap_changed.emit(current_ap, effective_max_ap)
+
+## Explicit fixture/debug setup. Gameplay must spend through consume_ap() or
+## spend_all_remaining_ap(); this method never changes activation capacity.
+func set_available_ap_for_setup(value: int) -> void:
+	var before := current_ap
+	var requested := clampi(value, 0, activation_capacity_ap)
+	spent_ap = activation_capacity_ap - requested
+	if before != current_ap:
 		ap_changed.emit(current_ap, effective_max_ap)
 
 func configure_base_ap(value: int, refresh_activation := false) -> void:
@@ -218,6 +217,6 @@ func take_damage(amount: int) -> void:
 func reset_turn_statuses() -> void:
 	is_defending = false
 
-func reset_turn() -> void:
-	reset_ap()
+func refresh_activation() -> void:
+	refresh_activation_ap()
 	reset_turn_statuses()

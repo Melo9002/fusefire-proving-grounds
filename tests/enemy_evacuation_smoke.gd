@@ -59,7 +59,7 @@ func _check_manual_enemy_extract_button() -> void:
 		return
 	world_bar._refresh_extract_button()
 	check(world_bar.extract_button.visible, "The active manually controlled enemy receives an Extract button")
-	enemy.stats.current_ap = 0
+	enemy.stats.set_available_ap_for_setup(0)
 	world_bar._refresh_extract_button()
 	check(world_bar.extract_button.visible and not world_bar.extract_button.disabled, "Enemy extraction remains enabled at zero AP")
 	world_bar.extract_button.button_down.emit()

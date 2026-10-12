@@ -114,6 +114,13 @@ func _execute_turn() -> void:
 		return
 	var has_moved := false
 	current_mission_intent = _get_ai_mission_intent()
+	# TurnManager may select a zero-AP actor only when a legal free objective
+	# action exists. Give that action one deterministic submission opportunity.
+	if unit.stats.current_ap <= 0:
+		var free_step := await _try_mission_step(false)
+		if free_step == MissionStepResult.EXTRACTED:
+			_is_executing = false
+			return
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
 		if await _try_mission_step(false) == MissionStepResult.EXTRACTED:
 			_is_executing = false

@@ -141,7 +141,7 @@ func _check_extract() -> void:
 			var cell := level.battle_controller.grid_manager.get_cell_data(cell_pos)
 			check(not cell.walkable and cell.cover_type == MapCellData.CoverType.FULL and cell.blocks_line_of_sight, "Truck cells provide blocking full cover")
 	var exhausted := level.turn_manager.player_units[1]
-	exhausted.stats.current_ap = 0
+	exhausted.stats.set_available_ap_for_setup(0)
 	level.battle_controller.grid_manager.update_unit_position(exhausted, exhausted.grid_position, destinations[0])
 	check(level.objective_manager.can_extract(exhausted), "An exhausted non-active unit may use the zero-AP Extract action")
 	var extract_query := level.battle_controller.query_mission(&"extract", exhausted)

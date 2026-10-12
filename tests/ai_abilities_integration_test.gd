@@ -26,7 +26,7 @@ func _test_shield_policy_uses_capability() -> void:
 	var threat: TacticalUnit = level.turn_manager.enemy_units[0]
 	var ai := _policy_adapter(level, actor)
 	_prepare_adjacent(level, actor, threat)
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	check(actor.shield_capability != null and ai.call("_most_relevant_defensive_threat") == threat, "Shield policy discovers a legal incoming threat through capability data")
 	check(await ai.call("_try_shield_against", threat), "Shieldbearer AI submits Shield through the authoritative action path")
 	check(actor.tactical_state.is_shielding and actor.stats.current_ap == 0, "AI Shield spends the final AP and commits stance state")
@@ -39,12 +39,12 @@ func _test_guard_policy_is_bounded() -> void:
 	var threat: TacticalUnit = level.turn_manager.enemy_units[0]
 	var ai := _policy_adapter(level, actor)
 	_prepare_adjacent(level, actor, threat)
-	actor.stats.current_ap = 2
+	actor.stats.set_available_ap_for_setup(2)
 	check(ai.call("_guard_has_plausible_trigger"), "Guard policy recognizes a plausible legal reaction target")
 	check(await ai.call("_try_guard_if_useful"), "AI submits Guard through the shared authoritative query")
 	check(actor.tactical_state.is_overwatching and actor.stats.current_ap == 0, "Guard ends activation while preserving its one reaction")
 	actor.tactical_state.clear_overwatch()
-	actor.stats.current_ap = 2
+	actor.stats.set_available_ap_for_setup(2)
 	ai.set("_consecutive_low_value_actions", 1)
 	check(not await ai.call("_try_guard_if_useful"), "A previous low-value defensive turn prevents repeated Guard stalling")
 	ai.free()
@@ -71,7 +71,7 @@ func _test_terminal_approach_and_zero_ap_interaction() -> void:
 	var squad := level.battle_controller.get_squad_context(actor)
 	squad.begin_unit(actor)
 	ai.set("_squad_context", squad)
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	var result: int = await ai.call("_try_mission_step", false)
 	check(result == AIController.MissionStepResult.INTERACTED, "AI approaches and interacts with its required terminal in one mission step")
 	check(actor.stats.current_ap == 0 and terminal.is_activated, "Terminal remains free after AI spends its final AP moving adjacent")

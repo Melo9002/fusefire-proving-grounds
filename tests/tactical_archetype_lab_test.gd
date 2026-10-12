@@ -84,7 +84,7 @@ func _test_base_ap_configuration_and_compatibility() -> void:
 	var scene_fixture: Node = load("res://tests/fixtures/scene_authored_ap_fixture.tscn").instantiate()
 	root.add_child(scene_fixture)
 	var scene_stats := scene_fixture.get_node("UnitStats") as UnitStats
-	check(scene_stats.max_ap == 4 and scene_stats.current_ap == 4, "Existing scene-authored runtime max_ap remains unchanged")
+	check(scene_stats.max_ap == 4 and scene_stats.current_ap == 4, "Scene-authored Base AP remains supported")
 	var property_usage := {}
 	for property in two_ap.get_property_list():
 		property_usage[StringName(property.name)] = int(property.usage)

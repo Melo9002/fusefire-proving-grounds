@@ -31,15 +31,15 @@ var automatic_annihilation_results := true
 ## Authoritative AP may already be committed, but selection waits until the
 ## action lifecycle has completed its blocking presentation.
 var action_completion_barrier: Callable
-## Optional read-only rule for a free objective interaction that an exhausted
-## active unit may still perform before selection advances.
-var zero_ap_continuation_available: Callable
+## Optional read-only rule for a legal free objective action. Zero ordinary AP
+## does not end an activation while this returns true.
+var free_objective_action_available: Callable
 
 func start_battle() -> void:
 	battle_result = BattleResult.ONGOING
 	for unit in player_units:
 		var callback = _on_player_ap_changed.bind(unit)
-		if unit.stats and not unit.stats.ap_changed.is_connected(callback):
+		if is_instance_valid(unit) and unit.stats and not unit.stats.ap_changed.is_connected(callback):
 			unit.stats.ap_changed.connect(callback)
 	current_round = 1
 	round_started.emit(current_round)
@@ -76,7 +76,7 @@ func select_player_unit(unit: TacticalUnit) -> bool:
 		return false
 	if not is_instance_valid(unit) or not player_units.has(unit):
 		return false
-	if not unit.stats or unit.stats.current_ap <= 0 or unit.is_moving:
+	if not _is_activation_eligible(unit) or unit.is_moving:
 		return false
 
 	_set_active_unit(unit, true)
@@ -88,13 +88,10 @@ func advance_automated_player(finished_unit: TacticalUnit) -> void:
 	# AP exhaustion may already have selected the next unit.
 	if active_unit != finished_unit:
 		return
-	var start_index := player_units.find(finished_unit)
-	for offset in range(1, player_units.size() + 1):
-		var candidate := player_units[(start_index + offset) % player_units.size()]
-		if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
-		and candidate.stats.current_ap > 0:
-			_set_active_unit(candidate)
-			return
+	var candidate := _find_next_eligible(player_units, player_units.find(finished_unit), true)
+	if candidate:
+		_set_active_unit(candidate)
+		return
 	var turn_record := {
 		"kind": "end_turn",
 		"actor": String(finished_unit.tactical_id) if is_instance_valid(finished_unit) else "",
@@ -140,11 +137,10 @@ func _continue_after_active_unit_removed(was_player: bool, was_ally: bool, was_e
 	if battle_result != BattleResult.ONGOING or is_instance_valid(active_unit):
 		return
 	if current_phase == TurnPhase.PLAYER_TURN and was_player:
-		for candidate in player_units:
-			if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
-			and candidate.stats.current_ap > 0:
-				_set_active_unit(candidate)
-				return
+		var candidate := _find_next_eligible(player_units, -1, false)
+		if candidate:
+			_set_active_unit(candidate)
+			return
 		if player_units.is_empty():
 			# Let the committing action capture its stable post-extraction state
 			# before phase continuation. Replay verifies that committed fingerprint
@@ -178,11 +174,10 @@ func remove_extracted_unit(unit: TacticalUnit) -> void:
 	# extraction fingerprint. Only an empty roster needs barrier-aware phase
 	# continuation.
 	if current_phase == TurnPhase.PLAYER_TURN and was_player:
-		for candidate in player_units:
-			if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
-			and candidate.stats.current_ap > 0:
-				_set_active_unit(candidate)
-				return
+		var candidate := _find_next_eligible(player_units, -1, false)
+		if candidate:
+			_set_active_unit(candidate)
+			return
 	_continue_after_active_unit_removed.call_deferred(was_player, was_ally, was_enemy)
 
 func is_any_unit_moving() -> bool:
@@ -193,10 +188,10 @@ func is_any_unit_moving() -> bool:
 
 func _on_player_ap_changed(current: int, _maximum: int, unit: TacticalUnit) -> void:
 	if current == 0:
-		# Extraction may free the unit before this deferred check executes.
-		_advance_selection_if_needed.call_deferred(unit.get_instance_id())
+		# Extraction or defeat may free the unit before this deferred check executes.
+		_advance_exhausted_unit_if_needed.call_deferred(unit.get_instance_id())
 
-func _advance_selection_if_needed(exhausted_unit_id: int) -> void:
+func _advance_exhausted_unit_if_needed(exhausted_unit_id: int) -> void:
 	if get_tree().paused:
 		await get_tree().create_timer(0.0, false).timeout
 	while action_completion_barrier.is_valid() and action_completion_barrier.call():
@@ -210,22 +205,19 @@ func _advance_selection_if_needed(exhausted_unit_id: int) -> void:
 		return
 	if not is_instance_valid(exhausted_unit) or not exhausted_unit.stats or exhausted_unit.stats.current_ap > 0:
 		return
-	if zero_ap_continuation_available.is_valid() and zero_ap_continuation_available.call(exhausted_unit):
+	if _has_free_objective_action(exhausted_unit):
 		return
 	_advance_from_exhausted_player(exhausted_unit)
 
 func complete_free_objective_action(unit: TacticalUnit) -> void:
 	if is_instance_valid(unit) and unit.stats and unit.stats.current_ap <= 0:
-		_advance_selection_if_needed.call_deferred(unit.get_instance_id())
+		_advance_exhausted_unit_if_needed.call_deferred(unit.get_instance_id())
 
 func _advance_from_exhausted_player(exhausted_unit: TacticalUnit) -> void:
-	var start_index = player_units.find(exhausted_unit)
-	for offset in range(1, player_units.size() + 1):
-		var candidate = player_units[(start_index + offset) % player_units.size()]
-		if is_instance_valid(candidate) and candidate.stats and not candidate.stats.is_defeated \
-			and candidate.stats.current_ap > 0:
-			_set_active_unit(candidate)
-			return
+	var candidate := _find_next_eligible(player_units, player_units.find(exhausted_unit), true)
+	if candidate:
+		_set_active_unit(candidate)
+		return
 	player_actions_exhausted.emit()
 
 func _check_battle_result() -> void:
@@ -251,27 +243,32 @@ func _finish_battle(result: BattleResult) -> void:
 func _start_player_turn_phase() -> void:
 	current_phase = TurnPhase.PLAYER_TURN
 	_prioritize_carrier(player_units)
-	for unit in player_units:
-		if is_instance_valid(unit) and unit.stats:
-			unit.stats.reset_turn()
+	_refresh_roster(player_units)
 
 	if player_units.is_empty():
 		_start_ally_turn_phase()
 		return
-	_set_active_unit(player_units[0])
+	var candidate := _find_next_eligible(player_units, -1, false)
+	if candidate:
+		_set_active_unit(candidate)
+	else:
+		_clear_active_unit()
 	turn_phase_changed.emit(current_phase)
+	if not candidate:
+		_emit_player_actions_exhausted.call_deferred()
 
 func _start_enemy_turn_phase() -> void:
 	current_phase = TurnPhase.ENEMY_TURN
-	for unit_item in enemy_units:
-		if is_instance_valid(unit_item) and unit_item.stats:
-			unit_item.stats.reset_turn()
+	_refresh_roster(enemy_units)
 
-	active_unit_index = 0
-	if not enemy_units.is_empty():
-		_set_active_unit(enemy_units[0])
+	active_unit_index = -1
+	var candidate := _find_next_eligible(enemy_units, active_unit_index, false)
+	if candidate:
+		active_unit_index = enemy_units.find(candidate)
+		_set_active_unit(candidate)
 		turn_phase_changed.emit(current_phase)
 	else:
+		_clear_active_unit()
 		_end_round()
 
 func _start_ally_turn_phase() -> void:
@@ -280,30 +277,40 @@ func _start_ally_turn_phase() -> void:
 		return
 	current_phase = TurnPhase.ALLY_TURN
 	_prioritize_carrier(allied_units)
-	for unit_item in allied_units:
-		if is_instance_valid(unit_item) and unit_item.stats:
-			unit_item.stats.reset_turn()
-	active_unit_index = 0
-	_set_active_unit(allied_units[0])
-	turn_phase_changed.emit(current_phase)
+	_refresh_roster(allied_units)
+	active_unit_index = -1
+	var candidate := _find_next_eligible(allied_units, active_unit_index, false)
+	if candidate:
+		active_unit_index = allied_units.find(candidate)
+		_set_active_unit(candidate)
+		turn_phase_changed.emit(current_phase)
+	else:
+		_clear_active_unit()
+		_start_enemy_turn_phase()
 
 func _advance_ally_unit_queue() -> void:
 	if battle_result != BattleResult.ONGOING:
 		return
-	active_unit_index += 1
-	if active_unit_index < allied_units.size():
-		_set_active_unit(allied_units[active_unit_index])
-	else:
-		_start_enemy_turn_phase()
+	var queue_index := allied_units.find(active_unit) if is_instance_valid(active_unit) else active_unit_index
+	var candidate := _find_next_eligible(allied_units, queue_index, false)
+	if candidate:
+		active_unit_index = allied_units.find(candidate)
+		_set_active_unit(candidate)
+		return
+	_clear_active_unit()
+	_start_enemy_turn_phase()
 
 func _advance_enemy_unit_queue() -> void:
 	if battle_result != BattleResult.ONGOING:
 		return
-	active_unit_index += 1
-	if active_unit_index < enemy_units.size():
-		_set_active_unit(enemy_units[active_unit_index])
-	else:
-		_end_round()
+	var queue_index := enemy_units.find(active_unit) if is_instance_valid(active_unit) else active_unit_index
+	var candidate := _find_next_eligible(enemy_units, queue_index, false)
+	if candidate:
+		active_unit_index = enemy_units.find(candidate)
+		_set_active_unit(candidate)
+		return
+	_clear_active_unit()
+	_end_round()
 
 func _end_round() -> void:
 	tactical_beat_ended.emit(current_round)
@@ -319,6 +326,44 @@ func _set_active_unit(unit: TacticalUnit, force_camera_recenter := false) -> voi
 	active_unit = unit
 	active_unit_changed.emit(active_unit)
 	selection_focus_requested.emit(active_unit, force_camera_recenter)
+
+func _clear_active_unit() -> void:
+	if active_unit == null:
+		return
+	active_unit = null
+	active_unit_changed.emit(null)
+
+func _emit_player_actions_exhausted() -> void:
+	if current_phase == TurnPhase.PLAYER_TURN and battle_result == BattleResult.ONGOING \
+	and not is_instance_valid(active_unit):
+		player_actions_exhausted.emit()
+
+func _refresh_roster(roster: Array[TacticalUnit]) -> void:
+	for unit in roster:
+		if is_instance_valid(unit) and unit.stats and not unit.stats.is_defeated:
+			unit.stats.refresh_activation()
+
+func _is_activation_eligible(unit: TacticalUnit) -> bool:
+	return is_instance_valid(unit) and unit.stats and not unit.stats.is_defeated \
+		and (unit.stats.current_ap > 0 or _has_free_objective_action(unit))
+
+func _has_free_objective_action(unit: TacticalUnit) -> bool:
+	return free_objective_action_available.is_valid() and free_objective_action_available.call(unit)
+
+func _find_next_eligible(roster: Array[TacticalUnit], after_index: int, wrap: bool) -> TacticalUnit:
+	if roster.is_empty():
+		return null
+	var checks := roster.size() if wrap else roster.size() - after_index - 1
+	for offset in range(1, checks + 1):
+		var index := after_index + offset
+		if wrap:
+			index %= roster.size()
+		if index >= roster.size():
+			break
+		var candidate := roster[index]
+		if _is_activation_eligible(candidate):
+			return candidate
+	return null
 
 func _prioritize_carrier(roster: Array[TacticalUnit]) -> void:
 	for index in roster.size():

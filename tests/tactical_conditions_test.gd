@@ -59,7 +59,7 @@ func _check_lifecycle_susceptibility_and_treatment() -> void:
 	check(not droplets.emitting, "Emergency Seal stops the droplet presentation immediately")
 	var rejected_ap := actor.stats.current_ap
 	check(await service.submit_simple(service.make_simple_request(&"emergency_seal", actor, TacticalActionRequest.Source.PLAYER), true) == null and actor.stats.current_ap == rejected_ap, "Invalid treatment consumes no AP or charge")
-	actor.stats.current_ap = 1
+	actor.stats.set_available_ap_for_setup(1)
 	actor.emergency_seal_charges = 1
 	service.apply_condition(actor, ConditionCatalog.LEAKING, &"fixture")
 	var ai := AIController.new()
