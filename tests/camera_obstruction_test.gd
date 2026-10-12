@@ -17,6 +17,11 @@ func run() -> void:
 	var wall := StaticBody3D.new()
 	wall.collision_layer = 2
 	var shape := CollisionShape3D.new()
+	var wall_mesh := MeshInstance3D.new()
+	var wall_box := BoxMesh.new()
+	wall_box.size = Vector3(4, 4, 0.2)
+	wall_mesh.mesh = wall_box
+	wall.add_child(wall_mesh)
 	var box := BoxShape3D.new()
 	box.size = Vector3(4, 4, 0.2)
 	shape.shape = box
@@ -30,6 +35,15 @@ func run() -> void:
 	check(not rig._camera_path_clear(origin, destination), "Terrain blocks camera")
 	check(rig._safe_camera_position(origin, destination).z < 1.9, "Camera stays before wall with clearance")
 	check(rig._camera_path_clear(origin, Vector3(0, 1.5, -4)), "Open camera path is unchanged")
+	lens.global_position = origin
+	rig._cinematic_active = true
+	rig._cinematic_look_target = destination
+	rig._update_camera_occlusion()
+	check(is_equal_approx(wall_mesh.transparency, rig.occluder_transparency), "Terrain between camera and focus becomes mostly transparent")
+	rig._cinematic_look_target = Vector3(0, 1.5, -4)
+	rig._update_camera_occlusion()
+	check(is_zero_approx(wall_mesh.transparency), "Occluder transparency restores when the sightline clears")
+	rig._cinematic_active = false
 	wall.collision_layer = 4
 	await physics_frame
 	check(rig._camera_path_clear(origin, destination), "Unit collision layer does not obstruct camera")

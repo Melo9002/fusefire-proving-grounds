@@ -21,6 +21,9 @@ extends Node3D
 @export_group("Selection Focus")
 @export_range(0.05, 1.0, 0.05, "suffix:s") var selection_focus_duration := 0.35
 @export_range(0.0, 0.4, 0.01) var comfortable_viewport_margin := 0.16
+@export_group("Occlusion")
+@export_range(0.0, 1.0, 0.05) var occluder_transparency := 0.72
+@export_range(1, 12, 1) var maximum_faded_occluders := 6
 @export_group("")
 
 var _transitioning := false
@@ -39,6 +42,7 @@ var _cinematic_side := 1.0
 var _cinematic_active := false
 var _cinematic_camera_position := Vector3.ZERO
 var _cinematic_look_target := Vector3.ZERO
+var _faded_occluders: Dictionary = {}
 
 func _ready() -> void:
 	if not map_floor or not camera:
@@ -52,13 +56,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _transitioning:
+		_update_camera_occlusion()
 		return
 	if _cinematic_active:
 		_update_cinematic_camera(delta)
+		_update_camera_occlusion()
 		return
 	if not get_window().has_focus():
 		_dragging = false
 		_rotating = false
+		_update_camera_occlusion()
 		return
 	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		_dragging = false
@@ -101,6 +108,75 @@ func _process(delta: float) -> void:
 	if turn_direction != 0.0:
 		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-turn_direction * rotation_speed * delta))
+	_update_camera_occlusion()
+
+func _exit_tree() -> void:
+	_restore_faded_occluders({})
+
+func _update_camera_occlusion() -> void:
+	if not is_instance_valid(camera) or not is_inside_tree():
+		_restore_faded_occluders({})
+		return
+	var focus: Variant = _camera_occlusion_focus()
+	if focus == null:
+		_restore_faded_occluders({})
+		return
+	var faded_now := {}
+	var excluded: Array[RID] = []
+	for _index in maximum_faded_occluders:
+		var ray := PhysicsRayQueryParameters3D.create(camera.global_position, focus, 3, excluded)
+		ray.hit_from_inside = true
+		var hit := get_world_3d().direct_space_state.intersect_ray(ray)
+		if hit.is_empty():
+			break
+		var collider := hit.get("collider") as Node
+		if collider and collider.has_method("get_rid"):
+			excluded.append(collider.get_rid())
+		var geometry := _occluder_geometry(collider, int(hit.get("shape", -1)))
+		if geometry and geometry != map_floor:
+			faded_now[geometry] = true
+			if not _faded_occluders.has(geometry):
+				_faded_occluders[geometry] = geometry.transparency
+			geometry.transparency = occluder_transparency
+	_restore_faded_occluders(faded_now)
+
+func _camera_occlusion_focus() -> Variant:
+	if _cinematic_active:
+		return _cinematic_look_target
+	if turn_manager and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
+	and is_instance_valid(turn_manager.active_unit):
+		return turn_manager.active_unit.global_position + Vector3.UP * turn_manager.active_unit.standing_height
+	# During enemy observation the active unit is deliberately not a camera
+	# protagonist. Fade terrain toward the current tactical pivot instead.
+	return global_position + Vector3.UP
+
+func _occluder_geometry(collider: Node, shape_index: int) -> GeometryInstance3D:
+	if collider is GeometryInstance3D:
+		return collider as GeometryInstance3D
+	if collider is CollisionObject3D and shape_index >= 0:
+		var owner_id := (collider as CollisionObject3D).shape_find_owner(shape_index)
+		if owner_id >= 0:
+			var shape_owner := (collider as CollisionObject3D).shape_owner_get_owner(owner_id)
+			if shape_owner is GeometryInstance3D:
+				return shape_owner as GeometryInstance3D
+	var current := collider
+	while is_instance_valid(current):
+		if current is GeometryInstance3D:
+			return current as GeometryInstance3D
+		current = current.get_parent()
+	if is_instance_valid(collider):
+		for child in collider.get_children():
+			if child is GeometryInstance3D:
+				return child as GeometryInstance3D
+	return null
+
+func _restore_faded_occluders(still_faded: Dictionary) -> void:
+	for geometry in _faded_occluders.keys():
+		if not is_instance_valid(geometry):
+			_faded_occluders.erase(geometry)
+		elif not still_faded.has(geometry):
+			geometry.transparency = float(_faded_occluders[geometry])
+			_faded_occluders.erase(geometry)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _cinematic_active:
