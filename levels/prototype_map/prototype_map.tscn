@@ -717,7 +717,7 @@ text = "End Turn"
 [node name="APDisplayLabel" type="Label" parent="Visualizers/BattleUI/TurnHUDController/VBoxContainer" unique_id=1990059315]
 layout_mode = 2
 
-[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "aim_button", "shield_button", "overwatch_button", "interact_button", "end_unit_button", "supply_points_label", "tactical_state_label")]
+[node name="ActionHUDController" type="Control" parent="Visualizers/BattleUI" unique_id=353924541 node_paths=PackedStringArray("battle_controller", "move_button", "attack_button", "reload_button", "aim_button", "shield_button", "overwatch_button", "interact_button", "emergency_seal_button", "end_unit_button", "supply_points_label", "tactical_state_label")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -731,6 +731,7 @@ aim_button = NodePath("ActionBar/AimButton")
 shield_button = NodePath("ActionBar/ShieldButton")
 overwatch_button = NodePath("ActionBar/OverwatchButton")
 interact_button = NodePath("ActionBar/InteractButton")
+emergency_seal_button = NodePath("ActionBar/EmergencySealButton")
 end_unit_button = NodePath("ActionBar/EndUnitButton")
 supply_points_label = NodePath("ActionBar/SupplyPointsLabel")
 tactical_state_label = NodePath("ActionBar/TacticalStateLabel")
@@ -771,6 +772,11 @@ text = "Guard"
 [node name="InteractButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2
 text = "Interact (Free)"
+
+[node name="EmergencySealButton" type="Button" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
+visible = false
+layout_mode = 2
+text = "Seal (1 AP)"
 
 [node name="SupplyPointsLabel" type="Label" parent="Visualizers/BattleUI/ActionHUDController/ActionBar"]
 layout_mode = 2

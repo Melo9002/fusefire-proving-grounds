@@ -10,6 +10,8 @@ signal active_unit_changed(unit: TacticalUnit)
 ## clicks, portraits, automatic cycling, and phase starts. It never changes turn state.
 signal selection_focus_requested(unit: TacticalUnit, force_recenter: bool)
 signal round_started(round_number: int)
+## Synchronous authoritative boundary at the end of the current shared round.
+signal tactical_beat_ended(beat_number: int)
 signal battle_ended(result: BattleResult)
 signal player_actions_exhausted
 signal turn_ended(record: Dictionary)
@@ -295,6 +297,9 @@ func _advance_enemy_unit_queue() -> void:
 		_end_round()
 
 func _end_round() -> void:
+	tactical_beat_ended.emit(current_round)
+	if battle_result != BattleResult.ONGOING:
+		return
 	current_round += 1
 	round_started.emit(current_round)
 	_start_player_turn_phase()

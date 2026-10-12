@@ -35,6 +35,7 @@ func _test_capability_action_and_combat() -> void:
 	var actor: TacticalUnit = level.turn_manager.player_units[0]
 	var threat: TacticalUnit = level.turn_manager.enemy_units[0]
 	var service := level.battle_controller.action_service
+	var starting_ap := actor.stats.current_ap
 	_prepare_adjacent(level, actor, threat)
 	check(actor.shield_capability != null and threat.shield_capability == null, "Only Shieldbearer receives the Inspector-authored capability")
 	check(not service.query_shield(threat.tactical_id, actor.tactical_id).is_legal(), "A unit without the capability cannot activate Shield Stance")
@@ -42,7 +43,7 @@ func _test_capability_action_and_combat() -> void:
 	var inventory := service.query_shield(actor.tactical_id)
 	var query := service.query_shield(actor.tactical_id, threat.tactical_id)
 	check(inventory.is_legal() and inventory.has_legal_threats(), "Targetless Shield query exposes legal hostile choices")
-	check(query.is_legal() and query.cost.ap == 1 and query.actor_ap_after == 1, "Shield query exposes its one-AP cost")
+	check(query.is_legal() and query.cost.ap == 1 and query.actor_ap_after == starting_ap - 1, "Shield query exposes its one-AP cost")
 	check(is_equal_approx(query.protected_arc_degrees, 120.0) and query.accuracy_modifier == -20 and is_equal_approx(query.damage_multiplier, 0.35), "Shield query exposes capability tuning")
 	check(service.get_combat_rng_state() == rng_before and service.state_revision == 0, "Shield queries consume no RNG or revision")
 	service.call("_set_busy", true)
@@ -50,12 +51,12 @@ func _test_capability_action_and_combat() -> void:
 	service.call("_set_busy", false)
 	actor.stats.current_ap = 0
 	check(service.query_shield(actor.tactical_id, threat.tactical_id).validation.code == &"insufficient_ap", "Shield query rejects insufficient AP")
-	actor.stats.current_ap = 2
+	actor.stats.current_ap = starting_ap
 	var stale := service.make_shield_request(actor, threat, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
-	check(await service.submit_shield(stale, true) == null and actor.stats.current_ap == 2, "Stale Shield request spends no AP")
+	check(await service.submit_shield(stale, true) == null and actor.stats.current_ap == starting_ap, "Stale Shield request spends no AP")
 	var result := await service.submit_shield(service.make_shield_request(actor, threat, TacticalActionRequest.Source.PLAYER), true)
-	check(result != null and result.actor_ap_before == 2 and result.actor_ap_after == 1, "Shield Stance consumes exactly one AP")
+	check(result != null and result.actor_ap_before == starting_ap and result.actor_ap_after == starting_ap - 1, "Shield Stance consumes exactly one AP")
 	check(actor.tactical_state.is_shielding and service.state_revision == 1 and result.transaction_id == 1, "Shield Stance commits one state transition")
 	check(service.get_combat_rng_state() == rng_before, "Shield activation consumes no combat RNG")
 	check(service.query_attack(actor.tactical_id, threat.tactical_id).validation.code == &"shield_stance_restriction", "Shield Stance prevents Attack")

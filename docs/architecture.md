@@ -260,3 +260,11 @@ Selection focus moves only this pivot, preserving the player's zoom and view ang
 - Victory and Defeat are text states in the existing turn HUD; a dedicated result screen can come later.
 
 Play a few rounds, choose the rules you want, and then change the relevant owner above.
+
+## Tactical conditions
+
+A tactical beat is one complete shared round; its fictional duration is approximately three seconds, without introducing a real-time clock. `TurnManager` emits `tactical_beat_ended` after the final enemy activation. The action service ticks conditions there before the next round, in stable actor-ID and condition-ID order. Periodic damage uses `UnitStats.take_damage()`, retaining the existing defeat, roster, objective, and turn owners.
+
+Inspector-authored `ConditionDefinition` Resources describe Leaking, Bleeding, and Jammed. Spawned units own one runtime instance per condition ID, and reapplication refreshes duration. Archetype data declares mechanical-fluid, electronic, or biological susceptibility, narrow immunity IDs, and Emergency Seal charges. Leaking and Bleeding deal one HP for three beat boundaries. Jammed lasts one boundary, cancels existing Aim when applied, and makes the shared Aim query illegal. Emergency Seal is an explicit one-AP action that consumes one charge and removes Leaking without restoring HP.
+
+Attack fixtures may assign an explicit `attack_condition`; ordinary weapons leave it empty. `TileHazardMarker` nodes copy their assigned condition onto runtime map cells. Move applies exposure after entering a checkpoint and before Guard reactions, keeping exposure inside the parent Move result. Attack application likewise stays inside its parent Attack. HUD labels and lightweight droplets observe committed state. New replay configurations opt into condition fingerprints and payload schema 9; recordings without `conditions_enabled` retain historical state and mechanics.

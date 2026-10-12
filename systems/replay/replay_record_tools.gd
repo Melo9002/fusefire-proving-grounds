@@ -31,8 +31,8 @@ static func validate_action_record(record: Dictionary, envelope_version: int) ->
 				return "tactical action is missing request or resolved result"
 			var payload_version := int(record.get("schema_version", -1))
 			var kind := String(record.get("kind", ""))
-			if kind == "attack" and payload_version not in [2, 3, 4, 5, 7]:
-				return "unsupported Attack payload schema %s (expected 2, 3, 4, 5, or 7)" % payload_version
+			if kind == "attack" and payload_version not in [2, 3, 4, 5, 7, 9]:
+				return "unsupported Attack payload schema %s" % payload_version
 			if kind == "reload" and payload_version != 3:
 				return "unsupported Reload payload schema %s (expected 3)" % payload_version
 			if kind == "aim" and payload_version != 4:
@@ -43,10 +43,12 @@ static func validate_action_record(record: Dictionary, envelope_version: int) ->
 				return "unsupported Overwatch payload schema %s (expected 6)" % payload_version
 			if kind == "interact_terminal" and payload_version != 8:
 				return "unsupported terminal interaction payload schema %s (expected 8)" % payload_version
-			if kind == "move" and payload_version not in [2, 6]:
-				return "unsupported Move payload schema %s (expected 2 or 6)" % payload_version
-			if kind not in ["attack", "reload", "aim", "shield", "overwatch", "move", "interact_terminal"] and payload_version != 2:
-				return "unsupported action payload schema %s (expected 2)" % payload_version
+			if kind == "move" and payload_version not in [2, 6, 9]:
+				return "unsupported Move payload schema %s" % payload_version
+			if kind == "emergency_seal" and payload_version != 9:
+				return "unsupported Emergency Seal payload schema %s" % payload_version
+			if kind not in ["attack", "reload", "aim", "shield", "overwatch", "move", "interact_terminal", "emergency_seal"] and payload_version not in [2, 9]:
+				return "unsupported action payload schema %s" % payload_version
 			if int(record.get("request", {}).get("schema_version", -1)) != TacticalActionRequest.SCHEMA_VERSION:
 				return "unsupported request payload schema %s (expected %d)" % [record.get("request", {}).get("schema_version"), TacticalActionRequest.SCHEMA_VERSION]
 		elif int(record.get("schema_version", -1)) != 1:

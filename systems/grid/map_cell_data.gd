@@ -16,6 +16,8 @@ var cover_type: CoverType = CoverType.NONE
 var cover_height: float = 0.0
 var blocks_line_of_sight: bool = false
 var movement_cost: int = 1
+## Optional authored environmental exposure. Empty cells have no hazard.
+var hazard_condition: ConditionDefinition
 
 func _init(cell: Vector3i, position: Vector3) -> void:
 	grid_position = cell

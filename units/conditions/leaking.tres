@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ConditionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/conditions/condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"leaking"
+display_name = "Leaking"
+description = "Mechanical fluid loss causes periodic damage until sealed or expired."
+required_susceptibility = 2
+duration_beats = 3
+recurring_damage = 1
+status_color = Color(0.2, 0.75, 1, 1)

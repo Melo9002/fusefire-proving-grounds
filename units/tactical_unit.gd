@@ -22,10 +22,16 @@ signal attack_presented(target_world_position: Vector3)
 @export var archetype_id: StringName = &"generic"
 ## Prepared for 01.11.4; grants no defensive benefit by itself.
 @export var shield_capability: ShieldCapability
+@export_flags("Biological", "Mechanical Fluid", "Electronic") var condition_susceptibilities := ConditionDefinition.Susceptibility.MECHANICAL_FLUID | ConditionDefinition.Susceptibility.ELECTRONIC
+@export var condition_immunities: Array[StringName] = []
+@export_range(0, 9, 1) var emergency_seal_charges := 1
+## Optional weapon/test-fixture condition. Ordinary attacks leave this empty.
+@export var attack_condition: ConditionDefinition
 @export_group("Components")
 @export var stats: UnitStats
 @export var mission_actor: MissionActor
 @export var tactical_state: TacticalState
+@export var conditions: ConditionComponent
 @export_group("Presentation")
 ## Disable for isolated presentation tools or fixtures that intentionally have no battle UI layer.
 @export var show_world_hud := true
@@ -46,6 +52,7 @@ var _visual_segments: Array[StringName] = []
 var _visual_waypoint := -1
 var carried_unit: TacticalUnit
 var _movement_speed_before_carry := -1
+var _leak_particles: CPUParticles3D
 
 func carry_unit(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit) or carried_unit != null:
@@ -79,6 +86,43 @@ func _ready() -> void:
 		visual_adapter.setup(self)
 	if show_world_hud:
 		_spawn_world_hud()
+	if conditions and not conditions.changed.is_connected(_refresh_condition_presentation):
+		conditions.changed.connect(_refresh_condition_presentation)
+	_refresh_condition_presentation()
+
+func can_receive_condition(definition: ConditionDefinition) -> bool:
+	if definition == null or condition_immunities.has(definition.condition_id): return false
+	if definition.required_susceptibility == 0: return true
+	return (condition_susceptibilities & definition.required_susceptibility) == definition.required_susceptibility
+
+## Narrow equipment-resistance hook. Equipment can supply IDs later without a registry.
+func is_condition_resisted(condition_id: StringName) -> bool:
+	return condition_immunities.has(condition_id)
+
+func _refresh_condition_presentation() -> void:
+	var leaking := conditions != null and conditions.has(&"leaking") and stats and not stats.is_defeated
+	if leaking and not is_instance_valid(_leak_particles):
+		_leak_particles = CPUParticles3D.new()
+		_leak_particles.name = "LeakingDroplets"
+		_leak_particles.position = Vector3(0, 1.0, 0)
+		_leak_particles.amount = 8
+		_leak_particles.lifetime = 1.1
+		_leak_particles.direction = Vector3.DOWN
+		_leak_particles.spread = 18.0
+		_leak_particles.initial_velocity_min = 0.25
+		_leak_particles.initial_velocity_max = 0.7
+		_leak_particles.gravity = Vector3(0, -1.8, 0)
+		var droplet := SphereMesh.new()
+		droplet.radius = 0.025
+		droplet.height = 0.08
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.1, 0.65, 1.0, 0.85)
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		droplet.material = material
+		_leak_particles.mesh = droplet
+		add_child(_leak_particles)
+	if is_instance_valid(_leak_particles):
+		_leak_particles.emitting = leaking
 
 func _apply_character_presentation() -> void:
 	var bean := get_node_or_null("MeshInstance3D") as MeshInstance3D
@@ -91,6 +135,7 @@ func _apply_character_presentation() -> void:
 func _on_stats_defeated() -> void:
 	if tactical_state:
 		tactical_state.reset()
+	_refresh_condition_presentation()
 	if visual_adapter and not defer_stat_presentation:
 		visual_adapter.present_defeat()
 	defeated.emit(self)

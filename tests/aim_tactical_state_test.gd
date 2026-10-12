@@ -27,15 +27,16 @@ func _test_aim_contract_and_attack() -> void:
 	var service := level.battle_controller.action_service
 	_prepare_attack(level, actor, target)
 	var rng_before := service.get_combat_rng_state()
+	var ap_before := actor.stats.current_ap
 	var query := service.query_aim(actor.tactical_id)
-	check(query.is_legal() and query.actor_ap_before == 2 and query.actor_ap_after == 1, "Aim query exposes its one-AP cost")
+	check(query.is_legal() and query.actor_ap_before == ap_before and query.actor_ap_after == ap_before - 1, "Aim query exposes its one-AP cost")
 	check(not query.aiming_before and query.accuracy_bonus == 15, "Aim query exposes state and +15 bonus")
 	check(service.get_combat_rng_state() == rng_before and service.state_revision == 0, "Aim query changes no RNG or revision")
 	var stale := service.make_aim_request(actor, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
 	check(await service.submit_aim(stale, true) == null and service.last_rejection.code == &"stale_revision", "Stale Aim is rejected")
 	var result := await service.submit_aim(service.make_aim_request(actor, TacticalActionRequest.Source.PLAYER), true)
-	check(result != null and result.actor_ap_before == 2 and result.actor_ap_after == 1, "Aim consumes exactly one AP")
+	check(result != null and result.actor_ap_before == ap_before and result.actor_ap_after == ap_before - 1, "Aim consumes exactly one AP")
 	check(result.aiming_after and actor.tactical_state.is_aiming and service.state_revision == 1 and result.transaction_id == 1, "Aim commits one state transition, revision, and transaction")
 	check(actor.stats.current_supply_points == 4 and service.get_combat_rng_state() == rng_before, "Aim consumes no SP or RNG")
 	check(service.query_aim(actor.tactical_id).validation.code == &"already_aiming", "Aimed actors cannot Aim repeatedly")
@@ -48,7 +49,7 @@ func _test_aim_contract_and_attack() -> void:
 	var attack := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(attack != null and attack.aim_applied and attack.aim_bonus == 15 and not actor.tactical_state.is_aiming, "Committed Attack consumes Aim on its seeded outcome")
 	check(actor.stats.current_supply_points == 0 and attack.supply_points_cost == 1, "Aimed Attack consumes exactly one SP")
-	check(attack.to_replay_record().schema_version == 7, "Current Attack uses the Good Guard retaliation payload schema while retaining Aim and shield fields")
+	check(attack.to_replay_record().schema_version == AttackActionResult.SCHEMA_VERSION, "Current Attack uses the condition-aware payload schema while retaining Aim, shield, and Guard fields")
 	level.queue_free()
 	await process_frame
 	await process_frame

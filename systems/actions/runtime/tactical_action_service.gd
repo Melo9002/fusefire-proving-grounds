@@ -28,6 +28,9 @@ var aim_enabled := true
 var shield_enabled := true
 ## False only while reproducing recordings created before Overwatch existed.
 var overwatch_enabled := true
+## False while reconstructing recordings authored before conditions existed.
+var conditions_enabled := true
+var last_beat_events: Array[Dictionary] = []
 
 var _turn_manager: TurnManager
 var _grid_manager: GridManager
@@ -67,6 +70,8 @@ func setup(
 	_turn_manager = turn_manager
 	_grid_manager = grid_manager
 	_objective_manager = objective_manager
+	if _turn_manager and not _turn_manager.tactical_beat_ended.is_connected(_on_tactical_beat_ended):
+		_turn_manager.tactical_beat_ended.connect(_on_tactical_beat_ended)
 	_combat_rng.seed = combat_seed
 	_present_attack = present_attack
 	_present_reload = present_reload
@@ -223,6 +228,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		target.defer_stat_presentation = true
 		target.stats.take_damage(result.damage)
 		target.defer_stat_presentation = false
+		if result.damage > 0 and not target.stats.is_defeated and conditions_enabled and actor.attack_condition:
+			var condition_event := _apply_condition(target, actor.attack_condition, actor.tactical_id, &"attack")
+			if condition_event.get("applied", false): result.condition_events.append(condition_event)
 	_resolve_attack_retaliation(actor, target, result)
 	if _objective_manager:
 		_objective_manager.evaluate_outcome_after_action_commit()
@@ -650,10 +658,10 @@ func query_simple(kind: StringName, actor_id: StringName) -> SimpleActionQueryRe
 	if not service_check.accepted:
 		query.validation = service_check
 		return query
-	if kind not in [&"wait", &"defend"]:
-		query.validation = ActionValidationResult.reject(&"unsupported_action", "Expected Wait or Defend", state_revision)
+	if kind not in [&"wait", &"defend", &"emergency_seal"]:
+		query.validation = ActionValidationResult.reject(&"unsupported_action", "Unsupported simple action", state_revision)
 		return query
-	query.validation = _validate_actor(actor)
+	query.validation = _validate_emergency_seal(actor) if kind == &"emergency_seal" else _validate_actor(actor)
 	return query
 
 func query_mission(kind: StringName, actor_id: StringName, target_id: StringName = &"") -> MissionActionQueryResult:
@@ -730,7 +738,13 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	result.request = request
 	result.actor_ap_before = actor.stats.current_ap
 	result.defending_before = actor.stats.is_defending
+	result.charges_before = actor.emergency_seal_charges
 	if request.kind == &"wait": actor.stats.current_ap = 0
+	elif request.kind == &"emergency_seal":
+		actor.stats.consume_ap(1)
+		actor.emergency_seal_charges -= 1
+		result.condition_id = &"leaking"
+		result.condition_removed = actor.conditions.remove(&"leaking")
 	else:
 		actor.stats.consume_ap(ATTACK_AP_COST)
 		actor.stats.is_defending = true
@@ -739,6 +753,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	_cancel_overwatch(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.defending_after = actor.stats.is_defending
+	result.charges_after = actor.emergency_seal_charges
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
@@ -822,7 +837,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"rescue", &"extract", &"interact_terminal"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"emergency_seal", &"rescue", &"extract", &"interact_terminal"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -903,6 +918,19 @@ func _validate_aim(actor: TacticalUnit) -> ActionValidationResult:
 		return ActionValidationResult.reject(&"state_unavailable", "Actor has no tactical-state component", state_revision)
 	if actor.tactical_state.is_aiming:
 		return ActionValidationResult.reject(&"already_aiming", "Actor is already Aimed", state_revision)
+	if conditions_enabled and actor.conditions and actor.conditions.restricts(&"aim"):
+		return ActionValidationResult.reject(&"condition_restriction", "Jammed units cannot Aim", state_revision)
+	return ActionValidationResult.allow(state_revision)
+
+func _validate_emergency_seal(actor: TacticalUnit) -> ActionValidationResult:
+	if not conditions_enabled:
+		return ActionValidationResult.reject(&"unsupported_action", "Emergency Seal is unavailable in this historical replay", state_revision)
+	var actor_result := _validate_actor(actor)
+	if not actor_result.accepted: return actor_result
+	if actor.conditions == null or not actor.conditions.has(&"leaking"):
+		return ActionValidationResult.reject(&"condition_missing", "Unit is not Leaking", state_revision)
+	if actor.emergency_seal_charges <= 0:
+		return ActionValidationResult.reject(&"no_charges", "No Emergency Seal charges remain", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
 func _validate_shield(actor: TacticalUnit, threat: TacticalUnit) -> ActionValidationResult:
@@ -969,7 +997,7 @@ func _cancel_overwatch(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_overwatch() if overwatch_enabled and is_instance_valid(actor) and actor.tactical_state else false
 
 func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult) -> void:
-	if not overwatch_enabled or result.path_cells.size() <= 1:
+	if result.path_cells.size() <= 1:
 		return
 	var watcher_ids := actor_registry.get_ids()
 	watcher_ids.sort_custom(func(first: StringName, second: StringName) -> bool:
@@ -982,6 +1010,15 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 	var final_index := result.path_cells.size() - 1
 	for checkpoint_index in range(1, result.path_cells.size()):
 		var checkpoint := result.path_cells[checkpoint_index]
+		if conditions_enabled:
+			var cell := _grid_manager.map_data.get_cell(checkpoint) if _grid_manager and _grid_manager.map_data else null
+			if cell and cell.hazard_condition:
+				var exposure := _apply_condition(mover, cell.hazard_condition, StringName("hazard:%s" % checkpoint), &"hazard")
+				exposure["checkpoint_index"] = checkpoint_index
+				exposure["checkpoint_cell"] = [checkpoint.x, checkpoint.y, checkpoint.z]
+				if exposure.get("applied", false): result.condition_events.append(exposure)
+		if not overwatch_enabled:
+			continue
 		for watcher_id in watcher_ids:
 			var watcher := actor_registry.resolve(watcher_id)
 			if not _watcher_can_react(watcher, mover):
@@ -1025,6 +1062,50 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 		result.presentation_path = result.presentation_path.slice(0, final_index + 1)
 		result.visual_segments = result.visual_segments.slice(0, final_index + 1)
 		result.target_cell = result.path_cells[-1]
+
+func _apply_condition(target: TacticalUnit, definition: ConditionDefinition, source_id: StringName, source_kind: StringName) -> Dictionary:
+	var event := {
+		"condition_id": String(definition.condition_id) if definition else "",
+		"source_id": String(source_id),
+		"source_kind": String(source_kind),
+		"target_id": String(target.tactical_id) if is_instance_valid(target) else "",
+		"applied": false,
+		"refreshed": false,
+		"remaining_beats": 0,
+	}
+	if not conditions_enabled or not is_instance_valid(target) or not target.stats or target.stats.is_defeated \
+	or target.conditions == null or definition == null or not target.can_receive_condition(definition):
+		return event
+	var application := target.conditions.apply(definition, _turn_manager.current_round, source_id)
+	event.merge(application, true)
+	if event.get("applied", false) and definition.restricted_action == &"aim" and target.tactical_state:
+		target.tactical_state.clear_aim()
+	return event
+
+func apply_condition(target: TacticalUnit, definition: ConditionDefinition, source_id: StringName = &"system") -> Dictionary:
+	return _apply_condition(target, definition, source_id, &"system")
+
+func _on_tactical_beat_ended(beat_number: int) -> void:
+	if not conditions_enabled: return
+	last_beat_events.clear()
+	var actor_ids := actor_registry.get_ids()
+	actor_ids.sort_custom(func(a: StringName, b: StringName): return String(a) < String(b))
+	for actor_id in actor_ids:
+		var actor := actor_registry.resolve(actor_id)
+		if not is_instance_valid(actor) or not actor.stats or actor.stats.is_defeated or actor.conditions == null:
+			continue
+		for tick in actor.conditions.tick(beat_number):
+			var event: Dictionary = tick.duplicate(true)
+			event["target_id"] = String(actor.tactical_id)
+			event["beat"] = beat_number
+			event["hp_before"] = actor.stats.current_hp
+			var damage := int(event.get("damage", 0))
+			if damage > 0:
+				actor.stats.take_damage(damage)
+			event["hp_after"] = actor.stats.current_hp
+			event["defeated"] = actor.stats.is_defeated
+			last_beat_events.append(event)
+			if actor.stats.is_defeated: break
 
 func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, result: AttackActionResult) -> void:
 	if not overwatch_enabled or not _watcher_can_react(watcher, attacker):

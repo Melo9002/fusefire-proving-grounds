@@ -19,6 +19,10 @@ extends Resource
 @export_group("Capabilities")
 ## Missing capability means this archetype cannot enter Shield Stance.
 @export var shield_capability: ShieldCapability
+@export_group("Conditions")
+@export_flags("Biological", "Mechanical Fluid", "Electronic") var condition_susceptibilities := ConditionDefinition.Susceptibility.MECHANICAL_FLUID | ConditionDefinition.Susceptibility.ELECTRONIC
+@export var condition_immunities: Array[StringName] = []
+@export_range(0, 9, 1) var emergency_seal_charges := 1
 
 func validation_message() -> String:
 	if archetype_id.is_empty():
@@ -36,6 +40,9 @@ func apply_starting_configuration(unit: TacticalUnit) -> void:
 		return
 	unit.archetype_id = archetype_id
 	unit.shield_capability = shield_capability
+	unit.condition_susceptibilities = condition_susceptibilities
+	unit.condition_immunities = condition_immunities.duplicate()
+	unit.emergency_seal_charges = emergency_seal_charges
 	if max_hp > 0:
 		unit.stats.max_hp = max_hp
 		unit.stats.current_hp = max_hp

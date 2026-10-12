@@ -50,6 +50,8 @@ func present_attack(result: AttackActionResult) -> void:
 		target.present_attack_impact(result.target_defeated)
 		if result.target_defeated: target.finish_defeat_presentation()
 	if attack_feedback.is_valid(): attack_feedback.call(attacker, target, result.did_hit, result.hit_chance)
+	for condition_event in result.condition_events:
+		print_rich("[color=sky_blue][Condition][/color] %s applied to %s" % [condition_event.get("condition_id", ""), condition_event.get("target_id", "")])
 	for event in result.reaction_events:
 		if not is_instance_valid(target): break
 		if _camera_available():
@@ -174,6 +176,10 @@ func present_simple(result: SimpleActionResult) -> void:
 		result.presentation_error = "Presenter could not find actor '%s'" % result.request.actor_id
 		return
 	if result.presentation_suppressed: return
+	if result.request.kind == &"emergency_seal":
+		print_rich("[color=sky_blue][Emergency Seal][/color] %s seals the leak (%d charge(s) remain)" % [unit.name, result.charges_after])
+		await _safe_delay(0.2)
+		return
 	if result.request.kind == &"wait":
 		print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, result.request.details.get("reason", "No useful action available.")])
 		return

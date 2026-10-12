@@ -112,3 +112,9 @@ the rig creates those model-dependent nodes after loading. Stable composition—
 targets and the animation controller—remains visible in the runtime and demo
 scenes. This boundary keeps model swapping possible without hiding ordinary
 editable structure in code.
+
+## Conditions and hazards
+
+Condition tuning lives in the Inspector-editable Resources under `units/conditions/`. `leaking.tres`, `bleeding.tres`, and `jammed.tres` define susceptibility, duration, recurring damage, action restriction, and display metadata. Archetype Resources under `units/archetypes/` declare susceptibility, immunity IDs, and starting Emergency Seal charges; runtime instances belong to each spawned unit's `ConditionComponent` and never mutate the shared Resources.
+
+`TacticalActionService` owns attack application, hazardous movement checkpoints, Emergency Seal, and tactical-beat ticks. `TurnManager.tactical_beat_ended` supplies the end-of-round timing boundary. Authored maps can place a `TileHazardMarker` and assign a condition Resource. Presentation belongs to `TacticalUnit` droplets and the existing HUD scripts. Verify changes with `tests/tactical_conditions_test.gd`, followed by the action, movement, Guard, replay, AI, and Prototype 1 suites.

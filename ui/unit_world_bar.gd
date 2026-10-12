@@ -49,6 +49,9 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 	if unit is TacticalUnit and (unit as TacticalUnit).tactical_state:
 		var state := (unit as TacticalUnit).tactical_state
 		if not state.changed.is_connected(_refresh_tactical_state): state.changed.connect(_refresh_tactical_state)
+	if unit is TacticalUnit and (unit as TacticalUnit).conditions:
+		var conditions := (unit as TacticalUnit).conditions
+		if not conditions.changed.is_connected(_refresh_tactical_state): conditions.changed.connect(_refresh_tactical_state)
 	_refresh_tactical_state()
 	_refresh_extract_button()
 
@@ -147,4 +150,13 @@ func _refresh_tactical_state() -> void:
 	var state := (_target_unit as TacticalUnit).tactical_state
 	if state and state.is_overwatching:
 		tactical_state_label.text = "GUARD"
+		tactical_state_label.visible = true
+		return
+	var conditions := (_target_unit as TacticalUnit).conditions
+	if conditions and not conditions.active.is_empty():
+		var entries: Array[String] = []
+		for instance: ConditionInstance in conditions.active.values():
+			entries.append("%s %d" % [instance.definition.display_name.to_upper(), instance.remaining_beats])
+		entries.sort()
+		tactical_state_label.text = " · ".join(entries)
 		tactical_state_label.visible = true

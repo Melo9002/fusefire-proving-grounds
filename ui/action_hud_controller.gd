@@ -11,12 +11,14 @@ class_name ActionHUDController
 @export var shield_button: Button
 @export var overwatch_button: Button
 @export var interact_button: Button
+@export var emergency_seal_button: Button
 @export var end_unit_button: Button
 @export var supply_points_label: Label
 @export var tactical_state_label: Label
 
 var _tracked_stats: UnitStats
 var _tracked_tactical_state: TacticalState
+var _tracked_conditions: ConditionComponent
 
 func _ready() -> void:
 	if not battle_controller:
@@ -36,6 +38,8 @@ func _ready() -> void:
 		overwatch_button.pressed.connect(_on_overwatch_pressed)
 	if interact_button:
 		interact_button.pressed.connect(_on_interact_pressed)
+	if emergency_seal_button:
+		emergency_seal_button.pressed.connect(_on_emergency_seal_pressed)
 	battle_controller.shield_mode_toggled.connect(_on_shield_mode_toggled)
 	battle_controller.overwatch_mode_toggled.connect(_on_overwatch_mode_toggled)
 	if end_unit_button:
@@ -72,6 +76,10 @@ func _on_active_unit_changed(new_unit: TacticalUnit) -> void:
 	_tracked_tactical_state = new_unit.tactical_state if is_instance_valid(new_unit) else null
 	if is_instance_valid(_tracked_tactical_state):
 		_tracked_tactical_state.changed.connect(_update_button_states)
+	if is_instance_valid(_tracked_conditions) and _tracked_conditions.changed.is_connected(_update_button_states):
+		_tracked_conditions.changed.disconnect(_update_button_states)
+	_tracked_conditions = new_unit.conditions if is_instance_valid(new_unit) else null
+	if is_instance_valid(_tracked_conditions): _tracked_conditions.changed.connect(_update_button_states)
 
 	_update_button_states()
 
@@ -111,6 +119,10 @@ func _on_interact_pressed() -> void:
 	var query := battle_controller.query_terminal(active_unit)
 	if query.legal_target_ids.is_empty(): return
 	await battle_controller.try_terminal(active_unit, query.legal_target_ids[0])
+
+func _on_emergency_seal_pressed() -> void:
+	var active_unit := battle_controller.tactical_unit
+	if is_instance_valid(active_unit): await battle_controller.try_emergency_seal(active_unit)
 
 func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
@@ -168,6 +180,7 @@ func _update_button_states() -> void:
 	var shield_query := battle_controller.query_shield(unit)
 	var overwatch_query := battle_controller.query_overwatch(unit)
 	var terminal_query := battle_controller.query_terminal(unit)
+	var seal_query := battle_controller.query_simple(&"emergency_seal", unit)
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
@@ -202,15 +215,28 @@ func _update_button_states() -> void:
 		interact_button.disabled = terminal_query.legal_target_ids.is_empty()
 		interact_button.tooltip_text = "Activate the adjacent mission terminal" if not terminal_query.legal_target_ids.is_empty() else terminal_query.reason()
 		interact_button.text = "Interact"
+	if emergency_seal_button:
+		emergency_seal_button.visible = unit.conditions != null and unit.conditions.has(&"leaking")
+		emergency_seal_button.disabled = not seal_query.is_legal()
+		emergency_seal_button.tooltip_text = "Remove Leaking; restores no HP" if seal_query.is_legal() else seal_query.reason()
+		emergency_seal_button.text = "Seal (1 AP · %d)" % unit.emergency_seal_charges
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
 	if tactical_state_label:
+		var condition_text := ""
+		if unit.conditions and not unit.conditions.active.is_empty():
+			var condition_entries: Array[String] = []
+			for instance: ConditionInstance in unit.conditions.active.values():
+				condition_entries.append("%s %d" % [instance.definition.display_name.to_upper(), instance.remaining_beats])
+			condition_entries.sort()
+			condition_text = " · ".join(condition_entries)
 		if unit.tactical_state and unit.tactical_state.is_overwatching:
-			tactical_state_label.text = "GUARD"
+			tactical_state_label.text = "GUARD" + (" · " + condition_text if not condition_text.is_empty() else "")
 		elif unit.tactical_state and unit.tactical_state.is_shielding:
-			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y]
+			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y] + (" · " + condition_text if not condition_text.is_empty() else "")
 		else:
-			tactical_state_label.text = "AIMED +%d" % TacticalState.AIM_ACCURACY_BONUS if unit.tactical_state and unit.tactical_state.is_aiming else ""
+			var aim_text := "AIMED +%d" % TacticalState.AIM_ACCURACY_BONUS if unit.tactical_state and unit.tactical_state.is_aiming else ""
+			tactical_state_label.text = " · ".join([aim_text, condition_text].filter(func(value: String): return not value.is_empty()))
 	if end_unit_button:
 		end_unit_button.disabled = not wait_query.is_legal()
 		end_unit_button.tooltip_text = "" if wait_query.is_legal() else wait_query.reason()
@@ -223,6 +249,7 @@ func _disable_all_buttons() -> void:
 	if shield_button: shield_button.disabled = true
 	if overwatch_button: overwatch_button.disabled = true
 	if interact_button: interact_button.disabled = true
+	if emergency_seal_button: emergency_seal_button.disabled = true
 	if end_unit_button: end_unit_button.disabled = true
 	if supply_points_label: supply_points_label.text = "SP —"
 	if tactical_state_label: tactical_state_label.text = ""

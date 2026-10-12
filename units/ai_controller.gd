@@ -122,6 +122,9 @@ func _execute_turn() -> void:
 		and turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
 		and _should_control_unit():
 		current_mission_intent = _get_ai_mission_intent()
+		if await _try_emergency_seal():
+			_record_ai_decision("Emergency Seal", unit.name, "Stopped authoritative Leaking damage.", "Attack, Move, Objective")
+			continue
 		var escorted_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		# An escort already clear of the evacuation lane may engage immediate
 		# threats before repositioning. A blocker clears the lane first.
@@ -318,6 +321,12 @@ func _try_reload_if_useful() -> bool:
 		return false
 	var query := battle_controller.query_reload(unit)
 	return query.is_legal() and await battle_controller.try_reload(unit)
+
+func _try_emergency_seal() -> bool:
+	if not is_instance_valid(unit) or unit.conditions == null or not unit.conditions.has(&"leaking"):
+		return false
+	var query := battle_controller.query_simple(&"emergency_seal", unit)
+	return query.is_legal() and await battle_controller.try_emergency_seal(unit)
 
 func _try_aim_for_attack(target: TacticalUnit) -> bool:
 	if not is_instance_valid(unit) or not is_instance_valid(target) or not unit.stats:

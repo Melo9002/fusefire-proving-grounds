@@ -1,7 +1,7 @@
 class_name BattleStateFingerprint
 extends RefCounted
 
-static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager, include_supply_points := true, include_aim := true, include_shield := true, include_overwatch := true) -> String:
+static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager, include_supply_points := true, include_aim := true, include_shield := true, include_overwatch := true, include_conditions := true) -> String:
 	var active_id := "none"
 	if is_instance_valid(turn_manager.active_unit):
 		active_id = _unit_id(turn_manager.active_unit)
@@ -76,6 +76,10 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 				int(unit.stats.is_defending) if unit.stats else 0,
 				carried_id,
 			])
+		if include_conditions and unit.conditions:
+			for condition in unit.conditions.snapshot():
+				parts.append("condition=%s,%s,%d,%d,%s" % [_unit_id(unit), condition.condition_id, condition.remaining_beats, condition.applied_beat, condition.source_id])
+			parts.append("seal=%s,%d" % [_unit_id(unit), unit.emergency_seal_charges])
 	if objectives and objectives.mission:
 		for state in objectives.get_objectives():
 			parts.append("objective=%s,%d,%d" % [state.definition.objective_id, state.status, state.progress])

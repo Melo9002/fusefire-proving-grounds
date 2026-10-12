@@ -50,6 +50,7 @@ var supply_points_enabled := true
 var aim_enabled := true
 var shield_enabled := true
 var overwatch_enabled := true
+var conditions_enabled := true
 var action_camera_director: Node
 var action_service: TacticalActionService
 var action_presenter: TacticalActionPresenter
@@ -119,6 +120,7 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 		await get_tree().create_timer(0.05, false).timeout
 		MapBuilder.scan_obstacles(get_world_3d(), grid_manager, pathfinder)
 	MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
+	_apply_authored_tile_hazards()
 	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
 	var faction_counts := {
 		TacticalUnit.Faction.PLAYER: 0,
@@ -158,6 +160,13 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 
 	turn_manager.start_battle()
 	return true
+
+func _apply_authored_tile_hazards() -> void:
+	for node in get_tree().get_nodes_in_group("tile_hazards"):
+		var definition: ConditionDefinition = node.get("condition") if node is Node3D else null
+		if definition == null: continue
+		var cell := grid_manager.map_data.get_cell(grid_manager.world_to_grid((node as Node3D).global_position))
+		if cell: cell.hazard_condition = definition
 
 func _initialize_action_service() -> void:
 	if is_instance_valid(action_service):
@@ -203,6 +212,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.aim_enabled = aim_enabled
 	action_service.shield_enabled = shield_enabled
 	action_service.overwatch_enabled = overwatch_enabled
+	action_service.conditions_enabled = conditions_enabled
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
@@ -684,6 +694,11 @@ func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	return result != null
+
+func try_emergency_seal(unit: TacticalUnit) -> bool:
+	if not is_instance_valid(action_service): return false
+	var request := action_service.make_simple_request(&"emergency_seal", unit, _action_source())
+	return await action_service.submit_simple(request) != null
 
 func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
 	if not is_instance_valid(action_service): return false

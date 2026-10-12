@@ -248,7 +248,7 @@ Do not create ability registries, factories, generic effect stacks, event buses,
 ## 10. Explicit deferrals
 
 - ally shield protection, formations, durability, classes, equipment customization;
-- general conditions/hazards/EMP/hacking consequences (01.12);
+- broader condition catalogues, EMP damage, spreading hazards, and generalized equipment effects; the focused 01.12 condition foundation is implemented;
 - base/effective/current AP and tempo modifiers (01.13);
 - path-mutating doors, hacking minigame, inventories, weapon swaps, reload upgrades;
 - suppression, Kill Zone, return fire, reaction chains, rollback/rewind;

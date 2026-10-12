@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ConditionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/conditions/condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"jammed"
+display_name = "Jammed"
+description = "Electronic disruption prevents Aim until the next tactical beat."
+required_susceptibility = 4
+duration_beats = 1
+restricted_action = &"aim"
+status_color = Color(0.8, 0.35, 1, 1)

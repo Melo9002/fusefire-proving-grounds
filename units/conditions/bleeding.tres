@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ConditionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/conditions/condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"bleeding"
+display_name = "Bleeding"
+description = "Biological blood loss causes periodic damage."
+required_susceptibility = 1
+duration_beats = 3
+recurring_damage = 1
+status_color = Color(0.9, 0.15, 0.15, 1)

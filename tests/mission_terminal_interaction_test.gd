@@ -69,14 +69,15 @@ func _test_terminal_action() -> void:
 	await process_frame
 	await process_frame
 	check(level.turn_manager.active_unit == actor, "Selection waits when an exhausted unit can still perform a free terminal interaction")
-	actor.stats.current_ap = 2
+	actor.stats.current_ap = actor.stats.max_ap
+	var ap_before := actor.stats.current_ap
 	var stale := service.make_terminal_request(actor, &"main_terminal", TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
-	check(await service.submit_mission(stale, true) == null and actor.stats.current_ap == 2 and not terminal.is_activated, "Stale terminal request changes no state")
+	check(await service.submit_mission(stale, true) == null and actor.stats.current_ap == ap_before and not terminal.is_activated, "Stale terminal request changes no state")
 	actor.tactical_state.establish_aim()
 	var sp_before := actor.stats.current_supply_points
 	var result := await service.submit_mission(service.make_terminal_request(actor, &"main_terminal", TacticalActionRequest.Source.PLAYER), true)
-	check(result != null and result.actor_ap_before == 2 and result.actor_ap_after == 2, "Committed terminal interaction consumes no AP")
+	check(result != null and result.actor_ap_before == ap_before and result.actor_ap_after == ap_before, "Committed terminal interaction consumes no AP")
 	check(actor.stats.current_supply_points == sp_before and service.get_combat_rng_state() == rng_before, "Terminal interaction consumes no SP or combat RNG")
 	check(terminal.is_activated and result.terminal_activated_after, "Terminal activation commits exactly once")
 	check(not actor.tactical_state.is_aiming, "Committed terminal interaction cancels Aim")

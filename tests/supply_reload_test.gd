@@ -64,14 +64,15 @@ func _test_reload_contract() -> void:
 	var full := service.query_reload(actor.tactical_id)
 	check(not full.is_legal() and full.validation.code == &"resource_full", "Reload rejects a full SP reserve")
 	actor.stats.current_supply_points = 0
+	var ap_before := actor.stats.current_ap
 	var query := service.query_reload(actor.tactical_id)
 	var rng_before := service.get_combat_rng_state()
-	check(query.is_legal() and query.actor_ap_before == 2 and query.actor_ap_after == 1, "Reload query exposes its one-AP cost")
+	check(query.is_legal() and query.actor_ap_before == ap_before and query.actor_ap_after == ap_before - 1, "Reload query exposes its one-AP cost")
 	check(query.supply_points_before == 0 and query.supply_points_after == 4 and query.supply_points_restored == 4, "Reload query predicts a full refill")
 	var stale := service.make_reload_request(actor, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
 	check(await service.submit_reload(stale, true) == null and service.last_rejection.code == &"stale_revision", "Stale Reload is rejected")
-	check(actor.stats.current_ap == 2 and actor.stats.current_supply_points == 0 and service.get_combat_rng_state() == rng_before, "Rejected Reload changes no AP, SP, or RNG")
+	check(actor.stats.current_ap == ap_before and actor.stats.current_supply_points == 0 and service.get_combat_rng_state() == rng_before, "Rejected Reload changes no AP, SP, or RNG")
 	service._set_busy(true)
 	check(not service.query_reload(actor.tactical_id).is_legal() and service.query_reload(actor.tactical_id).validation.code == &"action_busy", "Reload query respects the action barrier")
 	service._set_busy(false)
@@ -84,7 +85,7 @@ func _test_reload_contract() -> void:
 	, CONNECT_ONE_SHOT)
 	var request := service.make_reload_request(actor, TacticalActionRequest.Source.PLAYER)
 	var result := await service.submit_reload(request, true)
-	check(result != null and result.actor_ap_before == 2 and result.actor_ap_after == 1, "Reload spends exactly one AP")
+	check(result != null and result.actor_ap_before == ap_before and result.actor_ap_after == ap_before - 1, "Reload spends exactly one AP")
 	check(result.supply_points_before == 0 and result.supply_points_after == 4 and result.supply_points_restored == 4, "Reload restores SP to capacity")
 	check(result.transaction_id == 1 and result.base_revision == 0 and result.committed_revision == 1 and commit_count[0] == 1, "Reload creates exactly one transaction, revision, and committed result")
 	check(reentrant_code[0] == &"action_busy", "Reload rejects synchronous reentrant submission")
