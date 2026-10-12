@@ -9,6 +9,15 @@ const URGENCY_PER_ACTION := 3.0
 const URGENCY_MAX_SCORE := 18.0
 const ROUTE_CORRIDOR_BASE := 2.0
 const ROUTE_CORRIDOR_MAX_BONUS := 2.0
+const ACTIVATION_PRESENTATION_DELAY_SECONDS := 0.6
+const ACTION_PRESENTATION_DELAY_SECONDS := 0.25
+const RECENT_MOVE_HISTORY_LIMIT := 4
+const ESCORT_REJOIN_DISTANCE := 5
+const ESCORT_APPROACH_RANGE := 4
+const ESCORT_POSITION_MIN_DISTANCE := 2.0
+const ESCORT_POSITION_MAX_DISTANCE := 5.0
+const ESCORT_POSITION_IDEAL_DISTANCE := 3.0
+const ESCORT_POSITION_DISTANCE_WEIGHT := 2.0
 
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
 
@@ -115,7 +124,7 @@ func _execute_turn() -> void:
 
 func _run_activation() -> bool:
 	# Brief pause makes the enemy activation visible before it acts.
-	await get_tree().create_timer(0.6, false).timeout
+	await get_tree().create_timer(ACTIVATION_PRESENTATION_DELAY_SECONDS, false).timeout
 	if not _should_control_unit():
 		return false
 	if unit.mission_actor and unit.mission_actor.is_vip():
@@ -148,7 +157,7 @@ func _run_activation() -> bool:
 				if is_instance_valid(escort_target):
 					_squad_context.reserve_target(unit, escort_target)
 				_record_ai_decision("Attack", String(escort_target.name) if is_instance_valid(escort_target) else "defeated target", "Protected the VIP carrier from a legal threat.", "Clear route, Reposition, Wait")
-				await get_tree().create_timer(0.25, false).timeout
+				await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
 				continue
 		var mission_step := await _try_mission_step(has_moved)
 		if mission_step == MissionStepResult.EXTRACTED:
@@ -173,7 +182,7 @@ func _run_activation() -> bool:
 				_squad_context.reserve_target(unit, attack_target)
 			if not _pending_target_note.is_empty(): _squad_notes.append(_pending_target_note)
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Wait")
-			await get_tree().create_timer(0.25, false).timeout
+			await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
 			continue
 		if await _try_reload_if_useful():
 			_record_ai_decision("Reload", "%d/%d SP" % [unit.stats.current_supply_points, unit.stats.max_supply_points], "Restored attack supply through the authoritative Reload query.", "Move, Wait")
@@ -187,8 +196,8 @@ func _run_activation() -> bool:
 			if not has_moved and await _clear_carrier_route(protected_carrier):
 				has_moved = true
 				continue
-			if not has_moved and _grid_distance_to(protected_carrier) > 5 \
-			and await _move_toward_range(protected_carrier, 4):
+			if not has_moved and _grid_distance_to(protected_carrier) > ESCORT_REJOIN_DISTANCE \
+			and await _move_toward_range(protected_carrier, ESCORT_APPROACH_RANGE):
 				has_moved = true
 				_record_ai_decision("Support", protected_carrier.name, "Closed into escort range while respecting the carrier corridor.", "Attack, Clear route, Wait")
 				continue
@@ -531,7 +540,7 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 		return false
 	_movement_preview_pending_completion = false
 	_recent_move_origins.append(start)
-	if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
+	if _recent_move_origins.size() > RECENT_MOVE_HISTORY_LIMIT: _recent_move_origins.pop_front()
 	_last_move_destination = best
 	_reserve_destination(best, _squad_context.destination_adjustment(unit, best) if _squad_context else 0.0)
 	_record_ai_decision("Support", carrier.name, "Cleared the carrier's reserved evacuation route.", "Attack, Wait")
@@ -549,11 +558,12 @@ func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 		if candidate == start or route.has(candidate):
 			continue
 		var carrier_distance := candidate.distance_to(carrier.grid_position)
-		if carrier_distance < 2.0 or carrier_distance > 5.0:
+		if carrier_distance < ESCORT_POSITION_MIN_DISTANCE or carrier_distance > ESCORT_POSITION_MAX_DISTANCE:
 			continue
 		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
-		var score: float = scored.total - absf(carrier_distance - 3.0) * 2.0
-		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": "%s; escort spacing %+.0f" % [scored.summary, -absf(carrier_distance - 3.0) * 2.0]}
+		var spacing_penalty := absf(carrier_distance - ESCORT_POSITION_IDEAL_DISTANCE) * ESCORT_POSITION_DISTANCE_WEIGHT
+		var score: float = scored.total - spacing_penalty
+		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": "%s; escort spacing %+.0f" % [scored.summary, -spacing_penalty]}
 		_last_position_candidates.append(candidate_record)
 		if score > best_score:
 			best_score = score
@@ -568,7 +578,7 @@ func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 		return false
 	_movement_preview_pending_completion = false
 	_recent_move_origins.append(start)
-	if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
+	if _recent_move_origins.size() > RECENT_MOVE_HISTORY_LIMIT: _recent_move_origins.pop_front()
 	_last_move_destination = best
 	_reserve_destination(best, _squad_context.destination_adjustment(unit, best) if _squad_context else 0.0)
 	_record_ai_decision("Support", carrier.name, "Spread into a useful escort position while keeping the carrier route clear.", "Attack, Extract, Wait")
@@ -813,7 +823,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		_publish_movement_preview(best_candidate, best_summary)
 	if best_candidate.x >= 0 and await battle_controller.try_move(unit, best_candidate):
 		_recent_move_origins.append(start_cell)
-		if _recent_move_origins.size() > 4: _recent_move_origins.pop_front()
+		if _recent_move_origins.size() > RECENT_MOVE_HISTORY_LIMIT: _recent_move_origins.pop_front()
 		_last_move_destination = best_candidate
 		_last_position_scores = best_summary
 		_reserve_destination(best_candidate, best_adjustment)
