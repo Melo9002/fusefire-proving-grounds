@@ -5,7 +5,7 @@ extends Node
 @export_range(1, 30, 1, "suffix:cells") var speed: int = 5
 
 signal hp_changed(current: int, max_hp: int)
-signal ap_changed(current: int, max_ap: int)
+signal ap_changed(current: int, effective_maximum: int)
 signal supply_points_changed(current: int, maximum: int)
 signal status_changed
 signal defeated
@@ -24,17 +24,44 @@ var current_hp: int = 100:
 			hp_changed.emit(current_hp, max_hp)
 
 @export_group("Action Points (AP)")
-@export_range(1, 20, 1) var max_ap: int = 2:
+## Normal configured AP before temporary capacity modifiers.
+var _base_ap := 2
+@export_range(0, 20, 1, "suffix:AP") var base_ap: int = 2:
+	get:
+		return _base_ap
 	set(value):
-		max_ap = max(1, value)
-		current_ap = min(current_ap, max_ap)
+		_apply_base_ap(value, false)
+## Runtime compatibility alias. Reads return the effective maximum; writes
+## configure Base AP and follow the same no-refund capacity rules as modifiers.
+@export_storage var max_ap: int = 2:
+	get:
+		return effective_max_ap
+	set(value):
+		_apply_base_ap(value, false)
 
-var current_ap: int = 2:
+var effective_max_ap: int:
+	get:
+		var modifier_total := 0
+		for delta in _ap_modifiers.values():
+			modifier_total += int(delta)
+		return maxi(0, base_ap + modifier_total)
+
+var activation_capacity_ap := 2
+var spent_ap := 0
+var current_ap: int:
+	get:
+		return maxi(0, activation_capacity_ap - spent_ap)
 	set(value):
-		var clamped_val = clampi(value, 0, max_ap)
-		if current_ap != clamped_val:
-			current_ap = clamped_val
-			ap_changed.emit(current_ap, max_ap)
+		# Compatibility for fixtures/debug setup. Ordinary gameplay spends through
+		# consume_ap() and spend_all_remaining_ap(). This setter intentionally
+		# establishes the requested available AP inside the current capacity.
+		var before := current_ap
+		var requested := clampi(value, 0, activation_capacity_ap)
+		spent_ap = activation_capacity_ap - requested
+		if before != current_ap:
+			ap_changed.emit(current_ap, effective_max_ap)
+
+var _ap_modifiers: Dictionary = {}
 
 @export_group("Supply Points (SP)")
 ## Prototype attack supply capacity. This is intentionally unit-level until
@@ -61,17 +88,107 @@ var is_defeated: bool = false
 
 func _ready() -> void:
 	current_hp = max_hp
-	current_ap = max_ap
+	reset_ap()
 	current_supply_points = max_supply_points
 
 func has_enough_ap(amount: int) -> bool:
 	return current_ap >= amount
 
-func consume_ap(amount: int) -> void:
-	current_ap -= amount
+func consume_ap(amount: int) -> bool:
+	if amount < 0 or current_ap < amount:
+		return false
+	if amount == 0:
+		return true
+	spent_ap += amount
+	ap_changed.emit(current_ap, effective_max_ap)
+	return true
+
+func spend_all_remaining_ap() -> int:
+	var amount := current_ap
+	if amount > 0:
+		spent_ap += amount
+		ap_changed.emit(current_ap, effective_max_ap)
+	return amount
 
 func reset_ap() -> void:
-	current_ap = max_ap
+	var before_current := current_ap
+	var before_capacity := activation_capacity_ap
+	activation_capacity_ap = effective_max_ap
+	spent_ap = 0
+	if before_current != current_ap or before_capacity != activation_capacity_ap:
+		ap_changed.emit(current_ap, effective_max_ap)
+
+func configure_base_ap(value: int, refresh_activation := false) -> void:
+	_apply_base_ap(value, refresh_activation)
+
+func _apply_base_ap(value: int, refresh_activation: bool) -> void:
+	var before_current := current_ap
+	var before_effective := effective_max_ap
+	var normalized := maxi(0, value)
+	if _base_ap != normalized:
+		_base_ap = normalized
+		_ratchet_activation_capacity()
+	if refresh_activation:
+		activation_capacity_ap = effective_max_ap
+		spent_ap = 0
+	if before_current != current_ap or before_effective != effective_max_ap:
+		ap_changed.emit(current_ap, effective_max_ap)
+
+func set_ap_modifier(source_id: StringName, delta: int) -> bool:
+	if not _is_valid_ap_modifier_source(source_id):
+		return false
+	if delta == 0:
+		return remove_ap_modifier(source_id)
+	var before_current := current_ap
+	var before_effective := effective_max_ap
+	_ap_modifiers[source_id] = delta
+	_ratchet_activation_capacity()
+	if before_current != current_ap or before_effective != effective_max_ap:
+		ap_changed.emit(current_ap, effective_max_ap)
+	return true
+
+func remove_ap_modifier(source_id: StringName) -> bool:
+	if not _is_valid_ap_modifier_source(source_id) or not _ap_modifiers.has(source_id):
+		return false
+	var before_current := current_ap
+	var before_effective := effective_max_ap
+	_ap_modifiers.erase(source_id)
+	_ratchet_activation_capacity()
+	if before_current != current_ap or before_effective != effective_max_ap:
+		ap_changed.emit(current_ap, effective_max_ap)
+	return true
+
+func has_ap_modifier(source_id: StringName) -> bool:
+	return _ap_modifiers.has(source_id)
+
+func get_ap_modifier(source_id: StringName) -> int:
+	return int(_ap_modifiers.get(source_id, 0))
+
+func get_ap_modifier_snapshot() -> Array[Dictionary]:
+	var source_ids: Array[StringName] = []
+	for source_id in _ap_modifiers.keys():
+		source_ids.append(StringName(source_id))
+	source_ids.sort()
+	var snapshot: Array[Dictionary] = []
+	for source_id in source_ids:
+		snapshot.append({"source_id": source_id, "delta": int(_ap_modifiers[source_id])})
+	return snapshot
+
+func get_ap_snapshot() -> Dictionary:
+	return {
+		"base_ap": base_ap,
+		"effective_max_ap": effective_max_ap,
+		"activation_capacity_ap": activation_capacity_ap,
+		"spent_ap": spent_ap,
+		"current_ap": current_ap,
+		"modifiers": get_ap_modifier_snapshot(),
+	}
+
+func _is_valid_ap_modifier_source(source_id: StringName) -> bool:
+	return not String(source_id).strip_edges().is_empty()
+
+func _ratchet_activation_capacity() -> void:
+	activation_capacity_ap = mini(activation_capacity_ap, effective_max_ap)
 
 func has_supply_points(amount: int) -> bool:
 	return current_supply_points >= amount

@@ -53,7 +53,7 @@ func _check_registration_and_multiple_watchers() -> void:
 	first.tactical_state.clear_shield()
 	first.tactical_state.establish_aim()
 	var armed_first := await service.submit_overwatch(service.make_overwatch_request(first, TacticalActionRequest.Source.PLAYER), true)
-	check(armed_first != null and first.stats.current_ap == 0 and first.stats.current_supply_points == 4 and first.tactical_state.is_overwatching and not first.tactical_state.is_aiming, "Registration spends all AP, preserves SP, cancels Aim, and arms one reaction")
+	check(armed_first != null and first.stats.current_ap == 0 and first.stats.spent_ap == first.stats.activation_capacity_ap and first.stats.current_supply_points == 4 and first.tactical_state.is_overwatching and not first.tactical_state.is_aiming, "Registration records all remaining AP as expenditure, preserves SP, cancels Aim, and arms one reaction")
 	first.stats.current_ap = 1
 	check(service.query_overwatch(first.tactical_id).validation.code == &"already_overwatching", "Duplicate Overwatch registration is rejected")
 	first.stats.current_ap = 0

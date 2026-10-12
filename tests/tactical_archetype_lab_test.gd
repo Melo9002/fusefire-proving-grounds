@@ -70,8 +70,8 @@ func _test_base_ap_configuration_and_compatibility() -> void:
 	four_ap.apply_starting_configuration(four_ap_unit)
 	var inherited_fallback := inherited_unit.stats.max_ap
 	inherited.apply_starting_configuration(inherited_unit)
-	check(two_ap_unit.stats.max_ap == 2 and two_ap_unit.stats.current_ap == 2, "Inspector base AP configures a two-AP fixture without identity checks")
-	check(four_ap_unit.stats.max_ap == 4 and four_ap_unit.stats.current_ap == 4, "Inspector base AP configures a four-AP fixture without identity checks")
+	check(two_ap_unit.stats.base_ap == 2 and two_ap_unit.stats.max_ap == 2 and two_ap_unit.stats.current_ap == 2, "Inspector base AP configures a two-AP fixture without identity checks")
+	check(four_ap_unit.stats.base_ap == 4 and four_ap_unit.stats.max_ap == 4 and four_ap_unit.stats.current_ap == 4, "Inspector base AP configures a four-AP fixture without identity checks")
 	check(inherited.configured_base_ap() == 0 and inherited_unit.stats.max_ap == inherited_fallback, "Zero base AP preserves the TacticalUnit scene fallback")
 
 	var legacy := load("res://tests/fixtures/legacy_max_ap_archetype.tres") as TacticalArchetype

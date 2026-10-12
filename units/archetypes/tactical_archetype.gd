@@ -56,8 +56,7 @@ func apply_starting_configuration(unit: TacticalUnit) -> void:
 		unit.stats.current_hp = max_hp
 	var starting_ap := configured_base_ap()
 	if starting_ap > 0:
-		unit.stats.max_ap = starting_ap
-		unit.stats.current_ap = starting_ap
+		unit.stats.configure_base_ap(starting_ap, true)
 	unit.stats.max_supply_points = max_supply_points
 	unit.stats.current_supply_points = max_supply_points
 	if movement_range > 0: unit.stats.speed = movement_range

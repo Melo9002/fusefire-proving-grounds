@@ -419,7 +419,7 @@ func submit_overwatch(request: TacticalActionRequest, suppress_presentation := f
 	result.actor_ap_before = actor.stats.current_ap
 	result.supply_points_before = actor.stats.current_supply_points
 	result.overwatching_before = actor.tactical_state.is_overwatching
-	actor.stats.current_ap = 0
+	actor.stats.spend_all_remaining_ap()
 	_cancel_aim(actor)
 	_cancel_shield(actor)
 	actor.tactical_state.establish_overwatch()
@@ -739,7 +739,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	result.actor_ap_before = actor.stats.current_ap
 	result.defending_before = actor.stats.is_defending
 	result.charges_before = actor.emergency_seal_charges
-	if request.kind == &"wait": actor.stats.current_ap = 0
+	if request.kind == &"wait": actor.stats.spend_all_remaining_ap()
 	elif request.kind == &"emergency_seal":
 		actor.stats.consume_ap(1)
 		actor.emergency_seal_charges -= 1

@@ -21,6 +21,7 @@ func _run() -> void:
 	var rng_before := service.get_combat_rng_state()
 	var revision_before := service.state_revision
 	var ap_before := attacker.stats.current_ap
+	var spent_before := attacker.stats.spent_ap
 	var hp_before := target.stats.current_hp
 	var state_before := BattleStateFingerprint.capture(first.turn_manager, first.battle_controller.grid_manager, first.objective_manager)
 	var query := first.battle_controller.query_attack(attacker, target)
@@ -51,7 +52,7 @@ func _run() -> void:
 	var repeated := first.battle_controller.query_attack(attacker, target)
 	_check(repeated.hit_chance == query.hit_chance and repeated.cover_type == query.cover_type and repeated.obstruction == query.obstruction, "Repeated unchanged queries return equivalent predictions")
 	_check(service.get_combat_rng_state() == rng_before, "Attack query does not consume combat RNG")
-	_check(service.state_revision == revision_before and attacker.stats.current_ap == ap_before and target.stats.current_hp == hp_before, "Attack queries do not mutate revision, AP, or HP")
+	_check(service.state_revision == revision_before and attacker.stats.current_ap == ap_before and attacker.stats.spent_ap == spent_before and target.stats.current_hp == hp_before, "Attack queries do not mutate revision, AP expenditure, or HP")
 	_check(BattleStateFingerprint.capture(first.turn_manager, first.battle_controller.grid_manager, first.objective_manager) == state_before, "Attack queries leave the complete authoritative fingerprint unchanged")
 	attacker.stats.current_ap = 0
 	var no_ap := first.battle_controller.query_attack(attacker, target)
@@ -64,6 +65,7 @@ func _run() -> void:
 	stale.expected_revision = -1
 	var stale_result := await service.submit_attack(stale, true)
 	_check(stale_result == null and service.last_rejection.code == &"stale_revision", "Stale request is rejected explicitly")
+	_check(attacker.stats.current_ap == ap_before and attacker.stats.spent_ap == spent_before, "Stale rejection preserves AP capacity and expenditure")
 	_check(service.get_combat_rng_state() == rng_before, "Rejected request does not consume combat RNG")
 
 	var commits := [0]
@@ -178,7 +180,7 @@ func _check_move_and_wait_pipeline() -> void:
 	var duplicate := await service.submit_move(move.request, true)
 	_check(duplicate == null and grid.get_unit_at(destination) == actor and actor.stats.current_ap == query.actor_ap_after, "Duplicate Move cannot spend AP or move twice")
 	var wait := await service.submit_simple(service.make_simple_request(&"wait", actor, TacticalActionRequest.Source.PLAYER), true)
-	_check(wait != null and actor.stats.current_ap == 0 and service.state_revision == 2, "Wait exhausts AP and advances the shared revision")
+	_check(wait != null and actor.stats.current_ap == 0 and actor.stats.spent_ap == actor.stats.activation_capacity_ap and service.state_revision == 2, "Wait records all remaining AP as expenditure and advances the shared revision")
 	_check(wait.presentation_suppressed and wait.presentation_completed, "Suppressed Wait still completes its lifecycle")
 	var exhausted_wait := service.query_simple(&"wait", actor.tactical_id)
 	_check(not exhausted_wait.is_legal() and exhausted_wait.validation.code == &"insufficient_ap", "Wait availability uses the same final AP validation as submission")

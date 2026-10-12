@@ -13,7 +13,7 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change cursor, movement/path, cover, objective, shot, or selection markings | `levels/prototype_map/prototype_map.tscn` → **Visualizers**; each visualizer exposes its colors and dimensions | `tests/battle_smoke.gd` and a local battle |
 | Match foot speed to a new walk cycle | **Locomotion → Stride Length** on the adapter; **Gameplay → Movement Speed** on the unit | Locomotion demo and a local battle |
 | Tune shot, hit, landing, or pickup return timing | **Action Timing** on the adapter root | `tests/unit_visual_adapter_test.gd` |
-| Change the reusable scene's fallback movement range, HP, or AP | `units/tactical_unit.tscn` → `UnitStats` | Core battle/objective smoke tests |
+| Change the reusable scene's fallback movement range, HP, or AP | `units/tactical_unit.tscn` → `UnitStats`; AP is the **Base AP** field, while movement remains **Speed** | Core battle/objective smoke tests |
 | Change weapon range or world movement speed | `units/tactical_unit.tscn` root → **Gameplay** | `tests/battle_smoke.gd` |
 | Tune a roster archetype's Supply Point capacity | Open its `.tres` file under `units/archetypes/` and edit **Max Supply Points**; each spawned unit receives independent current/max values | `tests/tactical_archetype_lab_test.gd` and `tests/supply_reload_test.gd` |
 | Change Attack legality, cover, obstruction, range, or hit chance | `systems/combat_rules.gd`; activation/AP/revision checks remain in `systems/actions/runtime/tactical_action_service.gd` | `tests/tactical_action_service_test.gd` and combat cover/elevation/trajectory tests |

@@ -45,8 +45,9 @@ func _run() -> void:
 	var start := building.stair_ground_cell
 	grid.update_unit_position(unit, unit.grid_position, start)
 	unit.global_position = grid.map_data.get_cell(start).world_position + Vector3.UP * unit.standing_height
+	var ap_before_stairs := unit.stats.current_ap
 	check(await battle.try_move(unit, building.stair_cells[-1]), "Shared Move action climbs generated stairs")
-	check(unit.grid_position == building.stair_cells[-1] and unit.stats.current_ap == 1, "Stair movement spends one AP and registers elevated occupancy")
+	check(unit.grid_position == building.stair_cells[-1] and unit.stats.current_ap == ap_before_stairs - 1, "Stair movement spends one AP and registers elevated occupancy")
 	if not building.upper_cells.is_empty():
 		var upper := building.upper_ladder_roof_cell
 		grid.update_unit_position(unit, unit.grid_position, building.upper_ladder_ground_cell)
