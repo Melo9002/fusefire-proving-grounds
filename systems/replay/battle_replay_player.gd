@@ -14,6 +14,9 @@ enum CameraMode { FREE, SELECTION_FOCUS, CINEMATIC }
 var recording
 var level: BattleLevel
 var action_delay := 0.18
+## Consecutive actions by one actor retain normal presentation but use only a
+## tiny breathing interval, so an activation reads as one continuous sequence.
+var continuous_actor_delay := 0.03
 var playback_complete := false
 var playback_succeeded := false
 var verified_actions := 0
@@ -62,6 +65,7 @@ func _play() -> void:
 		if level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 			break
 		var record: Dictionary = recording.actions[index]
+		var continues_actor := _continues_actor_at(index)
 		var record_issue := ReplayRecordTools.validate_action_record(record, recording.schema_version)
 		if not record_issue.is_empty():
 			_fail("reconstruction", index, record, record_issue)
@@ -80,7 +84,7 @@ func _play() -> void:
 			verified_actions += 1
 			playback_progressed.emit(verified_actions, recording.actions.size())
 			print("[Replay] COALESCED — action %d (%s) was already applied by gameplay rules" % [index, record.get("kind", "unknown")])
-			await _action_interval()
+			await _action_interval(continues_actor)
 			continue
 		await _focus_action(record)
 		await _wait_until_playing()
@@ -98,7 +102,7 @@ func _play() -> void:
 			return
 		verified_actions += 1
 		playback_progressed.emit(verified_actions, recording.actions.size())
-		await _action_interval()
+		await _action_interval(continues_actor)
 	var matches: bool = level.turn_manager.battle_result == recording.expected_result
 	print("[Replay] %s — verified %d/%d actions | expected %s, got %s" % [
 		"COMPLETED" if matches else "DIVERGED",
@@ -133,11 +137,24 @@ func _wait_until_playing() -> void:
 	while playback_paused:
 		await get_tree().process_frame
 
-func _action_interval() -> void:
+func _action_interval(continues_actor := false) -> void:
 	await _wait_until_playing()
-	var delay := action_delay / maxf(playback_speed, 0.1)
+	var base_delay := continuous_actor_delay if continues_actor else action_delay
+	var delay := base_delay / maxf(playback_speed, 0.1)
 	if delay > 0.0:
 		await get_tree().create_timer(delay, false).timeout
+
+func _continues_actor_at(index: int) -> bool:
+	if recording == null or index < 0 or index + 1 >= recording.actions.size():
+		return false
+	var current: Dictionary = recording.actions[index]
+	var following: Dictionary = recording.actions[index + 1]
+	var actor := String(current.get("actor", ""))
+	if actor.is_empty() or actor != String(following.get("actor", "")):
+		return false
+	# Turn/mission boundaries need the normal pause even if a historical record
+	# happens to repeat the last actor identifier.
+	return String(following.get("kind", "")) not in ["end_turn", "depart"]
 
 func _focus_action(record: Dictionary) -> void:
 	if record.get("kind", "") == "end_turn":
