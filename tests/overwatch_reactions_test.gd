@@ -178,10 +178,12 @@ func _check_player_overwatch_hands_off_turn_and_draws_range() -> void:
 	var range_visualizer := level.get_node("Visualizers/OverwatchRangeVisualizer") as OverwatchRangeVisualizer
 	check(controller.is_overwatch_mode_active and watcher.stats.current_ap == ap_before, "First Overwatch press previews without committing or spending AP")
 	check(range_visualizer != null and range_visualizer.displayed_cells == controller.call("_legal_shot_cells", watcher), "Overwatch preview reuses the exact Attack range and line-of-sight cells")
+	check(range_visualizer != null and not range_visualizer.preview_cells.is_empty() and range_visualizer.committed_cells.is_empty(), "Pending Guard coverage uses the bright preview layer")
 	check(await controller.try_overwatch(watcher), "Player can register Overwatch through the ordinary controller entry point")
 	check(not controller.is_overwatch_mode_active, "Confirming Overwatch leaves preview mode")
 	check(level.turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN, "Final-unit Overwatch hands control to the enemy phase instead of waiting at zero AP")
 	check(range_visualizer != null and not range_visualizer.displayed_cells.is_empty(), "Active friendly Overwatch draws a visible guarded range")
+	check(range_visualizer != null and range_visualizer.preview_cells.is_empty() and not range_visualizer.committed_cells.is_empty(), "Confirmed Guard coverage switches to the darker committed layer")
 	watcher.tactical_state.clear_overwatch()
 	controller.call("_refresh_overwatch_range")
 	check(range_visualizer.displayed_cells.is_empty(), "Guard range clears when the reservation is removed")

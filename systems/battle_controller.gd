@@ -223,21 +223,20 @@ func _on_action_committed(_result) -> void:
 func _refresh_overwatch_range() -> void:
 	if not is_instance_valid(overwatch_range_visualizer):
 		return
-	var guarded := {}
+	var committed_guarded := {}
 	var watchers: Array[TacticalUnit] = []
 	watchers.assign(turn_manager.player_units + turn_manager.allied_units)
-	if is_overwatch_mode_active and is_instance_valid(tactical_unit) and not watchers.has(tactical_unit):
-		watchers.append(tactical_unit)
 	for watcher in watchers:
 		if not is_instance_valid(watcher) or not watcher.stats or watcher.stats.is_defeated \
-		or not watcher.tactical_state \
-		or (not watcher.tactical_state.is_overwatching \
-		and not (is_overwatch_mode_active and watcher == tactical_unit)):
+		or not watcher.tactical_state or not watcher.tactical_state.is_overwatching:
 			continue
-		for cell in _legal_shot_cells(watcher): guarded[cell] = true
-	var cells: Array[Vector3i] = []
-	for cell: Vector3i in guarded.keys(): cells.append(cell)
-	overwatch_range_visualizer.show_cells(cells)
+		for cell in _legal_shot_cells(watcher): committed_guarded[cell] = true
+	var committed_cells: Array[Vector3i] = []
+	for cell: Vector3i in committed_guarded.keys(): committed_cells.append(cell)
+	var preview_cells: Array[Vector3i] = []
+	if is_overwatch_mode_active and is_instance_valid(tactical_unit):
+		preview_cells.assign(_legal_shot_cells(tactical_unit))
+	overwatch_range_visualizer.show_ranges(preview_cells, committed_cells)
 
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
