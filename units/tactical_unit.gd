@@ -135,6 +135,8 @@ func _apply_character_presentation() -> void:
 func _on_stats_defeated() -> void:
 	if tactical_state:
 		tactical_state.reset()
+	if conditions:
+		conditions.clear()
 	_refresh_condition_presentation()
 	if visual_adapter and not defer_stat_presentation:
 		visual_adapter.present_defeat()

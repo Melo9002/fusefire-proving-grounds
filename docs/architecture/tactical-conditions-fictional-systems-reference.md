@@ -16,7 +16,7 @@ The labels below are deliberate:
 | Activation | **Implemented** | One actor's opportunity to spend AP and perform legal actions. |
 | Tactical beat | **Implemented boundary; provisional duration** | One complete shared tactical round. The engine exposes one deterministic end-of-round boundary. Fiction treats the interval as approximately three seconds. |
 | Action Point (AP) | **Implemented resource; provisional interpretation** | The authoritative action budget spent during an activation. Fictionally, AP measures useful tactical opportunities rather than literal seconds. |
-| Condition definition | **Implemented** | An Inspector-editable `ConditionDefinition` Resource containing stable identity, susceptibility, duration, recurring damage, an optional restricted action, and presentation metadata. |
+| Condition definition | **Implemented** | An Inspector-editable `ConditionDefinition` Resource containing stable identity, susceptibility, duration, recurring damage, an optional restricted action, an optional non-positive maximum-AP delta, and presentation metadata. |
 | Condition instance | **Implemented** | Per-unit runtime state containing the definition, remaining beats, application beat, and source identity. |
 | Susceptibility | **Implemented** | A data flag indicating that a unit can receive biological, mechanical-fluid, or electronic conditions. |
 | Immunity | **Implemented** | A per-unit condition-ID exclusion checked before application. It is also the narrow hook future equipment can populate. |
@@ -69,7 +69,7 @@ The implementation is intentionally narrower than a general effect engine.
 
 ### Definitions and runtime ownership
 
-`ConditionDefinition` Resources under `units/conditions/` are immutable shared definitions. They expose a stable ID, display text, required susceptibility flags, duration, recurring damage, one optional restricted action, and status color. `ConditionComponent` belongs to each spawned unit and owns its independent active instances. Applying or treating a condition never mutates the shared Resource.
+`ConditionDefinition` Resources are immutable shared definitions. They expose a stable ID, display text, required susceptibility flags, duration, recurring damage, one optional restricted action, one optional non-positive maximum-AP delta, and status color. `ConditionComponent` belongs to each spawned unit and owns its independent active instances. Applying or treating a condition never mutates the shared Resource.
 
 There is at most one active instance for each condition ID on a unit. Reapplication refreshes that instance to the definition's full duration and updates its application beat and source; it does not create a second stack or an extra immediate tick.
 
@@ -93,8 +93,17 @@ Rejected and stale actions do not alter AP, charges, HP, or condition state. Nes
 | Leaking | **Implemented** | Mechanical fluid | 3 beats | 1 HP per beat | Removed by Emergency Seal; no AP or accuracy penalty | Blue `CPUParticles3D` droplets plus HUD/world status text |
 | Bleeding | **Implemented definition and proof fixture** | Biological | 3 beats | 1 HP per beat | Emergency Seal does not treat it | Basic shared status text/color; no bespoke biological actor or effect |
 | Jammed | **Implemented** | Electronic | 1 beat | None | Disables Aim and clears an existing Aim when successfully applied | Basic shared status text/color |
+| System Overload | **Implemented provisional test fixture** | Electronic | 2 beats | None | Applies -1 effective maximum AP through `condition:system_overload`; absent from normal missions and loadouts | Basic shared status text/color |
 
-No additional accuracy, movement, AP, Shield, Guard, or damage modifiers are implied by these conditions.
+Leaking, Bleeding, and Jammed retain their original rules and apply no AP modifier. No accuracy, movement, Shield, Guard, or additional damage modifiers are implied by System Overload.
+
+### Condition-owned AP modifiers
+
+**Implemented in 01.13.4:** a definition with a nonzero `maximum_ap_delta` is synchronized by its owning `ConditionComponent` through the stable `condition:<condition_id>` source in `UnitStats`. Reapplication refreshes the one runtime condition instance and replaces the same modifier source, so it cannot stack duplicate penalties. Explicit removal, expiration, component clearing, and unit defeat remove that source idempotently. Other modifier sources remain untouched.
+
+The AP lifecycle continues to own capacity and expenditure. Applying a penalty can ratchet activation capacity downward. Removing or expiring it restores effective maximum but never raises capacity or refunds AP during the current activation; the restored maximum becomes available at the next faction-phase refresh. Susceptibility or immunity rejection occurs before condition state changes and therefore creates no modifier.
+
+System Overload is deliberately stored under `tests/fixtures/`. It proves this contract without adding an ordinary weapon, hazard, mission rule, loadout, AI policy, or wider condition catalogue.
 
 ### Emergency Seal
 
@@ -188,16 +197,17 @@ No chemical composition, manufacturer standard, service history, or established 
 
 ## Tactical tempo and Task 01.13
 
-The following is **01.13 design intent**, not completed 01.12 functionality:
+The following began as **01.13 design intent**. Base, effective maximum, activation capacity, expenditure, and current AP accounting are now implemented through 01.13.4; future humans, exceptional-unit balance, equipment, enhancements, and injuries remain proposals:
 
 - typical future humans have 2 base AP;
 - typical MIRAs have 3 base AP;
 - exceptional units may reach 4 AP;
-- base AP, effective maximum AP, and current AP become distinct concepts;
-- equipment, enhancements, injuries, and conditions may modify effective maximum AP;
+- base AP, effective maximum AP, activation capacity, expenditure, and current AP are distinct concepts;
+- a provisional condition fixture can modify effective maximum AP;
+- equipment, enhancements, and injuries may eventually provide other modifier sources;
 - AP continues to represent effective tactical tempo rather than literal movement speed.
 
-Current MIRA archetype Resources are already authored with a maximum of 3 AP, and runtime stats already distinguish current AP from maximum AP. The fuller base/effective/current calculation, mid-activation adjustment rules, tempo modifiers, human defaults, and injury-driven AP effects are not implemented. 01.12 conditions do not alter AP.
+Current MIRA archetype Resources are authored with 3 Base AP. Runtime accounting preserves expenditure when capacity changes and prevents same-activation refunds. System Overload is the only condition/AP bridge and exists only as a controlled fixture. Human actors, injury-driven tempo changes, equipment bonuses, and explicit AP grants are not implemented.
 
 The three-second fictional beat gives recurring effects and future tempo rules a shared narrative scale. It does not require a real-time scheduler or promise that every unit performs actions simultaneously.
 
@@ -214,12 +224,13 @@ The three-second fictional beat gives recurring effects and future tempo rules a
 | AI self-treatment | [`units/ai_controller.gd`](../../units/ai_controller.gd) |
 | Replay fingerprints and compatibility | [`systems/replay/battle_state_fingerprint.gd`](../../systems/replay/battle_state_fingerprint.gd), [`battle_replay_recording.gd`](../../systems/replay/battle_replay_recording.gd), [`replay_record_tools.gd`](../../systems/replay/replay_record_tools.gd) |
 | Focused verification | [`tests/tactical_conditions_test.gd`](../../tests/tactical_conditions_test.gd) |
+| Condition/AP integration verification | [`tests/condition_ap_tempo_integration_test.gd`](../../tests/condition_ap_tempo_integration_test.gd), [`tests/fixtures/system_overload.tres`](../../tests/fixtures/system_overload.tres) |
 
 The broader ownership summary remains in [`docs/architecture.md`](../architecture.md), and Inspector editing guidance remains in [`docs/human-editing-guide.md`](../human-editing-guide.md).
 
 ## Explicitly outside 01.12
 
-- AP modifiers and tactical-tempo calculation;
+- additional condition/AP integrations, equipment modifiers, and explicit AP grants;
 - playable humans and biological treatment equipment;
 - random critical condition application;
 - grenades, EMP damage, specialized ammunition, and weapon inventories;

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ConditionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/conditions/condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"system_overload"
+display_name = "System Overload"
+description = "Provisional test impairment that reduces maximum Action Points."
+required_susceptibility = 4
+duration_beats = 2
+maximum_ap_delta = -1
+status_color = Color(1, 0.55, 0.15, 1)
