@@ -43,6 +43,7 @@ var aim_enabled := true
 var shield_enabled := true
 var overwatch_enabled := true
 var conditions_enabled := true
+var tactical_tempo_enabled := true
 var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
@@ -88,6 +89,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	shield_enabled = config.shield_enabled
 	overwatch_enabled = config.overwatch_enabled
 	conditions_enabled = config.conditions_enabled
+	tactical_tempo_enabled = config.tactical_tempo_enabled
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed
@@ -115,6 +117,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.shield_enabled = shield_enabled
 	normalized.overwatch_enabled = overwatch_enabled
 	normalized.conditions_enabled = conditions_enabled
+	normalized.tactical_tempo_enabled = tactical_tempo_enabled
 	normalized.refinery = use_refinery_map
 	_replay_configuration = normalized.to_replay()
 

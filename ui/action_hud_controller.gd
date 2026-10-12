@@ -172,7 +172,7 @@ func _update_button_states() -> void:
 		_disable_all_buttons()
 		return
 
-	var has_ap = stats.current_ap >= 1 and not battle_controller.is_action_in_progress
+	var move_query := battle_controller.query_move(unit)
 	var attack_query := battle_controller.query_attack(unit)
 	var wait_query := battle_controller.query_simple(&"wait", unit)
 	var reload_query := battle_controller.query_reload(unit)
@@ -184,7 +184,8 @@ func _update_button_states() -> void:
 	var attack_available := attack_query.is_legal() and attack_query.has_legal_targets() and not battle_controller.is_action_in_progress
 
 	if move_button:
-		move_button.disabled = not has_ap
+		move_button.disabled = not move_query.is_legal() or battle_controller.is_action_in_progress
+		move_button.tooltip_text = "" if move_query.is_legal() else move_query.validation.message
 	if attack_button:
 		attack_button.disabled = not attack_available
 		if not attack_query.is_legal():

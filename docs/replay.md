@@ -79,6 +79,8 @@ Schema-7 Attack payloads may likewise contain one retaliation event when the tar
 
 Mission terminal activation uses payload schema 8. The record identifies the actor and terminal, preserves the authored terminal cell, AP before/after (normally unchanged because interaction is free), activation before/after, objective state, transaction, revision, and expected post-commit fingerprint. Playback resubmits the same `interact_terminal` request through `TacticalActionService`. Terminal state appears in fingerprints only when a mission defines terminals, so historical missions and schema-2 Rescue/Extract recordings retain their original fingerprints and payload meaning.
 
+New recordings also set `tactical_tempo_enabled`. Their fingerprints include each unit's Base AP, effective maximum, activation capacity, spent AP, current AP, and AP modifiers sorted by stable source ID. This detects internal tempo divergence even when both states display the same value, such as `2 / 3 AP`. A recording without the flag retains the earlier fingerprint shape. This compatibility boundary changes neither the schema-3 envelope nor any action payload because tactical requests and results did not change.
+
 ## XCOM history lesson and future rewind
 
 XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.

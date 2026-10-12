@@ -55,7 +55,8 @@ func _play() -> void:
 	var tracks_shield := bool(recording.configuration.get("shield_enabled", false))
 	var tracks_overwatch := bool(recording.configuration.get("overwatch_enabled", false))
 	var tracks_conditions := bool(recording.configuration.get("conditions_enabled", false))
-	var initial_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch, tracks_conditions)
+	var tracks_tactical_tempo := bool(recording.configuration.get("tactical_tempo_enabled", false))
+	var initial_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch, tracks_conditions, tracks_tactical_tempo)
 	if recording.schema_version >= 3 and not recording.initial_state_fingerprint.is_empty() and initial_state != recording.initial_state_fingerprint:
 		_fail("reconstruction", -1, {}, "initial state fingerprint differs\nExpected: %s\nActual:   %s" % [recording.initial_state_fingerprint, initial_state])
 		return
@@ -77,7 +78,7 @@ func _play() -> void:
 				_fail("validation", index, record, "base_revision differs: expected %s, got %d" % [record.get("base_revision"), actual_revision])
 				return
 		var expected_state: String = record.get("expected_state", "")
-		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch)
+		var state_before := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch, tracks_conditions, tracks_tactical_tempo)
 		# Some gameplay signals commit an automatic action while their enclosing action is
 		# still finishing. If the earlier replayed action already produced this exact
 		# authoritative state, the nested record has already been applied.
@@ -97,7 +98,7 @@ func _play() -> void:
 			if int(record.get("committed_revision", -1)) != committed_revision:
 				_fail("commit", index, record, "committed_revision differs: expected %s, got %d" % [record.get("committed_revision"), committed_revision])
 				return
-		var actual_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch, tracks_conditions)
+		var actual_state := StateFingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, tracks_supply, tracks_aim, tracks_shield, tracks_overwatch, tracks_conditions, tracks_tactical_tempo)
 		if not expected_state.is_empty() and actual_state != expected_state:
 			_fail("comparison", index, record, "state fingerprint differs\nExpected: %s\nActual:   %s" % [expected_state, actual_state])
 			return

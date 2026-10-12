@@ -1,7 +1,7 @@
 class_name BattleStateFingerprint
 extends RefCounted
 
-static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager, include_supply_points := true, include_aim := true, include_shield := true, include_overwatch := true, include_conditions := true) -> String:
+static func capture(turn_manager: TurnManager, grid: GridManager, objectives: ObjectiveManager, include_supply_points := true, include_aim := true, include_shield := true, include_overwatch := true, include_conditions := true, include_tactical_tempo := true) -> String:
 	var active_id := "none"
 	if is_instance_valid(turn_manager.active_unit):
 		active_id = _unit_id(turn_manager.active_unit)
@@ -80,6 +80,14 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 			for condition in unit.conditions.snapshot():
 				parts.append("condition=%s,%s,%d,%d,%s" % [_unit_id(unit), condition.condition_id, condition.remaining_beats, condition.applied_beat, condition.source_id])
 			parts.append("seal=%s,%d" % [_unit_id(unit), unit.emergency_seal_charges])
+		if include_tactical_tempo and unit.stats:
+			var ap := unit.stats.get_ap_snapshot()
+			parts.append("tempo=%s,%d,%d,%d,%d,%d" % [
+				_unit_id(unit), ap.base_ap, ap.effective_max_ap,
+				ap.activation_capacity_ap, ap.spent_ap, ap.current_ap,
+			])
+			for modifier in ap.modifiers:
+				parts.append("ap_modifier=%s,%s,%d" % [_unit_id(unit), modifier.source_id, modifier.delta])
 	if objectives and objectives.mission:
 		for state in objectives.get_objectives():
 			parts.append("objective=%s,%d,%d" % [state.definition.objective_id, state.status, state.progress])

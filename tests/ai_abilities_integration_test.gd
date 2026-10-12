@@ -17,6 +17,7 @@ func _run() -> void:
 	await _test_guard_policy_is_bounded()
 	await _test_terminal_approach_and_zero_ap_interaction()
 	await _test_active_reaction_casualty_advances_selection()
+	await _test_authoritative_ap_capacity_queries()
 	print("AI abilities integration: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
@@ -98,6 +99,23 @@ func _test_active_reaction_casualty_advances_selection() -> void:
 	await process_frame
 	check(level.turn_manager.active_unit == survivor, "Defeating the active actor during a reaction advances to a surviving unit")
 	check(level.turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN, "Reaction defeat preserves the current phase while another actor can act")
+	await _dispose(level)
+
+func _test_authoritative_ap_capacity_queries() -> void:
+	var level := await _create_battle(&"generic", MissionObjectiveDefinition.Kind.ELIMINATE, 17114)
+	var actor: TacticalUnit = level.turn_manager.player_units[0]
+	var target: TacticalUnit = level.turn_manager.enemy_units[0]
+	_prepare_adjacent(level, actor, target)
+	level.turn_manager.call("_set_active_unit", actor)
+	for capacity in range(5):
+		actor.stats.configure_base_ap(capacity, true)
+		var attack := level.battle_controller.query_attack(actor)
+		var move := level.battle_controller.query_move(actor)
+		var aim := level.battle_controller.query_aim(actor)
+		check(attack.is_legal() == (capacity > 0), "AI Attack legality uses authoritative %d-AP capacity" % capacity)
+		check(move.is_legal() == (capacity > 0), "AI Move legality uses authoritative %d-AP capacity" % capacity)
+		check(aim.is_legal() == (capacity > 0), "AI Aim legality uses authoritative %d-AP capacity" % capacity)
+		check(actor.stats.current_ap == capacity, "AI observes the same available AP at capacity %d" % capacity)
 	await _dispose(level)
 
 func _create_battle(archetype: StringName, mission_kind: MissionObjectiveDefinition.Kind, seed: int) -> BattleLevel:

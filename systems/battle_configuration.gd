@@ -20,6 +20,8 @@ var shield_enabled := true
 var overwatch_enabled := true
 ## Old replay configurations omit this and retain pre-condition semantics.
 var conditions_enabled := true
+## Old replay configurations omit this and retain the pre-tempo fingerprint shape.
+var tactical_tempo_enabled := true
 var generated_map := false
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
@@ -42,6 +44,7 @@ func apply_replay(data: Dictionary) -> void:
 	shield_enabled = bool(data.get("shield_enabled", false))
 	overwatch_enabled = bool(data.get("overwatch_enabled", false))
 	conditions_enabled = bool(data.get("conditions_enabled", false))
+	tactical_tempo_enabled = bool(data.get("tactical_tempo_enabled", false))
 	normalize_rosters()
 	generated_map = data.get("generated_map", false)
 	battle_seed = data.get("seed", 1)
@@ -70,6 +73,7 @@ func to_replay() -> Dictionary:
 		"shield_enabled": shield_enabled,
 		"overwatch_enabled": overwatch_enabled,
 		"conditions_enabled": conditions_enabled,
+		"tactical_tempo_enabled": tactical_tempo_enabled,
 		"map_size": map_size,
 		"include_vip": include_vip,
 		"vip_behavior": vip_behavior,
