@@ -5,6 +5,7 @@ This directory contains the project documentation intended for developers, desig
 ## Guides
 
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
+- [Tactical conditions and fictional systems reference](architecture/tactical-conditions-fictional-systems-reference.md) — implemented 01.12 condition behavior, the three-second fictional beat, MIRA damage interpretation, and clearly separated future questions.
 - [Prototype 1 release](prototype-1-release.md) — release scope, known limits, packaging checks, and maintainer entry points.
 - [Prototype 2 idea vault](prototype-2/idea-vault.md) — wishes, experiments, dependencies, external resources, and scope boundaries for the next prototype.
 - [Pre-production workshop](prototype-2/preproduction-plan.md) — start-now proofs, incubation work packages, task cards, decision gates, and parked ideas.
