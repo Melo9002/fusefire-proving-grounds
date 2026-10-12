@@ -26,6 +26,7 @@ func _test_catalog_and_independent_state() -> void:
 	var shield := TacticalArchetypeCatalog.get_definition(&"shieldbearer")
 	check(shield != null and shield.shield_capability != null, "Shieldbearer declares shield capability")
 	for definition in TacticalArchetypeCatalog.all():
+		check(definition.max_ap == 3, "%s declares the three-AP MIRA baseline" % definition.display_name)
 		if definition.archetype_id != &"shieldbearer":
 			check(definition.shield_capability == null, "%s does not advertise a shield" % definition.display_name)
 
@@ -110,6 +111,8 @@ func _test_spawned_rosters() -> void:
 	await create_timer(0.2).timeout
 	check(level.turn_manager.player_units[0].archetype_id == &"shieldbearer", "Player slot 1 spawns as Shieldbearer")
 	check(level.turn_manager.player_units[1].archetype_id == &"marksman", "Player slot 2 spawns as Marksman")
+	for unit in level.turn_manager.player_units + level.turn_manager.enemy_units + level.turn_manager.allied_units:
+		check(unit.stats.max_ap == 3 and unit.stats.current_ap == 3, "%s spawns with the three-AP MIRA baseline" % unit.tactical_id)
 	check(level.turn_manager.enemy_units[0].archetype_id == &"sentinel" and level.turn_manager.enemy_units[1].archetype_id == &"support", "Enemy slots preserve independent selections")
 	var combat_ally: TacticalUnit
 	var vip: TacticalUnit

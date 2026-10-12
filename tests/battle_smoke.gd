@@ -50,7 +50,7 @@ func _run() -> void:
 	var destination = start + Vector3i(1, 0, 0)
 	check(battle.current_movement_zone.has(destination), "Adjacent empty cell is reachable")
 	battle._on_floor_clicked(grid.grid_to_world(destination))
-	check(player.is_moving and player.stats.current_ap == 1, "Move starts and spends one AP")
+	check(player.is_moving and player.stats.current_ap == 2, "Move starts and spends one AP from the MIRA baseline")
 	check(battle.is_action_in_progress, "Movement locks other battle actions")
 	check(not turns.select_player_unit(turns.player_units[1]), "Selection is blocked during movement")
 	turns.end_current_turn()
@@ -69,7 +69,9 @@ func _run() -> void:
 	check(enemy.stats.current_ap == enemy_ap_before_invalid_action, "Rejected actions do not spend AP")
 	enemy.stats.is_defending = true
 	check(await battle.try_attack(player, enemy), "In-range attack executes")
-	check(enemy.stats.current_hp == 88 and player.stats.current_ap == 0, "Defend halves damage and attack costs one AP")
+	check(enemy.stats.current_hp == 88 and player.stats.current_ap == 1, "Defend halves damage and attack costs one AP")
+	check(await battle.try_attack(player, enemy), "The MIRA baseline permits a third one-AP action")
+	check(enemy.stats.current_hp == 76 and player.stats.current_ap == 0, "The third action spends the remaining MIRA AP")
 	check(not await battle.try_attack(player, enemy), "Attack without AP is rejected")
 	check(turns.current_phase == TurnManager.TurnPhase.PLAYER_TURN, "Zero AP does not automatically end the phase")
 

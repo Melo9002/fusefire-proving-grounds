@@ -8,4 +8,5 @@ script = ExtResource("1")
 archetype_id = &"shieldbearer"
 display_name = "Shieldbearer"
 description = "Carries a physical shield and can commit to a directional Shield Stance."
+max_ap = 3
 shield_capability = ExtResource("2")

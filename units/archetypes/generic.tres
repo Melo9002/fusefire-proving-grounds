@@ -7,3 +7,4 @@ script = ExtResource("1")
 archetype_id = &"generic"
 display_name = "Generic"
 description = "Current FuseFire baseline combatant. No specialized mechanics."
+max_ap = 3

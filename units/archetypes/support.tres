@@ -7,3 +7,4 @@ script = ExtResource("1")
 archetype_id = &"support"
 display_name = "Support"
 description = "Supply experiment preset. Supply Points and Reload arrive in 01.11.1."
+max_ap = 3
