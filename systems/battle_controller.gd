@@ -104,6 +104,7 @@ func _ready() -> void:
 	turn_manager.turn_phase_changed.connect(_on_turn_phase_changed)
 	turn_manager.turn_ended.connect(_on_authoritative_turn_ended)
 	turn_manager.active_unit_changed.connect(_on_active_unit_changed)
+	turn_manager.player_actions_exhausted.connect(_on_player_actions_exhausted)
 	mouse_raycaster.floor_clicked.connect(_on_floor_clicked)
 	mouse_raycaster.unit_clicked.connect(_on_unit_clicked)
 
@@ -440,6 +441,14 @@ func _on_active_unit_changed(unit: TacticalUnit) -> void:
 	is_shield_mode_active = false
 	is_overwatch_mode_active = false
 	_refresh_overwatch_range()
+
+func _on_player_actions_exhausted() -> void:
+	# A defeated or extracted automated actor cannot finish its own AI callback.
+	# The roster owner reports exhaustion after the action barrier; battle-level
+	# orchestration then advances the phase exactly once.
+	if debug_player_ai and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
+	and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
+		turn_manager.end_current_turn()
 
 func update_unit_movement_zone() -> void:
 	if not tactical_unit or tactical_unit.is_moving:

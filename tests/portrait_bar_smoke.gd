@@ -38,7 +38,7 @@ func _run() -> void:
 	check(selection_visualizer.selected_unit == turns.player_units[2], "Battlefield selection moves the world outline")
 
 	var moving_unit = turns.player_units[2]
-	moving_unit.stats.consume_ap(1)
+	moving_unit.stats.consume_ap(moving_unit.stats.current_ap - 1)
 	var grid = level.get_node("Systems/GridManager") as GridManager
 	var start_cell = grid.world_to_grid(moving_unit.global_position)
 	var destination = start_cell + Vector3i(1, 0, 0)
@@ -55,22 +55,28 @@ func _run() -> void:
 	check(bar.portraits[0].display_state == UnitPortrait.DisplayState.SELECTED, "Cycling updates portrait selection")
 	check(selection_visualizer.selected_unit == turns.player_units[0], "Cycling updates the world outline")
 
-	turns.player_units[0].stats.consume_ap(2)
+	turns.player_units[0].stats.consume_ap(turns.player_units[0].stats.current_ap)
 	await process_frame
 	check(turns.active_unit == turns.player_units[1], "Cycling skips the exhausted unit")
-	turns.player_units[1].stats.consume_ap(2)
+	turns.player_units[1].stats.consume_ap(turns.player_units[1].stats.current_ap)
 	await process_frame
 	var end_turn_button = level.get_node("Visualizers/BattleUI/TurnHUDController/VBoxContainer/EndTurnButton") as Button
 	check(turns.active_unit == turns.player_units[1], "No available unit leaves selection for inspection")
 	check(end_turn_button.text == "END TURN — NO AP", "End Turn becomes prominent when all units are exhausted")
 
 	var defeated_unit = turns.player_units[1]
+	battle.debug_player_ai = true
 	defeated_unit.stats.take_damage(1000)
+	await process_frame
 	await process_frame
 	check(bar.portraits.size() == 3, "Defeated unit keeps its portrait for battle history")
 	check(bar.portraits[1].display_state == UnitPortrait.DisplayState.DEAD, "Defeated portrait shows dead state")
 	check(bar.portraits[1].hp_label.text == "HP  0 / 100", "Portrait HP updates before removal")
 	check(turns.player_units.size() == 2, "Defeat still removes the world unit from the roster")
+	var ap_hud = level.get_node("Visualizers/BattleUI/TurnHUDController/VBoxContainer/APHUDController") as APHUDController
+	check(ap_hud.current_tracked_stats != defeated_unit.stats \
+	and ap_hud.current_tracked_stats == turns.active_unit.stats, "Defeating the active unit stops the shared AP display from tracking the removed actor")
+	check(turns.current_phase != TurnManager.TurnPhase.PLAYER_TURN, "Automated player exhaustion advances after its active unit is defeated")
 
 	level.queue_free()
 	await process_frame

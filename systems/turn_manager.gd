@@ -127,6 +127,7 @@ func remove_unit(unit: TacticalUnit) -> void:
 	enemy_units.erase(unit)
 	if was_active:
 		active_unit = null
+		active_unit_changed.emit(null)
 	_check_battle_result()
 	if was_active and battle_result == BattleResult.ONGOING:
 		_continue_after_active_unit_removed.call_deferred(was_player, was_ally, was_enemy)
@@ -162,6 +163,7 @@ func remove_extracted_unit(unit: TacticalUnit) -> void:
 	if not was_active:
 		return
 	active_unit = null
+	active_unit_changed.emit(null)
 	if current_phase == TurnPhase.PLAYER_TURN:
 		for candidate in player_units:
 			if is_instance_valid(candidate) and candidate.stats.current_ap > 0:
