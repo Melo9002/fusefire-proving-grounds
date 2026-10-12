@@ -103,15 +103,24 @@ func _execute_turn() -> void:
 	if _is_executing:
 		return
 	_is_executing = true
+	var should_advance := await _run_activation()
+	# Queue changes emit active_unit_changed synchronously. Clear this guard first
+	# so a partially spent automated player can be selected again immediately.
+	_is_executing = false
+	if should_advance:
+		if turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN:
+			turn_manager.advance_automated_player(unit)
+		else:
+			turn_manager.end_current_turn()
+
+func _run_activation() -> bool:
 	# Brief pause makes the enemy activation visible before it acts.
 	await get_tree().create_timer(0.6, false).timeout
 	if not _should_control_unit():
-		_is_executing = false
-		return
+		return false
 	if unit.mission_actor and unit.mission_actor.is_vip():
 		await _execute_vip_turn()
-		_is_executing = false
-		return
+		return false
 	var has_moved := false
 	current_mission_intent = _get_ai_mission_intent()
 	# TurnManager may select a zero-AP actor only when a legal free objective
@@ -119,12 +128,10 @@ func _execute_turn() -> void:
 	if unit.stats.current_ap <= 0:
 		var free_step := await _try_mission_step(false)
 		if free_step == MissionStepResult.EXTRACTED:
-			_is_executing = false
-			return
+			return false
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
 		if await _try_mission_step(false) == MissionStepResult.EXTRACTED:
-			_is_executing = false
-			return
+			return false
 	while is_instance_valid(unit) and unit.stats.current_ap > 0 \
 		and turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
 		and _should_control_unit():
@@ -145,8 +152,7 @@ func _execute_turn() -> void:
 				continue
 		var mission_step := await _try_mission_step(has_moved)
 		if mission_step == MissionStepResult.EXTRACTED:
-			_is_executing = false
-			return
+			return false
 		if mission_step == MissionStepResult.MOVED:
 			has_moved = true
 			continue
@@ -209,15 +215,7 @@ func _execute_turn() -> void:
 		_wait_for_next_turn(_movement_wait_reason(reason), "Attack, Move")
 		break
 
-	var should_advance := _should_control_unit()
-	# Queue changes emit active_unit_changed synchronously. Clear this guard first
-	# so a partially spent automated player can be selected again immediately.
-	_is_executing = false
-	if should_advance:
-		if turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN:
-			turn_manager.advance_automated_player(unit)
-		else:
-			turn_manager.end_current_turn()
+	return _should_control_unit()
 
 func _try_mission_step(has_moved: bool) -> MissionStepResult:
 	if not current_mission_intent.is_actionable():
