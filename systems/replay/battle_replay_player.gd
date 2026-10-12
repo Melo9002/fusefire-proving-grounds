@@ -234,97 +234,37 @@ func _execute(record: Dictionary) -> bool:
 		return false
 	match kind:
 		"move":
-			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
-			request.source = TacticalActionRequest.Source.REPLAY
-			if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
+			var request := _request_from_record(record, true)
 			var original_movement_speed := actor.movement_speed
 			actor.movement_speed = original_movement_speed * playback_speed
 			var result := await level.battle_controller.action_service.submit_move(request)
 			if is_instance_valid(actor):
 				actor.movement_speed = original_movement_speed
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "move rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty():
-				last_divergence = difference
-				return false
-			return true
+			return _verify_action_result(result, record, "move")
 		"attack":
 			var request_data: Dictionary = record.get("request", {})
 			if request_data.is_empty():
 				push_error("Replay attack is missing its versioned request")
 				return false
-			var request := TacticalActionRequest.from_dictionary(request_data)
-			request.source = TacticalActionRequest.Source.REPLAY
-			if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
+			var request := _request_from_record(record, true)
 			var result := await level.battle_controller.action_service.submit_attack(request)
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "attack rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty():
-				last_divergence = difference
-				return false
-			return true
+			return _verify_action_result(result, record, "attack")
 		"reload":
-			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
-			request.source = TacticalActionRequest.Source.REPLAY
+			var request := _request_from_record(record)
 			var result := await level.battle_controller.action_service.submit_reload(request)
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "reload rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty(): last_divergence = difference; return false
-			return true
+			return _verify_action_result(result, record, "reload")
 		"aim":
-			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
-			request.source = TacticalActionRequest.Source.REPLAY
+			var request := _request_from_record(record)
 			var result := await level.battle_controller.action_service.submit_aim(request)
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "aim rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty(): last_divergence = difference; return false
-			return true
+			return _verify_action_result(result, record, "aim")
 		"shield":
-			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
-			request.source = TacticalActionRequest.Source.REPLAY
+			var request := _request_from_record(record)
 			var result := await level.battle_controller.action_service.submit_shield(request)
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "shield rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty(): last_divergence = difference; return false
-			return true
+			return _verify_action_result(result, record, "shield")
 		"overwatch":
-			var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
-			request.source = TacticalActionRequest.Source.REPLAY
+			var request := _request_from_record(record)
 			var result := await level.battle_controller.action_service.submit_overwatch(request)
-			if result == null:
-				var rejection := level.battle_controller.action_service.last_rejection
-				last_divergence = "overwatch rejected [%s]: %s" % [rejection.code, rejection.message]
-				return false
-			var identity_difference := _compare_result_identity(result, record)
-			if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-			var difference := result.compare_resolved(record.get("resolved", {}))
-			if not difference.is_empty(): last_divergence = difference; return false
-			return true
+			return _verify_action_result(result, record, "overwatch")
 		"defend":
 			return await _replay_simple(record)
 		"wait":
@@ -338,17 +278,27 @@ func _execute(record: Dictionary) -> bool:
 	return false
 
 func _replay_simple(record: Dictionary) -> bool:
+	var request := _request_from_record(record, true)
+	var result := await level.battle_controller.action_service.submit_simple(request)
+	return _verify_action_result(result, record, String(request.kind))
+
+func _request_from_record(record: Dictionary, apply_legacy_revision := false) -> TacticalActionRequest:
 	var request := TacticalActionRequest.from_dictionary(record.get("request", {}))
 	request.source = TacticalActionRequest.Source.REPLAY
-	if recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION: request.expected_revision = level.battle_controller.action_service.state_revision
-	var result := await level.battle_controller.action_service.submit_simple(request)
+	if apply_legacy_revision and recording.schema_version == BattleReplayRecording.LEGACY_SCHEMA_VERSION:
+		request.expected_revision = level.battle_controller.action_service.state_revision
+	return request
+
+func _verify_action_result(result, record: Dictionary, rejection_kind: String) -> bool:
 	if result == null:
 		var rejection := level.battle_controller.action_service.last_rejection
-		last_divergence = "%s rejected [%s]: %s" % [request.kind, rejection.code, rejection.message]
+		last_divergence = "%s rejected [%s]: %s" % [rejection_kind, rejection.code, rejection.message]
 		return false
 	var identity_difference := _compare_result_identity(result, record)
-	if not identity_difference.is_empty(): last_divergence = identity_difference; return false
-	var difference := result.compare_resolved(record.get("resolved", {}))
+	if not identity_difference.is_empty():
+		last_divergence = identity_difference
+		return false
+	var difference: String = result.compare_resolved(record.get("resolved", {}))
 	if not difference.is_empty():
 		last_divergence = difference
 		return false
