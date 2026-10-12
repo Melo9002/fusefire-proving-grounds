@@ -66,6 +66,16 @@ func _run() -> void:
 	check(rig.is_selection_focus_active(), "Automatic next-unit selection focuses an offscreen unit")
 	await create_timer(0.2).timeout
 
+	# A phase/selection change can occur while Good Guard still owns the action
+	# camera. Returning to tactical view must use the new active unit rather than
+	# the stale reaction-shot subject.
+	rig.frame_cinematic_action(first, level.turn_manager.enemy_units[0].global_position)
+	while rig.is_camera_transitioning(): await process_frame
+	level.turn_manager.call("_set_active_unit", third, true)
+	rig.return_to_tactical_view()
+	while rig.is_camera_transitioning(): await process_frame
+	check(rig.global_position.distance_to(rig._clamped_focus_position(third.global_position)) < 0.05, "Action camera return honors a player selection that changed during Good Guard presentation")
+
 	# Replay owns its camera policy; selection signals cannot override it.
 	level.battle_controller.replay_mode = true
 	rig.global_position = first.global_position

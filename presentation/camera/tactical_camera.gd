@@ -285,8 +285,16 @@ func return_to_tactical_view() -> void:
 	var actor := _cinematic_actor
 	_cinematic_active = false
 	_cinematic_actor = null
-	if is_instance_valid(actor):
-		global_position = actor.global_position
+	# Selection can change synchronously while an action camera is active. Its
+	# focus request is intentionally ignored during the cinematic, so the return
+	# transition must honor the current player selection instead of restoring the
+	# stale cinematic subject.
+	var return_anchor := actor
+	if turn_manager and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
+	and is_instance_valid(turn_manager.active_unit):
+		return_anchor = turn_manager.active_unit
+	if is_instance_valid(return_anchor):
+		global_position = return_anchor.global_position
 		_clamp_to_map()
 	camera.position = Vector3(0.0, 0.0, _zoom)
 	camera.rotation = Vector3.ZERO
