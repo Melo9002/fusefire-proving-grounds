@@ -7,6 +7,7 @@ This directory contains the project documentation intended for developers, desig
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
 - [Tactical conditions and fictional systems reference](architecture/tactical-conditions-fictional-systems-reference.md) — implemented 01.12 condition behavior, the three-second fictional beat, MIRA damage interpretation, and clearly separated future questions.
 - [01.13.0 AP architecture audit and XCOM study](research/01.13.0-ap-architecture-audit-xcom-study.md) — current AP and movement ownership, tactical-beat ordering, source-grounded XCOM comparison, and the proposed Tactical Tempo state model.
+- [Tactical Tempo validation and freeze](architecture/tactical-tempo-freeze.md) — finalized AP invariants, lifecycle ordering, supported integrations, regression matrix, and deferred features after Tasks 01.13.1–01.13.6.
 - [Prototype 1 release](prototype-1-release.md) — release scope, known limits, packaging checks, and maintainer entry points.
 - [Prototype 2 idea vault](prototype-2/idea-vault.md) — wishes, experiments, dependencies, external resources, and scope boundaries for the next prototype.
 - [Pre-production workshop](prototype-2/preproduction-plan.md) — start-now proofs, incubation work packages, task cards, decision gates, and parked ideas.

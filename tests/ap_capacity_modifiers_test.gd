@@ -11,6 +11,7 @@ func check(condition: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
+	_test_base_ap_spending_matrix()
 	_test_ordinary_expenditure_and_penalty_ratchet()
 	_test_positive_modifier_waits_for_refresh()
 	_test_zero_capacity_and_overlapping_penalties()
@@ -19,6 +20,19 @@ func _run() -> void:
 	_test_explicit_setup_contract()
 	print("AP capacity and modifiers: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _test_base_ap_spending_matrix() -> void:
+	for base in [2, 3, 4]:
+		var stats := _stats(base)
+		check(stats.base_ap == base and stats.effective_max_ap == base, "%d Base AP establishes the matching effective maximum" % base)
+		check(stats.activation_capacity_ap == base and stats.spent_ap == 0 and stats.current_ap == base, "%d Base AP refreshes one complete activation budget" % base)
+		for spent in range(1, base + 1):
+			check(stats.consume_ap(1), "%d-AP actor can spend action %d" % [base, spent])
+			check(stats.spent_ap == spent and stats.current_ap == base - spent, "%d-AP actor preserves capacity and expenditure after action %d" % [base, spent])
+		check(not stats.consume_ap(1) and stats.current_ap == 0 and stats.spent_ap == base, "%d-AP actor rejects overspending without mutation" % base)
+		stats.refresh_activation_ap()
+		check(stats.activation_capacity_ap == base and stats.spent_ap == 0 and stats.current_ap == base, "%d-AP actor refreshes exactly once to its full budget" % base)
+		stats.queue_free()
 
 func _stats(base: int) -> UnitStats:
 	var stats := UnitStats.new()
