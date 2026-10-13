@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dqrauo23hx24s"]
+
+[ext_resource type="Shader" uid="uid://delqfwi4jlrn4" path="res://addons/prototype-texture/PROTOTYPE.gdshader" id="1_7t3b4"]
+[ext_resource type="Texture2D" uid="uid://hevrfbtetwg2" path="res://addons/prototype-texture/PROTOTYPE.png" id="2_lu1gq"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_7t3b4")
+shader_parameter/texture_albedo = ExtResource("2_lu1gq")
+shader_parameter/texture_size_m = 1.0
+shader_parameter/base_color = Color(0.2556586, 0.25565886, 0.25565875, 1)
