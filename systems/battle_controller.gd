@@ -45,6 +45,10 @@ var battle_seed: int = 1
 var ai_decision_seed: int = 1
 var _squad_contexts: Dictionary[int, SquadContext] = {}
 var _commander_policies: Dictionary[int, AICommanderPolicy] = {}
+var _commander_profiles := {
+	0: AICommanderPolicy.Profile.DEFAULT,
+	1: AICommanderPolicy.Profile.DEFAULT,
+}
 var replay_mode := false
 ## Disabled only when reconstructing recordings made before Supply Points.
 var supply_points_enabled := true
@@ -613,8 +617,13 @@ func get_squad_context(unit: TacticalUnit) -> SquadContext:
 func get_commander_policy(unit: TacticalUnit) -> AICommanderPolicy:
 	var team_id := _ai_team_id(unit)
 	if not _commander_policies.has(team_id):
-		_commander_policies[team_id] = AICommanderPolicyData.create()
+		_commander_policies[team_id] = AICommanderPolicyData.create(_commander_profiles.get(team_id, AICommanderPolicy.Profile.DEFAULT))
 	return _commander_policies[team_id]
+
+func configure_commander_profiles(player_team: AICommanderPolicy.Profile, enemy_team: AICommanderPolicy.Profile) -> void:
+	_commander_profiles[0] = player_team
+	_commander_profiles[1] = enemy_team
+	_commander_policies.clear()
 
 func _ai_team_id(unit: TacticalUnit) -> int:
 	return 0 if unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] else 1

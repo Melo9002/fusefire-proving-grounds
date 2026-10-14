@@ -16,6 +16,8 @@ var vip_toggle: CheckButton
 var vip_behavior: OptionButton
 var objective_option: OptionButton
 var difficulty_option: OptionButton
+var player_commander_option: OptionButton
+var enemy_commander_option: OptionButton
 var deployment_summary: Label
 var compatibility_toggle: CheckButton
 var compatibility_status: Label
@@ -57,6 +59,8 @@ func _ready() -> void:
 	generated_map_toggle.toggled.connect(_on_generation_toggled)
 	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	player_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	enemy_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	auto_seed_toggle.toggled.connect(_on_auto_seed_toggled)
 	seed_input.value_changed.connect(_update_summary)
 	_refresh_seed_controls()
@@ -320,6 +324,35 @@ func _build_objective_setup() -> void:
 	difficulty_box.add_child(difficulty_label)
 	difficulty_box.add_child(difficulty_option)
 	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(difficulty_box)
+	var commander_box := VBoxContainer.new()
+	commander_box.name = "CommanderSetup"
+	commander_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var commander_label := Label.new()
+	commander_label.text = "COMMANDER DOCTRINES"
+	commander_box.add_child(commander_label)
+	var commander_columns := HBoxContainer.new()
+	commander_columns.add_theme_constant_override("separation", 12)
+	player_commander_option = _create_commander_selector("PLAYER + ALLY", "Doctrine used by automated player units and AI allies.")
+	enemy_commander_option = _create_commander_selector("ENEMY", "Doctrine used by enemy units.")
+	commander_columns.add_child(player_commander_option.get_parent())
+	commander_columns.add_child(enemy_commander_option.get_parent())
+	commander_box.add_child(commander_columns)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(commander_box)
+
+func _create_commander_selector(label_text: String, tooltip: String) -> OptionButton:
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var label := Label.new()
+	label.text = label_text
+	column.add_child(label)
+	var selector := OptionButton.new()
+	selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	selector.tooltip_text = tooltip
+	for profile in AICommanderPolicy.Profile.size():
+		selector.add_item(AICommanderPolicy.get_label(profile))
+	selector.select(AICommanderPolicy.Profile.DEFAULT)
+	column.add_child(selector)
+	return selector
 
 func _build_seed_actions() -> void:
 	var actions := HBoxContainer.new()
@@ -379,8 +412,10 @@ func _update_summary(_value: float) -> void:
 	var ai_controlled := int(ally_count.value) + ai_vip
 	if deployment_summary:
 		var difficulty_label := difficulty_option.get_item_text(difficulty_option.selected) if difficulty_option else "Normal"
+		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
+		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
-		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d\n\nAI DIFFICULTY\n%s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), difficulty_label]
+		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
 func _on_generation_toggled(enabled: bool) -> void:
@@ -417,6 +452,8 @@ func _start_battle() -> void:
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
+	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
+	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
 	config.refinery = map_size_option.selected == 3
 	battle.configure_battle(config)
 	get_tree().root.add_child(battle)

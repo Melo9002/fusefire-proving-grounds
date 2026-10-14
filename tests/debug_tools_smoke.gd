@@ -86,6 +86,8 @@ func _check_automatic_battle() -> void:
 	check(debug_tools._latest_ai_decision.has("squad_adjustments"), "AI explanations expose squad-awareness adjustments")
 	check(debug_tools._latest_ai_decision.get("commander_policy_id", "") == "default", "AI explanations expose the active commander policy")
 	check(debug_tools._latest_ai_decision.get("strategic_intent", "") == "Balanced engagement", "AI explanations expose strategic intent")
+	check(debug_tools._latest_ai_decision.has("commander_composition"), "AI explanations expose difficulty, commander, and final policy values")
+	check(debug_tools._ai_decision_label.text.contains("Doctrine:"), "F3 renders the active doctrine composition")
 
 	level.queue_free()
 	await process_frame

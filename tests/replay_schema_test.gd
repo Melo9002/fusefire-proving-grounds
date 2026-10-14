@@ -29,6 +29,17 @@ func _run() -> void:
 	check(rebuilt.is_playable(), "Current replay schema round trip is playable")
 	check(rebuilt.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Envelope version survives round trip")
 	check(rebuilt.configuration.seed == 733578405 and rebuilt.configuration.map_size == Vector2i(32, 24), "Seed and map size survive round trip")
+	check(rebuilt.configuration.player_commander == AICommanderPolicy.Profile.DEFAULT and rebuilt.configuration.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "Older replay configurations default both commander teams")
+	var cautious_recording_data := recording.to_dictionary()
+	var cautious_configuration: Dictionary = cautious_recording_data.get("battle_configuration", {})
+	cautious_configuration["player_commander"] = AICommanderPolicy.Profile.CAUTIOUS
+	var cautious_rebuilt := BattleReplayRecording.from_dictionary(cautious_recording_data)
+	check(cautious_rebuilt.configuration.player_commander == AICommanderPolicy.Profile.CAUTIOUS, "Non-default commander identity survives replay envelope serialization")
+	var aggressive_recording_data := recording.to_dictionary()
+	var aggressive_configuration: Dictionary = aggressive_recording_data.get("battle_configuration", {})
+	aggressive_configuration["enemy_commander"] = AICommanderPolicy.Profile.AGGRESSIVE
+	var aggressive_rebuilt := BattleReplayRecording.from_dictionary(aggressive_recording_data)
+	check(aggressive_rebuilt.configuration.enemy_commander == AICommanderPolicy.Profile.AGGRESSIVE, "Aggressive commander identity survives replay envelope serialization")
 	check(not rebuilt.configuration.supply_points_enabled, "A replay configuration without an SP rules flag remains explicitly historical after round trip")
 	check(not rebuilt.configuration.tactical_tempo_enabled, "A replay configuration without a tactical-tempo flag retains its historical fingerprint shape")
 	check(rebuilt.configuration.mission is MissionDefinition and rebuilt.configuration.mission.objectives.size() == mission.objectives.size(), "Mission definition survives round trip")

@@ -83,7 +83,7 @@ func _run() -> void:
 	check(setup.deployment_summary.text.contains("Player-controlled: 2\nAI allies: 1\nEnemies: 2"), "Setup summary follows the selected VIP controller")
 	setup.difficulty_option.select(AIDifficultyPolicy.Tier.HARD)
 	setup.difficulty_option.item_selected.emit(AIDifficultyPolicy.Tier.HARD)
-	check(setup.deployment_summary.text.contains("AI DIFFICULTY\nHard"), "Setup briefing follows the selected AI difficulty")
+	check(setup.deployment_summary.text.contains("Difficulty: Hard"), "Setup briefing follows the selected AI difficulty")
 	setup.queue_free()
 	await process_frame
 

@@ -36,6 +36,7 @@ var _squad_notes: Array[String] = []
 var _pending_target_note := ""
 var _pending_target_scores := "None"
 var _policy: AIDifficultyPolicy
+var _difficulty_policy: AIDifficultyPolicy
 var _commander_policy: AICommanderPolicy
 var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
@@ -66,7 +67,8 @@ func _ready() -> void:
 	unit.defeated.connect(_on_unit_defeated)
 	_objective_manager = objective_manager
 	_commander_policy = battle_controller.get_commander_policy(unit)
-	_policy = _commander_policy.compose(AIDifficultyPolicy.create(battle_controller.ai_difficulty))
+	_difficulty_policy = AIDifficultyPolicy.create(battle_controller.ai_difficulty)
+	_policy = _commander_policy.compose(_difficulty_policy)
 	_decision_rng.seed = battle_controller.ai_decision_seed * 1000003 + String(unit.name).hash()
 
 func _validate_dependencies() -> bool:
@@ -1028,7 +1030,11 @@ func _movement_wait_reason(prefix: String) -> String:
 	return "%s %s" % [prefix, "; ".join(details)]
 
 func _decision_context() -> Dictionary:
+	var composition := {}
+	if _commander_policy != null and _difficulty_policy != null and _policy != null:
+		composition = _commander_policy.composition_snapshot(_difficulty_policy, _policy)
 	return {
+		"commander_composition": composition,
 		"grid_position": unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1),
 		"remaining_ap": unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1,
 		"recent_move_origins": _recent_move_origins.duplicate(),

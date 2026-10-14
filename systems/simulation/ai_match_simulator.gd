@@ -29,6 +29,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		"map_size": _serializable_value(config.get("map_size", Vector2i(32, 24))),
 		"refinery": bool(config.get("refinery", false)),
 		"difficulty": AIDifficultyPolicy.Tier.keys()[result.difficulty],
+		"player_commander": AICommanderPolicy.get_label(config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)),
+		"enemy_commander": AICommanderPolicy.get_label(config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"maximum_rounds": maxi(1, int(config.get("maximum_rounds", 20))),
 		"stall_seconds": maxf(1.0, float(config.get("stall_seconds", 6.0))),
 		"timeout_seconds": maxf(1.0, float(config.get("timeout_seconds", 30.0))),
@@ -48,6 +50,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.vip_behavior = config.get("vip_behavior", MissionActor.VIPBehavior.FOLLOW_ESCORT)
 	battle_config.mission = mission
 	battle_config.difficulty = result.difficulty
+	battle_config.player_commander = config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)
+	battle_config.enemy_commander = config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)
 	battle_config.refinery = config.get("refinery", false)
 	level.configure_battle(battle_config)
 	add_child(level)

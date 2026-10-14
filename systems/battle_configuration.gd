@@ -29,6 +29,8 @@ var include_vip := false
 var vip_behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED
 var mission: MissionDefinition
 var difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
+var player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
+var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var refinery := false
 
 
@@ -54,6 +56,8 @@ func apply_replay(data: Dictionary) -> void:
 	var saved_mission: MissionDefinition = data.get("mission")
 	mission = saved_mission.duplicate(true) if saved_mission else null
 	difficulty = data.get("difficulty", AIDifficultyPolicy.Tier.NORMAL)
+	player_commander = int(data.get("player_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
+	enemy_commander = int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
 	refinery = data.get("refinery", false)
 
 
@@ -79,6 +83,8 @@ func to_replay() -> Dictionary:
 		"vip_behavior": vip_behavior,
 		"mission": mission.duplicate(true) if mission else null,
 		"difficulty": difficulty,
+		"player_commander": player_commander,
+		"enemy_commander": enemy_commander,
 		"refinery": refinery,
 	}
 

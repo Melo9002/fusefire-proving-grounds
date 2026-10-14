@@ -541,10 +541,11 @@ func _on_ai_decision_recorded(record: Dictionary) -> void:
 		_update_ai_scoring_details(record)
 	if not _ai_decision_label:
 		return
-	_ai_decision_label.text = "AI DECISION — %s\nCommander: %s  |  Intent: %s\n%s → %s  %s\nMission goal: %s\nPosition: %s\nTarget: %s\nSquad: %s\nReason: %s\nAlternatives: %s" % [
+	_ai_decision_label.text = "AI DECISION — %s\nCommander: %s  |  Intent: %s\nDoctrine: %s\n%s → %s  %s\nMission goal: %s\nPosition: %s\nTarget: %s\nSquad: %s\nReason: %s\nAlternatives: %s" % [
 		record.get("difficulty", "Normal"),
 		record.get("commander_policy", "Default"),
 		record.get("strategic_intent", "Balanced engagement"),
+		_commander_composition_summary(record.get("commander_composition", {})),
 		record.get("actor", "Unknown"),
 		record.get("action", "Unknown"),
 		record.get("subject", ""),
@@ -556,6 +557,19 @@ func _on_ai_decision_recorded(record: Dictionary) -> void:
 		record.get("alternatives", ""),
 	]
 	_ai_decision_label.visible = _show_ai_decisions
+
+func _commander_composition_summary(composition: Dictionary) -> String:
+	if composition.is_empty():
+		return "neutral"
+	var summaries: Array[String] = []
+	for field in ["position_cover_weight", "position_exposure_weight", "position_danger_weight", "movement_progress_weight"]:
+		var values: Dictionary = composition.get(field, {})
+		if values.is_empty(): continue
+		summaries.append("%s %.2f×%.2f=%.2f" % [field.trim_suffix("_weight"), values.get("base", 1.0), values.get("multiplier", 1.0), values.get("final", 1.0)])
+	var advance: Dictionary = composition.get("safe_advance_exposure_tolerance", {})
+	if not advance.is_empty():
+		summaries.append("safe advance %.2f%+.2f=%.2f" % [advance.get("base", 0.0), advance.get("delta", 0.0), advance.get("final", 0.0)])
+	return "; ".join(summaries)
 
 func _update_overlay() -> void:
 	if not turn_manager or not grid_manager:

@@ -25,15 +25,21 @@ func _run() -> void:
 	await process_frame
 	check(setup.difficulty_option.item_count == 3, "Match setup offers all three AI difficulties")
 	check(setup.difficulty_option.selected == AIDifficultyPolicy.Tier.NORMAL, "Normal is the default AI difficulty")
+	check(setup.player_commander_option.item_count == 3 and setup.enemy_commander_option.item_count == 3, "Match setup offers all three commander doctrines to both teams")
+	check(setup.player_commander_option.selected == AICommanderPolicy.Profile.DEFAULT and setup.enemy_commander_option.selected == AICommanderPolicy.Profile.DEFAULT, "Both teams default to the compatibility doctrine")
 	var setup_panel := setup.get_node("CenterContainer/Panel") as PanelContainer
 	check(setup_panel.global_position.y >= 0.0 and setup_panel.global_position.y + setup_panel.size.y <= setup.size.y, "Difficulty selector fits within the 720p setup viewport")
 	setup.difficulty_option.select(AIDifficultyPolicy.Tier.HARD)
+	setup.player_commander_option.select(AICommanderPolicy.Profile.CAUTIOUS)
+	setup.enemy_commander_option.select(AICommanderPolicy.Profile.AGGRESSIVE)
 	setup._start_battle()
 	await create_timer(0.2).timeout
 	var battle := current_scene as BattleLevel
 	check(battle != null, "Match setup starts the configured battle")
 	if battle:
 		check(battle.ai_difficulty == AIDifficultyPolicy.Tier.HARD and battle.battle_controller.ai_difficulty == AIDifficultyPolicy.Tier.HARD, "Selected difficulty reaches battle systems")
+		check(battle.battle_controller.get_commander_policy(battle.turn_manager.player_units[0]).profile == AICommanderPolicy.Profile.CAUTIOUS, "Selected player-team commander reaches battle systems")
+		check(battle.battle_controller.get_commander_policy(battle.turn_manager.enemy_units[0]).profile == AICommanderPolicy.Profile.AGGRESSIVE, "Selected enemy commander reaches battle systems")
 		var enemy_ai := battle.enemy_units_parent.get_node("EnemyUnit1AI") as AIController
 		check(enemy_ai._policy.tier == AIDifficultyPolicy.Tier.HARD, "Enemy AI receives the selected policy")
 		battle.queue_free()

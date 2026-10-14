@@ -49,7 +49,7 @@ var _replay_configuration: Dictionary = {}
 var _replay_recorder
 var action_camera_director: Node
 
-func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false) -> void:
+func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false, player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT, enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT) -> void:
 	var config := BattleConfigurationData.new()
 	config.player_count = player_count
 	config.enemy_count = enemy_count
@@ -61,6 +61,8 @@ func configure(player_count: int, enemy_count: int, generate_map: bool = false, 
 	config.vip_behavior = behavior
 	config.mission = selected_mission
 	config.difficulty = selected_difficulty
+	config.player_commander = player_commander
+	config.enemy_commander = enemy_commander
 	config.refinery = refinery
 	configure_battle(config)
 
@@ -93,6 +95,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed
+	battle_controller.configure_commander_profiles(config.player_commander, config.enemy_commander)
 	battle_controller.supply_points_enabled = supply_points_enabled
 	battle_controller.aim_enabled = aim_enabled
 	battle_controller.shield_enabled = shield_enabled
@@ -112,6 +115,8 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.vip_behavior = vip_behavior
 	normalized.mission = mission_definition
 	normalized.difficulty = ai_difficulty
+	normalized.player_commander = config.player_commander
+	normalized.enemy_commander = config.enemy_commander
 	normalized.supply_points_enabled = supply_points_enabled
 	normalized.aim_enabled = aim_enabled
 	normalized.shield_enabled = shield_enabled

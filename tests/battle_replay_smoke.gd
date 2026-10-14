@@ -21,6 +21,8 @@ func _run() -> void:
 	if recording:
 		_check(not recording.actions.is_empty(), "Replay contains authoritative actions")
 		_check(recording.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Replay uses the current explicit envelope schema")
+		_check(recording.configuration.player_commander == AICommanderPolicy.Profile.AGGRESSIVE, "Replay records the Aggressive player-team commander")
+		_check(recording.configuration.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "Replay records the independently configured enemy commander")
 		_check(not recording.initial_state_fingerprint.is_empty(), "Replay captures the reconstructed initial state")
 		for index in recording.actions.size():
 			var record: Dictionary = recording.actions[index]
@@ -106,7 +108,8 @@ func _create_battle(recording) -> BattleLevel:
 			2, 2, true, 23001, 0, Vector2i(24, 20), false,
 			MissionActor.VIPBehavior.PLAYER_CONTROLLED,
 			MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 2, false),
-			AIDifficultyPolicy.Tier.NORMAL, false
+			AIDifficultyPolicy.Tier.NORMAL, false,
+			AICommanderPolicy.Profile.AGGRESSIVE, AICommanderPolicy.Profile.DEFAULT
 		)
 	root.add_child(level)
 	while level.turn_manager.current_round == 0:

@@ -100,6 +100,8 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"vip_behavior": int(source.get("vip_behavior", MissionActor.VIPBehavior.PLAYER_CONTROLLED)),
 		"mission": _mission_to_data(source.get("mission")),
 		"difficulty": int(source.get("difficulty", AIDifficultyPolicy.Tier.NORMAL)),
+		"player_commander": int(source.get("player_commander", AICommanderPolicy.Profile.DEFAULT)),
+		"enemy_commander": int(source.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"refinery": bool(source.get("refinery", false)),
 	}
 
@@ -128,6 +130,8 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"vip_behavior": int(data.get("vip_behavior", MissionActor.VIPBehavior.PLAYER_CONTROLLED)),
 		"mission": _mission_from_data(mission_data) if mission_data is Dictionary else mission_data,
 		"difficulty": int(data.get("difficulty", AIDifficultyPolicy.Tier.NORMAL)),
+		"player_commander": int(data.get("player_commander", AICommanderPolicy.Profile.DEFAULT)),
+		"enemy_commander": int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"refinery": bool(data.get("refinery", false)),
 	}
 

@@ -1,6 +1,6 @@
 # FuseFire tactical AI
 
-This documentation describes the tactical AI currently implemented on `main`. It is an implementation reference, not a proposed commander system. The AI is deterministic for a fixed battle configuration, action history, and AI decision seed, apart from its deliberately seeded Easy and Normal difficulty lapses.
+This documentation describes the tactical AI currently implemented on `main`, including the Default, Cautious, and Aggressive commander doctrines. The AI is deterministic for a fixed battle configuration, commander assignment, action history, and AI decision seed, apart from its deliberately seeded Easy and Normal difficulty lapses.
 
 The short answer to “why does it sometimes look smart?” is that simple unit policies operate over rich authoritative queries and share a small amount of squad memory. A unit does not plan the whole faction turn. It follows an ordered action policy, scores legal targets and movement destinations, and records destinations, intended targets, objective handlers, and protected evacuation corridors for units acting later that round. Combat geometry, directional cover, elevation-aware distance, line of sight, objectives, AP, SP, and reactions are resolved by the same services used by the player. Several independent choices can therefore line up into what looks like an ambush or coordinated push.
 

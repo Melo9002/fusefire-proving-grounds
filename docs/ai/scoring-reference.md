@@ -10,6 +10,8 @@ The top-level action ladder is neither a hard legality rule nor a utility score.
 
 ## Position score
 
+Difficulty weights are composed with the selected commander before these formulas run. Cautious uses cover ×1.30, exposure ×1.30, danger ×1.35, firing ×0.90, movement progress ×0.95, crowding ×1.15, and survival separation ×1.10. Aggressive uses progress ×1.20, firing ×1.20, cover ×0.90, exposure ×0.85, danger ×0.90, wounded-target value ×1.15, finishing value ×1.25, and threat value ×1.10. Default uses identity values.
+
 `AIPositionScorer.evaluate()` returns:
 
 ```text
