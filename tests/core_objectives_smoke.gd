@@ -15,6 +15,7 @@ func _run() -> void:
 	await _check_round_objectives()
 	await _check_reach()
 	await _check_rescue()
+	await _check_rescue_early_departure()
 	await _check_extract()
 	print("Core objectives: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -122,6 +123,23 @@ func _check_rescue() -> void:
 	check(await level.objective_manager.try_extract(remaining), "Remaining escort can board after VIP objective completed")
 	await process_frame
 	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Rescuing and extracting the VIP grants victory")
+	await _finish(level)
+
+func _check_rescue_early_departure() -> void:
+	var level := await _create_level(MissionObjectiveDefinition.Kind.RESCUE, false, 3)
+	var target := level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var carrier := level.turn_manager.player_units[0]
+	var target_cell := level.battle_controller.grid_manager.get_unit_grid(target)
+	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, target_cell + Vector3i.LEFT)
+	check(await level.objective_manager.try_rescue(carrier, target), "Early-departure fixture rescues the VIP authoritatively")
+	var exit := level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")[0]
+	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, exit)
+	check(await level.objective_manager.try_extract(carrier), "Early-departure fixture extracts the rescued VIP")
+	await process_frame
+	check(level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING, "Required rescue completion keeps the battle active for surviving escorts")
+	check(level.objective_manager.get_units_left_behind() == 2, "Departure reports the two surviving escorts still deployed")
+	check(level.objective_manager.end_mission_early(), "The explicit Depart command converts secured rescue into victory")
+	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY and level.objective_manager.left_behind == 2, "Early departure records victory and the units deliberately left behind")
 	await _finish(level)
 
 func _check_extract() -> void:

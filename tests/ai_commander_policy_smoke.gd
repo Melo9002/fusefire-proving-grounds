@@ -95,6 +95,7 @@ func _check_team_ownership_and_diagnostics() -> void:
 	check(battle.get_commander_policy(player) != battle.get_commander_policy(enemy), "Opposing teams own distinct commander policy instances")
 	check(battle.get_commander_policy(player).profile == AICommanderPolicy.Profile.CAUTIOUS, "Player team receives configured Cautious doctrine")
 	check(battle.get_commander_policy(enemy).profile == AICommanderPolicy.Profile.DEFAULT, "Enemy team independently retains Default doctrine")
+	check(level.player_commander == AICommanderPolicy.Profile.CAUTIOUS and level.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "Battle startup retains both readable commander profiles")
 	var records: Array[Dictionary] = []
 	battle.ai_decision_recorded.connect(func(value: Dictionary): records.append(value))
 	battle.record_ai_decision(enemy, "Wait", enemy.name, "Fixture decision", "None")

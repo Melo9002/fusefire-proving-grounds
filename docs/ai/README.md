@@ -13,6 +13,7 @@ The AI is not a general planner, behavior tree, minimax search, or learned model
 - [Information access and fairness](information-access-and-fairness.md) identifies exactly what the AI reads and where it has computational advantages.
 - [Tuning and maintainability](tuning-and-maintainability.md) maps the strongest tuning controls, diagnostics, confirmed issues, risks, and open questions.
 - [Commander architecture](commander-architecture.md) defines the behavior-preserving policy foundation and the proposed strategic layer.
+- [Commander Foundation 2.x freeze](commander-foundation-2-freeze.md) records the validation matrix, Rescue completion contract, and frozen extension boundaries.
 
 ## Principal implementation
 

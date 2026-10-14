@@ -38,6 +38,8 @@ var include_vip := false
 var vip_behavior := MissionActor.VIPBehavior.PLAYER_CONTROLLED
 var mission_definition: MissionDefinition
 var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
+var player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
+var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var supply_points_enabled := true
 var aim_enabled := true
 var shield_enabled := true
@@ -86,6 +88,8 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	vip_behavior = config.vip_behavior
 	mission_definition = config.mission
 	ai_difficulty = config.difficulty
+	player_commander = config.player_commander
+	enemy_commander = config.enemy_commander
 	supply_points_enabled = config.supply_points_enabled
 	aim_enabled = config.aim_enabled
 	shield_enabled = config.shield_enabled
@@ -140,6 +144,7 @@ func _ready() -> void:
 	action_camera_director.setup(get_node("CameraRig") as TacticalCamera)
 	battle_controller.action_camera_director = action_camera_director
 	print("[AI Difficulty] %s" % AIDifficultyPolicy.get_label(ai_difficulty))
+	print("[Commanders] Player + Ally: %s | Enemy: %s" % [AICommanderPolicy.get_label(player_commander), AICommanderPolicy.get_label(enemy_commander)])
 	print("[BattleSeed] %d — %s map" % [battle_seed, "generated" if use_generated_map else "authored"])
 	if mission_definition != null:
 		objective_manager.load_mission(mission_definition)
