@@ -34,6 +34,7 @@ var battle_seed: int = 1
 var generation_seed: int = 1
 var generated_size := Vector2i(32, 24)
 var use_refinery_map := false
+var use_industrial_warehouse := false
 var include_vip := false
 var vip_behavior := MissionActor.VIPBehavior.PLAYER_CONTROLLED
 var mission_definition: MissionDefinition
@@ -82,6 +83,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	ally_archetypes = TacticalArchetypeCatalog.normalize_ids(config.ally_archetypes, allied_unit_count)
 	use_generated_map = config.generated_map
 	use_refinery_map = config.refinery
+	use_industrial_warehouse = config.industrial_warehouse
 	battle_seed = config.battle_seed
 	generation_seed = config.battle_seed
 	include_vip = config.include_vip
@@ -128,6 +130,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.conditions_enabled = conditions_enabled
 	normalized.tactical_tempo_enabled = tactical_tempo_enabled
 	normalized.refinery = use_refinery_map
+	normalized.industrial_warehouse = use_industrial_warehouse
 	_replay_configuration = normalized.to_replay()
 
 func configure_replay(recording) -> void:
@@ -160,7 +163,7 @@ func _ready() -> void:
 		rig._set_zoom(42.0 * scale_factor)
 		var width := int(grid.map_floor.size.x / grid.cell_size)
 		var depth := int(grid.map_floor.size.z / grid.cell_size)
-		var generated_map := FlatMapGenerator.generate_with_cover(width, depth, grid.cell_size, generation_seed, 5, use_refinery_map)
+		var generated_map := FlatMapGenerator.generate_with_cover(width, depth, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
 		var generated_geometry := Node3D.new()
 		generated_geometry.name = "GeneratedTerrain"
 		add_child(generated_geometry)

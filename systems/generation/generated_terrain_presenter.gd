@@ -43,6 +43,8 @@ static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
 		block.set_meta("grid_position", cell.grid_position)
 		block.set_meta("cover_type", cell.cover_type)
 		parent.add_child(block)
+	if map_data.source_kind == "generated_industrial_warehouse":
+		preload("res://systems/generation/industrial_warehouse_presenter.gd").build(map_data, parent, cell_size)
 
 static func _build_platform(map_data: MapData, parent: Node3D, cell_size: float, platform: GeneratedPlatformData) -> void:
 	var first := map_data.get_cell(platform.cells[0])

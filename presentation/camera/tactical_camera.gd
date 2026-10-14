@@ -43,6 +43,24 @@ var _cinematic_active := false
 var _cinematic_camera_position := Vector3.ZERO
 var _cinematic_look_target := Vector3.ZERO
 var _faded_occluders: Dictionary = {}
+var _inspected_floor := Vector3.INF
+var _inspection_actor: TacticalUnit
+var _inspection_actor_cell := Vector3i.ZERO
+
+func inspect_floor(position: Vector3) -> void:
+	_inspected_floor = position
+	_inspection_actor = turn_manager.active_unit if turn_manager else null
+	_inspection_actor_cell = _inspection_actor.grid_position if is_instance_valid(_inspection_actor) else Vector3i.ZERO
+
+func inspected_floor_height() -> float:
+	var actor := turn_manager.active_unit if turn_manager else null
+	if actor != _inspection_actor or (is_instance_valid(actor) and actor.grid_position != _inspection_actor_cell):
+		_inspected_floor = Vector3.INF
+		_inspection_actor = actor
+		_inspection_actor_cell = actor.grid_position if is_instance_valid(actor) else Vector3i.ZERO
+	if _inspected_floor != Vector3.INF:
+		return _inspected_floor.y
+	return actor.global_position.y - actor.standing_height if is_instance_valid(actor) else global_position.y
 
 func _ready() -> void:
 	if not map_floor or not camera:
@@ -112,12 +130,21 @@ func _process(delta: float) -> void:
 
 func _exit_tree() -> void:
 	_restore_faded_occluders({})
+	for group in ["tactical_roof_cutaways", "tactical_visual_occluders"]:
+		for visual in get_tree().get_nodes_in_group(group):
+			visual.restore_view()
 
 func _update_camera_occlusion() -> void:
 	if not is_instance_valid(camera) or not is_inside_tree():
 		_restore_faded_occluders({})
 		return
 	var focuses := _camera_occlusion_focuses()
+	# Explicit roof layers and visual-only props use the same camera subjects
+	# as ordinary occlusion, including nested-reaction targets.
+	for roof in get_tree().get_nodes_in_group("tactical_roof_cutaways"):
+		roof.update_view(camera.global_position, focuses)
+	for visual in get_tree().get_nodes_in_group("tactical_visual_occluders"):
+		visual.update_view(camera.global_position, focuses)
 	if focuses.is_empty():
 		_restore_faded_occluders({})
 		return
@@ -151,6 +178,9 @@ func _camera_occlusion_focuses() -> Array[Vector3]:
 			if actor_focus.distance_squared_to(_cinematic_look_target) > 0.01:
 				result.append(actor_focus)
 		return result
+	inspected_floor_height() # Clear manual inspection when selection changes.
+	if _inspected_floor != Vector3.INF:
+		return [_inspected_floor + Vector3.UP * 0.5]
 	if turn_manager and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN \
 	and is_instance_valid(turn_manager.active_unit):
 		return [turn_manager.active_unit.global_position + Vector3.UP * turn_manager.active_unit.standing_height]

@@ -598,6 +598,10 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.committed_revision = state_revision
 	is_committing = false
 	if not actor.stats.is_defeated and _movement_committed.is_valid(): _movement_committed.call(actor, result.start_cell, result.target_cell)
+	# Reach may complete synchronously here. Record the settled outcome before
+	# presentation yields, just as Attack does, so playback sees the same boundary.
+	if _objective_manager:
+		_objective_manager.evaluate_outcome_after_action_commit()
 	result.objective_state_after = _capture_objectives()
 	result.carried_actor_id = actor.carried_unit.tactical_id if actor.is_carrying_unit() else &""
 	action_committed.emit(result)

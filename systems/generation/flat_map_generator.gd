@@ -2,6 +2,7 @@ class_name FlatMapGenerator
 extends RefCounted
 
 const RefineryLayout = preload("res://systems/generation/refinery_layout_builder.gd")
+const IndustrialWarehouseLayout = preload("res://systems/generation/industrial_warehouse_layout_builder.gd")
 
 const MAP_SIZES: Array[Vector2i] = [Vector2i(24, 20), Vector2i(32, 24), Vector2i(40, 30)]
 const CONTAINER_HEIGHT := 2.0
@@ -50,7 +51,7 @@ static func generate(width: int, depth: int, cell_size: float, map_seed: int, sp
 	map_data.rebuild_los_index()
 	return map_data
 
-static func generate_with_cover(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5, refinery: bool = false) -> MapData:
+static func generate_with_cover(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5, refinery: bool = false, industrial_warehouse: bool = false) -> MapData:
 	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
 	map_data.source_kind = "generated_cover"
 	var rng := RandomNumberGenerator.new()
@@ -62,7 +63,9 @@ static func generate_with_cover(width: int, depth: int, cell_size: float, map_se
 			anchors.append(Vector3i(x, 0, z))
 	_shuffle_cells(anchors, rng)
 	var building_cells := 0
-	if refinery:
+	if industrial_warehouse:
+		IndustrialWarehouseLayout.apply(map_data, cell_size)
+	elif refinery:
 		RefineryLayout.apply(map_data, cell_size)
 	else:
 		building_cells = _place_buildings(map_data, anchors, rng, width, depth, center_row, cell_size)
@@ -70,9 +73,13 @@ static func generate_with_cover(width: int, depth: int, cell_size: float, map_se
 		GeneratedElevationPlacer.apply(map_data, rng, cell_size)
 	var access_rng := RandomNumberGenerator.new()
 	access_rng.seed = 2202
-	GeneratedTraversalBuilder.apply(map_data, access_rng if refinery else rng, cell_size)
+	GeneratedTraversalBuilder.apply(map_data, access_rng if refinery or industrial_warehouse else rng, cell_size)
 	if refinery:
 		map_data.source_kind = "generated_refinery"
+	if industrial_warehouse:
+		map_data.source_kind = IndustrialWarehouseLayout.SOURCE_KIND
+		map_data.rebuild_los_index()
+		return map_data
 	var container_cells := _place_containers(map_data, anchors, rng, width, depth, center_row)
 
 	var desired_cover := clampi(floori(float(width * depth) / 10.0), 12, anchors.size())

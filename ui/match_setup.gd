@@ -50,6 +50,7 @@ func _ready() -> void:
 		var dimensions := FlatMapGenerator.MAP_SIZES[index]
 		map_size_option.add_item("%s — %d × %d tiles" % [size_names[index], dimensions.x, dimensions.y])
 	map_size_option.add_item("Special — Refinery (40 × 30)")
+	map_size_option.add_item("Special — Industrial Warehouse (40 × 30)")
 	map_size_option.select(1)
 	map_size_option.disabled = not generated_map_toggle.button_pressed
 	start_button.pressed.connect(_start_battle)
@@ -403,7 +404,12 @@ func _on_objective_selected(index: int) -> void:
 func _update_summary(_value: float) -> void:
 	var map_label := "HANDMADE"
 	if generated_map_toggle.button_pressed:
-		map_label = "REFINERY" if map_size_option.selected == 3 else "GENERATED — %s" % map_size_option.get_item_text(map_size_option.selected)
+		if map_size_option.selected == 3:
+			map_label = "REFINERY"
+		elif map_size_option.selected == 4:
+			map_label = "INDUSTRIAL WAREHOUSE"
+		else:
+			map_label = "GENERATED — %s" % map_size_option.get_item_text(map_size_option.selected)
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
 	var player_vip := 1 if has_vip and vip_behavior.selected == MissionActor.VIPBehavior.PLAYER_CONTROLLED else 0
@@ -447,7 +453,7 @@ func _start_battle() -> void:
 	config.player_archetypes = player_archetypes.duplicate()
 	config.enemy_archetypes = enemy_archetypes.duplicate()
 	config.ally_archetypes = ally_archetypes.duplicate()
-	config.map_size = Vector2i(40, 30) if map_size_option.selected == 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
+	config.map_size = Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
@@ -455,6 +461,7 @@ func _start_battle() -> void:
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
 	config.refinery = map_size_option.selected == 3
+	config.industrial_warehouse = map_size_option.selected == 4
 	battle.configure_battle(config)
 	get_tree().root.add_child(battle)
 	get_tree().current_scene = battle

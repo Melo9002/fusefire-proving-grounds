@@ -30,6 +30,12 @@ func _run() -> void:
 	check(rebuilt.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Envelope version survives round trip")
 	check(rebuilt.configuration.seed == 733578405 and rebuilt.configuration.map_size == Vector2i(32, 24), "Seed and map size survive round trip")
 	check(rebuilt.configuration.player_commander == AICommanderPolicy.Profile.DEFAULT and rebuilt.configuration.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "Older replay configurations default both commander teams")
+	check(not rebuilt.configuration.industrial_warehouse, "Older replay configurations default away from the industrial preset")
+	var industrial_recording_data := recording.to_dictionary()
+	var industrial_configuration: Dictionary = industrial_recording_data.get("battle_configuration", {})
+	industrial_configuration["industrial_warehouse"] = true
+	var industrial_rebuilt := BattleReplayRecording.from_dictionary(industrial_recording_data)
+	check(industrial_rebuilt.configuration.industrial_warehouse, "Industrial preset identity survives replay envelope serialization")
 	var cautious_recording_data := recording.to_dictionary()
 	var cautious_configuration: Dictionary = cautious_recording_data.get("battle_configuration", {})
 	cautious_configuration["player_commander"] = AICommanderPolicy.Profile.CAUTIOUS

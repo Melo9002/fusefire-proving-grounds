@@ -4,6 +4,9 @@ This directory contains the project documentation intended for developers, desig
 
 ## Guides
 
+- [Industrial warehouse slice](generation/industrial-warehouse-vertical-slice.md) — playable warehouse, walkable roof, camera cutaway, floor inspection, validation and remaining limits.
+- [Industrial asset inventory](generation/industrial-asset-inventory.md) — retained Kenney packs, formats, licenses and import validation.
+
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
 - [Tactical conditions and fictional systems reference](architecture/tactical-conditions-fictional-systems-reference.md) — implemented 01.12 condition behavior, the three-second fictional beat, MIRA damage interpretation, and clearly separated future questions.
 - [01.13.0 AP architecture audit and XCOM study](research/01.13.0-ap-architecture-audit-xcom-study.md) — current AP and movement ownership, tactical-beat ordering, source-grounded XCOM comparison, and the proposed Tactical Tempo state model.

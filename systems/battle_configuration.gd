@@ -32,6 +32,7 @@ var difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var refinery := false
+var industrial_warehouse := false
 
 
 func apply_replay(data: Dictionary) -> void:
@@ -59,6 +60,7 @@ func apply_replay(data: Dictionary) -> void:
 	player_commander = int(data.get("player_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
 	enemy_commander = int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
 	refinery = data.get("refinery", false)
+	industrial_warehouse = data.get("industrial_warehouse", false)
 
 
 func to_replay() -> Dictionary:
@@ -86,6 +88,7 @@ func to_replay() -> Dictionary:
 		"player_commander": player_commander,
 		"enemy_commander": enemy_commander,
 		"refinery": refinery,
+		"industrial_warehouse": industrial_warehouse,
 	}
 
 func normalize_rosters() -> void:

@@ -12,7 +12,10 @@ var _left_press_position := Vector2.ZERO
 var _left_dragged := false
 var _surface_index := 0
 var _surface_cells: Array[Vector3i] = []
+var _preferred_floor_height := INF
 var _floor_hint: Label
+var _level_panel: PanelContainer
+var _level_label: Label
 
 func _ready() -> void:
 	var layer := CanvasLayer.new()
@@ -26,12 +29,59 @@ func _ready() -> void:
 	_floor_hint.add_theme_constant_override("shadow_offset_y", 2)
 	layer.add_child(_floor_hint)
 	_floor_hint.hide()
+	_build_level_panel(layer)
+
+func _build_level_panel(layer: CanvasLayer) -> void:
+	_level_panel = PanelContainer.new()
+	_level_panel.name = "LevelInspection"
+	_level_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_level_panel.position = Vector2(-290, 78)
+	_level_panel.size = Vector2(278, 84)
+	layer.add_child(_level_panel)
+	var rows := VBoxContainer.new()
+	_level_panel.add_child(rows)
+	_level_label = Label.new()
+	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rows.add_child(_level_label)
+	var buttons := HBoxContainer.new()
+	rows.add_child(buttons)
+	for entry in [["Ground", 0.0], ["Walkway", 2.0], ["Roof", 5.0]]:
+		var button := Button.new()
+		button.text = entry[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_inspect_level.bind(float(entry[1])))
+		buttons.add_child(button)
+	var hint := Label.new()
+	hint.text = "Alt + wheel: cycle floors under cursor"
+	hint.add_theme_font_size_override("font_size", 12)
+	rows.add_child(hint)
+	_level_panel.hide()
+
+func _inspect_level(height: float) -> void:
+	var roofs := get_tree().get_nodes_in_group("tactical_roof_cutaways")
+	var rig := camera.get_parent() as TacticalCamera if camera else null
+	if roofs.is_empty() or not rig:
+		return
+	var point: Vector3 = roofs[0].global_position
+	point.y = height
+	rig.inspect_floor(point)
+	_update_level_panel()
+
+func _update_level_panel() -> void:
+	var rig := camera.get_parent() as TacticalCamera if camera else null
+	_level_panel.visible = rig != null and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty()
+	if not _level_panel.visible:
+		return
+	var height := rig.inspected_floor_height()
+	var title := "Roof" if height >= 4.5 else ("Walkway" if height >= 1.5 else "Ground")
+	_level_label.text = "VIEW: %s · Level %d" % [title, roundi(height)]
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		_left_pressed = false
 
 func _process(_delta: float) -> void:
+	_update_level_panel()
 	if not get_window().has_focus() or get_viewport().gui_get_hovered_control():
 		_floor_hint.hide()
 		return
@@ -80,18 +130,39 @@ func get_floor_raycast_result(screen_position := Vector2.INF) -> Dictionary:
 	var cells: Array[Vector3i] = []
 	for candidate in candidates:
 		cells.append(candidate.grid_position)
-	if cells != _surface_cells:
+	var rig := camera.get_parent() as TacticalCamera if camera else null
+	var height := INF
+	if rig and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty():
+		height = rig.inspected_floor_height()
+	if cells != _surface_cells or height != _preferred_floor_height:
 		_surface_index = 0
 		_surface_cells = cells
+		_preferred_floor_height = height
+		# Opt-in layered warehouse presentation: avoid ordering a rooftop Move
+		# when its hidden collider lies above the inspected interior floor.
+		if is_finite(height):
+			var nearest := INF
+			for index in candidates.size():
+				var distance: float = absf(candidates[index].position.y - height)
+				if distance < nearest:
+					nearest = distance
+					_surface_index = index
 	if candidates.is_empty():
 		return {}
 	_surface_index = clampi(_surface_index, 0, candidates.size() - 1)
+	# Inspection is a ceiling, not permission to select whichever higher surface
+	# happens to be nearest. Retain all candidates for explicit floor cycling.
+	if is_finite(height) and candidates[_surface_index].position.y > height + 0.1:
+		return {}
 	return candidates[_surface_index]
 
 func cycle_surface(direction: int, screen_position := Vector2.INF) -> void:
 	get_floor_raycast_result(screen_position)
 	if not _surface_cells.is_empty():
 		_surface_index = posmod(_surface_index + direction, _surface_cells.size())
+		var rig := camera.get_parent() as TacticalCamera if camera else null
+		if rig and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty():
+			rig.inspect_floor(grid_manager.get_cell_data(_surface_cells[_surface_index]).world_position)
 
 func get_floor_candidates(screen_position: Vector2) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
@@ -152,6 +223,10 @@ func get_unit_under_mouse(screen_position := Vector2.INF) -> TacticalUnit:
 		var unit := result.collider as TacticalUnit
 		if not unit or not unit.is_visible_in_tree() or not unit.stats or unit.stats.is_defeated:
 			continue
+		if is_finite(_preferred_floor_height):
+			var cell := grid_manager.get_cell_data(unit.grid_position)
+			if cell and cell.world_position.y > _preferred_floor_height + 0.1:
+				continue
 		if _surface_index > 0 and not floor_hit.is_empty() and unit.grid_position.y != floor_hit.grid_position.y:
 			continue
 		return unit
