@@ -14,6 +14,8 @@ func check(condition: bool, message: String) -> void:
 func _run() -> void:
 	await _check_registration_and_multiple_watchers()
 	await _check_lethal_interruption()
+	await _check_reactive_move_camera_release(false)
+	await _check_reactive_move_camera_release(true)
 	await _check_direct_attack_retaliation()
 	await _check_defeated_watcher_cannot_retaliate()
 	await _check_player_overwatch_hands_off_turn_and_draws_range()
@@ -116,6 +118,7 @@ func _check_lethal_interruption() -> void:
 
 func _check_direct_attack_retaliation() -> void:
 	var level := await _create_battle(1)
+	level.action_camera_director.frequency = ActionCameraDirector.Frequency.COMBAT_ONLY
 	var service := level.battle_controller.action_service
 	var watcher: TacticalUnit = level.turn_manager.player_units[0]
 	var attacker: TacticalUnit = level.turn_manager.enemy_units[0]
@@ -128,10 +131,12 @@ func _check_direct_attack_retaliation() -> void:
 	var watcher_hp_before := watcher.stats.current_hp
 	var watcher_sp_before := watcher.stats.current_supply_points
 	var revision_before := service.state_revision
-	var attack := await service.submit_attack(service.make_attack_request(attacker, watcher, TacticalActionRequest.Source.AI), true)
+	var attack := await service.submit_attack(service.make_attack_request(attacker, watcher, TacticalActionRequest.Source.AI))
 	check(attack != null and attack.reaction_events.size() == 1, "A direct attack against a surviving watcher triggers one retaliation")
 	check(watcher.stats.current_hp <= watcher_hp_before and watcher.stats.current_supply_points == watcher_sp_before - 1, "The original attack resolves first and retaliation consumes one SP")
 	check(not watcher.tactical_state.is_overwatching and service.state_revision == revision_before + 1, "Attack retaliation consumes the reservation inside one parent revision")
+	var camera_rig := level.get_node("CameraRig") as TacticalCamera
+	check(not camera_rig._cinematic_active and not camera_rig.is_camera_transitioning() and not service.is_busy, "Direct-attack Guard releases cinematic ownership and the action barrier")
 	if attack and not attack.reaction_events.is_empty():
 		check(attack.reaction_events[0].watcher_id == watcher.tactical_id, "Nested retaliation preserves the watching actor identity")
 	var attack_record: Dictionary = level._replay_recorder.recording.actions[-1]
@@ -139,6 +144,46 @@ func _check_direct_attack_retaliation() -> void:
 	check(ReplayRecordTools.validate_action_record(attack_record, BattleReplayRecording.CURRENT_SCHEMA_VERSION).is_empty(), "Retaliating Attack payload passes replay schema validation")
 	level.queue_free()
 	await process_frame
+	await process_frame
+	await process_frame
+
+func _check_reactive_move_camera_release(lethal: bool) -> void:
+	var level := await _create_battle(2)
+	level.action_camera_director.frequency = ActionCameraDirector.Frequency.COMBAT_ONLY
+	var service := level.battle_controller.action_service
+	var watcher: TacticalUnit = level.turn_manager.player_units[0]
+	var next_player: TacticalUnit = level.turn_manager.player_units[1]
+	var mover: TacticalUnit = level.turn_manager.enemy_units[0]
+	var camera_rig := level.get_node("CameraRig") as TacticalCamera
+	_clear_shot_geometry(level)
+	watcher.attack_range = 100
+	check(await service.submit_overwatch(service.make_overwatch_request(watcher, TacticalActionRequest.Source.PLAYER), true) != null, "%s camera fixture registers Guard" % ("Lethal" if lethal else "Nonlethal"))
+	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
+	level.turn_manager.call("_set_active_unit", mover)
+	var move_query := service.query_move(mover.tactical_id)
+	var destination := _destination_with_path(service, mover, move_query.legal_destination_cells)
+	if lethal:
+		mover.stats.current_hp = 1
+	service._combat_rng.seed = _seed_for_hit(100)
+	var move := await service.submit_move(service.make_move_request(mover, destination, TacticalActionRequest.Source.AI))
+	var label := "Lethal" if lethal else "Nonlethal"
+	check(move != null and move.reaction_events.size() == 1, "%s movement triggers one presented Guard reaction" % label)
+	if move and not move.reaction_events.is_empty():
+		check(move.reaction_events[0].target_defeated == lethal, "%s camera fixture resolves the intended survival result" % label)
+	check(not camera_rig._cinematic_active, "%s movement-triggered Guard releases cinematic camera ownership" % label)
+	check(not camera_rig.is_camera_transitioning(), "%s movement-triggered Guard completes the tactical-camera return" % label)
+	check(not service.is_busy, "%s movement-triggered Guard releases the action-service barrier" % label)
+	if lethal:
+		check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "Lethal movement-triggered Guard permits normal battle-result progression")
+	else:
+		level.turn_manager.current_phase = TurnManager.TurnPhase.PLAYER_TURN
+		next_player.stats.refresh_activation()
+		check(level.turn_manager.select_player_unit(next_player), "Nonlethal movement-triggered Guard leaves normal player selection operable")
+		check(level.turn_manager.active_unit == next_player, "Nonlethal movement-triggered Guard permits normal phase selection progression")
+	var camera_before_pan := camera_rig.global_position
+	camera_rig._pan(Vector2.RIGHT, 0.1)
+	check(not camera_rig.global_position.is_equal_approx(camera_before_pan), "%s movement-triggered Guard restores manual camera control" % label)
+	level.queue_free()
 	await process_frame
 	await process_frame
 

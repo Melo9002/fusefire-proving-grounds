@@ -137,19 +137,19 @@ func present_move(result: MoveActionResult) -> void:
 		unit.move_along_path(result.presentation_path, result.visual_segments)
 		await _wait_for_movement(unit, result)
 	else:
-		await _present_reactive_move(unit, result)
+		camera_presented = await _present_reactive_move(unit, result) or camera_presented
 	if is_instance_valid(unit): _snap_to_committed_destination(unit, result)
 	else: result.presentation_error = "Move actor left the scene during traversal"
 	await _finish_camera(camera_presented)
 
-func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> void:
+func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> bool:
 	var reactions_by_checkpoint := {}
 	for event in result.reaction_events:
 		if not reactions_by_checkpoint.has(event.checkpoint_index): reactions_by_checkpoint[event.checkpoint_index] = []
 		reactions_by_checkpoint[event.checkpoint_index].append(event)
 	var reaction_camera_used := false
 	for index in range(1, result.presentation_path.size()):
-		if not is_instance_valid(unit): return
+		if not is_instance_valid(unit): return reaction_camera_used
 		var segment := PackedVector3Array([unit.global_position, result.presentation_path[index]])
 		var pose: StringName = result.visual_segments[index] if index < result.visual_segments.size() else &"move"
 		unit.move_along_path(segment, [&"move", pose])
@@ -167,8 +167,9 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> voi
 			print_rich("[color=orange][Guard][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 			if event.target_defeated and is_instance_valid(unit):
 				unit.finish_defeat_presentation()
-				return
+				return reaction_camera_used
 			await _safe_delay(0.18)
+	return reaction_camera_used
 
 func present_simple(result: SimpleActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
