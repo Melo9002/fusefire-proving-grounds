@@ -2,6 +2,7 @@ extends Node3D
 class_name BattleController
 
 const SquadContextData = preload("res://systems/ai/squad_context.gd")
+const AICommanderPolicyData = preload("res://systems/ai/ai_commander_policy.gd")
 const ActionCameraDirectorData = preload("res://presentation/camera/action_camera_director.gd")
 
 signal move_mode_toggled(is_active: bool)
@@ -43,6 +44,7 @@ var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var battle_seed: int = 1
 var ai_decision_seed: int = 1
 var _squad_contexts: Dictionary[int, SquadContext] = {}
+var _commander_policies: Dictionary[int, AICommanderPolicy] = {}
 var replay_mode := false
 ## Disabled only when reconstructing recordings made before Supply Points.
 var supply_points_enabled := true
@@ -601,12 +603,21 @@ func is_current_phase_manually_controlled() -> bool:
 		or (debug_enemy_control and turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN)
 
 func get_squad_context(unit: TacticalUnit) -> SquadContext:
-	var team_id := 0 if unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] else 1
+	var team_id := _ai_team_id(unit)
 	if not _squad_contexts.has(team_id):
 		_squad_contexts[team_id] = SquadContextData.new()
 	var context: SquadContext = _squad_contexts[team_id]
 	context.begin_round(turn_manager.current_round)
 	return context
+
+func get_commander_policy(unit: TacticalUnit) -> AICommanderPolicy:
+	var team_id := _ai_team_id(unit)
+	if not _commander_policies.has(team_id):
+		_commander_policies[team_id] = AICommanderPolicyData.create()
+	return _commander_policies[team_id]
+
+func _ai_team_id(unit: TacticalUnit) -> int:
+	return 0 if unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] else 1
 
 func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = [], context: Dictionary = {}) -> void:
 	var actor_name := "Unknown"
@@ -626,6 +637,11 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 		"target_candidates": target_candidates.duplicate(true),
 		"difficulty": AIDifficultyPolicy.get_label(ai_difficulty),
 	}
+	if is_instance_valid(actor):
+		var commander := get_commander_policy(actor)
+		record["commander_policy"] = AICommanderPolicy.get_label(commander.profile)
+		record["commander_policy_id"] = String(commander.get_policy_id())
+		record["strategic_intent"] = commander.get_strategic_intent_label()
 	record.merge(context, true)
 	ai_decision_recorded.emit(record)
 

@@ -84,6 +84,8 @@ func _check_automatic_battle() -> void:
 	check(debug_tools._latest_ai_decision.has("action") and debug_tools._latest_ai_decision.has("reason"), "AI explanations contain a choice and reason")
 	check(debug_tools._latest_ai_decision.has("mission_goal"), "AI explanations keep the mission goal beside the combat choice")
 	check(debug_tools._latest_ai_decision.has("squad_adjustments"), "AI explanations expose squad-awareness adjustments")
+	check(debug_tools._latest_ai_decision.get("commander_policy_id", "") == "default", "AI explanations expose the active commander policy")
+	check(debug_tools._latest_ai_decision.get("strategic_intent", "") == "Balanced engagement", "AI explanations expose strategic intent")
 
 	level.queue_free()
 	await process_frame

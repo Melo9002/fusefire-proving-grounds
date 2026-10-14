@@ -36,6 +36,7 @@ var _squad_notes: Array[String] = []
 var _pending_target_note := ""
 var _pending_target_scores := "None"
 var _policy: AIDifficultyPolicy
+var _commander_policy: AICommanderPolicy
 var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
 var _last_position_candidates: Array[Dictionary] = []
@@ -64,7 +65,8 @@ func _ready() -> void:
 	battle_controller.debug_player_ai_changed.connect(_on_debug_player_ai_changed)
 	unit.defeated.connect(_on_unit_defeated)
 	_objective_manager = objective_manager
-	_policy = AIDifficultyPolicy.create(battle_controller.ai_difficulty)
+	_commander_policy = battle_controller.get_commander_policy(unit)
+	_policy = _commander_policy.compose(AIDifficultyPolicy.create(battle_controller.ai_difficulty))
 	_decision_rng.seed = battle_controller.ai_decision_seed * 1000003 + String(unit.name).hash()
 
 func _validate_dependencies() -> bool:

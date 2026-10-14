@@ -541,8 +541,10 @@ func _on_ai_decision_recorded(record: Dictionary) -> void:
 		_update_ai_scoring_details(record)
 	if not _ai_decision_label:
 		return
-	_ai_decision_label.text = "AI DECISION — %s\n%s → %s  %s\nMission goal: %s\nPosition: %s\nTarget: %s\nSquad: %s\nReason: %s\nAlternatives: %s" % [
+	_ai_decision_label.text = "AI DECISION — %s\nCommander: %s  |  Intent: %s\n%s → %s  %s\nMission goal: %s\nPosition: %s\nTarget: %s\nSquad: %s\nReason: %s\nAlternatives: %s" % [
 		record.get("difficulty", "Normal"),
+		record.get("commander_policy", "Default"),
+		record.get("strategic_intent", "Balanced engagement"),
 		record.get("actor", "Unknown"),
 		record.get("action", "Unknown"),
 		record.get("subject", ""),
