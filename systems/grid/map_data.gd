@@ -15,6 +15,9 @@ var source_kind: String = "authored"
 var generation_seed: int = 0
 var map_size := Vector2i.ZERO
 var transport_footprints: Dictionary = {}
+## Optional presentation names keyed by authoritative grid elevation. Missing
+## names fall back to Ground / Level N in generic floor controls.
+var elevation_labels: Dictionary[int, String] = {0: "Ground"}
 
 func add_cell(cell: MapCellData) -> void:
 	cells[cell.grid_position] = cell
@@ -94,6 +97,29 @@ func rebuild_los_index() -> void:
 		if cell.blocks_line_of_sight and cell.cover_height > 0.0:
 			los_blocking_cells.append(cell)
 
+func get_walkable_elevation_levels() -> Array[int]:
+	var seen: Dictionary = {}
+	for cell: MapCellData in cells.values():
+		if cell.walkable and cell.can_stop:
+			seen[cell.grid_position.y] = true
+	var levels: Array[int] = []
+	for level in seen.keys():
+		levels.append(int(level))
+	levels.sort()
+	return levels
+
+func get_elevation_label(level: int) -> String:
+	return elevation_labels.get(level, "Ground" if level == 0 else "Level %d" % level)
+
+func get_inspectable_elevation_levels() -> Array[int]:
+	var walkable := get_walkable_elevation_levels()
+	var levels: Array[int] = []
+	for level in elevation_labels.keys():
+		if walkable.has(int(level)):
+			levels.append(int(level))
+	levels.sort()
+	return levels
+
 func clear() -> void:
 	transport_footprints.clear()
 	containers.clear()
@@ -109,3 +135,4 @@ func clear() -> void:
 	source_kind = "authored"
 	generation_seed = 0
 	map_size = Vector2i.ZERO
+	elevation_labels = {0: "Ground"}

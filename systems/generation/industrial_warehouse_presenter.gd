@@ -2,6 +2,7 @@ class_name IndustrialWarehousePresenter
 extends RefCounted
 
 const Layout = preload("res://systems/generation/industrial_warehouse_layout_builder.gd")
+const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const INDUSTRIAL_ROOT := "res://art/environments/kenney/city_kit_industrial/models/"
 const FACTORY_ROOT := "res://art/environments/kenney/factory_kit/models/"
 const STEEL := Color("344952")
@@ -39,7 +40,7 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 		_box(wall, center + Vector3.UP * (Layout.WALL_HEIGHT - 0.03) * cell_size, (size + Vector3(0.035, 0, 0.035)) * cell_size, STEEL)
 		if (position.x + position.y) % 3 == 0:
 			_box(wall, center + Vector3.UP * Layout.WALL_HEIGHT * 0.5 * cell_size, Vector3(0.91 if side else 0.12, Layout.WALL_HEIGHT, 0.12 if side else 0.91) * cell_size, STEEL)
-		wall.occlusion_bounds = mesh_bounds(wall)
+		wall.occlusion_bounds = AssetPlacement.mesh_bounds(wall)
 	# Headers are overhead presentation; the ground openings remain unobstructed.
 	_box(site, _world(data, Vector2(18.5, 17)) + Vector3.UP * 2.95 * cell_size, Vector3(4, 0.3, 0.86) * cell_size, SAFETY)
 	_box(site, _world(data, Vector2(19, 5)) + Vector3.UP * 2.95 * cell_size, Vector3(3, 0.3, 0.86) * cell_size, STEEL)
@@ -59,19 +60,19 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 		if container:
 			container.visible = false
 		_hide_footprint_blocks(parent, footprint)
-		_place_scene(site, INDUSTRIAL_ROOT + "shipping-container-%s.glb" % ["a", "b", "c"][index], _center(data, footprint), Vector3(4.8, Layout.CONTAINER_HEIGHT, 1.98) * cell_size, PI * 0.5)
+		AssetPlacement.instantiate_fitted(site, INDUSTRIAL_ROOT + "shipping-container-%s.glb" % ["a", "b", "c"][index], _center(data, footprint), Vector3(4.8, Layout.CONTAINER_HEIGHT, 1.98) * cell_size, PI * 0.5)
 	for position in Layout.MACHINE_CELLS:
 		_hide_tactical_block(parent, position)
 		var center := _world(data, Vector2(position))
 		_box(site, center + Vector3.UP * 0.3 * cell_size, Vector3(0.94, 0.6, 0.94) * cell_size, STEEL)
-		_place_scene(site, FACTORY_ROOT + "machine.glb", center + Vector3.UP * 0.6 * cell_size, Vector3(0.94, 0.9, 0.94) * cell_size)
+		AssetPlacement.instantiate_fitted(site, FACTORY_ROOT + "machine.glb", center + Vector3.UP * 0.6 * cell_size, Vector3(0.94, 0.9, 0.94) * cell_size)
 	for footprint in Layout.CONVEYOR_SPECS:
 		_hide_footprint_blocks(parent, footprint)
 		var center := _center(data, footprint)
 		_box(site, center + Vector3.UP * 0.125 * cell_size, Vector3(1.95, 0.25, 0.9) * cell_size, STEEL)
-		_place_scene(site, FACTORY_ROOT + "conveyor-long.glb", center + Vector3.UP * 0.25 * cell_size, Vector3(2, 0.4, 1) * cell_size)
+		AssetPlacement.instantiate_fitted(site, FACTORY_ROOT + "conveyor-long.glb", center + Vector3.UP * 0.25 * cell_size, Vector3(2, 0.4, 1) * cell_size)
 	_hide_footprint_blocks(parent, Layout.CRANE_FOOTPRINT)
-	_place_scene(site, FACTORY_ROOT + "crane.glb", _center(data, Layout.CRANE_FOOTPRINT), Vector3(2.9, 3.7, 3.9) * cell_size)
+	AssetPlacement.instantiate_fitted(site, FACTORY_ROOT + "crane.glb", _center(data, Layout.CRANE_FOOTPRINT), Vector3(2.9, 3.7, 3.9) * cell_size)
 	for position in Layout.YARD_COVER:
 		_hide_tactical_block(parent, position)
 		var center := _world(data, Vector2(position))
@@ -128,46 +129,6 @@ static func _box(parent: Node3D, center: Vector3, size: Vector3, color: Color) -
 	instance.mesh = mesh
 	instance.position = center
 	parent.add_child(instance)
-
-static func _place_scene(parent: Node3D, path: String, floor_center: Vector3, limits: Vector3, yaw := 0.0) -> void:
-	var packed := load(path) as PackedScene
-	if not packed:
-		return
-	var instance := packed.instantiate() as Node3D
-	var rotation_basis := Basis(Vector3.UP, yaw)
-	var bounds := Transform3D(rotation_basis, Vector3.ZERO) * mesh_bounds(instance)
-	if bounds.size.x <= 0 or bounds.size.y <= 0 or bounds.size.z <= 0:
-		instance.free()
-		return
-	var factor: float = min(limits.x / bounds.size.x, min(limits.y / bounds.size.y, limits.z / bounds.size.z))
-	var wrapper := TacticalVisualOccluder.new()
-	wrapper.name = path.get_file().get_basename()
-	wrapper.basis = rotation_basis.scaled(Vector3.ONE * factor)
-	wrapper.position = floor_center - Vector3(bounds.get_center().x, bounds.position.y, bounds.get_center().z) * factor
-	wrapper.set_meta("asset_path", path)
-	wrapper.set_meta("placement_limits", limits)
-	wrapper.set_meta("floor_center", floor_center)
-	wrapper.add_child(instance)
-	wrapper.occlusion_bounds = mesh_bounds(instance)
-	parent.add_child(wrapper)
-
-# Include every ancestor transform, including the imported root. Vendor meshes remain untouched.
-static func mesh_bounds(node: Node3D, accumulated := Transform3D.IDENTITY) -> AABB:
-	var boxes: Array[AABB] = []
-	_collect_bounds(node, accumulated, boxes)
-	var bounds := AABB()
-	for index in boxes.size():
-		bounds = boxes[index] if index == 0 else bounds.merge(boxes[index])
-	return bounds
-
-static func _collect_bounds(node: Node, accumulated: Transform3D, boxes: Array[AABB]) -> void:
-	var transform := accumulated
-	if node is Node3D:
-		transform = accumulated * node.transform
-	if node is MeshInstance3D:
-		boxes.append(transform * node.get_aabb())
-	for child in node.get_children():
-		_collect_bounds(child, transform, boxes)
 
 static func _hide_tactical_block(parent: Node3D, position: Vector2i) -> void:
 	var block := parent.get_node_or_null("Cover_%d_0_%d" % [position.x, position.y]) as Node3D

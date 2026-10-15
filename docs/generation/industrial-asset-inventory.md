@@ -35,6 +35,8 @@ Kenney assets use the conventional Godot-compatible orientation observed on impo
 
 No collision meshes, tactical cover definitions, grid footprints, entrances, traversal links, elevation metadata, spawn suitability, or objective suitability have been generated. Those belong to later Battlefield Generation 2.0 authoring and validation tasks.
 
+Goal 2.1 adds a separate FuseFire-owned visual calibration catalog for 14 representative assets and a laboratory that can browse the entire library. See [Environment Asset Calibration Laboratory](asset-calibration-laboratory.md). Its measured bounds and scales remain presentation metadata; no imported mesh creates tactical occupancy.
+
 ## Organization contract
 
 ```text

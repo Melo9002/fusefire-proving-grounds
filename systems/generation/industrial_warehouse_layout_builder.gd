@@ -49,6 +49,8 @@ const YARD_COVER: Array[Vector2i] = [
 
 static func apply(data: MapData, cell_size: float) -> void:
 	data.source_kind = SOURCE_KIND
+	data.elevation_labels[PLATFORM_LEVEL] = "Walkway"
+	data.elevation_labels[ROOF_LEVEL] = "Roof"
 	for position in WALL_CELLS:
 		_set_full_cover(data, position, WALL_HEIGHT * cell_size)
 	for footprint in CONTAINER_SPECS:

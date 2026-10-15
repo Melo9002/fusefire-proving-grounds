@@ -6,6 +6,8 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	var ordinary := FlatMapGenerator.generate_with_cover(40, 30, 1.0, 940059876)
+	check(ordinary.get_inspectable_elevation_levels() == [0], "Unlabelled terrain elevations do not become building floor controls")
 	for map_seed in [1, 940059876]:
 		var data := FlatMapGenerator.generate_with_cover(40, 30, 1.0, map_seed, 5, false, true)
 		var repeated := FlatMapGenerator.generate_with_cover(40, 30, 1.0, map_seed, 5, false, true)
@@ -18,6 +20,9 @@ func _run() -> void:
 			TacticalUnit.Faction.ENEMY: 5,
 		})
 		check(data.source_kind == IndustrialWarehouseLayoutBuilder.SOURCE_KIND, "Industrial source kind is explicit")
+		check(data.get_walkable_elevation_levels() == [0, 2, 5], "Authoritative walkable levels drive generic floor controls")
+		check(data.get_inspectable_elevation_levels() == [0, 2, 5], "Only explicitly described tactical levels appear in floor controls")
+		check(data.get_elevation_label(2) == "Walkway" and data.get_elevation_label(5) == "Roof", "Layout supplies presentation labels without owning floor UI")
 		check(_layout_signature(data) == _layout_signature(repeated), "Seed %d reproduces the same authoritative industrial layout" % map_seed)
 		check(validation.is_valid(), "Seed %d validates: %s" % [map_seed, validation.describe()])
 		check(data.platforms.size() == 1 and data.generated_traversals.size() == 2, "Warehouse has maintenance and rooftop ladder access")
@@ -43,7 +48,7 @@ func _run() -> void:
 	for child in assets.get_children():
 		if not child.has_meta("asset_path"):
 			continue
-		var bounds := IndustrialWarehousePresenter.mesh_bounds(child)
+		var bounds := EnvironmentAssetPlacement.mesh_bounds(child)
 		var limits: Vector3 = child.get_meta("placement_limits")
 		var floor_center: Vector3 = child.get_meta("floor_center")
 		check(bounds.size.x <= limits.x + 0.001 and bounds.size.y <= limits.y + 0.001 and bounds.size.z <= limits.z + 0.001, "Imported hierarchy fits reserved envelope: " + str(child.name))

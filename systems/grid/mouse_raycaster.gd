@@ -16,6 +16,8 @@ var _preferred_floor_height := INF
 var _floor_hint: Label
 var _level_panel: PanelContainer
 var _level_label: Label
+var _level_buttons: HBoxContainer
+var _level_signature := ""
 
 func _ready() -> void:
 	var layer := CanvasLayer.new()
@@ -43,14 +45,8 @@ func _build_level_panel(layer: CanvasLayer) -> void:
 	_level_label = Label.new()
 	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rows.add_child(_level_label)
-	var buttons := HBoxContainer.new()
-	rows.add_child(buttons)
-	for entry in [["Ground", 0.0], ["Walkway", 2.0], ["Roof", 5.0]]:
-		var button := Button.new()
-		button.text = entry[0]
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(_inspect_level.bind(float(entry[1])))
-		buttons.add_child(button)
+	_level_buttons = HBoxContainer.new()
+	rows.add_child(_level_buttons)
 	var hint := Label.new()
 	hint.text = "Alt + wheel: cycle floors under cursor"
 	hint.add_theme_font_size_override("font_size", 12)
@@ -58,23 +54,51 @@ func _build_level_panel(layer: CanvasLayer) -> void:
 	_level_panel.hide()
 
 func _inspect_level(height: float) -> void:
-	var roofs := get_tree().get_nodes_in_group("tactical_roof_cutaways")
 	var rig := camera.get_parent() as TacticalCamera if camera else null
-	if roofs.is_empty() or not rig:
+	if not rig:
 		return
-	var point: Vector3 = roofs[0].global_position
+	var point := rig.global_position
+	var roofs := get_tree().get_nodes_in_group("tactical_roof_cutaways")
+	if not roofs.is_empty():
+		point = (roofs[0] as Node3D).global_position
 	point.y = height
 	rig.inspect_floor(point)
 	_update_level_panel()
 
 func _update_level_panel() -> void:
 	var rig := camera.get_parent() as TacticalCamera if camera else null
-	_level_panel.visible = rig != null and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty()
+	var levels := _available_levels()
+	_level_panel.visible = rig != null and levels.size() > 1
 	if not _level_panel.visible:
 		return
+	_sync_level_buttons(levels)
 	var height := rig.inspected_floor_height()
-	var title := "Roof" if height >= 4.5 else ("Walkway" if height >= 1.5 else "Ground")
-	_level_label.text = "VIEW: %s · Level %d" % [title, roundi(height)]
+	var level := _nearest_level(height, levels)
+	_level_label.text = "VIEW: %s · Level %d" % [grid_manager.map_data.get_elevation_label(level), level]
+
+func _available_levels() -> Array[int]:
+	return grid_manager.map_data.get_inspectable_elevation_levels() if grid_manager else []
+
+func _sync_level_buttons(levels: Array[int]) -> void:
+	var signature := ",".join(levels.map(func(level: int) -> String: return str(level)))
+	if signature == _level_signature:
+		return
+	_level_signature = signature
+	for child in _level_buttons.get_children():
+		child.queue_free()
+	for level in levels:
+		var button := Button.new()
+		button.text = grid_manager.map_data.get_elevation_label(level)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_inspect_level.bind(float(level) * grid_manager.elevation_step))
+		_level_buttons.add_child(button)
+
+func _nearest_level(height: float, levels: Array[int]) -> int:
+	var nearest := levels[0]
+	for level in levels:
+		if absf(float(level) * grid_manager.elevation_step - height) < absf(float(nearest) * grid_manager.elevation_step - height):
+			nearest = level
+	return nearest
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
@@ -132,7 +156,7 @@ func get_floor_raycast_result(screen_position := Vector2.INF) -> Dictionary:
 		cells.append(candidate.grid_position)
 	var rig := camera.get_parent() as TacticalCamera if camera else null
 	var height := INF
-	if rig and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty():
+	if rig and _available_levels().size() > 1:
 		height = rig.inspected_floor_height()
 	if cells != _surface_cells or height != _preferred_floor_height:
 		_surface_index = 0
@@ -161,7 +185,7 @@ func cycle_surface(direction: int, screen_position := Vector2.INF) -> void:
 	if not _surface_cells.is_empty():
 		_surface_index = posmod(_surface_index + direction, _surface_cells.size())
 		var rig := camera.get_parent() as TacticalCamera if camera else null
-		if rig and not get_tree().get_nodes_in_group("tactical_roof_cutaways").is_empty():
+		if rig and _available_levels().size() > 1:
 			rig.inspect_floor(grid_manager.get_cell_data(_surface_cells[_surface_index]).world_position)
 
 func get_floor_candidates(screen_position: Vector2) -> Array[Dictionary]:

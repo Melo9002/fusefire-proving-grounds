@@ -15,7 +15,7 @@ Select **Special — Industrial Warehouse (40 × 30)** in match setup. This is a
 - Machinery on solid service plinths, conveyor workstations, loading crane, and an elevated maintenance platform using existing deck, railing and ladder presentation. No decorative catwalk meshes obstruct the deck.
 - The miniature decorative building is absent. Walls, cargo and machinery use blocked grid cells; low barriers retain existing traversable-but-not-stoppable low-cover semantics.
 
-The imported subset uses City Kit Industrial containers and Factory Kit machinery, conveyors and crane. Vendor GLBs are untouched. Placement accumulates **all ancestor transforms**, measures rotated bounds, applies **one uniform scale**, centers the model in its reserved envelope and aligns its lowest point to the floor. It does not stretch axes independently. The shell and roof are simple FuseFire-owned procedural geometry.
+The imported subset uses City Kit Industrial containers and Factory Kit machinery, conveyors and crane. Vendor GLBs are untouched. Shared `EnvironmentAssetPlacement` code accumulates **all ancestor transforms**, measures rotated bounds, applies **one uniform scale**, centers the model in its reserved envelope and aligns its lowest point to the floor. It does not stretch axes independently. The shell and roof are simple FuseFire-owned procedural geometry.
 
 The screenshot helper stages one MIRA visual at the loading entrance for scale comparison; it is not an added combatant or a gameplay change.
 
@@ -35,7 +35,7 @@ This is focus-based visibility, not a rule that globally hides a building whenev
 
 A persistent **VIEW** panel shows the inspected level and provides **Ground / Walkway / Roof** buttons. The existing **Alt + wheel** picker also cycles roof, maintenance deck and ground where their collider surfaces overlap under the cursor. On this map, the camera follows that inspection choice and destinations prefer the inspected floor, so hidden roof collision cannot silently steal an interior click. Inspection is a height ceiling: if no eligible lower tile exists, return no destination instead of falling back upward. Higher-level unit clicks are filtered too. Explicit Roof inspection permits rooftop picking, but AP, path reachability and action legality remain owned by the action service. Selecting a different actor or moving the actor clears the manual override; a selected rooftop actor selects rooftop height automatically. Other map presets retain their previous picker behavior.
 
-The panel is deliberately limited to the three authored warehouse heights. General multi-building floor controls and visual layer filtering for all units remain future work. No full floor-management framework was added.
+The panel derives its buttons from authoritative walkable elevations and uses optional `MapData` labels (`Ground`, `Walkway`, `Roof` here). General multi-building membership and visual layer filtering for all units remain future work. No full floor-management framework was added.
 
 ### Local XCOM 2 SDK evidence
 
