@@ -16,7 +16,8 @@ func _init() -> void:
 	result.decision_records = [{"actor": "AllyUnit1", "action": "Move", "destination": [12, 0, 8]}]
 	result.decision_count = result.decision_records.size()
 	result.validation_errors = ["Synthetic validation detail"]
-	var directory := "user://ai_sim_failure_report_smoke"
+	var test_output := OS.get_environment("FUSEFIRE_TEST_OUTPUT_DIR")
+	var directory := test_output.path_join("ai_sim_failure_report_smoke") if not test_output.is_empty() else "user://ai_sim_failure_report_smoke"
 	var path: String = FailureReporter.save(result, directory)
 	var failures := 0
 	if path.is_empty() or not FileAccess.file_exists(path):

@@ -61,6 +61,14 @@ All combatant Beans currently use a shared 10-tile attack range to make cover an
 With the Godot console executable on your PATH:
 
 ```powershell
+.\tools\run_tests.ps1 smoke
+.\tools\run_tests.ps1 subsystem -Subsystem combat
+.\tools\run_tests.ps1 full
+```
+
+The Project Ironclad runner provides fast, subsystem, and broad tiers with per-test logs and correct failure propagation. See `docs/quality/project-ironclad.md`. Individual tests can still be run directly:
+
+```powershell
 godot_console --headless --path . --editor --quit
 godot_console --headless --path . --script res://tests/battle_smoke.gd
 godot_console --headless --path . --script res://tests/match_setup_smoke.gd

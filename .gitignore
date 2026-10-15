@@ -9,3 +9,6 @@
 # Local proprietary reference exports used for Operation XCOM research.
 # Notes and original FuseFire experiments belong in Git; extracted assets do not.
 /research/xcom-local/
+
+# Local Project Ironclad output.
+/artifacts/test-results/
