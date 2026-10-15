@@ -6,15 +6,34 @@ Goal 2.1 establishes a visual calibration workflow for the four retained Kenney 
 
 Open `res://tools/asset_lab/asset_lab.tscn` in Godot and run the current scene (**F6**).
 
-- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. A leading `*` marks one of the 14 curated profiles.
+- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. A leading `*` marks one of the 14 assets with additional orientation/anchor metadata.
+- The review selector shows all, reviewed, or unreviewed assets. **Next unreviewed asset** advances within the active family and search.
 - Right-drag orbits; the mouse wheel zooms; **F** frames the current model or assembly.
 - Uniform scale never stretches one axis independently. Yaw rotates around Godot's up axis.
-- Every Kenney asset initializes and resets to a developer-selected family scale: **9.0** for City Kit architecture and infrastructure, **5.0** for selected human-scale street furniture, and **1.0** for Factory Kit and Modular Space Kit assets authored at useful native dimensions.
+- The information panel reports the semantic calibration category and active source: `default`, `category`, or `asset override`.
 - Floor center aligns the lowest mesh point and centers X/Z. Source origin preserves an authored modular pivot. Top center puts a thin road or floor surface at the requested height.
 - Anchor X/Z use half-cell increments. The neighbor control exposes pitch and seam alignment.
 - Yellow lines show complete imported hierarchy bounds. Red, green and blue lines show +X, +Y and +Z at the placement anchor.
 - The MIRA reference is the actual runtime visual and measures approximately 1.60 world units tall after it initializes.
 - **Copy current calibration JSON** copies the inspected visual values. It deliberately records `tactical_occupancy: not authored`.
+
+## Saving calibration work
+
+Persistent developer choices live in the human-readable project file `res://tools/asset_lab/asset_calibrations.json`. The laboratory writes only this file through explicit controls; original GLBs, native bounds, gameplay geometry and `MapData` are untouched.
+
+1. Select an asset and adjust scale, yaw, anchor and offsets.
+2. The status line changes to **UNSAVED CHANGES** when the viewport differs from the resolved saved values.
+3. **Save selected asset override** records those four visual properties for that asset.
+4. Toggle **Reviewed** when inspection is complete, then use **Next unreviewed asset**.
+5. **Reset to inherited preset** removes the selected asset override and restores its category or general default. It does not erase review state.
+6. Edit **Category preset scale** and explicitly save it to update every asset in the category that lacks an individual override.
+7. **Reload saved calibrations** discards unsaved viewport edits and rereads the project file.
+
+The general fallback is currently 1.0. Resolution is always:
+
+`asset override > category preset > general fallback`
+
+The checked-in initial category decisions are based on developer inspection:
 
 The four assembly views exercise road and paving seams, a wall with a wide entrance, loading machinery, and Space Kit floor/wall alignment. They are calibration fixtures, not gameplay modules.
 
@@ -33,13 +52,15 @@ One tactical cell equals one Godot world unit. Imported scenes are Y-up and rota
 
 The catalog applies these deterministic tiers to all 315 assets:
 
-| Asset family | Count | Scale | Rationale |
+| Calibration category | Scale | Rationale |
 | --- | ---: | ---: | --- |
-| City Kit Industrial | 37 | 9.0 | Buildings, containers, chimneys, tanks, solar panels, water tower and windmills share the pack's miniature convention. |
-| City Kit Roads infrastructure | 90 | 9.0 | Roads, paving, poles, road lights, signs, bridge pieces and traffic lights align with the City Kit convention. |
-| City Kit Roads street furniture | 5 | 5.0 | Construction barrier, cone, fence, light and dumpster read at human scale beside a MIRA. |
-| Factory Kit | 143 | 1.0 | Structural bays, doors and machinery are already authored in useful world-sized units; 9× or 10× makes them monumental. |
-| Modular Space Kit | 40 | 1.0 | Four-unit rooms and walls already form a coherent native-scale construction grammar. |
+| Buildings, containers, chimneys, tanks, solar panels | 9.0 | Explicit visual preferences from hands-on inspection. |
+| Electricity infrastructure and road lights | 9.0 | Read correctly beside the runtime MIRA. |
+| Roads/paving and signs/signals | 9.0 | Preserve the current connected City Kit assembly baseline. |
+| Construction fences and dumpsters | 5.0 | Read as human-scale street furniture. |
+| Other construction equipment | 5.0 | Initial grouped baseline; remains unreviewed until inspected. |
+| Industrial remainder | 9.0 | Initial baseline; large structures remain unreviewed and should receive overrides when necessary. |
+| Factory, Space and unknown categories | fallback 1.0 | Their native units are already useful, and uncertain assets are left for explicit review. |
 
 Fit-to-envelope remains appropriate for a deliberately authored runtime prop reservation, such as the warehouse containers, but changing laboratory calibration does not rescale those existing warehouse assets.
 
@@ -78,6 +99,6 @@ These dimensions come from Godot's imported mesh hierarchy, including descendant
 
 ## Boundaries and Goal 2.2 requirements
 
-The 301 unstarred assets remain browsable but unverified. Forward direction is visual and family-specific; filenames and AABBs do not prove entrances or connectors. Decorative details, openings and sparse machinery require authored tactical meaning.
+Assets begin unreviewed regardless of whether they inherit a category preset. A category value is a productive starting point, not proof that every member was visually approved. Forward direction is visual and family-specific; filenames and AABBs do not prove entrances or connectors. Decorative details, openings and sparse machinery require authored tactical meaning.
 
 Goal 2.2 should define its first real module records from the verified road/paving and Factory entrance assemblies. A module needs an authoritative cell footprint separate from its visual envelope, allowed quarter-turn rotations, explicit connection points, clearance, presentation placements and suitability tags. Door and road connectors should be authored; bounds should validate clearance and seams rather than generate gameplay state.

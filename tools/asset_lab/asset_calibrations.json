@@ -1,0 +1,21 @@
+{
+	"asset_overrides": {},
+	"category_presets": {
+		"buildings": { "scale": 9.0 },
+		"chimneys": { "scale": 9.0 },
+		"construction_equipment": { "scale": 5.0 },
+		"construction_fences": { "scale": 5.0 },
+		"dumpsters": { "scale": 5.0 },
+		"electricity_infrastructure": { "scale": 9.0 },
+		"industrial_other": { "scale": 9.0 },
+		"road_lights": { "scale": 9.0 },
+		"roads_and_paving": { "scale": 9.0 },
+		"shipping_containers": { "scale": 9.0 },
+		"signs_and_signals": { "scale": 9.0 },
+		"solar_panels": { "scale": 9.0 },
+		"water_tanks": { "scale": 9.0 }
+	},
+	"fallback": { "scale": 1.0 },
+	"reviewed": [],
+	"version": 1
+}

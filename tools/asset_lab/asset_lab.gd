@@ -2,6 +2,7 @@ extends Control
 ## Standalone presentation sandbox; no battle, grid singleton, or combat state.
 const Catalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
+@export_file("*.json") var calibration_path := Catalog.DATA_PATH
 var world: Node3D
 var content: Node3D
 var overlays: Node3D
@@ -10,6 +11,7 @@ var camera: Camera3D
 var asset_list: ItemList
 var search: LineEdit
 var family_filter: OptionButton
+var review_filter: OptionButton
 var info: Label
 var mode: OptionButton
 var anchor: OptionButton
@@ -34,8 +36,17 @@ var native_bounds := AABB()
 var comparison: Node3D
 var copy_button: Button
 var reset_button: Button
+var save_button: Button
+var reviewed_toggle: CheckBox
+var category_label: Label
+var category_scale: SpinBox
+var fallback_scale: SpinBox
+var save_status: Label
+var calibration_data: Dictionary
+var write_controls: Array[Control] = []
 
 func _ready() -> void:
+	calibration_data = Catalog.load_calibrations(calibration_path)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -59,6 +70,10 @@ func _ready() -> void:
 	for label in ["City Kit Industrial", "City Kit Roads", "Factory Kit", "Modular Space Kit"]:
 		family_filter.add_item(label)
 	panel.add_child(family_filter)
+	review_filter = OptionButton.new()
+	for label in ["All review states", "Unreviewed only", "Reviewed only"]:
+		review_filter.add_item(label)
+	panel.add_child(review_filter)
 	search = LineEdit.new()
 	search.placeholder_text = "Search pack/model (all 315)"
 	panel.add_child(search)
@@ -67,6 +82,7 @@ func _ready() -> void:
 	panel.add_child(asset_list)
 	search.text_changed.connect(_filter)
 	family_filter.item_selected.connect(func(_i): _filter(search.text))
+	review_filter.item_selected.connect(func(_i): _filter(search.text))
 	asset_list.item_selected.connect(func(i): select_asset(asset_list.get_item_metadata(i)))
 	_filter("")
 	factor = _number(panel, "Uniform scale", 0.01, 50, 0.01, Catalog.DEFAULT_SCALE)
@@ -91,6 +107,48 @@ func _ready() -> void:
 	copy_button.text = "Copy current calibration JSON"
 	copy_button.pressed.connect(func(): DisplayServer.clipboard_set(JSON.stringify(calibration_record(), "\t")))
 	panel.add_child(copy_button)
+	save_button = Button.new()
+	save_button.text = "Save selected asset override"
+	save_button.pressed.connect(_save_override)
+	panel.add_child(save_button)
+	write_controls.append(save_button)
+	var clear_button := Button.new()
+	clear_button.text = "Reset to inherited preset"
+	clear_button.pressed.connect(_clear_override)
+	panel.add_child(clear_button)
+	write_controls.append(clear_button)
+	reviewed_toggle = CheckBox.new()
+	reviewed_toggle.text = "Reviewed"
+	reviewed_toggle.toggled.connect(_set_reviewed)
+	panel.add_child(reviewed_toggle)
+	write_controls.append(reviewed_toggle)
+	var next_button := Button.new()
+	next_button.text = "Next unreviewed asset"
+	next_button.pressed.connect(_next_unreviewed)
+	panel.add_child(next_button)
+	category_label = Label.new()
+	panel.add_child(category_label)
+	category_scale = _number(panel, "Category preset scale", 0.01, 50, 0.01, 1)
+	write_controls.append(category_scale)
+	var category_button := Button.new()
+	category_button.text = "Save category scale preset"
+	category_button.pressed.connect(_save_category_preset)
+	panel.add_child(category_button)
+	write_controls.append(category_button)
+	fallback_scale = _number(panel, "General fallback scale", 0.01, 50, 0.01, float(calibration_data.fallback.scale))
+	write_controls.append(fallback_scale)
+	var fallback_button := Button.new()
+	fallback_button.text = "Save general fallback"
+	fallback_button.pressed.connect(_save_fallback)
+	panel.add_child(fallback_button)
+	write_controls.append(fallback_button)
+	var reload_button := Button.new()
+	reload_button.text = "Reload saved calibrations"
+	reload_button.pressed.connect(_reload_calibrations)
+	panel.add_child(reload_button)
+	save_status = Label.new()
+	save_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(save_status)
 	info = Label.new()
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.custom_minimum_size.x = 335
@@ -161,7 +219,9 @@ func _filter(query: String) -> void:
 	ids = Catalog.all_ids()
 	var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
 	for id in ids:
-		if (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
+		var reviewed: bool = id in calibration_data.get("reviewed", [])
+		var review_matches: bool = review_filter.selected == 0 or (review_filter.selected == 1 and not reviewed) or (review_filter.selected == 2 and reviewed)
+		if review_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
 			var index := asset_list.add_item(("* " if Catalog.PROFILES.has(id) else "") + id)
 			asset_list.set_item_metadata(index, id)
 			asset_list.set_item_tooltip(index, id)
@@ -170,13 +230,19 @@ func select_asset(id: String) -> void:
 	changing = true
 	selected = id
 	mode.select(0)
-	var profile := Catalog.profile(id)
+	var profile := Catalog.profile(id, calibration_data)
 	factor.value = profile.scale
-	angle.value = 0
+	angle.value = profile.yaw_degrees
 	anchor.select(profile.anchor)
-	x_offset.value = 0
-	y_offset.value = -0.12 if id == "city_kit_roads/road-side" else 0
-	z_offset.value = 0
+	var position: Array = profile.anchor_position
+	x_offset.value = position[0]
+	y_offset.value = position[1]
+	z_offset.value = position[2]
+	var category: String = profile.calibration_category
+	category_label.text = "Category: " + category
+	category_scale.value = float(calibration_data.get("category_presets", {}).get(category, calibration_data.fallback).scale)
+	fallback_scale.value = float(calibration_data.fallback.scale)
+	reviewed_toggle.button_pressed = profile.reviewed
 	for i in asset_list.item_count:
 		if asset_list.get_item_metadata(i) == id:
 			asset_list.select(i)
@@ -196,6 +262,11 @@ func rebuild(frame := false) -> void:
 	anchor.disabled = mode.selected != 0
 	duplicate_piece.disabled = mode.selected != 0
 	copy_button.disabled = mode.selected != 0
+	for control in write_controls:
+		if control is BaseButton:
+			control.disabled = mode.selected != 0
+		elif control is SpinBox:
+			control.editable = mode.selected == 0
 	content = Node3D.new()
 	overlays = Node3D.new()
 	world.add_child(content)
@@ -207,8 +278,8 @@ func rebuild(frame := false) -> void:
 		current_bounds = piece.transform * native_bounds
 		if duplicate_piece.button_pressed:
 			Placement.instantiate_calibrated(content, Catalog.path_for(selected), at + Vector3(pitch.value, 0, 0), factor.value, deg_to_rad(angle.value), anchor.selected)
-		var p := Catalog.profile(selected)
-		info.text = "%s\n%s · family baseline %.1f×\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.category, Catalog.scale_for(selected), p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
+		var p := Catalog.profile(selected, calibration_data)
+		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
 		_axes(overlays, at, 0.65)
 	else:
 		_build_assembly(mode.selected)
@@ -227,33 +298,110 @@ func rebuild(frame := false) -> void:
 		# Adapter scene is parented at y=-1 under units; use floor-space origin here.
 		comparison.position = Vector3(current_bounds.end.x + 1.1, 0, current_bounds.get_center().z)
 		content.add_child(comparison)
-	info.text += "\nGrid = 1 world unit. Red +X / green +Y / blue +Z.\nRMB drag: orbit · wheel: zoom · F: frame.\n* = curated calibration; others unreviewed.\nCopy exports the individual asset settings only."
+	info.text += "\nGrid = 1 world unit. Red +X / green +Y / blue +Z.\nRMB drag: orbit · wheel: zoom · F: frame.\n* = additional orientation/anchor metadata; use the review filter for calibration progress.\nCopy exports the individual asset settings only."
 	if frame:
 		focus = current_bounds.get_center() + Vector3(0.7, 0, 0)
 		distance = maxf(7, current_bounds.size.length() * 1.35)
 	_update_camera()
+	_update_save_status()
 
 func _build_assembly(index: int) -> void:
 	match index:
 		1:
 			for x in [-9, 0, 9]:
-				Catalog.place(content, "city_kit_roads/road-side", Vector3(x, -0.18, 0))
-				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -11.79))
+				Catalog.place(content, "city_kit_roads/road-side", Vector3(x, -0.18, 0), 0, calibration_data)
+				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -11.79), 0, calibration_data)
 		2:
-			Catalog.place(content, "factory_kit/structure-doorway-wide", Vector3.ZERO)
+			Catalog.place(content, "factory_kit/structure-doorway-wide", Vector3.ZERO, 0, calibration_data)
 			for x in [-2.5, -1.5, 1.5, 2.5]:
-				Catalog.place(content, "factory_kit/structure-wall", Vector3(x, 0, 0))
+				Catalog.place(content, "factory_kit/structure-wall", Vector3(x, 0, 0), 0, calibration_data)
 		3:
-			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-6, 0, -2), PI / 2)
-			Catalog.place(content, "factory_kit/crane", Vector3(4, 0, -1))
-			Catalog.place(content, "factory_kit/machine", Vector3(-2, 0, 4))
+			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-6, 0, -2), PI / 2, calibration_data)
+			Catalog.place(content, "factory_kit/crane", Vector3(4, 0, -1), 0, calibration_data)
+			Catalog.place(content, "factory_kit/machine", Vector3(-2, 0, 4), 0, calibration_data)
 			for x in [1, 3]:
 				_box(content, Vector3(2, 0.4, 1), Vector3(x, 0.2, 4), Color("555e68"))
-				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4))
+				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4), 0, calibration_data)
 		4:
 			for x in [-2, 2]:
-				Catalog.place(content, "modular_space_kit/template-floor", Vector3(x, 0, 0))
-				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -2))
+				Catalog.place(content, "modular_space_kit/template-floor", Vector3(x, 0, 0), 0, calibration_data)
+				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -2), 0, calibration_data)
+
+func _override_record() -> Dictionary:
+	return {
+		"scale": factor.value,
+		"yaw_degrees": angle.value,
+		"anchor": anchor.selected,
+		"anchor_position": [x_offset.value, y_offset.value, z_offset.value]
+	}
+
+func _save_data(message: String) -> bool:
+	var error := Catalog.save_calibrations(calibration_data, calibration_path)
+	if error != OK:
+		save_status.text = "SAVE FAILED: %s" % error_string(error)
+		return false
+	save_status.text = message
+	return true
+
+func _save_override() -> void:
+	calibration_data.asset_overrides[selected] = _override_record()
+	if _save_data("Saved asset override for " + selected):
+		select_asset(selected)
+
+func _clear_override() -> void:
+	calibration_data.asset_overrides.erase(selected)
+	if _save_data("Reset to inherited preset for " + selected):
+		select_asset(selected)
+
+func _save_category_preset() -> void:
+	var category := Catalog.calibration_category(selected)
+	calibration_data.category_presets[category] = {"scale": category_scale.value}
+	if _save_data("Saved category preset: %s = %.2f" % [category, category_scale.value]):
+		select_asset(selected)
+
+func _save_fallback() -> void:
+	calibration_data.fallback = {"scale": fallback_scale.value}
+	if _save_data("Saved general fallback = %.2f" % fallback_scale.value):
+		select_asset(selected)
+
+func _set_reviewed(enabled: bool) -> void:
+	if changing:
+		return
+	var reviewed: Array = calibration_data.reviewed
+	if enabled and selected not in reviewed:
+		reviewed.append(selected)
+		reviewed.sort()
+	elif not enabled:
+		reviewed.erase(selected)
+	calibration_data.reviewed = reviewed
+	if _save_data(("Marked reviewed: " if enabled else "Marked unreviewed: ") + selected):
+		_filter(search.text)
+		_update_save_status()
+
+func _next_unreviewed() -> void:
+	var all := Catalog.all_ids()
+	var start := maxi(0, all.find(selected) + 1)
+	for offset in all.size():
+		var candidate: String = all[(start + offset) % all.size()]
+		var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
+		if candidate not in calibration_data.reviewed and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
+			select_asset(candidate)
+			return
+	save_status.text = "No unreviewed assets match the current family/search."
+
+func _reload_calibrations() -> void:
+	calibration_data = Catalog.load_calibrations(calibration_path)
+	_filter(search.text)
+	select_asset(selected)
+	save_status.text = "Reloaded " + calibration_path
+
+func _update_save_status() -> void:
+	if not is_instance_valid(save_status) or mode.selected != 0:
+		return
+	var p := Catalog.profile(selected, calibration_data)
+	var saved := {"scale": p.scale, "yaw_degrees": p.yaw_degrees, "anchor": p.anchor, "anchor_position": p.anchor_position}
+	var dirty := JSON.stringify(_override_record()) != JSON.stringify(saved)
+	save_status.text = "%s | %s | %s" % [p.calibration_source, "reviewed" if p.reviewed else "unreviewed", "UNSAVED CHANGES" if dirty else "saved/inherited"]
 
 func calibration_record() -> Dictionary:
 	return {"id": selected, "path": Catalog.path_for(selected), "scale": factor.value, "yaw_degrees": angle.value,

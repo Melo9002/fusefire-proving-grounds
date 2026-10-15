@@ -16,11 +16,12 @@ func run() -> void:
 	var parent := Node3D.new()
 	root.add_child(parent)
 	var records: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/asset_lab/native_bounds.json"))
+	var catalog_data := Catalog.load_calibrations()
 	check(Catalog.all_ids().size() == 315, "All four packs must be browsable")
 	var scale_counts := {1.0: 0, 5.0: 0, 9.0: 0}
 	for id in Catalog.all_ids():
-		var expected := Catalog.scale_for(id)
-		check(is_equal_approx(Catalog.profile(id).scale, expected), id + " uses its family scale")
+		var expected := Catalog.scale_for(id, catalog_data)
+		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, expected), id + " resolves its calibration")
 		check(scale_counts.has(expected), id + " uses a known calibration tier")
 		if scale_counts.has(expected):
 			scale_counts[expected] += 1
@@ -28,9 +29,17 @@ func run() -> void:
 	check(scale_counts[5.0] == 5, "Five human-scale street props use scale 5")
 	check(scale_counts[1.0] == 183, "Factory and Space assets retain native scale")
 	for id in ["city_kit_industrial/chimney-basic", "city_kit_industrial/chimney-large", "city_kit_industrial/chimney-medium", "city_kit_industrial/chimney-small"]:
-		check(is_equal_approx(Catalog.profile(id).scale, 9.0), id + " remains industrial scale 9")
-	for id in Catalog.STREET_FURNITURE:
-		check(is_equal_approx(Catalog.profile(id).scale, 5.0), id + " uses street-furniture scale 5")
+		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, 9.0), id + " remains industrial scale 9")
+	for id in ["city_kit_roads/construction-fence", "city_kit_roads/dumpster"]:
+		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, 5.0), id + " uses its observed scale 5 category")
+	var priority_data := Catalog.default_data()
+	priority_data.fallback.scale = 2.0
+	priority_data.category_presets.buildings.scale = 3.0
+	priority_data.asset_overrides["city_kit_industrial/building-a"] = {"scale": 4.0}
+	check(Catalog.profile("factory_kit/oopi", priority_data).scale == 2.0, "General fallback resolves")
+	check(Catalog.profile("city_kit_industrial/building-b", priority_data).scale == 3.0, "Category preset overrides fallback")
+	check(Catalog.profile("city_kit_industrial/building-a", priority_data).scale == 4.0, "Asset override wins resolution")
+	check(Catalog.profile("city_kit_industrial/building-a", priority_data).calibration_source == "asset override", "Resolution source reported")
 	check(records.size() == Catalog.PROFILES.size(), "Every curated asset has measured bounds")
 	for id in Catalog.PROFILES:
 		check(Catalog.PROFILES[id].has("anchor") and Catalog.PROFILES[id].has("category") and Catalog.PROFILES[id].has("orientation") and Catalog.PROFILES[id].has("note"), id + " metadata preserved")
@@ -52,7 +61,11 @@ func run() -> void:
 					check(absf(box.get_center().x - at.x) < 0.0001 and absf(box.get_center().z - at.z) < 0.0001, "Horizontal anchor")
 					check(absf((box.position.y if anchor == 0 else box.end.y) - at.y) < 0.0001, "Vertical anchor")
 				piece.free()
+	var persistence_path := "res://tests/_asset_calibration_test.json"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(persistence_path))
+	check(Catalog.save_calibrations(Catalog.default_data(), persistence_path) == OK, "Calibration fixture saved")
 	var lab = load("res://tools/asset_lab/asset_lab.tscn").instantiate()
+	lab.calibration_path = persistence_path
 	root.add_child(lab)
 	await process_frame
 	check(lab.asset_list.item_count == 315, "Empty search shows every asset")
@@ -82,8 +95,45 @@ func run() -> void:
 	check(is_equal_approx(lab.factor.value, 5.0), "Street furniture initializes at scale 5")
 	lab.select_asset("factory_kit/oopi")
 	check(is_equal_approx(lab.factor.value, 1.0), "Unreviewed Factory selection initializes at native scale")
+	lab.fallback_scale.value = 1.25
+	lab._save_fallback()
+	check(is_equal_approx(lab.factor.value, 1.25), "Edited fallback applies to uncategorized asset")
+	lab.select_asset("city_kit_industrial/building-a")
+	lab.factor.value = 7.25
+	lab.angle.value = 90
+	lab.x_offset.value = 0.5
+	check("UNSAVED CHANGES" in lab.save_status.text, "Unsaved edits are visible")
+	lab._save_override()
+	var persisted := Catalog.load_calibrations(persistence_path)
+	check(is_equal_approx(float(persisted.asset_overrides["city_kit_industrial/building-a"].scale), 7.25), "Asset override persists")
+	check(Catalog.profile("city_kit_industrial/building-a", persisted).yaw_degrees == 90, "Override rotation persists")
+	lab.reviewed_toggle.button_pressed = true
+	persisted = Catalog.load_calibrations(persistence_path)
+	check("city_kit_industrial/building-a" in persisted.reviewed, "Reviewed state persists")
+	lab.review_filter.select(2)
+	lab._filter("")
+	check(lab.asset_list.item_count == 1, "Reviewed-only filter")
+	lab.review_filter.select(1)
+	lab._filter("")
+	check(lab.asset_list.item_count == 314, "Unreviewed-only filter")
+	var reviewed_id: String = lab.selected
+	lab._next_unreviewed()
+	check(lab.selected != reviewed_id and lab.selected not in persisted.reviewed, "Next unreviewed navigation")
+	lab.review_filter.select(0)
+	lab._filter("")
+	lab.select_asset("city_kit_industrial/building-a")
+	lab._reload_calibrations()
+	check(is_equal_approx(lab.factor.value, 7.25), "Reload restores saved override")
+	lab._clear_override()
+	check(is_equal_approx(lab.factor.value, 9.0), "Reset removes override and restores category preset")
+	lab.select_asset("city_kit_roads/dumpster")
+	lab.category_scale.value = 6.0
+	lab._save_category_preset()
+	check(is_equal_approx(lab.factor.value, 6.0), "Edited category preset applies")
+	lab.fallback_scale.value = 1.0
+	lab._save_fallback()
 	lab.select_asset("factory_kit/machine")
-	check(is_equal_approx(lab.factor.value, 1.0), "Curated Factory selection initializes at native scale")
+	check(is_equal_approx(lab.factor.value, 1.0), "Curated Factory selection inherits restored fallback")
 	lab.angle.value = 90
 	check(absf(lab.current_bounds.size.x - 1.5) < 0.001, "UI rotation updates dimensions")
 	lab.x_offset.value = 2.5
@@ -123,6 +173,15 @@ func run() -> void:
 	check(Placement.mesh_bounds(hierarchy).size.is_equal_approx(Vector3.ONE * 2), "Nested transforms measured")
 	hierarchy.free()
 	lab.free()
+	var lab_reloaded = load("res://tools/asset_lab/asset_lab.tscn").instantiate()
+	lab_reloaded.calibration_path = persistence_path
+	root.add_child(lab_reloaded)
+	await process_frame
+	lab_reloaded.select_asset("city_kit_roads/dumpster")
+	check(is_equal_approx(lab_reloaded.factor.value, 6.0), "Category preset survives laboratory restart")
+	check("city_kit_industrial/building-a" in lab_reloaded.calibration_data.reviewed, "Review state survives laboratory restart")
+	lab_reloaded.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(persistence_path))
 	parent.free()
 	print("Asset calibration: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

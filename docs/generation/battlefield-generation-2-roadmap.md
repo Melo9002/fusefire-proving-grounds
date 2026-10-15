@@ -29,7 +29,7 @@ The installed Kenney library is a construction source, not a generator. The Indu
 
 - The Industrial Warehouse has coherent tactical geometry, a loading yard, cargo lanes, machinery, a raised walkway, a walkable roof and two vertical links. Its geometry and asset choices are fixed constants.
 - Roof cutaway uses one authored rectangular interior and roof volume. It is suitable for this building, but multiple overlapping buildings need explicit membership or separate cutaway volumes.
-- The Asset Laboratory browses all 315 GLBs and inspects bounds, pivots, scale, rotation, grid alignment, a runtime MIRA reference and neighbor seams. Fourteen representative assets have curated visual profiles and measured source bounds.
+- The Asset Laboratory browses all 315 GLBs and inspects bounds, pivots, scale, rotation, grid alignment, a runtime MIRA reference and neighbor seams. It now resolves a general fallback, semantic category presets and persistent per-asset overrides; review state supports progressive catalog calibration. Fourteen representative assets have additional orientation/anchor metadata and measured source bounds.
 - Existing generated buildings and refinery equipment are useful prototypes, but their layout and presentation descriptions are separate code paths.
 - Map quality measures cover, routes, openness, clusters, lanes and deployment exposure. It does not yet understand roads, entrances, parcel adjacency or vertical access quality.
 
@@ -61,7 +61,7 @@ The warehouse, imported assets, multilevel picking, cutaway behavior and replay 
 
 ### 2.1 — Asset Pack Integration & Calibration — demonstrated
 
-All 315 retained GLBs import, instantiate and are searchable in the standalone Asset Laboratory. Fourteen representatives across all packs have persisted source bounds, categories, uniform scales, anchor conventions and compatibility notes. Fixed-scale placement preserves authored pivots for connected families; fit-to-envelope remains available for standalone authored prop reservations. Rendered road, entrance, machinery and Space Kit assemblies verify seams and expose family-specific scale. Tactical footprints remain deliberately unauthored until Goal 2.2.
+All 315 retained GLBs import, instantiate and are searchable by pack and review state in the standalone Asset Laboratory. Project-local JSON persists category presets, per-asset scale/yaw/anchor/offset overrides and reviewed IDs using `asset override > category > fallback` resolution. Fourteen representatives retain additional source bounds, orientation, anchor conventions and compatibility notes. Rendered road, entrance, machinery and Space Kit assemblies verify seams and expose incompatible scales. Tactical footprints remain deliberately unauthored until Goal 2.2.
 
 ### 2.2 — Modular Environment Components — not started
 
@@ -85,7 +85,7 @@ Connectivity, spawn capacity, objectives, traversal integrity and broad tactical
 
 ### 2.7 — Designer Tools & Debug Views — partial (asset calibration demonstrated)
 
-F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds search, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews and JSON copy-out. Module connector and rejection overlays should arrive with 2.2–2.3.
+F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. Module connector and rejection overlays should arrive with 2.2–2.3.
 
 ### 2.8 — Integrated Battlefield Generation Release — not started
 
