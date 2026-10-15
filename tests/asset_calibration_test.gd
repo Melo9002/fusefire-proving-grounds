@@ -17,8 +17,23 @@ func run() -> void:
 	root.add_child(parent)
 	var records: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/asset_lab/native_bounds.json"))
 	check(Catalog.all_ids().size() == 315, "All four packs must be browsable")
+	var scale_counts := {1.0: 0, 5.0: 0, 9.0: 0}
+	for id in Catalog.all_ids():
+		var expected := Catalog.scale_for(id)
+		check(is_equal_approx(Catalog.profile(id).scale, expected), id + " uses its family scale")
+		check(scale_counts.has(expected), id + " uses a known calibration tier")
+		if scale_counts.has(expected):
+			scale_counts[expected] += 1
+	check(scale_counts[9.0] == 127, "City architecture and infrastructure use scale 9")
+	check(scale_counts[5.0] == 5, "Five human-scale street props use scale 5")
+	check(scale_counts[1.0] == 183, "Factory and Space assets retain native scale")
+	for id in ["city_kit_industrial/chimney-basic", "city_kit_industrial/chimney-large", "city_kit_industrial/chimney-medium", "city_kit_industrial/chimney-small"]:
+		check(is_equal_approx(Catalog.profile(id).scale, 9.0), id + " remains industrial scale 9")
+	for id in Catalog.STREET_FURNITURE:
+		check(is_equal_approx(Catalog.profile(id).scale, 5.0), id + " uses street-furniture scale 5")
 	check(records.size() == Catalog.PROFILES.size(), "Every curated asset has measured bounds")
 	for id in Catalog.PROFILES:
+		check(Catalog.PROFILES[id].has("anchor") and Catalog.PROFILES[id].has("category") and Catalog.PROFILES[id].has("orientation") and Catalog.PROFILES[id].has("note"), id + " metadata preserved")
 		check(not str(Catalog.PROFILES[id].orientation).is_empty(), id + " orientation is documented")
 		var instance = load(Catalog.path_for(id)).instantiate()
 		var native := Placement.mesh_bounds(instance)
@@ -41,9 +56,34 @@ func run() -> void:
 	root.add_child(lab)
 	await process_frame
 	check(lab.asset_list.item_count == 315, "Empty search shows every asset")
+	lab.family_filter.select(1)
+	lab._filter("")
+	check(lab.asset_list.item_count == 37, "Industrial family filter")
+	lab.family_filter.select(2)
+	lab._filter("")
+	check(lab.asset_list.item_count == 95, "Road family filter")
+	lab.family_filter.select(3)
+	lab._filter("")
+	check(lab.asset_list.item_count == 143, "Factory family filter")
+	lab.family_filter.select(4)
+	lab._filter("")
+	check(lab.asset_list.item_count == 40, "Space family filter")
+	lab.family_filter.select(0)
+	lab._filter("")
 	lab._filter("structure-doorway-wide")
 	check(lab.asset_list.item_count == 1, "Browser filter")
+	lab.select_asset("city_kit_industrial/chimney-large")
+	check(is_equal_approx(lab.factor.value, 9.0), "Industrial selection initializes at scale 9")
+	lab.factor.value = 3.25
+	lab.reset_button.pressed.emit()
+	check(is_equal_approx(lab.factor.value, 9.0), "Catalog reset restores family scale 9")
+	check(is_equal_approx(float(lab.calibration_record().scale), 9.0), "Calibration JSON exports family scale 9")
+	lab.select_asset("city_kit_roads/construction-fence")
+	check(is_equal_approx(lab.factor.value, 5.0), "Street furniture initializes at scale 5")
+	lab.select_asset("factory_kit/oopi")
+	check(is_equal_approx(lab.factor.value, 1.0), "Unreviewed Factory selection initializes at native scale")
 	lab.select_asset("factory_kit/machine")
+	check(is_equal_approx(lab.factor.value, 1.0), "Curated Factory selection initializes at native scale")
 	lab.angle.value = 90
 	check(absf(lab.current_bounds.size.x - 1.5) < 0.001, "UI rotation updates dimensions")
 	lab.x_offset.value = 2.5

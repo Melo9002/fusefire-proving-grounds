@@ -22,11 +22,24 @@ func run() -> void:
 		await RenderingServer.frame_post_draw
 		var error = root.get_texture().get_image().save_png(args[0].path_join("assembly-%d.png" % index))
 		assert(error == OK)
-	for id in ["city_kit_industrial/building-a", "city_kit_roads/road-straight", "factory_kit/structure-window", "modular_space_kit/corridor"]:
+	var inspected := [
+		"city_kit_industrial/building-c",
+		"city_kit_industrial/chimney-large",
+		"city_kit_industrial/shipping-container-a",
+		"city_kit_industrial/water-tower",
+		"city_kit_roads/construction-fence",
+		"city_kit_roads/dumpster",
+		"city_kit_roads/electricity-pole",
+		"city_kit_roads/light-curved",
+		"city_kit_roads/road-straight",
+		"factory_kit/structure-window",
+		"modular_space_kit/corridor",
+	]
+	for id in inspected:
 		lab.select_asset(id)
 		await process_frame
 		await RenderingServer.frame_post_draw
 		assert(root.get_texture().get_image().save_png(args[0].path_join(id.replace("/", "-") + ".png")) == OK)
 	print("MIRA ready bounds: ", lab.Placement.mesh_bounds(lab.comparison))
-	print("Asset lab captured 9 views")
+	print("Asset lab captured %d views" % (5 + inspected.size()))
 	quit()

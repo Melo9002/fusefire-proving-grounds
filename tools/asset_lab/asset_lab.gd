@@ -8,6 +8,8 @@ var overlays: Node3D
 var viewport: SubViewport
 var camera: Camera3D
 var asset_list: ItemList
+var search: LineEdit
+var family_filter: OptionButton
 var info: Label
 var mode: OptionButton
 var anchor: OptionButton
@@ -31,6 +33,7 @@ var current_bounds := AABB()
 var native_bounds := AABB()
 var comparison: Node3D
 var copy_button: Button
+var reset_button: Button
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -51,16 +54,22 @@ func _ready() -> void:
 		mode.add_item(label)
 	panel.add_child(mode)
 	mode.item_selected.connect(func(_i): rebuild(true))
-	var search := LineEdit.new()
+	family_filter = OptionButton.new()
+	family_filter.add_item("All asset families")
+	for label in ["City Kit Industrial", "City Kit Roads", "Factory Kit", "Modular Space Kit"]:
+		family_filter.add_item(label)
+	panel.add_child(family_filter)
+	search = LineEdit.new()
 	search.placeholder_text = "Search pack/model (all 315)"
 	panel.add_child(search)
 	asset_list = ItemList.new()
 	asset_list.custom_minimum_size.y = 170
 	panel.add_child(asset_list)
 	search.text_changed.connect(_filter)
+	family_filter.item_selected.connect(func(_i): _filter(search.text))
 	asset_list.item_selected.connect(func(i): select_asset(asset_list.get_item_metadata(i)))
 	_filter("")
-	factor = _number(panel, "Uniform scale", 0.01, 20, 0.01, 1)
+	factor = _number(panel, "Uniform scale", 0.01, 50, 0.01, Catalog.DEFAULT_SCALE)
 	angle = _number(panel, "Yaw degrees (Y-up)", -360, 360, 90, 0)
 	anchor = OptionButton.new()
 	for label in ["Anchor: floor center", "Anchor: source origin", "Anchor: top center"]:
@@ -74,10 +83,10 @@ func _ready() -> void:
 	duplicate_piece = _check(panel, "Neighbor / seam comparison", false)
 	bounds_toggle = _check(panel, "Bounds + pivot axes + anchor", true)
 	mira_toggle = _check(panel, "MIRA reference (runtime visual)", true)
-	var reset := Button.new()
-	reset.text = "Reset to catalog calibration / frame"
-	reset.pressed.connect(func(): select_asset(selected))
-	panel.add_child(reset)
+	reset_button = Button.new()
+	reset_button.text = "Reset to catalog calibration / frame"
+	reset_button.pressed.connect(func(): select_asset(selected))
+	panel.add_child(reset_button)
 	copy_button = Button.new()
 	copy_button.text = "Copy current calibration JSON"
 	copy_button.pressed.connect(func(): DisplayServer.clipboard_set(JSON.stringify(calibration_record(), "\t")))
@@ -150,8 +159,9 @@ func _check(panel: VBoxContainer, label: String, initial: bool) -> CheckBox:
 func _filter(query: String) -> void:
 	asset_list.clear()
 	ids = Catalog.all_ids()
+	var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
 	for id in ids:
-		if query.is_empty() or query.to_lower() in id.to_lower():
+		if (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
 			var index := asset_list.add_item(("* " if Catalog.PROFILES.has(id) else "") + id)
 			asset_list.set_item_metadata(index, id)
 			asset_list.set_item_tooltip(index, id)
@@ -198,11 +208,11 @@ func rebuild(frame := false) -> void:
 		if duplicate_piece.button_pressed:
 			Placement.instantiate_calibrated(content, Catalog.path_for(selected), at + Vector3(pitch.value, 0, 0), factor.value, deg_to_rad(angle.value), anchor.selected)
 		var p := Catalog.profile(selected)
-		info.text = "%s\n%s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.category, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
+		info.text = "%s\n%s · family baseline %.1f×\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.category, Catalog.scale_for(selected), p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
 		_axes(overlays, at, 0.65)
 	else:
 		_build_assembly(mode.selected)
-		info.text = "Assembly %d — fixed family scales, authored origins.\nBounds are visual envelopes, not solids.\nIndividual controls apply only in asset mode.\n" % mode.selected
+		info.text = "Assembly %d — family calibration policy, authored origins.\nBounds are visual envelopes, not solids.\nIndividual controls apply only in asset mode.\n" % mode.selected
 	current_bounds = Placement.mesh_bounds(content)
 	if bounds_toggle.button_pressed:
 		for piece in content.get_children():
@@ -226,24 +236,24 @@ func rebuild(frame := false) -> void:
 func _build_assembly(index: int) -> void:
 	match index:
 		1:
-			for x in [-6, 0, 6]:
-				Catalog.place(content, "city_kit_roads/road-side", Vector3(x, -0.12, 0))
-				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -7.86))
+			for x in [-9, 0, 9]:
+				Catalog.place(content, "city_kit_roads/road-side", Vector3(x, -0.18, 0))
+				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -11.79))
 		2:
 			Catalog.place(content, "factory_kit/structure-doorway-wide", Vector3.ZERO)
-			for x in [-3.75, -2.25, 2.25, 3.75]:
+			for x in [-2.5, -1.5, 1.5, 2.5]:
 				Catalog.place(content, "factory_kit/structure-wall", Vector3(x, 0, 0))
 		3:
-			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-4, 0, 0), PI / 2)
-			Catalog.place(content, "factory_kit/crane", Vector3(3.5, 0, 0))
-			Catalog.place(content, "factory_kit/machine", Vector3(-1, 0, 4))
+			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-6, 0, -2), PI / 2)
+			Catalog.place(content, "factory_kit/crane", Vector3(4, 0, -1))
+			Catalog.place(content, "factory_kit/machine", Vector3(-2, 0, 4))
 			for x in [1, 3]:
 				_box(content, Vector3(2, 0.4, 1), Vector3(x, 0.2, 4), Color("555e68"))
 				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4))
 		4:
 			for x in [-2, 2]:
 				Catalog.place(content, "modular_space_kit/template-floor", Vector3(x, 0, 0))
-				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -1))
+				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -2))
 
 func calibration_record() -> Dictionary:
 	return {"id": selected, "path": Catalog.path_for(selected), "scale": factor.value, "yaw_degrees": angle.value,
