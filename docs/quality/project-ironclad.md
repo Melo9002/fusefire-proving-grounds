@@ -4,7 +4,7 @@ Project Ironclad is FuseFire's lightweight regression-testing practice. Its purp
 
 ## Current infrastructure
 
-The repository contains 92 top-level GDScript test executables under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. Godot's process exit code is therefore the authoritative suite result.
+The repository contains 93 top-level GDScript test executables under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. Godot's process exit code is therefore the authoritative suite result.
 
 | Area | Existing coverage |
 | --- | --- |
@@ -13,7 +13,7 @@ The repository contains 92 top-level GDScript test executables under `tests/`. M
 | Movement | Pathfinding, diagonal movement, traversal links, elevation selection, vaulting and locomotion |
 | Missions | Objective state, terminals, rescue/extraction, evacuation, survival and placement |
 | AI | Difficulty, commanders, position/target scoring, abilities, stalemate recovery and deterministic match simulation |
-| Generation | Map data/validation, fixed-seed generation, multi-seed batches, buildings, elevation, traversal, mission placement and quality metrics |
+| Generation | Map data/validation, fixed-seed generation, modular components, multi-seed batches, buildings, elevation, traversal, mission placement and quality metrics |
 | Replay | Schema compatibility, recording/playback, actor continuity, rescue/departure flows and state determinism |
 | Assets/presentation | Imports, calibration precedence/persistence, camera behavior, HUD/overlays and visual adapters |
 

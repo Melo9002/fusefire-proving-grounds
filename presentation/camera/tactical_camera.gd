@@ -47,8 +47,8 @@ var _inspected_floor := Vector3.INF
 var _inspection_actor: TacticalUnit
 var _inspection_actor_cell := Vector3i.ZERO
 
-func inspect_floor(position: Vector3) -> void:
-	_inspected_floor = position
+func inspect_floor(floor_position: Vector3) -> void:
+	_inspected_floor = floor_position
 	_inspection_actor = turn_manager.active_unit if turn_manager else null
 	_inspection_actor_cell = _inspection_actor.grid_position if is_instance_valid(_inspection_actor) else Vector3i.ZERO
 

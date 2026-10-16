@@ -52,7 +52,7 @@ var _replay_configuration: Dictionary = {}
 var _replay_recorder
 var action_camera_director: Node
 
-func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false, player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT, enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT) -> void:
+func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false, selected_player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT, selected_enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT) -> void:
 	var config := BattleConfigurationData.new()
 	config.player_count = player_count
 	config.enemy_count = enemy_count
@@ -64,8 +64,8 @@ func configure(player_count: int, enemy_count: int, generate_map: bool = false, 
 	config.vip_behavior = behavior
 	config.mission = selected_mission
 	config.difficulty = selected_difficulty
-	config.player_commander = player_commander
-	config.enemy_commander = enemy_commander
+	config.player_commander = selected_player_commander
+	config.enemy_commander = selected_enemy_commander
 	config.refinery = refinery
 	configure_battle(config)
 

@@ -46,14 +46,14 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 	_box(site, _world(data, Vector2(19, 5)) + Vector3.UP * 2.95 * cell_size, Vector3(3, 0.3, 0.86) * cell_size, STEEL)
 	_box(site, _world(data, Vector2(11, 11.5)) + Vector3.UP * 2.95 * cell_size, Vector3(0.86, 0.3, 2) * cell_size, STEEL)
 	_box(site, _world(data, Vector2(28, 12.5)) + Vector3.UP * 2.95 * cell_size, Vector3(0.86, 0.3, 2) * cell_size, STEEL)
-	var sign := Label3D.new()
-	sign.text = "DISPATCH / 01"
-	sign.font_size = 48
-	sign.pixel_size = 0.004 * cell_size
-	sign.outline_size = 0
-	sign.modulate = STEEL
-	sign.position = _world(data, Vector2(18.5, 17.44)) + Vector3.UP * 2.95 * cell_size
-	site.add_child(sign)
+	var dispatch_label := Label3D.new()
+	dispatch_label.text = "DISPATCH / 01"
+	dispatch_label.font_size = 48
+	dispatch_label.pixel_size = 0.004 * cell_size
+	dispatch_label.outline_size = 0
+	dispatch_label.modulate = STEEL
+	dispatch_label.position = _world(data, Vector2(18.5, 17.44)) + Vector3.UP * 2.95 * cell_size
+	site.add_child(dispatch_label)
 	for index in Layout.CONTAINER_SPECS.size():
 		var footprint: Rect2i = Layout.CONTAINER_SPECS[index]
 		var container := parent.get_node_or_null("Container_%d_%d" % [footprint.position.x, footprint.position.y]) as Node3D

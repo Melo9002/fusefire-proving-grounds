@@ -35,11 +35,9 @@ The installed Kenney library is a construction source, not a generator. The Indu
 
 ### Missing
 
-- Typed module definitions with footprints, connectors, compatibility tags and presentation references.
 - Plot/parcel or equivalent layout grammar for roads, lots, buildings and open spaces.
-- A tactical module definition that links calibrated presentation assets to authoritative footprints and connectors.
 - Mission requirements that reserve layout space before assembly.
-- Validation for module seams, entrances, road connectivity and alternate vertical routes.
+- General validation for open module seams, complete road networks and alternate vertical routes.
 
 ## Reference findings from the local XCOM 2 SDK
 
@@ -63,13 +61,13 @@ The warehouse, imported assets, multilevel picking, cutaway behavior and replay 
 
 All 315 retained GLBs import, instantiate and are searchable by pack and review state in the standalone Asset Laboratory. Project-local JSON persists category presets, per-asset scale/yaw/anchor/offset overrides and reviewed IDs using `asset override > category > fallback` resolution. Fourteen representatives retain additional source bounds, orientation, anchor conventions and compatibility notes. Rendered road, entrance, machinery and Space Kit assemblies verify seams and expose incompatible scales. Tactical footprints remain deliberately unauthored until Goal 2.2.
 
-### 2.2 — Modular Environment Components — not started
+### 2.2 — Modular Environment Components — demonstrated (first industrial family)
 
-Define the smallest module resource from two real examples, likely a warehouse bay and a loading-yard or road segment. It should pair authoritative footprint operations with presentation references, entrances/connectors, allowed rotations, elevation surfaces and suitability tags. Keep `MapData` as the committed result.
+The first lightweight component records now separate logical footprints, clearances, tactical cell effects, rotation-aware semantic connectors and visual references. Eight industrial definitions cover Factory walls/entrance/interior, road and paving surfaces, and cargo. A deterministic opt-in frontage sample validates overlap, doorway access and authoritative cell translation, then presents its Kenney meshes independently. `MapData` remains the committed tactical result. Suitability tags and elevated module surfaces remain future extensions.
 
-### 2.3 — Coherent Layout Assembly — not started
+### 2.3 — Coherent Layout Assembly — partial
 
-Assemble plots from compatible modules using seeded ordering. Begin with one industrial grammar: road edge → loading yard → warehouse entrance → interior/service space. Prove rotation, connection matching, clearance and deterministic rejection diagnostics before adding city districts.
+A constrained industrial grammar now assembles road edge → paving/loading frontage → warehouse entrance → interior/service space, with seeded cargo variants. Rotation, connection matching, clearance, overlap rejection and deterministic output are covered. The next step is a bounded placement/search grammar with useful rejection diagnostics, followed by plots and parcels.
 
 ### 2.4 — Verticality & Geometry Occlusion — partial
 
@@ -83,9 +81,9 @@ Missions currently place zones after graph construction and validate reachabilit
 
 Connectivity, spawn capacity, objectives, traversal integrity and broad tactical metrics exist. Extend them when modules exist so checks are grounded in real metadata: connector closure, entrance access, road continuity, vertical-route redundancy and mission-specific approach quality.
 
-### 2.7 — Designer Tools & Debug Views — partial (asset calibration demonstrated)
+### 2.7 — Designer Tools & Debug Views — partial (asset and module inspection demonstrated)
 
-F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. Module connector and rejection overlays should arrive with 2.2–2.3.
+F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The 2.2 standalone preview regenerates the modular industrial sample by seed. Connector and rejection overlays remain for later assembly tooling.
 
 ### 2.8 — Integrated Battlefield Generation Release — not started
 
@@ -93,7 +91,7 @@ Requires representative authored, procedural and hybrid presets using the shared
 
 ## Next implementation slice
 
-Define two small 2.2 module records from the now-verified road/paving and Factory entrance assemblies. Keep their authoritative footprints, clearance and connectors separate from the visual calibration profile. Then replace a fixed portion of the warehouse with seed-selected compatible variants while preserving the same authoritative entrances and mission reachability.
+Extend the demonstrated industrial frontage into a bounded 2.3 placement grammar. Generate two or three connected frontage shapes from the existing catalog, report rejected placements clearly, and reserve stable entrance/access regions for later mission-aware placement. Keep the path opt-in until multi-seed connectivity and tactical quality checks are established.
 
 ## Constraints and deferred ideas
 

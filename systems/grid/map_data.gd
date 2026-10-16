@@ -15,6 +15,10 @@ var source_kind: String = "authored"
 var generation_seed: int = 0
 var map_size := Vector2i.ZERO
 var transport_footprints: Dictionary = {}
+## Opt-in modular-generation metadata. Placements describe presentation and
+## authored component identity; MapCellData remains tactical authority.
+var environment_modules: Array[EnvironmentModulePlacement] = []
+var environment_module_seed: int = 0
 ## Optional presentation names keyed by authoritative grid elevation. Missing
 ## names fall back to Ground / Level N in generic floor controls.
 var elevation_labels: Dictionary[int, String] = {0: "Ground"}
@@ -122,6 +126,8 @@ func get_inspectable_elevation_levels() -> Array[int]:
 
 func clear() -> void:
 	transport_footprints.clear()
+	environment_modules.clear()
+	environment_module_seed = 0
 	containers.clear()
 	buildings.clear()
 	platforms.clear()

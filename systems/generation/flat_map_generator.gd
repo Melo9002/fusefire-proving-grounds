@@ -99,6 +99,14 @@ static func generate_with_cover(width: int, depth: int, cell_size: float, map_se
 	map_data.rebuild_los_index()
 	return map_data
 
+## Goal 2.2 opt-in vertical slice. Existing generation modes do not call this.
+static func generate_modular_industrial_sample(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5) -> MapData:
+	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
+	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed)
+	if not layout.errors.is_empty():
+		push_error("Modular industrial layout failed: %s" % "; ".join(layout.errors))
+	return map_data
+
 static func _formation_templates() -> Array[Array]:
 	return [
 		[[Vector2i(0, 0), MapCellData.CoverType.LOW], [Vector2i(1, 0), MapCellData.CoverType.FULL], [Vector2i(2, 0), MapCellData.CoverType.LOW]],
