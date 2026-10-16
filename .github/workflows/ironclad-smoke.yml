@@ -1,0 +1,55 @@
+name: Ironclad smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned Godot
+        id: godot
+        shell: pwsh
+        run: |
+          $version = "4.7.2-stable"
+          $archive = Join-Path $env:RUNNER_TEMP "Godot_v$version`_win64.exe.zip"
+          $install = Join-Path $env:RUNNER_TEMP "godot-$version"
+          $url = "https://github.com/godotengine/godot-builds/releases/download/$version/Godot_v$version`_win64.exe.zip"
+          $expectedSha256 = "731980F9608D61333E5BAF54A2EF17210ACC7A538446C0CB9969F002ACA1E953"
+
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualSha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "Godot archive checksum mismatch. Expected $expectedSha256, got $actualSha256."
+          }
+
+          Expand-Archive -LiteralPath $archive -DestinationPath $install
+          $executable = (Get-ChildItem -LiteralPath $install -Filter "Godot_v$version`_win64.exe" -File -Recurse -ErrorAction Stop).FullName
+          if (-not $executable) {
+            throw "Pinned Godot executable was not present in the official archive."
+          }
+          "executable=$executable" >> $env:GITHUB_OUTPUT
+
+      - name: Run Ironclad smoke tier
+        shell: pwsh
+        run: .\tools\run_tests.ps1 smoke -Godot "${{ steps.godot.outputs.executable }}" -LogDirectory artifacts/test-results
+
+      - name: Upload smoke failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ironclad-smoke-logs-${{ github.run_id }}
+          path: artifacts/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -105,4 +105,12 @@ Run long scripts directly when their subsystem changes. Run capture scripts with
 - Individual GDScript tests report their own internal checks differently, so Ironclad reports honest suite counts rather than inventing assertion totals.
 - The runner does not impose per-test timeouts yet; long deterministic scenarios remain visible through per-suite timing.
 
-The next useful milestones are CI execution of smoke, optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
+After the first hosted smoke run, the next useful milestones are optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
+
+The maintained behavior-level classification and prioritized coverage gaps are documented in [Ironclad Test Contract Inventory](test-contract-inventory.md).
+
+## GitHub smoke automation
+
+`.github/workflows/ironclad-smoke.yml` runs the existing smoke tier on pushes and pull requests targeting `main`. The Windows job downloads the official Godot 4.7.2 stable archive from `godotengine/godot-builds`, verifies its pinned SHA-256, and passes the extracted executable directly to this runner. It has read-only repository permissions and uploads only `artifacts/test-results/` when the job fails.
+
+This workflow has been validated locally for structure, paths, engine version and runner behavior. Its first GitHub-hosted execution still requires a future push or pull request.
