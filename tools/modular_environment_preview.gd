@@ -29,15 +29,15 @@ func _rebuild() -> void:
 	content.name = "PreviewContent"
 	add_child(content)
 	var data := FlatMapGenerator.generate_modular_industrial_sample(40, 30, 1.0, generation_seed)
-	var floor := MeshInstance3D.new()
+	var ground_mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(40, 30)
-	floor.mesh = plane
+	ground_mesh.mesh = plane
 	var floor_material := StandardMaterial3D.new()
 	floor_material.albedo_color = Color("303a3f")
 	floor_material.roughness = 1.0
-	floor.material_override = floor_material
-	content.add_child(floor)
+	ground_mesh.material_override = floor_material
+	content.add_child(ground_mesh)
 	GeneratedTerrainPresenter.build(data, content, 1.0)
 	var graph := Pathfinder.new()
 	MapGraphBuilder.build(data, graph)
