@@ -1,6 +1,7 @@
 extends Node3D
 
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
+const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 
 @export var generation_seed := 2202
 var content: Node3D
@@ -8,6 +9,7 @@ var status: Label
 var seed_input: SpinBox
 var camera: Camera3D
 var orbit: RefCounted
+var inspection_target := "whole map"
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -22,6 +24,16 @@ func _shortcut_input(event: InputEvent) -> void:
 			_rebuild()
 		elif event.keycode == KEY_F:
 			_frame_camera()
+		elif event.keycode == KEY_C:
+			_focus_component(&"factory_wall_corner", "factory corner — outer, scale 1.5")
+		elif event.keycode == KEY_G:
+			_focus_component(&"road_straight", "road / paving seam")
+		elif event.keycode == KEY_1:
+			_set_camera_view(0.0, 0.18)
+		elif event.keycode == KEY_3:
+			_set_camera_view(PI * 0.5, 0.18)
+		elif event.keycode == KEY_7:
+			_set_camera_view(0.0, 1.50)
 		elif event.keycode == KEY_BRACKETRIGHT:
 			_set_seed(generation_seed + 1)
 		elif event.keycode == KEY_BRACKETLEFT:
@@ -55,9 +67,7 @@ func _rebuild() -> void:
 		TacticalUnit.Faction.PLAYER: 5,
 		TacticalUnit.Faction.ENEMY: 5,
 	})
-	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nR regenerate · [ / ] seed · RMB orbit · MMB pan · wheel zoom · F frame" % [
-		generation_seed, data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe()
-	]
+	_update_status(data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe())
 	if is_instance_valid(seed_input):
 		seed_input.set_value_no_signal(generation_seed)
 
@@ -117,6 +127,22 @@ func _build_ui() -> void:
 	frame_button.text = "Frame map"
 	frame_button.pressed.connect(_frame_camera)
 	controls.add_child(frame_button)
+	var corner_button := Button.new()
+	corner_button.text = "Inspect corner"
+	corner_button.tooltip_text = "Frame the assembled Factory outer-corner joint (C)"
+	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — outer, scale 1.5"))
+	controls.add_child(corner_button)
+	var road_button := Button.new()
+	road_button.text = "Inspect road seam"
+	road_button.tooltip_text = "Frame the road and paving connection (G)"
+	road_button.pressed.connect(func(): _focus_component(&"road_straight", "road / paving seam"))
+	controls.add_child(road_button)
+	var views := HBoxContainer.new()
+	views.position = Vector2(18, 112)
+	layer.add_child(views)
+	_add_view_button(views, "Front (1)", 0.0, 0.18)
+	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
+	_add_view_button(views, "Top (7)", 0.0, 1.50)
 
 func _set_seed(value: int) -> void:
 	generation_seed = value
@@ -127,6 +153,60 @@ func _frame_camera() -> void:
 		# Generated MapData is centered around the world origin. Framing a
 		# positive-only box put the actual assembly in the corner of the view.
 		orbit.frame(AABB(Vector3(-20, 0, -15), Vector3(40, 8, 30)))
+		inspection_target = "whole map"
+		_refresh_status_target()
+
+func _focus_component(component_id: StringName, label: String) -> bool:
+	if not is_instance_valid(content) or not is_instance_valid(orbit):
+		return false
+	var modular_root := content.get_node_or_null("ModularEnvironment")
+	if modular_root == null:
+		return false
+	var modules := modular_root.get_children()
+	for module in modules:
+		if module.get_meta("component_id", &"") != component_id:
+			continue
+		var bounds := AssetPlacement.mesh_bounds(module as Node3D)
+		if bounds.size == Vector3.ZERO:
+			return false
+		# A joint only makes sense beside the pieces it connects. Include touching
+		# module visuals so the inspector frames the seam rather than one mesh.
+		var neighborhood := bounds
+		for neighbor in modules:
+			if neighbor == module:
+				continue
+			var neighbor_bounds := AssetPlacement.mesh_bounds(neighbor as Node3D)
+			if bounds.grow(0.25).intersects(neighbor_bounds):
+				neighborhood = neighborhood.merge(neighbor_bounds)
+		orbit.frame(neighborhood.grow(1.0))
+		inspection_target = label
+		_refresh_status_target()
+		return true
+	return false
+
+func _set_camera_view(azimuth: float, altitude: float) -> void:
+	if is_instance_valid(orbit):
+		orbit.set_view(azimuth, altitude)
+
+func _add_view_button(parent: Control, label: String, azimuth: float, altitude: float) -> void:
+	var button := Button.new()
+	button.text = label
+	button.pressed.connect(func(): _set_camera_view(azimuth, altitude))
+	parent.add_child(button)
+
+func _update_status(component_count: int, validation_text: String) -> void:
+	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nTarget: %s  |  RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
+		generation_seed, component_count, validation_text, inspection_target
+	]
+
+func _refresh_status_target() -> void:
+	if not is_instance_valid(status):
+		return
+	var lines := status.text.split("\n")
+	if lines.size() < 2:
+		return
+	lines[1] = "Target: %s  |  RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % inspection_target
+	status.text = "\n".join(lines)
 
 func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> void:
 	var mesh := ImmediateMesh.new()

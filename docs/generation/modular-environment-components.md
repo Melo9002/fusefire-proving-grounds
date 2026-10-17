@@ -40,7 +40,7 @@ The first catalog contains:
 
 The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. One container and the vaultable barrier are deliberately layered over the paving surface. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
 
-The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the 1.5 scale and quarter-cell visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
+The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the 1.5 scale and quarter-cell visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. Straight Factory facades retain source-origin anchoring with a local 0.25-cell inset; that offset rotates with the module and aligns both legs of an outer corner without moving tactical cells. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
 
 The current authored footprints are deliberately different from raw visual bounds where the tactical meaning demands it:
 
@@ -70,7 +70,7 @@ Press `R` to rebuild the same seed. Press `[` or `]` to change the seed. A seed 
 godot --path . res://tools/modular_environment_preview.tscn -- 7319
 ```
 
-The preview reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. The camera frames the centered generated world and supports orbit, pan, zoom, and the visible seed controls. It does not start a battle or alter the default generation mode.
+The preview reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. Use the visible **Inspect corner** and **Inspect road seam** controls to frame those assembled joints, then right-drag to orbit, middle-drag to pan, and use the wheel to zoom. **Front**, **Side**, and **Top** buttons (or `1`, `3`, and `7`) change angle without losing the current target. `C`, `G`, and `F` focus the corner, road seam, and whole map. It does not start a battle or alter the default generation mode.
 
 ## Adding a module
 

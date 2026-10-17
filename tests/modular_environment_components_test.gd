@@ -53,7 +53,8 @@ func _run() -> void:
 	check(catalog.road_straight.tactical_role == EnvironmentModuleDefinition.TacticalRole.GROUND and catalog.road_straight.cell_effects.is_empty(), "Road visuals remain ordinary tactical ground")
 	check(catalog.road_straight.placement_layer == EnvironmentModuleDefinition.PlacementLayer.GROUND and catalog.cargo_container.placement_layer == EnvironmentModuleDefinition.PlacementLayer.OCCUPANT, "Ground and tactical obstacles reserve independent placement layers")
 	check(is_equal_approx(catalog.road_straight.visuals[0].offset.y, 0.02) and is_equal_approx(catalog.paving_square.visuals[0].offset.y, 0.02), "Road and paving surfaces share a raised presentation plane")
-	check(catalog.factory_wall_corner.visuals[0].yaw_quarters == 2, "Outer corner visual faces into both connected wall runs")
+	check(catalog.factory_wall_corner.visuals[0].yaw_quarters == 0 and catalog.factory_wall_corner.visuals[0].anchor == 1, "Outer corner preserves its authored source orientation and seam")
+	check(catalog.factory_wall_straight.visuals[0].anchor == 1 and catalog.factory_wall_straight.visuals[0].offset == Vector3(0, 0, -0.25), "Factory straight pieces preserve their source seam with a quarter-cell facade offset")
 
 	var presented := Node3D.new()
 	root.add_child(presented)
@@ -69,6 +70,11 @@ func _run() -> void:
 	check(preview.orbit.focus.is_equal_approx(Vector3(0, 4, 0)), "Preview frames the centered MapData world bounds")
 	check(preview.content.get_node_or_null("TacticalGrid") != null, "Preview exposes a grid overlay for visual footprint inspection")
 	check("VALID" in preview.status.text, "Preview reports the generated modular layout as valid")
+	check(preview._focus_component(&"factory_wall_corner", "factory corner — outer, scale 1.5"), "Preview can frame the assembled corner for seam inspection")
+	check(preview.inspection_target == "factory corner — outer, scale 1.5" and "Target: factory corner" in preview.status.text, "Preview identifies its active inspection target and calibration")
+	var corner_focus: Vector3 = preview.orbit.focus
+	preview._set_camera_view(PI * 0.5, 0.18)
+	check(preview.orbit.focus.is_equal_approx(corner_focus) and is_equal_approx(preview.orbit.azimuth, PI * 0.5), "View presets preserve the inspection target while changing angle")
 	preview.queue_free()
 	await process_frame
 	print("Modular environment components: %d failure(s)" % failures)

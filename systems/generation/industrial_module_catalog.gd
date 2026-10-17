@@ -34,8 +34,8 @@ static func _wall_straight() -> EnvironmentModuleDefinition:
 	item.allowed_rotations = [0, 1, 2, 3]
 	for x in 3:
 		item.set_effect(Vector2i(x, 0), _full_cover())
-	item.add_visual(FACTORY + "structure-wall.glb", Vector2(0.75, 0), 1.5, 0, 0)
-	item.add_visual(FACTORY + "structure-wall.glb", Vector2(2.25, 0), 1.5, 0, 0)
+	item.add_visual(FACTORY + "structure-wall.glb", Vector2(0.75, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
+	item.add_visual(FACTORY + "structure-wall.glb", Vector2(2.25, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
 	item.add_connection(Vector2i(0, 0), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(2, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	return item
@@ -48,9 +48,10 @@ static func _wall_corner() -> EnvironmentModuleDefinition:
 		item.set_effect(cell, _full_cover())
 	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	# The imported outer corner faces away from this junction at yaw 0.
-	# A half-turn joins both wall faces and keeps the trim band continuous.
-	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2(0.75, 0.75), 1.5, 2, 0)
+	# These Factory pieces are authored to join at their source origins. Straight
+	# facades use the quarter-cell inset above; the convex corner then joins both
+	# runs at its native yaw on the shared 1.5-unit assembly pitch.
+	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2(0.75, 0.75), 1.5, 0, 1)
 	return item
 
 static func _doorway() -> EnvironmentModuleDefinition:
@@ -64,7 +65,7 @@ static func _doorway() -> EnvironmentModuleDefinition:
 	item.add_connection(Vector2i(2, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
 	item.add_connection(Vector2i(1, 0), Vector2i.DOWN, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
-	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(1.5, 0), 1.5, 0, 0)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(1.5, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
 	return item
 
 static func _interior_floor() -> EnvironmentModuleDefinition:
