@@ -53,11 +53,14 @@ func run() -> void:
 	check(resolved_sources.default == 0, "Every catalog asset is covered by a saved category or asset calibration")
 	check(resolved_sources["asset override"] == catalog_data.asset_overrides.size(), "Every saved asset override resolves with highest priority")
 	check(resolved_sources.category + resolved_sources["asset override"] == Catalog.all_ids().size(), "Saved calibration coverage includes all catalog assets")
+	check(is_equal_approx(Catalog.scale_for("factory_kit/machine", catalog_data), 2.0), "Factory Kit inherits the saved scale-two baseline")
+	check(is_equal_approx(Catalog.scale_for("modular_space_kit/template-floor", catalog_data), 2.0), "Space Kit inherits the saved scale-two baseline")
 	var priority_data := Catalog.default_data()
 	priority_data.fallback.scale = 2.0
 	priority_data.category_presets.buildings.scale = 3.0
 	priority_data.asset_overrides["city_kit_industrial/building-a"] = {"scale": 4.0}
-	check(Catalog.profile("factory_kit/oopi", priority_data).scale == 2.0, "General fallback resolves")
+	check(Catalog.profile("future_pack/uncategorized", priority_data).scale == 2.0, "General fallback resolves for uncategorized assets")
+	check(Catalog.profile("factory_kit/oopi", priority_data).scale == 2.0, "Factory category preset overrides the general fallback")
 	check(Catalog.profile("city_kit_industrial/building-b", priority_data).scale == 3.0, "Category preset overrides fallback")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).scale == 4.0, "Asset override wins resolution")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).calibration_source == "asset override", "Resolution source reported")
@@ -76,6 +79,9 @@ func run() -> void:
 		check(convention.tactical_policy in ["none_decorative", "authored_component", "author_before_gameplay", "module_definition_required"], id + " reports a known tactical-authoring policy")
 	check(PlacementConventions.record("city_kit_industrial/shipping-container-a", catalog_data, records).authored_tactical_footprint == [2, 5], "Calibrated container keeps an authored obstacle footprint separate from its visual envelope")
 	check(PlacementConventions.record("city_kit_roads/construction-barrier", catalog_data, records).authored_tactical_footprint == [1, 1], "Low barrier has a one-cell authored module footprint")
+	check(PlacementConventions.record("factory_kit/structure-wall", catalog_data, records).assembly_pitch == [2.0, 2.0], "Factory structures expose the two-unit planning pitch")
+	check(PlacementConventions.record("factory_kit/structure-doorway-wide", catalog_data, records).authored_tactical_footprint == [4, 1], "Scale-two doorway reports its authored four-cell footprint")
+	check(PlacementConventions.record("modular_space_kit/template-floor", catalog_data, records).assembly_pitch == [8.0, 8.0], "Space Kit remains a separate eight-unit planning family")
 	for id in Catalog.PROFILES:
 		check(Catalog.PROFILES[id].has("anchor") and Catalog.PROFILES[id].has("category") and Catalog.PROFILES[id].has("orientation") and Catalog.PROFILES[id].has("note"), id + " metadata preserved")
 		check(not str(Catalog.PROFILES[id].orientation).is_empty(), id + " orientation is documented")
@@ -130,10 +136,10 @@ func run() -> void:
 	lab.select_asset("city_kit_roads/construction-fence")
 	check(is_equal_approx(lab.factor.value, 5.0), "Street furniture initializes at scale 5")
 	lab.select_asset("factory_kit/oopi")
-	check(is_equal_approx(lab.factor.value, 1.0), "Unreviewed Factory selection initializes at native scale")
+	check(is_equal_approx(lab.factor.value, 2.0), "Factory selection initializes at the scale-two category baseline")
 	lab.fallback_scale.value = 1.25
 	lab._save_fallback()
-	check(is_equal_approx(lab.factor.value, 1.25), "Edited fallback applies to uncategorized asset")
+	check(is_equal_approx(lab.factor.value, 2.0), "Factory category remains higher priority than edited fallback")
 	lab.select_asset("city_kit_industrial/building-a")
 	lab.factor.value = 7.25
 	lab.angle.value = 90
@@ -193,9 +199,9 @@ func run() -> void:
 	lab.fallback_scale.value = 1.0
 	lab._save_fallback()
 	lab.select_asset("factory_kit/machine")
-	check(is_equal_approx(lab.factor.value, 1.0), "Curated Factory selection inherits restored fallback")
+	check(is_equal_approx(lab.factor.value, 2.0), "Curated Factory selection inherits the scale-two category preset")
 	lab.angle.value = 90
-	check(absf(lab.current_bounds.size.x - 1.5) < 0.001, "UI rotation updates dimensions")
+	check(absf(lab.current_bounds.size.x - 3.0) < 0.001, "UI rotation updates dimensions at the inherited scale")
 	lab.x_offset.value = 2.5
 	check(absf(lab.current_bounds.get_center().x - 2.5) < 0.001, "UI anchor snap")
 	lab.duplicate_piece.button_pressed = true

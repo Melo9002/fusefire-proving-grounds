@@ -33,7 +33,9 @@ static func default_data() -> Dictionary:
 			"roads_and_paving": {"scale": 9.0}, "signs_and_signals": {"scale": 9.0},
 			"electricity_infrastructure": {"scale": 9.0}, "road_lights": {"scale": 9.0},
 			"construction_fences": {"scale": 5.0}, "dumpsters": {"scale": 5.0},
-			"construction_equipment": {"scale": 5.0}
+			"construction_equipment": {"scale": 5.0},
+			"factory_unclassified": {"scale": 2.0},
+			"space_unclassified": {"scale": 2.0}
 		},
 		"asset_overrides": {}, "reviewed": []
 	}

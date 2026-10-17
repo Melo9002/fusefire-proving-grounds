@@ -359,7 +359,7 @@
       "scale": 10.0
     },
     "factory_unclassified": {
-      "scale": 1.5
+      "scale": 2.0
     },
     "industrial_other": {
       "scale": 10.0
@@ -380,7 +380,7 @@
       "scale": 10.0
     },
     "space_unclassified": {
-      "scale": 1.5
+      "scale": 2.0
     },
     "water_tanks": {
       "scale": 10.0

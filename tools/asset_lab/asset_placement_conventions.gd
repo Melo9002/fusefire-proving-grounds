@@ -10,9 +10,9 @@ const AUTHORED_FOOTPRINTS := {
 	"city_kit_roads/road-straight": [10, 10],
 	"city_kit_roads/road-curve": [20, 20],
 	"city_kit_roads/tile-low": [10, 10],
-	"factory_kit/structure-wall": [3, 1],
+	"factory_kit/structure-wall": [4, 1],
 	"factory_kit/structure-corner-outer": [2, 2],
-	"factory_kit/structure-doorway-wide": [3, 1],
+	"factory_kit/structure-doorway-wide": [4, 1],
 	"city_kit_industrial/shipping-container-a": [2, 5],
 	"city_kit_industrial/shipping-container-b": [2, 5],
 	"city_kit_industrial/shipping-container-c": [2, 5],
@@ -60,24 +60,24 @@ static func _rotated_size(size: Vector3, yaw: float) -> Vector3:
 
 static func _origin_snap(id: String) -> Array:
 	if id.begins_with("city_kit_roads/"): return [1.0, 1.0]
-	if id.begins_with("factory_kit/"): return [0.25, 0.25]
-	if id.begins_with("modular_space_kit/"): return [0.5, 0.5]
+	if id.begins_with("factory_kit/"): return [1.0, 1.0]
+	if id.begins_with("modular_space_kit/"): return [1.0, 1.0]
 	return [0.5, 0.5]
 
 static func _assembly_pitch(id: String) -> Array:
 	var semantic := Catalog.semantic_category(id)
 	if semantic in ["road_modules", "paving_tiles"]: return [10.0, 10.0]
-	if semantic in ["factory_structure_modules", "factory_entrances"]: return [1.5, 1.5]
-	if id.begins_with("modular_space_kit/"): return [6.0, 6.0]
+	if semantic in ["factory_structure_modules", "factory_entrances"]: return [2.0, 2.0]
+	if id.begins_with("modular_space_kit/"): return [8.0, 8.0]
 	return [0.0, 0.0]
 
 static func _note(id: String, policy: String) -> String:
 	if id.begins_with("factory_kit/"):
-		return "Quarter-cell visual anchors preserve the calibrated 1.5-unit Factory bay rhythm."
+		return "Integer visual anchors preserve the calibrated 2-unit Factory bay rhythm."
 	if id.begins_with("city_kit_roads/"):
 		return "Road origins stay on integer cells; compatible road tiles connect on the 10-unit pitch."
 	if id.begins_with("modular_space_kit/"):
-		return "Space Kit uses a separate 6-unit construction pitch; do not mix it with Factory bays automatically."
+		return "Space Kit uses a separate 8-unit construction pitch; do not mix it with Factory bays automatically."
 	if policy == "author_before_gameplay":
 		return "Visual envelope is a reservation aid only; author solid cells, cover and clearance separately."
 	return "Presentation placement only; no tactical footprint is implied."

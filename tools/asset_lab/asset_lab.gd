@@ -397,7 +397,7 @@ func _build_assembly(index: int) -> void:
 				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -11.79), 0, calibration_data)
 		2:
 			Catalog.place(content, "factory_kit/structure-doorway-wide", Vector3.ZERO, 0, calibration_data)
-			for x in [-2.5, -1.5, 1.5, 2.5]:
+			for x in [-5, -3, 3, 5]:
 				Catalog.place(content, "factory_kit/structure-wall", Vector3(x, 0, 0), 0, calibration_data)
 		3:
 			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-6, 0, -2), PI / 2, calibration_data)
@@ -407,9 +407,9 @@ func _build_assembly(index: int) -> void:
 				_box(content, Vector3(2, 0.4, 1), Vector3(x, 0.2, 4), Color("555e68"))
 				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4), 0, calibration_data)
 		4:
-			for x in [-2, 2]:
+			for x in [-4, 4]:
 				Catalog.place(content, "modular_space_kit/template-floor", Vector3(x, 0, 0), 0, calibration_data)
-				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -2), 0, calibration_data)
+				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -4), 0, calibration_data)
 
 func _override_record() -> Dictionary:
 	return {

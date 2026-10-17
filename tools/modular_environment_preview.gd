@@ -25,7 +25,7 @@ func _shortcut_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F:
 			_frame_camera()
 		elif event.keycode == KEY_C:
-			_focus_component(&"factory_wall_corner", "factory corner — outer, scale 1.5")
+			_focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0")
 		elif event.keycode == KEY_G:
 			_focus_component(&"road_straight", "road / paving seam")
 		elif event.keycode == KEY_1:
@@ -130,7 +130,7 @@ func _build_ui() -> void:
 	var corner_button := Button.new()
 	corner_button.text = "Inspect corner"
 	corner_button.tooltip_text = "Frame the assembled Factory outer-corner joint (C)"
-	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — outer, scale 1.5"))
+	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0"))
 	controls.add_child(corner_button)
 	var road_button := Button.new()
 	road_button.text = "Inspect road seam"
@@ -219,12 +219,12 @@ func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> 
 	var half_depth := float(map_size.y) * cell_size * 0.5
 	for x in map_size.x + 1:
 		var world_x := -half_width + float(x) * cell_size
-		mesh.surface_add_vertex(Vector3(world_x, 0.035, -half_depth))
-		mesh.surface_add_vertex(Vector3(world_x, 0.035, half_depth))
+		mesh.surface_add_vertex(Vector3(world_x, 0.08, -half_depth))
+		mesh.surface_add_vertex(Vector3(world_x, 0.08, half_depth))
 	for z in map_size.y + 1:
 		var world_z := -half_depth + float(z) * cell_size
-		mesh.surface_add_vertex(Vector3(-half_width, 0.035, world_z))
-		mesh.surface_add_vertex(Vector3(half_width, 0.035, world_z))
+		mesh.surface_add_vertex(Vector3(-half_width, 0.08, world_z))
+		mesh.surface_add_vertex(Vector3(half_width, 0.08, world_z))
 	mesh.surface_end()
 	var overlay := MeshInstance3D.new()
 	overlay.name = "TacticalGrid"

@@ -11,12 +11,12 @@ static func apply(data: MapData, cell_size: float, map_seed: int) -> Environment
 	var placements: Array[EnvironmentModulePlacement] = [
 		EnvironmentModulePlacement.new(&"road_straight", Vector2i(1, 20)),
 		EnvironmentModulePlacement.new(&"paving_square", Vector2i(11, 20)),
-		EnvironmentModulePlacement.new(&"factory_interior_floor", Vector2i(11, 13)),
-		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(11, 19)),
-		EnvironmentModulePlacement.new(&"factory_doorway_wide", Vector2i(14, 19)),
-		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(17, 19)),
-		EnvironmentModulePlacement.new(&"factory_wall_corner", Vector2i(20, 18)),
-		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(21, 15), 1),
+		EnvironmentModulePlacement.new(&"factory_interior_floor", Vector2i(11, 12)),
+		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(11, 20)),
+		EnvironmentModulePlacement.new(&"factory_doorway_wide", Vector2i(15, 20)),
+		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(19, 20)),
+		EnvironmentModulePlacement.new(&"factory_wall_corner", Vector2i(23, 19)),
+		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(24, 15), 1),
 		# Occupants intentionally share cells with the paving ground layer.
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(18, 23), 0, rng.randi_range(0, 2)),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(30, 18), 1, rng.randi_range(0, 2)),

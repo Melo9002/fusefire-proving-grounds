@@ -40,7 +40,7 @@ The first catalog contains:
 
 The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. One container and the vaultable barrier are deliberately layered over the paving surface. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
 
-The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the 1.5 scale and quarter-cell visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. Straight Factory facades retain source-origin anchoring with a local 0.25-cell inset; that offset rotates with the module and aligns both legs of an outer corner without moving tactical cells. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
+The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the scale-2 baseline and integer visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. Factory facades retain source-origin anchoring and join on the kit's native two-unit rhythm. Runtime Factory structure meshes use a 2.01 presentation scale (a 0.5% seam bleed) so their closed end-cap faces do not z-fight; logical footprints and connections remain on integer boundaries. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
 
 The current authored footprints are deliberately different from raw visual bounds where the tactical meaning demands it:
 
@@ -48,13 +48,13 @@ The current authored footprints are deliberately different from raw visual bound
 | --- | ---: | --- | --- |
 | Straight road / paving | 10 × 10 | 10-unit integer pitch | Open ground |
 | Road curve | 20 × 20 | Two road pitches | Open ground |
-| Factory wall run | 3 × 1 | Two 1.5-unit wall bays | Blocking full cover |
-| Wide doorway | 3 × 1 | One 3-unit entrance bay | Blocking jambs, open center |
-| Factory corner | 2 × 2 | 1.5 scale with documented visual overhang | Blocking junction |
+| Factory wall run | 4 × 1 | Two 2-unit wall bays | Blocking full cover |
+| Wide doorway | 4 × 1 | One 4-unit entrance bay | Blocking jambs, two open center lanes |
+| Factory corner | 2 × 2 | Scale 2 on the intended integer junction | Blocking junction |
 | Container | 2 × 5 | Scale 5; the visual slightly exceeds four cells in length | Solid obstacle |
 | Construction barrier | 1 × 1 | Scale 5 | Vaultable low cover |
 
-Visual placement may use quarter- or half-unit offsets to keep imported seams aligned. Module origins, connections, and tactical effects remain integer grid cells. Thin road and paving meshes use a shared 0.02-unit presentation lift above the preview base plane; this removes z-fighting without changing their tactical elevation or introducing collision.
+Visual placement may use half-unit offsets for props whose authored pivots require them; the scale-two Factory structure family aligns on integers. Module origins, connections, and tactical effects remain integer grid cells. Thin road and paving meshes use a shared 0.02-unit presentation lift above the preview base plane; this removes z-fighting without changing their tactical elevation or introducing collision.
 
 ## Inspecting the sample
 

@@ -4,6 +4,7 @@ extends RefCounted
 const FACTORY := "res://art/environments/kenney/factory_kit/models/"
 const INDUSTRIAL := "res://art/environments/kenney/city_kit_industrial/models/"
 const ROADS := "res://art/environments/kenney/city_kit_roads/models/"
+const STRUCTURE_PRESENTATION_SCALE := 2.01
 
 static func create() -> Dictionary:
 	var catalog := {}
@@ -28,52 +29,56 @@ static func _vaultable_low_cover(height := 0.65) -> Dictionary:
 	return {"interaction": EnvironmentModuleDefinition.CellInteraction.VAULT, "cover_type": MapCellData.CoverType.LOW, "cover_height": height, "walkable": true, "can_stop": false, "blocks_los": false, "movement_cost": 2}
 
 static func _wall_straight() -> EnvironmentModuleDefinition:
-	var item := EnvironmentModuleDefinition.new(&"factory_wall_straight", &"factory_structure", Vector2i(3, 1))
+	var item := EnvironmentModuleDefinition.new(&"factory_wall_straight", &"factory_structure", Vector2i(4, 1))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
-	item.set_visual_convention(Vector2(0.25, 0.25), Vector2(1.5, 1.5), "Two calibrated 1.5-unit Factory wall bays form this three-cell run.")
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Two scale-2 Factory wall bays form this four-cell run on integer grid boundaries.")
 	item.allowed_rotations = [0, 1, 2, 3]
-	for x in 3:
+	for x in 4:
 		item.set_effect(Vector2i(x, 0), _full_cover())
-	item.add_visual(FACTORY + "structure-wall.glb", Vector2(0.75, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
-	item.add_visual(FACTORY + "structure-wall.glb", Vector2(2.25, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
+	item.add_visual(FACTORY + "structure-wall.glb", Vector2(1, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	item.add_visual(FACTORY + "structure-wall.glb", Vector2(3, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
 	item.add_connection(Vector2i(0, 0), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	item.add_connection(Vector2i(2, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	item.add_connection(Vector2i(3, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	return item
 
 static func _wall_corner() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_wall_corner", &"factory_structure", Vector2i(2, 2))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
-	item.set_visual_convention(Vector2(0.25, 0.25), Vector2(1.5, 1.5), "Calibrated corner projects half a cell beyond its authored two-cell junction envelope.")
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Scale-2 corner uses the Factory Kit's native two-unit pitch on integer grid boundaries.")
 	for cell in item.footprint_cells:
 		item.set_effect(cell, _full_cover())
 	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	# These Factory pieces are authored to join at their source origins. Straight
-	# facades use the quarter-cell inset above; the convex corner then joins both
-	# runs at its native yaw on the shared 1.5-unit assembly pitch.
-	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2(0.75, 0.75), 1.5, 0, 1)
+	# Factory pieces join at their source origins. At scale 2 the convex corner
+	# and both straight runs share an integer two-cell pitch without overlap.
+	# Closed modular meshes retain end caps. The tiny presentation-scale bleed
+	# keeps those coplanar faces from z-fighting at otherwise exact seams.
+	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2.ONE, STRUCTURE_PRESENTATION_SCALE, 0, 1)
 	return item
 
 static func _doorway() -> EnvironmentModuleDefinition:
-	var item := EnvironmentModuleDefinition.new(&"factory_doorway_wide", &"factory_structure", Vector2i(3, 1))
+	var item := EnvironmentModuleDefinition.new(&"factory_doorway_wide", &"factory_structure", Vector2i(4, 1))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
-	item.set_visual_convention(Vector2(0.25, 0.25), Vector2(1.5, 1.5), "The calibrated wide doorway spans three cells and keeps its center lane open.")
-	item.clearance_cells = [Vector2i(1, -1), Vector2i(1, 1)]
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "The scale-2 wide doorway spans four cells and keeps two center lanes open.")
+	item.clearance_cells = [Vector2i(1, -1), Vector2i(2, -1), Vector2i(1, 1), Vector2i(2, 1)]
 	item.set_effect(Vector2i(0, 0), _full_cover())
-	item.set_effect(Vector2i(2, 0), _full_cover())
+	item.set_effect(Vector2i(3, 0), _full_cover())
 	item.add_connection(Vector2i(0, 0), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	item.add_connection(Vector2i(2, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	item.add_connection(Vector2i(3, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	item.add_connection(Vector2i(2, 0), Vector2i.UP, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
 	item.add_connection(Vector2i(1, 0), Vector2i.DOWN, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
-	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(1.5, 0), 1.5, 0, 1, Vector3(0, 0, -0.25))
+	item.add_connection(Vector2i(2, 0), Vector2i.DOWN, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(2, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
 	return item
 
 static func _interior_floor() -> EnvironmentModuleDefinition:
-	var item := EnvironmentModuleDefinition.new(&"factory_interior_floor", &"factory_structure", Vector2i(9, 6))
+	var item := EnvironmentModuleDefinition.new(&"factory_interior_floor", &"factory_structure", Vector2i(12, 8))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2.ONE, "Authored tactical floor; the neutral floor marker has no imported collision.")
-	item.add_connection(Vector2i(4, 5), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	item.add_connection(Vector2i(5, 7), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	item.add_connection(Vector2i(6, 7), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
 	return item
 
 static func _road_straight() -> EnvironmentModuleDefinition:
@@ -104,6 +109,10 @@ static func _paving() -> EnvironmentModuleDefinition:
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Paving shares the calibrated ten-unit City Roads pitch.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
+	# The scale-two doorway is layered over the first paving row, so its open
+	# lanes connect to the next traversable paving cells rather than the same row.
+	item.add_connection(Vector2i(5, 1), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
+	item.add_connection(Vector2i(6, 1), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
