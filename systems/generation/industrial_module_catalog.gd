@@ -48,7 +48,9 @@ static func _wall_corner() -> EnvironmentModuleDefinition:
 		item.set_effect(cell, _full_cover())
 	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2(0.75, 0.75), 1.5, 0, 0)
+	# The imported outer corner faces away from this junction at yaw 0.
+	# A half-turn joins both wall faces and keeps the trim band continuous.
+	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2(0.75, 0.75), 1.5, 2, 0)
 	return item
 
 static func _doorway() -> EnvironmentModuleDefinition:

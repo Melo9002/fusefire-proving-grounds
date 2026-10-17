@@ -45,6 +45,7 @@ func _run() -> void:
 	check(barrier.walkable and not barrier.can_stop and barrier.cover_type == MapCellData.CoverType.LOW and barrier.movement_cost == 2, "Vaultable module writes the existing low-cover traversal contract")
 	check(catalog.construction_barrier_vault.interaction_at(Vector2i.ZERO) == EnvironmentModuleDefinition.CellInteraction.VAULT, "Vault animation intent is explicit module metadata")
 	check(catalog.road_straight.tactical_role == EnvironmentModuleDefinition.TacticalRole.GROUND and catalog.road_straight.cell_effects.is_empty(), "Road visuals remain ordinary tactical ground")
+	check(catalog.factory_wall_corner.visuals[0].yaw_quarters == 2, "Outer corner visual faces into both connected wall runs")
 
 	var presented := Node3D.new()
 	root.add_child(presented)
