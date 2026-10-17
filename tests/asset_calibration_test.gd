@@ -1,6 +1,8 @@
 extends SceneTree
 const Catalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
+const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
+const PlacementConventions = preload("res://tools/asset_lab/asset_placement_conventions.gd")
 var failures := 0
 var checks := 0
 func _initialize() -> void:
@@ -15,23 +17,42 @@ func vector(values: Array) -> Vector3:
 func run() -> void:
 	var parent := Node3D.new()
 	root.add_child(parent)
+	var camera := Camera3D.new()
+	parent.add_child(camera)
+	var orbit = OrbitCamera.new(camera)
+	orbit.frame(AABB(Vector3.ZERO, Vector3(10, 5, 2)))
+	var framed_distance: float = orbit.distance
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	check(orbit.handle_mouse(wheel) and orbit.distance < framed_distance, "Shared inspection camera zooms")
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_MIDDLE
+	motion.relative = Vector2(20, -10)
+	var old_focus: Vector3 = orbit.focus
+	check(orbit.handle_mouse(motion) and not orbit.focus.is_equal_approx(old_focus), "Shared inspection camera pans")
 	var records: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/asset_lab/native_bounds.json"))
 	var catalog_data := Catalog.load_calibrations()
 	check(Catalog.all_ids().size() == 315, "All four packs must be browsable")
-	var scale_counts := {1.0: 0, 5.0: 0, 9.0: 0}
+	var unknown_semantics: Array[String] = []
+	for id in Catalog.all_ids():
+		check(not Catalog.semantic_category(id).is_empty(), id + " has a semantic category")
+		check(Catalog.inferred_classification(id) in ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"], id + " has a broad classification")
+		if Catalog.semantic_category(id) == "unknown_manual_review":
+			unknown_semantics.append(id)
+	check(unknown_semantics == ["factory_kit/oopi"], "Only the ambiguous OOPI asset remains explicitly unclassified")
+	var resolved_sources := {"default": 0, "category": 0, "asset override": 0}
 	for id in Catalog.all_ids():
 		var expected := Catalog.scale_for(id, catalog_data)
 		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, expected), id + " resolves its calibration")
-		check(scale_counts.has(expected), id + " uses a known calibration tier")
-		if scale_counts.has(expected):
-			scale_counts[expected] += 1
-	check(scale_counts[9.0] == 127, "City architecture and infrastructure use scale 9")
-	check(scale_counts[5.0] == 5, "Five human-scale street props use scale 5")
-	check(scale_counts[1.0] == 183, "Factory and Space assets retain native scale")
-	for id in ["city_kit_industrial/chimney-basic", "city_kit_industrial/chimney-large", "city_kit_industrial/chimney-medium", "city_kit_industrial/chimney-small"]:
-		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, 9.0), id + " remains industrial scale 9")
-	for id in ["city_kit_roads/construction-fence", "city_kit_roads/dumpster"]:
-		check(is_equal_approx(Catalog.profile(id, catalog_data).scale, 5.0), id + " uses its observed scale 5 category")
+		check(is_finite(expected) and expected > 0.0, id + " resolves a finite positive scale")
+		var source: String = Catalog.profile(id, catalog_data).calibration_source
+		check(resolved_sources.has(source), id + " reports a recognized calibration source")
+		if resolved_sources.has(source):
+			resolved_sources[source] += 1
+	check(resolved_sources.default == 0, "Every catalog asset is covered by a saved category or asset calibration")
+	check(resolved_sources["asset override"] == catalog_data.asset_overrides.size(), "Every saved asset override resolves with highest priority")
+	check(resolved_sources.category + resolved_sources["asset override"] == Catalog.all_ids().size(), "Saved calibration coverage includes all catalog assets")
 	var priority_data := Catalog.default_data()
 	priority_data.fallback.scale = 2.0
 	priority_data.category_presets.buildings.scale = 3.0
@@ -40,7 +61,21 @@ func run() -> void:
 	check(Catalog.profile("city_kit_industrial/building-b", priority_data).scale == 3.0, "Category preset overrides fallback")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).scale == 4.0, "Asset override wins resolution")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).calibration_source == "asset override", "Resolution source reported")
-	check(records.size() == Catalog.PROFILES.size(), "Every curated asset has measured bounds")
+	priority_data.asset_overrides["city_kit_industrial/building-a"] = {"scale": 1.0, "yaw_degrees": 90.0, "anchor": Placement.Anchor.SOURCE_ORIGIN, "anchor_position": [2.0, 3.0, 4.0]}
+	var catalog_piece := Catalog.place(parent, "city_kit_industrial/building-a", Vector3(10, 0, 0), PI / 2.0, priority_data)
+	check(catalog_piece.position.is_equal_approx(Vector3(12, 3, 4)), "Catalog placement applies saved anchor offset")
+	check(catalog_piece.basis.x.normalized().is_equal_approx(Vector3.LEFT), "Catalog placement composes saved and requested yaw")
+	catalog_piece.free()
+	check(records.size() == Catalog.all_ids().size(), "Every catalog asset has measured bounds")
+	for id in Catalog.all_ids():
+		check(records.has(id), id + " has a measured-bounds record")
+		if records.has(id):
+			check(vector(records[id].size).x > 0.0 and vector(records[id].size).z > 0.0, id + " has a usable horizontal visual envelope")
+		var convention := PlacementConventions.record(id, catalog_data, records)
+		check(convention.visual_envelope_cells[0] > 0 and convention.visual_envelope_cells[1] > 0, id + " exposes a positive planning envelope")
+		check(convention.tactical_policy in ["none_decorative", "authored_component", "author_before_gameplay", "module_definition_required"], id + " reports a known tactical-authoring policy")
+	check(PlacementConventions.record("city_kit_industrial/shipping-container-a", catalog_data, records).authored_tactical_footprint == [2, 5], "Calibrated container keeps an authored obstacle footprint separate from its visual envelope")
+	check(PlacementConventions.record("city_kit_roads/construction-barrier", catalog_data, records).authored_tactical_footprint == [1, 1], "Low barrier has a one-cell authored module footprint")
 	for id in Catalog.PROFILES:
 		check(Catalog.PROFILES[id].has("anchor") and Catalog.PROFILES[id].has("category") and Catalog.PROFILES[id].has("orientation") and Catalog.PROFILES[id].has("note"), id + " metadata preserved")
 		check(not str(Catalog.PROFILES[id].orientation).is_empty(), id + " orientation is documented")
@@ -69,6 +104,7 @@ func run() -> void:
 	root.add_child(lab)
 	await process_frame
 	check(lab.asset_list.item_count == 315, "Empty search shows every asset")
+	check(lab.comparison.scale.is_equal_approx(Vector3.ONE * (1.64 / 1.60)), "Laboratory MIRA reference is normalized from 1.60 m to 1.64 m")
 	lab.family_filter.select(1)
 	lab._filter("")
 	check(lab.asset_list.item_count == 37, "Industrial family filter")
@@ -102,14 +138,26 @@ func run() -> void:
 	lab.factor.value = 7.25
 	lab.angle.value = 90
 	lab.x_offset.value = 0.5
+	lab.classification.select(1)
+	lab.footprint_x.value = 8
+	lab.footprint_z.value = 6
+	lab.calibration_notes.text = "Verified against MIRA reference."
 	check("UNSAVED CHANGES" in lab.save_status.text, "Unsaved edits are visible")
 	lab._save_override()
 	var persisted := Catalog.load_calibrations(persistence_path)
 	check(is_equal_approx(float(persisted.asset_overrides["city_kit_industrial/building-a"].scale), 7.25), "Asset override persists")
 	check(Catalog.profile("city_kit_industrial/building-a", persisted).yaw_degrees == 90, "Override rotation persists")
+	check(persisted.asset_overrides["city_kit_industrial/building-a"].classification == "structural", "Human classification persists")
+	var saved_footprint: Array = persisted.asset_overrides["city_kit_industrial/building-a"].suggested_footprint
+	check(int(saved_footprint[0]) == 8 and int(saved_footprint[1]) == 6, "Suggested planning footprint persists")
+	check(persisted.asset_overrides["city_kit_industrial/building-a"].calibration_notes == "Verified against MIRA reference.", "Calibration notes persist")
+	check(persisted.asset_overrides["city_kit_industrial/building-a"].measured_native_size.size() == 3, "Measured native dimensions persist")
+	check(persisted.asset_overrides["city_kit_industrial/building-a"].measured_calibrated_size.size() == 3, "Measured calibrated dimensions persist")
+	lab.calibration_notes.text = "Final reviewed evidence."
 	lab.reviewed_toggle.button_pressed = true
 	persisted = Catalog.load_calibrations(persistence_path)
 	check("city_kit_industrial/building-a" in persisted.reviewed, "Reviewed state persists")
+	check(persisted.asset_overrides["city_kit_industrial/building-a"].calibration_notes == "Final reviewed evidence.", "Marking reviewed saves current calibration")
 	lab.review_filter.select(2)
 	lab._filter("")
 	check(lab.asset_list.item_count == 1, "Reviewed-only filter")
@@ -120,6 +168,18 @@ func run() -> void:
 	lab._next_unreviewed()
 	check(lab.selected != reviewed_id and lab.selected not in persisted.reviewed, "Next unreviewed navigation")
 	lab.review_filter.select(0)
+	lab._filter("")
+	var conveyor_filter_index := -1
+	for index in lab.semantic_filter.item_count:
+		if lab.semantic_filter.get_item_metadata(index) == "conveyor_modules":
+			conveyor_filter_index = index
+	check(conveyor_filter_index > 0, "Semantic category filter includes conveyors")
+	lab.semantic_filter.select(conveyor_filter_index)
+	lab._filter("")
+	check(lab.asset_list.item_count > 1, "Semantic category filter groups related models")
+	for index in lab.asset_list.item_count:
+		check(Catalog.semantic_category(lab.asset_list.get_item_metadata(index)) == "conveyor_modules", "Semantic filter excludes unrelated models")
+	lab.semantic_filter.select(0)
 	lab._filter("")
 	lab.select_asset("city_kit_industrial/building-a")
 	lab._reload_calibrations()
@@ -181,6 +241,13 @@ func run() -> void:
 	check(is_equal_approx(lab_reloaded.factor.value, 6.0), "Category preset survives laboratory restart")
 	check("city_kit_industrial/building-a" in lab_reloaded.calibration_data.reviewed, "Review state survives laboratory restart")
 	lab_reloaded.free()
+	var preview = load("res://tools/modular_environment_preview.tscn").instantiate()
+	root.add_child(preview)
+	await process_frame
+	check(is_instance_valid(preview.seed_input) and is_instance_valid(preview.orbit), "Modular preview exposes working seed and camera controls")
+	preview._set_seed(940059876)
+	check(preview.generation_seed == 940059876 and int(preview.seed_input.value) == 940059876, "Modular preview seed control regenerates requested seed")
+	preview.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(persistence_path))
 	parent.free()
 	print("Asset calibration: %d checks, %d failures" % [checks, failures])

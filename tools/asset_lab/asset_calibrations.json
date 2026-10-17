@@ -1,21 +1,710 @@
 {
-	"asset_overrides": {},
-	"category_presets": {
-		"buildings": { "scale": 9.0 },
-		"chimneys": { "scale": 9.0 },
-		"construction_equipment": { "scale": 5.0 },
-		"construction_fences": { "scale": 5.0 },
-		"dumpsters": { "scale": 5.0 },
-		"electricity_infrastructure": { "scale": 9.0 },
-		"industrial_other": { "scale": 9.0 },
-		"road_lights": { "scale": 9.0 },
-		"roads_and_paving": { "scale": 9.0 },
-		"shipping_containers": { "scale": 9.0 },
-		"signs_and_signals": { "scale": 9.0 },
-		"solar_panels": { "scale": 9.0 },
-		"water_tanks": { "scale": 9.0 }
-	},
-	"fallback": { "scale": 1.0 },
-	"reviewed": [],
-	"version": 1
+  "asset_overrides": {
+    "city_kit_industrial/building-a": {
+      "anchor": 0.0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "structural",
+      "measured_calibrated_size": [
+        20.835880279541,
+        14.7000007629395,
+        12.4200010299683
+      ],
+      "measured_native_size": [
+        2.08358812332153,
+        1.47000002861023,
+        1.24200010299683
+      ],
+      "scale": 10.0,
+      "suggested_footprint": [
+        0.0,
+        0.0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/building-b": {
+      "anchor": 0.0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "structural",
+      "measured_calibrated_size": [
+        20.835880279541,
+        14.7000007629395,
+        12.6200008392334
+      ],
+      "measured_native_size": [
+        2.08358812332153,
+        1.47000002861023,
+        1.26200008392334
+      ],
+      "scale": 10.0,
+      "suggested_footprint": [
+        0.0,
+        0.0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/chimney-large": {
+      "anchor": 0.0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        10.7999992370605,
+        17.0,
+        10.7999992370605
+      ],
+      "measured_native_size": [
+        1.07999992370605,
+        1.70000004768372,
+        1.07999992370605
+      ],
+      "scale": 10.0,
+      "suggested_footprint": [
+        0.0,
+        0.0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/chimney-medium": {
+      "anchor": 0.0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        4.5,
+        19.25,
+        4.5
+      ],
+      "measured_native_size": [
+        0.449999988079071,
+        1.92499995231628,
+        0.449999988079071
+      ],
+      "scale": 10.0,
+      "suggested_footprint": [
+        0.0,
+        0.0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/chimney-small": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        3.0,
+        7.5,
+        3.0
+      ],
+      "measured_native_size": [
+        0.300000011920929,
+        0.75,
+        0.300000011920929
+      ],
+      "scale": 10.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/shipping-container-a": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        1.8630006313324,
+        1.7403998374939,
+        4.11300039291382
+      ],
+      "measured_native_size": [
+        0.372600138187408,
+        0.348079979419708,
+        0.822600066661835
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/shipping-container-b": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        1.8630006313324,
+        1.7403998374939,
+        4.11300039291382
+      ],
+      "measured_native_size": [
+        0.372600138187408,
+        0.348079979419708,
+        0.822600066661835
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/shipping-container-c": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "tactical_obstacle",
+      "measured_calibrated_size": [
+        1.8630006313324,
+        1.7403998374939,
+        4.11300039291382
+      ],
+      "measured_native_size": [
+        0.372600138187408,
+        0.348079979419708,
+        0.822600066661835
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/solar-panel-flat": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "decorative",
+      "measured_calibrated_size": [
+        2.09100008010864,
+        0.307500004768372,
+        3.56699991226196
+      ],
+      "measured_native_size": [
+        0.418200016021729,
+        0.0615000016987324,
+        0.71340000629425
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/solar-panel-landscape": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "decorative",
+      "measured_calibrated_size": [
+        3.5669994354248,
+        1.31180274486542,
+        1.97525000572205
+      ],
+      "measured_native_size": [
+        0.713399887084961,
+        0.262360543012619,
+        0.395050019025803
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/solar-panel-landscape-group": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "decorative",
+      "measured_calibrated_size": [
+        7.56700420379639,
+        1.31180417537689,
+        4.47525024414063
+      ],
+      "measured_native_size": [
+        1.51340079307556,
+        0.262360841035843,
+        0.89505010843277
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/solar-panel-portrait": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "decorative",
+      "measured_calibrated_size": [
+        2.09099960327148,
+        2.04980278015137,
+        3.24286270141602
+      ],
+      "measured_native_size": [
+        0.418199956417084,
+        0.409960567951202,
+        0.648572564125061
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    },
+    "city_kit_industrial/solar-panel-portrait-group": {
+      "anchor": 0,
+      "anchor_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "calibration_notes": "",
+      "classification": "decorative",
+      "measured_calibrated_size": [
+        4.59100151062012,
+        2.04980325698853,
+        6.24286079406738
+      ],
+      "measured_native_size": [
+        0.918200373649597,
+        0.409960627555847,
+        1.24857211112976
+      ],
+      "scale": 5.0,
+      "suggested_footprint": [
+        0,
+        0
+      ],
+      "yaw_degrees": 0.0
+    }
+  },
+  "category_presets": {
+    "buildings": {
+      "scale": 10.0
+    },
+    "chimneys": {
+      "scale": 10.0
+    },
+    "construction_equipment": {
+      "scale": 5.0
+    },
+    "construction_fences": {
+      "scale": 5.0
+    },
+    "dumpsters": {
+      "scale": 5.0
+    },
+    "electricity_infrastructure": {
+      "scale": 10.0
+    },
+    "factory_unclassified": {
+      "scale": 1.5
+    },
+    "industrial_other": {
+      "scale": 10.0
+    },
+    "road_lights": {
+      "scale": 10.0
+    },
+    "roads_and_paving": {
+      "scale": 10.0
+    },
+    "shipping_containers": {
+      "scale": 8.0
+    },
+    "signs_and_signals": {
+      "scale": 10.0
+    },
+    "solar_panels": {
+      "scale": 10.0
+    },
+    "space_unclassified": {
+      "scale": 1.5
+    },
+    "water_tanks": {
+      "scale": 10.0
+    }
+  },
+  "fallback": {
+    "scale": 1.0
+  },
+  "reviewed": [
+    "city_kit_industrial/building-a",
+    "city_kit_industrial/building-b",
+    "city_kit_industrial/building-c",
+    "city_kit_industrial/building-d",
+    "city_kit_industrial/building-e",
+    "city_kit_industrial/building-f",
+    "city_kit_industrial/building-g",
+    "city_kit_industrial/building-h",
+    "city_kit_industrial/building-i",
+    "city_kit_industrial/building-j",
+    "city_kit_industrial/building-k",
+    "city_kit_industrial/building-l",
+    "city_kit_industrial/building-m",
+    "city_kit_industrial/building-n",
+    "city_kit_industrial/building-o",
+    "city_kit_industrial/building-p",
+    "city_kit_industrial/building-q",
+    "city_kit_industrial/building-r",
+    "city_kit_industrial/building-s",
+    "city_kit_industrial/building-t",
+    "city_kit_industrial/chimney-basic",
+    "city_kit_industrial/chimney-large",
+    "city_kit_industrial/chimney-medium",
+    "city_kit_industrial/chimney-small",
+    "city_kit_industrial/detail-tank",
+    "city_kit_industrial/detail-tank-large",
+    "city_kit_industrial/shipping-container-a",
+    "city_kit_industrial/shipping-container-b",
+    "city_kit_industrial/shipping-container-c",
+    "city_kit_industrial/solar-panel-flat",
+    "city_kit_industrial/solar-panel-landscape",
+    "city_kit_industrial/solar-panel-landscape-group",
+    "city_kit_industrial/solar-panel-portrait",
+    "city_kit_industrial/solar-panel-portrait-group",
+    "city_kit_industrial/water-tower",
+    "city_kit_industrial/windmill",
+    "city_kit_industrial/windmill-low",
+    "city_kit_roads/bridge-pillar",
+    "city_kit_roads/bridge-pillar-wide",
+    "city_kit_roads/construction-barrier",
+    "city_kit_roads/construction-cone",
+    "city_kit_roads/construction-fence",
+    "city_kit_roads/construction-light",
+    "city_kit_roads/dumpster",
+    "city_kit_roads/electricity-pole",
+    "city_kit_roads/electricity-pole-single",
+    "city_kit_roads/electricity-pole-wide",
+    "city_kit_roads/electricity-side",
+    "city_kit_roads/electricity-side-single",
+    "city_kit_roads/electricity-side-wide",
+    "city_kit_roads/electricity-wires",
+    "city_kit_roads/electricity-wires-wide",
+    "city_kit_roads/light-curved",
+    "city_kit_roads/light-curved-cross",
+    "city_kit_roads/light-curved-double",
+    "city_kit_roads/light-square",
+    "city_kit_roads/light-square-cross",
+    "city_kit_roads/light-square-double",
+    "city_kit_roads/road-bend",
+    "city_kit_roads/road-bend-barrier",
+    "city_kit_roads/road-bend-sidewalk",
+    "city_kit_roads/road-bend-square",
+    "city_kit_roads/road-bend-square-barrier",
+    "city_kit_roads/road-bridge",
+    "city_kit_roads/road-crossing",
+    "city_kit_roads/road-crossroad",
+    "city_kit_roads/road-crossroad-barrier",
+    "city_kit_roads/road-crossroad-line",
+    "city_kit_roads/road-crossroad-path",
+    "city_kit_roads/road-curve",
+    "city_kit_roads/road-curve-barrier",
+    "city_kit_roads/road-curve-intersection",
+    "city_kit_roads/road-curve-intersection-barrier",
+    "city_kit_roads/road-curve-pavement",
+    "city_kit_roads/road-driveway-double",
+    "city_kit_roads/road-driveway-double-barrier",
+    "city_kit_roads/road-driveway-single",
+    "city_kit_roads/road-driveway-single-barrier",
+    "city_kit_roads/road-end",
+    "city_kit_roads/road-end-barrier",
+    "city_kit_roads/road-end-round",
+    "city_kit_roads/road-end-round-barrier",
+    "city_kit_roads/road-intersection",
+    "city_kit_roads/road-intersection-barrier",
+    "city_kit_roads/road-intersection-line",
+    "city_kit_roads/road-intersection-path",
+    "city_kit_roads/road-roundabout",
+    "city_kit_roads/road-roundabout-barrier",
+    "city_kit_roads/road-side",
+    "city_kit_roads/road-side-barrier",
+    "city_kit_roads/road-side-entry",
+    "city_kit_roads/road-side-entry-barrier",
+    "city_kit_roads/road-side-exit",
+    "city_kit_roads/road-side-exit-barrier",
+    "city_kit_roads/road-sign-empty",
+    "city_kit_roads/road-sign-empty-hanging",
+    "city_kit_roads/road-sign-object-stop",
+    "city_kit_roads/road-sign-object-street",
+    "city_kit_roads/road-sign-object-warning",
+    "city_kit_roads/road-sign-stop",
+    "city_kit_roads/road-sign-street",
+    "city_kit_roads/road-sign-warning",
+    "city_kit_roads/road-slant",
+    "city_kit_roads/road-slant-barrier",
+    "city_kit_roads/road-slant-curve",
+    "city_kit_roads/road-slant-curve-barrier",
+    "city_kit_roads/road-slant-flat",
+    "city_kit_roads/road-slant-flat-curve",
+    "city_kit_roads/road-slant-flat-high",
+    "city_kit_roads/road-slant-high",
+    "city_kit_roads/road-slant-high-barrier",
+    "city_kit_roads/road-split",
+    "city_kit_roads/road-split-barrier",
+    "city_kit_roads/road-square",
+    "city_kit_roads/road-square-barrier",
+    "city_kit_roads/road-straight",
+    "city_kit_roads/road-straight-barrier",
+    "city_kit_roads/road-straight-barrier-end",
+    "city_kit_roads/road-straight-barrier-half",
+    "city_kit_roads/road-straight-half",
+    "city_kit_roads/sign-highway",
+    "city_kit_roads/sign-highway-detailed",
+    "city_kit_roads/sign-highway-wide",
+    "city_kit_roads/tile-high",
+    "city_kit_roads/tile-low",
+    "city_kit_roads/tile-slant",
+    "city_kit_roads/tile-slantHigh",
+    "city_kit_roads/traffic-light",
+    "city_kit_roads/traffic-light-hanging",
+    "city_kit_roads/traffic-light-object-hanging",
+    "city_kit_roads/traffic-light-object-horizontal",
+    "city_kit_roads/traffic-light-object-vertical",
+    "factory_kit/arrow",
+    "factory_kit/arrow-basic",
+    "factory_kit/arrow-basic-rounded",
+    "factory_kit/arrow-rounded",
+    "factory_kit/box-large",
+    "factory_kit/box-long",
+    "factory_kit/box-small",
+    "factory_kit/box-wide",
+    "factory_kit/button-floor-round",
+    "factory_kit/button-floor-round-small",
+    "factory_kit/button-floor-square",
+    "factory_kit/button-floor-square-small",
+    "factory_kit/catwalk-corner",
+    "factory_kit/catwalk-cross",
+    "factory_kit/catwalk-junction",
+    "factory_kit/catwalk-stairs",
+    "factory_kit/catwalk-stairs-loop",
+    "factory_kit/catwalk-straight",
+    "factory_kit/cog-a",
+    "factory_kit/cog-b",
+    "factory_kit/cog-c",
+    "factory_kit/cog-d",
+    "factory_kit/cog-e",
+    "factory_kit/cone",
+    "factory_kit/conveyor",
+    "factory_kit/conveyor-bars",
+    "factory_kit/conveyor-bars-fence",
+    "factory_kit/conveyor-bars-fence-slope",
+    "factory_kit/conveyor-bars-high",
+    "factory_kit/conveyor-bars-high-slope",
+    "factory_kit/conveyor-bars-sides",
+    "factory_kit/conveyor-bars-stripe",
+    "factory_kit/conveyor-bars-stripe-fence",
+    "factory_kit/conveyor-bars-stripe-fence-slope",
+    "factory_kit/conveyor-bars-stripe-high",
+    "factory_kit/conveyor-bars-stripe-high-slope",
+    "factory_kit/conveyor-bars-stripe-side",
+    "factory_kit/conveyor-corner",
+    "factory_kit/conveyor-cross",
+    "factory_kit/conveyor-junction-t",
+    "factory_kit/conveyor-long",
+    "factory_kit/conveyor-long-part-end",
+    "factory_kit/conveyor-long-part-middle",
+    "factory_kit/conveyor-long-sides",
+    "factory_kit/conveyor-long-sides-part-end",
+    "factory_kit/conveyor-long-sides-part-middle",
+    "factory_kit/conveyor-long-stripe",
+    "factory_kit/conveyor-long-stripe-sides",
+    "factory_kit/conveyor-long-stripe-sides-part-end",
+    "factory_kit/conveyor-long-stripe-sides-part-middle",
+    "factory_kit/conveyor-sides",
+    "factory_kit/conveyor-sides-cross",
+    "factory_kit/conveyor-sides-junction-t",
+    "factory_kit/conveyor-stripe",
+    "factory_kit/conveyor-stripe-corner",
+    "factory_kit/conveyor-stripe-cross",
+    "factory_kit/conveyor-stripe-junction-t",
+    "factory_kit/conveyor-stripe-part-end",
+    "factory_kit/conveyor-stripe-part-middle",
+    "factory_kit/conveyor-stripe-sides",
+    "factory_kit/conveyor-stripe-sides-cross",
+    "factory_kit/conveyor-stripe-sides-junction-t",
+    "factory_kit/crane",
+    "factory_kit/crane-lift",
+    "factory_kit/crane-magnet",
+    "factory_kit/door",
+    "factory_kit/door-wide-closed",
+    "factory_kit/door-wide-half",
+    "factory_kit/door-wide-open",
+    "factory_kit/floor",
+    "factory_kit/floor-large",
+    "factory_kit/hopper-high-round",
+    "factory_kit/hopper-high-square",
+    "factory_kit/hopper-round",
+    "factory_kit/hopper-square",
+    "factory_kit/indicator-special-area",
+    "factory_kit/indicator-special-arrow",
+    "factory_kit/indicator-special-cross",
+    "factory_kit/indicator-special-lines",
+    "factory_kit/lever-double",
+    "factory_kit/lever-single",
+    "factory_kit/machine",
+    "factory_kit/machine-bed",
+    "factory_kit/machine-connection-hole",
+    "factory_kit/machine-connection-pipe",
+    "factory_kit/machine-fortified",
+    "factory_kit/machine-window",
+    "factory_kit/machine-window-bar",
+    "factory_kit/oopi",
+    "factory_kit/pipe-glass-large",
+    "factory_kit/pipe-glass-large-bend",
+    "factory_kit/pipe-glass-large-bump",
+    "factory_kit/pipe-glass-large-cross",
+    "factory_kit/pipe-glass-large-curve",
+    "factory_kit/pipe-glass-large-junction",
+    "factory_kit/pipe-glass-large-long",
+    "factory_kit/pipe-glass-large-side",
+    "factory_kit/pipe-glass-large-valve",
+    "factory_kit/pipe-large",
+    "factory_kit/pipe-large-bend",
+    "factory_kit/pipe-large-bump",
+    "factory_kit/pipe-large-cross",
+    "factory_kit/pipe-large-curve",
+    "factory_kit/pipe-large-junction",
+    "factory_kit/pipe-large-long",
+    "factory_kit/pipe-large-side",
+    "factory_kit/pipe-large-valve",
+    "factory_kit/piston-round",
+    "factory_kit/piston-square",
+    "factory_kit/piston-thin-round",
+    "factory_kit/piston-thin-square",
+    "factory_kit/robot-arm-a",
+    "factory_kit/robot-arm-b",
+    "factory_kit/scanner-high",
+    "factory_kit/scanner-low",
+    "factory_kit/screen-flat",
+    "factory_kit/screen-hanging-small",
+    "factory_kit/screen-hanging-wide",
+    "factory_kit/screen-panel-flat",
+    "factory_kit/screen-panel-small",
+    "factory_kit/screen-panel-wide",
+    "factory_kit/screen-small",
+    "factory_kit/screen-wide",
+    "factory_kit/structure-corner-inner",
+    "factory_kit/structure-corner-outer",
+    "factory_kit/structure-doorway",
+    "factory_kit/structure-doorway-wide",
+    "factory_kit/structure-high",
+    "factory_kit/structure-medium",
+    "factory_kit/structure-short",
+    "factory_kit/structure-tall",
+    "factory_kit/structure-wall",
+    "factory_kit/structure-window",
+    "factory_kit/structure-window-wide",
+    "factory_kit/structure-yellow-high",
+    "factory_kit/structure-yellow-medium",
+    "factory_kit/structure-yellow-short",
+    "factory_kit/structure-yellow-tall",
+    "factory_kit/top",
+    "factory_kit/top-large",
+    "factory_kit/top-large-checkerboard",
+    "factory_kit/warning-orange",
+    "factory_kit/warning-traffic",
+    "modular_space_kit/cables",
+    "modular_space_kit/corridor",
+    "modular_space_kit/corridor-corner",
+    "modular_space_kit/corridor-end",
+    "modular_space_kit/corridor-intersection",
+    "modular_space_kit/corridor-junction",
+    "modular_space_kit/corridor-transition",
+    "modular_space_kit/corridor-wide",
+    "modular_space_kit/corridor-wide-corner",
+    "modular_space_kit/corridor-wide-end",
+    "modular_space_kit/corridor-wide-intersection",
+    "modular_space_kit/corridor-wide-junction",
+    "modular_space_kit/gate",
+    "modular_space_kit/gate-door",
+    "modular_space_kit/gate-door-window",
+    "modular_space_kit/gate-lasers",
+    "modular_space_kit/room-corner",
+    "modular_space_kit/room-large",
+    "modular_space_kit/room-large-variation",
+    "modular_space_kit/room-small",
+    "modular_space_kit/room-small-variation",
+    "modular_space_kit/room-wide",
+    "modular_space_kit/room-wide-variation",
+    "modular_space_kit/stairs",
+    "modular_space_kit/stairs-wide",
+    "modular_space_kit/template-corner",
+    "modular_space_kit/template-detail",
+    "modular_space_kit/template-floor",
+    "modular_space_kit/template-floor-big",
+    "modular_space_kit/template-floor-detail",
+    "modular_space_kit/template-floor-detail-a",
+    "modular_space_kit/template-floor-layer",
+    "modular_space_kit/template-floor-layer-hole",
+    "modular_space_kit/template-floor-layer-raised",
+    "modular_space_kit/template-wall",
+    "modular_space_kit/template-wall-corner",
+    "modular_space_kit/template-wall-detail-a",
+    "modular_space_kit/template-wall-half",
+    "modular_space_kit/template-wall-stairs",
+    "modular_space_kit/template-wall-top"
+  ],
+  "version": 2
 }

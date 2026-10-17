@@ -2,6 +2,10 @@ extends Control
 ## Standalone presentation sandbox; no battle, grid singleton, or combat state.
 const Catalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
+const PlacementConventions = preload("res://tools/asset_lab/asset_placement_conventions.gd")
+const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
+const MIRA_REFERENCE_HEIGHT := 1.64
+const MIRA_RUNTIME_HEIGHT := 1.60
 @export_file("*.json") var calibration_path := Catalog.DATA_PATH
 var world: Node3D
 var content: Node3D
@@ -12,6 +16,7 @@ var asset_list: ItemList
 var search: LineEdit
 var family_filter: OptionButton
 var review_filter: OptionButton
+var semantic_filter: OptionButton
 var info: Label
 var mode: OptionButton
 var anchor: OptionButton
@@ -27,11 +32,9 @@ var mira_toggle: CheckBox
 var ids: Array[String] = []
 var selected := "factory_kit/structure-doorway-wide"
 var changing := false
-var distance := 12.0
-var azimuth := 0.65
-var altitude := 0.45
-var focus := Vector3(0, 1, 0)
+var orbit: RefCounted
 var current_bounds := AABB()
+var display_bounds := AABB()
 var native_bounds := AABB()
 var comparison: Node3D
 var copy_button: Button
@@ -42,11 +45,18 @@ var category_label: Label
 var category_scale: SpinBox
 var fallback_scale: SpinBox
 var save_status: Label
+var classification: OptionButton
+var footprint_x: SpinBox
+var footprint_z: SpinBox
+var calibration_notes: TextEdit
+var dimensions_label: Label
 var calibration_data: Dictionary
+var bounds_data: Dictionary
 var write_controls: Array[Control] = []
 
 func _ready() -> void:
 	calibration_data = Catalog.load_calibrations(calibration_path)
+	bounds_data = PlacementConventions.load_bounds()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -74,18 +84,39 @@ func _ready() -> void:
 	for label in ["All review states", "Unreviewed only", "Reviewed only"]:
 		review_filter.add_item(label)
 	panel.add_child(review_filter)
+	semantic_filter = OptionButton.new()
+	semantic_filter.add_item("All semantic categories")
+	var semantic_categories: Array[String] = []
+	for id in Catalog.all_ids():
+		var semantic := Catalog.semantic_category(id)
+		if semantic not in semantic_categories:
+			semantic_categories.append(semantic)
+	semantic_categories.sort()
+	for semantic in semantic_categories:
+		semantic_filter.add_item(semantic.replace("_", " ").capitalize())
+		semantic_filter.set_item_metadata(semantic_filter.item_count - 1, semantic)
+	panel.add_child(semantic_filter)
 	search = LineEdit.new()
 	search.placeholder_text = "Search pack/model (all 315)"
 	panel.add_child(search)
 	asset_list = ItemList.new()
-	asset_list.custom_minimum_size.y = 170
+	asset_list.custom_minimum_size.y = 220
 	panel.add_child(asset_list)
 	search.text_changed.connect(_filter)
 	family_filter.item_selected.connect(func(_i): _filter(search.text))
 	review_filter.item_selected.connect(func(_i): _filter(search.text))
+	semantic_filter.item_selected.connect(func(_i): _filter(search.text))
 	asset_list.item_selected.connect(func(i): select_asset(asset_list.get_item_metadata(i)))
 	_filter("")
 	factor = _number(panel, "Uniform scale", 0.01, 50, 0.01, Catalog.DEFAULT_SCALE)
+	var scale_buttons := HBoxContainer.new()
+	panel.add_child(scale_buttons)
+	for entry in [["−1", -1.0], ["−0.1", -0.1], ["+0.1", 0.1], ["+1", 1.0]]:
+		var scale_button := Button.new()
+		scale_button.text = entry[0]
+		scale_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scale_button.pressed.connect(func(): factor.value = clampf(factor.value + entry[1], factor.min_value, factor.max_value))
+		scale_buttons.add_child(scale_button)
 	angle = _number(panel, "Yaw degrees (Y-up)", -360, 360, 90, 0)
 	anchor = OptionButton.new()
 	for label in ["Anchor: floor center", "Anchor: source origin", "Anchor: top center"]:
@@ -99,6 +130,20 @@ func _ready() -> void:
 	duplicate_piece = _check(panel, "Neighbor / seam comparison", false)
 	bounds_toggle = _check(panel, "Bounds + pivot axes + anchor", true)
 	mira_toggle = _check(panel, "MIRA reference (runtime visual)", true)
+	var camera_help := Label.new()
+	camera_help.text = "VIEW  RMB orbit · MMB pan · wheel zoom · F frame\n1 front · 3 side · 7 top · Q/E rotate asset"
+	camera_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(camera_help)
+	var camera_buttons := HBoxContainer.new()
+	panel.add_child(camera_buttons)
+	for label in ["Frame", "Front", "Side", "Top"]:
+		var view_button := Button.new()
+		view_button.text = label
+		camera_buttons.add_child(view_button)
+		if label == "Frame": view_button.pressed.connect(_frame_camera)
+		elif label == "Front": view_button.pressed.connect(func(): orbit.set_view(0.0, 0.12))
+		elif label == "Side": view_button.pressed.connect(func(): orbit.set_view(PI / 2.0, 0.12))
+		else: view_button.pressed.connect(func(): orbit.set_view(0.0, 1.5))
 	reset_button = Button.new()
 	reset_button.text = "Reset to catalog calibration / frame"
 	reset_button.pressed.connect(func(): select_asset(selected))
@@ -108,7 +153,7 @@ func _ready() -> void:
 	copy_button.pressed.connect(func(): DisplayServer.clipboard_set(JSON.stringify(calibration_record(), "\t")))
 	panel.add_child(copy_button)
 	save_button = Button.new()
-	save_button.text = "Save selected asset override"
+	save_button.text = "Save calibration"
 	save_button.pressed.connect(_save_override)
 	panel.add_child(save_button)
 	write_controls.append(save_button)
@@ -118,10 +163,29 @@ func _ready() -> void:
 	panel.add_child(clear_button)
 	write_controls.append(clear_button)
 	reviewed_toggle = CheckBox.new()
-	reviewed_toggle.text = "Reviewed"
+	reviewed_toggle.text = "Reviewed (saves current calibration)"
 	reviewed_toggle.toggled.connect(_set_reviewed)
 	panel.add_child(reviewed_toggle)
 	write_controls.append(reviewed_toggle)
+	classification = OptionButton.new()
+	for label in ["Unclassified", "Structural module", "Ground module", "Entrance / connector", "Tactical obstacle", "Decorative prop"]:
+		classification.add_item(label)
+	panel.add_child(classification)
+	classification.item_selected.connect(func(_i): rebuild())
+	write_controls.append(classification)
+	footprint_x = _number(panel, "Suggested footprint X (cells)", 0, 100, 1, 0)
+	footprint_z = _number(panel, "Suggested footprint Z (cells)", 0, 100, 1, 0)
+	write_controls.append(footprint_x)
+	write_controls.append(footprint_z)
+	calibration_notes = TextEdit.new()
+	calibration_notes.placeholder_text = "Verified orientation, intended combinations, clearance, or scale notes"
+	calibration_notes.custom_minimum_size.y = 72
+	calibration_notes.text_changed.connect(_update_save_status)
+	panel.add_child(calibration_notes)
+	write_controls.append(calibration_notes)
+	dimensions_label = Label.new()
+	dimensions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(dimensions_label)
 	var next_button := Button.new()
 	next_button.text = "Next unreviewed asset"
 	next_button.pressed.connect(_next_unreviewed)
@@ -188,6 +252,7 @@ func _ready() -> void:
 	camera.current = true
 	camera.fov = 48
 	world.add_child(camera)
+	orbit = OrbitCamera.new(camera)
 	select_asset(selected)
 
 func _number(panel: VBoxContainer, label: String, low: float, high: float, step: float, value: float) -> SpinBox:
@@ -221,7 +286,9 @@ func _filter(query: String) -> void:
 	for id in ids:
 		var reviewed: bool = id in calibration_data.get("reviewed", [])
 		var review_matches: bool = review_filter.selected == 0 or (review_filter.selected == 1 and not reviewed) or (review_filter.selected == 2 and reviewed)
-		if review_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
+		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
+		var semantic_matches := selected_semantic.is_empty() or Catalog.semantic_category(id) == selected_semantic
+		if review_matches and semantic_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
 			var index := asset_list.add_item(("* " if Catalog.PROFILES.has(id) else "") + id)
 			asset_list.set_item_metadata(index, id)
 			asset_list.set_item_tooltip(index, id)
@@ -239,10 +306,15 @@ func select_asset(id: String) -> void:
 	y_offset.value = position[1]
 	z_offset.value = position[2]
 	var category: String = profile.calibration_category
-	category_label.text = "Category: " + category
+	category_label.text = "Semantic: %s\nScale group: %s" % [profile.semantic_category, category]
 	category_scale.value = float(calibration_data.get("category_presets", {}).get(category, calibration_data.fallback).scale)
 	fallback_scale.value = float(calibration_data.fallback.scale)
 	reviewed_toggle.button_pressed = profile.reviewed
+	classification.select(_classification_index(str(profile.get("classification", "unclassified"))))
+	var suggested: Array = profile.get("suggested_footprint", [0, 0])
+	footprint_x.value = float(suggested[0])
+	footprint_z.value = float(suggested[1])
+	calibration_notes.text = str(profile.get("calibration_notes", ""))
 	for i in asset_list.item_count:
 		if asset_list.get_item_metadata(i) == id:
 			asset_list.select(i)
@@ -257,7 +329,7 @@ func rebuild(frame := false) -> void:
 		content.free()
 	if is_instance_valid(overlays):
 		overlays.free()
-	for control in [factor, angle, x_offset, y_offset, z_offset, pitch]:
+	for control in [factor, angle, x_offset, y_offset, z_offset, pitch, footprint_x, footprint_z]:
 		control.editable = mode.selected == 0
 	anchor.disabled = mode.selected != 0
 	duplicate_piece.disabled = mode.selected != 0
@@ -267,6 +339,10 @@ func rebuild(frame := false) -> void:
 			control.disabled = mode.selected != 0
 		elif control is SpinBox:
 			control.editable = mode.selected == 0
+		elif control is TextEdit:
+			control.editable = mode.selected == 0
+		elif control is OptionButton:
+			control.disabled = mode.selected != 0
 	content = Node3D.new()
 	overlays = Node3D.new()
 	world.add_child(content)
@@ -279,12 +355,19 @@ func rebuild(frame := false) -> void:
 		if duplicate_piece.button_pressed:
 			Placement.instantiate_calibrated(content, Catalog.path_for(selected), at + Vector3(pitch.value, 0, 0), factor.value, deg_to_rad(angle.value), anchor.selected)
 		var p := Catalog.profile(selected, calibration_data)
-		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
+		var convention := PlacementConventions.record(selected, calibration_data, bounds_data)
+		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.semantic_category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
+		info.text += "Snap X/Z: %s · assembly pitch: %s\nTactical policy: %s · authored footprint: %s\n%s\n" % [convention.origin_snap, convention.assembly_pitch, convention.tactical_policy, convention.authored_tactical_footprint if not convention.authored_tactical_footprint.is_empty() else "none", convention.note]
 		_axes(overlays, at, 0.65)
 	else:
 		_build_assembly(mode.selected)
 		info.text = "Assembly %d — family calibration policy, authored origins.\nBounds are visual envelopes, not solids.\nIndividual controls apply only in asset mode.\n" % mode.selected
 	current_bounds = Placement.mesh_bounds(content)
+	display_bounds = current_bounds
+	if mode.selected == 0:
+		dimensions_label.text = "MEASURED\nNative: %.3f × %.3f × %.3f\nCalibrated: %.3f × %.3f × %.3f\nSuggested footprint is planning metadata; it does not change MapData." % [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
+	else:
+		dimensions_label.text = "Assembly envelope: %.3f × %.3f × %.3f" % [current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	if bounds_toggle.button_pressed:
 		for piece in content.get_children():
 			if piece is TacticalVisualOccluder:
@@ -297,12 +380,13 @@ func rebuild(frame := false) -> void:
 		comparison = load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate()
 		# Adapter scene is parented at y=-1 under units; use floor-space origin here.
 		comparison.position = Vector3(current_bounds.end.x + 1.1, 0, current_bounds.get_center().z)
+		comparison.scale = Vector3.ONE * (MIRA_REFERENCE_HEIGHT / MIRA_RUNTIME_HEIGHT)
 		content.add_child(comparison)
-	info.text += "\nGrid = 1 world unit. Red +X / green +Y / blue +Z.\nRMB drag: orbit · wheel: zoom · F: frame.\n* = additional orientation/anchor metadata; use the review filter for calibration progress.\nCopy exports the individual asset settings only."
+		display_bounds = display_bounds.merge(Placement.mesh_bounds(comparison))
+	info.text += "\nGrid = 1 world unit. Lab MIRA reference = %.2f m. Red +X / green +Y / blue +Z.\nRMB orbit · MMB pan · wheel zoom · F frame.\n* = additional orientation/anchor metadata; use the review filter for calibration progress.\nCopy exports the individual asset settings only." % MIRA_REFERENCE_HEIGHT
 	if frame:
-		focus = current_bounds.get_center() + Vector3(0.7, 0, 0)
-		distance = maxf(7, current_bounds.size.length() * 1.35)
-	_update_camera()
+		_frame_camera()
+	orbit.apply()
 	_update_save_status()
 
 func _build_assembly(index: int) -> void:
@@ -332,7 +416,12 @@ func _override_record() -> Dictionary:
 		"scale": factor.value,
 		"yaw_degrees": angle.value,
 		"anchor": anchor.selected,
-		"anchor_position": [x_offset.value, y_offset.value, z_offset.value]
+		"anchor_position": [x_offset.value, y_offset.value, z_offset.value],
+		"classification": _classification_key(classification.selected),
+		"suggested_footprint": [int(footprint_x.value), int(footprint_z.value)],
+		"calibration_notes": calibration_notes.text.strip_edges(),
+		"measured_native_size": [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z],
+		"measured_calibrated_size": [current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	}
 
 func _save_data(message: String) -> bool:
@@ -367,6 +456,10 @@ func _save_fallback() -> void:
 func _set_reviewed(enabled: bool) -> void:
 	if changing:
 		return
+	if enabled:
+		# A reviewed flag must always refer to a durable per-asset record, never
+		# merely to a provisional inherited preset or unsaved viewport state.
+		calibration_data.asset_overrides[selected] = _override_record()
 	var reviewed: Array = calibration_data.reviewed
 	if enabled and selected not in reviewed:
 		reviewed.append(selected)
@@ -384,7 +477,8 @@ func _next_unreviewed() -> void:
 	for offset in all.size():
 		var candidate: String = all[(start + offset) % all.size()]
 		var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
-		if candidate not in calibration_data.reviewed and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
+		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
+		if candidate not in calibration_data.reviewed and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (selected_semantic.is_empty() or Catalog.semantic_category(candidate) == selected_semantic) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
 			select_asset(candidate)
 			return
 	save_status.text = "No unreviewed assets match the current family/search."
@@ -399,34 +493,50 @@ func _update_save_status() -> void:
 	if not is_instance_valid(save_status) or mode.selected != 0:
 		return
 	var p := Catalog.profile(selected, calibration_data)
-	var saved := {"scale": p.scale, "yaw_degrees": p.yaw_degrees, "anchor": p.anchor, "anchor_position": p.anchor_position}
+	var saved := {"scale": p.scale, "yaw_degrees": p.yaw_degrees, "anchor": p.anchor, "anchor_position": p.anchor_position,
+		"classification": p.get("classification", "unclassified"), "suggested_footprint": p.get("suggested_footprint", [0, 0]),
+		"calibration_notes": p.get("calibration_notes", ""), "measured_native_size": p.get("measured_native_size", [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z]),
+		"measured_calibrated_size": p.get("measured_calibrated_size", [current_bounds.size.x, current_bounds.size.y, current_bounds.size.z])}
 	var dirty := JSON.stringify(_override_record()) != JSON.stringify(saved)
 	save_status.text = "%s | %s | %s" % [p.calibration_source, "reviewed" if p.reviewed else "unreviewed", "UNSAVED CHANGES" if dirty else "saved/inherited"]
 
 func calibration_record() -> Dictionary:
-	return {"id": selected, "path": Catalog.path_for(selected), "scale": factor.value, "yaw_degrees": angle.value,
-		"anchor": anchor.selected, "anchor_position": [x_offset.value, y_offset.value, z_offset.value],
+	var record := _override_record()
+	record.merge({"id": selected, "path": Catalog.path_for(selected),
 		"native_position": [native_bounds.position.x, native_bounds.position.y, native_bounds.position.z],
-		"native_size": [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z], "tactical_occupancy": "not authored"}
+		"calibration_source": Catalog.profile(selected, calibration_data).calibration_source,
+		"reviewed": reviewed_toggle.button_pressed, "tactical_occupancy": "not authored"})
+	return record
 
 func _view_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_RIGHT:
-		azimuth -= event.relative.x * 0.008
-		altitude = clampf(altitude + event.relative.y * 0.008, -0.1, 1.4)
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			distance = maxf(1, distance * 0.9)
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			distance = minf(100, distance / 0.9)
-	_update_camera()
+	if orbit.handle_mouse(event):
+		accept_event()
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
-		rebuild(true)
+func _shortcut_input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_F: _frame_camera()
+		KEY_1: orbit.set_view(0.0, 0.12)
+		KEY_3: orbit.set_view(PI / 2.0, 0.12)
+		KEY_7: orbit.set_view(0.0, 1.5)
+		KEY_Q:
+			if mode.selected == 0: angle.value -= 90.0
+		KEY_E:
+			if mode.selected == 0: angle.value += 90.0
+		KEY_S:
+			if event.ctrl_pressed and mode.selected == 0: _save_override()
 
-func _update_camera() -> void:
-	camera.position = focus + Vector3(sin(azimuth) * cos(altitude), sin(altitude), cos(azimuth) * cos(altitude)) * distance
-	camera.look_at(focus)
+func _frame_camera() -> void:
+	if is_instance_valid(orbit) and current_bounds.size.length_squared() > 0.0:
+		orbit.frame(display_bounds)
+
+func _classification_key(index: int) -> String:
+	return ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"][clampi(index, 0, 5)]
+
+func _classification_index(value: String) -> int:
+	var values := ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"]
+	return maxi(0, values.find(value))
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
