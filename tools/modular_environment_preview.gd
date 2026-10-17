@@ -10,6 +10,9 @@ var seed_input: SpinBox
 var camera: Camera3D
 var orbit: RefCounted
 var inspection_target := "whole map"
+var inspection_module: Node3D
+var adjustment_step: SpinBox
+var transform_label: Label
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -34,6 +37,24 @@ func _shortcut_input(event: InputEvent) -> void:
 			_set_camera_view(PI * 0.5, 0.18)
 		elif event.keycode == KEY_7:
 			_set_camera_view(0.0, 1.50)
+		elif event.keycode == KEY_TAB:
+			_select_next_module()
+		elif event.keycode == KEY_LEFT:
+			_nudge_inspection(Vector3.LEFT * _adjustment_amount())
+		elif event.keycode == KEY_RIGHT:
+			_nudge_inspection(Vector3.RIGHT * _adjustment_amount())
+		elif event.keycode == KEY_UP:
+			_nudge_inspection(Vector3.FORWARD * _adjustment_amount())
+		elif event.keycode == KEY_DOWN:
+			_nudge_inspection(Vector3.BACK * _adjustment_amount())
+		elif event.keycode == KEY_PAGEUP:
+			_nudge_inspection(Vector3.UP * _adjustment_amount())
+		elif event.keycode == KEY_PAGEDOWN:
+			_nudge_inspection(Vector3.DOWN * _adjustment_amount())
+		elif event.keycode == KEY_Q:
+			_rotate_inspection(-90.0)
+		elif event.keycode == KEY_E:
+			_rotate_inspection(90.0)
 		elif event.keycode == KEY_BRACKETRIGHT:
 			_set_seed(generation_seed + 1)
 		elif event.keycode == KEY_BRACKETLEFT:
@@ -46,6 +67,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _rebuild() -> void:
 	if content:
 		content.free()
+	inspection_module = null
+	inspection_target = "whole map"
 	content = Node3D.new()
 	content.name = "PreviewContent"
 	add_child(content)
@@ -143,6 +166,34 @@ func _build_ui() -> void:
 	_add_view_button(views, "Front (1)", 0.0, 0.18)
 	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
 	_add_view_button(views, "Top (7)", 0.0, 1.50)
+	_add_action_button(views, "Next piece (Tab)", _select_next_module)
+	var nudges := HBoxContainer.new()
+	nudges.position = Vector2(18, 152)
+	layer.add_child(nudges)
+	var nudge_heading := Label.new()
+	nudge_heading.text = "Selected piece  ·  step"
+	nudges.add_child(nudge_heading)
+	adjustment_step = SpinBox.new()
+	adjustment_step.min_value = 0.01
+	adjustment_step.max_value = 5.0
+	adjustment_step.step = 0.01
+	adjustment_step.value = 0.05
+	adjustment_step.custom_minimum_size.x = 90
+	nudges.add_child(adjustment_step)
+	_add_action_button(nudges, "X−", func(): _nudge_inspection(Vector3.LEFT * _adjustment_amount()))
+	_add_action_button(nudges, "X+", func(): _nudge_inspection(Vector3.RIGHT * _adjustment_amount()))
+	_add_action_button(nudges, "Y−", func(): _nudge_inspection(Vector3.DOWN * _adjustment_amount()))
+	_add_action_button(nudges, "Y+", func(): _nudge_inspection(Vector3.UP * _adjustment_amount()))
+	_add_action_button(nudges, "Z−", func(): _nudge_inspection(Vector3.FORWARD * _adjustment_amount()))
+	_add_action_button(nudges, "Z+", func(): _nudge_inspection(Vector3.BACK * _adjustment_amount()))
+	_add_action_button(nudges, "Yaw −90", func(): _rotate_inspection(-90.0))
+	_add_action_button(nudges, "Yaw +90", func(): _rotate_inspection(90.0))
+	_add_action_button(nudges, "Reset", _reset_inspection)
+	_add_action_button(nudges, "Copy transform", _copy_inspection_transform)
+	transform_label = Label.new()
+	transform_label.position = Vector2(18, 192)
+	transform_label.text = "Select Inspect corner or Inspect road seam, then move the framed piece."
+	layer.add_child(transform_label)
 
 func _set_seed(value: int) -> void:
 	generation_seed = value
@@ -166,23 +217,43 @@ func _focus_component(component_id: StringName, label: String) -> bool:
 	for module in modules:
 		if module.get_meta("component_id", &"") != component_id:
 			continue
-		var bounds := AssetPlacement.mesh_bounds(module as Node3D)
-		if bounds.size == Vector3.ZERO:
-			return false
-		# A joint only makes sense beside the pieces it connects. Include touching
-		# module visuals so the inspector frames the seam rather than one mesh.
-		var neighborhood := bounds
-		for neighbor in modules:
-			if neighbor == module:
-				continue
-			var neighbor_bounds := AssetPlacement.mesh_bounds(neighbor as Node3D)
-			if bounds.grow(0.25).intersects(neighbor_bounds):
-				neighborhood = neighborhood.merge(neighbor_bounds)
-		orbit.frame(neighborhood.grow(1.0))
-		inspection_target = label
-		_refresh_status_target()
-		return true
+		return _focus_module(module as Node3D, label, modules)
 	return false
+
+func _focus_module(module: Node3D, label: String, modules: Array[Node]) -> bool:
+	var bounds := AssetPlacement.mesh_bounds(module)
+	if bounds.size == Vector3.ZERO:
+		return false
+	# A joint only makes sense beside the pieces it connects. Include touching
+	# module visuals so the inspector frames the seam rather than one mesh.
+	var neighborhood := bounds
+	for neighbor in modules:
+		if neighbor == module:
+			continue
+		var neighbor_bounds := AssetPlacement.mesh_bounds(neighbor as Node3D)
+		if bounds.grow(0.25).intersects(neighbor_bounds):
+			neighborhood = neighborhood.merge(neighbor_bounds)
+	orbit.frame(neighborhood.grow(1.0))
+	_prepare_inspection_module(module)
+	inspection_target = label
+	_refresh_status_target()
+	return true
+
+func _select_next_module() -> void:
+	if not is_instance_valid(content) or not is_instance_valid(orbit):
+		return
+	var modular_root := content.get_node_or_null("ModularEnvironment")
+	if modular_root == null:
+		return
+	var modules: Array[Node] = modular_root.get_children()
+	if modules.is_empty():
+		return
+	var index := modules.find(inspection_module)
+	for offset in modules.size():
+		var candidate := modules[(index + 1 + offset) % modules.size()] as Node3D
+		var component_id: StringName = candidate.get_meta("component_id", &"unknown")
+		if _focus_module(candidate, str(component_id), modules):
+			return
 
 func _set_camera_view(azimuth: float, altitude: float) -> void:
 	if is_instance_valid(orbit):
@@ -193,6 +264,76 @@ func _add_view_button(parent: Control, label: String, azimuth: float, altitude: 
 	button.text = label
 	button.pressed.connect(func(): _set_camera_view(azimuth, altitude))
 	parent.add_child(button)
+
+func _add_action_button(parent: Control, label: String, callback: Callable) -> void:
+	var button := Button.new()
+	button.text = label
+	button.pressed.connect(callback)
+	parent.add_child(button)
+
+func _prepare_inspection_module(module: Node3D) -> void:
+	inspection_module = module
+	if not module.has_meta("inspection_base_position"):
+		var pivot := AssetPlacement.mesh_bounds(module).get_center()
+		for child in module.get_children():
+			if child is Node3D:
+				child.position -= pivot
+		module.position = pivot
+		module.set_meta("inspection_base_position", pivot)
+	_update_transform_label()
+
+func _adjustment_amount() -> float:
+	return adjustment_step.value if is_instance_valid(adjustment_step) else 0.05
+
+func _nudge_inspection(delta: Vector3) -> void:
+	if not is_instance_valid(inspection_module):
+		_update_transform_label("Select a piece first.")
+		return
+	inspection_module.position += delta
+	_update_transform_label()
+
+func _rotate_inspection(degrees: float) -> void:
+	if not is_instance_valid(inspection_module):
+		_update_transform_label("Select a piece first.")
+		return
+	inspection_module.rotate_y(deg_to_rad(degrees))
+	_update_transform_label()
+
+func _reset_inspection() -> void:
+	if not is_instance_valid(inspection_module):
+		_update_transform_label("Select a piece first.")
+		return
+	inspection_module.position = inspection_module.get_meta("inspection_base_position", inspection_module.position)
+	inspection_module.rotation = Vector3.ZERO
+	_update_transform_label()
+
+func _copy_inspection_transform() -> void:
+	if not is_instance_valid(inspection_module):
+		_update_transform_label("Select a piece first.")
+		return
+	var text := _inspection_transform_text()
+	DisplayServer.clipboard_set(text)
+	_update_transform_label("Copied: " + text)
+
+func _inspection_transform_text() -> String:
+	if not is_instance_valid(inspection_module):
+		return ""
+	var base: Vector3 = inspection_module.get_meta("inspection_base_position", inspection_module.position)
+	var offset := inspection_module.position - base
+	return "%s offset=(%.3f, %.3f, %.3f) yaw=%.1f" % [
+		inspection_module.get_meta("component_id", &"unknown"), offset.x, offset.y, offset.z,
+		rad_to_deg(inspection_module.rotation.y),
+	]
+
+func _update_transform_label(prefix := "") -> void:
+	if not is_instance_valid(transform_label):
+		return
+	if not prefix.is_empty():
+		transform_label.text = prefix
+	elif is_instance_valid(inspection_module):
+		transform_label.text = _inspection_transform_text() + "  ·  arrows X/Z · PgUp/PgDn Y · Q/E yaw"
+	else:
+		transform_label.text = "Select Inspect corner or Inspect road seam, then move the framed piece."
 
 func _update_status(component_count: int, validation_text: String) -> void:
 	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nTarget: %s  |  RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [

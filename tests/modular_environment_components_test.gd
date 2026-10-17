@@ -74,6 +74,15 @@ func _run() -> void:
 	check("VALID" in preview.status.text, "Preview reports the generated modular layout as valid")
 	check(preview._focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0"), "Preview can frame the assembled corner for seam inspection")
 	check(preview.inspection_target == "factory corner — outer, scale 2.0" and "Target: factory corner" in preview.status.text, "Preview identifies its active inspection target and calibration")
+	var selected_module: Node3D = preview.inspection_module
+	var authored_position: Vector3 = selected_module.get_meta("inspection_base_position")
+	preview._nudge_inspection(Vector3(0.125, 0.25, -0.5))
+	check(selected_module.position.is_equal_approx(authored_position + Vector3(0.125, 0.25, -0.5)), "Preview lets the developer nudge a selected module in three axes")
+	check("offset=(0.125, 0.250, -0.500)" in preview._inspection_transform_text(), "Preview reports a copyable authored offset")
+	preview._rotate_inspection(90.0)
+	check(is_equal_approx(rad_to_deg(selected_module.rotation.y), 90.0), "Preview lets the developer rotate the selected module")
+	preview._reset_inspection()
+	check(selected_module.position.is_equal_approx(authored_position) and selected_module.rotation.is_equal_approx(Vector3.ZERO), "Preview resets inspection edits to the authored transform")
 	var corner_focus: Vector3 = preview.orbit.focus
 	preview._set_camera_view(PI * 0.5, 0.18)
 	check(preview.orbit.focus.is_equal_approx(corner_focus) and is_equal_approx(preview.orbit.azimuth, PI * 0.5), "View presets preserve the inspection target while changing angle")

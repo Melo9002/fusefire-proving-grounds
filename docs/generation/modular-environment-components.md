@@ -70,7 +70,9 @@ Press `R` to rebuild the same seed. Press `[` or `]` to change the seed. A seed 
 godot --path . res://tools/modular_environment_preview.tscn -- 7319
 ```
 
-The preview reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. Use the visible **Inspect corner** and **Inspect road seam** controls to frame those assembled joints, then right-drag to orbit, middle-drag to pan, and use the wheel to zoom. **Front**, **Side**, and **Top** buttons (or `1`, `3`, and `7`) change angle without losing the current target. `C`, `G`, and `F` focus the corner, road seam, and whole map. It does not start a battle or alter the default generation mode.
+The preview reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. Use **Inspect corner**, **Inspect road seam**, or **Next piece** (`Tab`) to select and frame a module. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
+
+The selected-piece controls are a visual authoring scratchpad. Choose a step and use the X/Y/Z buttons or the arrow and Page Up/Page Down keys to move the module. `Q` and `E` rotate it by 90 degrees. **Reset** restores its authored transform, while **Copy transform** puts the component ID, offset, and yaw on the clipboard for transfer into the catalog. These edits affect only the current preview session; they never modify `MapData`, calibration JSON, or tactical footprints. `C`, `G`, and `F` focus the corner, road seam, and whole map.
 
 ## Adding a module
 
