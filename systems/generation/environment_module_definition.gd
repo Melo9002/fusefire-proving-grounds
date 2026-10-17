@@ -1,6 +1,21 @@
 class_name EnvironmentModuleDefinition
 extends RefCounted
 
+enum TacticalRole {
+	GROUND,
+	STRUCTURE,
+	SOLID_OBSTACLE,
+	VAULTABLE_OBSTACLE,
+	VISUAL_ONLY,
+}
+
+enum CellInteraction {
+	OPEN,
+	BLOCKED,
+	VAULT,
+	WALK_OVER,
+}
+
 var component_id: StringName
 var family: StringName
 var size: Vector2i
@@ -10,6 +25,11 @@ var cell_effects: Dictionary = {}
 var connections: Array[EnvironmentModuleConnection] = []
 var visuals: Array[Dictionary] = []
 var allowed_rotations: Array[int] = [0, 1, 2, 3]
+var tactical_role: TacticalRole = TacticalRole.VISUAL_ONLY
+## Presentation authoring convention only. Tactical placement remains integer-cell based.
+var visual_origin_snap := Vector2(0.5, 0.5)
+var visual_assembly_pitch := Vector2.ZERO
+var calibration_note := ""
 
 func _init(id: StringName, component_family: StringName, dimensions: Vector2i) -> void:
 	component_id = id
@@ -48,6 +68,20 @@ func add_connection(cell: Vector2i, direction: Vector2i, type: EnvironmentModule
 func set_effect(cell: Vector2i, effect: Dictionary) -> EnvironmentModuleDefinition:
 	cell_effects[cell] = effect.duplicate(true)
 	return self
+
+func set_tactical_role(role: TacticalRole) -> EnvironmentModuleDefinition:
+	tactical_role = role
+	return self
+
+func set_visual_convention(origin_snap: Vector2, assembly_pitch: Vector2, note := "") -> EnvironmentModuleDefinition:
+	visual_origin_snap = origin_snap
+	visual_assembly_pitch = assembly_pitch
+	calibration_note = note
+	return self
+
+func interaction_at(cell: Vector2i) -> CellInteraction:
+	var effect: Dictionary = cell_effects.get(cell, {})
+	return effect.get("interaction", CellInteraction.OPEN)
 
 func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quarters := 0, anchor := 0) -> EnvironmentModuleDefinition:
 	visuals.append({

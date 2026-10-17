@@ -4,13 +4,20 @@ Goal 2.2 introduces a small, opt-in industrial module system. It proves that reu
 
 ## Architecture
 
-`EnvironmentModuleDefinition` describes a stable component ID, logical footprint, clearance, allowed quarter-turn rotations, explicit connections, tactical cell effects and presentation references. `EnvironmentModulePlacement` records one deterministic placement. `EnvironmentModuleLayout` rotates footprints and connectors, rejects overlaps and invalid clearances, and validates connector compatibility.
+`EnvironmentModuleDefinition` describes a stable component ID, logical footprint, clearance, allowed quarter-turn rotations, explicit connections, tactical cell effects and presentation references. It also records a semantic tactical role and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement. `EnvironmentModuleLayout` rotates footprints and connectors, rejects overlaps and invalid clearances, and validates connector compatibility.
 
 The boundary is deliberate:
 
 - Tactical cell effects are copied into `MapData`. These determine traversal, cover and line of sight.
 - Visual references are stored with the definition and instantiated by `ModularEnvironmentPresenter`.
 - Mesh bounds, imported collisions and visual overlap never change tactical legality.
+
+The first explicit tactical roles are `ground`, `structure`, `solid_obstacle`, `vaultable_obstacle`, and `visual_only`. Cell interactions refine this into `open`, `blocked`, `vault`, and `walk_over`. These labels explain authored intent; the copied `MapCellData` remains authoritative.
+
+- Roads and paving are ground presentation. They add no blocking cells.
+- Containers are solid tactical obstacles. Their authored cells block movement and line of sight and provide full cover.
+- The construction barrier is vaultable. Its cell uses FuseFire's existing low-cover contract: traversable, non-stoppable, movement cost 2, and the presentation path selects the `vault` animation.
+- A future walk-over prop can use the explicit `walk_over` interaction without receiving low-cover or forced-vault behavior.
 
 The resulting placement list is retained on `MapData` as presentation metadata. Replay and tactical simulation continue to consume the authoritative cells.
 
@@ -27,10 +34,25 @@ The first catalog contains:
 - Factory straight wall, corner, wide doorway and interior floor.
 - Straight road, road corner and paved ground.
 - A cargo-container obstacle.
+- A one-cell vaultable construction barrier.
 
 The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
 
-The presentation uses known integration conventions: City Kit Roads surfaces use the existing scale 9 calibration, Factory Kit structural pieces retain their known native modular convention, and the containers use the existing warehouse scale. No Asset Laboratory calibration or review state is changed.
+The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the 1.5 scale and quarter-cell visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
+
+The current authored footprints are deliberately different from raw visual bounds where the tactical meaning demands it:
+
+| Component | Logical footprint | Visual convention | Tactical meaning |
+| --- | ---: | --- | --- |
+| Straight road / paving | 10 × 10 | 10-unit integer pitch | Open ground |
+| Road curve | 20 × 20 | Two road pitches | Open ground |
+| Factory wall run | 3 × 1 | Two 1.5-unit wall bays | Blocking full cover |
+| Wide doorway | 3 × 1 | One 3-unit entrance bay | Blocking jambs, open center |
+| Factory corner | 2 × 2 | 1.5 scale with documented visual overhang | Blocking junction |
+| Container | 2 × 5 | Scale 5; the visual slightly exceeds four cells in length | Solid obstacle |
+| Construction barrier | 1 × 1 | Scale 5 | Vaultable low cover |
+
+Visual placement may use quarter- or half-unit offsets to keep imported seams aligned. Module origins, connections, and tactical effects remain integer grid cells.
 
 ## Inspecting the sample
 
@@ -46,13 +68,13 @@ Press `R` to rebuild the same seed. Press `[` or `]` to change the seed. A seed 
 godot --path . res://tools/modular_environment_preview.tscn -- 7319
 ```
 
-The preview reports map validation status and presents entrances, wall runs, connected ground and cargo obstacles. It does not start a battle or alter the default generation mode.
+The preview reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. The camera frames the centered generated world and supports orbit, pan, zoom, and the visible seed controls. It does not start a battle or alter the default generation mode.
 
 ## Adding a module
 
 1. Add a definition to `IndustrialModuleCatalog` with a unique ID and family.
 2. Declare its logical footprint and any extra clearance cells.
-3. Add tactical effects only for cells that must alter gameplay.
+3. Assign the narrowest tactical role and add effects only for cells that must alter gameplay. Low obstacles intended for crossing should use the established vault contract rather than becoming solid blockers.
 4. Add edge connections using the small semantic vocabulary.
 5. Add a visual reference with explicit scale, yaw and offset. Keep uncertain assets behind placeholders until inspected.
 6. Place it through `EnvironmentModuleLayout.try_add()` so bounds, overlap and clearance checks run.
@@ -64,6 +86,7 @@ The preview reports map validation status and presents entrances, wall runs, con
 - Connections validate declared neighbors but open boundary connectors are not yet globally required to close.
 - Only ground-level industrial pieces are supported. Multi-floor modules and vertical connectors remain separate work.
 - Factory and Space Kit dimensions are not normalized or treated as interchangeable.
-- The Factory structural pieces still need broader manual calibration before more wall families are added.
+- The reviewed visual scales are available, but more structural assets still need authored footprints and connector decisions before joining the runtime catalog.
+- Ground and obstacle modules currently reserve exclusive layout footprints, so placing tactical props on top of a ground module requires a future layered-placement rule rather than bypassing overlap checks.
 - Objective and spawn suitability metadata is not part of module definitions yet.
 

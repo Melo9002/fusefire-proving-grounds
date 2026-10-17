@@ -9,16 +9,17 @@ static func apply(data: MapData, cell_size: float, map_seed: int) -> Environment
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed ^ 0x2202
 	var placements: Array[EnvironmentModulePlacement] = [
-		EnvironmentModulePlacement.new(&"road_straight", Vector2i(2, 20)),
+		EnvironmentModulePlacement.new(&"road_straight", Vector2i(1, 20)),
 		EnvironmentModulePlacement.new(&"paving_square", Vector2i(11, 20)),
-		EnvironmentModulePlacement.new(&"factory_interior_floor", Vector2i(11, 14)),
+		EnvironmentModulePlacement.new(&"factory_interior_floor", Vector2i(11, 13)),
 		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(11, 19)),
 		EnvironmentModulePlacement.new(&"factory_doorway_wide", Vector2i(14, 19)),
-		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(16, 19)),
-		EnvironmentModulePlacement.new(&"factory_wall_corner", Vector2i(19, 19)),
-		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(19, 16), 1),
+		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(17, 19)),
+		EnvironmentModulePlacement.new(&"factory_wall_corner", Vector2i(20, 18)),
+		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(21, 15), 1),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(24, 19), 0, rng.randi_range(0, 2)),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(30, 18), 1, rng.randi_range(0, 2)),
+		EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(22, 24)),
 	]
 	for placement in placements:
 		if not layout.try_add(catalog[placement.component_id], placement, data.map_size):
@@ -82,6 +83,7 @@ static func _apply_tactical_cells(data: MapData, layout: EnvironmentModuleLayout
 			cell.walkable = effect.get("walkable", true)
 			cell.can_stop = effect.get("can_stop", cell.walkable)
 			cell.blocks_line_of_sight = effect.get("blocks_los", false)
+			cell.movement_cost = maxi(1, int(effect.get("movement_cost", 1)))
 
 static func _find(layout: EnvironmentModuleLayout, id: StringName) -> EnvironmentModulePlacement:
 	for placement in layout.placements:

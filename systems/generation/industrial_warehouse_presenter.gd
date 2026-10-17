@@ -139,8 +139,3 @@ static func _hide_footprint_blocks(parent: Node3D, footprint: Rect2i) -> void:
 	for x in range(footprint.position.x, footprint.end.x):
 		for z in range(footprint.position.y, footprint.end.y):
 			_hide_tactical_block(parent, Vector2i(x, z))
-
-
-
-
-

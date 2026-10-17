@@ -16,6 +16,9 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 		module_root.name = "%s_%d_%d" % [placement.component_id, placement.origin.x, placement.origin.y]
 		module_root.set_meta("component_id", placement.component_id)
 		module_root.set_meta("rotation", placement.rotation)
+		module_root.set_meta("tactical_role", EnvironmentModuleDefinition.TacticalRole.keys()[definition.tactical_role].to_lower())
+		module_root.set_meta("visual_origin_snap", definition.visual_origin_snap)
+		module_root.set_meta("visual_assembly_pitch", definition.visual_assembly_pitch)
 		root.add_child(module_root)
 		for local_cell in definition.cell_effects:
 			var rotated := definition.rotate_cell(local_cell, placement.rotation)
