@@ -17,9 +17,10 @@ static func apply(data: MapData, cell_size: float, map_seed: int) -> Environment
 		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(17, 19)),
 		EnvironmentModulePlacement.new(&"factory_wall_corner", Vector2i(20, 18)),
 		EnvironmentModulePlacement.new(&"factory_wall_straight", Vector2i(21, 15), 1),
-		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(24, 19), 0, rng.randi_range(0, 2)),
+		# Occupants intentionally share cells with the paving ground layer.
+		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(18, 23), 0, rng.randi_range(0, 2)),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(30, 18), 1, rng.randi_range(0, 2)),
-		EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(22, 24)),
+		EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(13, 23)),
 	]
 	for placement in placements:
 		if not layout.try_add(catalog[placement.component_id], placement, data.map_size):

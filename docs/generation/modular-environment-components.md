@@ -4,13 +4,15 @@ Goal 2.2 introduces a small, opt-in industrial module system. It proves that reu
 
 ## Architecture
 
-`EnvironmentModuleDefinition` describes a stable component ID, logical footprint, clearance, allowed quarter-turn rotations, explicit connections, tactical cell effects and presentation references. It also records a semantic tactical role and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement. `EnvironmentModuleLayout` rotates footprints and connectors, rejects overlaps and invalid clearances, and validates connector compatibility.
+`EnvironmentModuleDefinition` describes a stable component ID, logical footprint, clearance, allowed quarter-turn rotations, explicit connections, tactical cell effects and presentation references. It also records a semantic tactical role, placement layer, and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement. `EnvironmentModuleLayout` rotates footprints and connectors, rejects same-layer overlaps and invalid clearances, and validates connector compatibility.
 
 The boundary is deliberate:
 
 - Tactical cell effects are copied into `MapData`. These determine traversal, cover and line of sight.
 - Visual references are stored with the definition and instantiated by `ModularEnvironmentPresenter`.
 - Mesh bounds, imported collisions and visual overlap never change tactical legality.
+
+Placement reservations are layered. `ground` modules reject other ground modules in the same cells, while `occupant` modules reject other occupants. Ground and occupant footprints may overlap, so a container, barrier, machine, or building section can sit on concrete without removing the concrete surface. `overhead` is reserved for future presentation pieces that need independent placement. Tactical effects are still applied once from every placed definition; layering does not merge or infer gameplay rules.
 
 The first explicit tactical roles are `ground`, `structure`, `solid_obstacle`, `vaultable_obstacle`, and `visual_only`. Cell interactions refine this into `open`, `blocked`, `vault`, and `walk_over`. These labels explain authored intent; the copied `MapCellData` remains authoritative.
 
@@ -36,7 +38,7 @@ The first catalog contains:
 - A cargo-container obstacle.
 - A one-cell vaultable construction barrier.
 
-The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
+The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. One container and the vaultable barrier are deliberately layered over the paving surface. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
 
 The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the 1.5 scale and quarter-cell visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
 
@@ -52,7 +54,7 @@ The current authored footprints are deliberately different from raw visual bound
 | Container | 2 × 5 | Scale 5; the visual slightly exceeds four cells in length | Solid obstacle |
 | Construction barrier | 1 × 1 | Scale 5 | Vaultable low cover |
 
-Visual placement may use quarter- or half-unit offsets to keep imported seams aligned. Module origins, connections, and tactical effects remain integer grid cells.
+Visual placement may use quarter- or half-unit offsets to keep imported seams aligned. Module origins, connections, and tactical effects remain integer grid cells. Thin road and paving meshes use a shared 0.02-unit presentation lift above the preview base plane; this removes z-fighting without changing their tactical elevation or introducing collision.
 
 ## Inspecting the sample
 
@@ -87,6 +89,6 @@ The preview reports map validation status and presents entrances, wall runs, con
 - Only ground-level industrial pieces are supported. Multi-floor modules and vertical connectors remain separate work.
 - Factory and Space Kit dimensions are not normalized or treated as interchangeable.
 - The reviewed visual scales are available, but more structural assets still need authored footprints and connector decisions before joining the runtime catalog.
-- Ground and obstacle modules currently reserve exclusive layout footprints, so placing tactical props on top of a ground module requires a future layered-placement rule rather than bypassing overlap checks.
+- Layering currently distinguishes ground, occupant, and overhead reservations. More complex compatibility masks are deferred until a real component needs them.
 - Objective and spawn suitability metadata is not part of module definitions yet.
 

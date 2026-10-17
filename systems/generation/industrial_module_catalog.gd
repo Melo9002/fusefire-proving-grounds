@@ -70,6 +70,7 @@ static func _doorway() -> EnvironmentModuleDefinition:
 static func _interior_floor() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_interior_floor", &"factory_structure", Vector2i(9, 6))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2.ONE, "Authored tactical floor; the neutral floor marker has no imported collision.")
 	item.add_connection(Vector2i(4, 5), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
 	return item
@@ -77,31 +78,34 @@ static func _interior_floor() -> EnvironmentModuleDefinition:
 static func _road_straight() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"road_straight", &"city_roads", Vector2i(10, 10))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
-	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads tiles use the calibrated ten-unit pitch.")
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads tiles use the calibrated ten-unit pitch; surfaces sit 0.02 units above the base plane to prevent z-fighting.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
-	item.add_visual(ROADS + "road-straight.glb", Vector2(4.5, 4.5), 10.0, 0, 2)
+	item.add_visual(ROADS + "road-straight.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
 	return item
 
 static func _road_corner() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"road_corner", &"city_roads", Vector2i(20, 20))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(20, 20), "The calibrated curve occupies two ten-unit road pitches.")
 	item.add_connection(Vector2i(9, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(19, 9), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
-	item.add_visual(ROADS + "road-curve.glb", Vector2(9.5, 9.5), 10.0, 0, 2)
+	item.add_visual(ROADS + "road-curve.glb", Vector2(9.5, 9.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
 	return item
 
 static func _paving() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"paving_square", &"city_roads", Vector2i(10, 10))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Paving shares the calibrated ten-unit City Roads pitch.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
-	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2)
+	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
 	return item
 
 static func _cargo_container() -> EnvironmentModuleDefinition:

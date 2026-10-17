@@ -16,6 +16,12 @@ enum CellInteraction {
 	WALK_OVER,
 }
 
+enum PlacementLayer {
+	GROUND,
+	OCCUPANT,
+	OVERHEAD,
+}
+
 var component_id: StringName
 var family: StringName
 var size: Vector2i
@@ -26,6 +32,9 @@ var connections: Array[EnvironmentModuleConnection] = []
 var visuals: Array[Dictionary] = []
 var allowed_rotations: Array[int] = [0, 1, 2, 3]
 var tactical_role: TacticalRole = TacticalRole.VISUAL_ONLY
+## Components collide only with reservations on the same placement layer.
+## This allows an obstacle to occupy cells that already have a ground surface.
+var placement_layer: PlacementLayer = PlacementLayer.OCCUPANT
 ## Presentation authoring convention only. Tactical placement remains integer-cell based.
 var visual_origin_snap := Vector2(0.5, 0.5)
 var visual_assembly_pitch := Vector2.ZERO
@@ -73,6 +82,10 @@ func set_tactical_role(role: TacticalRole) -> EnvironmentModuleDefinition:
 	tactical_role = role
 	return self
 
+func set_placement_layer(layer: PlacementLayer) -> EnvironmentModuleDefinition:
+	placement_layer = layer
+	return self
+
 func set_visual_convention(origin_snap: Vector2, assembly_pitch: Vector2, note := "") -> EnvironmentModuleDefinition:
 	visual_origin_snap = origin_snap
 	visual_assembly_pitch = assembly_pitch
@@ -83,12 +96,13 @@ func interaction_at(cell: Vector2i) -> CellInteraction:
 	var effect: Dictionary = cell_effects.get(cell, {})
 	return effect.get("interaction", CellInteraction.OPEN)
 
-func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quarters := 0, anchor := 0) -> EnvironmentModuleDefinition:
+func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quarters := 0, anchor := 0, offset := Vector3.ZERO) -> EnvironmentModuleDefinition:
 	visuals.append({
 		"asset_path": asset_path,
 		"local_cell": local_cell,
 		"scale": scale,
 		"yaw_quarters": yaw_quarters,
 		"anchor": anchor,
+		"offset": offset,
 	})
 	return self

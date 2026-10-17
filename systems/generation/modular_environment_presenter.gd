@@ -40,6 +40,8 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 	var local: Vector2 = visual.local_cell
 	var rotated := _rotate_point(local, definition.size, placement.rotation)
 	var at := _world(data, placement.origin, rotated, cell_size)
+	var local_offset: Vector3 = visual.get("offset", Vector3.ZERO)
+	at += local_offset.rotated(Vector3.UP, float(placement.rotation) * PI * 0.5)
 	var yaw := float(posmod(placement.rotation + int(visual.get("yaw_quarters", 0)), 4)) * PI * 0.5
 	var node := AssetPlacement.instantiate_calibrated(parent, asset_path, at, float(visual.scale), yaw, int(visual.anchor))
 	node.set_meta("component_id", placement.component_id)

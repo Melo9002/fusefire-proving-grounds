@@ -63,7 +63,7 @@ All 315 retained GLBs import, instantiate and are searchable by pack and review 
 
 ### 2.2 — Modular Environment Components — demonstrated (first industrial family)
 
-The first lightweight component records now separate logical footprints, clearances, tactical cell effects, rotation-aware semantic connectors and visual references. Eight industrial definitions cover Factory walls/entrance/interior, road and paving surfaces, and cargo. A deterministic opt-in frontage sample validates overlap, doorway access and authoritative cell translation, then presents its Kenney meshes independently. `MapData` remains the committed tactical result. Suitability tags and elevated module surfaces remain future extensions.
+The first lightweight component records now separate logical footprints, layered ground/occupant reservations, clearances, tactical cell effects, rotation-aware semantic connectors and visual references. Nine industrial definitions cover Factory walls/entrance/interior, road and paving surfaces, cargo, and a vaultable road barrier. A deterministic opt-in frontage sample validates same-layer overlap rejection, legal obstacles over ground, doorway access and authoritative cell translation, then presents its Kenney meshes independently. `MapData` remains the committed tactical result. Suitability tags and elevated module surfaces remain future extensions.
 
 ### 2.3 — Coherent Layout Assembly — partial
 
