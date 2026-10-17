@@ -83,7 +83,9 @@ switch ($Tier) {
             exit 2
         }
         $pattern = $subsystemPatterns[$Subsystem]
-        $selectedNames = @($allTests | Where-Object { $_.BaseName -match $pattern } | ForEach-Object Name)
+        $explicitOnly = @($visualTests + $extendedTests)
+        $selectedNames = @($allTests | Where-Object { $_.BaseName -match $pattern -and $_.Name -notin $explicitOnly } | ForEach-Object Name)
+        $skippedNames = @($allTests | Where-Object { $_.BaseName -match $pattern -and $_.Name -in $explicitOnly } | ForEach-Object Name)
     }
     "full" {
         $excluded = @($visualTests + $extendedTests)
@@ -110,7 +112,7 @@ if ($List) {
     Write-Host "FuseFire Project Ironclad - $suiteLabel"
     $entries | ForEach-Object { Write-Host "  $($_.Name)" }
     if ($skippedNames.Count -gt 0) {
-        Write-Host "Explicit-only checks excluded from full:"
+        Write-Host "Explicit-only checks excluded from this tier:"
         $skippedNames | ForEach-Object { Write-Host "  $_" }
     }
     exit 0
@@ -124,6 +126,10 @@ if ($null -eq $godotCommand) {
 
 if ([string]::IsNullOrWhiteSpace($LogDirectory)) {
     $LogDirectory = Join-Path $repoRoot "artifacts/test-results"
+} elseif (-not [IO.Path]::IsPathRooted($LogDirectory)) {
+	# Tests receive this directory through FUSEFIRE_TEST_OUTPUT_DIR. Keep it
+	# absolute so Godot never interprets a CI-relative path under user://.
+	$LogDirectory = Join-Path $repoRoot $LogDirectory
 }
 $runName = Get-Date -Format "yyyyMMdd-HHmmss"
 $runDirectory = Join-Path $LogDirectory ("$runName-" + $suiteLabel.Replace("/", "-"))
@@ -154,22 +160,43 @@ try {
         }
 		$engineLogPath = Join-Path $runDirectory "$($entry.Name).godot.log"
         $arguments = if ($entry.Kind -eq "parse") {
-            @("--headless", "--log-file", $engineLogPath, "--editor", "--path", $repoRoot, "--quit-after", "2")
+			# --import waits for a clean checkout's class cache and imported assets.
+			# A frame-limited editor launch can quit while the import scan is active.
+            @("--headless", "--log-file", $engineLogPath, "--path", $repoRoot, "--import")
         } else {
             @("--headless", "--log-file", $engineLogPath, "--path", $repoRoot, "--script", $entry.Script)
         }
         $watch = [Diagnostics.Stopwatch]::StartNew()
+		$stdoutPath = "$logPath.stdout.tmp"
+		$stderrPath = "$logPath.stderr.tmp"
         try {
-			$previousErrorPreference = $ErrorActionPreference
-			$ErrorActionPreference = "Continue"
-            $output = & $godotCommand.Source @arguments 2>&1
-            $exitCode = $LASTEXITCODE
+			# Start-Process waits for both console- and GUI-subsystem Godot builds.
+			# Direct invocation with '&' returns immediately for Godot's windowed
+			# Windows executable, leaving $LASTEXITCODE unset and tests concurrent.
+			$launchArguments = @($arguments | ForEach-Object {
+				if ($_ -match '[\s"]') { '"' + $_.Replace('"', '\"') + '"' } else { $_ }
+			})
+			$process = Start-Process -FilePath $godotCommand.Source -ArgumentList $launchArguments `
+				-Wait -PassThru -NoNewWindow `
+				-RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+			$output = @()
+			if (Test-Path -LiteralPath $stdoutPath) {
+				$output += @(Get-Content -LiteralPath $stdoutPath)
+			}
+			if (Test-Path -LiteralPath $stderrPath) {
+				$output += @(Get-Content -LiteralPath $stderrPath)
+			}
+			$exitCode = $process.ExitCode
         } catch {
             $output = @($_ | Out-String)
             $exitCode = 1
 		} finally {
-			$ErrorActionPreference = $previousErrorPreference
+			Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
         }
+		if ($null -eq $exitCode) {
+			$output += "Godot process completed without reporting an exit code. Treating the result as a runner failure."
+			$exitCode = 1
+		}
         $watch.Stop()
         $output | Set-Content -LiteralPath $logPath
         if ($exitCode -eq 0) {

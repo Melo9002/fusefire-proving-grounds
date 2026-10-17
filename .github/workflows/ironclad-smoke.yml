@@ -35,7 +35,10 @@ jobs:
           }
 
           Expand-Archive -LiteralPath $archive -DestinationPath $install
-          $executable = (Get-ChildItem -LiteralPath $install -Filter "Godot_v$version`_win64.exe" -File -Recurse -ErrorAction Stop).FullName
+          # PowerShell does not wait for Windows GUI-subsystem executables when
+          # they are invoked with &, leaving $LASTEXITCODE unset. Use Godot's
+          # console binary for predictable CI process semantics and logs.
+          $executable = (Get-ChildItem -LiteralPath $install -Filter "Godot_v$version`_win64_console.exe" -File -Recurse -ErrorAction Stop).FullName
           if (-not $executable) {
             throw "Pinned Godot executable was not present in the official archive."
           }
