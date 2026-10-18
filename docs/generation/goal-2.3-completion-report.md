@@ -24,7 +24,7 @@ The approach adapts useful Plot and Parcel concepts found in the local XCOM 2 SD
 - Seeded crossroad and rotated T-junction networks with connected approaches that reach map boundaries.
 - Ten-cell parcels plus a larger 20 × 20 district parcel carrying road-edge metadata.
 - A complete City Kit Industrial building shell for the large parcel.
-- A roofed, four-sided Factory Kit service building with multiple usable entrances.
+- A validated derived service building with an enclosed perimeter, fully covered usable floor, and one road-facing entrance.
 - Loading-bay, machinery-yard, service-alley, and courtyard compositions.
 - Rotation of templates toward an adjacent road edge.
 - Bounded candidate attempts, recorded rejection reasons, and explicit open-ground fallback.
@@ -75,7 +75,7 @@ The automated results establish deterministic planning, bounded termination, con
 
 - Road grammar currently creates one intersection with straight approaches. Multiple intersections, curves, lane markings, curbs, and secondary streets remain extensions.
 - The first template catalog is intentionally small and creates at most one large district parcel.
-- City Kit shells are exterior-only tactical obstacles. Factory service buildings are enterable but lack furnished interiors and gameplay-driven roof cutaways.
+- City Kit shells are exterior-only tactical obstacles. Derived service buildings are enterable but lack furnished interiors and gameplay-driven roof cutaways.
 - Many catalog assets still lack authored visual envelopes and functional parcel roles.
 - Open-ground fallback is explicit but not yet scored for environmental quality.
 - Mission needs are validated after assembly rather than reserving parcels before placement.

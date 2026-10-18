@@ -7,6 +7,7 @@ This directory contains the project documentation intended for developers, desig
 - [Industrial warehouse slice](generation/industrial-warehouse-vertical-slice.md) — playable warehouse, walkable roof, camera cutaway, floor inspection, validation and remaining limits.
 - [Industrial asset inventory](generation/industrial-asset-inventory.md) — retained Kenney packs, formats, licenses and import validation.
 - [Environment asset calibration laboratory](generation/asset-calibration-laboratory.md) — launch instructions, scale and anchor conventions, verified profiles, assembly findings and Goal 2.2 requirements.
+- [Structural building assemblies](generation/structural-building-assemblies.md) — closed/open building contracts, measured Factory-piece limitations, validation rules, and Map Editor inspection workflow.
 - [Battlefield Generation 2.0 roadmap](generation/battlefield-generation-2-roadmap.md) — verified Astra handoff, reusable foundation, capability status, XCOM lessons and the next implementation slice.
 
 - [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.

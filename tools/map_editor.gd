@@ -7,7 +7,7 @@ const CUSTOM_LAYOUT := &"custom_layout"
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const EDITOR_LAYOUTS: Array[StringName] = [
 	CUSTOM_LAYOUT,
-	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works",
+	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery",
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
 
@@ -175,7 +175,14 @@ func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var ui_root := Control.new()
+	ui_root.name = "MapEditorUI"
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The root only positions the editor widgets.  If it keeps Control's default
+	# STOP filter, its otherwise empty full-screen rectangle swallows mouse
+	# events before _unhandled_input() can orbit the camera or ray-pick modules.
+	# Interactive children retain their own STOP filters and continue to receive
+	# clicks normally.
+	ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var compact_theme := Theme.new()
 	compact_theme.default_font_size = 13
 	ui_root.theme = compact_theme
@@ -702,12 +709,21 @@ func _copy_inspection_transform() -> void:
 func _inspection_transform_text() -> String:
 	if not is_instance_valid(inspection_module):
 		return ""
+	var assembly_id: StringName = inspection_module.get_meta("structural_assembly_id", &"")
+	var assembly_label := ""
+	if not assembly_id.is_empty():
+		assembly_label = " · assembly=%s · %s · %s" % [
+			assembly_id,
+			inspection_module.get_meta("assembly_enclosure", &"unknown"),
+			inspection_module.get_meta("architectural_purpose", &"unspecified"),
+		]
 	if _is_composing():
-		return "%s origin=%s yaw=%d° variation=%d" % [
+		return "%s origin=%s yaw=%d° variation=%d%s" % [
 			inspection_module.get_meta("component_id", &"unknown"),
 			inspection_module.get_meta("origin", Vector2i.ZERO),
 			int(inspection_module.get_meta("rotation", 0)) * 90,
 			int(inspection_module.get_meta("variation", 0)),
+			assembly_label,
 		]
 	var base: Vector3 = inspection_module.get_meta("inspection_base_position", inspection_module.position)
 	var offset := inspection_module.position - base
@@ -718,9 +734,10 @@ func _inspection_transform_text() -> String:
 		if not asset_name.is_empty() and asset_name not in assets:
 			assets.append(asset_name)
 	var asset_label := " [%s]" % ", ".join(assets) if not assets.is_empty() else ""
-	return "%s%s offset=(%.3f, %.3f, %.3f) yaw=%.1f" % [
+	return "%s%s offset=(%.3f, %.3f, %.3f) yaw=%.1f%s" % [
 		inspection_module.get_meta("component_id", &"unknown"), asset_label, offset.x, offset.y, offset.z,
 		rad_to_deg(inspection_module.rotation.y),
+		assembly_label,
 	]
 
 func _update_transform_label(prefix := "") -> void:

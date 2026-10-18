@@ -38,8 +38,9 @@ The catalog contains:
 - Courtyard and loading-dock spaces with authored mission-suitability cells.
 - Cargo containers, individual machinery, a machinery cover cluster, and a vaultable construction barrier.
 - Catwalk stairs, service ramp, maintenance platform, and elevated walkway with authored surfaces and vertical links.
+- Validated closed-building, open-shelter, and sealed prebuilt-shell assemblies. Their architectural contracts are documented in [Structural Building Assemblies](structural-building-assemblies.md).
 
-Four constrained presets exercise the catalog: `industrial_frontage`, `loading_yard`, `road_and_shops`, and `vertical_works`. They cover connected road approaches, entrances, open spaces, layered cargo and machinery, and movement from ground to authored elevated surfaces. Every preset is deterministic for the same dimensions and seed. These remain working assembly fixtures rather than a general parcel grammar.
+Five constrained presets exercise the catalog: `industrial_frontage`, `loading_yard`, `road_and_shops`, `vertical_works`, and `building_gallery`. They cover connected road approaches, entrances, open spaces, layered cargo and machinery, complete and intentionally open structures, and movement from ground to authored elevated surfaces. Every preset is deterministic for the same dimensions and seed. These remain working assembly fixtures rather than a general parcel grammar.
 
 Suitability metadata identifies candidate spawn, objective, and extraction cells without creating mission zones automatically. Generation and tests resolve those candidates against the final authoritative `MapData`, require them to remain stoppable, and verify representative spawn-to-objective paths. Mission-aware assembly can later consume the same metadata before committing its layout.
 

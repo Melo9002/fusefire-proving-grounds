@@ -234,8 +234,7 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 		&"loading_bay":
 			local = [
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
-				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 3), 0, rng.randi_range(0, 2)),
-				EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(7, 6)),
+				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(1, 2)),
 			]
 		&"yard":
 			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 3)), EnvironmentModulePlacement.new(&"yard_fence", Vector2i(8, 2))]

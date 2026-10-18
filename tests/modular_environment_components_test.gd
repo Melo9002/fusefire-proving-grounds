@@ -7,7 +7,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var catalog := IndustrialModuleCatalog.create()
-	check(catalog.size() == 30, "The modular catalog exposes the original set plus semantic and visual-coherence components")
+	check(catalog.size() == 31, "The modular catalog exposes the original set plus semantic and structural-assembly components")
+	check(catalog.industrial_loading_canopy.assembly_enclosure == &"open_shelter", "The catalog distinguishes intentional shelters from incomplete buildings")
 	check(catalog.factory_window_wall.module_type == EnvironmentModuleDefinition.ModuleType.WINDOW, "Window sections are explicit module types")
 	check(catalog.paved_alley.module_type == EnvironmentModuleDefinition.ModuleType.ALLEY, "Alleys are explicit module types")
 	check(catalog.road_crossroad.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION, "Road junctions are explicit module types")
@@ -113,6 +114,8 @@ func _run() -> void:
 	var preview = load("res://tools/map_editor.tscn").instantiate()
 	root.add_child(preview)
 	await process_frame
+	var editor_ui := preview.find_child("MapEditorUI", true, false) as Control
+	check(editor_ui != null and editor_ui.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Map Editor's transparent UI surface leaves orbit and click selection input available to the 3D view")
 	preview._frame_camera()
 	check(preview.orbit.focus.is_equal_approx(Vector3(0, 4, 0)), "Preview frames the centered MapData world bounds")
 	check(preview.content.get_node_or_null("TacticalGrid") != null, "Preview exposes a grid overlay for visual footprint inspection")

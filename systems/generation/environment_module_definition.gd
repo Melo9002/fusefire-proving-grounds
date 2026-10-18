@@ -78,6 +78,13 @@ var suitability_cells: Dictionary = {}
 ## Optional calibrated presentation envelope in local cell/world units. It is
 ## used to reject visible intersections, never to author tactical occupancy.
 var visual_envelope := AABB()
+## Populated only when this module represents a validated architectural
+## assembly rather than an individual asset or loose component.
+var structural_assembly_id: StringName = &""
+var architectural_purpose: StringName = &""
+var assembly_enclosure: StringName = &""
+var assembly_complete := false
+var assembly_notes := ""
 
 func _init(id: StringName, component_family: StringName, dimensions: Vector2i) -> void:
 	component_id = id
@@ -183,5 +190,18 @@ func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quart
 		"local_cell": local_cell,
 		"yaw_quarters": yaw_quarters,
 		"offset": offset,
+	})
+	return self
+
+## Exact Godot geometry for seams whose imported meshes are unsuitable at the
+## required parcel size.  This remains presentation-only and never authors
+## collision, cover or traversal.
+func add_box_visual(label: String, local_center: Vector3, dimensions: Vector3, color: Color) -> EnvironmentModuleDefinition:
+	visuals.append({
+		"kind": "box",
+		"label": label,
+		"local_center": local_center,
+		"dimensions": dimensions,
+		"color": color,
 	})
 	return self

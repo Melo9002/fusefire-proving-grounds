@@ -71,7 +71,8 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	for connection in service_building.connections:
 		if connection.type == EnvironmentModuleConnection.Type.EXTERIOR_ACCESS:
 			exterior_accesses += 1
-	check(exterior_accesses >= 8, "Complete service buildings retain usable entrances on every side")
+	check(service_building.assembly_complete and service_building.assembly_enclosure == &"closed", "Procedural service buildings come from a validated closed-building assembly")
+	check(exterior_accesses == 4, "Complete service buildings retain the authored four-cell street entrance")
 	var presentation := Node3D.new()
 	root.add_child(presentation)
 	ModularEnvironmentPresenter.build(data, presentation, 1.0)

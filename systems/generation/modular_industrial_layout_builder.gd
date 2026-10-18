@@ -2,7 +2,7 @@ class_name ModularIndustrialLayoutBuilder
 extends RefCounted
 
 const SOURCE_KIND := "generated_modular_industrial"
-const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works"]
+const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery"]
 
 static func apply(data: MapData, cell_size: float, map_seed: int, preset: StringName = &"industrial_frontage") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -31,6 +31,7 @@ static func _placements_for(preset: StringName, rng: RandomNumberGenerator) -> A
 		&"loading_yard": return _loading_yard(rng)
 		&"road_and_shops": return _road_and_shops()
 		&"vertical_works": return _vertical_works()
+		&"building_gallery": return _building_gallery()
 		_: return []
 
 static func _industrial_frontage(rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
@@ -81,6 +82,17 @@ static func _vertical_works() -> Array[EnvironmentModulePlacement]:
 		EnvironmentModulePlacement.new(&"maintenance_walkway", Vector2i(14, 12)),
 		EnvironmentModulePlacement.new(&"factory_machine", Vector2i(8, 14)),
 		EnvironmentModulePlacement.new(&"service_ramp", Vector2i(20, 8)),
+	]
+
+static func _building_gallery() -> Array[EnvironmentModulePlacement]:
+	return [
+		# Keep the gallery clear of FlatMapGenerator's edge deployment zones so
+		# it remains a valid playable inspection map rather than a visual-only set.
+		EnvironmentModulePlacement.new(&"industrial_building_shell", Vector2i(13, 1), 0, 0),
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(13, 18)),
+		EnvironmentModulePlacement.new(&"complete_service_building", Vector2i(13, 18)),
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(27, 18)),
+		EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(28, 20)),
 	]
 
 static func _validate_layout(layout: EnvironmentModuleLayout, catalog: Dictionary, data: MapData) -> bool:

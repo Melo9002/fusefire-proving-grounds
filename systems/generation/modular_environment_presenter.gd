@@ -26,6 +26,10 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 		module_root.set_meta("module_type", EnvironmentModuleDefinition.ModuleType.keys()[definition.module_type].to_lower())
 		module_root.set_meta("visual_origin_snap", definition.visual_origin_snap)
 		module_root.set_meta("visual_assembly_pitch", definition.visual_assembly_pitch)
+		module_root.set_meta("structural_assembly_id", definition.structural_assembly_id)
+		module_root.set_meta("architectural_purpose", definition.architectural_purpose)
+		module_root.set_meta("assembly_enclosure", definition.assembly_enclosure)
+		module_root.set_meta("assembly_complete", definition.assembly_complete)
 		root.add_child(module_root)
 		for local_cell in definition.cell_effects:
 			var rotated := definition.rotate_cell(local_cell, placement.rotation)
@@ -40,6 +44,9 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 			_add_visual(data, module_root, definition, placement, visual, cell_size)
 
 static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
+	if visual.get("kind", "asset") == "box":
+		_add_box_visual(data, parent, definition, placement, visual, cell_size)
+		return
 	var paths: Array = visual.get("asset_variants", [])
 	var asset_path: String = visual.get("asset_path", "")
 	var factor := float(visual.get("scale", 1.0))
@@ -72,6 +79,25 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 		return
 	node.set_meta("component_id", placement.component_id)
 	node.set_meta("asset_path", asset_path)
+
+static func _add_box_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
+	var authored_center: Vector3 = visual.get("local_center", Vector3.ZERO)
+	var rotated := _rotate_point(Vector2(authored_center.x, authored_center.z), definition.size, placement.rotation)
+	var mesh := MeshInstance3D.new()
+	mesh.name = str(visual.get("label", "DerivedStructure"))
+	var box := BoxMesh.new()
+	var dimensions: Vector3 = visual.get("dimensions", Vector3.ONE)
+	box.size = dimensions * cell_size
+	mesh.mesh = box
+	mesh.position = _world(data, placement.origin, rotated, cell_size)
+	mesh.position.y += (authored_center.y + float(placement.elevation)) * cell_size
+	mesh.rotation.y = float(posmod(placement.rotation, 4)) * PI * 0.5
+	var material := StandardMaterial3D.new()
+	material.albedo_color = visual.get("color", Color("596579"))
+	material.roughness = 0.88
+	mesh.material_override = material
+	mesh.set_meta("derived_structural_visual", true)
+	parent.add_child(mesh)
 
 static func _add_continuous_road_surface(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, cell_size: float) -> void:
 	if definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]:

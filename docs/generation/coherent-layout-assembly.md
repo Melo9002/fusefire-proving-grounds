@@ -39,7 +39,7 @@ The first grammar includes:
 
 - Continuous road surfaces for every logical road and intersection cell.
 - A large industrial shell parcel using a complete City Kit Industrial building asset.
-- A roofed, four-sided Factory Kit service building with multiple usable exterior entrances.
+- A validated, exact-geometry service building with a complete shell, roofed usable floor, and one road-facing entrance.
 - Loading areas with calibrated containers and dumpsters.
 - Machinery yards with perimeter fencing.
 - Paved service alleys and courtyards.
@@ -85,7 +85,7 @@ Rendered captures are inspection evidence; headless tests do not establish visua
 
 - The road grammar has one intersection with straight approaches; lane markings, curves, secondary streets, and multi-block networks remain future work.
 - The grammar currently creates at most one large district parcel per map.
-- City Kit building shells are exterior-only tactical obstacles. Factory service buildings are enterable, but they do not yet have furnished interiors or gameplay-driven roof cutaways.
+- City Kit building shells are exterior-only tactical obstacles. Derived service buildings are enterable, but they do not yet have furnished interiors or gameplay-driven roof cutaways. See [Structural Building Assemblies](structural-building-assemblies.md) for the asset measurements and completeness contract.
 - Contextual details use a small subset of the calibrated catalog. More authored parcel assemblies are needed before every seed can have the same visual density.
 - Mission suitability is validated after assembly. Future mission-aware generation should reserve required parcels before commitment.
 - Procedural vertical parcels remain deferred while the existing authored vertical fixture protects traversal behavior.
