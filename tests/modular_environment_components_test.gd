@@ -75,6 +75,9 @@ func _run() -> void:
 	check(preview._focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0"), "Preview can frame the assembled corner for seam inspection")
 	check(preview.inspection_target == "factory corner — outer, scale 2.0" and "Target: factory corner" in preview.status.text, "Preview identifies its active inspection target and calibration")
 	var selected_module: Node3D = preview.inspection_module
+	var selected_meshes := selected_module.find_children("*", "MeshInstance3D", true, false)
+	check(not selected_meshes.is_empty() and (selected_meshes[0] as MeshInstance3D).material_overlay != null, "Selected preview module receives a visible outline")
+	check("structure-corner-outer.glb" in preview._inspection_transform_text(), "Selection readout identifies the exact imported corner asset")
 	var authored_position: Vector3 = selected_module.get_meta("inspection_base_position")
 	preview._nudge_inspection(Vector3(0.125, 0.25, -0.5))
 	check(selected_module.position.is_equal_approx(authored_position + Vector3(0.125, 0.25, -0.5)), "Preview lets the developer nudge a selected module in three axes")
@@ -86,6 +89,22 @@ func _run() -> void:
 	var corner_focus: Vector3 = preview.orbit.focus
 	preview._set_camera_view(PI * 0.5, 0.18)
 	check(preview.orbit.focus.is_equal_approx(corner_focus) and is_equal_approx(preview.orbit.azimuth, PI * 0.5), "View presets preserve the inspection target while changing angle")
+	preview._frame_camera()
+	preview._set_camera_view(0.0, 1.50)
+	var preview_modules: Array[Node] = preview.content.get_node("ModularEnvironment").get_children()
+	var cargo_module: Node3D
+	for candidate in preview_modules:
+		if candidate.get_meta("component_id", &"") == &"cargo_container":
+			cargo_module = candidate as Node3D
+	var cargo_center: Vector3 = preload("res://presentation/environment_asset_placement.gd").mesh_bounds(cargo_module).get_center()
+	var cargo_screen_position: Vector2 = preview.camera.unproject_position(cargo_center)
+	var click_camera_focus: Vector3 = preview.orbit.focus
+	check(preview._select_module_at_screen(cargo_screen_position), "Preview ray picks a module from its visible screen position")
+	check(preview.inspection_module == cargo_module and preview.inspection_target == "cargo_container", "Direct click selection targets the intended module")
+	check(preview.orbit.focus.is_equal_approx(click_camera_focus), "Direct click selection preserves the developer's current camera")
+	var cargo_meshes := cargo_module.find_children("*", "MeshInstance3D", true, false)
+	check(not cargo_meshes.is_empty() and (cargo_meshes[0] as MeshInstance3D).material_overlay != null, "Clicked module receives the selection outline")
+	check((selected_meshes[0] as MeshInstance3D).material_overlay == null, "Selecting another module clears the previous outline")
 	preview.queue_free()
 	await process_frame
 	print("Modular environment components: %d failure(s)" % failures)

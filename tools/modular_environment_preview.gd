@@ -13,6 +13,7 @@ var inspection_target := "whole map"
 var inspection_module: Node3D
 var adjustment_step: SpinBox
 var transform_label: Label
+var selection_outline_material: StandardMaterial3D
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -61,6 +62,10 @@ func _shortcut_input(event: InputEvent) -> void:
 			_set_seed(generation_seed - 1)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if _select_module_at_screen(event.position):
+			get_viewport().set_input_as_handled()
+			return
 	if is_instance_valid(orbit) and orbit.handle_mouse(event):
 		get_viewport().set_input_as_handled()
 
@@ -95,6 +100,12 @@ func _rebuild() -> void:
 		seed_input.set_value_no_signal(generation_seed)
 
 func _build_ui() -> void:
+	selection_outline_material = StandardMaterial3D.new()
+	selection_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	selection_outline_material.albedo_color = Color(1.0, 0.72, 0.18, 0.95)
+	selection_outline_material.cull_mode = BaseMaterial3D.CULL_FRONT
+	selection_outline_material.grow = true
+	selection_outline_material.grow_amount = 0.025
 	camera = Camera3D.new()
 	camera.position = Vector3(30, 24, 30)
 	camera.fov = 55.0
@@ -192,7 +203,7 @@ func _build_ui() -> void:
 	_add_action_button(nudges, "Copy transform", _copy_inspection_transform)
 	transform_label = Label.new()
 	transform_label.position = Vector2(18, 192)
-	transform_label.text = "Select Inspect corner or Inspect road seam, then move the framed piece."
+	transform_label.text = "Left-click any piece to select it, then adjust its transform."
 	layer.add_child(transform_label)
 
 func _set_seed(value: int) -> void:
@@ -255,6 +266,34 @@ func _select_next_module() -> void:
 		if _focus_module(candidate, str(component_id), modules):
 			return
 
+func _select_module_at_screen(screen_position: Vector2) -> bool:
+	if not is_instance_valid(content) or not is_instance_valid(camera):
+		return false
+	var modular_root := content.get_node_or_null("ModularEnvironment")
+	if modular_root == null:
+		return false
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_direction := camera.project_ray_normal(screen_position)
+	var selected: Node3D
+	var nearest_distance := INF
+	var modules: Array[Node] = modular_root.get_children()
+	for candidate_node in modules:
+		var candidate := candidate_node as Node3D
+		var hit = AssetPlacement.mesh_bounds(candidate).intersects_ray(ray_origin, ray_direction)
+		if hit == null:
+			continue
+		var distance := ray_origin.distance_squared_to(hit as Vector3)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			selected = candidate
+	if not is_instance_valid(selected):
+		return false
+	var component_id: StringName = selected.get_meta("component_id", &"unknown")
+	_prepare_inspection_module(selected)
+	inspection_target = str(component_id)
+	_refresh_status_target()
+	return true
+
 func _set_camera_view(azimuth: float, altitude: float) -> void:
 	if is_instance_valid(orbit):
 		orbit.set_view(azimuth, altitude)
@@ -272,6 +311,8 @@ func _add_action_button(parent: Control, label: String, callback: Callable) -> v
 	parent.add_child(button)
 
 func _prepare_inspection_module(module: Node3D) -> void:
+	if is_instance_valid(inspection_module) and inspection_module != module:
+		_set_selection_outline(inspection_module, false)
 	inspection_module = module
 	if not module.has_meta("inspection_base_position"):
 		var pivot := AssetPlacement.mesh_bounds(module).get_center()
@@ -280,7 +321,15 @@ func _prepare_inspection_module(module: Node3D) -> void:
 				child.position -= pivot
 		module.position = pivot
 		module.set_meta("inspection_base_position", pivot)
+	_set_selection_outline(module, true)
 	_update_transform_label()
+
+func _set_selection_outline(module: Node3D, enabled: bool) -> void:
+	if not is_instance_valid(module):
+		return
+	for child in module.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := child as MeshInstance3D
+		mesh_instance.material_overlay = selection_outline_material if enabled else null
 
 func _adjustment_amount() -> float:
 	return adjustment_step.value if is_instance_valid(adjustment_step) else 0.05
@@ -320,8 +369,15 @@ func _inspection_transform_text() -> String:
 		return ""
 	var base: Vector3 = inspection_module.get_meta("inspection_base_position", inspection_module.position)
 	var offset := inspection_module.position - base
-	return "%s offset=(%.3f, %.3f, %.3f) yaw=%.1f" % [
-		inspection_module.get_meta("component_id", &"unknown"), offset.x, offset.y, offset.z,
+	var assets: Array[String] = []
+	for child in inspection_module.get_children():
+		var path: String = child.get_meta("asset_path", "")
+		var asset_name := path.get_file()
+		if not asset_name.is_empty() and asset_name not in assets:
+			assets.append(asset_name)
+	var asset_label := " [%s]" % ", ".join(assets) if not assets.is_empty() else ""
+	return "%s%s offset=(%.3f, %.3f, %.3f) yaw=%.1f" % [
+		inspection_module.get_meta("component_id", &"unknown"), asset_label, offset.x, offset.y, offset.z,
 		rad_to_deg(inspection_module.rotation.y),
 	]
 
@@ -333,10 +389,10 @@ func _update_transform_label(prefix := "") -> void:
 	elif is_instance_valid(inspection_module):
 		transform_label.text = _inspection_transform_text() + "  ·  arrows X/Z · PgUp/PgDn Y · Q/E yaw"
 	else:
-		transform_label.text = "Select Inspect corner or Inspect road seam, then move the framed piece."
+		transform_label.text = "Left-click any piece to select it, then adjust its transform."
 
 func _update_status(component_count: int, validation_text: String) -> void:
-	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nTarget: %s  |  RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
+	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
 		generation_seed, component_count, validation_text, inspection_target
 	]
 
@@ -346,7 +402,7 @@ func _refresh_status_target() -> void:
 	var lines := status.text.split("\n")
 	if lines.size() < 2:
 		return
-	lines[1] = "Target: %s  |  RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % inspection_target
+	lines[1] = "Target: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % inspection_target
 	status.text = "\n".join(lines)
 
 func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> void:
