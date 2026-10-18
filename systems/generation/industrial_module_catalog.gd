@@ -49,11 +49,11 @@ static func _wall_corner() -> EnvironmentModuleDefinition:
 		item.set_effect(cell, _full_cover())
 	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
 	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
-	# Factory pieces join at their source origins. At scale 2 the convex corner
+	# Factory pieces join at their source origins. At scale 2 the concave corner
 	# and both straight runs share an integer two-cell pitch without overlap.
 	# Closed modular meshes retain end caps. The tiny presentation-scale bleed
 	# keeps those coplanar faces from z-fighting at otherwise exact seams.
-	item.add_visual(FACTORY + "structure-corner-outer.glb", Vector2.ONE, STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	item.add_visual(FACTORY + "structure-corner-inner.glb", Vector2.ONE, STRUCTURE_PRESENTATION_SCALE, 0, 1)
 	return item
 
 static func _doorway() -> EnvironmentModuleDefinition:

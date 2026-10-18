@@ -29,7 +29,7 @@ func _shortcut_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F:
 			_frame_camera()
 		elif event.keycode == KEY_C:
-			_focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0")
+			_focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0")
 		elif event.keycode == KEY_G:
 			_focus_component(&"road_straight", "road / paving seam")
 		elif event.keycode == KEY_1:
@@ -163,8 +163,8 @@ func _build_ui() -> void:
 	controls.add_child(frame_button)
 	var corner_button := Button.new()
 	corner_button.text = "Inspect corner"
-	corner_button.tooltip_text = "Frame the assembled Factory outer-corner joint (C)"
-	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — outer, scale 2.0"))
+	corner_button.tooltip_text = "Frame the assembled Factory inner-corner joint (C)"
+	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0"))
 	controls.add_child(corner_button)
 	var road_button := Button.new()
 	road_button.text = "Inspect road seam"
@@ -392,7 +392,7 @@ func _update_transform_label(prefix := "") -> void:
 		transform_label.text = "Left-click any piece to select it, then adjust its transform."
 
 func _update_status(component_count: int, validation_text: String) -> void:
-	status.text = "MODULAR INDUSTRIAL PREVIEW  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
+	status.text = "FUSEFIRE MAP EDITOR  |  industrial prototype  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
 		generation_seed, component_count, validation_text, inspection_target
 	]
 

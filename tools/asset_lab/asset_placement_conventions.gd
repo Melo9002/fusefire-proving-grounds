@@ -11,6 +11,7 @@ const AUTHORED_FOOTPRINTS := {
 	"city_kit_roads/road-curve": [20, 20],
 	"city_kit_roads/tile-low": [10, 10],
 	"factory_kit/structure-wall": [4, 1],
+	"factory_kit/structure-corner-inner": [2, 2],
 	"factory_kit/structure-corner-outer": [2, 2],
 	"factory_kit/structure-doorway-wide": [4, 1],
 	"city_kit_industrial/shipping-container-a": [2, 5],
