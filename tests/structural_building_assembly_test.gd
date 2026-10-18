@@ -14,6 +14,8 @@ func _run() -> void:
 	check(service.wall_cells.size() + service.entrance_cells.size() == service.parcel_size.x * 2 + service.parcel_size.y * 2 - 4, "Closed-building perimeter is fully assigned to walls or entrances")
 	check(service.usable_floor_cells.all(func(cell): return cell in service.roof_cells), "Every usable service-building floor cell is roof-covered")
 	check(service.module.visuals.all(func(visual): return visual.get("kind", "") == "box"), "Service-building shell uses exact derived geometry instead of overlapping deep facade blocks")
+	check(service.module.visuals.any(func(visual): return visual.get("visual_role", &"") == &"structural"), "Service building identifies structural shell geometry")
+	check(service.module.visuals.any(func(visual): return visual.get("visual_role", &"") == &"decorative"), "Service building identifies separable decorative geometry")
 
 	var canopy: EnvironmentBuildingDefinition = buildings.loading_canopy
 	check(canopy.enclosure == EnvironmentBuildingDefinition.Enclosure.OPEN_SHELTER and canopy.is_complete(), "Loading canopy is deliberately open rather than an incomplete closed building")
@@ -45,6 +47,24 @@ func _run() -> void:
 	check(service_node != null and not service_node.find_children("*", "MeshInstance3D", true, false).is_empty(), "Derived building geometry is inspectable in the shared presenter")
 	presentation.queue_free()
 	await process_frame
+
+	var editor = load("res://tools/map_editor.tscn").instantiate()
+	root.add_child(editor)
+	await process_frame
+	editor.layout_preset = &"building_gallery"
+	editor._rebuild()
+	check(editor._focus_component(&"complete_service_building", "service building"), "Map Editor can focus a reusable building assembly")
+	check(editor._set_assembly_view(editor.ASSEMBLY_VIEW_SHELL), "Map Editor enables shell-only view for the selected assembly")
+	var selected: Node3D = editor.inspection_module
+	check(_role_visibility(selected, &"structural", true) and _role_visibility(selected, &"decorative", false), "Shell view hides decoration while preserving structural geometry")
+	var modular_root: Node = editor.content.get_node("ModularEnvironment")
+	check(modular_root.get_children().all(func(module): return module.visible == (module == selected)), "Filtered assembly views isolate the selected building")
+	check(editor._set_assembly_view(editor.ASSEMBLY_VIEW_DECORATION), "Map Editor enables decoration-only view")
+	check(_role_visibility(selected, &"structural", false) and _role_visibility(selected, &"decorative", true), "Decoration view reveals trim independently of the shell")
+	check(editor._set_assembly_view(editor.ASSEMBLY_VIEW_COMPLETE), "Map Editor restores the complete environment view")
+	check(modular_root.get_children().all(func(module): return module.visible), "Complete view restores every module")
+	editor.queue_free()
+	await process_frame
 	print("Structural building assembly: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
@@ -56,6 +76,16 @@ func _find_module(parent: Node, component_id: StringName) -> Node3D:
 		if child.get_meta("component_id", &"") == component_id:
 			return child as Node3D
 	return null
+
+func _role_visibility(module: Node3D, role: StringName, expected: bool) -> bool:
+	var found := false
+	for visual_node in module.get_children():
+		if StringName(visual_node.get_meta("assembly_visual_role", &"")) != role:
+			continue
+		found = true
+		if visual_node.visible != expected:
+			return false
+	return found
 
 func check(condition: bool, message: String) -> void:
 	if condition:

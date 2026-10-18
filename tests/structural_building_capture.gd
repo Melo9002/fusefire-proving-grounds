@@ -45,5 +45,21 @@ func _run() -> void:
 				push_error("Capture failed: %s" % error)
 				quit(1)
 				return
+		if component_id == &"complete_service_building":
+			for diagnostic in [
+				[editor.ASSEMBLY_VIEW_SHELL, "shell"],
+				[editor.ASSEMBLY_VIEW_DECORATION, "decoration"],
+			]:
+				editor._set_assembly_view(diagnostic[0])
+				editor._set_camera_view(0.0, 0.18)
+				await process_frame
+				await RenderingServer.frame_post_draw
+				var diagnostic_name := "%s-%s.png" % [component_id, diagnostic[1]]
+				var diagnostic_error := root.get_texture().get_image().save_png(output.path_join(diagnostic_name))
+				if diagnostic_error != OK:
+					push_error("Capture failed: %s" % diagnostic_error)
+					quit(1)
+					return
+			editor._set_assembly_view(editor.ASSEMBLY_VIEW_COMPLETE)
 	print("Structural building captures saved to " + output)
 	quit()

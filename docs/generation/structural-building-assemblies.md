@@ -72,6 +72,14 @@ godot --path . res://tools/map_editor.tscn -- 2202 building_gallery
 
 Choose **Authored — Building Gallery** to compare the closed service shop, open loading canopy and sealed City Industrial shell. Left-click any assembly to select it. Right-drag orbits, middle-drag pans, the wheel zooms, and `1`, `3`, and `7` switch to front, side and overhead views. The selection readout reports the assembly ID, enclosure kind and architectural purpose.
 
+The assembly-view buttons provide three diagnostics:
+
+- **Complete** restores the ordinary environment.
+- **Shell** isolates the selected assembly and shows only walls, supports, floors, roofs, and other structural visuals.
+- **Decor** keeps the assembly isolated but shows only separable trim, window panels, signs, and similar decorative visuals.
+
+Visual roles belong to individual presentation entries in the building definition. A future derived scene can therefore expose its shell and decoration without changing tactical cells. Monolithic vendor buildings currently appear wholly in **Shell** because their source GLB does not separate decorations into reusable nodes; the editor does not pretend it can isolate geometry that the asset does not expose.
+
 The transparent UI surface deliberately passes mouse events to the 3D view; buttons and fields remain interactive. If camera input is tested after UI changes, verify both selection and orbit in open viewport space.
 
 For a repeatable front, side, back and overhead capture of every gallery assembly, run this explicit rendered check with a writable output directory:

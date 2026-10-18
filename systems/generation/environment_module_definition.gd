@@ -171,7 +171,7 @@ func interaction_at(cell: Vector2i) -> CellInteraction:
 	var effect: Dictionary = cell_effects.get(cell, {})
 	return effect.get("interaction", CellInteraction.OPEN)
 
-func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quarters := 0, anchor := 0, offset := Vector3.ZERO) -> EnvironmentModuleDefinition:
+func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quarters := 0, anchor := 0, offset := Vector3.ZERO, visual_role: StringName = &"component") -> EnvironmentModuleDefinition:
 	visuals.append({
 		"asset_path": asset_path,
 		"local_cell": local_cell,
@@ -179,29 +179,32 @@ func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quart
 		"yaw_quarters": yaw_quarters,
 		"anchor": anchor,
 		"offset": offset,
+		"visual_role": visual_role,
 	})
 	return self
 
 ## Uses the developer-reviewed Asset Lab calibration at presentation time. This
 ## keeps visual scale/anchor edits independent from the tactical definition.
-func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quarters := 0, offset := Vector3.ZERO) -> EnvironmentModuleDefinition:
+func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quarters := 0, offset := Vector3.ZERO, visual_role: StringName = &"component") -> EnvironmentModuleDefinition:
 	visuals.append({
 		"asset_ids": asset_ids,
 		"local_cell": local_cell,
 		"yaw_quarters": yaw_quarters,
 		"offset": offset,
+		"visual_role": visual_role,
 	})
 	return self
 
 ## Exact Godot geometry for seams whose imported meshes are unsuitable at the
 ## required parcel size.  This remains presentation-only and never authors
 ## collision, cover or traversal.
-func add_box_visual(label: String, local_center: Vector3, dimensions: Vector3, color: Color) -> EnvironmentModuleDefinition:
+func add_box_visual(label: String, local_center: Vector3, dimensions: Vector3, color: Color, visual_role: StringName = &"structural") -> EnvironmentModuleDefinition:
 	visuals.append({
 		"kind": "box",
 		"label": label,
 		"local_center": local_center,
 		"dimensions": dimensions,
 		"color": color,
+		"visual_role": visual_role,
 	})
 	return self

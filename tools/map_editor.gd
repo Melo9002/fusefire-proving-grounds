@@ -4,6 +4,9 @@ const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
 const CUSTOM_LAYOUT := &"custom_layout"
+const ASSEMBLY_VIEW_COMPLETE := &"complete"
+const ASSEMBLY_VIEW_SHELL := &"shell"
+const ASSEMBLY_VIEW_DECORATION := &"decoration"
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const EDITOR_LAYOUTS: Array[StringName] = [
 	CUSTOM_LAYOUT,
@@ -36,6 +39,7 @@ var composer_panel: Control
 var inspection_shortcuts: Array[Control] = []
 var editor_catalog: Dictionary = IndustrialModuleCatalog.create()
 var displayed_data: MapData
+var assembly_view: StringName = ASSEMBLY_VIEW_COMPLETE
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -108,6 +112,7 @@ func _rebuild() -> void:
 		content.free()
 	inspection_module = null
 	inspection_target = "whole map"
+	assembly_view = ASSEMBLY_VIEW_COMPLETE
 	content = Node3D.new()
 	content.name = "PreviewContent"
 	add_child(content)
@@ -256,6 +261,9 @@ func _build_ui() -> void:
 	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
 	_add_view_button(views, "Top (7)", 0.0, 1.50)
 	_add_action_button(views, "Next piece (Tab)", _select_next_module)
+	_add_action_button(views, "Complete", func(): _set_assembly_view(ASSEMBLY_VIEW_COMPLETE))
+	_add_action_button(views, "Shell", func(): _set_assembly_view(ASSEMBLY_VIEW_SHELL))
+	_add_action_button(views, "Decor", func(): _set_assembly_view(ASSEMBLY_VIEW_DECORATION))
 	var nudges := HBoxContainer.new()
 	nudges.position = Vector2(12, 138)
 	ui_root.add_child(nudges)
@@ -644,6 +652,8 @@ func _prepare_inspection_module(module: Node3D) -> void:
 	if is_instance_valid(inspection_module) and inspection_module != module:
 		_set_selection_outline(inspection_module, false)
 	inspection_module = module
+	if assembly_view != ASSEMBLY_VIEW_COMPLETE and StringName(module.get_meta("structural_assembly_id", &"")).is_empty():
+		assembly_view = ASSEMBLY_VIEW_COMPLETE
 	if not _is_composing() and not module.has_meta("inspection_base_position"):
 		var pivot := AssetPlacement.mesh_bounds(module).get_center()
 		for child in module.get_children():
@@ -652,7 +662,41 @@ func _prepare_inspection_module(module: Node3D) -> void:
 		module.position = pivot
 		module.set_meta("inspection_base_position", pivot)
 	_set_selection_outline(module, true)
+	_apply_assembly_view()
 	_update_transform_label()
+
+func _set_assembly_view(view: StringName) -> bool:
+	if view not in [ASSEMBLY_VIEW_COMPLETE, ASSEMBLY_VIEW_SHELL, ASSEMBLY_VIEW_DECORATION]:
+		return false
+	if view != ASSEMBLY_VIEW_COMPLETE:
+		if not is_instance_valid(inspection_module) or StringName(inspection_module.get_meta("structural_assembly_id", &"")).is_empty():
+			_update_transform_label("Select a building assembly before choosing a shell view.")
+			return false
+	assembly_view = view
+	_apply_assembly_view()
+	_update_transform_label()
+	return true
+
+func _apply_assembly_view() -> void:
+	if not is_instance_valid(content):
+		return
+	var modular_root := content.get_node_or_null("ModularEnvironment")
+	if modular_root == null:
+		return
+	for module_node in modular_root.get_children():
+		var module := module_node as Node3D
+		module.visible = assembly_view == ASSEMBLY_VIEW_COMPLETE or module == inspection_module
+		for visual_node in module.get_children():
+			if not visual_node is Node3D:
+				continue
+			var role: StringName = visual_node.get_meta("assembly_visual_role", &"component")
+			match assembly_view:
+				ASSEMBLY_VIEW_SHELL:
+					visual_node.visible = role == &"structural"
+				ASSEMBLY_VIEW_DECORATION:
+					visual_node.visible = role == &"decorative"
+				_:
+					visual_node.visible = true
 
 func _set_selection_outline(module: Node3D, enabled: bool) -> void:
 	if not is_instance_valid(module):
@@ -717,6 +761,8 @@ func _inspection_transform_text() -> String:
 			inspection_module.get_meta("assembly_enclosure", &"unknown"),
 			inspection_module.get_meta("architectural_purpose", &"unspecified"),
 		]
+		if assembly_view != ASSEMBLY_VIEW_COMPLETE:
+			assembly_label += " · view=%s" % assembly_view
 	if _is_composing():
 		return "%s origin=%s yaw=%d° variation=%d%s" % [
 			inspection_module.get_meta("component_id", &"unknown"),

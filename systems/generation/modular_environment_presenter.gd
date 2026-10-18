@@ -79,6 +79,7 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 		return
 	node.set_meta("component_id", placement.component_id)
 	node.set_meta("asset_path", asset_path)
+	node.set_meta("assembly_visual_role", visual.get("visual_role", &"component"))
 
 static func _add_box_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
 	var authored_center: Vector3 = visual.get("local_center", Vector3.ZERO)
@@ -97,6 +98,7 @@ static func _add_box_visual(data: MapData, parent: Node3D, definition: Environme
 	material.roughness = 0.88
 	mesh.material_override = material
 	mesh.set_meta("derived_structural_visual", true)
+	mesh.set_meta("assembly_visual_role", visual.get("visual_role", &"structural"))
 	parent.add_child(mesh)
 
 static func _add_continuous_road_surface(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, cell_size: float) -> void:

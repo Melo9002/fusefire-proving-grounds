@@ -76,9 +76,9 @@ static func _add_service_shell_visuals(item: EnvironmentModuleDefinition) -> voi
 	item.add_box_visual("Roof", Vector3(4.5, 3.52, 4.5), Vector3(10.2, 0.20, 10.2), roof)
 	# Flush facade details provide readable windows without changing the shell's
 	# structural envelope or tactical line-of-sight contract.
-	item.add_box_visual("BackWindow", Vector3(4.5, 2.0, -0.12), Vector3(3.8, 1.25, 0.04), glass)
-	item.add_box_visual("LeftWindow", Vector3(-0.12, 2.0, 4.5), Vector3(0.04, 1.25, 3.8), glass)
-	item.add_box_visual("RightWindow", Vector3(9.12, 2.0, 4.5), Vector3(0.04, 1.25, 3.8), glass)
+	item.add_box_visual("BackWindow", Vector3(4.5, 2.0, -0.12), Vector3(3.8, 1.25, 0.04), glass, &"decorative")
+	item.add_box_visual("LeftWindow", Vector3(-0.12, 2.0, 4.5), Vector3(0.04, 1.25, 3.8), glass, &"decorative")
+	item.add_box_visual("RightWindow", Vector3(9.12, 2.0, 4.5), Vector3(0.04, 1.25, 3.8), glass, &"decorative")
 
 static func _loading_canopy() -> EnvironmentBuildingDefinition:
 	var building := EnvironmentBuildingDefinition.new(&"loading_canopy", &"covered_loading_area", EnvironmentBuildingDefinition.Enclosure.OPEN_SHELTER, Vector2i(8, 6))
@@ -107,7 +107,7 @@ static func _loading_canopy() -> EnvironmentBuildingDefinition:
 	for support in supports:
 		item.add_box_visual("CanopySupport", Vector3(support.x, 1.55, support.y), Vector3(0.38, 3.1, 0.38), steel)
 	item.add_box_visual("CanopyRoof", Vector3(3.5, 3.25, 2.5), Vector3(7.7, 0.22, 5.7), roof)
-	item.add_box_visual("CanopyStripe", Vector3(3.5, 2.85, 5.16), Vector3(7.2, 0.28, 0.08), stripe)
+	item.add_box_visual("CanopyStripe", Vector3(3.5, 2.85, 5.16), Vector3(7.2, 0.28, 0.08), stripe, &"decorative")
 	building.module = item
 	return building
 
@@ -126,7 +126,10 @@ static func _prebuilt_industrial_shell() -> EnvironmentBuildingDefinition:
 	for cell in item.footprint_cells:
 		item.set_effect(cell, _full_cover())
 	item.set_visual_envelope(AABB(Vector3.ZERO, Vector3(14.0, 10.0, 14.0)))
-	item.add_catalog_visual(building.source_assets, Vector2(6.5, 6.5))
+	# These vendor scenes are monolithic exterior shells. Their decoration cannot
+	# be separated without deriving a replacement scene, so the complete asset is
+	# classified as structural for shell inspection.
+	item.add_catalog_visual(building.source_assets, Vector2(6.5, 6.5), 0, Vector3.ZERO, &"structural")
 	building.module = item
 	return building
 
