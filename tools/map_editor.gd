@@ -2,8 +2,11 @@ extends Node3D
 
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
+const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
+const CUSTOM_LAYOUT := &"custom_layout"
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const EDITOR_LAYOUTS: Array[StringName] = [
+	CUSTOM_LAYOUT,
 	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works",
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
@@ -22,6 +25,17 @@ var transform_label: Label
 var selection_outline_material: StandardMaterial3D
 var preset_picker: OptionButton
 var preview_map_size := Vector2i(40, 30)
+var show_plan_overlay := true
+var custom_layout := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+var custom_dirty := false
+var component_picker: OptionButton
+var rotation_picker: OptionButton
+var variation_input: SpinBox
+var composer_message: Label
+var composer_panel: Control
+var inspection_shortcuts: Array[Control] = []
+var editor_catalog: Dictionary = IndustrialModuleCatalog.create()
+var displayed_data: MapData
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -30,6 +44,7 @@ func _ready() -> void:
 	if args.size() > 1 and StringName(args[1]) in EDITOR_LAYOUTS:
 		layout_preset = StringName(args[1])
 	_build_ui()
+	_load_custom_layout(false)
 	_rebuild()
 
 func _shortcut_input(event: InputEvent) -> void:
@@ -38,6 +53,8 @@ func _shortcut_input(event: InputEvent) -> void:
 			_rebuild()
 		elif event.keycode == KEY_F:
 			_frame_camera()
+		elif event.keycode == KEY_P:
+			_set_plan_overlay_visible(not show_plan_overlay)
 		elif event.keycode == KEY_C:
 			_focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0")
 		elif event.keycode == KEY_G:
@@ -50,6 +67,10 @@ func _shortcut_input(event: InputEvent) -> void:
 			_set_camera_view(0.0, 1.50)
 		elif event.keycode == KEY_TAB:
 			_select_next_module()
+		elif event.keycode == KEY_DELETE and _is_composing():
+			_delete_selected_placement()
+		elif event.keycode == KEY_S and event.ctrl_pressed and _is_composing():
+			_save_custom_layout()
 		elif event.keycode == KEY_LEFT:
 			_nudge_inspection(Vector3.LEFT * _adjustment_amount())
 		elif event.keycode == KEY_RIGHT:
@@ -76,6 +97,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _select_module_at_screen(event.position):
 			get_viewport().set_input_as_handled()
 			return
+		if _is_composing() and _place_selected_component_at_screen(event.position):
+			get_viewport().set_input_as_handled()
+			return
 	if is_instance_valid(orbit) and orbit.handle_mouse(event):
 		get_viewport().set_input_as_handled()
 
@@ -88,10 +112,13 @@ func _rebuild() -> void:
 	content.name = "PreviewContent"
 	add_child(content)
 	var data: MapData
-	if layout_preset in PROCEDURAL_LAYOUTS:
+	if layout_preset == CUSTOM_LAYOUT:
+		data = _build_custom_map()
+	elif layout_preset in PROCEDURAL_LAYOUTS:
 		data = FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, generation_seed, layout_preset)
 	else:
 		data = FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
+	displayed_data = data
 	preview_map_size = data.map_size
 	var ground_mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
@@ -112,6 +139,7 @@ func _rebuild() -> void:
 		TacticalUnit.Faction.ENEMY: 5,
 	})
 	_update_status(data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe(), data.environment_layout_plan)
+	_update_composer_visibility()
 	if is_instance_valid(seed_input):
 		seed_input.set_value_no_signal(generation_seed)
 
@@ -146,13 +174,19 @@ func _build_ui() -> void:
 	add_child(environment)
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	var ui_root := Control.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var compact_theme := Theme.new()
+	compact_theme.default_font_size = 13
+	ui_root.theme = compact_theme
+	layer.add_child(ui_root)
 	status = Label.new()
-	status.position = Vector2(18, 18)
-	status.add_theme_font_size_override("font_size", 18)
-	layer.add_child(status)
+	status.position = Vector2(12, 12)
+	status.add_theme_font_size_override("font_size", 15)
+	ui_root.add_child(status)
 	var controls := HBoxContainer.new()
-	controls.position = Vector2(18, 96)
-	layer.add_child(controls)
+	controls.position = Vector2(12, 74)
+	ui_root.add_child(controls)
 	var previous := Button.new()
 	previous.text = "Previous seed"
 	previous.pressed.connect(func(): _set_seed(generation_seed - 1))
@@ -186,26 +220,38 @@ func _build_ui() -> void:
 	frame_button.text = "Frame map"
 	frame_button.pressed.connect(_frame_camera)
 	controls.add_child(frame_button)
+	var plan_toggle := CheckButton.new()
+	plan_toggle.text = "Plan overlay (P)"
+	plan_toggle.button_pressed = show_plan_overlay
+	plan_toggle.toggled.connect(_set_plan_overlay_visible)
+	controls.add_child(plan_toggle)
+	var edit_copy := Button.new()
+	edit_copy.text = "Edit copy"
+	edit_copy.tooltip_text = "Copy the displayed authored or generated modules into the custom composer"
+	edit_copy.pressed.connect(_compose_current_layout)
+	controls.add_child(edit_copy)
 	var corner_button := Button.new()
 	corner_button.text = "Inspect corner"
 	corner_button.tooltip_text = "Frame the assembled Factory inner-corner joint (C)"
 	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0"))
 	controls.add_child(corner_button)
+	inspection_shortcuts.append(corner_button)
 	var road_button := Button.new()
 	road_button.text = "Inspect road seam"
 	road_button.tooltip_text = "Frame the road and paving connection (G)"
 	road_button.pressed.connect(func(): _focus_component(&"road_straight", "road / paving seam"))
 	controls.add_child(road_button)
+	inspection_shortcuts.append(road_button)
 	var views := HBoxContainer.new()
-	views.position = Vector2(18, 136)
-	layer.add_child(views)
+	views.position = Vector2(12, 106)
+	ui_root.add_child(views)
 	_add_view_button(views, "Front (1)", 0.0, 0.18)
 	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
 	_add_view_button(views, "Top (7)", 0.0, 1.50)
 	_add_action_button(views, "Next piece (Tab)", _select_next_module)
 	var nudges := HBoxContainer.new()
-	nudges.position = Vector2(18, 176)
-	layer.add_child(nudges)
+	nudges.position = Vector2(12, 138)
+	ui_root.add_child(nudges)
 	var nudge_heading := Label.new()
 	nudge_heading.text = "Selected piece  ·  step"
 	nudges.add_child(nudge_heading)
@@ -227,9 +273,128 @@ func _build_ui() -> void:
 	_add_action_button(nudges, "Reset", _reset_inspection)
 	_add_action_button(nudges, "Copy transform", _copy_inspection_transform)
 	transform_label = Label.new()
-	transform_label.position = Vector2(18, 216)
+	transform_label.position = Vector2(12, 170)
 	transform_label.text = "Left-click any piece to select it, then adjust its transform."
-	layer.add_child(transform_label)
+	ui_root.add_child(transform_label)
+	_build_composer_ui(ui_root)
+
+func _build_composer_ui(layer: Control) -> void:
+	var panel := PanelContainer.new()
+	panel.name = "ComposerPanel"
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.position = Vector2(-338, 210)
+	panel.size = Vector2(326, 350)
+	layer.add_child(panel)
+	composer_panel = panel
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 5)
+	margin.add_child(column)
+	var heading := Label.new()
+	heading.text = "MAP COMPOSER"
+	heading.add_theme_font_size_override("font_size", 16)
+	column.add_child(heading)
+	var instructions := Label.new()
+	instructions.text = "Choose a module, then click an empty grid cell to place it.\nClick a piece to select it; arrows move, Q/E rotate, Delete removes."
+	instructions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(instructions)
+	component_picker = OptionButton.new()
+	component_picker.fit_to_longest_item = false
+	component_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var component_ids: Array = editor_catalog.keys()
+	component_ids.sort_custom(func(a, b):
+		var first: EnvironmentModuleDefinition = editor_catalog[a]
+		var second: EnvironmentModuleDefinition = editor_catalog[b]
+		return "%s/%s" % [first.family, first.component_id] < "%s/%s" % [second.family, second.component_id]
+	)
+	for component_id in component_ids:
+		var definition: EnvironmentModuleDefinition = editor_catalog[component_id]
+		component_picker.add_item("%s  [%d×%d]" % [String(component_id).replace("_", " "), definition.size.x, definition.size.y])
+		component_picker.set_item_metadata(component_picker.item_count - 1, component_id)
+		component_picker.set_item_tooltip(component_picker.item_count - 1, "%s / %s" % [definition.family, component_id])
+	column.add_child(component_picker)
+	var options := HBoxContainer.new()
+	column.add_child(options)
+	var rotation_label := Label.new()
+	rotation_label.text = "Rotation"
+	options.add_child(rotation_label)
+	rotation_picker = OptionButton.new()
+	for quarter in 4:
+		rotation_picker.add_item("%d°" % (quarter * 90))
+		rotation_picker.set_item_metadata(quarter, quarter)
+	options.add_child(rotation_picker)
+	var variation_label := Label.new()
+	variation_label.text = "Variation"
+	options.add_child(variation_label)
+	variation_input = SpinBox.new()
+	variation_input.min_value = 0
+	variation_input.max_value = 32
+	variation_input.step = 1
+	variation_input.custom_minimum_size.x = 72
+	options.add_child(variation_input)
+	var edit_actions := HBoxContainer.new()
+	column.add_child(edit_actions)
+	_add_action_button(edit_actions, "Rotate selected", func(): _rotate_selected_placement(1))
+	_add_action_button(edit_actions, "Delete selected", _delete_selected_placement)
+	var file_actions := HBoxContainer.new()
+	column.add_child(file_actions)
+	_add_action_button(file_actions, "Save (Ctrl+S)", _save_custom_layout)
+	_add_action_button(file_actions, "Reload", func(): _load_custom_layout(true))
+	_add_action_button(file_actions, "Clear", _clear_custom_layout)
+	composer_message = Label.new()
+	composer_message.text = "Saved layouts are project-local JSON."
+	composer_message.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	composer_message.custom_minimum_size.y = 45
+	column.add_child(composer_message)
+
+func _is_composing() -> bool:
+	return layout_preset == CUSTOM_LAYOUT
+
+func _update_composer_visibility() -> void:
+	if is_instance_valid(composer_panel):
+		composer_panel.visible = _is_composing()
+	for control in inspection_shortcuts:
+		control.visible = not _is_composing()
+	if _is_composing():
+		_update_composer_message()
+	_update_transform_label()
+
+func _build_custom_map() -> MapData:
+	var data := FlatMapGenerator.generate(preview_map_size.x, preview_map_size.y, 1.0, generation_seed)
+	data.source_kind = "authored_map_editor"
+	EnvironmentModuleMapWriter.apply(data, custom_layout, editor_catalog, 1.0)
+	data.environment_modules.assign(custom_layout.placements)
+	data.environment_module_seed = generation_seed
+	data.rebuild_los_index()
+	return data
+
+func _compose_current_layout() -> void:
+	if not is_instance_valid(displayed_data):
+		return
+	if _is_composing():
+		_set_composer_message("This is already the editable composition.")
+		return
+	var copied := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+	for source in displayed_data.environment_modules:
+		var placement := EnvironmentModulePlacement.new(source.component_id, source.origin, source.rotation, source.variation, source.elevation)
+		if not copied.try_add(editor_catalog.get(placement.component_id), placement, displayed_data.map_size):
+			push_error("Could not copy displayed layout into composer: %s" % copied.errors.back())
+			return
+	custom_layout = copied
+	preview_map_size = displayed_data.map_size
+	custom_dirty = true
+	layout_preset = CUSTOM_LAYOUT
+	for item_index in preset_picker.item_count:
+		if preset_picker.get_item_metadata(item_index) == CUSTOM_LAYOUT:
+			preset_picker.select(item_index)
+			break
+	_rebuild()
+	_set_composer_message("Copied %d displayed modules. The source layout is unchanged." % custom_layout.placements.size())
 
 func _set_seed(value: int) -> void:
 	generation_seed = value
@@ -238,6 +403,8 @@ func _set_seed(value: int) -> void:
 func _select_preset(index: int) -> void:
 	layout_preset = preset_picker.get_item_metadata(index)
 	_rebuild()
+	if _is_composing():
+		_set_composer_message("Composition mode. Click an empty grid cell to place the selected module.")
 
 func _frame_camera() -> void:
 	if is_instance_valid(orbit):
@@ -246,6 +413,13 @@ func _frame_camera() -> void:
 		orbit.frame(AABB(Vector3(-preview_map_size.x * 0.5, 0, -preview_map_size.y * 0.5), Vector3(preview_map_size.x, 8, preview_map_size.y)))
 		inspection_target = "whole map"
 		_refresh_status_target()
+
+func _set_plan_overlay_visible(visible: bool) -> void:
+	show_plan_overlay = visible
+	if is_instance_valid(content):
+		var overlay := content.get_node_or_null("SpatialPlan")
+		if overlay != null:
+			overlay.visible = visible
 
 func _focus_component(component_id: StringName, label: String) -> bool:
 	if not is_instance_valid(content) or not is_instance_valid(orbit):
@@ -320,8 +494,128 @@ func _select_module_at_screen(screen_position: Vector2) -> bool:
 	var component_id: StringName = selected.get_meta("component_id", &"unknown")
 	_prepare_inspection_module(selected)
 	inspection_target = str(component_id)
+	if _is_composing():
+		_sync_composer_to_selection(selected)
 	_refresh_status_target()
 	return true
+
+func _place_selected_component_at_screen(screen_position: Vector2) -> bool:
+	if not _is_composing() or not is_instance_valid(component_picker):
+		return false
+	var plane := Plane(Vector3.UP, 0.0)
+	var hit = plane.intersects_ray(camera.project_ray_origin(screen_position), camera.project_ray_normal(screen_position))
+	if hit == null:
+		return false
+	var point := hit as Vector3
+	var origin := Vector2i(floori(point.x + float(preview_map_size.x) * 0.5), floori(point.z + float(preview_map_size.y) * 0.5))
+	var component_id: StringName = component_picker.get_item_metadata(component_picker.selected)
+	var rotation := int(rotation_picker.get_item_metadata(rotation_picker.selected))
+	var placement := EnvironmentModulePlacement.new(component_id, origin, rotation, int(variation_input.value))
+	var candidate := _layout_with_change(-1, placement)
+	if candidate == null:
+		return true
+	custom_layout = candidate
+	custom_dirty = true
+	_rebuild()
+	_set_composer_message("Placed %s at %s." % [component_id, origin])
+	return true
+
+func _layout_with_change(replace_index: int, replacement: EnvironmentModulePlacement) -> EnvironmentModuleLayout:
+	var candidate := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+	for index in custom_layout.placements.size() + (1 if replace_index < 0 else 0):
+		var placement: EnvironmentModulePlacement
+		if replace_index < 0 and index == custom_layout.placements.size():
+			placement = replacement
+		elif index == replace_index:
+			placement = replacement
+		else:
+			placement = custom_layout.placements[index]
+		var copied := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		if not candidate.try_add(editor_catalog.get(copied.component_id), copied, preview_map_size):
+			_set_composer_message("Cannot place: %s" % candidate.errors.back(), true)
+			return null
+	return candidate
+
+func _layout_without(index_to_remove: int) -> EnvironmentModuleLayout:
+	var candidate := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+	for index in custom_layout.placements.size():
+		if index == index_to_remove:
+			continue
+		var placement := custom_layout.placements[index]
+		var copied := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		if not candidate.try_add(editor_catalog.get(copied.component_id), copied, preview_map_size):
+			_set_composer_message("Could not rebuild composition: %s" % candidate.errors.back(), true)
+			return null
+	return candidate
+
+func _selected_placement_index() -> int:
+	return int(inspection_module.get_meta("placement_index", -1)) if is_instance_valid(inspection_module) else -1
+
+func _move_selected_placement(delta: Vector2i) -> void:
+	var index := _selected_placement_index()
+	if index < 0 or index >= custom_layout.placements.size():
+		_set_composer_message("Select a placed module first.", true)
+		return
+	var current := custom_layout.placements[index]
+	var replacement := EnvironmentModulePlacement.new(current.component_id, current.origin + delta, current.rotation, current.variation, current.elevation)
+	var candidate := _layout_with_change(index, replacement)
+	if candidate == null:
+		return
+	custom_layout = candidate
+	custom_dirty = true
+	_rebuild()
+	_select_placement_index(index)
+
+func _rotate_selected_placement(quarter_turns: int) -> void:
+	var index := _selected_placement_index()
+	if index < 0 or index >= custom_layout.placements.size():
+		_set_composer_message("Select a placed module first.", true)
+		return
+	var current := custom_layout.placements[index]
+	var replacement := EnvironmentModulePlacement.new(current.component_id, current.origin, current.rotation + quarter_turns, current.variation, current.elevation)
+	var candidate := _layout_with_change(index, replacement)
+	if candidate == null:
+		return
+	custom_layout = candidate
+	custom_dirty = true
+	_rebuild()
+	_select_placement_index(index)
+
+func _delete_selected_placement() -> void:
+	var index := _selected_placement_index()
+	if index < 0 or index >= custom_layout.placements.size():
+		_set_composer_message("Select a placed module first.", true)
+		return
+	var removed := custom_layout.placements[index].component_id
+	var candidate := _layout_without(index)
+	if candidate == null:
+		return
+	custom_layout = candidate
+	custom_dirty = true
+	_rebuild()
+	_set_composer_message("Removed %s." % removed)
+
+func _select_placement_index(index: int) -> void:
+	var root := content.get_node_or_null("ModularEnvironment") if is_instance_valid(content) else null
+	if root == null:
+		return
+	for candidate in root.get_children():
+		if int(candidate.get_meta("placement_index", -1)) == index:
+			_prepare_inspection_module(candidate as Node3D)
+			inspection_target = str(candidate.get_meta("component_id", &"unknown"))
+			_sync_composer_to_selection(candidate)
+			_refresh_status_target()
+			return
+
+func _sync_composer_to_selection(module: Node3D) -> void:
+	var component_id: StringName = module.get_meta("component_id", &"")
+	for item_index in component_picker.item_count:
+		if component_picker.get_item_metadata(item_index) == component_id:
+			component_picker.select(item_index)
+			break
+	rotation_picker.select(int(module.get_meta("rotation", 0)))
+	variation_input.value = int(module.get_meta("variation", 0))
+	_update_composer_message()
 
 func _set_camera_view(azimuth: float, altitude: float) -> void:
 	if is_instance_valid(orbit):
@@ -343,7 +637,7 @@ func _prepare_inspection_module(module: Node3D) -> void:
 	if is_instance_valid(inspection_module) and inspection_module != module:
 		_set_selection_outline(inspection_module, false)
 	inspection_module = module
-	if not module.has_meta("inspection_base_position"):
+	if not _is_composing() and not module.has_meta("inspection_base_position"):
 		var pivot := AssetPlacement.mesh_bounds(module).get_center()
 		for child in module.get_children():
 			if child is Node3D:
@@ -367,6 +661,12 @@ func _nudge_inspection(delta: Vector3) -> void:
 	if not is_instance_valid(inspection_module):
 		_update_transform_label("Select a piece first.")
 		return
+	if _is_composing():
+		if not is_zero_approx(delta.y):
+			_set_composer_message("Use modules with authored vertical links for elevation; free Y movement is presentation-only.", true)
+			return
+		_move_selected_placement(Vector2i(int(signf(delta.x)), int(signf(delta.z))))
+		return
 	inspection_module.position += delta
 	_update_transform_label()
 
@@ -374,12 +674,18 @@ func _rotate_inspection(degrees: float) -> void:
 	if not is_instance_valid(inspection_module):
 		_update_transform_label("Select a piece first.")
 		return
+	if _is_composing():
+		_rotate_selected_placement(roundi(degrees / 90.0))
+		return
 	inspection_module.rotate_y(deg_to_rad(degrees))
 	_update_transform_label()
 
 func _reset_inspection() -> void:
 	if not is_instance_valid(inspection_module):
 		_update_transform_label("Select a piece first.")
+		return
+	if _is_composing():
+		_set_composer_message("Composer placements already use snapped grid transforms.")
 		return
 	inspection_module.position = inspection_module.get_meta("inspection_base_position", inspection_module.position)
 	inspection_module.rotation = Vector3.ZERO
@@ -396,6 +702,13 @@ func _copy_inspection_transform() -> void:
 func _inspection_transform_text() -> String:
 	if not is_instance_valid(inspection_module):
 		return ""
+	if _is_composing():
+		return "%s origin=%s yaw=%d° variation=%d" % [
+			inspection_module.get_meta("component_id", &"unknown"),
+			inspection_module.get_meta("origin", Vector2i.ZERO),
+			int(inspection_module.get_meta("rotation", 0)) * 90,
+			int(inspection_module.get_meta("variation", 0)),
+		]
 	var base: Vector3 = inspection_module.get_meta("inspection_base_position", inspection_module.position)
 	var offset := inspection_module.position - base
 	var assets: Array[String] = []
@@ -416,9 +729,10 @@ func _update_transform_label(prefix := "") -> void:
 	if not prefix.is_empty():
 		transform_label.text = prefix
 	elif is_instance_valid(inspection_module):
-		transform_label.text = _inspection_transform_text() + "  ·  arrows X/Z · PgUp/PgDn Y · Q/E yaw"
+		var help := "  ·  arrows move · Q/E rotate · Delete removes" if _is_composing() else "  ·  arrows X/Z · PgUp/PgDn Y · Q/E yaw"
+		transform_label.text = _inspection_transform_text() + help
 	else:
-		transform_label.text = "Left-click any piece to select it, then adjust its transform."
+		transform_label.text = "Choose a module and click an empty grid cell to place it." if _is_composing() else "Left-click any piece to select it, then adjust its transform."
 
 func _update_status(component_count: int, validation_text: String, plan: EnvironmentLayoutPlan = null) -> void:
 	var plan_text := "authored layout"
@@ -427,8 +741,10 @@ func _update_status(component_count: int, validation_text: String, plan: Environ
 			String(plan.topology).replace("_", " "), plan.road_cells.size(), plan.parcels.size(),
 			plan.rejected_candidates.size(), "yes" if plan.fallback_used else "no",
 		]
-	status.text = "FUSEFIRE MAP EDITOR  |  %s  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views\nPlan: %s" % [
-		String(layout_preset).replace("_", " "), generation_seed, component_count, validation_text, inspection_target, plan_text
+	var dirty_text := "  |  UNSAVED" if _is_composing() and custom_dirty else ""
+	var lmb_help := "select/place" if _is_composing() else "select"
+	status.text = "FUSEFIRE MAP EDITOR  |  %s%s  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB %s · RMB orbit · MMB pan · wheel zoom · F map · P plan · 1/3/7 views\nPlan: %s" % [
+		String(layout_preset).replace("_", " "), dirty_text, generation_seed, component_count, validation_text, inspection_target, lmb_help, plan_text
 	]
 
 func _refresh_status_target() -> void:
@@ -437,8 +753,57 @@ func _refresh_status_target() -> void:
 	var lines := status.text.split("\n")
 	if lines.size() < 2:
 		return
-	lines[1] = "Target: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % inspection_target
+	var lmb_help := "select/place" if _is_composing() else "select"
+	lines[1] = "Target: %s  |  LMB %s · RMB orbit · MMB pan · wheel zoom · F map · P plan · 1/3/7 views" % [inspection_target, lmb_help]
 	status.text = "\n".join(lines)
+
+func _save_custom_layout() -> void:
+	var error := LayoutStore.save(custom_layout, preview_map_size)
+	if not error.is_empty():
+		_set_composer_message(error, true)
+		return
+	custom_dirty = false
+	_update_status(custom_layout.placements.size(), "VALID")
+	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), LayoutStore.DEFAULT_PATH])
+
+func _load_custom_layout(rebuild_after: bool) -> void:
+	var result := LayoutStore.load(editor_catalog)
+	var loaded_starter := false
+	if not result.ok:
+		result = LayoutStore.load(editor_catalog, LayoutStore.STARTER_PATH)
+		loaded_starter = result.ok
+		if not result.ok:
+			if rebuild_after:
+				_set_composer_message(result.error, true)
+			return
+	custom_layout = result.layout
+	custom_layout.layout_id = CUSTOM_LAYOUT
+	preview_map_size = result.map_size
+	custom_dirty = loaded_starter
+	if rebuild_after:
+		_rebuild()
+		if loaded_starter:
+			_set_composer_message("Loaded the starter composition. Save to create your custom layout.")
+		else:
+			_set_composer_message("Reloaded %d saved modules." % custom_layout.placements.size())
+
+func _clear_custom_layout() -> void:
+	custom_layout = EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+	custom_dirty = true
+	_rebuild()
+	_set_composer_message("Cleared the working composition. Save only when this is intentional.")
+
+func _set_composer_message(message: String, is_error := false) -> void:
+	if not is_instance_valid(composer_message):
+		return
+	composer_message.text = message
+	composer_message.modulate = Color("ff9f9f") if is_error else Color.WHITE
+
+func _update_composer_message() -> void:
+	if not _is_composing():
+		return
+	var state := "UNSAVED" if custom_dirty else "saved"
+	_set_composer_message("%d modules · %s · custom_layout.json" % [custom_layout.placements.size(), state])
 
 func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> void:
 	var mesh := ImmediateMesh.new()
@@ -488,6 +853,7 @@ func _add_spatial_plan_overlay(parent: Node3D, data: MapData) -> void:
 	var overlay := MeshInstance3D.new()
 	overlay.name = "SpatialPlan"
 	overlay.mesh = mesh
+	overlay.visible = show_plan_overlay
 	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(overlay)
 

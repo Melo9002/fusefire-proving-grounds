@@ -1,94 +1,91 @@
 # Coherent Layout Assembly
 
-Goal 2.3 adds an opt-in hierarchical generator above FuseFire's Goal 2.2 module catalog. It plans a recognizable place before placing individual objects:
+Goal 2.3 turns the reusable Goal 2.2 modules into seeded places with roads, parcels, complete structures, functional open areas, and authoritative tactical connectivity. The procedural path remains opt-in and shares the same `MapData` authority and modular presenter as authored layouts.
 
-1. Select an environment identity.
-2. Build one connected macro-scale road plot.
-3. Divide the remaining macro cells into parcels and record their road-facing edges.
-4. Fill each parcel from a small authored template grammar.
-5. Reject templates that violate tactical footprints, placement clearance, or calibrated visual envelopes.
-6. Commit the completed module layout into authoritative `MapData` through the shared module writer.
+## Generation hierarchy
 
-The first identities are `industrial_district`, `commercial_street`, and `mixed_service`. They choose different parcel-template sets and therefore produce different structure and obstacle densities. Crossroads and rotated T junctions vary with the seed. Every road approach continues to a map boundary, so the initial grammar does not create unexplained internal dead ends.
+`CoherentEnvironmentAssembler` builds a layout in seven bounded steps:
 
-This path is opt-in through `FlatMapGenerator.generate_coherent_environment()`. Existing flat, cover, refinery, warehouse, and authored modular generation remain available.
+1. Select an environment identity: industrial district, commercial street, or mixed service.
+2. Build a connected macro road plot from a crossroad or T-junction grammar.
+3. Derive road-facing parcels, including one larger 20 × 20 district parcel where space permits.
+4. Choose authored parcel compositions appropriate to the identity and parcel size.
+5. Rotate each composition toward a compatible road edge and try bounded alternatives.
+6. Add contextual street furniture after the road graph is known.
+7. Commit accepted tactical effects to `MapData`, validate routes, and repair deployment candidates onto road-connected ground when necessary.
 
-## Architecture
+Identical inputs and seeds make the same decisions. Different seeds can change the road topology, district parcel location, parcel composition, component variation, and contextual details.
 
-`CoherentEnvironmentAssembler` owns planning and bounded placement. `EnvironmentLayoutPlan` records the selected identity, seed, topology, macro road cells, parcel bounds, template choices, rejected candidates, search attempts, fallback use, and deterministic signature. `EnvironmentModuleMapWriter` is the single translator used by authored and procedural layouts to copy tactical effects, elevated surfaces, and vertical links into `MapData`.
+## Plot and parcel influence
 
-The generator uses authored parcel templates rather than selecting unrelated modules wherever cells happen to be empty. Current templates describe a storefront, loading bay, industrial yard, workshop frontage, service alley, and courtyard. Their rotation is derived from a parcel's adjacent road edge. The templates reuse the same 22-component catalog and do not contain a separate tactical representation.
+The design adapts the useful division of responsibility from XCOM 2's Plot and Parcel system. Inspection of the installed War of the Chosen SDK found separate plot organization, parcel sizes and eligibility, street-facing entrance slots, objective tags, spawn density, deterministic parcel selection, backtracking records, and plot-cover parcels that close seams.
 
-The base flat generator still establishes authoritative ground cells and faction ownership. If a newly placed obstacle claims an existing deployment cell, coherent assembly moves only that invalid deployment position to the nearest deterministic walkable stopping cell. The shared map validator then verifies capacity and hostile-faction connectivity.
+FuseFire uses the same broad lesson rather than copying XCOM code or data: the road plot establishes large-scale organization; authored parcels supply coherent functional places; explicit sockets and metadata join them; bounded alternatives prevent a failed candidate from corrupting the map. Small props decorate a resolved place instead of defining its structure.
 
-## Three spatial contracts
+## Spatial contracts
 
-Module placement distinguishes three kinds of space:
+The assembler keeps four responsibilities distinct:
 
-- **Tactical footprint:** integer cells and authored effects that become movement, stopping, cover, line-of-sight, and occupancy state in `MapData`.
-- **Placement clearance:** rotation-aware cells reserved for entrances, machine service space, access lanes, and seams. A later same-layer footprint cannot intrude into them, and a new clearance cannot cover an existing same-layer footprint.
-- **Visual envelope:** an optional calibrated `AABB` in local cell/world units. Same-layer envelope intersections reject the candidate, but the envelope never changes tactical state.
+- **Tactical footprint** writes authoritative movement, stopping, cover, line-of-sight, occupancy, elevation, and traversal data.
+- **Placement clearance** reserves physical or functional room around entrances, machinery, seams, and access routes.
+- **Visual envelope** describes calibrated mesh extent for rejecting undesirable same-layer intersections. It does not create gameplay collision.
+- **Connections** describe semantic access such as roads, paving, exterior entrances, and vertical links with position, facing, and elevation.
 
-Ground, occupant, and overhead placement layers remain independent. A container can legally sit on paved ground, and future elevated pieces can cross ground space. Deliberate structural seams continue to use authored connection sockets; touching visual-envelope boundaries are accepted.
+The presenter resolves catalog visual references through the saved Asset Lab calibration at runtime. A visual scale adjustment therefore does not silently rewrite a component's tactical footprint.
 
-Container and machine-cluster envelopes cover the overhang that caused the Goal 2.2 clipping reports. More catalog assets should receive envelopes only after their useful assembly bounds are measured. Raw vendor bounds are not automatically promoted to gameplay or placement authority.
+## Current compositions
 
-## Bounded alternatives
+The first grammar includes:
 
-Parcel placement is transactional. The assembler clones the accepted prefix, tries a candidate template, and retains it only if every member passes all placement contracts. A failed candidate records its reason and the assembler tries another seeded choice. Each parcel has a fixed attempt limit and falls back to explicit open ground if no candidate is legal. This guarantees termination and makes degraded output visible rather than silently accepting a broken composition.
+- Continuous road surfaces for every logical road and intersection cell.
+- A large industrial shell parcel using a complete City Kit Industrial building asset.
+- A roofed, four-sided Factory Kit service building with multiple usable exterior entrances.
+- Loading areas with calibrated containers and dumpsters.
+- Machinery yards with perimeter fencing.
+- Paved service alleys and courtyards.
+- Road-context traffic signals, stop signs, streetlights, and utility poles.
 
-Seed 7 in the industrial identity is a regression fixture: one yard candidate is rejected because its machine envelope would intersect a neighboring container, then a valid alternative is selected without requiring the open-ground fallback.
+Freestanding shop fronts and window walls remain valid catalog modules for authored assemblies, but the procedural generator no longer treats them as complete buildings.
 
-## XCOM reference findings
+## Map Editor inspection
 
-The locally installed War of the Chosen SDK was inspected for design ideas, especially `XComParcelManager.uc`, `XComParcel.uc`, and `XComParcelEntrance.uc`. Its useful concepts are hierarchical plot/parcel selection, parcel size and facing metadata, entrance slots, objective eligibility, randomized input ordering, and bounded/exhaustive search for a valid arrangement.
-
-FuseFire adopts the division of responsibility, not XCOM code or content. `EnvironmentLayoutPlan` is the macro plot, parcel dictionaries are the lots, Goal 2.2 definitions are the reusable pieces, and `MapData` remains the tactical authority.
-
-## Map Editor
-
-Launch from the repository root:
-
-```powershell
-godot_console --path . res://tools/map_editor.tscn
-```
-
-The layout selector now contains both authored Goal 2.2 fixtures and the three procedural identities. You can also launch a fixed seed directly:
+Launch a representative layout with:
 
 ```powershell
 godot_console --path . res://tools/map_editor.tscn -- 2208 industrial_district
-godot_console --path . res://tools/map_editor.tscn -- 7319 commercial_street
-godot_console --path . res://tools/map_editor.tscn -- 11027 mixed_service
 ```
 
-Procedural views show cyan road-plot boundaries and amber parcel boundaries above the tactical grid. The status line reports topology, road-tile and parcel counts, rejected candidates, fallback use, component count, and general map validity. Existing orbit, pan, zoom, seed controls, direct module selection, outline, framing, and transform scratchpad remain available.
+Useful identities and seeds:
 
-For repeatable rendered evidence:
+- `industrial_district 2208`
+- `commercial_street 7319`
+- `mixed_service 11027`
+
+Use right-drag to orbit, middle-drag to pan, the wheel to zoom, and click a component to select it. Press `P` or use **Plan overlay** to hide the cyan road and amber parcel diagnostics for an unobstructed rendered view. Seed controls reproduce or vary the layout.
+
+The automated capture fixture records overview, overhead, and street-level views:
 
 ```powershell
-godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- C:/path/to/captures
+godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- artifacts/goal23-quality
 ```
 
-## Verification
+Rendered captures are inspection evidence; headless tests do not establish visual correctness.
 
-`coherent_layout_assembly_test.gd` protects:
+## Adding a parcel composition
 
-- deterministic plan, placement, and tactical signatures;
-- meaningful variation across three identities and four representative seeds;
-- connected road graphs whose approaches reach map boundaries;
-- assigned parcel templates and bounded search termination;
-- clearance and visual-envelope conflict rejection;
-- successful alternative selection after a real rejected candidate;
-- tactical map validation and repaired deployment legality;
-- shared procedural presentation and Map Editor plan diagnostics.
-
-The capture helper renders one representative seed per identity for human inspection. Headless tests establish logic and scene behavior; they do not establish visual quality.
+1. Build it from registered module definitions or add a small reusable definition to `IndustrialModuleCatalog`.
+2. Give the composition a functional identity, required parcel size, and road-facing rule.
+3. Reserve entrance and access clearances independently from tactical occupancy.
+4. Add visual envelopes for assets that can overhang their logical cells.
+5. Keep props subordinate to the parcel's purpose.
+6. Add a fixed-seed regression for connectivity, legality, and important composition rules.
+7. Inspect overview, overhead, and street-level renders.
 
 ## Current limits
 
-- The first road grammar produces one crossroad or T junction with straight boundary approaches. Curves, multiple intersections, blocks, and secondary streets remain future extensions.
-- Parcels use a fixed ten-cell macro size and a compact authored template catalog. Building depth, roofs, full interiors, and multi-parcel structures are limited.
-- Only known overhanging occupant modules have calibrated visual envelopes. Other modules still depend on authored template spacing and visual review.
-- The current fallback is deliberate open ground. Future quality scoring should distinguish useful civic/open space from excessive low-density output.
-- Mission requirements validate against the completed map. Goal 2.5 should reserve objective and extraction needs during planning.
-- Procedural vertical districts are deferred; the authored `vertical_works` fixture continues to validate elevated module translation and traversal.
+- The road grammar has one intersection with straight approaches; lane markings, curves, secondary streets, and multi-block networks remain future work.
+- The grammar currently creates at most one large district parcel per map.
+- City Kit building shells are exterior-only tactical obstacles. Factory service buildings are enterable, but they do not yet have furnished interiors or gameplay-driven roof cutaways.
+- Contextual details use a small subset of the calibrated catalog. More authored parcel assemblies are needed before every seed can have the same visual density.
+- Mission suitability is validated after assembly. Future mission-aware generation should reserve required parcels before commitment.
+- Procedural vertical parcels remain deferred while the existing authored vertical fixture protects traversal behavior.

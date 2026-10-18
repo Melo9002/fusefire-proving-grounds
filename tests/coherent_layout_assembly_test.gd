@@ -9,6 +9,7 @@ func _run() -> void:
 	var catalog := IndustrialModuleCatalog.create()
 	_test_spatial_contracts(catalog)
 	_test_environment_generation(catalog)
+	_test_visual_composition(catalog)
 	await _test_map_editor()
 	print("Coherent layout assembly: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -49,6 +50,34 @@ func _test_environment_generation(catalog: Dictionary) -> void:
 			check(_tactical_map_is_valid(generated), "%s seed %d remains a valid tactical battlefield" % [environment_id, map_seed])
 			distinct_signatures[_spatial_signature(generated.environment_layout_plan)] = true
 	check(distinct_signatures.size() >= 6, "Different seeds and identities change spatial organization, not only prop variants")
+
+func _test_visual_composition(catalog: Dictionary) -> void:
+	var data := FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, 7319, &"commercial_street")
+	var ids: Dictionary = {}
+	for placement in data.environment_modules:
+		ids[placement.component_id] = int(ids.get(placement.component_id, 0)) + 1
+	check(ids.has(&"industrial_building_shell"), "A coherent district reserves a multi-parcel complete building shell")
+	check(ids.has(&"complete_service_building"), "Commercial parcels use complete four-sided buildings")
+	check(not ids.has(&"factory_shop_front") and not ids.has(&"factory_window_wall"), "Procedural parcels do not expose freestanding facade samples as buildings")
+	check(ids.has(&"traffic_signal") and ids.has(&"street_light"), "Commercial road furniture is attached to the street plan")
+	var has_large_parcel := false
+	for parcel in data.environment_layout_plan.parcels:
+		var bounds: Rect2i = parcel.bounds
+		if bounds.size.x > CoherentEnvironmentAssembler.MACRO_SIZE or bounds.size.y > CoherentEnvironmentAssembler.MACRO_SIZE:
+			has_large_parcel = true
+	check(has_large_parcel, "The plot grammar supports authored parcels larger than one macro tile")
+	var service_building: EnvironmentModuleDefinition = catalog.complete_service_building
+	var exterior_accesses := 0
+	for connection in service_building.connections:
+		if connection.type == EnvironmentModuleConnection.Type.EXTERIOR_ACCESS:
+			exterior_accesses += 1
+	check(exterior_accesses >= 8, "Complete service buildings retain usable entrances on every side")
+	var presentation := Node3D.new()
+	root.add_child(presentation)
+	ModularEnvironmentPresenter.build(data, presentation, 1.0)
+	var road_surfaces := presentation.find_children("ContinuousRoadSurface", "MeshInstance3D", true, false)
+	check(road_surfaces.size() == data.environment_layout_plan.road_cells.size(), "Every logical road tile receives a continuous visible surface")
+	presentation.queue_free()
 
 func _test_map_editor() -> void:
 	var editor = load("res://tools/map_editor.tscn").instantiate()

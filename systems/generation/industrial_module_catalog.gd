@@ -30,6 +30,14 @@ static func create() -> Dictionary:
 	_register(catalog, _ramp())
 	_register(catalog, _elevated_platform())
 	_register(catalog, _elevated_walkway())
+	_register(catalog, _complete_service_building())
+	_register(catalog, _industrial_building_shell())
+	_register(catalog, _street_light())
+	_register(catalog, _traffic_signal())
+	_register(catalog, _stop_sign())
+	_register(catalog, _dumpster())
+	_register(catalog, _utility_pole())
+	_register(catalog, _yard_fence())
 	return catalog
 
 static func _register(catalog: Dictionary, definition: EnvironmentModuleDefinition) -> void:
@@ -282,7 +290,116 @@ static func _machine() -> EnvironmentModuleDefinition:
 	for cell in item.footprint_cells:
 		item.set_effect(cell, _full_cover())
 	item.clearance_cells = [Vector2i(0, -1), Vector2i(1, -1)]
+	item.set_visual_envelope(AABB(Vector3(-0.2, 0.0, -0.3), Vector3(2.4, 2.7, 2.6)))
 	item.add_visual(FACTORY + "machine.glb", Vector2(0.5, 0.5), 2.0, 0, 0)
+	return item
+
+static func _complete_service_building() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"complete_service_building", &"factory_buildings", Vector2i(10, 10))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.SHOP)
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Closed four-sided Factory assembly with an authored two-cell street entrance and roof.")
+	# The Factory meshes are four cells deep at the reviewed scale. Their source
+	# origins are inset so the complete assembly stays inside its ten-cell parcel.
+	for x in 10:
+		for z in 10:
+			if x in [2, 7] or z in [2, 7]:
+				var north_south_door := z in [2, 7] and x in [4, 5]
+				var east_west_door := x in [2, 7] and z in [4, 5]
+				if not north_south_door and not east_west_door:
+					item.set_effect(Vector2i(x, z), _full_cover())
+	item.clearance_cells = [Vector2i(4, 1), Vector2i(5, 1), Vector2i(4, 8), Vector2i(5, 8), Vector2i(1, 4), Vector2i(1, 5), Vector2i(8, 4), Vector2i(8, 5)]
+	item.set_visual_envelope(AABB(Vector3.ZERO, Vector3(10.0, 6.2, 10.0)))
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(2, 3), STRUCTURE_PRESENTATION_SCALE, 2, 1)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(6, 3), STRUCTURE_PRESENTATION_SCALE, 2, 1)
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(2, 7), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(6, 7), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(3, 2), STRUCTURE_PRESENTATION_SCALE, 1, 1)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(3, 6), STRUCTURE_PRESENTATION_SCALE, 1, 1)
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(7, 2), STRUCTURE_PRESENTATION_SCALE, 3, 1)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(7, 6), STRUCTURE_PRESENTATION_SCALE, 3, 1)
+	for x in [2, 6]:
+		for z in [2, 6]:
+			item.add_visual(FACTORY + "top-large.glb", Vector2(x, z), 2.0, 0, 1, Vector3(0, 6.04, 0))
+	for x in [4, 5]:
+		item.add_connection(Vector2i(x, 8), Vector2i.DOWN, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+		item.add_connection(Vector2i(x, 7), Vector2i.UP, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+		item.add_connection(Vector2i(x, 1), Vector2i.UP, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+		item.add_connection(Vector2i(x, 2), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	for z in [4, 5]:
+		item.add_connection(Vector2i(1, z), Vector2i.RIGHT, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+		item.add_connection(Vector2i(2, z), Vector2i.LEFT, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+		item.add_connection(Vector2i(8, z), Vector2i.LEFT, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+		item.add_connection(Vector2i(7, z), Vector2i.RIGHT, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(4, 4), Vector2i(5, 4)])
+	return item
+
+static func _industrial_building_shell() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"industrial_building_shell", &"city_industrial_buildings", Vector2i(14, 14))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.SHOP)
+	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "Complete reviewed City Kit shell; exterior-only until a matching interior is authored.")
+	for cell in item.footprint_cells:
+		item.set_effect(cell, _full_cover())
+	item.set_visual_envelope(AABB(Vector3.ZERO, Vector3(14.0, 10.0, 14.0)))
+	item.add_catalog_visual([
+		"city_kit_industrial/building-h", "city_kit_industrial/building-i",
+		"city_kit_industrial/building-j", "city_kit_industrial/building-k",
+		"city_kit_industrial/building-o",
+	], Vector2(6.5, 6.5))
+	return item
+
+static func _street_light() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"street_light", &"road_furniture", Vector2i.ONE)
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	item.set_visual_envelope(AABB(Vector3(-0.3, 0.0, -1.2), Vector3(0.6, 6.2, 2.4)))
+	item.add_catalog_visual(["city_kit_roads/light-square", "city_kit_roads/light-curved"], Vector2.ZERO)
+	return item
+
+static func _traffic_signal() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"traffic_signal", &"road_furniture", Vector2i.ONE)
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	item.set_visual_envelope(AABB(Vector3(-0.6, 0.0, -0.5), Vector3(1.2, 5.3, 1.0)))
+	item.add_catalog_visual(["city_kit_roads/traffic-light"], Vector2.ZERO)
+	return item
+
+static func _stop_sign() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"stop_sign", &"road_furniture", Vector2i.ONE)
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	item.set_visual_envelope(AABB(Vector3(-0.4, 0.0, -0.7), Vector3(0.8, 5.1, 1.4)))
+	item.add_catalog_visual(["city_kit_roads/road-sign-stop"], Vector2.ZERO)
+	return item
+
+static func _dumpster() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"service_dumpster", &"service_props", Vector2i(2, 2))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.SOLID_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	for cell in item.footprint_cells:
+		item.set_effect(cell, _vaultable_low_cover(1.05))
+	item.set_visual_envelope(AABB(Vector3(-0.2, 0.0, -0.2), Vector3(2.0, 1.2, 2.2)))
+	item.add_catalog_visual(["city_kit_roads/dumpster"], Vector2(0.5, 0.5))
+	return item
+
+static func _utility_pole() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"utility_pole", &"road_utilities", Vector2i.ONE)
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	item.set_visual_envelope(AABB(Vector3(-0.45, 0.0, -1.1), Vector3(0.9, 5.4, 2.2)))
+	item.add_catalog_visual(["city_kit_roads/electricity-pole-single"], Vector2.ZERO)
+	return item
+
+static func _yard_fence() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"yard_fence", &"industrial_boundaries", Vector2i(1, 4))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VAULTABLE_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
+	for cell in item.footprint_cells:
+		item.set_effect(cell, _vaultable_low_cover(0.9))
+	item.set_visual_envelope(AABB(Vector3(-0.25, 0.0, -0.25), Vector3(0.5, 1.0, 4.5)))
+	item.add_catalog_visual(["city_kit_roads/construction-fence"], Vector2(0, 0.5))
+	item.add_catalog_visual(["city_kit_roads/construction-fence"], Vector2(0, 2.5))
 	return item
 
 static func _machine_cover_cluster() -> EnvironmentModuleDefinition:

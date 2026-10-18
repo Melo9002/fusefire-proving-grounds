@@ -21,10 +21,11 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 		return layout
 	if not _build_road_plot(layout, plan, catalog, data.map_size, rng):
 		return layout
-	var parcels := _derive_parcels(plan, data.map_size)
+	_decorate_road_network(layout, plan, catalog, data.map_size, rng)
+	var parcels := _derive_parcels(plan, data.map_size, rng)
 	var populated := 0
 	for parcel in parcels:
-		var candidates := _template_candidates(environment_id, populated, not parcel.road_edges.is_empty(), rng)
+		var candidates := _template_candidates(environment_id, populated, parcel, rng)
 		var accepted := false
 		for template_id in candidates.slice(0, mini(MAX_TEMPLATE_ATTEMPTS, candidates.size())):
 			plan.search_attempts += 1
@@ -87,6 +88,21 @@ static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentL
 	plan.decisions.append("road %s at macro %s with %d approaches" % [plan.topology, center, directions.size()])
 	return _road_network_connected(layout, catalog)
 
+static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> void:
+	# Furniture is attached to the road plot as a deliberate pass. It never
+	# competes with the ground layer and never gets sprinkled into arbitrary lots.
+	for placement in layout.placements.duplicate():
+		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
+		if definition.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION:
+			var signal_id: StringName = &"traffic_signal" if plan.environment_id == &"commercial_street" else &"stop_sign"
+			for authored in [[Vector2i(1, 1), 0], [Vector2i(8, 1), 1], [Vector2i(8, 8), 2], [Vector2i(1, 8), 3]]:
+				layout.try_add(catalog[signal_id], EnvironmentModulePlacement.new(signal_id, placement.origin + authored[0], authored[1]), map_size)
+		elif definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD and rng.randi_range(0, 2) == 0:
+			var local := Vector2i(1, 1) if placement.rotation % 2 == 0 else Vector2i(1, 8)
+			var furniture_id: StringName = &"utility_pole" if plan.environment_id == &"industrial_district" else &"street_light"
+			layout.try_add(catalog[furniture_id], EnvironmentModulePlacement.new(furniture_id, placement.origin + local, placement.rotation, rng.randi_range(0, 1)), map_size)
+	plan.decisions.append("road furniture follows intersections and street edges")
+
 static func _road_network_connected(layout: EnvironmentModuleLayout, catalog: Dictionary) -> bool:
 	var roads: Array[EnvironmentModulePlacement] = []
 	for placement in layout.placements:
@@ -106,35 +122,85 @@ static func _road_network_connected(layout: EnvironmentModuleLayout, catalog: Di
 			frontier.append(neighbor)
 	return reached.size() == roads.size()
 
-static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i) -> Array[Dictionary]:
+static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng: RandomNumberGenerator) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var road_lookup: Dictionary = {}
 	for road_cell in plan.road_cells:
 		road_lookup[road_cell] = true
 	var columns := floori(float(map_size.x) / float(MACRO_SIZE))
 	var rows := floori(float(map_size.y) / float(MACRO_SIZE))
+	var consumed: Dictionary = {}
 	var index := 0
+	# XCOM's useful lesson is that a parcel is an authored complete space, not
+	# necessarily one grid tile. Reserve one 2x2 parcel for a complete building
+	# and its service apron, then fill the remaining single lots.
+	var large_origins: Array[Vector2i] = []
+	for z in rows - 1:
+		for x in columns - 1:
+			var origin := Vector2i(x, z)
+			var cells := [origin, origin + Vector2i.RIGHT, origin + Vector2i.DOWN, origin + Vector2i.ONE]
+			var valid := true
+			for cell in cells:
+				if road_lookup.has(cell):
+					valid = false
+					break
+			if valid and not _road_edges_for_macro_rect(origin, Vector2i(2, 2), road_lookup).is_empty():
+				large_origins.append(origin)
+	if not large_origins.is_empty():
+		var chosen := large_origins[rng.randi_range(0, large_origins.size() - 1)]
+		for dz in 2:
+			for dx in 2:
+				consumed[chosen + Vector2i(dx, dz)] = true
+		result.append({
+			"id": StringName("parcel_%02d" % index),
+			"bounds": Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2)),
+			"road_edges": _road_edges_for_macro_rect(chosen, Vector2i(2, 2), road_lookup),
+			"template": &"unassigned", "rotation": 0, "boundary": _touches_map_boundary(Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2)), map_size),
+		})
+		index += 1
 	for z in rows:
 		for x in columns:
 			var macro := Vector2i(x, z)
-			if road_lookup.has(macro):
+			if road_lookup.has(macro) or consumed.has(macro):
 				continue
-			var edges: Array[Vector2i] = []
-			for direction in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
-				if road_lookup.has(macro + direction):
-					edges.append(direction)
 			result.append({
 				"id": StringName("parcel_%02d" % index),
 				"bounds": Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE)),
-				"road_edges": edges,
+				"road_edges": _road_edges_for_macro_rect(macro, Vector2i.ONE, road_lookup),
 				"template": &"unassigned",
 				"rotation": 0,
+				"boundary": _touches_map_boundary(Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE)), map_size),
 			})
 			index += 1
 	return result
 
-static func _template_candidates(environment_id: StringName, parcel_index: int, has_frontage: bool, rng: RandomNumberGenerator) -> Array[StringName]:
+static func _touches_map_boundary(bounds: Rect2i, map_size: Vector2i) -> bool:
+	return bounds.position.x == 0 or bounds.position.y == 0 or bounds.end.x == map_size.x or bounds.end.y == map_size.y
+
+static func _road_edges_for_macro_rect(origin: Vector2i, size: Vector2i, road_lookup: Dictionary) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for direction in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		var touches := false
+		if direction.y != 0:
+			var z := origin.y - 1 if direction == Vector2i.UP else origin.y + size.y
+			for x in range(origin.x, origin.x + size.x):
+				if road_lookup.has(Vector2i(x, z)):
+					touches = true
+		else:
+			var x := origin.x - 1 if direction == Vector2i.LEFT else origin.x + size.x
+			for z in range(origin.y, origin.y + size.y):
+				if road_lookup.has(Vector2i(x, z)):
+					touches = true
+		if touches:
+			result.append(direction)
+	return result
+
+static func _template_candidates(environment_id: StringName, parcel_index: int, parcel: Dictionary, rng: RandomNumberGenerator) -> Array[StringName]:
 	var result: Array[StringName]
+	var bounds: Rect2i = parcel.bounds
+	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
+		return [&"district_building"]
+	var has_frontage: bool = not (parcel.road_edges as Array).is_empty()
 	if not has_frontage:
 		result = [&"courtyard", &"service_alley"]
 	elif parcel_index == 0:
@@ -153,20 +219,30 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
 	match template_id:
+		&"district_building":
+			local = [
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
+				EnvironmentModulePlacement.new(&"industrial_building_shell", Vector2i(3, 3), 0, rng.randi_range(0, 4)),
+				EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 1), 0, rng.randi_range(0, 1)),
+				EnvironmentModulePlacement.new(&"street_light", Vector2i(18, 1), 2, rng.randi_range(0, 1)),
+			]
 		&"shop":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"factory_shop_front", Vector2i(1, 9))]
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"complete_service_building", Vector2i.ZERO)]
 		&"loading_bay":
 			local = [
-				EnvironmentModulePlacement.new(&"industrial_loading_dock", Vector2i(0, 4)),
-				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 4), 0, rng.randi_range(0, 2)),
-				EnvironmentModulePlacement.new(&"factory_machine", Vector2i(6, 5)),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
+				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 3), 0, rng.randi_range(0, 2)),
+				EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(7, 6)),
 			]
 		&"yard":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 5)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(8, 2))]
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 3)), EnvironmentModulePlacement.new(&"yard_fence", Vector2i(8, 2))]
 		&"workshop":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"factory_window_wall", Vector2i(1, 9)), EnvironmentModulePlacement.new(&"factory_doorway_wide", Vector2i(5, 9)), EnvironmentModulePlacement.new(&"factory_machine", Vector2i(4, 5))]
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"complete_service_building", Vector2i.ZERO)]
 		&"service_alley":
-			local = [EnvironmentModulePlacement.new(&"paved_alley", Vector2i(3, 0)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(1, 4)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(8, 6))]
+			local = [EnvironmentModulePlacement.new(&"paved_alley", Vector2i(3, 0)), EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(0, 4)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(8, 6))]
 		_:
 			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO)]
 	var result: Array[EnvironmentModulePlacement] = []
@@ -222,6 +298,7 @@ static func _repair_deployment_cells(data: MapData, plan: EnvironmentLayoutPlan)
 	# positions to the nearest legal cell instead of inventing a second spawn
 	# system or allowing presentation geometry to decide mission legality.
 	var used: Dictionary = {}
+	var reachable := _road_connected_ground(data, plan)
 	for faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ENEMY, TacticalUnit.Faction.ALLY]:
 		for zone in data.get_zones_by_kind(MapZoneData.Kind.DEPLOYMENT):
 			if zone.faction != faction:
@@ -230,22 +307,46 @@ static func _repair_deployment_cells(data: MapData, plan: EnvironmentLayoutPlan)
 			for original in zone.cells:
 				var chosen: Vector3i = original
 				var cell := data.get_cell(chosen)
-				if cell == null or not cell.walkable or not cell.can_stop or used.has(chosen):
-					chosen = _nearest_deployment_cell(data, original, used)
+				if cell == null or not cell.walkable or not cell.can_stop or used.has(chosen) or not reachable.has(chosen):
+					chosen = _nearest_deployment_cell(data, original, used, reachable)
 					plan.decisions.append("deployment %s moved %s -> %s" % [zone.zone_id, original, chosen])
 				if chosen != Vector3i(-1, -1, -1):
 					repaired.append(chosen)
 					used[chosen] = true
 			zone.cells.assign(repaired)
 
-static func _nearest_deployment_cell(data: MapData, origin: Vector3i, used: Dictionary) -> Vector3i:
+static func _road_connected_ground(data: MapData, plan: EnvironmentLayoutPlan) -> Dictionary:
+	var reached: Dictionary = {}
+	if plan.road_cells.is_empty():
+		return reached
+	var road_macro: Vector2i = plan.road_cells[0]
+	var start := Vector3i(road_macro.x * plan.macro_size + plan.macro_size / 2, 0, road_macro.y * plan.macro_size + plan.macro_size / 2)
+	var start_cell := data.get_cell(start)
+	if start_cell == null or not start_cell.walkable:
+		return reached
+	var frontier: Array[Vector3i] = [start]
+	reached[start] = true
+	while not frontier.is_empty():
+		var current: Vector3i = frontier.pop_back()
+		for direction in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
+			var next_cell: Vector3i = current + direction
+			if reached.has(next_cell):
+				continue
+			var cell := data.get_cell(next_cell)
+			if cell == null or not cell.walkable:
+				continue
+			reached[next_cell] = true
+			frontier.append(next_cell)
+	return reached
+
+static func _nearest_deployment_cell(data: MapData, origin: Vector3i, used: Dictionary, allowed: Dictionary = {}) -> Vector3i:
 	var maximum_radius := maxi(data.map_size.x, data.map_size.y)
 	for radius in range(1, maximum_radius + 1):
 		for dz in range(-radius, radius + 1):
 			var remaining := radius - absi(dz)
 			for dx in ([-remaining] if remaining == 0 else [-remaining, remaining]):
 				var candidate := Vector3i(origin.x + dx, 0, origin.z + dz)
-				if candidate.x < 0 or candidate.z < 0 or candidate.x >= data.map_size.x or candidate.z >= data.map_size.y or used.has(candidate):
+				if candidate.x < 0 or candidate.z < 0 or candidate.x >= data.map_size.x or candidate.z >= data.map_size.y or used.has(candidate) or (not allowed.is_empty() and not allowed.has(candidate)):
 					continue
 				var cell := data.get_cell(candidate)
 				if cell != null and cell.walkable and cell.can_stop:

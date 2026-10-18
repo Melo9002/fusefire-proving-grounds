@@ -6,7 +6,7 @@ A 3D tactical combat prototype made in Godot 4.7. Choose independent player, all
 
 Import `project.godot` in Godot and press **F5**.
 
-The UI uses 1280×720 as its reference resolution and scales to standard 1080p and 1440p displays through Godot's canvas-item stretch mode.
+The UI uses 1600×900 as its reference resolution and scales to standard 1080p and 1440p displays through Godot's canvas-item stretch mode. Existing checks continue to protect essential controls at 1280×720 as a smaller compatibility window.
 
 During battle, press **Esc** to pause and open Resume or Return to Match Setup. Returning creates a fresh setup screen without retaining the current battle. Press **F3** separately to open the debug tools.
 

@@ -66,11 +66,11 @@ The lightweight component records separate logical footprints, layered ground/oc
 
 Rendered inspection confirms the tactical foundation and also exposes visual overhang where logically adjacent machinery, cargo, or catwalk pieces can intersect. The [Goal 2.2 completion report](goal-2.2-completion-report.md) records this as an explicit Goal 2.3 input rather than making vendor mesh bounds authoritative.
 
-### 2.3 — Coherent Layout Assembly — demonstrated (first procedural foundation)
+### 2.3 — Coherent Layout Assembly — demonstrated (visual-coherence foundation)
 
-A hierarchical opt-in assembler now selects an industrial, commercial, or mixed-service identity; builds a connected seeded crossroad or T-junction plot; derives road-facing parcels; and fills them with rotated authored storefront, workshop, loading, yard, alley, and courtyard templates. Parcel placement uses bounded transactional alternatives and an explicit open-ground fallback. Tactical footprints, same-layer placement clearances, and calibrated visual envelopes are separate contracts; candidate conflicts are rejected without making meshes authoritative. `EnvironmentLayoutPlan` retains deterministic decisions and diagnostics on `MapData`.
+A hierarchical opt-in assembler now selects an industrial, commercial, or mixed-service identity; builds a connected seeded crossroad or T-junction plot; derives road-facing parcels of more than one size; and fills them with authored building, loading, machinery-yard, alley, and courtyard compositions. Complete City Kit shells and roofed four-sided Factory Kit buildings replace procedural freestanding façades. The presenter creates continuous road surfaces from the logical graph, then adds contextual signals, signs, lights, poles, fences, containers, and dumpsters. Parcel placement uses bounded transactional alternatives and an explicit open-ground fallback. Tactical footprints, same-layer placement clearances, and calibrated visual envelopes are separate contracts; candidate conflicts are rejected without making meshes authoritative. `EnvironmentLayoutPlan` retains deterministic decisions and diagnostics on `MapData`.
 
-The Map Editor exposes authored and procedural layouts together, draws road and parcel boundaries, and reports topology, rejection, fallback, and tactical validation status. Multi-seed tests cover determinism, variation, road connectivity, termination, spatial conflicts, alternative selection, deployments, and shared presentation. The [Goal 2.3 implementation guide](coherent-layout-assembly.md) records architecture and inspection commands; the [completion report](goal-2.3-completion-report.md) records validation and current limits.
+The Map Editor exposes authored and procedural layouts together, can toggle road/parcel diagnostics for clean inspection, and reports topology, rejection, fallback, and tactical validation status. Multi-seed tests cover determinism, variation, road connectivity, termination, spatial conflicts, alternative selection, road-connected deployments, complete-building composition, continuous road presentation, and shared dispatch. The [Goal 2.3 implementation guide](coherent-layout-assembly.md) records architecture and inspection commands; the [completion report](goal-2.3-completion-report.md) records validation and current limits.
 
 ### 2.4 — Verticality & Geometry Occlusion — partial
 
@@ -84,9 +84,9 @@ Modules now expose spawn, objective and extraction candidate cells, and regressi
 
 Connectivity, spawn capacity, objectives, traversal integrity and broad tactical metrics exist. Extend them when modules exist so checks are grounded in real metadata: connector closure, entrance access, road continuity, vertical-route redundancy and mission-specific approach quality.
 
-### 2.7 — Designer Tools & Debug Views — partial (asset and module inspection demonstrated)
+### 2.7 — Designer Tools & Debug Views — partial (asset inspection and map composition demonstrated)
 
-F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The Map Editor switches among authored presets and procedural identities, regenerates by seed, supports click selection plus temporary transform adjustment, draws road/parcel plans, and summarizes rejection/fallback diagnostics. Per-socket, clearance-volume, visual-envelope, and rejected-candidate geometry overlays remain later tooling.
+F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The Map Editor switches among authored presets and procedural identities, regenerates by seed, supports click selection, draws road/parcel plans, and summarizes rejection/fallback diagnostics. Its custom composition mode exposes the registered module catalog, snapped placement, rotation, movement, deletion, shared validation, and project-local JSON save/reload. The [Map Editor Composer guide](map-editor-composer.md) records the workflow. Named libraries, undo/redo, per-socket, clearance-volume, visual-envelope, and rejected-candidate overlays remain later tooling.
 
 ### 2.8 — Integrated Battlefield Generation Release — not started
 
@@ -94,7 +94,7 @@ Requires representative authored, procedural and hybrid presets using the shared
 
 ## Next implementation slice
 
-Grow the demonstrated 2.3 grammar with multi-intersection blocks, secondary roads, deeper building parcels, and more calibrated visual envelopes. Then begin 2.5 by letting mission requirements reserve suitability regions before parcel commitment. Keep procedural coherent layouts opt-in while broader tactical-quality thresholds are established.
+Grow the demonstrated 2.3 grammar with multi-intersection blocks, secondary roads, lanes and curbs, additional authored large-parcel compositions, and more calibrated visual envelopes. Add gameplay-driven interior/cutaway treatment only when a tactical building needs it. Then begin 2.5 by letting mission requirements reserve suitability regions before parcel commitment. Keep procedural coherent layouts opt-in while broader tactical-quality thresholds are established.
 
 ## Constraints and deferred ideas
 

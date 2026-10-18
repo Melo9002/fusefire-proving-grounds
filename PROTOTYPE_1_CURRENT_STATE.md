@@ -412,7 +412,7 @@ No additional known runtime bug is asserted here without a reproducible failure 
 | Feature | Status | Primary evidence |
 | --- | --- | --- |
 | Match setup and force sizing | IMPLEMENTED | `ui/match_setup.gd` |
-| 720p reference viewport and scalable UI | IMPLEMENTED | `project.godot`, setup scene |
+| 900p reference viewport and scalable UI | IMPLEMENTED | `project.godot`, setup scene; 720p remains a compact compatibility check |
 | Automatic/manual battle seeds | IMPLEMENTED | `ui/match_setup.gd`, `battle_level.gd` |
 | Player/enemy/ally/neutral factions | IMPLEMENTED | `tactical_unit.gd`, `faction_rules.gd` |
 | 1–5 units per combat force | IMPLEMENTED | `match_setup.gd`, spawn systems |

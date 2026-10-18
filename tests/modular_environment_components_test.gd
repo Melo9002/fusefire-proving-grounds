@@ -7,7 +7,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var catalog := IndustrialModuleCatalog.create()
-	check(catalog.size() == 22, "The modular catalog exposes the original industrial set plus thirteen expanded components")
+	check(catalog.size() == 30, "The modular catalog exposes the original set plus semantic and visual-coherence components")
 	check(catalog.factory_window_wall.module_type == EnvironmentModuleDefinition.ModuleType.WINDOW, "Window sections are explicit module types")
 	check(catalog.paved_alley.module_type == EnvironmentModuleDefinition.ModuleType.ALLEY, "Alleys are explicit module types")
 	check(catalog.road_crossroad.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION, "Road junctions are explicit module types")

@@ -1,0 +1,13 @@
+{
+	"schema_version": 1,
+	"layout_id": "starter_layout",
+	"map_size": [40, 30],
+	"placements": [
+		{"component_id": "road_straight", "origin": [0, 10], "rotation": 0, "variation": 0, "elevation": 0},
+		{"component_id": "paving_square", "origin": [10, 10], "rotation": 0, "variation": 0, "elevation": 0},
+		{"component_id": "complete_service_building", "origin": [20, 10], "rotation": 0, "variation": 0, "elevation": 0},
+		{"component_id": "street_light", "origin": [12, 12], "rotation": 0, "variation": 0, "elevation": 0},
+		{"component_id": "cargo_container", "origin": [12, 16], "rotation": 0, "variation": 1, "elevation": 0},
+		{"component_id": "service_dumpster", "origin": [16, 16], "rotation": 0, "variation": 0, "elevation": 0}
+	]
+}

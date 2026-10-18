@@ -28,15 +28,25 @@ func _run() -> void:
 				editor.preset_picker.select(index)
 				break
 		editor._rebuild()
-		editor._frame_camera()
-		editor._set_camera_view(0.72, 0.62)
-		await process_frame
-		await RenderingServer.frame_post_draw
-		var filename := "%s-%d.png" % [sample[0], sample[1]]
-		var error := root.get_texture().get_image().save_png(output.path_join(filename))
-		if error != OK:
-			push_error("Capture failed: %s" % error)
-			quit(1)
-			return
+		for view in [
+			["overview", 0.72, 0.62, true],
+			["overhead", 0.0, 1.50, true],
+			["street", 0.35, 0.14, false],
+		]:
+			editor._set_plan_overlay_visible(view[3])
+			if view[0] == "street":
+				if not editor._focus_component(&"complete_service_building", "complete building street view"):
+					editor._focus_component(&"industrial_building_shell", "complete building street view")
+			else:
+				editor._frame_camera()
+			editor._set_camera_view(view[1], view[2])
+			await process_frame
+			await RenderingServer.frame_post_draw
+			var filename := "%s-%d-%s.png" % [sample[0], sample[1], view[0]]
+			var error := root.get_texture().get_image().save_png(output.path_join(filename))
+			if error != OK:
+				push_error("Capture failed: %s" % error)
+				quit(1)
+				return
 	print("Coherent layout captures saved to " + output)
 	quit()

@@ -55,7 +55,7 @@ $subsystemPatterns = @{
     generation = "battlefield|coherent_|container_maps|flat_map|generated_|industrial_|modular_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
     assets     = "asset|environment_asset|locomotion|pose|unit_visual"
-    ui         = "camera|debug_|feedback|hud|match_setup|pause|portrait|visualizer|world_bar"
+    ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
 }
 
 # Explicitly invoked workflows: rendered captures require a GPU/output path; extended
