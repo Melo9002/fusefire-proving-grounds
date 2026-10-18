@@ -7,6 +7,8 @@ const CUSTOM_LAYOUT := &"custom_layout"
 const ASSEMBLY_VIEW_COMPLETE := &"complete"
 const ASSEMBLY_VIEW_SHELL := &"shell"
 const ASSEMBLY_VIEW_DECORATION := &"decoration"
+const INSPECTION_CONTROLS_TOP := 92.0
+const INSPECTION_ROW_SPACING := 32.0
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const EDITOR_LAYOUTS: Array[StringName] = [
 	CUSTOM_LAYOUT,
@@ -197,7 +199,7 @@ func _build_ui() -> void:
 	status.add_theme_font_size_override("font_size", 15)
 	ui_root.add_child(status)
 	var controls := HBoxContainer.new()
-	controls.position = Vector2(12, 74)
+	controls.position = Vector2(12, INSPECTION_CONTROLS_TOP)
 	ui_root.add_child(controls)
 	var previous := Button.new()
 	previous.text = "Previous seed"
@@ -255,7 +257,7 @@ func _build_ui() -> void:
 	controls.add_child(road_button)
 	inspection_shortcuts.append(road_button)
 	var views := HBoxContainer.new()
-	views.position = Vector2(12, 106)
+	views.position = Vector2(12, INSPECTION_CONTROLS_TOP + INSPECTION_ROW_SPACING)
 	ui_root.add_child(views)
 	_add_view_button(views, "Front (1)", 0.0, 0.18)
 	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
@@ -265,7 +267,7 @@ func _build_ui() -> void:
 	_add_action_button(views, "Shell", func(): _set_assembly_view(ASSEMBLY_VIEW_SHELL))
 	_add_action_button(views, "Decor", func(): _set_assembly_view(ASSEMBLY_VIEW_DECORATION))
 	var nudges := HBoxContainer.new()
-	nudges.position = Vector2(12, 138)
+	nudges.position = Vector2(12, INSPECTION_CONTROLS_TOP + INSPECTION_ROW_SPACING * 2.0)
 	ui_root.add_child(nudges)
 	var nudge_heading := Label.new()
 	nudge_heading.text = "Selected piece  ·  step"
@@ -288,7 +290,7 @@ func _build_ui() -> void:
 	_add_action_button(nudges, "Reset", _reset_inspection)
 	_add_action_button(nudges, "Copy transform", _copy_inspection_transform)
 	transform_label = Label.new()
-	transform_label.position = Vector2(12, 170)
+	transform_label.position = Vector2(12, INSPECTION_CONTROLS_TOP + INSPECTION_ROW_SPACING * 3.0)
 	transform_label.text = "Left-click any piece to select it, then adjust its transform."
 	ui_root.add_child(transform_label)
 	_build_composer_ui(ui_root)
