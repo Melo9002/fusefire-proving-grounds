@@ -98,6 +98,7 @@ The component regression suite assembles every preset twice, compares determinis
 
 - Assembly uses four authored recipes with seeded visual variation; it does not search parcels or backtrack.
 - Connections validate declared neighbors but open boundary connectors are not yet globally required to close.
+- Logical non-overlap does not yet guarantee clean visual seams. Goal 2.3 must add authored socket transforms, clearance reservations, and diagnostic visual-envelope rejection for meshes that overhang their tactical footprints.
 - Vertical links are demonstrated, but multi-floor buildings, stacked module placement, alternate-access requirements, and camera floor membership remain later work.
 - Factory and Space Kit dimensions are not normalized or treated as interchangeable.
 - The reviewed visual scales are available, but more structural assets still need authored footprints and connector decisions before joining the runtime catalog.

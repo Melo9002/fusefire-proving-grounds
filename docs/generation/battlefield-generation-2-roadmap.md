@@ -65,6 +65,8 @@ All 315 retained GLBs import, instantiate and are searchable by pack and review 
 
 The lightweight component records separate logical footprints, layered ground/occupant/overhead reservations, clearances, tactical cell effects, explicit module types, elevation-aware semantic connectors, mission suitability, elevated surfaces, vertical links, and visual references. Twenty-two definitions now cover Factory walls, corners, doors, windows and floors; road intersections and alleys; a shop front, courtyard and loading dock; cargo, machinery and cover clusters; plus stairs, a road ramp, platform and walkway. Four deterministic opt-in presets validate overlap rejection, road continuity, doorway access, mission candidates, vertical traversal, authoritative cell translation, and shared presentation dispatch. `MapData` remains the committed tactical result.
 
+Rendered inspection confirms the tactical foundation and also exposes visual overhang where logically adjacent machinery, cargo, or catwalk pieces can intersect. The [Goal 2.2 completion report](goal-2.2-completion-report.md) records this as an explicit Goal 2.3 input rather than making vendor mesh bounds authoritative.
+
 ### 2.3 — Coherent Layout Assembly — partial
 
 Four constrained recipes now assemble an industrial frontage, loading yard, four-way road district with storefront, and vertical maintenance area. Rotation, elevation-aware connection matching, clearance, overlap rejection and deterministic output are covered. The next step is a bounded placement/search grammar with useful rejection diagnostics, followed by plots and parcels.
