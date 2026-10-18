@@ -2,6 +2,11 @@ extends Node3D
 
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
+const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
+const EDITOR_LAYOUTS: Array[StringName] = [
+	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works",
+	&"industrial_district", &"commercial_street", &"mixed_service",
+]
 
 @export var generation_seed := 2202
 @export var layout_preset: StringName = &"industrial_frontage"
@@ -16,12 +21,13 @@ var adjustment_step: SpinBox
 var transform_label: Label
 var selection_outline_material: StandardMaterial3D
 var preset_picker: OptionButton
+var preview_map_size := Vector2i(40, 30)
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty() and args[0].is_valid_int():
 		generation_seed = int(args[0])
-	if args.size() > 1 and StringName(args[1]) in ModularIndustrialLayoutBuilder.PRESETS:
+	if args.size() > 1 and StringName(args[1]) in EDITOR_LAYOUTS:
 		layout_preset = StringName(args[1])
 	_build_ui()
 	_rebuild()
@@ -81,10 +87,15 @@ func _rebuild() -> void:
 	content = Node3D.new()
 	content.name = "PreviewContent"
 	add_child(content)
-	var data := FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
+	var data: MapData
+	if layout_preset in PROCEDURAL_LAYOUTS:
+		data = FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, generation_seed, layout_preset)
+	else:
+		data = FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
+	preview_map_size = data.map_size
 	var ground_mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(40, 30)
+	plane.size = Vector2(data.map_size)
 	ground_mesh.mesh = plane
 	var floor_material := StandardMaterial3D.new()
 	floor_material.albedo_color = Color("303a3f")
@@ -92,6 +103,7 @@ func _rebuild() -> void:
 	ground_mesh.material_override = floor_material
 	content.add_child(ground_mesh)
 	_add_grid_overlay(content, data.map_size, 1.0)
+	_add_spatial_plan_overlay(content, data)
 	GeneratedTerrainPresenter.build(data, content, 1.0)
 	var graph := Pathfinder.new()
 	MapGraphBuilder.build(data, graph)
@@ -99,7 +111,7 @@ func _rebuild() -> void:
 		TacticalUnit.Faction.PLAYER: 5,
 		TacticalUnit.Faction.ENEMY: 5,
 	})
-	_update_status(data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe())
+	_update_status(data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe(), data.environment_layout_plan)
 	if is_instance_valid(seed_input):
 		seed_input.set_value_no_signal(generation_seed)
 
@@ -139,7 +151,7 @@ func _build_ui() -> void:
 	status.add_theme_font_size_override("font_size", 18)
 	layer.add_child(status)
 	var controls := HBoxContainer.new()
-	controls.position = Vector2(18, 72)
+	controls.position = Vector2(18, 96)
 	layer.add_child(controls)
 	var previous := Button.new()
 	previous.text = "Previous seed"
@@ -162,8 +174,9 @@ func _build_ui() -> void:
 	regenerate.pressed.connect(_rebuild)
 	controls.add_child(regenerate)
 	preset_picker = OptionButton.new()
-	for preset in ModularIndustrialLayoutBuilder.PRESETS:
-		preset_picker.add_item(String(preset).capitalize())
+	for preset in EDITOR_LAYOUTS:
+		var kind := "Procedural" if preset in PROCEDURAL_LAYOUTS else "Authored"
+		preset_picker.add_item("%s — %s" % [kind, String(preset).capitalize()])
 		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
 		if preset == layout_preset:
 			preset_picker.select(preset_picker.item_count - 1)
@@ -184,14 +197,14 @@ func _build_ui() -> void:
 	road_button.pressed.connect(func(): _focus_component(&"road_straight", "road / paving seam"))
 	controls.add_child(road_button)
 	var views := HBoxContainer.new()
-	views.position = Vector2(18, 112)
+	views.position = Vector2(18, 136)
 	layer.add_child(views)
 	_add_view_button(views, "Front (1)", 0.0, 0.18)
 	_add_view_button(views, "Side (3)", PI * 0.5, 0.18)
 	_add_view_button(views, "Top (7)", 0.0, 1.50)
 	_add_action_button(views, "Next piece (Tab)", _select_next_module)
 	var nudges := HBoxContainer.new()
-	nudges.position = Vector2(18, 152)
+	nudges.position = Vector2(18, 176)
 	layer.add_child(nudges)
 	var nudge_heading := Label.new()
 	nudge_heading.text = "Selected piece  ·  step"
@@ -214,7 +227,7 @@ func _build_ui() -> void:
 	_add_action_button(nudges, "Reset", _reset_inspection)
 	_add_action_button(nudges, "Copy transform", _copy_inspection_transform)
 	transform_label = Label.new()
-	transform_label.position = Vector2(18, 192)
+	transform_label.position = Vector2(18, 216)
 	transform_label.text = "Left-click any piece to select it, then adjust its transform."
 	layer.add_child(transform_label)
 
@@ -230,7 +243,7 @@ func _frame_camera() -> void:
 	if is_instance_valid(orbit):
 		# Generated MapData is centered around the world origin. Framing a
 		# positive-only box put the actual assembly in the corner of the view.
-		orbit.frame(AABB(Vector3(-20, 0, -15), Vector3(40, 8, 30)))
+		orbit.frame(AABB(Vector3(-preview_map_size.x * 0.5, 0, -preview_map_size.y * 0.5), Vector3(preview_map_size.x, 8, preview_map_size.y)))
 		inspection_target = "whole map"
 		_refresh_status_target()
 
@@ -407,9 +420,15 @@ func _update_transform_label(prefix := "") -> void:
 	else:
 		transform_label.text = "Left-click any piece to select it, then adjust its transform."
 
-func _update_status(component_count: int, validation_text: String) -> void:
-	status.text = "FUSEFIRE MAP EDITOR  |  %s  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
-		String(layout_preset).replace("_", " "), generation_seed, component_count, validation_text, inspection_target
+func _update_status(component_count: int, validation_text: String, plan: EnvironmentLayoutPlan = null) -> void:
+	var plan_text := "authored layout"
+	if plan != null:
+		plan_text = "%s · %d road tiles · %d parcels · %d rejected · fallback %s" % [
+			String(plan.topology).replace("_", " "), plan.road_cells.size(), plan.parcels.size(),
+			plan.rejected_candidates.size(), "yes" if plan.fallback_used else "no",
+		]
+	status.text = "FUSEFIRE MAP EDITOR  |  %s  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views\nPlan: %s" % [
+		String(layout_preset).replace("_", " "), generation_seed, component_count, validation_text, inspection_target, plan_text
 	]
 
 func _refresh_status_target() -> void:
@@ -444,3 +463,42 @@ func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> 
 	overlay.mesh = mesh
 	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(overlay)
+
+func _add_spatial_plan_overlay(parent: Node3D, data: MapData) -> void:
+	if data.environment_layout_plan == null:
+		return
+	var plan := data.environment_layout_plan
+	var mesh := ImmediateMesh.new()
+	var parcel_material := StandardMaterial3D.new()
+	parcel_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	parcel_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	parcel_material.albedo_color = Color(1.0, 0.65, 0.16, 0.75)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, parcel_material)
+	for parcel in plan.parcels:
+		_add_plan_rect(mesh, parcel.bounds, data.map_size, 0.13)
+	mesh.surface_end()
+	var road_material := StandardMaterial3D.new()
+	road_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	road_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	road_material.albedo_color = Color(0.15, 0.92, 1.0, 0.9)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, road_material)
+	for road_cell in plan.road_cells:
+		_add_plan_rect(mesh, Rect2i(road_cell * plan.macro_size, Vector2i.ONE * plan.macro_size), data.map_size, 0.15)
+	mesh.surface_end()
+	var overlay := MeshInstance3D.new()
+	overlay.name = "SpatialPlan"
+	overlay.mesh = mesh
+	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(overlay)
+
+func _add_plan_rect(mesh: ImmediateMesh, bounds: Rect2i, map_size: Vector2i, height: float) -> void:
+	var half := Vector2(map_size) * 0.5
+	var minimum := Vector2(bounds.position) - half
+	var maximum := Vector2(bounds.end) - half
+	var points := [
+		Vector3(minimum.x, height, minimum.y), Vector3(maximum.x, height, minimum.y),
+		Vector3(maximum.x, height, maximum.y), Vector3(minimum.x, height, maximum.y),
+	]
+	for index in 4:
+		mesh.surface_add_vertex(points[index])
+		mesh.surface_add_vertex(points[(index + 1) % 4])

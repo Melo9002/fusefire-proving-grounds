@@ -4,13 +4,13 @@ Goal 2.2 provides an opt-in modular environment system. Reusable components now 
 
 ## Architecture
 
-`EnvironmentModuleDefinition` describes a stable component ID, explicit module type, logical footprint, clearance, allowed quarter-turn rotations, connections, tactical cell effects, elevated surfaces, vertical links, mission-suitability cells, and presentation references. It also records a semantic tactical role, placement layer, and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement and base elevation. `EnvironmentModuleLayout` rotates footprints and connectors, rejects same-layer overlaps and invalid clearances, validates elevation-aware connector compatibility, and resolves suitability cells into world coordinates.
+`EnvironmentModuleDefinition` describes a stable component ID, explicit module type, logical footprint, clearance, allowed quarter-turn rotations, connections, tactical cell effects, elevated surfaces, vertical links, mission-suitability cells, presentation references, and an optional calibrated visual envelope. It also records a semantic tactical role, placement layer, and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement and base elevation. `EnvironmentModuleLayout` rotates footprints and connectors, rejects same-layer overlaps and invalid clearances, validates elevation-aware connector compatibility, and resolves suitability cells into world coordinates.
 
 The boundary is deliberate:
 
 - Tactical cell effects are copied into `MapData`. These determine traversal, cover and line of sight.
 - Visual references are stored with the definition and instantiated by `ModularEnvironmentPresenter`.
-- Mesh bounds, imported collisions and visual overlap never change tactical legality.
+- Mesh bounds, imported collisions and visual overlap never change tactical legality. Authored visual envelopes may reject a placement before commitment, but they never write tactical cells.
 
 Placement reservations are layered. `ground` modules reject other ground modules in the same cells, while `occupant` modules reject other occupants. Ground and occupant footprints may overlap, so a container, barrier, machine, or building section can sit on concrete without removing the concrete surface. `overhead` is reserved for future presentation pieces that need independent placement. Tactical effects are still applied once from every placed definition; layering does not merge or infer gameplay rules.
 
@@ -76,7 +76,7 @@ godot --path . res://tools/map_editor.tscn -- 7319
 godot --path . res://tools/map_editor.tscn -- 7319 vertical_works
 ```
 
-The Map Editor reports map validation status and presents all four presets through the same renderer. Its one-unit tactical grid makes visual overhang, elevated surfaces, and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
+The Map Editor reports map validation status and presents all four authored presets plus the Goal 2.3 procedural identities through the same renderer. Its one-unit tactical grid makes visual overhang, elevated surfaces, and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
 
 The selected-piece controls are a visual authoring scratchpad. Choose a step and use the X/Y/Z buttons or the arrow and Page Up/Page Down keys to move the module. `Q` and `E` rotate it by 90 degrees. **Reset** restores its authored transform, while **Copy transform** puts the component ID, offset, and yaw on the clipboard for transfer into the catalog. These edits affect only the current preview session; they never modify `MapData`, calibration JSON, or tactical footprints. `C`, `G`, and `F` focus the corner, road seam, and whole map.
 
@@ -96,12 +96,11 @@ The component regression suite assembles every preset twice, compares determinis
 
 ## Current limitations
 
-- Assembly uses four authored recipes with seeded visual variation; it does not search parcels or backtrack.
+- The four authored recipes remain fixtures. Goal 2.3 adds a bounded parcel-template search; its initial road grammar and template catalog are intentionally compact.
 - Connections validate declared neighbors but open boundary connectors are not yet globally required to close.
-- Logical non-overlap does not yet guarantee clean visual seams. Goal 2.3 must add authored socket transforms, clearance reservations, and diagnostic visual-envelope rejection for meshes that overhang their tactical footprints.
+- Calibrated container and machine-cluster envelopes now reject their known overhang collisions. Most catalog pieces still rely on authored spacing until useful assembly envelopes are measured.
 - Vertical links are demonstrated, but multi-floor buildings, stacked module placement, alternate-access requirements, and camera floor membership remain later work.
 - Factory and Space Kit dimensions are not normalized or treated as interchangeable.
 - The reviewed visual scales are available, but more structural assets still need authored footprints and connector decisions before joining the runtime catalog.
 - Layering currently distinguishes ground, occupant, and overhead reservations. More complex compatibility masks are deferred until a real component needs them.
 - Suitability metadata supplies candidates; mission planners do not yet reserve those cells before layout assembly.
-

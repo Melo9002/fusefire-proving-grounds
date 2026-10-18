@@ -5,7 +5,10 @@ var layout_id: StringName
 var generation_seed: int
 var placements: Array[EnvironmentModulePlacement] = []
 var errors: Array[String] = []
+var diagnostics: Array[String] = []
 var _reserved_cells_by_layer: Dictionary = {}
+var _clearance_cells_by_layer: Dictionary = {}
+var _visual_reservations: Array[Dictionary] = []
 
 func _init(id := &"", layout_seed := 0) -> void:
 	layout_id = id
@@ -20,6 +23,7 @@ func try_add(definition: EnvironmentModuleDefinition, placement: EnvironmentModu
 		return false
 	var cells := world_cells(definition, placement)
 	var reservations := _reservations_for(definition.placement_layer)
+	var clearance_reservations := _clearances_for(definition.placement_layer)
 	for cell in cells:
 		if cell.x < 0 or cell.y < 0 or cell.x >= map_size.x or cell.y >= map_size.y:
 			errors.append("%s extends outside the map at %s" % [placement.component_id, cell])
@@ -27,15 +31,43 @@ func try_add(definition: EnvironmentModuleDefinition, placement: EnvironmentModu
 		if reservations.has(cell):
 			errors.append("%s overlaps %s on %s at %s" % [placement.component_id, reservations[cell], EnvironmentModuleDefinition.PlacementLayer.keys()[definition.placement_layer].to_lower(), cell])
 			return false
+		if clearance_reservations.has(cell):
+			errors.append("%s intrudes into %s clearance on %s at %s" % [placement.component_id, clearance_reservations[cell], EnvironmentModuleDefinition.PlacementLayer.keys()[definition.placement_layer].to_lower(), cell])
+			return false
+	var clearances := world_clearance_cells(definition, placement)
+	for cell in clearances:
+		if cell.x < 0 or cell.y < 0 or cell.x >= map_size.x or cell.y >= map_size.y:
+			errors.append("%s clearance extends outside the map at %s" % [placement.component_id, cell])
+			return false
+		if reservations.has(cell):
+			errors.append("%s clearance overlaps %s on %s at %s" % [placement.component_id, reservations[cell], EnvironmentModuleDefinition.PlacementLayer.keys()[definition.placement_layer].to_lower(), cell])
+			return false
+	var visual_bounds := world_visual_envelope(definition, placement)
+	if visual_bounds.size != Vector3.ZERO:
+		for existing in _visual_reservations:
+			if existing.layer != definition.placement_layer:
+				continue
+			if visual_bounds.intersects(existing.bounds):
+				errors.append("%s visual envelope intersects %s" % [placement.component_id, existing.component_id])
+				return false
 	placements.append(placement)
 	for cell in cells:
 		reservations[cell] = placement.component_id
+	for cell in clearances:
+		clearance_reservations[cell] = placement.component_id
+	if visual_bounds.size != Vector3.ZERO:
+		_visual_reservations.append({"bounds": visual_bounds, "component_id": placement.component_id, "layer": definition.placement_layer})
 	return true
 
 func _reservations_for(layer: EnvironmentModuleDefinition.PlacementLayer) -> Dictionary:
 	if not _reserved_cells_by_layer.has(layer):
 		_reserved_cells_by_layer[layer] = {}
 	return _reserved_cells_by_layer[layer]
+
+func _clearances_for(layer: EnvironmentModuleDefinition.PlacementLayer) -> Dictionary:
+	if not _clearance_cells_by_layer.has(layer):
+		_clearance_cells_by_layer[layer] = {}
+	return _clearance_cells_by_layer[layer]
 
 func world_cells(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -48,6 +80,24 @@ func world_clearance_cells(definition: EnvironmentModuleDefinition, placement: E
 	for cell in definition.rotated_cells(definition.clearance_cells, placement.rotation):
 		result.append(placement.origin + cell)
 	return result
+
+func world_visual_envelope(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement) -> AABB:
+	var local := definition.visual_envelope
+	if local.size == Vector3.ZERO:
+		return AABB()
+	var points: Array[Vector3] = []
+	for x in [local.position.x, local.end.x]:
+		for y in [local.position.y, local.end.y]:
+			for z in [local.position.z, local.end.z]:
+				var point := Vector3(x, y, z)
+				for _step in posmod(placement.rotation, 4):
+					point = Vector3(float(definition.size.y - 1) - point.z, point.y, point.x)
+				points.append(point + Vector3(placement.origin.x, placement.elevation, placement.origin.y))
+	var bounds := AABB(points[0], Vector3.ZERO)
+	for point in points:
+		bounds = bounds.expand(point)
+	# Authoring envelopes that only touch at their boundary are compatible.
+	return bounds.grow(-0.01) if bounds.size.x > 0.02 and bounds.size.y > 0.02 and bounds.size.z > 0.02 else bounds
 
 func world_connections(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []

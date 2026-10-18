@@ -19,6 +19,8 @@ var transport_footprints: Dictionary = {}
 ## authored component identity; MapCellData remains tactical authority.
 var environment_modules: Array[EnvironmentModulePlacement] = []
 var environment_module_seed: int = 0
+## Optional hierarchical plan used by coherent modular generation and debug UI.
+var environment_layout_plan: EnvironmentLayoutPlan
 ## Optional presentation names keyed by authoritative grid elevation. Missing
 ## names fall back to Ground / Level N in generic floor controls.
 var elevation_labels: Dictionary[int, String] = {0: "Ground"}
@@ -128,6 +130,7 @@ func clear() -> void:
 	transport_footprints.clear()
 	environment_modules.clear()
 	environment_module_seed = 0
+	environment_layout_plan = null
 	containers.clear()
 	buildings.clear()
 	platforms.clear()

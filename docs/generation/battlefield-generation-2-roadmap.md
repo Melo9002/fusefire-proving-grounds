@@ -35,9 +35,8 @@ The installed Kenney library is a construction source, not a generator. The Indu
 
 ### Missing
 
-- Plot/parcel or equivalent layout grammar for roads, lots, buildings and open spaces.
 - Mission requirements that reserve layout space before assembly.
-- General validation for open module seams, complete road networks and alternate vertical routes.
+- General quality scoring for open module seams, multi-intersection road networks and alternate vertical routes.
 
 ## Reference findings from the local XCOM 2 SDK
 
@@ -67,9 +66,11 @@ The lightweight component records separate logical footprints, layered ground/oc
 
 Rendered inspection confirms the tactical foundation and also exposes visual overhang where logically adjacent machinery, cargo, or catwalk pieces can intersect. The [Goal 2.2 completion report](goal-2.2-completion-report.md) records this as an explicit Goal 2.3 input rather than making vendor mesh bounds authoritative.
 
-### 2.3 — Coherent Layout Assembly — partial
+### 2.3 — Coherent Layout Assembly — demonstrated (first procedural foundation)
 
-Four constrained recipes now assemble an industrial frontage, loading yard, four-way road district with storefront, and vertical maintenance area. Rotation, elevation-aware connection matching, clearance, overlap rejection and deterministic output are covered. The next step is a bounded placement/search grammar with useful rejection diagnostics, followed by plots and parcels.
+A hierarchical opt-in assembler now selects an industrial, commercial, or mixed-service identity; builds a connected seeded crossroad or T-junction plot; derives road-facing parcels; and fills them with rotated authored storefront, workshop, loading, yard, alley, and courtyard templates. Parcel placement uses bounded transactional alternatives and an explicit open-ground fallback. Tactical footprints, same-layer placement clearances, and calibrated visual envelopes are separate contracts; candidate conflicts are rejected without making meshes authoritative. `EnvironmentLayoutPlan` retains deterministic decisions and diagnostics on `MapData`.
+
+The Map Editor exposes authored and procedural layouts together, draws road and parcel boundaries, and reports topology, rejection, fallback, and tactical validation status. Multi-seed tests cover determinism, variation, road connectivity, termination, spatial conflicts, alternative selection, deployments, and shared presentation. The [Goal 2.3 implementation guide](coherent-layout-assembly.md) records architecture and inspection commands; the [completion report](goal-2.3-completion-report.md) records validation and current limits.
 
 ### 2.4 — Verticality & Geometry Occlusion — partial
 
@@ -85,7 +86,7 @@ Connectivity, spawn capacity, objectives, traversal integrity and broad tactical
 
 ### 2.7 — Designer Tools & Debug Views — partial (asset and module inspection demonstrated)
 
-F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The 2.2 Map Editor switches among all four modular presets, regenerates by seed, and supports click selection plus temporary transform adjustment. Connector, suitability, and rejection overlays remain for later assembly tooling.
+F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The Map Editor switches among authored presets and procedural identities, regenerates by seed, supports click selection plus temporary transform adjustment, draws road/parcel plans, and summarizes rejection/fallback diagnostics. Per-socket, clearance-volume, visual-envelope, and rejected-candidate geometry overlays remain later tooling.
 
 ### 2.8 — Integrated Battlefield Generation Release — not started
 
@@ -93,7 +94,7 @@ Requires representative authored, procedural and hybrid presets using the shared
 
 ## Next implementation slice
 
-Use the expanded catalog to build a bounded 2.3 placement grammar. Generate connected road and parcel arrangements from compatibility metadata, report rejected placements clearly, and reserve suitability regions before placing mission-critical modules. Keep the path opt-in until multi-seed connectivity and tactical quality checks are established.
+Grow the demonstrated 2.3 grammar with multi-intersection blocks, secondary roads, deeper building parcels, and more calibrated visual envelopes. Then begin 2.5 by letting mission requirements reserve suitability regions before parcel commitment. Keep procedural coherent layouts opt-in while broader tactical-quality thresholds are established.
 
 ## Constraints and deferred ideas
 

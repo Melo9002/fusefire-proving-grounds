@@ -112,6 +112,16 @@ static func generate_modular_environment_sample(width: int, depth: int, cell_siz
 		push_error("Modular environment layout failed: %s" % "; ".join(layout.errors))
 	return map_data
 
+## Goal 2.3 opt-in hierarchical assembly. The flat map establishes authoritative
+## cells and deployments; the assembler plans roads and parcels, then writes the
+## same module definitions used by authored Goal 2.2 layouts.
+static func generate_coherent_environment(width: int, depth: int, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district", spawn_capacity: int = 5) -> MapData:
+	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
+	var layout := CoherentEnvironmentAssembler.apply(map_data, cell_size, map_seed, environment_id)
+	if not layout.errors.is_empty():
+		push_error("Coherent environment assembly failed: %s" % "; ".join(layout.errors))
+	return map_data
+
 static func _formation_templates() -> Array[Array]:
 	return [
 		[[Vector2i(0, 0), MapCellData.CoverType.LOW], [Vector2i(1, 0), MapCellData.CoverType.FULL], [Vector2i(2, 0), MapCellData.CoverType.LOW]],

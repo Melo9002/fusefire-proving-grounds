@@ -75,6 +75,9 @@ var elevated_surfaces: Dictionary = {}
 var vertical_links: Array[Dictionary] = []
 ## Candidate local cells for mission planning, keyed by Suitability.
 var suitability_cells: Dictionary = {}
+## Optional calibrated presentation envelope in local cell/world units. It is
+## used to reject visible intersections, never to author tactical occupancy.
+var visual_envelope := AABB()
 
 func _init(id: StringName, component_family: StringName, dimensions: Vector2i) -> void:
 	component_id = id
@@ -151,6 +154,10 @@ func add_suitability(kind: Suitability, cells: Array[Vector2i]) -> EnvironmentMo
 	var stored: Array[Vector2i] = []
 	stored.assign(cells)
 	suitability_cells[kind] = stored
+	return self
+
+func set_visual_envelope(bounds: AABB) -> EnvironmentModuleDefinition:
+	visual_envelope = bounds
 	return self
 
 func interaction_at(cell: Vector2i) -> CellInteraction:

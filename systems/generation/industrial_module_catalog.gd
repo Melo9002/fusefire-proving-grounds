@@ -41,6 +41,16 @@ static func _full_cover() -> Dictionary:
 static func _vaultable_low_cover(height := 0.65) -> Dictionary:
 	return {"interaction": EnvironmentModuleDefinition.CellInteraction.VAULT, "cover_type": MapCellData.CoverType.LOW, "cover_height": height, "walkable": true, "can_stop": false, "blocks_los": false, "movement_cost": 2}
 
+static func _perimeter_clearance(size: Vector2i) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for x in range(-1, size.x + 1):
+		result.append(Vector2i(x, -1))
+		result.append(Vector2i(x, size.y))
+	for z in size.y:
+		result.append(Vector2i(-1, z))
+		result.append(Vector2i(size.x, z))
+	return result
+
 static func _wall_straight() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_wall_straight", &"factory_structure", Vector2i(4, 1))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
@@ -107,7 +117,9 @@ static func _road_straight() -> EnvironmentModuleDefinition:
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads tiles use the calibrated ten-unit pitch; surfaces sit 0.02 units above the base plane to prevent z-fighting.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(5, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_visual(ROADS + "road-straight.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
@@ -147,6 +159,7 @@ static func _cargo_container() -> EnvironmentModuleDefinition:
 	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "The calibrated container is a solid authored obstacle; its visual length slightly exceeds four cells.")
 	for cell in item.footprint_cells:
 		item.set_effect(cell, {"interaction": EnvironmentModuleDefinition.CellInteraction.BLOCKED, "cover_type": MapCellData.CoverType.FULL, "cover_height": 1.74, "walkable": false, "can_stop": false, "blocks_los": true, "movement_cost": 1})
+	item.set_visual_envelope(AABB(Vector3(-0.15, 0.0, -0.15), Vector3(2.3, 2.0, 5.3)))
 	item.visuals = [{
 		"asset_variants": [INDUSTRIAL + "shipping-container-a.glb", INDUSTRIAL + "shipping-container-b.glb", INDUSTRIAL + "shipping-container-c.glb"],
 		"local_cell": Vector2(0.5, 2.0), "scale": 5.0, "yaw_quarters": 0, "anchor": 0,
@@ -191,16 +204,23 @@ static func _alley() -> EnvironmentModuleDefinition:
 static func _road_intersection() -> EnvironmentModuleDefinition:
 	var item := _road_tile(&"road_intersection_t", "road-intersection.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(0, 5), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(9, 5), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	return item
 
 static func _road_crossroad() -> EnvironmentModuleDefinition:
 	var item := _road_tile(&"road_crossroad", "road-crossroad.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(5, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(0, 5), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(9, 5), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
 	return item
 
 static func _road_tile(id: StringName, model: String, type: EnvironmentModuleDefinition.ModuleType) -> EnvironmentModuleDefinition:
@@ -238,6 +258,7 @@ static func _courtyard() -> EnvironmentModuleDefinition:
 	for side in [[Vector2i(4, 0), Vector2i.UP], [Vector2i(4, 9), Vector2i.DOWN], [Vector2i(0, 4), Vector2i.LEFT], [Vector2i(9, 4), Vector2i.RIGHT]]:
 		item.add_connection(side[0], side[1], EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(4, 4), Vector2i(5, 4), Vector2i(4, 5), Vector2i(5, 5)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1)])
 	item.add_suitability(EnvironmentModuleDefinition.Suitability.EXTRACTION, [Vector2i(1, 7), Vector2i(2, 7), Vector2i(1, 8), Vector2i(2, 8)])
 	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
 	return item
@@ -272,6 +293,8 @@ static func _machine_cover_cluster() -> EnvironmentModuleDefinition:
 		item.set_effect(cell, _full_cover())
 	for cell in [Vector2i(2, 1), Vector2i(3, 2)]:
 		item.set_effect(cell, _vaultable_low_cover())
+	item.clearance_cells = _perimeter_clearance(item.size)
+	item.set_visual_envelope(AABB(Vector3(-0.3, 0.0, -0.3), Vector3(6.6, 3.0, 4.6)))
 	item.add_visual(FACTORY + "machine.glb", Vector2(0.5, 1.5), 2.0, 0, 0)
 	item.add_visual(FACTORY + "machine-fortified.glb", Vector2(4.5, 2.5), 2.0, 2, 0)
 	return item
