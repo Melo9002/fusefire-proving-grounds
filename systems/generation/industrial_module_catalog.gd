@@ -17,6 +17,19 @@ static func create() -> Dictionary:
 	_register(catalog, _paving())
 	_register(catalog, _cargo_container())
 	_register(catalog, _construction_barrier())
+	_register(catalog, _window_wall())
+	_register(catalog, _alley())
+	_register(catalog, _road_intersection())
+	_register(catalog, _road_crossroad())
+	_register(catalog, _shop_front())
+	_register(catalog, _courtyard())
+	_register(catalog, _loading_dock())
+	_register(catalog, _machine())
+	_register(catalog, _machine_cover_cluster())
+	_register(catalog, _stairs())
+	_register(catalog, _ramp())
+	_register(catalog, _elevated_platform())
+	_register(catalog, _elevated_walkway())
 	return catalog
 
 static func _register(catalog: Dictionary, definition: EnvironmentModuleDefinition) -> void:
@@ -31,6 +44,7 @@ static func _vaultable_low_cover(height := 0.65) -> Dictionary:
 static func _wall_straight() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_wall_straight", &"factory_structure", Vector2i(4, 1))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.WALL)
 	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Two scale-2 Factory wall bays form this four-cell run on integer grid boundaries.")
 	item.allowed_rotations = [0, 1, 2, 3]
 	for x in 4:
@@ -44,6 +58,7 @@ static func _wall_straight() -> EnvironmentModuleDefinition:
 static func _wall_corner() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_wall_corner", &"factory_structure", Vector2i(2, 2))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.CORNER)
 	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Scale-2 corner uses the Factory Kit's native two-unit pitch on integer grid boundaries.")
 	for cell in item.footprint_cells:
 		item.set_effect(cell, _full_cover())
@@ -59,6 +74,7 @@ static func _wall_corner() -> EnvironmentModuleDefinition:
 static func _doorway() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_doorway_wide", &"factory_structure", Vector2i(4, 1))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.DOORWAY)
 	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "The scale-2 wide doorway spans four cells and keeps two center lanes open.")
 	item.clearance_cells = [Vector2i(1, -1), Vector2i(2, -1), Vector2i(1, 1), Vector2i(2, 1)]
 	item.set_effect(Vector2i(0, 0), _full_cover())
@@ -75,15 +91,19 @@ static func _doorway() -> EnvironmentModuleDefinition:
 static func _interior_floor() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"factory_interior_floor", &"factory_structure", Vector2i(12, 8))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.FLOOR)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2.ONE, "Authored tactical floor; the neutral floor marker has no imported collision.")
 	item.add_connection(Vector2i(5, 7), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
 	item.add_connection(Vector2i(6, 7), Vector2i.DOWN, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(9, 3), Vector2i(9, 4)])
 	return item
 
 static func _road_straight() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"road_straight", &"city_roads", Vector2i(10, 10))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.ROAD)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads tiles use the calibrated ten-unit pitch; surfaces sit 0.02 units above the base plane to prevent z-fighting.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
@@ -96,6 +116,7 @@ static func _road_straight() -> EnvironmentModuleDefinition:
 static func _road_corner() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"road_corner", &"city_roads", Vector2i(20, 20))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.ROAD)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(20, 20), "The calibrated curve occupies two ten-unit road pitches.")
 	item.add_connection(Vector2i(9, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
@@ -106,6 +127,7 @@ static func _road_corner() -> EnvironmentModuleDefinition:
 static func _paving() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"paving_square", &"city_roads", Vector2i(10, 10))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.GROUND)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
 	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Paving shares the calibrated ten-unit City Roads pitch.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
@@ -121,6 +143,7 @@ static func _paving() -> EnvironmentModuleDefinition:
 static func _cargo_container() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"cargo_container", &"industrial_cargo", Vector2i(2, 5))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.SOLID_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
 	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "The calibrated container is a solid authored obstacle; its visual length slightly exceeds four cells.")
 	for cell in item.footprint_cells:
 		item.set_effect(cell, {"interaction": EnvironmentModuleDefinition.CellInteraction.BLOCKED, "cover_type": MapCellData.CoverType.FULL, "cover_height": 1.74, "walkable": false, "can_stop": false, "blocks_los": true, "movement_cost": 1})
@@ -133,7 +156,175 @@ static func _cargo_container() -> EnvironmentModuleDefinition:
 static func _construction_barrier() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"construction_barrier_vault", &"road_furniture", Vector2i.ONE)
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VAULTABLE_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
 	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "One-cell low obstacle: traversable, non-stoppable and presented as a vault.")
 	item.set_effect(Vector2i.ZERO, _vaultable_low_cover())
 	item.add_visual(ROADS + "construction-barrier.glb", Vector2.ZERO, 5.0, 0, 0)
+	return item
+
+static func _window_wall() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"factory_window_wall", &"factory_structure", Vector2i(4, 1))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.WINDOW)
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Window bay shares the Factory wall pitch; glazing remains LOS-blocking until transparent-window rules are authored.")
+	for x in 4:
+		item.set_effect(Vector2i(x, 0), _full_cover())
+	item.add_connection(Vector2i(0, 0), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	item.add_connection(Vector2i(3, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(2, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	return item
+
+static func _alley() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"paved_alley", &"civic_ground", Vector2i(4, 10))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.ALLEY)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
+	item.set_visual_convention(Vector2.ONE, Vector2(4, 10), "Narrow authored ground strip; neutral marker avoids stretching a road mesh.")
+	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ALLEY)
+	item.add_connection(Vector2i(1, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ALLEY)
+	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+	item.add_connection(Vector2i(3, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(1, 1), Vector2i(2, 1)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.EXTRACTION, [Vector2i(1, 8), Vector2i(2, 8)])
+	return item
+
+static func _road_intersection() -> EnvironmentModuleDefinition:
+	var item := _road_tile(&"road_intersection_t", "road-intersection.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
+	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	return item
+
+static func _road_crossroad() -> EnvironmentModuleDefinition:
+	var item := _road_tile(&"road_crossroad", "road-crossroad.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
+	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
+	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
+	return item
+
+static func _road_tile(id: StringName, model: String, type: EnvironmentModuleDefinition.ModuleType) -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(id, &"city_roads", Vector2i(10, 10))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(type)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads ten-unit connection pitch.")
+	item.add_visual(ROADS + model, Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	return item
+
+static func _shop_front() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"factory_shop_front", &"factory_composite", Vector2i(8, 1))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.SHOP)
+	item.set_visual_convention(Vector2.ONE, Vector2(2, 2), "Reusable storefront: window bay plus wide entrance on the Factory pitch.")
+	for x in [0, 1, 2, 3, 4, 7]:
+		item.set_effect(Vector2i(x, 0), _full_cover())
+	item.clearance_cells = [Vector2i(5, -1), Vector2i(6, -1), Vector2i(5, 1), Vector2i(6, 1)]
+	item.add_connection(Vector2i(0, 0), Vector2i.LEFT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	item.add_connection(Vector2i(7, 0), Vector2i.RIGHT, EnvironmentModuleConnection.Type.STRUCTURE_EDGE)
+	for x in [5, 6]:
+		item.add_connection(Vector2i(x, 0), Vector2i.UP, EnvironmentModuleConnection.Type.INTERIOR_ACCESS)
+		item.add_connection(Vector2i(x, 0), Vector2i.DOWN, EnvironmentModuleConnection.Type.EXTERIOR_ACCESS)
+	item.add_visual(FACTORY + "structure-window-wide.glb", Vector2(2, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	item.add_visual(FACTORY + "structure-doorway-wide.glb", Vector2(6, 0), STRUCTURE_PRESENTATION_SCALE, 0, 1)
+	return item
+
+static func _courtyard() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"paved_courtyard", &"civic_ground", Vector2i(10, 10))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.COURTYARD)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Open mission-capable paved space on the City Roads pitch.")
+	for side in [[Vector2i(4, 0), Vector2i.UP], [Vector2i(4, 9), Vector2i.DOWN], [Vector2i(0, 4), Vector2i.LEFT], [Vector2i(9, 4), Vector2i.RIGHT]]:
+		item.add_connection(side[0], side[1], EnvironmentModuleConnection.Type.SIDEWALK)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(4, 4), Vector2i(5, 4), Vector2i(4, 5), Vector2i(5, 5)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.EXTRACTION, [Vector2i(1, 7), Vector2i(2, 7), Vector2i(1, 8), Vector2i(2, 8)])
+	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	return item
+
+static func _loading_dock() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"industrial_loading_dock", &"industrial_space", Vector2i(10, 6))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.LOADING_DOCK)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 6), "Loading apron is authored ground; cargo and machines occupy its independent occupant layer.")
+	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.LOADING)
+	item.add_connection(Vector2i(4, 5), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(8, 1), Vector2i(8, 2)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(1, 4), Vector2i(2, 4)])
+	return item
+
+static func _machine() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"factory_machine", &"industrial_machinery", Vector2i(2, 2))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.SOLID_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.MACHINERY)
+	for cell in item.footprint_cells:
+		item.set_effect(cell, _full_cover())
+	item.clearance_cells = [Vector2i(0, -1), Vector2i(1, -1)]
+	item.add_visual(FACTORY + "machine.glb", Vector2(0.5, 0.5), 2.0, 0, 0)
+	return item
+
+static func _machine_cover_cluster() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"machine_cover_cluster", &"industrial_machinery", Vector2i(6, 4))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.SOLID_OBSTACLE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.COVER_CLUSTER)
+	for cell in [Vector2i(0, 1), Vector2i(1, 1), Vector2i(4, 2), Vector2i(5, 2)]:
+		item.set_effect(cell, _full_cover())
+	for cell in [Vector2i(2, 1), Vector2i(3, 2)]:
+		item.set_effect(cell, _vaultable_low_cover())
+	item.add_visual(FACTORY + "machine.glb", Vector2(0.5, 1.5), 2.0, 0, 0)
+	item.add_visual(FACTORY + "machine-fortified.glb", Vector2(4.5, 2.5), 2.0, 2, 0)
+	return item
+
+static func _stairs() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"catwalk_stairs", &"factory_vertical", Vector2i(4, 3))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.STAIRS)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OCCUPANT)
+	for x in 4:
+		item.add_elevated_surface(Vector2i(x, 2), 2)
+	item.add_connection(Vector2i(1, 0), Vector2i.UP, EnvironmentModuleConnection.Type.VERTICAL, 0)
+	item.add_connection(Vector2i(1, 2), Vector2i.DOWN, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_vertical_link(Vector3i(1, 0, 0), Vector3i(1, 2, 2), GeneratedTraversalData.Kind.STAIRS)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(1, 0), Vector2i(2, 0)])
+	item.add_visual(FACTORY + "catwalk-stairs.glb", Vector2(1.5, 1.0), 2.0, 0, 0)
+	return item
+
+static func _ramp() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"service_ramp", &"road_vertical", Vector2i(10, 10))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.RAMP)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OCCUPANT)
+	for x in 10:
+		item.add_elevated_surface(Vector2i(x, 9), 3)
+	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.VERTICAL, 0)
+	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.VERTICAL, 3)
+	item.add_vertical_link(Vector3i(4, 0, 0), Vector3i(4, 3, 9), GeneratedTraversalData.Kind.RAMP)
+	item.add_visual(ROADS + "road-slant.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	return item
+
+static func _elevated_platform() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"maintenance_platform", &"factory_vertical", Vector2i(4, 4))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PLATFORM)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OVERHEAD)
+	for cell in item.footprint_cells:
+		item.add_elevated_surface(cell, 2)
+	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_connection(Vector2i(3, 1), Vector2i.RIGHT, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(1, 1), Vector2i(2, 1)])
+	return item
+
+static func _elevated_walkway() -> EnvironmentModuleDefinition:
+	var item := EnvironmentModuleDefinition.new(&"maintenance_walkway", &"factory_vertical", Vector2i(2, 6))
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.WALKWAY)
+	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OVERHEAD)
+	for cell in item.footprint_cells:
+		item.add_elevated_surface(cell, 2)
+	item.add_connection(Vector2i(0, 0), Vector2i.UP, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_connection(Vector2i(0, 5), Vector2i.DOWN, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_connection(Vector2i(0, 1), Vector2i.LEFT, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_connection(Vector2i(1, 1), Vector2i.RIGHT, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	item.add_visual(FACTORY + "catwalk-straight.glb", Vector2(0.5, 2.5), 2.0, 0, 0, Vector3(0, 2, 0))
 	return item

@@ -4,6 +4,7 @@ const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 
 @export var generation_seed := 2202
+@export var layout_preset: StringName = &"industrial_frontage"
 var content: Node3D
 var status: Label
 var seed_input: SpinBox
@@ -14,11 +15,14 @@ var inspection_module: Node3D
 var adjustment_step: SpinBox
 var transform_label: Label
 var selection_outline_material: StandardMaterial3D
+var preset_picker: OptionButton
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty() and args[0].is_valid_int():
 		generation_seed = int(args[0])
+	if args.size() > 1 and StringName(args[1]) in ModularIndustrialLayoutBuilder.PRESETS:
+		layout_preset = StringName(args[1])
 	_build_ui()
 	_rebuild()
 
@@ -77,7 +81,7 @@ func _rebuild() -> void:
 	content = Node3D.new()
 	content.name = "PreviewContent"
 	add_child(content)
-	var data := FlatMapGenerator.generate_modular_industrial_sample(40, 30, 1.0, generation_seed)
+	var data := FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
 	var ground_mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(40, 30)
@@ -157,6 +161,14 @@ func _build_ui() -> void:
 	regenerate.text = "Regenerate"
 	regenerate.pressed.connect(_rebuild)
 	controls.add_child(regenerate)
+	preset_picker = OptionButton.new()
+	for preset in ModularIndustrialLayoutBuilder.PRESETS:
+		preset_picker.add_item(String(preset).capitalize())
+		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
+		if preset == layout_preset:
+			preset_picker.select(preset_picker.item_count - 1)
+	preset_picker.item_selected.connect(_select_preset)
+	controls.add_child(preset_picker)
 	var frame_button := Button.new()
 	frame_button.text = "Frame map"
 	frame_button.pressed.connect(_frame_camera)
@@ -208,6 +220,10 @@ func _build_ui() -> void:
 
 func _set_seed(value: int) -> void:
 	generation_seed = value
+	_rebuild()
+
+func _select_preset(index: int) -> void:
+	layout_preset = preset_picker.get_item_metadata(index)
 	_rebuild()
 
 func _frame_camera() -> void:
@@ -392,8 +408,8 @@ func _update_transform_label(prefix := "") -> void:
 		transform_label.text = "Left-click any piece to select it, then adjust its transform."
 
 func _update_status(component_count: int, validation_text: String) -> void:
-	status.text = "FUSEFIRE MAP EDITOR  |  industrial prototype  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
-		generation_seed, component_count, validation_text, inspection_target
+	status.text = "FUSEFIRE MAP EDITOR  |  %s  |  seed %d  |  %d components  |  %s\nTarget: %s  |  LMB select · RMB orbit · MMB pan · wheel zoom · F map · C corner · G road · 1/3/7 views" % [
+		String(layout_preset).replace("_", " "), generation_seed, component_count, validation_text, inspection_target
 	]
 
 func _refresh_status_target() -> void:

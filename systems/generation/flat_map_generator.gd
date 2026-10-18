@@ -101,10 +101,15 @@ static func generate_with_cover(width: int, depth: int, cell_size: float, map_se
 
 ## Goal 2.2 opt-in vertical slice. Existing generation modes do not call this.
 static func generate_modular_industrial_sample(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5) -> MapData:
+	return generate_modular_environment_sample(width, depth, cell_size, map_seed, &"industrial_frontage", spawn_capacity)
+
+## Opt-in Goal 2.2 catalog presets. Every preset uses the same authoritative
+## module translation path while preserving the original frontage entry point.
+static func generate_modular_environment_sample(width: int, depth: int, cell_size: float, map_seed: int, preset: StringName, spawn_capacity: int = 5) -> MapData:
 	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
-	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed)
+	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed, preset)
 	if not layout.errors.is_empty():
-		push_error("Modular industrial layout failed: %s" % "; ".join(layout.errors))
+		push_error("Modular environment layout failed: %s" % "; ".join(layout.errors))
 	return map_data
 
 static func _formation_templates() -> Array[Array]:

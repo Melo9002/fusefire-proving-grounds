@@ -61,13 +61,13 @@ The warehouse, imported assets, multilevel picking, cutaway behavior and replay 
 
 All 315 retained GLBs import, instantiate and are searchable by pack and review state in the standalone Asset Laboratory. Project-local JSON persists category presets, per-asset scale/yaw/anchor/offset overrides and reviewed IDs using `asset override > category > fallback` resolution. Fourteen representatives retain additional source bounds, orientation, anchor conventions and compatibility notes. Rendered road, entrance, machinery and Space Kit assemblies verify seams and expose incompatible scales. Tactical footprints remain deliberately unauthored until Goal 2.2.
 
-### 2.2 — Modular Environment Components — demonstrated (first industrial family)
+### 2.2 — Modular Environment Components — demonstrated (expanded catalog)
 
-The first lightweight component records now separate logical footprints, layered ground/occupant reservations, clearances, tactical cell effects, rotation-aware semantic connectors and visual references. Nine industrial definitions cover Factory walls/entrance/interior, road and paving surfaces, cargo, and a vaultable road barrier. A deterministic opt-in frontage sample validates same-layer overlap rejection, legal obstacles over ground, doorway access and authoritative cell translation, then presents its Kenney meshes independently. `MapData` remains the committed tactical result. Suitability tags and elevated module surfaces remain future extensions.
+The lightweight component records separate logical footprints, layered ground/occupant/overhead reservations, clearances, tactical cell effects, explicit module types, elevation-aware semantic connectors, mission suitability, elevated surfaces, vertical links, and visual references. Twenty-two definitions now cover Factory walls, corners, doors, windows and floors; road intersections and alleys; a shop front, courtyard and loading dock; cargo, machinery and cover clusters; plus stairs, a road ramp, platform and walkway. Four deterministic opt-in presets validate overlap rejection, road continuity, doorway access, mission candidates, vertical traversal, authoritative cell translation, and shared presentation dispatch. `MapData` remains the committed tactical result.
 
 ### 2.3 — Coherent Layout Assembly — partial
 
-A constrained industrial grammar now assembles road edge → paving/loading frontage → warehouse entrance → interior/service space, with seeded cargo variants. Rotation, connection matching, clearance, overlap rejection and deterministic output are covered. The next step is a bounded placement/search grammar with useful rejection diagnostics, followed by plots and parcels.
+Four constrained recipes now assemble an industrial frontage, loading yard, four-way road district with storefront, and vertical maintenance area. Rotation, elevation-aware connection matching, clearance, overlap rejection and deterministic output are covered. The next step is a bounded placement/search grammar with useful rejection diagnostics, followed by plots and parcels.
 
 ### 2.4 — Verticality & Geometry Occlusion — partial
 
@@ -75,7 +75,7 @@ Traversal, stacked surfaces, walkable roofs, camera cutaways and generic level s
 
 ### 2.5 — Mission-Aware Battlefield Generation — partial
 
-Missions currently place zones after graph construction and validate reachability. Future assembly should expose objective/deployment suitability and reserve required regions before modules are committed. Existing post-generation placement remains the compatibility fallback.
+Modules now expose spawn, objective and extraction candidate cells, and regressions resolve them against authoritative traversal. Missions still place zones after graph construction; future assembly should reserve required regions before modules are committed. Existing post-generation placement remains the compatibility fallback.
 
 ### 2.6 — Tactical Quality & Validation — partial
 
@@ -83,7 +83,7 @@ Connectivity, spawn capacity, objectives, traversal integrity and broad tactical
 
 ### 2.7 — Designer Tools & Debug Views — partial (asset and module inspection demonstrated)
 
-F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The 2.2 standalone preview regenerates the modular industrial sample by seed. Connector and rejection overlays remain for later assembly tooling.
+F3 map inspection, grid overlays, floor controls, seed reproduction and screenshot fixtures exist. The 2.1 Asset Laboratory adds family/search/review filters, orbit/zoom, native and calibrated bounds, pivots, grid/MIRA comparison, snapping, neighbor seams, assembly previews, persistent overrides, editable category/fallback presets, unsaved-state reporting and next-unreviewed navigation. The 2.2 Map Editor switches among all four modular presets, regenerates by seed, and supports click selection plus temporary transform adjustment. Connector, suitability, and rejection overlays remain for later assembly tooling.
 
 ### 2.8 — Integrated Battlefield Generation Release — not started
 
@@ -91,7 +91,7 @@ Requires representative authored, procedural and hybrid presets using the shared
 
 ## Next implementation slice
 
-Extend the demonstrated industrial frontage into a bounded 2.3 placement grammar. Generate two or three connected frontage shapes from the existing catalog, report rejected placements clearly, and reserve stable entrance/access regions for later mission-aware placement. Keep the path opt-in until multi-seed connectivity and tactical quality checks are established.
+Use the expanded catalog to build a bounded 2.3 placement grammar. Generate connected road and parcel arrangements from compatibility metadata, report rejected placements clearly, and reserve suitability regions before placing mission-critical modules. Keep the path opt-in until multi-seed connectivity and tactical quality checks are established.
 
 ## Constraints and deferred ideas
 

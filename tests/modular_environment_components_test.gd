@@ -7,7 +7,14 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var catalog := IndustrialModuleCatalog.create()
-	check(catalog.size() == 9, "The industrial family exposes nine bounded components")
+	check(catalog.size() == 22, "The modular catalog exposes the original industrial set plus thirteen expanded components")
+	check(catalog.factory_window_wall.module_type == EnvironmentModuleDefinition.ModuleType.WINDOW, "Window sections are explicit module types")
+	check(catalog.paved_alley.module_type == EnvironmentModuleDefinition.ModuleType.ALLEY, "Alleys are explicit module types")
+	check(catalog.road_crossroad.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION, "Road junctions are explicit module types")
+	check(catalog.factory_shop_front.module_type == EnvironmentModuleDefinition.ModuleType.SHOP, "Composite shop fronts remain reusable definitions")
+	check(catalog.industrial_loading_dock.module_type == EnvironmentModuleDefinition.ModuleType.LOADING_DOCK, "Loading docks are explicit reusable spaces")
+	check(catalog.machine_cover_cluster.module_type == EnvironmentModuleDefinition.ModuleType.COVER_CLUSTER, "Machinery cover clusters expose their semantic type")
+	check(not catalog.catwalk_stairs.vertical_links.is_empty() and not catalog.maintenance_platform.elevated_surfaces.is_empty(), "Vertical modules carry authored surfaces and links")
 
 	var connection_layout := EnvironmentModuleLayout.new(&"connection_fixture", 1)
 	var first := EnvironmentModulePlacement.new(&"road_straight", Vector2i.ZERO, 1)
@@ -58,6 +65,44 @@ func _run() -> void:
 	check(catalog.factory_wall_straight.visuals[0].anchor == 1 and catalog.factory_wall_straight.visuals[0].offset == Vector3.ZERO and is_equal_approx(catalog.factory_wall_straight.visuals[0].scale, IndustrialModuleCatalog.STRUCTURE_PRESENTATION_SCALE), "Factory straight pieces preserve their source seam with the presentation-only bleed")
 	check(catalog.factory_wall_corner.visuals[0].local_cell == Vector2.ONE and is_equal_approx(catalog.factory_wall_corner.visuals[0].scale, IndustrialModuleCatalog.STRUCTURE_PRESENTATION_SCALE), "Inner corner occupies the intended two-cell integer junction")
 
+	for preset in ModularIndustrialLayoutBuilder.PRESETS:
+		var preset_map := FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, 4401, preset)
+		var repeated_map := FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, 4401, preset)
+		check(not preset_map.environment_modules.is_empty(), "%s assembles a non-empty modular environment" % preset)
+		check(_signature(preset_map) == _signature(repeated_map), "%s is deterministic for identical inputs" % preset)
+		var preset_layout := _reconstruct_layout(preset_map, catalog)
+		var spawn_candidates := preset_layout.world_suitability_cells(EnvironmentModuleDefinition.Suitability.SPAWN, catalog)
+		var objective_candidates := preset_layout.world_suitability_cells(EnvironmentModuleDefinition.Suitability.OBJECTIVE, catalog)
+		check(not spawn_candidates.is_empty(), "%s publishes spawn suitability metadata" % preset)
+		check(not objective_candidates.is_empty(), "%s publishes objective suitability metadata" % preset)
+		if not spawn_candidates.is_empty() and not objective_candidates.is_empty():
+			var preset_graph := Pathfinder.new()
+			MapGraphBuilder.build(preset_map, preset_graph)
+			var validation := MapValidator.validate(preset_map, preset_graph, {TacticalUnit.Faction.PLAYER: 5, TacticalUnit.Faction.ENEMY: 5})
+			check(validation.is_valid(), "%s passes general tactical map validation: %s" % [preset, validation.describe()])
+			var spawn_cell := preset_map.get_cell(spawn_candidates[0])
+			var objective_cell := preset_map.get_cell(objective_candidates[0])
+			check(spawn_cell != null and spawn_cell.walkable and spawn_cell.can_stop, "%s spawn candidate resolves to valid tactical ground" % preset)
+			check(objective_cell != null and objective_cell.walkable and objective_cell.can_stop, "%s objective candidate resolves to valid tactical ground" % preset)
+			if spawn_cell != null and objective_cell != null:
+				check(not preset_graph.calculate_3d_path(spawn_cell.grid_position, objective_cell.grid_position).is_empty(), "%s preserves a traversable spawn-to-objective route" % preset)
+		var preset_presentation := Node3D.new()
+		root.add_child(preset_presentation)
+		GeneratedTerrainPresenter.build(preset_map, preset_presentation, 1.0)
+		var presented_modules := preset_presentation.get_node_or_null("ModularEnvironment")
+		check(presented_modules != null and presented_modules.get_child_count() == preset_map.environment_modules.size(), "%s dispatches every module to the shared presenter" % preset)
+		preset_presentation.queue_free()
+
+	var vertical_map := FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, 2202, &"vertical_works")
+	check(vertical_map.get_cell(Vector3i(11, 2, 12)) != null, "Stairs translate an elevated landing into authoritative MapData")
+	check(vertical_map.get_cell(Vector3i(12, 2, 13)) != null, "Platform translates authored elevated surfaces into authoritative MapData")
+	check(vertical_map.traversal_links.any(func(link): return link.from_cell == Vector3i(11, 0, 10) and link.to_cell == Vector3i(11, 2, 12)), "Stair metadata creates an authoritative vertical traversal link")
+	check(vertical_map.generated_traversals.any(func(link): return link.kind == GeneratedTraversalData.Kind.RAMP), "Ramp metadata preserves its presentation traversal kind")
+	var low_connection := EnvironmentModuleConnection.new(Vector2i.ZERO, Vector2i.RIGHT, EnvironmentModuleConnection.Type.VERTICAL, 0)
+	var high_connection := EnvironmentModuleConnection.new(Vector2i.ZERO, Vector2i.LEFT, EnvironmentModuleConnection.Type.VERTICAL, 2)
+	check(EnvironmentModuleConnection.types_are_compatible(low_connection.type, high_connection.type) and low_connection.elevation != high_connection.elevation, "Vertical connection compatibility remains elevation-aware at placement validation")
+
+	await process_frame
 	var presented := Node3D.new()
 	root.add_child(presented)
 	GeneratedTerrainPresenter.build(first_map, presented, 1.0)
@@ -127,6 +172,12 @@ func _find(data: MapData, id: StringName) -> EnvironmentModulePlacement:
 		if placement.component_id == id:
 			return placement
 	return null
+
+func _reconstruct_layout(data: MapData, catalog: Dictionary) -> EnvironmentModuleLayout:
+	var layout := EnvironmentModuleLayout.new(&"test_reconstruction", data.environment_module_seed)
+	for placement in data.environment_modules:
+		check(layout.try_add(catalog[placement.component_id], placement, data.map_size), "Generated placement remains valid during reconstruction: %s" % placement.component_id)
+	return layout
 
 func check(condition: bool, message: String) -> void:
 	if condition:

@@ -22,6 +22,34 @@ enum PlacementLayer {
 	OVERHEAD,
 }
 
+enum ModuleType {
+	GROUND,
+	ROAD,
+	INTERSECTION,
+	ALLEY,
+	FLOOR,
+	WALL,
+	CORNER,
+	DOORWAY,
+	WINDOW,
+	SHOP,
+	COURTYARD,
+	LOADING_DOCK,
+	MACHINERY,
+	COVER_CLUSTER,
+	STAIRS,
+	RAMP,
+	PLATFORM,
+	WALKWAY,
+	PROP,
+}
+
+enum Suitability {
+	SPAWN,
+	OBJECTIVE,
+	EXTRACTION,
+}
+
 var component_id: StringName
 var family: StringName
 var size: Vector2i
@@ -32,6 +60,7 @@ var connections: Array[EnvironmentModuleConnection] = []
 var visuals: Array[Dictionary] = []
 var allowed_rotations: Array[int] = [0, 1, 2, 3]
 var tactical_role: TacticalRole = TacticalRole.VISUAL_ONLY
+var module_type: ModuleType = ModuleType.PROP
 ## Components collide only with reservations on the same placement layer.
 ## This allows an obstacle to occupy cells that already have a ground surface.
 var placement_layer: PlacementLayer = PlacementLayer.OCCUPANT
@@ -39,6 +68,13 @@ var placement_layer: PlacementLayer = PlacementLayer.OCCUPANT
 var visual_origin_snap := Vector2(0.5, 0.5)
 var visual_assembly_pitch := Vector2.ZERO
 var calibration_note := ""
+## Optional walkable cells above the ground plane. Values are dictionaries
+## containing an integer `elevation` plus optional MapCellData-style fields.
+var elevated_surfaces: Dictionary = {}
+## Authored links use local Vector3i endpoints and GeneratedTraversalData.Kind.
+var vertical_links: Array[Dictionary] = []
+## Candidate local cells for mission planning, keyed by Suitability.
+var suitability_cells: Dictionary = {}
 
 func _init(id: StringName, component_family: StringName, dimensions: Vector2i) -> void:
 	component_id = id
@@ -70,8 +106,8 @@ func rotated_cells(cells: Array[Vector2i], rotation: int) -> Array[Vector2i]:
 		result.append(rotate_cell(cell, rotation))
 	return result
 
-func add_connection(cell: Vector2i, direction: Vector2i, type: EnvironmentModuleConnection.Type) -> EnvironmentModuleDefinition:
-	connections.append(EnvironmentModuleConnection.new(cell, direction, type))
+func add_connection(cell: Vector2i, direction: Vector2i, type: EnvironmentModuleConnection.Type, elevation := 0) -> EnvironmentModuleDefinition:
+	connections.append(EnvironmentModuleConnection.new(cell, direction, type, elevation))
 	return self
 
 func set_effect(cell: Vector2i, effect: Dictionary) -> EnvironmentModuleDefinition:
@@ -82,6 +118,10 @@ func set_tactical_role(role: TacticalRole) -> EnvironmentModuleDefinition:
 	tactical_role = role
 	return self
 
+func set_module_type(type: ModuleType) -> EnvironmentModuleDefinition:
+	module_type = type
+	return self
+
 func set_placement_layer(layer: PlacementLayer) -> EnvironmentModuleDefinition:
 	placement_layer = layer
 	return self
@@ -90,6 +130,27 @@ func set_visual_convention(origin_snap: Vector2, assembly_pitch: Vector2, note :
 	visual_origin_snap = origin_snap
 	visual_assembly_pitch = assembly_pitch
 	calibration_note = note
+	return self
+
+func add_elevated_surface(cell: Vector2i, elevation: int, effect := {}) -> EnvironmentModuleDefinition:
+	var authored_effect: Dictionary = effect.duplicate(true)
+	authored_effect["elevation"] = elevation
+	elevated_surfaces[cell] = authored_effect
+	return self
+
+func add_vertical_link(from_cell: Vector3i, to_cell: Vector3i, kind: GeneratedTraversalData.Kind, bidirectional := true) -> EnvironmentModuleDefinition:
+	vertical_links.append({
+		"from": from_cell,
+		"to": to_cell,
+		"kind": kind,
+		"bidirectional": bidirectional,
+	})
+	return self
+
+func add_suitability(kind: Suitability, cells: Array[Vector2i]) -> EnvironmentModuleDefinition:
+	var stored: Array[Vector2i] = []
+	stored.assign(cells)
+	suitability_cells[kind] = stored
 	return self
 
 func interaction_at(cell: Vector2i) -> CellInteraction:

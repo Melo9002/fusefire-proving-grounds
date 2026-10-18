@@ -56,8 +56,21 @@ func world_connections(definition: EnvironmentModuleDefinition, placement: Envir
 			"cell": placement.origin + definition.rotate_cell(connection.local_cell, placement.rotation),
 			"direction": definition.rotate_direction(connection.direction, placement.rotation),
 			"type": connection.type,
+			"elevation": placement.elevation + connection.elevation,
 			"component_id": placement.component_id,
 		})
+	return result
+
+func world_suitability_cells(kind: EnvironmentModuleDefinition.Suitability, catalog: Dictionary) -> Array[Vector3i]:
+	var result: Array[Vector3i] = []
+	for placement in placements:
+		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
+		if definition == null:
+			continue
+		var local_cells: Array = definition.suitability_cells.get(kind, [])
+		for local_cell: Vector2i in local_cells:
+			var rotated := definition.rotate_cell(local_cell, placement.rotation)
+			result.append(Vector3i(placement.origin.x + rotated.x, placement.elevation, placement.origin.y + rotated.y))
 	return result
 
 func placements_connect(first: EnvironmentModulePlacement, second: EnvironmentModulePlacement, catalog: Dictionary) -> bool:
@@ -70,6 +83,8 @@ func placements_connect(first: EnvironmentModulePlacement, second: EnvironmentMo
 			if first_connection.cell + first_connection.direction != second_connection.cell:
 				continue
 			if second_connection.direction != -first_connection.direction:
+				continue
+			if second_connection.elevation != first_connection.elevation:
 				continue
 			if EnvironmentModuleConnection.types_are_compatible(first_connection.type, second_connection.type):
 				return true

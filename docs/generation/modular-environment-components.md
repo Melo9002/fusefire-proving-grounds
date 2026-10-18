@@ -1,10 +1,10 @@
 # Modular Environment Components
 
-Goal 2.2 introduces a small, opt-in industrial module system. It proves that reusable environment pieces can assemble one coherent region without replacing the existing procedural generator.
+Goal 2.2 provides an opt-in modular environment system. Reusable components now assemble industrial, road, commercial/open-space, and vertical test regions without replacing the existing procedural generator.
 
 ## Architecture
 
-`EnvironmentModuleDefinition` describes a stable component ID, logical footprint, clearance, allowed quarter-turn rotations, explicit connections, tactical cell effects and presentation references. It also records a semantic tactical role, placement layer, and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement. `EnvironmentModuleLayout` rotates footprints and connectors, rejects same-layer overlaps and invalid clearances, and validates connector compatibility.
+`EnvironmentModuleDefinition` describes a stable component ID, explicit module type, logical footprint, clearance, allowed quarter-turn rotations, connections, tactical cell effects, elevated surfaces, vertical links, mission-suitability cells, and presentation references. It also records a semantic tactical role, placement layer, and visual snapping convention. `EnvironmentModulePlacement` records one deterministic placement and base elevation. `EnvironmentModuleLayout` rotates footprints and connectors, rejects same-layer overlaps and invalid clearances, validates elevation-aware connector compatibility, and resolves suitability cells into world coordinates.
 
 The boundary is deliberate:
 
@@ -25,20 +25,25 @@ The resulting placement list is retained on `MapData` as presentation metadata. 
 
 ## Connections
 
-The first vocabulary is intentionally small: `road`, `sidewalk`, `structure_edge`, `interior_access` and `exterior_access`. Connections include a footprint-edge cell, an outward direction and an elevation. Quarter-turn placement rotates both the cell and direction. Identical types connect; sidewalk and exterior-access connections are also compatible. Elevations must match.
+The connection vocabulary includes `road`, `sidewalk`, `structure_edge`, `interior_access`, `exterior_access`, `alley`, `loading`, and `vertical`. Connections include a footprint-edge cell, an outward direction and an elevation. Quarter-turn placement rotates both the cell and direction. Identical types connect; sidewalk, alley, or loading access can connect to a compatible exterior entrance. Elevations must match.
 
 Wall edges do not become entrances. A doorway has explicit interior and exterior access connectors, and the industrial builder verifies both connector matches and clear approach cells before committing its tactical effects.
 
-## Industrial catalog
+## Component catalog
 
-The first catalog contains:
+The catalog contains:
 
-- Factory straight wall, corner, wide doorway and interior floor.
-- Straight road, road corner and paved ground.
-- A cargo-container obstacle.
-- A one-cell vaultable construction barrier.
+- Factory straight wall, inner corner, wide doorway, window wall, interior floor, and composite shop front.
+- Straight road, road corner, T intersection, crossroad, paving, and a narrow alley.
+- Courtyard and loading-dock spaces with authored mission-suitability cells.
+- Cargo containers, individual machinery, a machinery cover cluster, and a vaultable construction barrier.
+- Catwalk stairs, service ramp, maintenance platform, and elevated walkway with authored surfaces and vertical links.
 
-The sample uses a constrained frontage template: connected road and paving, an interior floor, a wall run with a wide entrance, and seed-selected cargo variants. One container and the vaultable barrier are deliberately layered over the paving surface. It is deterministic for the same dimensions and seed. This is a working assembly fixture rather than a general parcel grammar.
+Four constrained presets exercise the catalog: `industrial_frontage`, `loading_yard`, `road_and_shops`, and `vertical_works`. They cover connected road approaches, entrances, open spaces, layered cargo and machinery, and movement from ground to authored elevated surfaces. Every preset is deterministic for the same dimensions and seed. These remain working assembly fixtures rather than a general parcel grammar.
+
+Suitability metadata identifies candidate spawn, objective, and extraction cells without creating mission zones automatically. Generation and tests resolve those candidates against the final authoritative `MapData`, require them to remain stoppable, and verify representative spawn-to-objective paths. Mission-aware assembly can later consume the same metadata before committing its layout.
+
+Vertical modules add explicit elevated `MapCellData` surfaces and `TraversalLinkData`; meshes never create walkability. The stair and service-ramp definitions declare local endpoints, elevations, traversal kinds, and bidirectionality. Platforms and walkways declare their elevated cells. The shared translator rotates and places that data into the map, while the presenter renders calibrated models and neutral authored-surface markers.
 
 The presentation uses the developer-reviewed calibration: City Kit Roads surfaces use a ten-unit pitch, Factory structure pieces use the scale-2 baseline and integer visual anchors, containers use their scale-5 overrides, and the construction barrier uses scale 5. Factory facades retain source-origin anchoring and join on the kit's native two-unit rhythm. Runtime Factory structure meshes use a 2.01 presentation scale (a 0.5% seam bleed) so their closed end-cap faces do not z-fight; logical footprints and connections remain on integer boundaries. These values are copied deliberately into module definitions; loading a map never edits Asset Laboratory calibration or review state.
 
@@ -64,13 +69,14 @@ From the repository root:
 godot --path . res://tools/map_editor.tscn
 ```
 
-Press `R` to rebuild the same seed. Press `[` or `]` to change the seed. A seed can also be supplied after `--`:
+Choose any implemented preset from the selector. Press `R` to rebuild the same seed. Press `[` or `]` to change the seed. A seed and optional preset can also be supplied after `--`:
 
 ```powershell
 godot --path . res://tools/map_editor.tscn -- 7319
+godot --path . res://tools/map_editor.tscn -- 7319 vertical_works
 ```
 
-The former modular preview is now the first FuseFire Map Editor prototype. It reports map validation status and presents entrances, wall runs, connected ground, cargo obstacles, and the vaultable barrier. Its one-unit tactical grid makes visual overhang and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
+The Map Editor reports map validation status and presents all four presets through the same renderer. Its one-unit tactical grid makes visual overhang, elevated surfaces, and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
 
 The selected-piece controls are a visual authoring scratchpad. Choose a step and use the X/Y/Z buttons or the arrow and Page Up/Page Down keys to move the module. `Q` and `E` rotate it by 90 degrees. **Reset** restores its authored transform, while **Copy transform** puts the component ID, offset, and yaw on the clipboard for transfer into the catalog. These edits affect only the current preview session; they never modify `MapData`, calibration JSON, or tactical footprints. `C`, `G`, and `F` focus the corner, road seam, and whole map.
 
@@ -84,13 +90,17 @@ The selected-piece controls are a visual authoring scratchpad. Choose a step and
 6. Place it through `EnvironmentModuleLayout.try_add()` so bounds, overlap and clearance checks run.
 7. Add a focused test for its connection or tactical contract.
 
+## Validation
+
+The component regression suite assembles every preset twice, compares deterministic signatures, reruns placement validation, checks published suitability cells, runs the general map validator, builds a tactical path between representative spawn and objective candidates, and verifies presentation dispatch. Focused assertions protect road rotation, layer overlap, doorway access, cover translation, vault behavior, and ground-to-elevated traversal.
+
 ## Current limitations
 
-- Assembly is a single authored grammar with seeded visual variation; it does not search parcels or backtrack.
+- Assembly uses four authored recipes with seeded visual variation; it does not search parcels or backtrack.
 - Connections validate declared neighbors but open boundary connectors are not yet globally required to close.
-- Only ground-level industrial pieces are supported. Multi-floor modules and vertical connectors remain separate work.
+- Vertical links are demonstrated, but multi-floor buildings, stacked module placement, alternate-access requirements, and camera floor membership remain later work.
 - Factory and Space Kit dimensions are not normalized or treated as interchangeable.
 - The reviewed visual scales are available, but more structural assets still need authored footprints and connector decisions before joining the runtime catalog.
 - Layering currently distinguishes ground, occupant, and overhead reservations. More complex compatibility masks are deferred until a real component needs them.
-- Objective and spawn suitability metadata is not part of module definitions yet.
+- Suitability metadata supplies candidates; mission planners do not yet reserve those cells before layout assembly.
 
