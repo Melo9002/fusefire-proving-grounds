@@ -105,7 +105,7 @@ func _ready() -> void:
 		review_filter.add_item(label)
 	panel.add_child(review_filter)
 	interpretation_filter = OptionButton.new()
-	for label in ["All interpretation states", "Needs identification", "Confirmed semantics", "Inferred semantics"]:
+	for label in ["All interpretation states", "Needs semantic review", "Unknown identity", "Confirmed semantics", "Catalog classified"]:
 		interpretation_filter.add_item(label)
 	panel.add_child(interpretation_filter)
 	semantic_filter = OptionButton.new()
@@ -274,8 +274,8 @@ func _ready() -> void:
 	next_button.pressed.connect(_next_unreviewed)
 	panel.add_child(next_button)
 	var identify_button := Button.new()
-	identify_button.text = "Next asset needing identification"
-	identify_button.pressed.connect(_next_needs_identification)
+	identify_button.text = "Next unresolved semantic asset"
+	identify_button.pressed.connect(_next_needs_review)
 	panel.add_child(identify_button)
 	category_label = Label.new()
 	panel.add_child(category_label)
@@ -391,11 +391,11 @@ func _filter(query: String) -> void:
 		var review_matches: bool = review_filter.selected == 0 or (review_filter.selected == 1 and not reviewed) or (review_filter.selected == 2 and reviewed)
 		var interpretation: Dictionary = Semantics.effective(id, semantic_data)
 		var confirmed: bool = interpretation.interpretation_source == "confirmed"
-		var interpretation_matches: bool = interpretation_filter.selected == 0 or (interpretation_filter.selected == 1 and interpretation.needs_identification) or (interpretation_filter.selected == 2 and confirmed) or (interpretation_filter.selected == 3 and not confirmed)
+		var interpretation_matches: bool = interpretation_filter.selected == 0 or (interpretation_filter.selected == 1 and interpretation.needs_review) or (interpretation_filter.selected == 2 and interpretation.needs_identification) or (interpretation_filter.selected == 3 and confirmed) or (interpretation_filter.selected == 4 and not confirmed)
 		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
 		var semantic_matches: bool = selected_semantic.is_empty() or interpretation.semantic_category == selected_semantic
 		if review_matches and interpretation_matches and semantic_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
-			var marker := "✓ " if confirmed else ("? " if interpretation.needs_identification else "· ")
+			var marker := "✓ " if confirmed else ("? " if interpretation.needs_identification else ("! " if interpretation.needs_review else "· "))
 			var index := asset_list.add_item(marker + id)
 			asset_list.set_item_metadata(index, id)
 			asset_list.set_item_tooltip(index, "%s\n%s · %s · %s" % [id, interpretation.asset_kind, interpretation.structural_role, interpretation.interpretation_source])
@@ -437,7 +437,8 @@ func select_asset(id: String) -> void:
 	semantic_connections.text = ", ".join(interpretation.connections)
 	semantic_generation_ready.button_pressed = bool(interpretation.generation_ready)
 	semantic_notes.text = str(interpretation.get("notes", ""))
-	semantic_status.text = "%s · confidence %s%s" % [interpretation.interpretation_source.capitalize(), interpretation.confidence, " · NEEDS IDENTIFICATION" if interpretation.needs_identification else ""]
+	var review_text: String = " · NEEDS IDENTIFICATION" if interpretation.needs_identification else (" · REVIEW: " + ", ".join(interpretation.review_flags) if interpretation.needs_review else "")
+	semantic_status.text = "%s · confidence %s%s" % [interpretation.interpretation_source.capitalize(), interpretation.confidence, review_text]
 	for i in asset_list.item_count:
 		if asset_list.get_item_metadata(i) == id:
 			asset_list.select(i)
@@ -484,7 +485,7 @@ func rebuild(frame := false) -> void:
 		var convention := PlacementConventions.record(selected, calibration_data, bounds_data)
 		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.semantic_category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
 		var facing_text: String = " + ".join(semantic.working_faces) if not semantic.working_faces.is_empty() else semantic.front_face
-		info.text += "Meaning: %s / %s / %s · %s\nPurpose: %s · contexts: %s\nWorking faces: %s · attachment: %s\nEvidence: %s\n" % [semantic.asset_kind, semantic.structural_role, semantic.completeness, semantic.interpretation_source, semantic.architectural_purpose, ", ".join(semantic.contexts), facing_text, semantic.attachment, semantic.evidence]
+		info.text += "Meaning: %s / %s / %s · %s\nPurpose: %s · contexts: %s\nWorking faces: %s · attachment: %s\nEvidence: %s\nOrientation: %s\nClearance: %s\nAssembly: %s\n" % [semantic.asset_kind, semantic.structural_role, semantic.completeness, semantic.interpretation_source, semantic.architectural_purpose, ", ".join(semantic.contexts), facing_text, semantic.attachment, semantic.evidence, semantic.orientation_notes, semantic.clearance_notes, semantic.assembly_notes]
 		info.text += "Snap X/Z: %s · assembly pitch: %s\nTactical policy: %s · authored footprint: %s\n%s\n" % [convention.origin_snap, convention.assembly_pitch, convention.tactical_policy, convention.authored_tactical_footprint if not convention.authored_tactical_footprint.is_empty() else "none", convention.note]
 		_axes(overlays, at, 0.65)
 	else:
@@ -615,7 +616,7 @@ func _clear_semantic_annotation() -> void:
 func _copy_identification_question() -> void:
 	var interpretation := Semantics.effective(selected, semantic_data)
 	var facing_text: String = " + ".join(interpretation.working_faces) if not interpretation.working_faces.is_empty() else interpretation.front_face
-	var question := "Please help identify `%s`. Current provisional interpretation: %s / %s / %s; working faces %s; attachment %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Is it complete or a fragment, what is its intended function, which local face or pair of faces points outward, what should connect to it, and which district contexts fit it?" % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, facing_text, interpretation.attachment, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
+	var question := "Please help review `%s`. Current catalog interpretation: %s / %s / %s; working faces %s; attachment %s; unresolved fields: %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Please correct only the unresolved or inaccurate properties and describe its intended combinations." % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, facing_text, interpretation.attachment, ", ".join(interpretation.review_flags) if not interpretation.review_flags.is_empty() else "none", current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	DisplayServer.clipboard_set(question)
 	semantic_status.text = "Identification question copied for " + selected
 
@@ -665,17 +666,17 @@ func _next_unreviewed() -> void:
 			return
 	save_status.text = "No unreviewed assets match the current family/search."
 
-func _next_needs_identification() -> void:
+func _next_needs_review() -> void:
 	var all := Catalog.all_ids()
 	var start := maxi(0, all.find(selected) + 1)
 	for offset in all.size():
 		var candidate: String = all[(start + offset) % all.size()]
 		var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
 		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
-		if Semantics.needs_identification(candidate, semantic_data) and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (selected_semantic.is_empty() or Semantics.effective(candidate, semantic_data).semantic_category == selected_semantic) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
+		if Semantics.effective(candidate, semantic_data).needs_review and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (selected_semantic.is_empty() or Semantics.effective(candidate, semantic_data).semantic_category == selected_semantic) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
 			select_asset(candidate)
 			return
-	semantic_status.text = "No unidentified assets match the current filters."
+	semantic_status.text = "No unresolved semantic assets match the current filters."
 
 func _reload_calibrations() -> void:
 	calibration_data = Catalog.load_calibrations(calibration_path)

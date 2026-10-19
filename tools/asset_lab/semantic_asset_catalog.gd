@@ -12,21 +12,25 @@ const DATA_PATH := "res://tools/asset_lab/asset_semantics.json"
 const KINDS := [
 	"unknown", "complete_building", "structural_fragment", "open_structure",
 	"ground_infrastructure", "equipment", "utility_infrastructure",
-	"tactical_obstacle", "decorative_prop",
+	"tactical_obstacle", "decorative_prop", "character_reference",
 ]
 const STRUCTURAL_ROLES := [
 	"unspecified", "shell", "wall", "corner", "entrance", "window", "roof",
-	"floor", "canopy", "road", "intersection", "sidewalk", "door",
-	"machinery", "container", "sign", "light", "utility", "detail",
+	"floor", "canopy", "road", "intersection", "junction", "roundabout",
+	"driveway", "crossing", "slope", "sidewalk", "door", "stairs",
+	"platform", "railing", "barrier", "bridge_support", "corridor", "room",
+	"gate", "machinery", "conveyor", "pipe", "control", "cargo", "container",
+	"sign", "light", "marking", "utility", "character", "detail",
 ]
 const COMPLETENESS := ["unknown", "complete", "fragment", "intentionally_open", "not_applicable"]
 const FRONT_FACES := ["unknown", "+z", "-z", "+x", "-x", "axis_neutral"]
 const SECONDARY_FRONT_FACES := ["none", "+z", "-z", "+x", "-x"]
 const DIRECTIONAL_FACES := ["+z", "-z", "+x", "-x"]
 const ATTACHMENTS := ["unknown", "ground", "source_origin", "wall", "overhead", "structural_socket", "ground_surface"]
+const REVIEW_FLAGS := ["identity", "working_faces", "connections", "clearance", "assembly"]
 
 static func default_data() -> Dictionary:
-	return {"version": 2, "confirmed": {}}
+	return {"version": 3, "confirmed": {}}
 
 static func load_data(path := DATA_PATH) -> Dictionary:
 	var defaults := default_data()
@@ -38,7 +42,7 @@ static func load_data(path := DATA_PATH) -> Dictionary:
 	var data: Dictionary = parsed
 	if not data.has("confirmed") or not data.confirmed is Dictionary:
 		data.confirmed = {}
-	data.version = 2
+	data.version = 3
 	return data
 
 static func save_data(data: Dictionary, path := DATA_PATH) -> Error:
@@ -58,14 +62,19 @@ static func effective(id: String, data := {}) -> Dictionary:
 		result.merge(confirmed[id], true)
 		result["interpretation_source"] = "confirmed"
 		result["confidence"] = "confirmed"
+		result["review_flags"] = confirmed[id].get("review_flags", [])
 		result["needs_identification"] = false
 	else:
 		result["interpretation_source"] = "inferred"
-		# Even a strong filename inference remains a question until a human has
-		# confirmed its architectural meaning. Confidence helps prioritize the
-		# queue; it never silently promotes an asset to verified knowledge.
-		result["needs_identification"] = true
-	var source_faces: Array = result.get("working_faces", []) if has_confirmed_working_faces else [result.get("front_face", "unknown")]
+		result["needs_identification"] = "identity" in result.get("review_flags", [])
+	result["needs_review"] = not result.get("review_flags", []).is_empty()
+	var source_faces: Array
+	if confirmed.has(id):
+		source_faces = result.get("working_faces", []) if has_confirmed_working_faces else [result.get("front_face", "unknown")]
+	else:
+		source_faces = result.get("working_faces", [])
+		if source_faces.is_empty():
+			source_faces = [result.get("front_face", "unknown")]
 	result["working_faces"] = normalize_working_faces(source_faces)
 	if not result.working_faces.is_empty():
 		result["front_face"] = result.working_faces[0]
@@ -87,29 +96,119 @@ static func inferred(id: String) -> Dictionary:
 		"contexts": _contexts_for(semantic),
 		"connections": [],
 		"generation_ready": false,
-		"confidence": "medium",
-		"evidence": "Inferred from source pack and filename; visually verify before procedural use.",
+		"confidence": "high",
+		"evidence": "Classified from source-pack naming and rendered family comparison; procedural eligibility remains separate.",
+		"review_flags": [],
+		"orientation_notes": "Axis-neutral or not required for this role.",
+		"clearance_notes": "Use calibrated visual bounds; no additional semantic clearance established.",
+		"assembly_notes": "Standalone visual unless a module authors stricter placement behavior.",
 		"notes": "",
 	}
-	if semantic in ["industrial_buildings"]:
-		record.merge({"asset_kind": "complete_building", "structural_role": "shell", "completeness": "unknown", "confidence": "medium", "attachment": "ground"}, true)
-	elif semantic in ["bridge_structures", "catwalk_modules", "factory_structure_modules", "space_corridors", "space_rooms", "space_wall_modules"]:
-		record.merge({"asset_kind": "structural_fragment", "structural_role": _structural_role(id, semantic), "completeness": "fragment", "attachment": "structural_socket"}, true)
-	elif semantic in ["road_modules", "paving_tiles", "factory_floor_modules", "factory_platforms", "space_floor_modules"]:
-		record.merge({"asset_kind": "ground_infrastructure", "structural_role": _structural_role(id, semantic), "completeness": "fragment", "attachment": "ground_surface"}, true)
-	elif semantic in ["factory_doors", "factory_entrances", "space_gates", "space_stairs"]:
-		record.merge({"asset_kind": "structural_fragment", "structural_role": "entrance", "completeness": "fragment", "attachment": "structural_socket"}, true)
-	elif semantic in ["cargo_containers"]:
-		record.merge({"asset_kind": "tactical_obstacle", "structural_role": "container", "completeness": "complete", "front_face": "+z", "confidence": "high"}, true)
-	elif semantic in ["industrial_chimneys", "tanks_and_towers", "wind_power", "cargo_boxes"]:
-		record.merge({"asset_kind": "tactical_obstacle", "structural_role": "detail", "completeness": "complete"}, true)
-	elif semantic in ["conveyor_modules", "crane_modules", "hoppers", "factory_machines", "machine_components", "pipe_modules", "robotics", "scanners"]:
-		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "unknown", "confidence": "medium"}, true)
-	elif semantic in ["electrical_infrastructure", "street_lighting", "traffic_signals"]:
-		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "utility", "completeness": "unknown", "confidence": "medium"}, true)
-	elif semantic in ["unknown_manual_review"]:
-		record.merge({"asset_kind": "unknown", "structural_role": "unspecified", "completeness": "unknown", "attachment": "unknown", "confidence": "low", "contexts": []}, true)
+	_apply_family_traits(record, id, semantic)
 	return record
+
+static func _apply_family_traits(record: Dictionary, id: String, semantic: String) -> void:
+	var name := id.get_file()
+	if semantic == "easter_egg_character":
+		record.merge({"asset_kind": "character_reference", "structural_role": "character", "completeness": "complete", "attachment": "ground", "confidence": "medium", "contexts": ["easter_egg"], "review_flags": ["working_faces"], "evidence": "The exact Oopi filename and rendered alien form match Kenney's Oopi character; retained as a non-environment reference.", "orientation_notes": "Character-facing direction remains to be confirmed.", "clearance_notes": "Character reference only; do not derive tactical occupancy.", "assembly_notes": "Standalone easter egg, not an environment module."}, true)
+	elif semantic == "industrial_buildings":
+		record.merge({"asset_kind": "complete_building", "structural_role": "shell", "completeness": "complete", "attachment": "ground", "review_flags": ["working_faces"], "orientation_notes": "Complete sealed exterior shell; select a street face only when a parcel needs one.", "clearance_notes": "Reserve the calibrated envelope plus entrance/service access where visible.", "assembly_notes": "Use as an exterior-only monolithic building; it does not provide an accessible interior."}, true)
+	elif semantic == "cargo_containers":
+		record.merge({"asset_kind": "tactical_obstacle", "structural_role": "container", "completeness": "complete", "front_face": "+z", "working_faces": ["+z"], "orientation_notes": "Long axis Z; cargo doors face local +Z.", "clearance_notes": "Keep door-side working clearance when access matters."}, true)
+	elif semantic == "industrial_chimneys":
+		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "utility", "completeness": "complete", "front_face": "axis_neutral", "orientation_notes": "Vertical exhaust stack; rotationally neutral.", "clearance_notes": "Tall landmark envelope; reserve base access and overhead clearance."}, true)
+	elif semantic == "tanks_and_towers":
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "complete", "front_face": "axis_neutral", "orientation_notes": "Freestanding storage vessel or tower.", "clearance_notes": "Reserve full base and maintenance clearance; do not infer solidity from the AABB alone."}, true)
+	elif semantic in ["solar_equipment", "wind_power"]:
+		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "utility", "completeness": "complete", "front_face": "axis_neutral", "orientation_notes": "Freestanding power-generation equipment.", "clearance_notes": "Grouped panels and turbine blades require their complete visual envelope."}, true)
+	elif semantic == "bridge_structures":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "bridge_support", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["road_bridge_support"], "assembly_notes": "Supports the road-bridge deck; never use as a freestanding complete structure."}, true)
+	elif semantic in ["construction_safety", "waste_props"]:
+		var tactical := name in ["construction-barrier", "construction-fence", "dumpster"]
+		record.merge({"asset_kind": "tactical_obstacle" if tactical else "decorative_prop", "structural_role": "barrier" if "barrier" in name or "fence" in name else "detail", "completeness": "complete", "front_face": "axis_neutral", "clearance_notes": "Roadside safety furniture; tactical behavior requires an authored module."}, true)
+	elif semantic == "electrical_infrastructure":
+		var wires_only := name.begins_with("electricity-wires")
+		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "utility", "completeness": "fragment", "attachment": "overhead" if wires_only else "ground", "front_face": "axis_neutral", "connections": ["electricity_span"], "clearance_notes": "Maintain the authored pole/wire span and overhead clearance.", "assembly_notes": "Single, side and wide variants form one electrical distribution family."}, true)
+	elif semantic == "street_lighting":
+		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "light", "completeness": "complete", "front_face": "axis_neutral", "clearance_notes": "Place outside the vehicle and pedestrian clear path."}, true)
+	elif semantic == "road_signage":
+		var component := name.begins_with("road-sign-object-")
+		record.merge({"asset_kind": "structural_fragment" if component else "decorative_prop", "structural_role": "sign", "completeness": "fragment" if component else "complete", "attachment": "structural_socket" if component else "ground", "review_flags": [] if component else ["working_faces"], "connections": ["road_sign_mount"] if component else [], "orientation_notes": "Sign face is directional; confirm the local face before placement."}, true)
+	elif semantic == "traffic_signals":
+		var component := name.begins_with("traffic-light-object-")
+		record.merge({"asset_kind": "structural_fragment" if component else "utility_infrastructure", "structural_role": "light", "completeness": "fragment" if component else "complete", "attachment": "structural_socket" if component else "ground", "review_flags": ["working_faces"], "connections": ["traffic_signal_mount"] if component else [], "orientation_notes": "Signal lenses are directional; confirm the local traffic-facing side."}, true)
+	elif semantic == "road_barrier_modules":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "barrier", "completeness": "fragment", "attachment": "ground_surface", "front_face": "axis_neutral", "connections": ["road_edge"], "assembly_notes": "Rendered inspection confirms this is an edge/barrier overlay, not a complete road surface."}, true)
+	elif semantic == "road_modules":
+		record.merge({"asset_kind": "ground_infrastructure", "structural_role": _road_role(name), "completeness": "fragment", "attachment": "ground_surface", "front_face": "axis_neutral", "connections": _road_connections(name), "orientation_notes": "Road topology is encoded by named edges; no semantic working face.", "assembly_notes": "Join only through compatible road, sidewalk and elevation edges."}, true)
+	elif semantic == "paving_tiles":
+		record.merge({"asset_kind": "ground_infrastructure", "structural_role": "sidewalk", "completeness": "fragment", "attachment": "ground_surface", "front_face": "axis_neutral", "connections": ["paving_edge"], "assembly_notes": "Tile variants form level or sloped pedestrian surfaces."}, true)
+	elif semantic == "floor_markings":
+		record.merge({"asset_kind": "decorative_prop", "structural_role": "marking", "completeness": "complete", "attachment": "ground_surface", "front_face": "axis_neutral", "clearance_notes": "Surface marking has no independent tactical occupancy."}, true)
+	elif semantic == "cargo_boxes":
+		record.merge({"asset_kind": "tactical_obstacle", "structural_role": "cargo", "completeness": "complete", "front_face": "axis_neutral", "clearance_notes": "Freestanding cargo; tactical cover and stacking remain module-authored."}, true)
+	elif semantic == "controls_and_switches":
+		record.merge({"asset_kind": "equipment", "structural_role": "control", "completeness": "complete", "attachment": "ground", "review_flags": ["working_faces"], "clearance_notes": "Reserve an operator side when the control is interactive."}, true)
+	elif semantic == "catwalk_modules":
+		var role := "stairs" if "stairs" in name else ("corner" if "corner" in name else ("junction" if "junction" in name or "cross" in name else "platform"))
+		record.merge({"asset_kind": "structural_fragment", "structural_role": role, "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["factory_catwalk"], "clearance_notes": "Preserve walking surface and vertical clearance.", "assembly_notes": "Rotation-aware catwalk network module."}, true)
+	elif semantic == "machine_components":
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["factory_machine_mount"], "review_flags": ["connections"], "assembly_notes": "Rendered as a machine component; exact supported mounts remain to be authored."}, true)
+	elif semantic == "safety_props":
+		record.merge({"asset_kind": "decorative_prop", "structural_role": "detail", "completeness": "complete", "front_face": "axis_neutral"}, true)
+	elif semantic == "conveyor_modules":
+		record.merge({"asset_kind": "equipment", "structural_role": "conveyor", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["factory_conveyor"], "clearance_notes": "Reserve belt path and side guards; slope variants also require vertical clearance.", "assembly_notes": "Connect end, middle, corner, T and cross variants within the conveyor family."}, true)
+	elif semantic == "crane_modules":
+		var attachment_piece := name != "crane"
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "fragment" if attachment_piece else "complete", "attachment": "structural_socket" if attachment_piece else "ground", "connections": ["factory_crane_attachment"], "front_face": "axis_neutral", "clearance_notes": "Reserve the boom swing and suspended-load volume.", "assembly_notes": "Lift and magnet are crane attachments; the crane is a complete freestanding machine."}, true)
+	elif semantic in ["factory_doors", "factory_entrances"]:
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "entrance" if semantic == "factory_entrances" else "door", "completeness": "fragment", "attachment": "structural_socket", "front_face": "+z", "working_faces": ["+z"], "connections": ["factory_bay"], "orientation_notes": "Opening crosses Z and the reviewed factory facade convention faces local +Z.", "clearance_notes": "Keep the opening and door travel volume clear."}, true)
+	elif semantic == "factory_floor_modules":
+		record.merge({"asset_kind": "ground_infrastructure", "structural_role": "floor", "completeness": "fragment", "attachment": "ground_surface", "front_face": "axis_neutral", "connections": ["factory_floor_edge"]}, true)
+	elif semantic == "hoppers":
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "complete", "attachment": "ground", "front_face": "axis_neutral", "clearance_notes": "Preserve loading clearance above and discharge clearance below."}, true)
+	elif semantic == "factory_machines":
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "complete", "attachment": "ground", "front_face": "+z", "working_faces": ["+z"], "connections": ["factory_machine_port"], "review_flags": ["connections"], "orientation_notes": "Rendered variants share a local +Z operating/open face.", "clearance_notes": "Reserve the open operating side and any top pipe connection."}, true)
+	elif semantic == "pipe_modules":
+		record.merge({"asset_kind": "equipment", "structural_role": "pipe", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["factory_glass_pipe" if name.begins_with("pipe-glass-") else "factory_pipe"], "assembly_notes": "Large opaque and glass pipes are separate but dimensionally related networks."}, true)
+	elif semantic == "robotics":
+		record.merge({"asset_kind": "equipment", "structural_role": "machinery", "completeness": "complete", "attachment": "ground", "front_face": "axis_neutral", "clearance_notes": "Reserve a radial operating envelope around the articulated arm."}, true)
+	elif semantic == "scanners":
+		record.merge({"asset_kind": "open_structure", "structural_role": "gate", "completeness": "intentionally_open", "attachment": "ground", "front_face": "axis_neutral", "connections": ["factory_passage"], "clearance_notes": "Keep the scanner opening traversable; its AABB is not solid occupancy."}, true)
+	elif semantic == "screens_and_panels":
+		var hanging := "hanging" in name
+		record.merge({"asset_kind": "equipment", "structural_role": "control", "completeness": "complete", "attachment": "overhead" if hanging else "ground", "review_flags": ["working_faces"], "clearance_notes": "Reserve sight and operator clearance on the display side."}, true)
+	elif semantic == "factory_structure_modules":
+		var role := _structural_role(id, semantic)
+		var faces: Array = ["+z", "+x"] if name == "structure-corner-inner" else (["-z", "-x"] if name == "structure-corner-outer" else (["+z"] if role in ["wall", "window"] else []))
+		var flags: Array = []
+		record.merge({"asset_kind": "structural_fragment", "structural_role": role, "completeness": "fragment", "attachment": "structural_socket", "front_face": faces[0] if not faces.is_empty() else "unknown", "working_faces": faces, "connections": ["factory_bay"], "review_flags": flags, "orientation_notes": "Factory bay facade convention uses local +Z; corners may expose two equal working faces.", "assembly_notes": "Wall, window and corner pieces require a structural assembly and roof/floor coverage."}, true)
+	elif semantic == "factory_railings":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "railing", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["factory_railing"], "assembly_notes": "Rendered inspection identifies these height variants as post-and-rail modules, not walls."}, true)
+	elif semantic == "factory_platforms":
+		record.merge({"asset_kind": "ground_infrastructure", "structural_role": "platform", "completeness": "fragment", "attachment": "ground_surface", "front_face": "axis_neutral", "connections": ["factory_platform_edge"]}, true)
+	elif semantic == "safety_indicators":
+		record.merge({"asset_kind": "utility_infrastructure", "structural_role": "light", "completeness": "complete", "attachment": "ground", "front_face": "axis_neutral"}, true)
+	elif semantic == "space_utilities":
+		record.merge({"asset_kind": "decorative_prop", "structural_role": "utility", "completeness": "complete", "attachment": "ground_surface", "front_face": "axis_neutral", "clearance_notes": "Loose cable dressing; no independent tactical effect."}, true)
+	elif semantic == "space_corridors":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "corridor", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["space_corridor"], "clearance_notes": "Preserve the walkable corridor opening.", "assembly_notes": "Open-top presentation is intentional for tactical visibility; connect only on named corridor edges."}, true)
+	elif semantic == "space_gates":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "gate", "completeness": "fragment", "attachment": "structural_socket", "review_flags": ["working_faces"], "connections": ["space_corridor"], "clearance_notes": "Keep the gate opening and moving/laser volume clear."}, true)
+	elif semantic == "space_rooms":
+		record.merge({"asset_kind": "open_structure", "structural_role": "room", "completeness": "intentionally_open", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["space_corridor"], "clearance_notes": "Interior floor is intended to remain accessible.", "assembly_notes": "Complete open-top room module for tactical cutaway presentation; connection edges remain modular."}, true)
+	elif semantic == "space_stairs":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "stairs", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["space_floor", "space_vertical"], "clearance_notes": "Preserve stair run, landing and headroom."}, true)
+	elif semantic == "space_floor_modules":
+		var raised := "layer" in name
+		record.merge({"asset_kind": "structural_fragment" if raised else "ground_infrastructure", "structural_role": "platform" if raised else "floor", "completeness": "fragment", "attachment": "structural_socket" if raised else "ground_surface", "front_face": "axis_neutral", "connections": ["space_floor"], "clearance_notes": "Layer variants require vertical support and under-platform clearance."}, true)
+	elif semantic == "space_wall_modules":
+		var role := _structural_role(id, semantic)
+		record.merge({"asset_kind": "structural_fragment", "structural_role": role, "completeness": "fragment", "attachment": "structural_socket", "front_face": "+z" if role == "wall" else "axis_neutral", "working_faces": ["+z"] if role == "wall" else [], "connections": ["space_wall"], "orientation_notes": "Reviewed template-wall interior convention faces local +Z.", "assembly_notes": "Space-kit wall grammar is independent from Factory Kit bay dimensions."}, true)
+	elif semantic == "space_details":
+		record.merge({"asset_kind": "structural_fragment", "structural_role": "detail", "completeness": "fragment", "attachment": "structural_socket", "front_face": "axis_neutral", "connections": ["space_structure"]}, true)
+	else:
+		record.merge({"asset_kind": "unknown", "structural_role": "unspecified", "completeness": "unknown", "attachment": "unknown", "confidence": "low", "contexts": [], "review_flags": ["identity", "working_faces", "connections", "assembly"], "evidence": "Rendered model and filename do not establish a reliable function.", "orientation_notes": "Unknown.", "clearance_notes": "Unknown.", "assembly_notes": "Unknown."}, true)
 
 static func normalize_working_faces(values: Array) -> Array[String]:
 	var result: Array[String] = []
@@ -139,10 +238,11 @@ static func semantic_category(id: String) -> String:
 		if name.begins_with("road-sign-") or name.begins_with("sign-"): return "road_signage"
 		if name.begins_with("traffic-light"): return "traffic_signals"
 		if name.begins_with("tile-"): return "paving_tiles"
+		if name.begins_with("road-") and "barrier" in name: return "road_barrier_modules"
 		if name.begins_with("road-"): return "road_modules"
 	if id.begins_with("factory_kit/"):
-		if name == "oopi": return "unknown_manual_review"
-		if name.begins_with("arrow") or name.begins_with("warning-") or name.begins_with("indicator-special-"): return "floor_markings"
+		if name == "oopi": return "easter_egg_character"
+		if name.begins_with("arrow") or name.begins_with("indicator-special-"): return "floor_markings"
 		if name.begins_with("box-"): return "cargo_boxes"
 		if name.begins_with("button-") or name.begins_with("lever-"): return "controls_and_switches"
 		if name.begins_with("catwalk-"): return "catwalk_modules"
@@ -159,8 +259,10 @@ static func semantic_category(id: String) -> String:
 		if name.begins_with("scanner-"): return "scanners"
 		if name.begins_with("screen-"): return "screens_and_panels"
 		if name.begins_with("structure-doorway"): return "factory_entrances"
+		if name.begins_with("structure-yellow-") or name in ["structure-high", "structure-medium", "structure-short", "structure-tall"]: return "factory_railings"
 		if name.begins_with("structure-"): return "factory_structure_modules"
 		if name.begins_with("top"): return "factory_platforms"
+		if name.begins_with("warning-"): return "safety_indicators"
 	if id.begins_with("modular_space_kit/"):
 		if name == "cables": return "space_utilities"
 		if name.begins_with("corridor"): return "space_corridors"
@@ -171,6 +273,22 @@ static func semantic_category(id: String) -> String:
 		if name.begins_with("template-wall") or name.begins_with("template-corner"): return "space_wall_modules"
 		if name.begins_with("template-detail"): return "space_details"
 	return "unknown_manual_review"
+
+static func _road_role(name: String) -> String:
+	if "roundabout" in name: return "roundabout"
+	if "crossroad" in name or "intersection" in name or "split" in name: return "intersection"
+	if "driveway" in name: return "driveway"
+	if "crossing" in name: return "crossing"
+	if "slant" in name: return "slope"
+	return "road"
+
+static func _road_connections(name: String) -> Array[String]:
+	var result: Array[String] = ["road_edge"]
+	if "path" in name or "side" in name or "pavement" in name or "sidewalk" in name or "driveway" in name:
+		result.append("paving_edge")
+	if "slant" in name or "bridge" in name:
+		result.append("road_elevation")
+	return result
 
 static func broad_classification(id: String) -> String:
 	var kind: String = inferred(id).asset_kind
@@ -187,6 +305,28 @@ static func is_confirmed(id: String, data := {}) -> bool:
 
 static func needs_identification(id: String, data := {}) -> bool:
 	return bool(effective(id, data).needs_identification)
+
+static func needs_review(id: String, data := {}) -> bool:
+	return bool(effective(id, data).needs_review)
+
+static func audit(ids: Array, data := {}) -> Dictionary:
+	if data.is_empty(): data = load_data()
+	var result := {
+		"total": ids.size(), "confirmed": 0, "catalog_classified": 0,
+		"needs_review": 0, "unknown_identity": 0, "generation_ready": 0,
+		"categories": {}, "review_flags": {},
+	}
+	for value in ids:
+		var record := effective(str(value), data)
+		if record.interpretation_source == "confirmed": result.confirmed += 1
+		else: result.catalog_classified += 1
+		if record.needs_review: result.needs_review += 1
+		if record.needs_identification: result.unknown_identity += 1
+		if record.generation_ready: result.generation_ready += 1
+		result.categories[record.semantic_category] = int(result.categories.get(record.semantic_category, 0)) + 1
+		for flag in record.review_flags:
+			result.review_flags[flag] = int(result.review_flags.get(flag, 0)) + 1
+	return result
 
 static func generation_candidates(ids: Array, data := {}, required_kind := "") -> Array[String]:
 	if data.is_empty(): data = load_data()
@@ -210,17 +350,21 @@ static func _structural_role(id: String, semantic: String) -> String:
 	if "corner" in name: return "corner"
 	if "window" in name: return "window"
 	if "doorway" in name or "gate" in name: return "entrance"
+	if "stairs" in name: return "stairs"
 	if "wall" in name: return "wall"
 	if "floor" in name or semantic in ["factory_floor_modules", "space_floor_modules"]: return "floor"
-	if semantic == "road_modules": return "intersection" if name.contains("intersection") or name.contains("crossroad") else "road"
+	if semantic == "space_corridors": return "corridor"
+	if semantic == "space_rooms": return "room"
+	if semantic == "road_modules": return _road_role(name)
 	if semantic == "paving_tiles": return "sidewalk"
 	return "unspecified"
 
 static func _contexts_for(semantic: String) -> Array[String]:
+	if semantic == "easter_egg_character": return ["easter_egg"]
 	if semantic.begins_with("space_"): return ["space_facility"]
-	if semantic in ["road_modules", "paving_tiles", "road_signage", "street_lighting", "traffic_signals", "electrical_infrastructure"]: return ["industrial", "commercial", "mixed_service"]
+	if semantic in ["road_modules", "road_barrier_modules", "paving_tiles", "road_signage", "street_lighting", "traffic_signals", "electrical_infrastructure", "construction_safety", "waste_props"]: return ["industrial", "commercial", "mixed_service"]
 	if semantic in ["industrial_buildings", "industrial_chimneys", "tanks_and_towers", "wind_power", "solar_equipment", "factory_machines", "conveyor_modules", "crane_modules", "hoppers", "robotics"]: return ["industrial"]
-	if semantic in ["factory_structure_modules", "factory_entrances", "factory_floor_modules", "factory_platforms"]: return ["industrial", "mixed_service"]
+	if semantic in ["factory_structure_modules", "factory_railings", "factory_entrances", "factory_floor_modules", "factory_platforms", "scanners", "screens_and_panels"]: return ["industrial", "mixed_service"]
 	return ["industrial", "commercial", "mixed_service"]
 
 static func _purpose_for(semantic: String) -> String:
@@ -232,17 +376,24 @@ static func _purpose_for(semantic: String) -> String:
 		"solar_equipment": "power_generation",
 		"wind_power": "power_generation",
 		"road_modules": "vehicle_access",
+		"road_barrier_modules": "road_edge_safety",
 		"paving_tiles": "pedestrian_surface",
 		"road_signage": "traffic_guidance",
 		"street_lighting": "street_lighting",
 		"traffic_signals": "traffic_control",
 		"electrical_infrastructure": "power_distribution",
 		"factory_structure_modules": "industrial_structure",
+		"factory_railings": "industrial_safety_railing",
 		"factory_entrances": "building_access",
 		"factory_floor_modules": "industrial_floor",
 		"factory_platforms": "industrial_platform",
 		"factory_machines": "industrial_process",
 		"conveyor_modules": "material_handling",
 		"crane_modules": "material_handling",
+		"space_corridors": "space_facility_circulation",
+		"space_rooms": "space_facility_room",
+		"space_gates": "space_facility_access",
+		"space_stairs": "space_vertical_access",
+		"easter_egg_character": "character_reference",
 	}
 	return purposes.get(semantic, semantic)

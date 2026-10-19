@@ -8,9 +8,9 @@ Calibration and semantic interpretation are deliberately separate. The same labo
 
 Open `res://tools/asset_lab/asset_lab.tscn` in Godot and run the current scene (**F6**).
 
-- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. `✓` marks confirmed semantic metadata and `?` marks an interpretation that still needs identification.
-- The semantic-category selector groups all 315 assets by their likely role (buildings, roads, conveyors, doors, pipes, screens, and so on) using conservative pack/name rules. It makes no scale or gameplay claim. `factory_kit/oopi` remains explicitly marked for manual classification because its name provides no reliable evidence.
-- The interpretation selector filters confirmed, inferred, and identification-needed assets. **Next asset needing identification** advances inside the active family, category, and search batch.
+- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. `✓` marks confirmed metadata, `?` an unknown identity, `!` a known identity with scoped review flags, and `·` a catalog classification with no flagged fields.
+- The semantic-category selector groups all 315 assets by their likely role (buildings, roads, conveyors, doors, pipes, screens, and so on) using pack naming, geometry, and rendered family evidence. It makes no scale or gameplay claim. `factory_kit/oopi` is retained as a non-environment character reference, with only its local facing still flagged for review.
+- The interpretation selector filters confirmed, catalog-classified, unresolved, and identity-unknown assets. **Next unresolved semantic asset** advances inside the active family, category, and search batch.
 - The review selector shows all, reviewed, or unreviewed assets. **Next unreviewed asset** advances within the active family, semantic category, and search.
 - Right-drag orbits, middle-drag pans, and the mouse wheel zooms. **F** frames the model; **1**, **3**, and **7** select front, side, and top views. **Q/E** rotate an individual asset by 90 degrees. The same actions are available as visible buttons.
 - Uniform scale never stretches one axis independently. Yaw rotates around Godot's up axis.

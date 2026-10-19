@@ -47,6 +47,13 @@ func run() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	assert(root.get_texture().get_image().save_png(args[0].path_join("factory-corner-two-working-faces.png")) == OK)
+	lab.select_asset("factory_kit/structure-corner-outer")
+	lab._select_option_value(lab.semantic_front, "-z")
+	lab._select_option_value(lab.semantic_secondary_front, "-x")
+	lab.rebuild(true)
+	await process_frame
+	await RenderingServer.frame_post_draw
+	assert(root.get_texture().get_image().save_png(args[0].path_join("factory-outer-corner-two-working-faces.png")) == OK)
 	print("MIRA ready bounds: ", lab.Placement.mesh_bounds(lab.comparison))
-	print("Asset lab captured %d views" % (6 + inspected.size()))
+	print("Asset lab captured %d views" % (7 + inspected.size()))
 	quit()

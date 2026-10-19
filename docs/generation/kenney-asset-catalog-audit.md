@@ -2,11 +2,13 @@
 
 This Goal 2.1 audit evaluates the current catalog for visual calibration and future modular battlefield authoring. It changes no calibration values, review states, vendor GLBs or tactical geometry.
 
+The later catalog-wide semantic pass is documented in `semantic-asset-identification-report.md`. This file retains the calibration and dimensional audit; semantic status below reflects the newer classification where relevant.
+
 ## Confirmed inventory and calibration mechanism
 
 The repository contains 315 tracked GLBs: 37 City Kit Industrial, 95 City Kit Roads, 143 Factory Kit and 40 Modular Space Kit. Godot successfully measured all 315 imported mesh hierarchies during this audit. The resulting analysis was temporary; the checked-in `native_bounds.json` intentionally remains the 14-asset curated baseline.
 
-Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. Resolution is `asset override > category preset > general fallback`. The current file has no per-asset overrides and no reviewed assets. The laboratory can save/reset overrides, edit presets, filter review state, move to the next unreviewed asset and report the active source. Curated `PROFILES` provide verified anchor/orientation notes for 14 representatives; every other asset explicitly remains visually unverified.
+Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. Resolution is `asset override > category preset > general fallback`. The current file records 13 per-asset overrides and all 315 assets as calibration-reviewed. The laboratory can save/reset overrides, edit presets, filter review state, move to the next unreviewed asset and report the active source. Curated `PROFILES` provide detailed anchor/orientation notes for representative assets; semantic review remains independent of calibration review.
 
 ## Current semantic grouping
 
@@ -23,11 +25,11 @@ Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. 
 | Electricity infrastructure | 8 | High | Poles, side pieces and wire spans; several are connection components rather than standalone poles. |
 | Road lights | 6 | High | Curved/square single, double and cross variants. |
 | Construction furniture | 5 | High | One fence, one dumpster and three barrier/cone/light pieces. |
-| Factory structural modules | subset of 143 | High by name | `structure-*`, doors, platforms, railings and stairs can form authored assemblies, but the catalog currently leaves all Factory pieces unclassified. |
-| Factory machinery / interior props | subset of 143 | Medium | Conveyors, cranes, robot arms, machines, pipes, boxes and controls are name-supported; working clearance and connectors require inspection. |
-| Space structural modules | subset of 40 | High by name | Floors, walls, rooms, gates, corridors and stairs form a coherent 4-unit grammar, but all remain catalog-unclassified. |
+| Factory structural modules | subset of 143 | High by name and render | Walls, entrances, corners, railings, platforms and catwalks are distinct semantic families; exact tactical modules remain separately authored. |
+| Factory machinery / interior props | subset of 143 | High identity, mixed connector confidence | Conveyors, cranes, robot arms, machines, pipes, boxes and controls are classified; machine-port questions remain flagged. |
+| Space structural modules | subset of 40 | High by name and render | Floors, walls, open-top rooms, gates, corridors and stairs form a separate coherent 4-unit grammar. |
 
-Ambiguous Factory details and controls should remain unclassified until their intended combination and working face are inspected. Classification should not imply tactical occupancy.
+`factory_kit/oopi` is identified as Kenney's Oopi alien character reference and excluded from environment use. Directional controls, displays, gates and several roadside objects retain explicit working-face review flags. Classification does not imply tactical occupancy.
 
 ## Provisional developer observations
 
@@ -45,7 +47,7 @@ These are visual preferences observed beside the approximately 1.60–1.64 m MIR
 | Construction fences | 5.0 |
 | Dumpsters | 5.0 |
 
-The current catalog also assigns 9.0 to roads/paving, signs/signals and the two industrial windmills; 5.0 to three other construction props; and the 1.0 fallback to all Factory and Space assets. These existing choices were measured, not changed.
+The current catalog also assigns 9.0 to roads/paving, signs/signals and the two industrial windmills; 5.0 to three other construction props; and category scale 2.0 to Factory and Space assets. These existing choices were measured, not changed by the semantic pass.
 
 ## Measured scale flags
 
@@ -60,7 +62,7 @@ Dimensions below are hierarchy AABBs after the currently resolved calibration. T
 - **Human-scale references:** the scale-5 construction fence is about 0.89 high and the dumpster 1.05 high. Scale-9 road lights are 5.40–6.07 high. Shipping containers resolve to roughly 3.35 × 3.13 × 7.40. These are useful rendered comparison targets because their relation to a MIRA is visually familiar.
 - **Cross-pack mismatch:** Factory doors are about 1.60 high and Factory structure bays 3.00 high at native scale, while Space walls/corridors are 4.05–4.70 high. Both packs are internally coherent, but they should not share seams or floor heights automatically.
 
-No rendered inspection was performed for all 315 assets during this audit. The flags above come from measured imported geometry plus filenames and existing developer observations.
+The later semantic pass rendered all 315 assets in 17 family contact sheets. Those normalized thumbnails establish identity and family relationships, while model-local facing and exact seam compatibility still require individual inspection where flagged.
 
 ## Prioritized manual inspection shortlist
 

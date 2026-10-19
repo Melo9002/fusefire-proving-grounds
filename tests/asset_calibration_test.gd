@@ -40,7 +40,7 @@ func run() -> void:
 		check(Catalog.inferred_classification(id) in ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"], id + " has a broad classification")
 		if Catalog.semantic_category(id) == "unknown_manual_review":
 			unknown_semantics.append(id)
-	check(unknown_semantics == ["factory_kit/oopi"], "Only the ambiguous OOPI asset remains explicitly unclassified")
+	check(unknown_semantics.is_empty(), "Every catalog asset has a supported semantic category")
 	var resolved_sources := {"default": 0, "category": 0, "asset override": 0}
 	for id in Catalog.all_ids():
 		var expected := Catalog.scale_for(id, catalog_data)
