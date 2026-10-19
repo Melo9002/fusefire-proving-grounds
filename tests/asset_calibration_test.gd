@@ -141,8 +141,23 @@ func run() -> void:
 	lab._save_fallback()
 	check(is_equal_approx(lab.factor.value, 2.0), "Factory category remains higher priority than edited fallback")
 	lab.select_asset("city_kit_industrial/building-a")
-	lab.factor.value = 7.25
+	check(is_instance_valid(lab.facing_compass_toggle) and lab.facing_compass_toggle.button_pressed, "Facing compass is visible by default")
+	for option_index in lab.semantic_front.item_count:
+		if str(lab.semantic_front.get_item_metadata(option_index)) == "+z":
+			lab.semantic_front.select(option_index)
+			break
+	lab.rebuild()
+	var compass: Node = lab.overlays.get_node_or_null("FacingCompass")
+	check(is_instance_valid(compass), "Facing compass is rendered for individual assets")
+	check(str(compass.get_meta("working_face", "")) == "+z", "Compass reads the selected semantic working face")
+	var working_label: Label3D = compass.get_node_or_null("AxisPlusZ") as Label3D
+	check(is_instance_valid(working_label) and working_label.text == "WORKING +Z", "Compass labels the working direction explicitly")
+	var direction_before: Vector3 = compass.get_meta("working_direction", Vector3.ZERO)
 	lab.angle.value = 90
+	compass = lab.overlays.get_node_or_null("FacingCompass")
+	var direction_after: Vector3 = compass.get_meta("working_direction", Vector3.ZERO)
+	check(direction_after.is_equal_approx(Vector3.BACK.rotated(Vector3.UP, PI / 2.0)) and not direction_after.is_equal_approx(direction_before), "Compass follows calibration yaw")
+	lab.factor.value = 7.25
 	lab.x_offset.value = 0.5
 	lab.classification.select(1)
 	lab.footprint_x.value = 8

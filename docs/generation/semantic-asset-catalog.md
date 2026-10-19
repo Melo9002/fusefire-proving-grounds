@@ -42,6 +42,8 @@ Select an asset and inspect it from several angles beside the 1.64 m MIRA. The s
 - Notes explaining purpose, accessibility, intended combinations or uncertainty.
 - Explicit approval for procedural visual selection.
 
+The optional **Model-local facing compass** appears above the selected asset. Red arrows label local `+X` and `-X`, blue arrows label local `+Z` and `-Z`, and the current **Street / working face** is highlighted in gold. The compass includes the asset's current calibration yaw, so change the working-face dropdown until the gold arrow points out of the storefront, entrance, sign face, machine work side, or other intended frontage. Orbit around the model to confirm it from more than one angle. Use **Axis Neutral** for objects without a meaningful front and **Unknown** when visual inspection is inconclusive.
+
 Choose **Save confirmed meaning** only when the interpretation is supported by visual inspection or known pack conventions. **Use inference** removes the confirmed override and returns the asset to the identification queue. Calibration saving remains separate.
 
 **Copy identification question** copies the stable asset ID, current inference, measured dimensions and a compact set of architectural questions. Paste it into a development conversation when a model needs collaborative interpretation; the resulting decision can then be saved as confirmed metadata.

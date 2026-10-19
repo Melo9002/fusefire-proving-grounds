@@ -31,6 +31,7 @@ var z_offset: SpinBox
 var pitch: SpinBox
 var duplicate_piece: CheckBox
 var bounds_toggle: CheckBox
+var facing_compass_toggle: CheckBox
 var mira_toggle: CheckBox
 var ids: Array[String] = []
 var selected := "factory_kit/structure-doorway-wide"
@@ -152,6 +153,8 @@ func _ready() -> void:
 	pitch = _number(panel, "Neighbor pitch X", 0.1, 20, 0.1, 1)
 	duplicate_piece = _check(panel, "Neighbor / seam comparison", false)
 	bounds_toggle = _check(panel, "Bounds + pivot axes + anchor", true)
+	facing_compass_toggle = _check(panel, "Model-local facing compass", true)
+	facing_compass_toggle.tooltip_text = "Shows local +/-X and +/-Z after the saved yaw. The selected street / working face is gold."
 	mira_toggle = _check(panel, "MIRA reference (runtime visual)", true)
 	var camera_help := Label.new()
 	camera_help.text = "VIEW  RMB orbit · MMB pan · wheel zoom · F frame\n1 front · 3 side · 7 top · Q/E rotate asset"
@@ -223,6 +226,7 @@ func _ready() -> void:
 	semantic_role = _semantic_option(panel, "Structural role", Semantics.STRUCTURAL_ROLES)
 	semantic_completeness = _semantic_option(panel, "Completeness", Semantics.COMPLETENESS)
 	semantic_front = _semantic_option(panel, "Street / working face", Semantics.FRONT_FACES)
+	semantic_front.item_selected.connect(func(_index): rebuild())
 	semantic_attachment = _semantic_option(panel, "Attachment", Semantics.ATTACHMENTS)
 	semantic_contexts = LineEdit.new()
 	semantic_contexts.placeholder_text = "Contexts: industrial, commercial, mixed_service"
@@ -359,7 +363,9 @@ func _semantic_option(panel: VBoxContainer, label: String, values: Array) -> Opt
 	row.add_child(text)
 	var option := OptionButton.new()
 	for value in values:
-		option.add_item(str(value).replace("_", " ").capitalize())
+		var raw := str(value)
+		var display := raw.to_upper() if raw in ["+x", "-x", "+z", "-z"] else raw.replace("_", " ").capitalize()
+		option.add_item(display)
 		option.set_item_metadata(option.item_count - 1, value)
 	row.add_child(option)
 	return option
@@ -479,6 +485,8 @@ func rebuild(frame := false) -> void:
 		info.text = "Assembly %d — family calibration policy, authored origins.\nBounds are visual envelopes, not solids.\nIndividual controls apply only in asset mode.\n" % mode.selected
 	current_bounds = Placement.mesh_bounds(content)
 	display_bounds = current_bounds
+	if mode.selected == 0 and facing_compass_toggle.button_pressed:
+		_facing_compass(overlays, current_bounds, deg_to_rad(angle.value), str(semantic_front.get_item_metadata(semantic_front.selected)))
 	if mode.selected == 0:
 		dimensions_label.text = "MEASURED\nNative: %.3f × %.3f × %.3f\nCalibrated: %.3f × %.3f × %.3f\nSuggested footprint is planning metadata; it does not change MapData." % [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	else:
@@ -498,7 +506,7 @@ func rebuild(frame := false) -> void:
 		comparison.scale = Vector3.ONE * (MIRA_REFERENCE_HEIGHT / MIRA_RUNTIME_HEIGHT)
 		content.add_child(comparison)
 		display_bounds = display_bounds.merge(Placement.mesh_bounds(comparison))
-	info.text += "\nGrid = 1 world unit. Lab MIRA reference = %.2f m. Red +X / green +Y / blue +Z.\nRMB orbit · MMB pan · wheel zoom · F frame.\n* = additional orientation/anchor metadata; use the review filter for calibration progress.\nCopy exports the individual asset settings only." % MIRA_REFERENCE_HEIGHT
+	info.text += "\nGrid = 1 world unit. Lab MIRA reference = %.2f m. Red X / blue Z; gold = selected working face.\nThe compass uses model-local axes after yaw. RMB orbit · MMB pan · wheel zoom · F frame.\n* = additional orientation/anchor metadata; use the review filter for calibration progress.\nCopy exports the individual asset settings only." % MIRA_REFERENCE_HEIGHT
 	if frame:
 		_frame_camera()
 	orbit.apply()
@@ -753,6 +761,58 @@ static func _axes(parent: Node3D, at: Vector3, length: float) -> void:
 	_lines(parent, [at, at + Vector3.RIGHT * length], Color.RED)
 	_lines(parent, [at, at + Vector3.UP * length], Color.GREEN)
 	_lines(parent, [at, at + Vector3.BACK * length], Color.DODGER_BLUE)
+
+static func _facing_compass(parent: Node3D, box: AABB, yaw_radians: float, working_face: String) -> void:
+	var compass := Node3D.new()
+	compass.name = "FacingCompass"
+	compass.set_meta("working_face", working_face)
+	parent.add_child(compass)
+	var origin := Vector3(box.get_center().x, box.end.y + maxf(0.55, box.size.y * 0.06), box.get_center().z)
+	var length := clampf(maxf(box.size.x, box.size.z) * 0.32, 1.25, 10.0)
+	var local_directions := {
+		"+x": Vector3.RIGHT,
+		"-x": Vector3.LEFT,
+		"+z": Vector3.BACK,
+		"-z": Vector3.FORWARD,
+	}
+	if working_face in local_directions:
+		compass.set_meta("working_direction", local_directions[working_face].rotated(Vector3.UP, yaw_radians))
+	for axis in ["+x", "-x", "+z", "-z"]:
+		var direction: Vector3 = local_directions[axis].rotated(Vector3.UP, yaw_radians)
+		var tip := origin + direction * length
+		var side := Vector3(-direction.z, 0.0, direction.x)
+		var head := minf(0.45, length * 0.24)
+		var selected_axis: bool = axis == working_face
+		var color: Color = Color("ffd166") if selected_axis else (Color("ff5c5c") if axis.ends_with("x") else Color("4da6ff"))
+		_lines(compass, PackedVector3Array([
+			origin, tip,
+			tip, tip - direction * head + side * head * 0.55,
+			tip, tip - direction * head - side * head * 0.55,
+		]), color)
+		var label := Label3D.new()
+		label.name = "Axis%s" % axis.to_upper().replace("+", "Plus").replace("-", "Minus")
+		label.text = ("WORKING " if selected_axis else "") + axis.to_upper()
+		label.position = tip + direction * 0.2 + Vector3.UP * 0.08
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.no_depth_test = true
+		label.font_size = 34
+		label.pixel_size = clampf(length / 500.0, 0.006, 0.02)
+		label.outline_size = 8
+		label.modulate = color
+		label.set_meta("facing_axis", axis)
+		compass.add_child(label)
+	if working_face not in local_directions:
+		var status := Label3D.new()
+		status.name = "FacingStatus"
+		status.text = "WORKING FACE: %s" % ("AXIS NEUTRAL" if working_face == "axis_neutral" else "NOT SET")
+		status.position = origin + Vector3.UP * 0.2
+		status.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		status.no_depth_test = true
+		status.font_size = 30
+		status.pixel_size = clampf(length / 500.0, 0.006, 0.02)
+		status.outline_size = 8
+		status.modulate = Color("ffd166")
+		compass.add_child(status)
 
 static func _bounds(parent: Node3D, box: AABB) -> void:
 	var points := PackedVector3Array()
