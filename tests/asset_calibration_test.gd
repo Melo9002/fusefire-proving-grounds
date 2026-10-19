@@ -53,14 +53,18 @@ func run() -> void:
 	check(resolved_sources.default == 0, "Every catalog asset is covered by a saved category or asset calibration")
 	check(resolved_sources["asset override"] == catalog_data.asset_overrides.size(), "Every saved asset override resolves with highest priority")
 	check(resolved_sources.category + resolved_sources["asset override"] == Catalog.all_ids().size(), "Saved calibration coverage includes all catalog assets")
-	check(is_equal_approx(Catalog.scale_for("factory_kit/machine", catalog_data), 2.0), "Factory Kit inherits the saved scale-two baseline")
-	check(is_equal_approx(Catalog.scale_for("modular_space_kit/template-floor", catalog_data), 2.0), "Space Kit inherits the saved scale-two baseline")
+	check(is_equal_approx(Catalog.scale_for("factory_kit/machine", catalog_data), 1.5), "Factory Kit inherits the human-reviewed 1.5 baseline")
+	check(is_equal_approx(Catalog.scale_for("modular_space_kit/template-floor", catalog_data), 1.0), "Space Kit inherits the human-reviewed scale-one baseline")
+	check(is_equal_approx(Catalog.scale_for("city_kit_roads/road-straight", catalog_data), 5.0), "Road surfaces inherit the reviewed scale-five baseline")
+	check(is_equal_approx(Catalog.scale_for("city_kit_roads/light-curved", catalog_data), 5.0), "Road lights inherit the reviewed scale-five baseline")
+	check(is_equal_approx(Catalog.scale_for("modular_space_kit/stairs-wide", catalog_data), 0.5), "Double-size Space stairs retain their individual half-scale correction")
+	check(catalog_data.asset_overrides.size() == 15 and catalog_data.reviewed.size() == 315, "All reviewed calibration choices and individual exceptions load")
 	var priority_data := Catalog.default_data()
 	priority_data.fallback.scale = 2.0
 	priority_data.category_presets.buildings.scale = 3.0
 	priority_data.asset_overrides["city_kit_industrial/building-a"] = {"scale": 4.0}
 	check(Catalog.profile("future_pack/uncategorized", priority_data).scale == 2.0, "General fallback resolves for uncategorized assets")
-	check(Catalog.profile("factory_kit/oopi", priority_data).scale == 2.0, "Factory category preset overrides the general fallback")
+	check(Catalog.profile("factory_kit/oopi", priority_data).scale == 1.5, "Factory category preset overrides the general fallback")
 	check(Catalog.profile("city_kit_industrial/building-b", priority_data).scale == 3.0, "Category preset overrides fallback")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).scale == 4.0, "Asset override wins resolution")
 	check(Catalog.profile("city_kit_industrial/building-a", priority_data).calibration_source == "asset override", "Resolution source reported")
@@ -79,9 +83,10 @@ func run() -> void:
 		check(convention.tactical_policy in ["none_decorative", "authored_component", "author_before_gameplay", "module_definition_required"], id + " reports a known tactical-authoring policy")
 	check(PlacementConventions.record("city_kit_industrial/shipping-container-a", catalog_data, records).authored_tactical_footprint == [2, 5], "Calibrated container keeps an authored obstacle footprint separate from its visual envelope")
 	check(PlacementConventions.record("city_kit_roads/construction-barrier", catalog_data, records).authored_tactical_footprint == [1, 1], "Low barrier has a one-cell authored module footprint")
-	check(PlacementConventions.record("factory_kit/structure-wall", catalog_data, records).assembly_pitch == [2.0, 2.0], "Factory structures expose the two-unit planning pitch")
-	check(PlacementConventions.record("factory_kit/structure-doorway-wide", catalog_data, records).authored_tactical_footprint == [4, 1], "Scale-two doorway reports its authored four-cell footprint")
-	check(PlacementConventions.record("modular_space_kit/template-floor", catalog_data, records).assembly_pitch == [8.0, 8.0], "Space Kit remains a separate eight-unit planning family")
+	check(PlacementConventions.record("city_kit_roads/road-straight", catalog_data, records).assembly_pitch == [5.0, 5.0], "Road inspection uses the calibrated five-unit base pitch")
+	check(PlacementConventions.record("factory_kit/structure-wall", catalog_data, records).assembly_pitch == [1.5, 1.5], "Factory inspection uses the calibrated 1.5-unit family pitch")
+	check(PlacementConventions.record("factory_kit/structure-doorway-wide", catalog_data, records).authored_tactical_footprint == [4, 1], "Doorway keeps its authored tactical footprint independent from visual scale")
+	check(PlacementConventions.record("modular_space_kit/template-floor", catalog_data, records).assembly_pitch == [4.0, 4.0], "Space Kit inspection uses its calibrated four-unit family pitch")
 	for id in Catalog.PROFILES:
 		check(Catalog.PROFILES[id].has("anchor") and Catalog.PROFILES[id].has("category") and Catalog.PROFILES[id].has("orientation") and Catalog.PROFILES[id].has("note"), id + " metadata preserved")
 		check(not str(Catalog.PROFILES[id].orientation).is_empty(), id + " orientation is documented")
@@ -110,7 +115,7 @@ func run() -> void:
 	root.add_child(lab)
 	await process_frame
 	check(lab.asset_list.item_count == 315, "Empty search shows every asset")
-	check(lab.comparison.scale.is_equal_approx(Vector3.ONE * (1.64 / 1.60)), "Laboratory MIRA reference is normalized from 1.60 m to 1.64 m")
+	check(lab.comparison.scale.is_equal_approx(Vector3.ONE), "Laboratory MIRA reference preserves the intended 1.60 m runtime height")
 	lab.family_filter.select(1)
 	lab._filter("")
 	check(lab.asset_list.item_count == 37, "Industrial family filter")
@@ -128,18 +133,18 @@ func run() -> void:
 	lab._filter("structure-doorway-wide")
 	check(lab.asset_list.item_count == 1, "Browser filter")
 	lab.select_asset("city_kit_industrial/chimney-large")
-	check(is_equal_approx(lab.factor.value, 9.0), "Industrial selection initializes at scale 9")
+	check(is_equal_approx(lab.factor.value, 5.0), "Industrial chimney selection initializes at the reviewed family scale 5")
 	lab.factor.value = 3.25
 	lab.reset_button.pressed.emit()
-	check(is_equal_approx(lab.factor.value, 9.0), "Catalog reset restores family scale 9")
-	check(is_equal_approx(float(lab.calibration_record().scale), 9.0), "Calibration JSON exports family scale 9")
+	check(is_equal_approx(lab.factor.value, 5.0), "Catalog reset restores the reviewed chimney family scale 5")
+	check(is_equal_approx(float(lab.calibration_record().scale), 5.0), "Calibration JSON exports the reviewed chimney family scale 5")
 	lab.select_asset("city_kit_roads/construction-fence")
 	check(is_equal_approx(lab.factor.value, 5.0), "Street furniture initializes at scale 5")
 	lab.select_asset("factory_kit/oopi")
-	check(is_equal_approx(lab.factor.value, 2.0), "Factory selection initializes at the scale-two category baseline")
+	check(is_equal_approx(lab.factor.value, 1.5), "Factory selection initializes at the 1.5 category baseline")
 	lab.fallback_scale.value = 1.25
 	lab._save_fallback()
-	check(is_equal_approx(lab.factor.value, 2.0), "Factory category remains higher priority than edited fallback")
+	check(is_equal_approx(lab.factor.value, 1.5), "Factory category remains higher priority than edited fallback")
 	lab.select_asset("city_kit_industrial/building-a")
 	check(is_instance_valid(lab.facing_compass_toggle) and lab.facing_compass_toggle.button_pressed, "Facing compass is visible by default")
 	for option_index in lab.semantic_front.item_count:
@@ -211,7 +216,7 @@ func run() -> void:
 	lab._reload_calibrations()
 	check(is_equal_approx(lab.factor.value, 7.25), "Reload restores saved override")
 	lab._clear_override()
-	check(is_equal_approx(lab.factor.value, 9.0), "Reset removes override and restores category preset")
+	check(is_equal_approx(lab.factor.value, 10.0), "Reset removes override and restores the reviewed building category preset")
 	lab.select_asset("city_kit_roads/dumpster")
 	lab.category_scale.value = 6.0
 	lab._save_category_preset()
@@ -219,9 +224,9 @@ func run() -> void:
 	lab.fallback_scale.value = 1.0
 	lab._save_fallback()
 	lab.select_asset("factory_kit/machine")
-	check(is_equal_approx(lab.factor.value, 2.0), "Curated Factory selection inherits the scale-two category preset")
+	check(is_equal_approx(lab.factor.value, 1.5), "Curated Factory selection inherits the 1.5 category preset")
 	lab.angle.value = 90
-	check(absf(lab.current_bounds.size.x - 3.0) < 0.001, "UI rotation updates dimensions at the inherited scale")
+	check(absf(lab.current_bounds.size.x - 2.25) < 0.001, "UI rotation updates dimensions at the inherited scale")
 	lab.x_offset.value = 2.5
 	check(absf(lab.current_bounds.get_center().x - 2.5) < 0.001, "UI anchor snap")
 	lab.duplicate_piece.button_pressed = true

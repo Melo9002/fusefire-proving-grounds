@@ -31,7 +31,7 @@ The left browser now shows:
 - **Interpretation state** and semantic-category filters for catalog-classified, confirmed, unresolved and unidentified batches.
 - **Next unresolved semantic asset** to advance within the active pack, category and text filters.
 
-Select an asset and inspect it from several angles beside the 1.64 m MIRA. The semantic editor records:
+Select an asset and inspect it from several angles beside the 1.60 m MIRA. The semantic editor records:
 
 - A human-readable identity, category and architectural purpose.
 - Object kind and structural role.

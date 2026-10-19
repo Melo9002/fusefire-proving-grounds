@@ -5,7 +5,7 @@ const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
 const PlacementConventions = preload("res://tools/asset_lab/asset_placement_conventions.gd")
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
-const MIRA_REFERENCE_HEIGHT := 1.64
+const MIRA_REFERENCE_HEIGHT := 1.60
 const MIRA_RUNTIME_HEIGHT := 1.60
 @export_file("*.json") var calibration_path := Catalog.DATA_PATH
 @export_file("*.json") var semantic_path := Semantics.DATA_PATH
@@ -523,13 +523,29 @@ func rebuild(frame := false) -> void:
 func _build_assembly(index: int) -> void:
 	match index:
 		1:
-			for x in [-9, 0, 9]:
-				Catalog.place(content, "city_kit_roads/road-side", Vector3(x, -0.18, 0), 0, calibration_data)
-				Catalog.place(content, "city_kit_roads/tile-low", Vector3(x, 0, -11.79), 0, calibration_data)
+			var previous_road: TacticalVisualOccluder
+			for _index in 3:
+				var road := _assembly_piece("city_kit_roads/road-side")
+				if previous_road:
+					_align_min_x(road, _assembly_bounds(previous_road).end.x)
+				var road_bounds := _assembly_bounds(road)
+				var paving := _assembly_piece("city_kit_roads/tile-low")
+				_center_x(paving, road_bounds.get_center().x)
+				_align_max_z(paving, road_bounds.position.z)
+				previous_road = road
 		2:
-			Catalog.place(content, "factory_kit/structure-doorway-wide", Vector3.ZERO, 0, calibration_data)
-			for x in [-5, -3, 3, 5]:
-				Catalog.place(content, "factory_kit/structure-wall", Vector3(x, 0, 0), 0, calibration_data)
+			var door := _assembly_piece("factory_kit/structure-doorway-wide")
+			var left_far := _assembly_piece("factory_kit/structure-wall")
+			var left_near := _assembly_piece("factory_kit/structure-wall")
+			var right_near := _assembly_piece("factory_kit/structure-wall")
+			var right_far := _assembly_piece("factory_kit/structure-wall")
+			var door_bounds := _assembly_bounds(door)
+			_align_max_x(left_near, door_bounds.position.x)
+			_align_max_x(left_far, _assembly_bounds(left_near).position.x)
+			_align_min_x(right_near, door_bounds.end.x)
+			_align_min_x(right_far, _assembly_bounds(right_near).end.x)
+			for piece in [left_far, left_near, right_near, right_far]:
+				_center_z(piece, door_bounds.get_center().z)
 		3:
 			Catalog.place(content, "city_kit_industrial/shipping-container-a", Vector3(-6, 0, -2), PI / 2, calibration_data)
 			Catalog.place(content, "factory_kit/crane", Vector3(4, 0, -1), 0, calibration_data)
@@ -538,9 +554,40 @@ func _build_assembly(index: int) -> void:
 				_box(content, Vector3(2, 0.4, 1), Vector3(x, 0.2, 4), Color("555e68"))
 				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4), 0, calibration_data)
 		4:
-			for x in [-4, 4]:
-				Catalog.place(content, "modular_space_kit/template-floor", Vector3(x, 0, 0), 0, calibration_data)
-				Catalog.place(content, "modular_space_kit/template-wall", Vector3(x, 0, -4), 0, calibration_data)
+			var previous_floor: TacticalVisualOccluder
+			for _index in 2:
+				var floor_piece := _assembly_piece("modular_space_kit/template-floor")
+				if previous_floor:
+					_align_min_x(floor_piece, _assembly_bounds(previous_floor).end.x)
+				var floor_bounds := _assembly_bounds(floor_piece)
+				var wall := _assembly_piece("modular_space_kit/template-wall")
+				_center_x(wall, floor_bounds.get_center().x)
+				_align_min_z(wall, floor_bounds.position.z)
+				previous_floor = floor_piece
+
+func _assembly_piece(id: String) -> TacticalVisualOccluder:
+	return Catalog.place(content, id, Vector3.ZERO, 0, calibration_data) as TacticalVisualOccluder
+
+func _assembly_bounds(piece: TacticalVisualOccluder) -> AABB:
+	return piece.transform * piece.occlusion_bounds
+
+func _align_min_x(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.x += target - _assembly_bounds(piece).position.x
+
+func _align_max_x(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.x += target - _assembly_bounds(piece).end.x
+
+func _align_min_z(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.z += target - _assembly_bounds(piece).position.z
+
+func _align_max_z(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.z += target - _assembly_bounds(piece).end.z
+
+func _center_x(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.x += target - _assembly_bounds(piece).get_center().x
+
+func _center_z(piece: TacticalVisualOccluder, target: float) -> void:
+	piece.position.z += target - _assembly_bounds(piece).get_center().z
 
 func _override_record() -> Dictionary:
 	return {
@@ -616,7 +663,7 @@ func _clear_semantic_annotation() -> void:
 func _copy_identification_question() -> void:
 	var interpretation := Semantics.effective(selected, semantic_data)
 	var facing_text: String = " + ".join(interpretation.working_faces) if not interpretation.working_faces.is_empty() else interpretation.front_face
-	var question := "Please help review `%s`. Current catalog interpretation: %s / %s / %s; working faces %s; attachment %s; unresolved fields: %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Please correct only the unresolved or inaccurate properties and describe its intended combinations." % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, facing_text, interpretation.attachment, ", ".join(interpretation.review_flags) if not interpretation.review_flags.is_empty() else "none", current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
+	var question := "Please help review `%s`. Current catalog interpretation: %s / %s / %s; working faces %s; attachment %s; unresolved fields: %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.60 m MIRA. Please correct only the unresolved or inaccurate properties and describe its intended combinations." % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, facing_text, interpretation.attachment, ", ".join(interpretation.review_flags) if not interpretation.review_flags.is_empty() else "none", current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	DisplayServer.clipboard_set(question)
 	semantic_status.text = "Identification question copied for " + selected
 

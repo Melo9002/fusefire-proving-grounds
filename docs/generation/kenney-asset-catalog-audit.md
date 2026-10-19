@@ -6,9 +6,9 @@ The later catalog-wide semantic pass is documented in `semantic-asset-identifica
 
 ## Confirmed inventory and calibration mechanism
 
-The repository contains 315 tracked GLBs: 37 City Kit Industrial, 95 City Kit Roads, 143 Factory Kit and 40 Modular Space Kit. Godot successfully measured all 315 imported mesh hierarchies during this audit. The resulting analysis was temporary; the checked-in `native_bounds.json` intentionally remains the 14-asset curated baseline.
+The repository contains 315 tracked GLBs: 37 City Kit Industrial, 95 City Kit Roads, 143 Factory Kit and 40 Modular Space Kit. Godot successfully measured all 315 imported mesh hierarchies, and `native_bounds.json` retains that catalog-wide measurement baseline.
 
-Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. Resolution is `asset override > category preset > general fallback`. The current file records 13 per-asset overrides and all 315 assets as calibration-reviewed. The laboratory can save/reset overrides, edit presets, filter review state, move to the next unreviewed asset and report the active source. Curated `PROFILES` provide detailed anchor/orientation notes for representative assets; semantic review remains independent of calibration review.
+Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. Resolution is `asset override > category preset > general fallback`. The current file records 15 per-asset overrides and all 315 assets as calibration-reviewed. The laboratory can save/reset overrides, edit presets, filter review state, move to the next unreviewed asset and report the active source. Curated `PROFILES` provide detailed anchor/orientation notes for representative assets; semantic review remains independent of calibration review.
 
 ## Current semantic grouping
 
@@ -33,7 +33,7 @@ Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. 
 
 ## Provisional developer observations
 
-These are visual preferences observed beside the approximately 1.60–1.64 m MIRA reference. They are neither universal real-world scale nor approval of every asset in a category.
+These are historical visual preferences observed during early review. The current laboratory uses a 1.60 m MIRA reference. The observations are neither universal real-world scale nor approval of every asset in a category.
 
 | Category | Observed preferred uniform scale |
 | --- | ---: |
@@ -47,27 +47,27 @@ These are visual preferences observed beside the approximately 1.60–1.64 m MIR
 | Construction fences | 5.0 |
 | Dumpsters | 5.0 |
 
-The current catalog also assigns 9.0 to roads/paving, signs/signals and the two industrial windmills; 5.0 to three other construction props; and category scale 2.0 to Factory and Space assets. These existing choices were measured, not changed by the semantic pass.
+Later hands-on review replaced those initial estimates. The current baselines are 5.0 for roads/paving, signs/signals, road lights, chimneys, tanks and the industrial remainder; 1.5 for Factory Kit; and 1.0 for Modular Space Kit. Buildings remain 10.0, electricity infrastructure 10.0, solar panels 10.0, and construction furniture 5.0. Individual overrides preserve exceptions.
 
 ## Measured scale flags
 
 Dimensions below are hierarchy AABBs after the currently resolved calibration. They measure visual envelopes, not door clearance, collision, solid occupancy or usable floor space.
 
-- **Industrial landmarks:** `windmill` is approximately 5.44 × 20.82 × 10.14 and `windmill-low` 5.44 × 16.14 × 10.14. Their height makes them the strongest candidates for individual review within `industrial_other`.
-- **Tanks and chimneys vary greatly inside their categories:** `water-tower` reaches 19.27 high; `detail-tank-large` spans about 13.58 × 8.65 × 14.84. Chimneys range from 1.80 × 9.00 × 1.80 (`basic`) to 9.72 × 15.30 × 9.72 (`large`), while `medium` is taller but narrower at 4.05 × 17.32 × 4.05. The variation may be intentional, but a single category multiplier does not prove visual suitability.
-- **Largest closed buildings:** `building-r` spans 22.35 × 12.54 × 11.45; `building-c` 16.88 × 11.25 × 18.97; `building-l` 18.75 × 17.32 × 16.83. Review these from the tactical camera before using them as modular anchors.
+- **Industrial landmarks:** `windmill` is approximately 3.02 × 11.57 × 5.63 and `windmill-low` 3.02 × 8.97 × 5.63 at the current scale-5 baseline. Their height still warrants parcel-level clearance.
+- **Tanks and chimneys vary greatly inside their categories:** `water-tower` is about 4.26 × 10.71 × 4.16 and `detail-tank-large` 7.54 × 4.81 × 8.24. Chimney Basic retains an individual scale-10 override and measures 2 × 10 × 2; Large is about 5.4 × 8.5 × 5.4 and Medium 2.25 × 9.62 × 2.25 at the category baseline. A shared category does not make their placement interchangeable.
+- **Largest closed buildings:** `building-r` spans about 24.84 × 13.93 × 12.72; `building-c` 18.76 × 12.50 × 21.08; `building-l` 20.84 × 19.25 × 18.70. Review these from the tactical camera before using them as modular anchors.
 - **Grouped solar panels:** `solar-panel-landscape-group` reaches 13.62 × 2.36 × 8.06 and the portrait group 8.26 × 3.69 × 11.24. They should be treated as arrays with clearance, not interchangeable with single panels.
-- **Road assemblies:** roundabout pieces are 27 × 27 and curve/intersection pieces can reach 18 × 18 at scale 9. These are likely coherent multi-tile assemblies rather than scaling errors. Their authored connector pitch should precede footprint authoring.
-- **Electricity variants:** `electricity-pole-wide` spans 9.71 horizontally, compared with 0.71 for `electricity-pole-single`; wide wire/side pieces similarly approach one 9-unit road pitch. Do not classify the wide variants as single-object outliers.
-- **Human-scale references:** the scale-5 construction fence is about 0.89 high and the dumpster 1.05 high. Scale-9 road lights are 5.40–6.07 high. Shipping containers resolve to roughly 3.35 × 3.13 × 7.40. These are useful rendered comparison targets because their relation to a MIRA is visually familiar.
-- **Cross-pack mismatch:** Factory doors are about 1.60 high and Factory structure bays 3.00 high at native scale, while Space walls/corridors are 4.05–4.70 high. Both packs are internally coherent, but they should not share seams or floor heights automatically.
+- **Road assemblies:** the roundabout piece is 15 × 15 and curve/intersection pieces can reach 10 × 10 at scale 5. These are coherent multi-tile surfaces rather than scaling errors. Their authored connector pitch should precede footprint authoring.
+- **Electricity variants:** electricity infrastructure retains scale 10 independently from the scale-5 road surfaces. Wide wire and side pieces represent spans, not single poles, and should not be classified as ordinary prop outliers.
+- **Human-scale references:** the construction fence is about 0.89 high, the dumpster 1.05 high, and `light-curved` 3.37 high at scale 5. The reviewed container override produces approximately 1.86 × 1.74 × 4.11. These are useful rendered comparison targets because their relation to a MIRA is visually familiar.
+- **Cross-pack mismatch:** Factory structure bays are 4.5 high at the current 1.5 baseline, while Space walls and corridors remain about 4.05–4.70 high at native scale. Similar height does not establish compatible pivots, thicknesses or sockets; the packs remain separate construction grammars.
 
 The later semantic pass rendered all 315 assets in 17 family contact sheets. Those normalized thumbnails establish identity and family relationships, while model-local facing and exact seam compatibility still require individual inspection where flagged.
 
 ## Prioritized manual inspection shortlist
 
 1. Factory `structure-wall`, `structure-doorway`, `structure-doorway-wide`, `structure-window`, standalone `door*`, stairs and platforms: establish the first wall/entrance grammar and verify actual openings.
-2. Roads `road-straight`, `road-side`, `tile-low`, intersections and curves: verify 9-unit connection pitch, sidewalk overhang and allowed rotations for plot access.
+2. Roads `road-straight`, `road-side`, `tile-low`, intersections and curves: verify the current 5-unit connection pitch, sidewalk overhang and allowed rotations for plot access.
 3. Industrial `shipping-container-a/b/c`, Roads `construction-fence` and `dumpster`: establish cargo lanes and familiar tactical-cover silhouettes.
 4. Factory `machine`, `conveyor-long`, `crane` and representative robot arms: author working-face clearance and loading-area arrangements.
 5. Industrial `building-r/c/l`, `water-tower`, both windmills, large tank and grouped solar panels: decide whether landmark-specific overrides are necessary before procedural placement.

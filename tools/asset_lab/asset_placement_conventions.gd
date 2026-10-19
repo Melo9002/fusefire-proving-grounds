@@ -56,7 +56,7 @@ static func record(id: String, calibration_data := {}, bounds_data := {}) -> Dic
 		"authored_tactical_footprint": authored,
 		"tactical_policy": tactical_policy,
 		"origin_snap": _origin_snap(id),
-		"assembly_pitch": _assembly_pitch(id),
+		"assembly_pitch": _assembly_pitch(id, calibration_data),
 		"allowed_yaw_degrees": [0, 90, 180, 270],
 		"anchor": profile.anchor,
 		"note": _note(id, tactical_policy),
@@ -73,20 +73,24 @@ static func _origin_snap(id: String) -> Array:
 	if id.begins_with("modular_space_kit/"): return [1.0, 1.0]
 	return [0.5, 0.5]
 
-static func _assembly_pitch(id: String) -> Array:
+static func _assembly_pitch(id: String, calibration_data: Dictionary) -> Array:
 	var semantic := Catalog.semantic_category(id)
-	if semantic in ["road_modules", "paving_tiles"]: return [10.0, 10.0]
-	if semantic in ["factory_structure_modules", "factory_entrances"]: return [2.0, 2.0]
-	if id.begins_with("modular_space_kit/"): return [8.0, 8.0]
+	var category := Catalog.calibration_category(id)
+	var presets: Dictionary = calibration_data.get("category_presets", {})
+	var fallback: Dictionary = calibration_data.get("fallback", {"scale": 1.0})
+	var family_scale := float(presets.get(category, fallback).scale)
+	if semantic in ["road_modules", "paving_tiles"]: return [family_scale, family_scale]
+	if semantic in ["factory_structure_modules", "factory_entrances"]: return [family_scale, family_scale]
+	if id.begins_with("modular_space_kit/"): return [4.0 * family_scale, 4.0 * family_scale]
 	return [0.0, 0.0]
 
 static func _note(id: String, policy: String) -> String:
 	if id.begins_with("factory_kit/"):
-		return "Integer visual anchors preserve the calibrated 2-unit Factory bay rhythm."
+		return "Integer visual anchors preserve the calibrated Factory family bay rhythm."
 	if id.begins_with("city_kit_roads/"):
-		return "Road origins stay on integer cells; compatible road tiles connect on the 10-unit pitch."
+		return "Road origins stay on integer cells; compatible tiles use the current calibrated family pitch."
 	if id.begins_with("modular_space_kit/"):
-		return "Space Kit uses a separate 8-unit construction pitch; do not mix it with Factory bays automatically."
+		return "Space Kit uses a separate four-native-unit construction pitch; do not mix it with Factory bays automatically."
 	if policy == "author_before_gameplay":
 		return "Visual envelope is a reservation aid only; author solid cells, cover and clearance separately."
 	return "Presentation placement only; no tactical footprint is implied."

@@ -28,15 +28,15 @@ static func default_data() -> Dictionary:
 		"version": 2,
 		"fallback": {"scale": DEFAULT_SCALE},
 		"category_presets": {
-			"buildings": {"scale": 9.0}, "shipping_containers": {"scale": 9.0},
-			"chimneys": {"scale": 9.0}, "water_tanks": {"scale": 9.0},
-			"solar_panels": {"scale": 9.0}, "industrial_other": {"scale": 9.0},
-			"roads_and_paving": {"scale": 9.0}, "signs_and_signals": {"scale": 9.0},
-			"electricity_infrastructure": {"scale": 9.0}, "road_lights": {"scale": 9.0},
+			"buildings": {"scale": 10.0}, "shipping_containers": {"scale": 8.0},
+			"chimneys": {"scale": 5.0}, "water_tanks": {"scale": 5.0},
+			"solar_panels": {"scale": 10.0}, "industrial_other": {"scale": 5.0},
+			"roads_and_paving": {"scale": 5.0}, "signs_and_signals": {"scale": 5.0},
+			"electricity_infrastructure": {"scale": 10.0}, "road_lights": {"scale": 5.0},
 			"construction_fences": {"scale": 5.0}, "dumpsters": {"scale": 5.0},
 			"construction_equipment": {"scale": 5.0},
-			"factory_unclassified": {"scale": 2.0},
-			"space_unclassified": {"scale": 2.0}
+			"factory_unclassified": {"scale": 1.5},
+			"space_unclassified": {"scale": 1.0}
 		},
 		"asset_overrides": {}, "reviewed": []
 	}
