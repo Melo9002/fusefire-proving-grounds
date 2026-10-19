@@ -20,6 +20,7 @@ This directory contains the project documentation intended for developers, desig
 - [Prototype 2 experiment notebook](prototype-2/experiments/README.md) — protected P1 baseline, reusable experiment record, outcomes, and minimum regression checks.
 - [Operation XCOM research ledger](prototype-2/operation-xcom/research-ledger.md) — sourced observations, FuseFire hypotheses, experiment status, and rollback notes.
 - [External resource ledger](prototype-2/external-resources.md) — dependency candidates, licenses, risks, removal paths, and decisions.
+- [Debug Draw 3D integration](dependencies/debug-draw-3d.md) — pinned version, license, project wrapper, Map Editor diagnostics, verification, and removal path.
 - [Animation source survey](prototype-2/animation-source-survey.md) — free motion sources, Godot 4.7 retargeting, candidate tools, and the first clip test.
 
 - [Prototype 1 27A recovery audit](prototype-1-audit-27a.md) — canonical verified findings, protected invariants, optimization targets, and the recovery sequence.

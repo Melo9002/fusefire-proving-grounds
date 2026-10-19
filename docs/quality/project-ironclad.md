@@ -17,7 +17,7 @@ The repository contains 93 top-level GDScript test executables under `tests/`. M
 | Replay | Schema compatibility, recording/playback, actor continuity, rescue/departure flows and state determinism |
 | Assets/presentation | Imports, calibration precedence/persistence, camera behavior, HUD/overlays and visual adapters |
 
-The project currently targets Godot `4.7.2.stable`. Tests require `godot_console` on `PATH`, or an explicit executable passed to the runner. No third-party test dependency is required.
+The project currently targets Godot `4.7.2.stable`. Tests require `godot_console` on `PATH`, or an explicit executable passed to the runner. Debug Draw 3D 1.7.3 is vendored in the repository and its smoke check verifies that the matching native library loads; no separately installed test dependency is required.
 
 Two scripts (`asset_lab_capture.gd` and `industrial_warehouse_capture.gd`) produce rendered evidence and require an ordinary graphics run plus an output directory. They are manual visual workflows, not automated visual comparisons. Five long batch/stress scripts are also explicit-only. Existing naming varies between `smoke`, `test`, and `validation`; that inconsistency is harmless and has not been rewritten.
 

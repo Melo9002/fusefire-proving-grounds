@@ -3,6 +3,7 @@ extends Node3D
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
+const DebugDraw = preload("res://tools/diagnostics/fusefire_debug_draw_3d.gd")
 const CUSTOM_LAYOUT := &"custom_layout"
 const ASSEMBLY_VIEW_COMPLETE := &"complete"
 const ASSEMBLY_VIEW_SHELL := &"shell"
@@ -29,8 +30,10 @@ var adjustment_step: SpinBox
 var transform_label: Label
 var selection_outline_material: StandardMaterial3D
 var preset_picker: OptionButton
+var spatial_contract_toggle: CheckButton
 var preview_map_size := Vector2i(40, 30)
 var show_plan_overlay := true
+var show_spatial_contracts := false
 var custom_layout := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
 var custom_dirty := false
 var component_picker: OptionButton
@@ -53,6 +56,10 @@ func _ready() -> void:
 	_load_custom_layout(false)
 	_rebuild()
 
+func _process(_delta: float) -> void:
+	if show_spatial_contracts:
+		_draw_selected_spatial_contracts()
+
 func _shortcut_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
@@ -61,6 +68,8 @@ func _shortcut_input(event: InputEvent) -> void:
 			_frame_camera()
 		elif event.keycode == KEY_P:
 			_set_plan_overlay_visible(not show_plan_overlay)
+		elif event.keycode == KEY_D:
+			_set_spatial_contracts_visible(not show_spatial_contracts)
 		elif event.keycode == KEY_C:
 			_focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0")
 		elif event.keycode == KEY_G:
@@ -239,6 +248,12 @@ func _build_ui() -> void:
 	plan_toggle.button_pressed = show_plan_overlay
 	plan_toggle.toggled.connect(_set_plan_overlay_visible)
 	controls.add_child(plan_toggle)
+	spatial_contract_toggle = CheckButton.new()
+	spatial_contract_toggle.text = "Spatial contracts (D)"
+	spatial_contract_toggle.button_pressed = show_spatial_contracts
+	spatial_contract_toggle.tooltip_text = "Selected module: green footprint, amber clearance, magenta visual envelope, cyan connection sockets"
+	spatial_contract_toggle.toggled.connect(_set_spatial_contracts_visible)
+	controls.add_child(spatial_contract_toggle)
 	var edit_copy := Button.new()
 	edit_copy.text = "Edit copy"
 	edit_copy.tooltip_text = "Copy the displayed authored or generated modules into the custom composer"
@@ -437,6 +452,62 @@ func _set_plan_overlay_visible(visible: bool) -> void:
 		var overlay := content.get_node_or_null("SpatialPlan")
 		if overlay != null:
 			overlay.visible = visible
+
+func _set_spatial_contracts_visible(visible: bool) -> void:
+	show_spatial_contracts = visible
+	if is_instance_valid(spatial_contract_toggle):
+		spatial_contract_toggle.set_pressed_no_signal(visible)
+	if not visible:
+		DebugDraw.clear_all()
+	elif not DebugDraw.is_available():
+		_update_transform_label("Debug Draw 3D is unavailable. Run a project import and verify the vendored native library.")
+	elif not is_instance_valid(inspection_module):
+		_update_transform_label("Spatial contracts enabled. Select a module to inspect it.")
+
+func _draw_selected_spatial_contracts() -> Dictionary:
+	var summary := {"available": DebugDraw.is_available(), "footprint": 0, "clearance": 0, "envelope": 0, "sockets": 0}
+	if not summary.available or not is_instance_valid(displayed_data) or not is_instance_valid(inspection_module):
+		return summary
+	var placement_index := int(inspection_module.get_meta("placement_index", -1))
+	if placement_index < 0 or placement_index >= displayed_data.environment_modules.size():
+		return summary
+	var placement: EnvironmentModulePlacement = displayed_data.environment_modules[placement_index]
+	var definition: EnvironmentModuleDefinition = editor_catalog.get(placement.component_id)
+	if definition == null:
+		return summary
+	var layout := EnvironmentModuleLayout.new(&"map_editor_diagnostics", generation_seed)
+	var _scope := DebugDraw.begin_scope(get_viewport(), true, 0.025)
+	for cell in layout.world_cells(definition, placement):
+		var center := _diagnostic_cell_center(cell, placement.elevation)
+		if DebugDraw.draw_aabb(AABB(center - Vector3(0.46, 0.04, 0.46), Vector3(0.92, 0.08, 0.92)), Color(0.25, 1.0, 0.4, 0.92)):
+			summary.footprint += 1
+	for cell in layout.world_clearance_cells(definition, placement):
+		var center := _diagnostic_cell_center(cell, placement.elevation) + Vector3.UP * 0.07
+		if DebugDraw.draw_aabb(AABB(center - Vector3(0.43, 0.025, 0.43), Vector3(0.86, 0.05, 0.86)), Color(1.0, 0.64, 0.12, 0.9)):
+			summary.clearance += 1
+	var envelope := layout.world_visual_envelope(definition, placement)
+	if envelope.size != Vector3.ZERO:
+		var origin_cell := displayed_data.get_cell(Vector3i(0, 0, 0))
+		if origin_cell != null:
+			envelope.position += origin_cell.world_position
+			if DebugDraw.draw_aabb(envelope, Color(1.0, 0.18, 0.82, 0.96)):
+				summary.envelope = 1
+	for connection in layout.world_connections(definition, placement):
+		var cell: Vector2i = connection.cell
+		var direction: Vector2i = connection.direction
+		var start := _diagnostic_cell_center(cell, int(connection.elevation)) + Vector3.UP * 0.28
+		var finish := start + Vector3(direction.x, 0.0, direction.y) * 0.8
+		if DebugDraw.draw_arrow(start, finish, Color(0.15, 0.92, 1.0, 1.0)):
+			summary.sockets += 1
+	return summary
+
+func _diagnostic_cell_center(cell: Vector2i, elevation: int) -> Vector3:
+	var map_cell := displayed_data.get_cell(Vector3i(cell.x, elevation, cell.y))
+	if map_cell != null:
+		return map_cell.world_position + Vector3.UP * 0.08
+	var origin_cell := displayed_data.get_cell(Vector3i(0, 0, 0))
+	var origin := origin_cell.world_position if origin_cell != null else Vector3.ZERO
+	return origin + Vector3(cell.x, elevation, cell.y) + Vector3.UP * 0.08
 
 func _focus_component(component_id: StringName, label: String) -> bool:
 	if not is_instance_valid(content) or not is_instance_valid(orbit):

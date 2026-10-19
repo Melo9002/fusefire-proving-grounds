@@ -43,6 +43,7 @@ $smokeTests = @(
     "objective_foundation_smoke.gd",
     "ai_commander_policy_smoke.gd",
     "replay_schema_test.gd",
+    "debug_draw_3d_integration_test.gd",
     "asset_calibration_test.gd",
     "battle_smoke.gd"
 )
@@ -60,7 +61,7 @@ $subsystemPatterns = @{
 
 # Explicitly invoked workflows: rendered captures require a GPU/output path; extended
 # batches are valuable but too expensive for the ordinary full tier.
-$visualTests = @("asset_lab_capture.gd", "coherent_layout_capture.gd", "industrial_warehouse_capture.gd", "structural_building_capture.gd")
+$visualTests = @("asset_lab_capture.gd", "coherent_layout_capture.gd", "debug_draw_3d_capture.gd", "industrial_warehouse_capture.gd", "structural_building_capture.gd")
 $extendedTests = @(
     "ai_match_simulation_smoke.gd",
     "battlefield_stress_smoke.gd",

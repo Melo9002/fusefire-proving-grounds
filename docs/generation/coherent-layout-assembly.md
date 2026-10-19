@@ -63,6 +63,8 @@ Useful identities and seeds:
 
 Use right-drag to orbit, middle-drag to pan, the wheel to zoom, and click a component to select it. Press `P` or use **Plan overlay** to hide the cyan road and amber parcel diagnostics for an unobstructed rendered view. Seed controls reproduce or vary the layout.
 
+Press `D` or enable **Spatial contracts** after selecting a component to inspect the data that governs its placement. Debug Draw 3D renders the tactical footprint in green, required clearance in amber, calibrated visual envelope in magenta, and rotation-aware connection sockets as cyan arrows. These overlays are diagnostic views of authored contracts; they do not create or modify `MapData` cells.
+
 The automated capture fixture records overview, overhead, and street-level views:
 
 ```powershell
