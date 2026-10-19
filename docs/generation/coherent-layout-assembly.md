@@ -38,7 +38,8 @@ The presenter resolves catalog visual references through the saved Asset Lab cal
 The first grammar includes:
 
 - Continuous derived roadbeds, sidewalks, curbs, and markings for every logical road and intersection cell.
-- Large industrial shell parcels using five confirmed, procedurally approved City Kit Industrial building variants.
+- Large industrial frontage parcels using calibrated per-asset contracts for all twenty reviewed City Kit Industrial shells; thirteen currently fit the 20 × 20 parcel without changing their scale.
+- Purposeful industrial-yard alternatives with a loading canopy, machinery, staged cargo and continuous paving when a shell cannot be placed.
 - Commercial blocks that assemble complete four-sided service buildings around paved street frontage without borrowing industrial-only semantic candidates.
 - A validated, exact-geometry service building with a complete shell, roofed usable floor, and one road-facing entrance.
 - Loading areas with calibrated containers and dumpsters.
@@ -60,6 +61,7 @@ godot_console --path . res://tools/map_editor.tscn -- 2208 industrial_district
 
 Useful identities and seeds:
 
+- `industrial_district 17` (primary semantic-building showcase)
 - `industrial_district 2208`
 - `commercial_street 7319`
 - `mixed_service 11027`
@@ -91,6 +93,7 @@ Rendered captures are inspection evidence; headless tests do not establish visua
 - The road grammar has one intersection with straight approaches; lane markings are present, while curves, crosswalks, secondary streets, and multi-block networks remain future work.
 - The 60 × 50 Map Editor canvas reserves up to three large industrial parcels, two mixed-service parcels, or two commercial blocks where the road topology permits; constrained maps degrade to fewer large parcels.
 - City Kit building shells are exterior-only tactical obstacles. Derived service buildings are enterable, but they do not yet have furnished interiors or gameplay-driven roof cutaways. See [Structural Building Assemblies](structural-building-assemblies.md) for the asset measurements and completeness contract.
-- Contextual details use a small subset of the calibrated catalog. More authored parcel assemblies are needed before every seed can have the same visual density.
+- The twenty building profiles are reusable, but the seven widest/deepest shells need a future 30-cell campus parcel before the generator can select them.
+- Contextual details use a focused subset of the calibrated catalog. More authored refinery, power and storage-yard assemblies are needed before every seed has the same functional variety.
 - Mission suitability is validated after assembly. Future mission-aware generation should reserve required parcels before commitment.
 - Procedural vertical parcels remain deferred while the existing authored vertical fixture protects traversal behavior.

@@ -6,6 +6,7 @@ const MACRO_SIZE := 10
 const ENVIRONMENTS: Array[StringName] = [&"industrial_district", &"commercial_street", &"mixed_service"]
 const MAX_TEMPLATE_ATTEMPTS := 6
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
+const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -256,7 +257,10 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 	var result: Array[StringName]
 	var bounds: Rect2i = parcel.bounds
 	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
-		result.append(&"commercial_block" if environment_id == &"commercial_street" else &"industrial_shell_block")
+		if environment_id == &"commercial_street":
+			result.append(&"commercial_block")
+		else:
+			result = [&"industrial_shell_block", &"industrial_yard_block"]
 		return result
 	var has_frontage: bool = not (parcel.road_edges as Array).is_empty()
 	if not has_frontage:
@@ -278,18 +282,21 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 
 static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
+	var catalog := IndustrialModuleCatalog.create()
 	match template_id:
 		&"open_ground":
 			local = []
 		&"industrial_shell_block":
+			local = _industrial_frontage_placements(parcel.size, catalog, rng)
+		&"industrial_yard_block":
 			local = [
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
-				EnvironmentModulePlacement.new(&"industrial_building_shell", Vector2i(3, 3), 0, rng.randi_range(0, 4)),
-				EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 1), 0, rng.randi_range(0, 1)),
-				EnvironmentModulePlacement.new(&"street_light", Vector2i(18, 1), 2, rng.randi_range(0, 1)),
+				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(1, 1)),
+				EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(11, 11)),
+				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 17), 1, rng.randi_range(0, 2)),
 			]
 		&"commercial_block":
 			local = [
@@ -317,9 +324,34 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 		_:
 			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO)]
 	var result: Array[EnvironmentModulePlacement] = []
-	var catalog := IndustrialModuleCatalog.create()
 	for placement in local:
 		result.append(_rotate_into_parcel(placement, catalog[placement.component_id], parcel, rotation))
+	return result
+
+static func _industrial_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
+	var result: Array[EnvironmentModulePlacement] = [
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
+		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
+	]
+	var candidates := BuildingProfiles.fitting_module_ids(parcel_size)
+	if candidates.is_empty():
+		return result
+	var shell_id: StringName = candidates[rng.randi_range(0, candidates.size() - 1)]
+	var shell: EnvironmentModuleDefinition = catalog[shell_id]
+	var shell_origin := Vector2i(floori(float(parcel_size.x - shell.size.x) * 0.5), 0)
+	result.append(EnvironmentModulePlacement.new(shell_id, shell_origin))
+	# The remaining authored pieces describe a purpose: a lit public frontage,
+	# plus either a side service machine, container staging, or waste pickup.
+	# Each choice is derived from the actual shell dimensions and must still pass
+	# normal footprint, clearance and calibrated-envelope validation.
+	if shell.size.x <= 14 and shell.size.y <= 15:
+		result.append(EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(0, maxi(2, shell.size.y - 3)), 1))
+		result.append(EnvironmentModulePlacement.new(&"street_light", Vector2i(parcel_size.x - 2, parcel_size.y - 2), 2, rng.randi_range(0, 1)))
+	else:
+		result.append(EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(1, parcel_size.y - 3), 1))
+		result.append(EnvironmentModulePlacement.new(&"street_light", Vector2i(parcel_size.x - 2, parcel_size.y - 2), 2, rng.randi_range(0, 1)))
 	return result
 
 static func _rotate_into_parcel(placement: EnvironmentModulePlacement, definition: EnvironmentModuleDefinition, parcel: Rect2i, rotation: int) -> EnvironmentModulePlacement:

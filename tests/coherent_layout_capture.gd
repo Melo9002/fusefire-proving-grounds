@@ -17,7 +17,7 @@ func _run() -> void:
 	root.add_child(editor)
 	await process_frame
 	for sample in [
-		[&"industrial_district", 2208],
+		[&"industrial_district", 17],
 		[&"commercial_street", 7319],
 		[&"mixed_service", 11027],
 	]:
@@ -33,11 +33,17 @@ func _run() -> void:
 			["overhead", 0.0, 1.50, true],
 			["intersection", 0.28, 0.45, false],
 			["street", 0.35, 0.14, false],
+			["service", 0.70, 0.20, false],
 		]:
 			editor._set_plan_overlay_visible(view[3])
 			if view[0] == "street":
-				if not editor._focus_component(&"complete_service_building", "complete building street view"):
-					editor._focus_component(&"industrial_building_shell", "complete building street view")
+				if sample[0] == &"industrial_district":
+					_focus_first_profiled_shell(editor)
+				elif not editor._focus_component(&"complete_service_building", "complete building street view"):
+					_focus_first_profiled_shell(editor)
+			elif view[0] == "service":
+				if not editor._focus_component(&"machine_cover_cluster", "industrial service area"):
+					editor._focus_component(&"industrial_loading_canopy", "industrial loading area")
 			elif view[0] == "intersection":
 				if not editor._focus_component(&"road_crossroad", "road intersection view"):
 					editor._focus_component(&"road_intersection_t", "road intersection view")
@@ -54,3 +60,9 @@ func _run() -> void:
 				return
 	print("Coherent layout captures saved to " + output)
 	quit()
+
+func _focus_first_profiled_shell(editor: Node) -> bool:
+	for placement in editor.displayed_data.environment_modules:
+		if String(placement.component_id).begins_with("industrial_shell_"):
+			return editor._focus_component(placement.component_id, "reviewed industrial building frontage")
+	return false

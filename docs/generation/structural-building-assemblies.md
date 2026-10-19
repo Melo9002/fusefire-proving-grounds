@@ -38,14 +38,15 @@ The generator rotates the entire assembly toward its parcel's road edge. The ent
 
 Because openness is part of its contract, the missing walls are valid architecture rather than an incomplete building.
 
-### City Industrial shell
+### City Industrial shells
 
-- 14×14 sealed tactical footprint.
-- Complete vendor-authored exterior variants.
+- Twenty per-asset sealed tactical footprints derived from calibrated bounds rather than one shared 14×14 estimate.
+- Complete vendor-authored exterior models with reviewed working faces.
+- A normalized local `+Z` frontage and three-cell placement-clearance apron.
 - Explicit `prebuilt_shell` status.
 - No claimed interior, doorway or walkable floor.
 
-This keeps the useful exterior massing without pretending that a closed GLB contains playable rooms.
+This keeps the useful exterior massing without pretending that a closed GLB contains playable rooms. Thirteen profiles fit the current 20×20 procedural frontage parcel; the remaining large profiles stay registered for future campus parcels.
 
 ## Validation rules
 

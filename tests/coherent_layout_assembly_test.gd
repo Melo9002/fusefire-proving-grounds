@@ -57,7 +57,8 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	var ids: Dictionary = {}
 	for placement in data.environment_modules:
 		ids[placement.component_id] = int(ids.get(placement.component_id, 0)) + 1
-	check(not ids.has(&"industrial_building_shell"), "Commercial districts do not misuse industrial-only shell assets")
+	for component_id in ids:
+		check(not String(component_id).begins_with("industrial_shell_"), "Commercial districts do not misuse industrial-only shell assets")
 	check(ids.has(&"complete_service_building"), "Commercial blocks reuse complete four-sided buildings around a shared frontage")
 	check(not ids.has(&"factory_shop_front") and not ids.has(&"factory_window_wall"), "Procedural parcels do not expose freestanding facade samples as buildings")
 	check(ids.has(&"traffic_signal") and ids.has(&"street_light"), "Commercial road furniture is attached to the street plan")
@@ -91,14 +92,14 @@ func _test_expanded_district_catalog() -> void:
 			var data := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, map_seed, environment_id)
 			var shell_count := 0
 			for placement in data.environment_modules:
-				if placement.component_id == &"industrial_building_shell":
+				if String(placement.component_id).begins_with("industrial_shell_"):
 					shell_count += 1
-					seen_shell_variants[placement.variation] = true
+					seen_shell_variants[placement.component_id] = true
 			check(shell_count >= 2, "%s seed %d reserves multiple complete reviewed shell parcels" % [environment_id, map_seed])
 	var commercial := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, 7319, &"commercial_street")
 	var commercial_buildings := 0
 	for placement in commercial.environment_modules:
-		check(placement.component_id != &"industrial_building_shell", "Commercial parcels exclude industrial-only semantic candidates")
+		check(not String(placement.component_id).begins_with("industrial_shell_"), "Commercial parcels exclude industrial-only semantic candidates")
 		if placement.component_id == &"complete_service_building":
 			commercial_buildings += 1
 	check(commercial_buildings >= 2, "The expanded commercial district assembles multiple complete street buildings")

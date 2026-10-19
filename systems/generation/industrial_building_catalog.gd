@@ -6,10 +6,14 @@ extends RefCounted
 
 const INDUSTRIAL := "res://art/environments/kenney/city_kit_industrial/models/"
 const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
+const ShellProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
 
 static func create() -> Dictionary:
 	var result := {}
 	for building in [_service_building(), _loading_canopy(), _prebuilt_industrial_shell()]:
+		result[building.assembly_id] = building
+	for asset_id in ShellProfiles.ids():
+		var building := _profiled_industrial_shell(asset_id)
 		result[building.assembly_id] = building
 	return result
 
@@ -132,6 +136,44 @@ static func _prebuilt_industrial_shell() -> EnvironmentBuildingDefinition:
 	# be separated without deriving a replacement scene, so the complete asset is
 	# classified as structural for shell inspection.
 	item.add_catalog_visual(building.source_assets, Vector2(6.5, 6.5), 0, Vector3.ZERO, &"structural")
+	building.module = item
+	return building
+
+static func _profiled_industrial_shell(asset_id: String) -> EnvironmentBuildingDefinition:
+	var profile := ShellProfiles.profile_for_asset(asset_id)
+	var suffix := asset_id.get_file().trim_prefix("building-")
+	var module_id := ShellProfiles.module_id_for_asset(asset_id)
+	var footprint: Vector2i = profile.size
+	var building := EnvironmentBuildingDefinition.new(
+		StringName("city_industrial_shell_%s" % suffix),
+		&"sealed_industrial_building",
+		EnvironmentBuildingDefinition.Enclosure.PREBUILT_SHELL,
+		footprint
+	)
+	building.notes = "Reviewed complete exterior shell with a calibrated per-asset footprint and a protected street/service apron."
+	building.source_assets = [asset_id]
+	var item := EnvironmentModuleDefinition.new(module_id, &"city_industrial_buildings", footprint)
+	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
+	item.set_module_type(EnvironmentModuleDefinition.ModuleType.SHOP)
+	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "Calibrated sealed City Kit shell; local +Z is the normalized frontage.")
+	for cell in item.footprint_cells:
+		item.set_effect(cell, _full_cover(float(profile.bounds.y)))
+	# The three-cell apron protects visible doors/loading faces and provides a
+	# readable transition to the road-facing paved parcel.  It remains walkable
+	# because clearance is a placement rule, not tactical occupancy.
+	var apron_width := mini(6, footprint.x)
+	var apron_start := floori(float(footprint.x - apron_width) * 0.5)
+	for z in range(footprint.y, footprint.y + ShellProfiles.FRONTAGE_DEPTH):
+		for x in range(apron_start, apron_start + apron_width):
+			item.clearance_cells.append(Vector2i(x, z))
+	var calibrated_size: Vector3 = profile.bounds
+	var center := Vector2(float(footprint.x - 1) * 0.5, float(footprint.y - 1) * 0.5)
+	item.set_visual_envelope(AABB(
+		Vector3(center.x - calibrated_size.x * 0.5, 0.0, center.y - calibrated_size.z * 0.5),
+		calibrated_size
+	))
+	var visual_yaw := 2 if profile.face == "-z" else 0
+	item.add_catalog_visual([asset_id], center, visual_yaw, Vector3.ZERO, &"structural")
 	building.module = item
 	return building
 

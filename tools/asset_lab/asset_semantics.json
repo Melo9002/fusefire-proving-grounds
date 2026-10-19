@@ -9,11 +9,14 @@
 				"industrial",
 				"mixed_service"
 			],
-			"evidence": "Visually reviewed as a complete monolithic exterior shell; procedural use remains sealed and exterior-only.",
-			"front_face": "unknown",
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
 			"generation_ready": true,
-			"notes": "No accessible interior is implied.",
-			"structural_role": "shell"
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell",
+			"working_faces": [
+				"-z"
+			]
 		},
 		"city_kit_industrial/building-i": {
 			"asset_kind": "complete_building",
@@ -24,11 +27,14 @@
 				"industrial",
 				"mixed_service"
 			],
-			"evidence": "Visually reviewed as a complete monolithic exterior shell; procedural use remains sealed and exterior-only.",
-			"front_face": "unknown",
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
 			"generation_ready": true,
-			"notes": "No accessible interior is implied.",
-			"structural_role": "shell"
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell",
+			"working_faces": [
+				"-z"
+			]
 		},
 		"city_kit_industrial/building-j": {
 			"asset_kind": "complete_building",
@@ -39,11 +45,14 @@
 				"industrial",
 				"mixed_service"
 			],
-			"evidence": "Visually reviewed as a complete monolithic exterior shell; procedural use remains sealed and exterior-only.",
-			"front_face": "unknown",
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
 			"generation_ready": true,
-			"notes": "No accessible interior is implied.",
-			"structural_role": "shell"
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell",
+			"working_faces": [
+				"-z"
+			]
 		},
 		"city_kit_industrial/building-k": {
 			"asset_kind": "complete_building",
@@ -54,11 +63,14 @@
 				"industrial",
 				"mixed_service"
 			],
-			"evidence": "Visually reviewed as a complete monolithic exterior shell; procedural use remains sealed and exterior-only.",
-			"front_face": "unknown",
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
 			"generation_ready": true,
-			"notes": "No accessible interior is implied.",
-			"structural_role": "shell"
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell",
+			"working_faces": [
+				"-z"
+			]
 		},
 		"city_kit_industrial/building-o": {
 			"asset_kind": "complete_building",
@@ -69,11 +81,14 @@
 				"industrial",
 				"mixed_service"
 			],
-			"evidence": "Visually reviewed as a complete monolithic exterior shell; procedural use remains sealed and exterior-only.",
-			"front_face": "unknown",
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
 			"generation_ready": true,
-			"notes": "No accessible interior is implied.",
-			"structural_role": "shell"
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell",
+			"working_faces": [
+				"-z"
+			]
 		},
 		"city_kit_roads/construction-fence": {
 			"asset_kind": "tactical_obstacle",
@@ -185,6 +200,276 @@
 			"generation_ready": true,
 			"notes": "Presentation only; facing is authored by its module.",
 			"structural_role": "utility"
+		},
+		"city_kit_industrial/building-a": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-b": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-c": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-d": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-e": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-f": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-g": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "+z",
+			"working_faces": [
+				"+z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-l": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-m": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "+z",
+			"working_faces": [
+				"+z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-n": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-p": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-q": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-r": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-s": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
+		},
+		"city_kit_industrial/building-t": {
+			"asset_kind": "complete_building",
+			"attachment": "ground",
+			"completeness": "complete",
+			"connections": [],
+			"contexts": [
+				"industrial",
+				"mixed_service"
+			],
+			"evidence": "Six-axis geometry review and calibrated bounds confirm a complete monolithic exterior shell; the procedural module supplies a per-asset solid footprint and protected facade apron.",
+			"front_face": "-z",
+			"working_faces": [
+				"-z"
+			],
+			"generation_ready": true,
+			"notes": "Exterior-only sealed shell. The reviewed working face is normalized to module-local +Z; no accessible interior is implied.",
+			"structural_role": "shell"
 		}
 	},
 	"version": 3

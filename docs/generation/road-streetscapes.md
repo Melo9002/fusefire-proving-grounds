@@ -39,7 +39,7 @@ Road modules occupy the ground placement layer. Furniture and tactical obstacles
 
 The visual variants are selected deterministically through the existing module placement variant. All references use stable semantic asset IDs and the Asset Lab's saved calibration at presentation time. No new procedural approvals or calibration changes are made by street generation.
 
-Parcel templates continue to add context-specific kit assets: dumpsters near service alleys, containers and machinery in loading areas, construction fencing around yards, and complete reviewed structures facing the street. Expanded 60 × 50 previews reserve several large parcels: industrial and mixed-service layouts draw only from the five confirmed City Industrial shells, while commercial blocks use complete authored shop buildings. Landlocked parcels remain undeveloped ground instead of becoming disconnected paving slabs with isolated clutter. These objects belong to functional parcels rather than a random map-wide clutter pass.
+Parcel templates continue to add context-specific kit assets: dumpsters near service alleys, containers and machinery in loading areas, construction fencing around yards, and complete reviewed structures facing the street. Expanded 60 × 50 previews reserve several large parcels. Industrial and mixed-service layouts select from calibrated per-building profiles whose working faces are normalized toward the sidewalk; commercial blocks use complete authored shop buildings. Landlocked parcels remain undeveloped ground instead of becoming disconnected paving slabs with isolated clutter. These objects belong to functional parcels rather than a random map-wide clutter pass.
 
 ## Adding a street detail
 
