@@ -157,6 +157,11 @@ func run() -> void:
 	compass = lab.overlays.get_node_or_null("FacingCompass")
 	var direction_after: Vector3 = compass.get_meta("working_direction", Vector3.ZERO)
 	check(direction_after.is_equal_approx(Vector3.BACK.rotated(Vector3.UP, PI / 2.0)) and not direction_after.is_equal_approx(direction_before), "Compass follows calibration yaw")
+	lab._select_option_value(lab.semantic_secondary_front, "+x")
+	lab.rebuild()
+	compass = lab.overlays.get_node_or_null("FacingCompass")
+	check(compass.get_meta("working_faces", []) == ["+z", "+x"], "Compass supports two equal corner working faces")
+	check((compass.get_node_or_null("AxisPlusX") as Label3D).text == "WORKING +X", "Second working face is highlighted without primary/secondary semantics")
 	lab.factor.value = 7.25
 	lab.x_offset.value = 0.5
 	lab.classification.select(1)

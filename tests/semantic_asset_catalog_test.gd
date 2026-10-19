@@ -16,6 +16,9 @@ func _run() -> void:
 		check(record.structural_role in Semantics.STRUCTURAL_ROLES, id + " has a valid structural role")
 		check(record.completeness in Semantics.COMPLETENESS, id + " has a valid completeness state")
 		check(record.front_face in Semantics.FRONT_FACES, id + " has a valid facing state")
+		check(record.working_faces.size() <= 2, id + " has at most two equal working faces")
+		for face in record.working_faces:
+			check(face in Semantics.DIRECTIONAL_FACES, id + " working face is cardinal")
 		check(record.attachment in Semantics.ATTACHMENTS, id + " has a valid attachment state")
 	check(Semantics.compatible_as_complete_building("city_kit_industrial/building-h", data), "Confirmed monolithic shell is eligible as a complete building visual")
 	check(not Semantics.compatible_as_complete_building("factory_kit/structure-wall", data), "A filename-classified structural fragment cannot masquerade as a complete building")
@@ -35,6 +38,7 @@ func _run() -> void:
 	lab._select_option_value(lab.semantic_role, "machinery")
 	lab._select_option_value(lab.semantic_completeness, "complete")
 	lab._select_option_value(lab.semantic_front, "+z")
+	lab._select_option_value(lab.semantic_secondary_front, "+x")
 	lab._select_option_value(lab.semantic_attachment, "ground")
 	lab.semantic_contexts.text = "industrial, mixed service"
 	lab.semantic_connections.text = "factory bay"
@@ -45,6 +49,7 @@ func _run() -> void:
 	var confirmed := Semantics.effective("factory_kit/oopi", persisted)
 	check(confirmed.interpretation_source == "confirmed" and not confirmed.needs_identification, "Human annotation overrides inference and persists")
 	check(confirmed.contexts == ["industrial", "mixed_service"] and confirmed.connections == ["factory_bay"], "Editable semantic tags normalize and persist")
+	check(confirmed.working_faces == ["+z", "+x"] and confirmed.front_face == "+z", "Two equal working faces persist with legacy primary-facing compatibility")
 	check(confirmed.generation_ready, "Procedural approval is explicit and persisted")
 	lab._clear_semantic_annotation()
 	check(Semantics.effective("factory_kit/oopi", Semantics.load_data(fixture_path)).needs_identification, "Reset returns to provisional inference")

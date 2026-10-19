@@ -65,6 +65,7 @@ var semantic_purpose: LineEdit
 var semantic_role: OptionButton
 var semantic_completeness: OptionButton
 var semantic_front: OptionButton
+var semantic_secondary_front: OptionButton
 var semantic_attachment: OptionButton
 var semantic_contexts: LineEdit
 var semantic_connections: LineEdit
@@ -225,8 +226,11 @@ func _ready() -> void:
 	semantic_kind = _semantic_option(panel, "Object kind", Semantics.KINDS)
 	semantic_role = _semantic_option(panel, "Structural role", Semantics.STRUCTURAL_ROLES)
 	semantic_completeness = _semantic_option(panel, "Completeness", Semantics.COMPLETENESS)
-	semantic_front = _semantic_option(panel, "Street / working face", Semantics.FRONT_FACES)
+	semantic_front = _semantic_option(panel, "Working face 1", Semantics.FRONT_FACES)
 	semantic_front.item_selected.connect(func(_index): rebuild())
+	semantic_secondary_front = _semantic_option(panel, "Working face 2 (equal)", Semantics.SECONDARY_FRONT_FACES)
+	semantic_secondary_front.tooltip_text = "Corners may expose two equally meaningful local faces. Keep None for ordinary one-front assets."
+	semantic_secondary_front.item_selected.connect(func(_index): rebuild())
 	semantic_attachment = _semantic_option(panel, "Attachment", Semantics.ATTACHMENTS)
 	semantic_contexts = LineEdit.new()
 	semantic_contexts.placeholder_text = "Contexts: industrial, commercial, mixed_service"
@@ -260,7 +264,7 @@ func _ready() -> void:
 	semantic_status = Label.new()
 	semantic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(semantic_status)
-	for control in [semantic_label, semantic_category_edit, semantic_purpose, semantic_kind, semantic_role, semantic_completeness, semantic_front, semantic_attachment, semantic_contexts, semantic_connections, semantic_generation_ready, semantic_notes, confirm_semantic, reset_semantic, question_button]:
+	for control in [semantic_label, semantic_category_edit, semantic_purpose, semantic_kind, semantic_role, semantic_completeness, semantic_front, semantic_secondary_front, semantic_attachment, semantic_contexts, semantic_connections, semantic_generation_ready, semantic_notes, confirm_semantic, reset_semantic, question_button]:
 		write_controls.append(control)
 	dimensions_label = Label.new()
 	dimensions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -425,7 +429,9 @@ func select_asset(id: String) -> void:
 	_select_option_value(semantic_kind, interpretation.asset_kind)
 	_select_option_value(semantic_role, interpretation.structural_role)
 	_select_option_value(semantic_completeness, interpretation.completeness)
-	_select_option_value(semantic_front, interpretation.front_face)
+	var working_faces: Array = interpretation.working_faces
+	_select_option_value(semantic_front, working_faces[0] if not working_faces.is_empty() else interpretation.front_face)
+	_select_option_value(semantic_secondary_front, working_faces[1] if working_faces.size() > 1 else "none")
 	_select_option_value(semantic_attachment, interpretation.attachment)
 	semantic_contexts.text = ", ".join(interpretation.contexts)
 	semantic_connections.text = ", ".join(interpretation.connections)
@@ -477,7 +483,8 @@ func rebuild(frame := false) -> void:
 		var semantic := Semantics.effective(selected, semantic_data)
 		var convention := PlacementConventions.record(selected, calibration_data, bounds_data)
 		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.semantic_category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
-		info.text += "Meaning: %s / %s / %s · %s\nPurpose: %s · contexts: %s\nFacing: %s · attachment: %s\nEvidence: %s\n" % [semantic.asset_kind, semantic.structural_role, semantic.completeness, semantic.interpretation_source, semantic.architectural_purpose, ", ".join(semantic.contexts), semantic.front_face, semantic.attachment, semantic.evidence]
+		var facing_text: String = " + ".join(semantic.working_faces) if not semantic.working_faces.is_empty() else semantic.front_face
+		info.text += "Meaning: %s / %s / %s · %s\nPurpose: %s · contexts: %s\nWorking faces: %s · attachment: %s\nEvidence: %s\n" % [semantic.asset_kind, semantic.structural_role, semantic.completeness, semantic.interpretation_source, semantic.architectural_purpose, ", ".join(semantic.contexts), facing_text, semantic.attachment, semantic.evidence]
 		info.text += "Snap X/Z: %s · assembly pitch: %s\nTactical policy: %s · authored footprint: %s\n%s\n" % [convention.origin_snap, convention.assembly_pitch, convention.tactical_policy, convention.authored_tactical_footprint if not convention.authored_tactical_footprint.is_empty() else "none", convention.note]
 		_axes(overlays, at, 0.65)
 	else:
@@ -486,7 +493,7 @@ func rebuild(frame := false) -> void:
 	current_bounds = Placement.mesh_bounds(content)
 	display_bounds = current_bounds
 	if mode.selected == 0 and facing_compass_toggle.button_pressed:
-		_facing_compass(overlays, current_bounds, deg_to_rad(angle.value), str(semantic_front.get_item_metadata(semantic_front.selected)))
+		_facing_compass(overlays, current_bounds, deg_to_rad(angle.value), _selected_working_faces(), str(semantic_front.get_item_metadata(semantic_front.selected)))
 	if mode.selected == 0:
 		dimensions_label.text = "MEASURED\nNative: %.3f × %.3f × %.3f\nCalibrated: %.3f × %.3f × %.3f\nSuggested footprint is planning metadata; it does not change MapData." % [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	else:
@@ -562,6 +569,8 @@ func _save_override() -> void:
 
 func _semantic_annotation_record() -> Dictionary:
 	var inferred := Semantics.inferred(selected)
+	var working_faces := _selected_working_faces()
+	var facing_state := working_faces[0] if not working_faces.is_empty() else str(semantic_front.get_item_metadata(semantic_front.selected))
 	return {
 		"label": semantic_label.text.strip_edges() if not semantic_label.text.strip_edges().is_empty() else inferred.label,
 		"semantic_category": semantic_category_edit.text.strip_edges().to_lower().replace(" ", "_") if not semantic_category_edit.text.strip_edges().is_empty() else inferred.semantic_category,
@@ -569,7 +578,8 @@ func _semantic_annotation_record() -> Dictionary:
 		"asset_kind": str(semantic_kind.get_item_metadata(semantic_kind.selected)),
 		"structural_role": str(semantic_role.get_item_metadata(semantic_role.selected)),
 		"completeness": str(semantic_completeness.get_item_metadata(semantic_completeness.selected)),
-		"front_face": str(semantic_front.get_item_metadata(semantic_front.selected)),
+		"front_face": facing_state,
+		"working_faces": working_faces,
 		"attachment": str(semantic_attachment.get_item_metadata(semantic_attachment.selected)),
 		"contexts": _tag_list(semantic_contexts.text),
 		"connections": _tag_list(semantic_connections.text),
@@ -577,6 +587,10 @@ func _semantic_annotation_record() -> Dictionary:
 		"evidence": "Confirmed in the Asset Lab by the developer.",
 		"notes": semantic_notes.text.strip_edges(),
 	}
+
+func _selected_working_faces() -> Array[String]:
+	var values: Array = [semantic_front.get_item_metadata(semantic_front.selected), semantic_secondary_front.get_item_metadata(semantic_secondary_front.selected)]
+	return Semantics.normalize_working_faces(values)
 
 func _save_semantic_annotation() -> void:
 	semantic_data.confirmed[selected] = _semantic_annotation_record()
@@ -600,7 +614,8 @@ func _clear_semantic_annotation() -> void:
 
 func _copy_identification_question() -> void:
 	var interpretation := Semantics.effective(selected, semantic_data)
-	var question := "Please help identify `%s`. Current provisional interpretation: %s / %s / %s; facing %s; attachment %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Is it complete or a fragment, what is its intended function, which side is its front or working face, what should connect to it, and which district contexts fit it?" % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, interpretation.front_face, interpretation.attachment, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
+	var facing_text: String = " + ".join(interpretation.working_faces) if not interpretation.working_faces.is_empty() else interpretation.front_face
+	var question := "Please help identify `%s`. Current provisional interpretation: %s / %s / %s; working faces %s; attachment %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Is it complete or a fragment, what is its intended function, which local face or pair of faces points outward, what should connect to it, and which district contexts fit it?" % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, facing_text, interpretation.attachment, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
 	DisplayServer.clipboard_set(question)
 	semantic_status.text = "Identification question copied for " + selected
 
@@ -762,10 +777,11 @@ static func _axes(parent: Node3D, at: Vector3, length: float) -> void:
 	_lines(parent, [at, at + Vector3.UP * length], Color.GREEN)
 	_lines(parent, [at, at + Vector3.BACK * length], Color.DODGER_BLUE)
 
-static func _facing_compass(parent: Node3D, box: AABB, yaw_radians: float, working_face: String) -> void:
+static func _facing_compass(parent: Node3D, box: AABB, yaw_radians: float, working_faces: Array[String], facing_state: String) -> void:
 	var compass := Node3D.new()
 	compass.name = "FacingCompass"
-	compass.set_meta("working_face", working_face)
+	compass.set_meta("working_face", working_faces[0] if not working_faces.is_empty() else facing_state)
+	compass.set_meta("working_faces", working_faces)
 	parent.add_child(compass)
 	var origin := Vector3(box.get_center().x, box.end.y + maxf(0.55, box.size.y * 0.06), box.get_center().z)
 	var length := clampf(maxf(box.size.x, box.size.z) * 0.32, 1.25, 10.0)
@@ -775,14 +791,18 @@ static func _facing_compass(parent: Node3D, box: AABB, yaw_radians: float, worki
 		"+z": Vector3.BACK,
 		"-z": Vector3.FORWARD,
 	}
-	if working_face in local_directions:
-		compass.set_meta("working_direction", local_directions[working_face].rotated(Vector3.UP, yaw_radians))
+	var working_directions := {}
+	for working_face in working_faces:
+		working_directions[working_face] = local_directions[working_face].rotated(Vector3.UP, yaw_radians)
+	compass.set_meta("working_directions", working_directions)
+	if working_faces.size() == 1:
+		compass.set_meta("working_direction", working_directions[working_faces[0]])
 	for axis in ["+x", "-x", "+z", "-z"]:
 		var direction: Vector3 = local_directions[axis].rotated(Vector3.UP, yaw_radians)
 		var tip := origin + direction * length
 		var side := Vector3(-direction.z, 0.0, direction.x)
 		var head := minf(0.45, length * 0.24)
-		var selected_axis: bool = axis == working_face
+		var selected_axis: bool = axis in working_faces
 		var color: Color = Color("ffd166") if selected_axis else (Color("ff5c5c") if axis.ends_with("x") else Color("4da6ff"))
 		_lines(compass, PackedVector3Array([
 			origin, tip,
@@ -801,10 +821,10 @@ static func _facing_compass(parent: Node3D, box: AABB, yaw_radians: float, worki
 		label.modulate = color
 		label.set_meta("facing_axis", axis)
 		compass.add_child(label)
-	if working_face not in local_directions:
+	if working_faces.is_empty():
 		var status := Label3D.new()
 		status.name = "FacingStatus"
-		status.text = "WORKING FACE: %s" % ("AXIS NEUTRAL" if working_face == "axis_neutral" else "NOT SET")
+		status.text = "WORKING FACE: %s" % ("AXIS NEUTRAL" if facing_state == "axis_neutral" else "NOT SET")
 		status.position = origin + Vector3.UP * 0.2
 		status.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		status.no_depth_test = true

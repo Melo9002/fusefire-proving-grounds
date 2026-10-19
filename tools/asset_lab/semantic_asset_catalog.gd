@@ -21,10 +21,12 @@ const STRUCTURAL_ROLES := [
 ]
 const COMPLETENESS := ["unknown", "complete", "fragment", "intentionally_open", "not_applicable"]
 const FRONT_FACES := ["unknown", "+z", "-z", "+x", "-x", "axis_neutral"]
+const SECONDARY_FRONT_FACES := ["none", "+z", "-z", "+x", "-x"]
+const DIRECTIONAL_FACES := ["+z", "-z", "+x", "-x"]
 const ATTACHMENTS := ["unknown", "ground", "source_origin", "wall", "overhead", "structural_socket", "ground_surface"]
 
 static func default_data() -> Dictionary:
-	return {"version": 1, "confirmed": {}}
+	return {"version": 2, "confirmed": {}}
 
 static func load_data(path := DATA_PATH) -> Dictionary:
 	var defaults := default_data()
@@ -36,7 +38,7 @@ static func load_data(path := DATA_PATH) -> Dictionary:
 	var data: Dictionary = parsed
 	if not data.has("confirmed") or not data.confirmed is Dictionary:
 		data.confirmed = {}
-	data.version = 1
+	data.version = 2
 	return data
 
 static func save_data(data: Dictionary, path := DATA_PATH) -> Error:
@@ -51,6 +53,7 @@ static func effective(id: String, data := {}) -> Dictionary:
 		data = load_data()
 	var result := inferred(id)
 	var confirmed: Dictionary = data.get("confirmed", {})
+	var has_confirmed_working_faces: bool = confirmed.has(id) and confirmed[id] is Dictionary and confirmed[id].has("working_faces")
 	if confirmed.has(id):
 		result.merge(confirmed[id], true)
 		result["interpretation_source"] = "confirmed"
@@ -62,6 +65,10 @@ static func effective(id: String, data := {}) -> Dictionary:
 		# confirmed its architectural meaning. Confidence helps prioritize the
 		# queue; it never silently promotes an asset to verified knowledge.
 		result["needs_identification"] = true
+	var source_faces: Array = result.get("working_faces", []) if has_confirmed_working_faces else [result.get("front_face", "unknown")]
+	result["working_faces"] = normalize_working_faces(source_faces)
+	if not result.working_faces.is_empty():
+		result["front_face"] = result.working_faces[0]
 	result["id"] = id
 	return result
 
@@ -75,6 +82,7 @@ static func inferred(id: String) -> Dictionary:
 		"structural_role": "detail",
 		"completeness": "not_applicable",
 		"front_face": "unknown",
+		"working_faces": [],
 		"attachment": "ground",
 		"contexts": _contexts_for(semantic),
 		"connections": [],
@@ -102,6 +110,16 @@ static func inferred(id: String) -> Dictionary:
 	elif semantic in ["unknown_manual_review"]:
 		record.merge({"asset_kind": "unknown", "structural_role": "unspecified", "completeness": "unknown", "attachment": "unknown", "confidence": "low", "contexts": []}, true)
 	return record
+
+static func normalize_working_faces(values: Array) -> Array[String]:
+	var result: Array[String] = []
+	for value in values:
+		var face := str(value).to_lower()
+		if face in DIRECTIONAL_FACES and face not in result:
+			result.append(face)
+		if result.size() == 2:
+			break
+	return result
 
 static func semantic_category(id: String) -> String:
 	var name := id.get_file()

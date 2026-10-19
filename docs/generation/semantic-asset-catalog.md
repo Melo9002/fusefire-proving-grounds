@@ -36,13 +36,13 @@ Select an asset and inspect it from several angles beside the 1.64 m MIRA. The s
 - A human-readable identity, category and architectural purpose.
 - Object kind and structural role.
 - Whether it is complete, fragmentary or intentionally open.
-- Its front or working face.
+- Its one or two equal working faces.
 - How it contacts or attaches to its surroundings.
 - Comma-separated environment contexts and connection families.
 - Notes explaining purpose, accessibility, intended combinations or uncertainty.
 - Explicit approval for procedural visual selection.
 
-The optional **Model-local facing compass** appears above the selected asset. Red arrows label local `+X` and `-X`, blue arrows label local `+Z` and `-Z`, and the current **Street / working face** is highlighted in gold. The compass includes the asset's current calibration yaw, so change the working-face dropdown until the gold arrow points out of the storefront, entrance, sign face, machine work side, or other intended frontage. Orbit around the model to confirm it from more than one angle. Use **Axis Neutral** for objects without a meaningful front and **Unknown** when visual inspection is inconclusive.
+The optional **Model-local facing compass** appears above the selected asset. Red arrows label local `+X` and `-X`, blue arrows label local `+Z` and `-Z`, and every selected working face is highlighted in gold. The compass includes the asset's current calibration yaw, so change **Working face 1** until the gold arrow points out of the storefront, entrance, sign face, machine work side, or other intended frontage. For an inner or outer corner, choose its second outward normal in **Working face 2 (equal)**; neither direction is treated as subordinate, and both rotate together when the module is placed. Structural connection sockets remain separate module metadata because they describe where adjoining pieces attach rather than which surfaces face outward. Orbit around the model to confirm the result from more than one angle. Use **Axis Neutral** for objects without a meaningful front and **Unknown** when visual inspection is inconclusive.
 
 Choose **Save confirmed meaning** only when the interpretation is supported by visual inspection or known pack conventions. **Use inference** removes the confirmed override and returns the asset to the identification queue. Calibration saving remains separate.
 
