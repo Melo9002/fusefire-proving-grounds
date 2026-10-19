@@ -31,12 +31,16 @@ func _run() -> void:
 		for view in [
 			["overview", 0.72, 0.62, true],
 			["overhead", 0.0, 1.50, true],
+			["intersection", 0.28, 0.45, false],
 			["street", 0.35, 0.14, false],
 		]:
 			editor._set_plan_overlay_visible(view[3])
 			if view[0] == "street":
 				if not editor._focus_component(&"complete_service_building", "complete building street view"):
 					editor._focus_component(&"industrial_building_shell", "complete building street view")
+			elif view[0] == "intersection":
+				if not editor._focus_component(&"road_crossroad", "road intersection view"):
+					editor._focus_component(&"road_intersection_t", "road intersection view")
 			else:
 				editor._frame_camera()
 			editor._set_camera_view(view[1], view[2])

@@ -4,6 +4,7 @@ extends RefCounted
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
+const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 
 static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 	var catalog := IndustrialModuleCatalog.create()
@@ -39,7 +40,7 @@ static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 			if block:
 				block.visible = false
 		_add_ground_marker(data, module_root, definition, placement, cell_size)
-		_add_continuous_road_surface(data, module_root, definition, placement, cell_size)
+		_add_road_streetscape(data, module_root, definition, placement, cell_size)
 		_add_elevated_surface_markers(data, module_root, definition, placement, cell_size)
 		for visual in definition.visuals:
 			_add_visual(data, module_root, definition, placement, visual, cell_size)
@@ -106,21 +107,70 @@ static func _add_box_visual(data: MapData, parent: Node3D, definition: Environme
 	mesh.set_meta("assembly_visual_role", visual.get("visual_role", &"structural"))
 	parent.add_child(mesh)
 
-static func _add_continuous_road_surface(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, cell_size: float) -> void:
+static func _add_road_streetscape(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, cell_size: float) -> void:
 	if definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]:
 		return
-	var dimensions := definition.rotated_size(placement.rotation)
+	var sections := Streetscape.surface_sections(definition.component_id)
+	if sections.is_empty():
+		return
+	var streetscape := Node3D.new()
+	streetscape.name = "RoadStreetscape"
+	streetscape.set_meta("carriageway_width", Streetscape.CARRIAGEWAY_WIDTH)
+	streetscape.set_meta("sidewalk_width", Streetscape.SIDEWALK_WIDTH)
+	parent.add_child(streetscape)
+	var environment_id: StringName = data.environment_layout_plan.environment_id if data.environment_layout_plan != null else &"mixed_service"
+	var counts := {}
+	for section in sections:
+		var kind: StringName = section.kind
+		var count := int(counts.get(kind, 0))
+		counts[kind] = count + 1
+		_add_street_section(data, streetscape, definition, placement, section, environment_id, cell_size, count)
+
+static func _add_street_section(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, section: Dictionary, environment_id: StringName, cell_size: float, index: int) -> void:
+	var kind: StringName = section.kind
+	var authored_center: Vector2 = section.center
+	var center := _rotate_point(authored_center, definition.size, placement.rotation)
+	var authored_size: Vector2 = section.size
+	var rotated_size := authored_size if posmod(placement.rotation, 2) == 0 else Vector2(authored_size.y, authored_size.x)
+	var height := Streetscape.ROAD_HEIGHT
+	if kind == Streetscape.SIDEWALK:
+		height = Streetscape.SIDEWALK_HEIGHT
+	elif kind == Streetscape.CURB:
+		height = Streetscape.CURB_HEIGHT
+	elif kind == Streetscape.MARKING:
+		height = Streetscape.MARKING_HEIGHT
 	var mesh := MeshInstance3D.new()
-	mesh.name = "ContinuousRoadSurface"
+	mesh.name = "%s_%02d" % [String(kind).to_pascal_case(), index]
 	var box := BoxMesh.new()
-	box.size = Vector3(dimensions.x * cell_size, 0.035, dimensions.y * cell_size)
+	box.size = Vector3(rotated_size.x * cell_size, height * cell_size, rotated_size.y * cell_size)
 	mesh.mesh = box
-	mesh.position = _world(data, placement.origin, Vector2(dimensions - Vector2i.ONE) * 0.5, cell_size) + Vector3.UP * 0.0175
+	mesh.position = _world(data, placement.origin, center, cell_size) + Vector3.UP * _street_section_center_y(kind, cell_size)
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("30363b")
-	material.roughness = 0.96
+	material.albedo_color = _street_section_color(kind, environment_id)
+	material.roughness = 0.94
 	mesh.material_override = material
 	parent.add_child(mesh)
+
+static func _street_section_center_y(kind: StringName, cell_size: float) -> float:
+	if kind == Streetscape.SIDEWALK:
+		return Streetscape.SIDEWALK_HEIGHT * 0.5 * cell_size
+	if kind == Streetscape.CURB:
+		return Streetscape.CURB_HEIGHT * 0.5 * cell_size
+	if kind == Streetscape.MARKING:
+		return (Streetscape.ROAD_HEIGHT + Streetscape.MARKING_HEIGHT * 0.5) * cell_size
+	return Streetscape.ROAD_HEIGHT * 0.5 * cell_size
+
+static func _street_section_color(kind: StringName, environment_id: StringName) -> Color:
+	if kind == Streetscape.ASPHALT:
+		return Color("2e3438") if environment_id == &"industrial_district" else Color("353a3d")
+	if kind == Streetscape.SIDEWALK:
+		match environment_id:
+			&"industrial_district": return Color("687176")
+			&"commercial_street": return Color("92918a")
+			_: return Color("777d7a")
+	if kind == Streetscape.CURB:
+		return Color("b8b7ad") if environment_id == &"commercial_street" else Color("8b9292")
+	return Color("d4aa43")
 
 static func _rotate_point(point: Vector2, size: Vector2i, rotation: int) -> Vector2:
 	match posmod(rotation, 4):
@@ -134,6 +184,8 @@ static func _world(data: MapData, origin: Vector2i, offset: Vector2, cell_size: 
 	return base.world_position + Vector3(offset.x * cell_size, 0.0, offset.y * cell_size)
 
 static func _add_ground_marker(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, cell_size: float) -> void:
+	if definition.module_type in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]:
+		return
 	if not definition.visuals.is_empty() or definition.placement_layer != EnvironmentModuleDefinition.PlacementLayer.GROUND:
 		return
 	var dimensions := definition.rotated_size(placement.rotation)

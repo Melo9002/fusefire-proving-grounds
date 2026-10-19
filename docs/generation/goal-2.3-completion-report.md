@@ -45,7 +45,7 @@ Representative inspection seeds are:
 
 ## Map Editor
 
-The Map Editor selector includes authored layouts and all three procedural identities. Procedural maps use a 50 × 40 tactical canvas. Cyan outlines identify road plot cells; amber outlines identify parcels. Press `P` or use **Plan overlay** to hide those diagnostics and inspect the rendered environment. Status text reports topology, road and parcel counts, rejection count, fallback use, component count, and shared tactical validation.
+The Map Editor selector includes authored layouts and all three procedural identities. Procedural maps use a 60 × 50 tactical canvas. Cyan outlines identify road plot cells; amber outlines identify parcels. Press `P` or use **Plan overlay** to hide those diagnostics and inspect the rendered environment. Status text reports topology, road and parcel counts, rejection count, fallback use, component count, and shared tactical validation.
 
 The compact Map Composer mode can start from its fixture or copy the displayed authored/generated layout. It supports catalog selection, click-to-place grid snapping, selection outlines, one-cell movement, quarter-turn rotation, deletion, placement validation, and save/reload through readable project-local JSON. This creates the authored parcel workflow needed to improve procedural composition without hard-coding every arrangement.
 
@@ -74,7 +74,7 @@ The automated results establish deterministic planning, bounded termination, con
 ## Remaining limits
 
 - Road grammar currently creates one intersection with straight approaches. Multiple intersections, curves, lane markings, curbs, and secondary streets remain extensions.
-- The first template catalog is intentionally small and creates at most one large district parcel.
+- The template catalog remains intentionally compact. Expanded maps can reserve several large district parcels, while constrained topology may produce fewer.
 - City Kit shells are exterior-only tactical obstacles. Derived service buildings are enterable but lack furnished interiors and gameplay-driven roof cutaways.
 - Many catalog assets still lack authored visual envelopes and functional parcel roles.
 - Open-ground fallback is explicit but not yet scored for environmental quality.

@@ -131,7 +131,7 @@ func _rebuild() -> void:
 	if layout_preset == CUSTOM_LAYOUT:
 		data = _build_custom_map()
 	elif layout_preset in PROCEDURAL_LAYOUTS:
-		data = FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, generation_seed, layout_preset)
+		data = FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, generation_seed, layout_preset)
 	else:
 		data = FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
 	displayed_data = data

@@ -46,13 +46,13 @@ Suitability metadata identifies candidate spawn, objective, and extraction cells
 
 Vertical modules add explicit elevated `MapCellData` surfaces and `TraversalLinkData`; meshes never create walkability. The stair and service-ramp definitions declare local endpoints, elevations, traversal kinds, and bidirectionality. Platforms and walkways declare their elevated cells. The shared translator rotates and places that data into the map, while the presenter renders calibrated models and neutral authored-surface markers.
 
-Legacy Goal 2.2 components retain explicit module-local presentation scales: City Kit Roads use their original ten-unit module rhythm and Factory facades use a 2.01 presentation scale with a 0.5% seam bleed. These values are part of those authored compositions and do not follow mutable Asset Lab category presets. The current inspection baselines are road scale 5 and Factory scale 1.5; adopting them in a gameplay module requires retuning that module's visuals and validating its existing tactical contract. Loading a map never edits Asset Laboratory calibration or review state.
+Legacy Goal 2.2 components retain explicit module-local presentation scales. The authored 20 × 20 road corner still uses the imported City Roads mesh; coherent straight, crossroad, and T-junction modules now use exact derived geometry on the same ten-unit pitch so carriageways, curbs, and sidewalks meet without stretched imported tiles. Factory facades use a 2.01 presentation scale with a 0.5% seam bleed. These values are part of those authored compositions and do not follow mutable Asset Lab category presets. The current inspection baselines are road scale 5 and Factory scale 1.5; adopting them in a gameplay module requires retuning that module's visuals and validating its existing tactical contract. Loading a map never edits Asset Laboratory calibration or review state.
 
 The current authored footprints are deliberately different from raw visual bounds where the tactical meaning demands it:
 
 | Component | Logical footprint | Visual convention | Tactical meaning |
 | --- | ---: | --- | --- |
-| Straight road / paving | 10 × 10 | 10-unit integer pitch | Open ground |
+| Straight road | 10 × 10 | 6-unit carriageway + two 2-unit sidewalks | Open ground; explicit barriers can add vaultable cover |
 | Road curve | 20 × 20 | Two road pitches | Open ground |
 | Factory wall run | 4 × 1 | Two 2-unit wall bays | Blocking full cover |
 | Wide doorway | 4 × 1 | One 4-unit entrance bay | Blocking jambs, two open center lanes |

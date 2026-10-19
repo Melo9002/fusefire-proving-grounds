@@ -123,14 +123,13 @@ static func _road_straight() -> EnvironmentModuleDefinition:
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.ROAD)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
-	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads tiles use the calibrated ten-unit pitch; surfaces sit 0.02 units above the base plane to prevent z-fighting.")
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Derived ten-unit street section: six-unit carriageway, two-unit sidewalks, curbs and markings. Tactical cells remain ordinary ground.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(5, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
-	item.add_visual(ROADS + "road-straight.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
 	return item
 
 static func _road_corner() -> EnvironmentModuleDefinition:
@@ -210,7 +209,7 @@ static func _alley() -> EnvironmentModuleDefinition:
 	return item
 
 static func _road_intersection() -> EnvironmentModuleDefinition:
-	var item := _road_tile(&"road_intersection_t", "road-intersection.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
+	var item := _road_tile(&"road_intersection_t", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(0, 5), Vector2i.LEFT, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
@@ -220,7 +219,7 @@ static func _road_intersection() -> EnvironmentModuleDefinition:
 	return item
 
 static func _road_crossroad() -> EnvironmentModuleDefinition:
-	var item := _road_tile(&"road_crossroad", "road-crossroad.glb", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
+	var item := _road_tile(&"road_crossroad", EnvironmentModuleDefinition.ModuleType.INTERSECTION)
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(5, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
@@ -231,13 +230,12 @@ static func _road_crossroad() -> EnvironmentModuleDefinition:
 	item.add_connection(Vector2i(9, 5), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
 	return item
 
-static func _road_tile(id: StringName, model: String, type: EnvironmentModuleDefinition.ModuleType) -> EnvironmentModuleDefinition:
+static func _road_tile(id: StringName, type: EnvironmentModuleDefinition.ModuleType) -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(id, &"city_roads", Vector2i(10, 10))
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(type)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
-	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "City Roads ten-unit connection pitch.")
-	item.add_visual(ROADS + model, Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Derived intersection geometry follows the same six-unit carriageway and two-unit sidewalk contract as straight streets.")
 	return item
 
 static func _shop_front() -> EnvironmentModuleDefinition:

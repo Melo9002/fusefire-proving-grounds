@@ -10,6 +10,7 @@ func _run() -> void:
 	_test_spatial_contracts(catalog)
 	_test_environment_generation(catalog)
 	_test_visual_composition(catalog)
+	_test_expanded_district_catalog()
 	await _test_map_editor()
 	print("Coherent layout assembly: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -56,8 +57,8 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	var ids: Dictionary = {}
 	for placement in data.environment_modules:
 		ids[placement.component_id] = int(ids.get(placement.component_id, 0)) + 1
-	check(ids.has(&"industrial_building_shell"), "A coherent district reserves a multi-parcel complete building shell")
-	check(ids.has(&"complete_service_building"), "Commercial parcels use complete four-sided buildings")
+	check(not ids.has(&"industrial_building_shell"), "Commercial districts do not misuse industrial-only shell assets")
+	check(ids.has(&"complete_service_building"), "Commercial blocks reuse complete four-sided buildings around a shared frontage")
 	check(not ids.has(&"factory_shop_front") and not ids.has(&"factory_window_wall"), "Procedural parcels do not expose freestanding facade samples as buildings")
 	check(ids.has(&"traffic_signal") and ids.has(&"street_light"), "Commercial road furniture is attached to the street plan")
 	var has_large_parcel := false
@@ -76,9 +77,32 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	var presentation := Node3D.new()
 	root.add_child(presentation)
 	ModularEnvironmentPresenter.build(data, presentation, 1.0)
-	var road_surfaces := presentation.find_children("ContinuousRoadSurface", "MeshInstance3D", true, false)
-	check(road_surfaces.size() == data.environment_layout_plan.road_cells.size(), "Every logical road tile receives a continuous visible surface")
+	var road_surfaces := presentation.find_children("RoadStreetscape", "Node3D", true, false)
+	check(road_surfaces.size() == data.environment_layout_plan.road_cells.size(), "Every logical road tile receives a complete derived streetscape")
+	for streetscape in road_surfaces:
+		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Every streetscape presents a continuous carriageway")
+		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Every streetscape presents authored sidewalks")
 	presentation.queue_free()
+
+func _test_expanded_district_catalog() -> void:
+	var seen_shell_variants: Dictionary = {}
+	for environment_id in [&"industrial_district", &"mixed_service"]:
+		for map_seed in [2208, 7319]:
+			var data := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, map_seed, environment_id)
+			var shell_count := 0
+			for placement in data.environment_modules:
+				if placement.component_id == &"industrial_building_shell":
+					shell_count += 1
+					seen_shell_variants[placement.variation] = true
+			check(shell_count >= 2, "%s seed %d reserves multiple complete reviewed shell parcels" % [environment_id, map_seed])
+	var commercial := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, 7319, &"commercial_street")
+	var commercial_buildings := 0
+	for placement in commercial.environment_modules:
+		check(placement.component_id != &"industrial_building_shell", "Commercial parcels exclude industrial-only semantic candidates")
+		if placement.component_id == &"complete_service_building":
+			commercial_buildings += 1
+	check(commercial_buildings >= 2, "The expanded commercial district assembles multiple complete street buildings")
+	check(seen_shell_variants.size() >= 3, "Representative industrial seeds exercise several reviewed shell assets")
 
 func _test_map_editor() -> void:
 	var editor = load("res://tools/map_editor.tscn").instantiate()
@@ -90,7 +114,7 @@ func _test_map_editor() -> void:
 	editor._rebuild()
 	await process_frame
 	check(editor.content.get_node_or_null("SpatialPlan") != null, "Map Editor draws the generated road and parcel plan")
-	check(editor.preview_map_size == Vector2i(50, 40), "Map Editor frames the larger coherent-generation canvas")
+	check(editor.preview_map_size == Vector2i(60, 50), "Map Editor frames the expanded coherent-generation canvas")
 	check("crossroad" in editor.status.text or "t junction" in editor.status.text, "Map Editor reports topology and generation diagnostics")
 	check("VALID" in editor.status.text, "Map Editor validates the procedural sample tactically")
 	editor.queue_free()

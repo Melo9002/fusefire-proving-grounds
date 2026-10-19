@@ -5,6 +5,7 @@ const SOURCE_KIND := "generated_modular_coherent"
 const MACRO_SIZE := 10
 const ENVIRONMENTS: Array[StringName] = [&"industrial_district", &"commercial_street", &"mixed_service"]
 const MAX_TEMPLATE_ATTEMPTS := 6
+const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -89,19 +90,60 @@ static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentL
 	return _road_network_connected(layout, catalog)
 
 static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> void:
-	# Furniture is attached to the road plot as a deliberate pass. It never
-	# competes with the ground layer and never gets sprinkled into arbitrary lots.
+	# Furniture is attached to authored slots in the road cross-section. Reviewed
+	# kit assets give each identity character while the inner sidewalk lane,
+	# entrances, and carriageway remain unobstructed.
+	var straight_index := 0
+	var fixture_count := 0
+	var obstacle_count := 0
 	for placement in layout.placements.duplicate():
 		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
 		if definition.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION:
-			var signal_id: StringName = &"traffic_signal" if plan.environment_id == &"commercial_street" else &"stop_sign"
-			for authored in [[Vector2i(1, 1), 0], [Vector2i(8, 1), 1], [Vector2i(8, 8), 2], [Vector2i(1, 8), 3]]:
-				layout.try_add(catalog[signal_id], EnvironmentModulePlacement.new(signal_id, placement.origin + authored[0], authored[1]), map_size)
-		elif definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD and rng.randi_range(0, 2) == 0:
-			var local := Vector2i(1, 1) if placement.rotation % 2 == 0 else Vector2i(1, 8)
-			var furniture_id: StringName = &"utility_pole" if plan.environment_id == &"industrial_district" else &"street_light"
-			layout.try_add(catalog[furniture_id], EnvironmentModulePlacement.new(furniture_id, placement.origin + local, placement.rotation, rng.randi_range(0, 1)), map_size)
-	plan.decisions.append("road furniture follows intersections and street edges")
+			var signal_id := _intersection_fixture_id(plan.environment_id, placement.component_id)
+			var seen_directions: Dictionary = {}
+			for connection in definition.connections:
+				if connection.type != EnvironmentModuleConnection.Type.ROAD or seen_directions.has(connection.direction):
+					continue
+				seen_directions[connection.direction] = true
+				var fixture := Streetscape.approach_fixture(connection.direction)
+				var local_cell: Vector2i = definition.rotate_cell(fixture.cell, placement.rotation)
+				var yaw := posmod(int(fixture.yaw) + placement.rotation, 4)
+				if layout.try_add(catalog[signal_id], EnvironmentModulePlacement.new(signal_id, placement.origin + local_cell, yaw), map_size):
+					fixture_count += 1
+		elif definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD:
+			var fixture := Streetscape.straight_fixture_slot(straight_index)
+			var fixture_id := _straight_fixture_id(plan.environment_id, straight_index)
+			var fixture_cell: Vector2i = definition.rotate_cell(fixture.cell, placement.rotation)
+			var fixture_yaw := posmod(int(fixture.yaw) + placement.rotation, 4)
+			if layout.try_add(catalog[fixture_id], EnvironmentModulePlacement.new(fixture_id, placement.origin + fixture_cell, fixture_yaw, rng.randi_range(0, 1)), map_size):
+				fixture_count += 1
+			if _should_add_street_obstacle(plan.environment_id, straight_index):
+				var obstacle := Streetscape.straight_fixture_slot(straight_index, true)
+				var obstacle_cell: Vector2i = definition.rotate_cell(obstacle.cell, placement.rotation)
+				var obstacle_yaw := posmod(int(obstacle.yaw) + placement.rotation, 4)
+				if layout.try_add(catalog.construction_barrier_vault, EnvironmentModulePlacement.new(&"construction_barrier_vault", placement.origin + obstacle_cell, obstacle_yaw), map_size):
+					obstacle_count += 1
+			straight_index += 1
+	plan.decisions.append("streetscape placed %d reviewed kit fixtures and %d deliberate tactical barriers" % [fixture_count, obstacle_count])
+
+static func _intersection_fixture_id(environment_id: StringName, intersection_id: StringName) -> StringName:
+	if environment_id == &"commercial_street" or (environment_id == &"mixed_service" and intersection_id == &"road_crossroad"):
+		return &"traffic_signal"
+	return &"stop_sign"
+
+static func _straight_fixture_id(environment_id: StringName, index: int) -> StringName:
+	if environment_id == &"commercial_street":
+		return &"street_light"
+	if environment_id == &"industrial_district":
+		return &"utility_pole" if posmod(index, 3) != 1 else &"street_light"
+	return &"street_light" if posmod(index, 2) == 0 else &"utility_pole"
+
+static func _should_add_street_obstacle(environment_id: StringName, index: int) -> bool:
+	if environment_id == &"industrial_district":
+		return posmod(index, 5) == 2
+	if environment_id == &"mixed_service":
+		return posmod(index, 6) == 3
+	return false
 
 static func _road_network_connected(layout: EnvironmentModuleLayout, catalog: Dictionary) -> bool:
 	var roads: Array[EnvironmentModulePlacement] = []
@@ -132,8 +174,8 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 	var consumed: Dictionary = {}
 	var index := 0
 	# XCOM's useful lesson is that a parcel is an authored complete space, not
-	# necessarily one grid tile. Reserve one 2x2 parcel for a complete building
-	# and its service apron, then fill the remaining single lots.
+	# necessarily one grid tile. Reserve several non-overlapping 2x2 parcels for
+	# complete buildings and their frontage, then fill the remaining single lots.
 	var large_origins: Array[Vector2i] = []
 	for z in rows - 1:
 		for x in columns - 1:
@@ -146,8 +188,22 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 					break
 			if valid and not _road_edges_for_macro_rect(origin, Vector2i(2, 2), road_lookup).is_empty():
 				large_origins.append(origin)
-	if not large_origins.is_empty():
-		var chosen := large_origins[rng.randi_range(0, large_origins.size() - 1)]
+	_shuffle_vector_cells(large_origins, rng)
+	var large_target := 2
+	match plan.environment_id:
+		&"industrial_district": large_target = 3
+		&"mixed_service": large_target = 2
+	var large_count := 0
+	for chosen in large_origins:
+		if large_count >= large_target:
+			break
+		var overlaps := false
+		for dz in 2:
+			for dx in 2:
+				if consumed.has(chosen + Vector2i(dx, dz)):
+					overlaps = true
+		if overlaps:
+			continue
 		for dz in 2:
 			for dx in 2:
 				consumed[chosen + Vector2i(dx, dz)] = true
@@ -158,6 +214,7 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 			"template": &"unassigned", "rotation": 0, "boundary": _touches_map_boundary(Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2)), map_size),
 		})
 		index += 1
+		large_count += 1
 	for z in rows:
 		for x in columns:
 			var macro := Vector2i(x, z)
@@ -199,10 +256,13 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 	var result: Array[StringName]
 	var bounds: Rect2i = parcel.bounds
 	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
-		return [&"district_building"]
+		result.append(&"commercial_block" if environment_id == &"commercial_street" else &"industrial_shell_block")
+		return result
 	var has_frontage: bool = not (parcel.road_edges as Array).is_empty()
 	if not has_frontage:
-		result = [&"courtyard", &"service_alley"]
+		# A landlocked parcel is intentionally undeveloped. Paving it and adding
+		# service clutter made the district read as disconnected tile chunks.
+		result = [&"open_ground"]
 	elif parcel_index == 0:
 		match environment_id:
 			&"industrial_district": result = [&"loading_bay", &"workshop", &"yard"]
@@ -219,7 +279,9 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
 	match template_id:
-		&"district_building":
+		&"open_ground":
+			local = []
+		&"industrial_shell_block":
 			local = [
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
@@ -228,6 +290,16 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 				EnvironmentModulePlacement.new(&"industrial_building_shell", Vector2i(3, 3), 0, rng.randi_range(0, 4)),
 				EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 1), 0, rng.randi_range(0, 1)),
 				EnvironmentModulePlacement.new(&"street_light", Vector2i(18, 1), 2, rng.randi_range(0, 1)),
+			]
+		&"commercial_block":
+			local = [
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
+				EnvironmentModulePlacement.new(&"complete_service_building", Vector2i(5, 0)),
+				EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 11), 0, rng.randi_range(0, 1)),
+				EnvironmentModulePlacement.new(&"street_light", Vector2i(18, 11), 2, rng.randi_range(0, 1)),
 			]
 		&"shop":
 			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"complete_service_building", Vector2i.ZERO)]
@@ -285,6 +357,13 @@ static func _clone_layout(source: EnvironmentModuleLayout, catalog: Dictionary, 
 	return result
 
 static func _shuffle(values: Array[StringName], rng: RandomNumberGenerator) -> void:
+	for index in range(values.size() - 1, 0, -1):
+		var swap_index := rng.randi_range(0, index)
+		var held := values[index]
+		values[index] = values[swap_index]
+		values[swap_index] = held
+
+static func _shuffle_vector_cells(values: Array[Vector2i], rng: RandomNumberGenerator) -> void:
 	for index in range(values.size() - 1, 0, -1):
 		var swap_index := rng.randi_range(0, index)
 		var held := values[index]

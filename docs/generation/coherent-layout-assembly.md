@@ -8,10 +8,10 @@ Goal 2.3 turns the reusable Goal 2.2 modules into seeded places with roads, parc
 
 1. Select an environment identity: industrial district, commercial street, or mixed service.
 2. Build a connected macro road plot from a crossroad or T-junction grammar.
-3. Derive road-facing parcels, including one larger 20 × 20 district parcel where space permits.
+3. Derive road-facing parcels, including multiple non-overlapping 20 × 20 district parcels where space permits.
 4. Choose authored parcel compositions appropriate to the identity and parcel size.
 5. Rotate each composition toward a compatible road edge and try bounded alternatives.
-6. Add contextual street furniture after the road graph is known.
+6. Build a six-unit carriageway with two-unit sidewalks and attach contextual kit furniture after the road graph is known.
 7. Commit accepted tactical effects to `MapData`, validate routes, and repair deployment candidates onto road-connected ground when necessary.
 
 Identical inputs and seeds make the same decisions. Different seeds can change the road topology, district parcel location, parcel composition, component variation, and contextual details.
@@ -37,13 +37,16 @@ The presenter resolves catalog visual references through the saved Asset Lab cal
 
 The first grammar includes:
 
-- Continuous road surfaces for every logical road and intersection cell.
-- A large industrial shell parcel using a complete City Kit Industrial building asset.
+- Continuous derived roadbeds, sidewalks, curbs, and markings for every logical road and intersection cell.
+- Large industrial shell parcels using five confirmed, procedurally approved City Kit Industrial building variants.
+- Commercial blocks that assemble complete four-sided service buildings around paved street frontage without borrowing industrial-only semantic candidates.
 - A validated, exact-geometry service building with a complete shell, roofed usable floor, and one road-facing entrance.
 - Loading areas with calibrated containers and dumpsters.
 - Machinery yards with perimeter fencing.
 - Paved service alleys and courtyards.
-- Road-context traffic signals, stop signs, streetlights, and utility poles.
+- Road-context traffic signals, stop signs, streetlights, utility poles, and deliberate vaultable barriers selected from the reviewed semantic catalog.
+
+The exact street cross-section and environment-specific furniture rules are documented in [Road Streetscapes](road-streetscapes.md).
 
 Freestanding shop fronts and window walls remain valid catalog modules for authored assemblies, but the procedural generator no longer treats them as complete buildings.
 
@@ -65,7 +68,7 @@ Use right-drag to orbit, middle-drag to pan, the wheel to zoom, and click a comp
 
 Press `D` or enable **Spatial contracts** after selecting a component to inspect the data that governs its placement. Debug Draw 3D renders the tactical footprint in green, required clearance in amber, calibrated visual envelope in magenta, and rotation-aware connection sockets as cyan arrows. These overlays are diagnostic views of authored contracts; they do not create or modify `MapData` cells.
 
-The automated capture fixture records overview, overhead, and street-level views:
+The automated capture fixture records overview, overhead, intersection, and street-level views:
 
 ```powershell
 godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- artifacts/goal23-quality
@@ -85,8 +88,8 @@ Rendered captures are inspection evidence; headless tests do not establish visua
 
 ## Current limits
 
-- The road grammar has one intersection with straight approaches; lane markings, curves, secondary streets, and multi-block networks remain future work.
-- The grammar currently creates at most one large district parcel per map.
+- The road grammar has one intersection with straight approaches; lane markings are present, while curves, crosswalks, secondary streets, and multi-block networks remain future work.
+- The 60 × 50 Map Editor canvas reserves up to three large industrial parcels, two mixed-service parcels, or two commercial blocks where the road topology permits; constrained maps degrade to fewer large parcels.
 - City Kit building shells are exterior-only tactical obstacles. Derived service buildings are enterable, but they do not yet have furnished interiors or gameplay-driven roof cutaways. See [Structural Building Assemblies](structural-building-assemblies.md) for the asset measurements and completeness contract.
 - Contextual details use a small subset of the calibrated catalog. More authored parcel assemblies are needed before every seed can have the same visual density.
 - Mission suitability is validated after assembly. Future mission-aware generation should reserve required parcels before commitment.
