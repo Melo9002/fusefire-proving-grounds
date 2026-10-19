@@ -3,6 +3,7 @@ extends RefCounted
 
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
+const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 
 static func build(data: MapData, parent: Node3D, cell_size: float) -> void:
 	var catalog := IndustrialModuleCatalog.create()
@@ -55,7 +56,11 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 	var saved_offset := Vector3.ZERO
 	var asset_ids: Array = visual.get("asset_ids", [])
 	if not asset_ids.is_empty():
-		var asset_id: String = asset_ids[placement.variation % asset_ids.size()]
+		var approved := SemanticCatalog.generation_candidates(asset_ids)
+		if approved.is_empty():
+			push_warning("No semantically approved visual candidates for %s" % definition.component_id)
+			return
+		var asset_id: String = approved[placement.variation % approved.size()]
 		var profile := AssetCatalog.profile(asset_id)
 		asset_path = AssetCatalog.path_for(asset_id)
 		factor = float(profile.scale)

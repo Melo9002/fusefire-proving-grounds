@@ -7,6 +7,8 @@ extends RefCounted
 ## floor, entrances and roof coverage.  MapData remains authoritative after the
 ## associated module's cell effects are translated into the generated map.
 
+const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
+
 enum Enclosure {
 	CLOSED,
 	OPEN_SHELTER,
@@ -42,6 +44,9 @@ func validate() -> PackedStringArray:
 	if enclosure == Enclosure.PREBUILT_SHELL:
 		if source_assets.is_empty():
 			errors.append("%s prebuilt shell has no source assets" % assembly_id)
+		for asset_id in source_assets:
+			if not SemanticCatalog.compatible_as_complete_building(asset_id):
+				errors.append("%s uses %s without confirmed complete-building metadata" % [assembly_id, asset_id])
 		return errors
 	if usable_floor_cells.is_empty():
 		errors.append("%s has no usable floor" % assembly_id)

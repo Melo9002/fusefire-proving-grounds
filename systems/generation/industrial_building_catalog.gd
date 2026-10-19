@@ -5,6 +5,7 @@ extends RefCounted
 ## whole-building contracts instead of treating facades as buildings.
 
 const INDUSTRIAL := "res://art/environments/kenney/city_kit_industrial/models/"
+const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 
 static func create() -> Dictionary:
 	var result := {}
@@ -114,11 +115,12 @@ static func _loading_canopy() -> EnvironmentBuildingDefinition:
 static func _prebuilt_industrial_shell() -> EnvironmentBuildingDefinition:
 	var building := EnvironmentBuildingDefinition.new(&"city_industrial_shell", &"sealed_industrial_building", EnvironmentBuildingDefinition.Enclosure.PREBUILT_SHELL, Vector2i(14, 14))
 	building.notes = "Complete vendor-authored exterior used as a sealed tactical mass until a matching interior and entrance are authored."
-	building.source_assets = [
+	var shell_candidates := [
 		"city_kit_industrial/building-h", "city_kit_industrial/building-i",
 		"city_kit_industrial/building-j", "city_kit_industrial/building-k",
 		"city_kit_industrial/building-o",
 	]
+	building.source_assets = Semantics.generation_candidates(shell_candidates, {}, "complete_building")
 	var item := EnvironmentModuleDefinition.new(&"industrial_building_shell", &"city_industrial_buildings", building.parcel_size)
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.STRUCTURE)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.SHOP)

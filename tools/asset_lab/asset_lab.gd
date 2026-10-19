@@ -1,12 +1,14 @@
 extends Control
 ## Standalone presentation sandbox; no battle, grid singleton, or combat state.
 const Catalog = preload("res://tools/asset_lab/asset_catalog.gd")
+const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
 const PlacementConventions = preload("res://tools/asset_lab/asset_placement_conventions.gd")
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const MIRA_REFERENCE_HEIGHT := 1.64
 const MIRA_RUNTIME_HEIGHT := 1.60
 @export_file("*.json") var calibration_path := Catalog.DATA_PATH
+@export_file("*.json") var semantic_path := Semantics.DATA_PATH
 var world: Node3D
 var content: Node3D
 var overlays: Node3D
@@ -17,6 +19,7 @@ var search: LineEdit
 var family_filter: OptionButton
 var review_filter: OptionButton
 var semantic_filter: OptionButton
+var interpretation_filter: OptionButton
 var info: Label
 var mode: OptionButton
 var anchor: OptionButton
@@ -51,11 +54,26 @@ var footprint_z: SpinBox
 var calibration_notes: TextEdit
 var dimensions_label: Label
 var calibration_data: Dictionary
+var semantic_data: Dictionary
 var bounds_data: Dictionary
 var write_controls: Array[Control] = []
+var semantic_kind: OptionButton
+var semantic_label: LineEdit
+var semantic_category_edit: LineEdit
+var semantic_purpose: LineEdit
+var semantic_role: OptionButton
+var semantic_completeness: OptionButton
+var semantic_front: OptionButton
+var semantic_attachment: OptionButton
+var semantic_contexts: LineEdit
+var semantic_connections: LineEdit
+var semantic_notes: TextEdit
+var semantic_status: Label
+var semantic_generation_ready: CheckBox
 
 func _ready() -> void:
 	calibration_data = Catalog.load_calibrations(calibration_path)
+	semantic_data = Semantics.load_data(semantic_path)
 	bounds_data = PlacementConventions.load_bounds()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var row := HBoxContainer.new()
@@ -84,11 +102,15 @@ func _ready() -> void:
 	for label in ["All review states", "Unreviewed only", "Reviewed only"]:
 		review_filter.add_item(label)
 	panel.add_child(review_filter)
+	interpretation_filter = OptionButton.new()
+	for label in ["All interpretation states", "Needs identification", "Confirmed semantics", "Inferred semantics"]:
+		interpretation_filter.add_item(label)
+	panel.add_child(interpretation_filter)
 	semantic_filter = OptionButton.new()
 	semantic_filter.add_item("All semantic categories")
 	var semantic_categories: Array[String] = []
 	for id in Catalog.all_ids():
-		var semantic := Catalog.semantic_category(id)
+		var semantic: String = Semantics.effective(id, semantic_data).semantic_category
 		if semantic not in semantic_categories:
 			semantic_categories.append(semantic)
 	semantic_categories.sort()
@@ -105,6 +127,7 @@ func _ready() -> void:
 	search.text_changed.connect(_filter)
 	family_filter.item_selected.connect(func(_i): _filter(search.text))
 	review_filter.item_selected.connect(func(_i): _filter(search.text))
+	interpretation_filter.item_selected.connect(func(_i): _filter(search.text))
 	semantic_filter.item_selected.connect(func(_i): _filter(search.text))
 	asset_list.item_selected.connect(func(i): select_asset(asset_list.get_item_metadata(i)))
 	_filter("")
@@ -183,6 +206,58 @@ func _ready() -> void:
 	calibration_notes.text_changed.connect(_update_save_status)
 	panel.add_child(calibration_notes)
 	write_controls.append(calibration_notes)
+	var semantic_heading := Label.new()
+	semantic_heading.text = "SEMANTIC INTERPRETATION"
+	semantic_heading.add_theme_font_size_override("font_size", 15)
+	panel.add_child(semantic_heading)
+	semantic_label = LineEdit.new()
+	semantic_label.placeholder_text = "Human name"
+	panel.add_child(semantic_label)
+	semantic_category_edit = LineEdit.new()
+	semantic_category_edit.placeholder_text = "Semantic category"
+	panel.add_child(semantic_category_edit)
+	semantic_purpose = LineEdit.new()
+	semantic_purpose.placeholder_text = "Purpose: warehouse, storefront, loading equipment…"
+	panel.add_child(semantic_purpose)
+	semantic_kind = _semantic_option(panel, "Object kind", Semantics.KINDS)
+	semantic_role = _semantic_option(panel, "Structural role", Semantics.STRUCTURAL_ROLES)
+	semantic_completeness = _semantic_option(panel, "Completeness", Semantics.COMPLETENESS)
+	semantic_front = _semantic_option(panel, "Street / working face", Semantics.FRONT_FACES)
+	semantic_attachment = _semantic_option(panel, "Attachment", Semantics.ATTACHMENTS)
+	semantic_contexts = LineEdit.new()
+	semantic_contexts.placeholder_text = "Contexts: industrial, commercial, mixed_service"
+	panel.add_child(semantic_contexts)
+	semantic_connections = LineEdit.new()
+	semantic_connections.placeholder_text = "Connections: road, sidewalk, factory_bay…"
+	panel.add_child(semantic_connections)
+	semantic_generation_ready = CheckBox.new()
+	semantic_generation_ready.text = "Approved for procedural visual selection"
+	semantic_generation_ready.tooltip_text = "This approves visual selection only; it does not create tactical occupancy, cover, collision, or traversal."
+	panel.add_child(semantic_generation_ready)
+	semantic_notes = TextEdit.new()
+	semantic_notes.placeholder_text = "Purpose, intended combinations, accessibility, or ambiguity"
+	semantic_notes.custom_minimum_size.y = 72
+	panel.add_child(semantic_notes)
+	var semantic_buttons := HBoxContainer.new()
+	panel.add_child(semantic_buttons)
+	var confirm_semantic := Button.new()
+	confirm_semantic.text = "Save confirmed meaning"
+	confirm_semantic.pressed.connect(_save_semantic_annotation)
+	semantic_buttons.add_child(confirm_semantic)
+	var reset_semantic := Button.new()
+	reset_semantic.text = "Use inference"
+	reset_semantic.pressed.connect(_clear_semantic_annotation)
+	semantic_buttons.add_child(reset_semantic)
+	var question_button := Button.new()
+	question_button.text = "Copy identification question"
+	question_button.tooltip_text = "Copy the asset ID, current inference, dimensions and a compact question for collaborative review."
+	question_button.pressed.connect(_copy_identification_question)
+	panel.add_child(question_button)
+	semantic_status = Label.new()
+	semantic_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(semantic_status)
+	for control in [semantic_label, semantic_category_edit, semantic_purpose, semantic_kind, semantic_role, semantic_completeness, semantic_front, semantic_attachment, semantic_contexts, semantic_connections, semantic_generation_ready, semantic_notes, confirm_semantic, reset_semantic, question_button]:
+		write_controls.append(control)
 	dimensions_label = Label.new()
 	dimensions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(dimensions_label)
@@ -190,6 +265,10 @@ func _ready() -> void:
 	next_button.text = "Next unreviewed asset"
 	next_button.pressed.connect(_next_unreviewed)
 	panel.add_child(next_button)
+	var identify_button := Button.new()
+	identify_button.text = "Next asset needing identification"
+	identify_button.pressed.connect(_next_needs_identification)
+	panel.add_child(identify_button)
 	category_label = Label.new()
 	panel.add_child(category_label)
 	category_scale = _number(panel, "Category preset scale", 0.01, 50, 0.01, 1)
@@ -271,6 +350,20 @@ func _number(panel: VBoxContainer, label: String, low: float, high: float, step:
 	box.value_changed.connect(func(_v): rebuild())
 	return box
 
+func _semantic_option(panel: VBoxContainer, label: String, values: Array) -> OptionButton:
+	var row := HBoxContainer.new()
+	panel.add_child(row)
+	var text := Label.new()
+	text.text = label
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(text)
+	var option := OptionButton.new()
+	for value in values:
+		option.add_item(str(value).replace("_", " ").capitalize())
+		option.set_item_metadata(option.item_count - 1, value)
+	row.add_child(option)
+	return option
+
 func _check(panel: VBoxContainer, label: String, initial: bool) -> CheckBox:
 	var check := CheckBox.new()
 	check.text = label
@@ -286,18 +379,23 @@ func _filter(query: String) -> void:
 	for id in ids:
 		var reviewed: bool = id in calibration_data.get("reviewed", [])
 		var review_matches: bool = review_filter.selected == 0 or (review_filter.selected == 1 and not reviewed) or (review_filter.selected == 2 and reviewed)
+		var interpretation: Dictionary = Semantics.effective(id, semantic_data)
+		var confirmed: bool = interpretation.interpretation_source == "confirmed"
+		var interpretation_matches: bool = interpretation_filter.selected == 0 or (interpretation_filter.selected == 1 and interpretation.needs_identification) or (interpretation_filter.selected == 2 and confirmed) or (interpretation_filter.selected == 3 and not confirmed)
 		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
-		var semantic_matches := selected_semantic.is_empty() or Catalog.semantic_category(id) == selected_semantic
-		if review_matches and semantic_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
-			var index := asset_list.add_item(("* " if Catalog.PROFILES.has(id) else "") + id)
+		var semantic_matches: bool = selected_semantic.is_empty() or interpretation.semantic_category == selected_semantic
+		if review_matches and interpretation_matches and semantic_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
+			var marker := "✓ " if confirmed else ("? " if interpretation.needs_identification else "· ")
+			var index := asset_list.add_item(marker + id)
 			asset_list.set_item_metadata(index, id)
-			asset_list.set_item_tooltip(index, id)
+			asset_list.set_item_tooltip(index, "%s\n%s · %s · %s" % [id, interpretation.asset_kind, interpretation.structural_role, interpretation.interpretation_source])
 
 func select_asset(id: String) -> void:
 	changing = true
 	selected = id
 	mode.select(0)
 	var profile := Catalog.profile(id, calibration_data)
+	var interpretation := Semantics.effective(id, semantic_data)
 	factor.value = profile.scale
 	angle.value = profile.yaw_degrees
 	anchor.select(profile.anchor)
@@ -306,7 +404,7 @@ func select_asset(id: String) -> void:
 	y_offset.value = position[1]
 	z_offset.value = position[2]
 	var category: String = profile.calibration_category
-	category_label.text = "Semantic: %s\nScale group: %s" % [profile.semantic_category, category]
+	category_label.text = "Semantic: %s (%s)\nScale group: %s" % [interpretation.semantic_category, interpretation.interpretation_source, category]
 	category_scale.value = float(calibration_data.get("category_presets", {}).get(category, calibration_data.fallback).scale)
 	fallback_scale.value = float(calibration_data.fallback.scale)
 	reviewed_toggle.button_pressed = profile.reviewed
@@ -315,6 +413,19 @@ func select_asset(id: String) -> void:
 	footprint_x.value = float(suggested[0])
 	footprint_z.value = float(suggested[1])
 	calibration_notes.text = str(profile.get("calibration_notes", ""))
+	semantic_label.text = str(interpretation.label)
+	semantic_category_edit.text = str(interpretation.semantic_category)
+	semantic_purpose.text = str(interpretation.architectural_purpose)
+	_select_option_value(semantic_kind, interpretation.asset_kind)
+	_select_option_value(semantic_role, interpretation.structural_role)
+	_select_option_value(semantic_completeness, interpretation.completeness)
+	_select_option_value(semantic_front, interpretation.front_face)
+	_select_option_value(semantic_attachment, interpretation.attachment)
+	semantic_contexts.text = ", ".join(interpretation.contexts)
+	semantic_connections.text = ", ".join(interpretation.connections)
+	semantic_generation_ready.button_pressed = bool(interpretation.generation_ready)
+	semantic_notes.text = str(interpretation.get("notes", ""))
+	semantic_status.text = "%s · confidence %s%s" % [interpretation.interpretation_source.capitalize(), interpretation.confidence, " · NEEDS IDENTIFICATION" if interpretation.needs_identification else ""]
 	for i in asset_list.item_count:
 		if asset_list.get_item_metadata(i) == id:
 			asset_list.select(i)
@@ -341,6 +452,8 @@ func rebuild(frame := false) -> void:
 			control.editable = mode.selected == 0
 		elif control is TextEdit:
 			control.editable = mode.selected == 0
+		elif control is LineEdit:
+			control.editable = mode.selected == 0
 		elif control is OptionButton:
 			control.disabled = mode.selected != 0
 	content = Node3D.new()
@@ -355,8 +468,10 @@ func rebuild(frame := false) -> void:
 		if duplicate_piece.button_pressed:
 			Placement.instantiate_calibrated(content, Catalog.path_for(selected), at + Vector3(pitch.value, 0, 0), factor.value, deg_to_rad(angle.value), anchor.selected)
 		var p := Catalog.profile(selected, calibration_data)
+		var semantic := Semantics.effective(selected, semantic_data)
 		var convention := PlacementConventions.record(selected, calibration_data, bounds_data)
 		info.text = "%s\n%s · %s · %s\n%s\nNative bounds: %s\nPlaced size: %s\nVisual envelope ceil X/Z: %d × %d (NOT occupancy)\n%s\n" % [selected, p.semantic_category, p.calibration_category, p.calibration_source, p.orientation, native_bounds, current_bounds.size, ceili(current_bounds.size.x - 0.0001), ceili(current_bounds.size.z - 0.0001), p.note]
+		info.text += "Meaning: %s / %s / %s · %s\nPurpose: %s · contexts: %s\nFacing: %s · attachment: %s\nEvidence: %s\n" % [semantic.asset_kind, semantic.structural_role, semantic.completeness, semantic.interpretation_source, semantic.architectural_purpose, ", ".join(semantic.contexts), semantic.front_face, semantic.attachment, semantic.evidence]
 		info.text += "Snap X/Z: %s · assembly pitch: %s\nTactical policy: %s · authored footprint: %s\n%s\n" % [convention.origin_snap, convention.assembly_pitch, convention.tactical_policy, convention.authored_tactical_footprint if not convention.authored_tactical_footprint.is_empty() else "none", convention.note]
 		_axes(overlays, at, 0.65)
 	else:
@@ -437,6 +552,50 @@ func _save_override() -> void:
 	if _save_data("Saved asset override for " + selected):
 		select_asset(selected)
 
+func _semantic_annotation_record() -> Dictionary:
+	var inferred := Semantics.inferred(selected)
+	return {
+		"label": semantic_label.text.strip_edges() if not semantic_label.text.strip_edges().is_empty() else inferred.label,
+		"semantic_category": semantic_category_edit.text.strip_edges().to_lower().replace(" ", "_") if not semantic_category_edit.text.strip_edges().is_empty() else inferred.semantic_category,
+		"architectural_purpose": semantic_purpose.text.strip_edges().to_lower().replace(" ", "_") if not semantic_purpose.text.strip_edges().is_empty() else inferred.architectural_purpose,
+		"asset_kind": str(semantic_kind.get_item_metadata(semantic_kind.selected)),
+		"structural_role": str(semantic_role.get_item_metadata(semantic_role.selected)),
+		"completeness": str(semantic_completeness.get_item_metadata(semantic_completeness.selected)),
+		"front_face": str(semantic_front.get_item_metadata(semantic_front.selected)),
+		"attachment": str(semantic_attachment.get_item_metadata(semantic_attachment.selected)),
+		"contexts": _tag_list(semantic_contexts.text),
+		"connections": _tag_list(semantic_connections.text),
+		"generation_ready": semantic_generation_ready.button_pressed,
+		"evidence": "Confirmed in the Asset Lab by the developer.",
+		"notes": semantic_notes.text.strip_edges(),
+	}
+
+func _save_semantic_annotation() -> void:
+	semantic_data.confirmed[selected] = _semantic_annotation_record()
+	var error := Semantics.save_data(semantic_data, semantic_path)
+	if error != OK:
+		semantic_status.text = "SEMANTIC SAVE FAILED: %s" % error_string(error)
+		return
+	_filter(search.text)
+	select_asset(selected)
+	semantic_status.text = "Confirmed meaning saved for " + selected
+
+func _clear_semantic_annotation() -> void:
+	semantic_data.confirmed.erase(selected)
+	var error := Semantics.save_data(semantic_data, semantic_path)
+	if error != OK:
+		semantic_status.text = "SEMANTIC SAVE FAILED: %s" % error_string(error)
+		return
+	_filter(search.text)
+	select_asset(selected)
+	semantic_status.text = "Using provisional inference for " + selected
+
+func _copy_identification_question() -> void:
+	var interpretation := Semantics.effective(selected, semantic_data)
+	var question := "Please help identify `%s`. Current provisional interpretation: %s / %s / %s; facing %s; attachment %s. Calibrated dimensions are %.3f × %.3f × %.3f world units beside a 1.64 m MIRA. Is it complete or a fragment, what is its intended function, which side is its front or working face, what should connect to it, and which district contexts fit it?" % [selected, interpretation.asset_kind, interpretation.structural_role, interpretation.completeness, interpretation.front_face, interpretation.attachment, current_bounds.size.x, current_bounds.size.y, current_bounds.size.z]
+	DisplayServer.clipboard_set(question)
+	semantic_status.text = "Identification question copied for " + selected
+
 func _clear_override() -> void:
 	calibration_data.asset_overrides.erase(selected)
 	if _save_data("Reset to inherited preset for " + selected):
@@ -483,11 +642,24 @@ func _next_unreviewed() -> void:
 			return
 	save_status.text = "No unreviewed assets match the current family/search."
 
+func _next_needs_identification() -> void:
+	var all := Catalog.all_ids()
+	var start := maxi(0, all.find(selected) + 1)
+	for offset in all.size():
+		var candidate: String = all[(start + offset) % all.size()]
+		var selected_pack: String = "" if family_filter.selected == 0 else Catalog.PACKS[family_filter.selected - 1]
+		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
+		if Semantics.needs_identification(candidate, semantic_data) and (selected_pack.is_empty() or candidate.begins_with(selected_pack + "/")) and (selected_semantic.is_empty() or Semantics.effective(candidate, semantic_data).semantic_category == selected_semantic) and (search.text.is_empty() or search.text.to_lower() in candidate.to_lower()):
+			select_asset(candidate)
+			return
+	semantic_status.text = "No unidentified assets match the current filters."
+
 func _reload_calibrations() -> void:
 	calibration_data = Catalog.load_calibrations(calibration_path)
+	semantic_data = Semantics.load_data(semantic_path)
 	_filter(search.text)
 	select_asset(selected)
-	save_status.text = "Reloaded " + calibration_path
+	save_status.text = "Reloaded calibration and semantic catalogs"
 
 func _update_save_status() -> void:
 	if not is_instance_valid(save_status) or mode.selected != 0:
@@ -537,6 +709,21 @@ func _classification_key(index: int) -> String:
 func _classification_index(value: String) -> int:
 	var values := ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"]
 	return maxi(0, values.find(value))
+
+static func _select_option_value(option: OptionButton, value: String) -> void:
+	for index in option.item_count:
+		if str(option.get_item_metadata(index)) == value:
+			option.select(index)
+			return
+	option.select(0)
+
+static func _tag_list(text: String) -> Array[String]:
+	var result: Array[String] = []
+	for raw in text.split(","):
+		var tag := raw.strip_edges().to_lower().replace(" ", "_")
+		if not tag.is_empty() and tag not in result:
+			result.append(tag)
+	return result
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()

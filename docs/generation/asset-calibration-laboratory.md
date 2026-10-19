@@ -2,12 +2,15 @@
 
 Goal 2.1 establishes a visual calibration workflow for the four retained Kenney packs. It does not assign tactical behavior to meshes. `MapData` remains the sole authority for occupied cells, movement, cover, line of sight, elevation and traversal.
 
+Calibration and semantic interpretation are deliberately separate. The same laboratory now edits confirmed meaning in `asset_semantics.json`; see [Semantic Asset Catalog](semantic-asset-catalog.md). A reviewed scale does not imply that an asset is a complete building, a compatible module or approved for procedural use.
+
 ## Launch and controls
 
 Open `res://tools/asset_lab/asset_lab.tscn` in Godot and run the current scene (**F6**).
 
-- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. A leading `*` marks one of the 14 assets with additional orientation/anchor metadata.
+- The asset-family selector separates the catalog into City Industrial, City Roads, Factory and Modular Space groups. Search operates within the selected family. `✓` marks confirmed semantic metadata and `?` marks an interpretation that still needs identification.
 - The semantic-category selector groups all 315 assets by their likely role (buildings, roads, conveyors, doors, pipes, screens, and so on) using conservative pack/name rules. It makes no scale or gameplay claim. `factory_kit/oopi` remains explicitly marked for manual classification because its name provides no reliable evidence.
+- The interpretation selector filters confirmed, inferred, and identification-needed assets. **Next asset needing identification** advances inside the active family, category, and search batch.
 - The review selector shows all, reviewed, or unreviewed assets. **Next unreviewed asset** advances within the active family, semantic category, and search.
 - Right-drag orbits, middle-drag pans, and the mouse wheel zooms. **F** frames the model; **1**, **3**, and **7** select front, side, and top views. **Q/E** rotate an individual asset by 90 degrees. The same actions are available as visible buttons.
 - Uniform scale never stretches one axis independently. Yaw rotates around Godot's up axis.

@@ -4,6 +4,7 @@ const ROOT := "res://art/environments/kenney/"
 const DATA_PATH := "res://tools/asset_lab/asset_calibrations.json"
 const PACKS := ["city_kit_industrial", "city_kit_roads", "factory_kit", "modular_space_kit"]
 const Placement = preload("res://presentation/environment_asset_placement.gd")
+const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const DEFAULT_SCALE := 1.0
 const PROFILES := {
 	"city_kit_industrial/shipping-container-a": {"anchor": 0, "category": "cargo", "orientation": "Long axis Z; doors face +Z.", "note": "Reserve clearance separately."},
@@ -98,69 +99,10 @@ static func calibration_category(id: String) -> String:
 ## Human-facing role grouping. This is based on pack and filename semantics; it
 ## does not claim scale, tactical occupancy, or visual approval.
 static func semantic_category(id: String) -> String:
-	var name := id.get_file()
-	if id.begins_with("city_kit_industrial/"):
-		if name.begins_with("building-"): return "industrial_buildings"
-		if name.begins_with("shipping-container-"): return "cargo_containers"
-		if name.begins_with("chimney-"): return "industrial_chimneys"
-		if name.begins_with("detail-tank") or name == "water-tower": return "tanks_and_towers"
-		if name.begins_with("solar-panel-"): return "solar_equipment"
-		if name.begins_with("windmill"): return "wind_power"
-	if id.begins_with("city_kit_roads/"):
-		if name.begins_with("bridge-pillar"): return "bridge_structures"
-		if name == "dumpster": return "waste_props"
-		if name.begins_with("construction-"): return "construction_safety"
-		if name.begins_with("electricity-"): return "electrical_infrastructure"
-		if name.begins_with("light-"): return "street_lighting"
-		if name.begins_with("road-sign-") or name.begins_with("sign-"): return "road_signage"
-		if name.begins_with("traffic-light"): return "traffic_signals"
-		if name.begins_with("tile-"): return "paving_tiles"
-		if name.begins_with("road-"): return "road_modules"
-	if id.begins_with("factory_kit/"):
-		if name == "oopi": return "unknown_manual_review"
-		if name.begins_with("arrow") or name.begins_with("warning-") or name.begins_with("indicator-special-"): return "floor_markings"
-		if name.begins_with("box-"): return "cargo_boxes"
-		if name.begins_with("button-") or name.begins_with("lever-"): return "controls_and_switches"
-		if name.begins_with("catwalk-"): return "catwalk_modules"
-		if name.begins_with("cog-") or name.begins_with("piston-"): return "machine_components"
-		if name == "cone": return "safety_props"
-		if name.begins_with("conveyor"): return "conveyor_modules"
-		if name.begins_with("crane"): return "crane_modules"
-		if name.begins_with("door"): return "factory_doors"
-		if name.begins_with("floor"): return "factory_floor_modules"
-		if name.begins_with("hopper-"): return "hoppers"
-		if name.begins_with("machine"): return "factory_machines"
-		if name.begins_with("pipe-"): return "pipe_modules"
-		if name.begins_with("robot-arm-"): return "robotics"
-		if name.begins_with("scanner-"): return "scanners"
-		if name.begins_with("screen-"): return "screens_and_panels"
-		if name.begins_with("structure-doorway"): return "factory_entrances"
-		if name.begins_with("structure-"): return "factory_structure_modules"
-		if name.begins_with("top"): return "factory_platforms"
-	if id.begins_with("modular_space_kit/"):
-		if name == "cables": return "space_utilities"
-		if name.begins_with("corridor"): return "space_corridors"
-		if name.begins_with("gate"): return "space_gates"
-		if name.begins_with("room-"): return "space_rooms"
-		if name.begins_with("stairs"): return "space_stairs"
-		if name.begins_with("template-floor"): return "space_floor_modules"
-		if name.begins_with("template-wall") or name.begins_with("template-corner"): return "space_wall_modules"
-		if name.begins_with("template-detail"): return "space_details"
-	return "unknown_manual_review"
+	return Semantics.semantic_category(id)
 
 static func inferred_classification(id: String) -> String:
-	var semantic := semantic_category(id)
-	if semantic in ["industrial_buildings", "bridge_structures", "catwalk_modules", "factory_structure_modules", "space_corridors", "space_rooms", "space_wall_modules"]:
-		return "structural"
-	if semantic in ["road_modules", "paving_tiles", "factory_floor_modules", "factory_platforms", "space_floor_modules"]:
-		return "ground"
-	if semantic in ["factory_doors", "factory_entrances", "space_gates", "space_stairs"]:
-		return "entrance"
-	if semantic in ["cargo_containers", "industrial_chimneys", "tanks_and_towers", "wind_power", "cargo_boxes", "conveyor_modules", "crane_modules", "hoppers", "factory_machines", "machine_components", "pipe_modules", "robotics", "scanners"]:
-		return "tactical_obstacle"
-	if semantic == "unknown_manual_review":
-		return "unclassified"
-	return "decorative"
+	return Semantics.broad_classification(id)
 
 static func profile(id: String, data := {}) -> Dictionary:
 	if data.is_empty(): data = load_calibrations()
