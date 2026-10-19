@@ -28,9 +28,73 @@ const SECONDARY_FRONT_FACES := ["none", "+z", "-z", "+x", "-x"]
 const DIRECTIONAL_FACES := ["+z", "-z", "+x", "-x"]
 const ATTACHMENTS := ["unknown", "ground", "source_origin", "wall", "overhead", "structural_socket", "ground_surface"]
 const REVIEW_FLAGS := ["identity", "working_faces", "connections", "clearance", "assembly"]
+const SOCKET_NORMALS := ["+x", "-x", "+y", "-y", "+z", "-z"]
+
+## Rendered from all six local axes. Empty arrays are deliberate axis-neutral
+## findings rather than missing data.
+const REVIEWED_WORKING_FACES := {
+	"city_kit_industrial/building-a": ["-z"],
+	"city_kit_industrial/building-b": ["-z"],
+	"city_kit_industrial/building-c": ["-z"],
+	"city_kit_industrial/building-d": ["-z"],
+	"city_kit_industrial/building-e": ["-z"],
+	"city_kit_industrial/building-f": ["-z"],
+	"city_kit_industrial/building-g": ["+z"],
+	"city_kit_industrial/building-l": ["-z"],
+	"city_kit_industrial/building-m": ["+z"],
+	"city_kit_industrial/building-n": ["-z"],
+	"city_kit_industrial/building-p": ["-z"],
+	"city_kit_industrial/building-q": ["-z"],
+	"city_kit_industrial/building-r": ["-z"],
+	"city_kit_industrial/building-s": ["-z"],
+	"city_kit_industrial/building-t": ["-z"],
+	"city_kit_roads/road-sign-empty": [],
+	"city_kit_roads/road-sign-empty-hanging": [],
+	"city_kit_roads/road-sign-street": [],
+	"city_kit_roads/road-sign-warning": ["-x"],
+	"city_kit_roads/sign-highway": ["-z"],
+	"city_kit_roads/sign-highway-detailed": ["-z"],
+	"city_kit_roads/sign-highway-wide": ["-z"],
+	"city_kit_roads/traffic-light-hanging": ["-x"],
+	"city_kit_roads/traffic-light-object-hanging": ["-x"],
+	"city_kit_roads/traffic-light-object-horizontal": ["-x"],
+	"city_kit_roads/traffic-light-object-vertical": ["-x"],
+	"factory_kit/button-floor-round": [],
+	"factory_kit/button-floor-round-small": [],
+	"factory_kit/button-floor-square": [],
+	"factory_kit/button-floor-square-small": [],
+	"factory_kit/lever-double": ["+z"],
+	"factory_kit/lever-single": ["+z"],
+	"factory_kit/oopi": ["-x"],
+	"factory_kit/screen-flat": ["-z"],
+	"factory_kit/screen-hanging-small": ["-z"],
+	"factory_kit/screen-hanging-wide": ["-z"],
+	"factory_kit/screen-panel-flat": ["-z"],
+	"factory_kit/screen-panel-small": ["-z"],
+	"factory_kit/screen-panel-wide": ["-z"],
+	"factory_kit/screen-small": ["-z"],
+	"factory_kit/screen-wide": ["-z"],
+	"modular_space_kit/gate": ["+z", "-z"],
+	"modular_space_kit/gate-door": ["+z", "-z"],
+	"modular_space_kit/gate-door-window": ["+z", "-z"],
+	"modular_space_kit/gate-lasers": ["+z", "-z"],
+}
+
+const MACHINE_CONNECTION_REVIEWS := {
+	"factory_kit/machine-connection-hole": {
+		"connections": ["factory_pipe"],
+		"sockets": [{"name": "top_pipe_receiver", "type": "factory_pipe", "position": [0.0, 1.293, 0.36], "normal": "+y", "role": "receiver", "example_mate": {"asset": "factory_kit/pipe-large", "asset_socket": [-0.5, 0.5, 0.0], "rotation_degrees": [0.0, 0.0, 90.0], "origin_offset": [0.5, 0.5, 0.0]}}],
+		"assembly_notes": "The visible top receiver is centered at native local (0, 1.293, 0.36). A pipe-large -X end mates after +90 degrees around Z with its origin offset (+0.5, +0.5, 0) from this socket. Glass pipes remain a separate network.",
+	},
+	"factory_kit/machine-connection-pipe": {
+		"connections": ["factory_pipe"],
+		"sockets": [{"name": "top_pipe_outlet", "type": "factory_pipe", "position": [0.0, 1.75, 0.36], "normal": "+y", "role": "outlet", "example_mate": {"asset": "factory_kit/pipe-large", "asset_socket": [-0.5, 0.5, 0.0], "rotation_degrees": [0.0, 0.0, 90.0], "origin_offset": [0.5, 0.5, 0.0]}}],
+		"assembly_notes": "The integrated vertical stub terminates at native local (0, 1.75, 0.36). A pipe-large -X end mates after +90 degrees around Z with its origin offset (+0.5, +0.5, 0) from this socket.",
+	},
+}
 
 static func default_data() -> Dictionary:
-	return {"version": 3, "confirmed": {}}
+	return {"version": 4, "confirmed": {}}
 
 static func load_data(path := DATA_PATH) -> Dictionary:
 	var defaults := default_data()
@@ -42,7 +106,7 @@ static func load_data(path := DATA_PATH) -> Dictionary:
 	var data: Dictionary = parsed
 	if not data.has("confirmed") or not data.confirmed is Dictionary:
 		data.confirmed = {}
-	data.version = 3
+	data.version = 4
 	return data
 
 static func save_data(data: Dictionary, path := DATA_PATH) -> Error:
@@ -95,6 +159,7 @@ static func inferred(id: String) -> Dictionary:
 		"attachment": "ground",
 		"contexts": _contexts_for(semantic),
 		"connections": [],
+		"sockets": [],
 		"generation_ready": false,
 		"confidence": "high",
 		"evidence": "Classified from source-pack naming and rendered family comparison; procedural eligibility remains separate.",
@@ -105,7 +170,67 @@ static func inferred(id: String) -> Dictionary:
 		"notes": "",
 	}
 	_apply_family_traits(record, id, semantic)
+	_apply_reviewed_findings(record, id, semantic)
 	return record
+
+static func _apply_reviewed_findings(record: Dictionary, id: String, semantic: String) -> void:
+	if REVIEWED_WORKING_FACES.has(id):
+		var faces: Array = REVIEWED_WORKING_FACES[id]
+		record["working_faces"] = faces.duplicate()
+		record["front_face"] = faces[0] if not faces.is_empty() else "axis_neutral"
+		record.review_flags.erase("working_faces")
+		record["orientation_notes"] = _reviewed_orientation_note(id, semantic, faces)
+		record["evidence"] = "Reviewed from labeled local-axis renders of the imported GLB; calibration yaw remains separate."
+	if semantic == "machine_components":
+		var animated := id.get_file().begins_with("piston-")
+		record["completeness"] = "complete"
+		record["attachment"] = "ground"
+		record["connections"] = []
+		record["sockets"] = []
+		record.review_flags.erase("connections")
+		record["evidence"] = "Six-axis geometry review found no keyed mating surface; matching envelopes alone are not treated as connection evidence."
+		record["assembly_notes"] = "Animated standalone piston machinery; preserve its AnimationPlayer and author clearance around its vertical stroke." if animated else "Standalone cog machinery/decoration. Its central bore is not a verified socket; combine only in an authored composition."
+	if semantic == "factory_machines":
+		record.review_flags.erase("connections")
+		record["connections"] = []
+		record["sockets"] = []
+		record["evidence"] = "Reviewed from six-axis renders, native bounds, pivots, and explicit seam assemblies."
+		if MACHINE_CONNECTION_REVIEWS.has(id):
+			record.merge(MACHINE_CONNECTION_REVIEWS[id], true)
+		elif id.get_file() == "machine-bed":
+			record["assembly_notes"] = "Complete large machine-bed variant with no verified external socket; do not join it to another machine solely because envelopes overlap."
+		else:
+			record["assembly_notes"] = "Complete machine-body variant with no verified external socket. Its top detail is not a general-purpose mount."
+
+static func _reviewed_orientation_note(id: String, semantic: String, faces: Array) -> String:
+	if faces.is_empty():
+		if id.get_file().begins_with("button-floor-"):
+			return "Top-actuated floor control; no horizontal working face."
+		return "Geometry has no unique horizontal operating face; placement topology remains separate."
+	if semantic == "industrial_buildings":
+		return "Door, loading-bay, and window composition identifies the reviewed street/service facade."
+	if semantic == "road_signage":
+		return "Colored sign panel identifies the reviewed traffic-facing side."
+	if semantic == "traffic_signals":
+		return "Signal lenses identify the reviewed traffic-facing side."
+	if semantic == "controls_and_switches":
+		return "Control handle presentation identifies the reviewed operator side."
+	if semantic == "screens_and_panels":
+		return "Dark display surface identifies the reviewed operator/viewing side."
+	if semantic == "space_gates":
+		return "Gate passage is bidirectional along local Z; +Z and -Z are equal working faces."
+	if semantic == "easter_egg_character":
+		return "Oopi's visible face points toward local -X."
+	return "Reviewed from labeled local-axis renders."
+
+static func socket_summary(sockets: Array) -> String:
+	if sockets.is_empty():
+		return "none"
+	var parts: Array[String] = []
+	for value in sockets:
+		var socket: Dictionary = value
+		parts.append("%s:%s %s @ %s" % [socket.get("name", "socket"), socket.get("type", "unknown"), socket.get("normal", "?"), socket.get("position", [])])
+	return "; ".join(parts)
 
 static func _apply_family_traits(record: Dictionary, id: String, semantic: String) -> void:
 	var name := id.get_file()

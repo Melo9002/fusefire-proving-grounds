@@ -12,9 +12,9 @@ Semantic interpretation remains separate from visual calibration and tactical au
 | City Kit Roads | 95 | Road surfaces, barrier overlays, supports, paving, utilities, signs and signals distinguished. |
 | Factory Kit | 143 | Structural bays, railings, platforms, conveyors, pipes, machines, controls and props identified. |
 | Modular Space Kit | 40 | Corridors, open-top rooms, gates, stairs, walls, floors and utility details identified as a separate grammar. |
-| **Total** | **315** | **315 catalog identities; unresolved fields remain explicit.** |
+| **Total** | **315** | **315 catalog identities; all scoped orientation and machine-connection reviews resolved.** |
 
-The effective catalog contains 12 existing human-confirmed records and 303 catalog classifications. Sixty-one assets retain one or more narrowly scoped review flags. Every stable ID now has a supported identity. The existing 12 procedural approvals remain the only procedural approvals.
+The effective catalog contains 12 existing human-confirmed records and 303 catalog classifications. Every stable ID has a supported identity and no catalog-inferred record retains a review flag. The existing 12 procedural approvals remain the only procedural approvals.
 
 The catalog uses five independent review flags:
 
@@ -52,21 +52,33 @@ Each family now provides, where supported:
 
 These tags describe visual meaning. Exact tactical footprints, interaction cells, cover, line of sight and traversal still belong to environment module definitions and `MapData`.
 
-## Remaining review batches
-
-### Oopi character reference
-
-`factory_kit/oopi` is a small white ovoid alien on teal feet. The exact model name and rendered form align with Kenney's Oopi character; Kenney's own *Oopi's Quest* identifies Oopi as an alien. The catalog therefore treats this model as a non-environment `character_reference` and easter egg, with medium confidence because the Factory Kit page does not explicitly document the cameo. It remains procedurally unapproved and only its local facing is flagged for review. Sources: [Kenney Factory Kit](https://kenney.nl/assets/factory-kit) and [Oopi's Quest](https://kenney.itch.io/oopis-quest).
+## Resolved review batches
 
 ### Working faces
 
-Forty-five records still need a model-local facing decision: 15 unconfirmed industrial shells, seven complete sign/gantry models, four unconfirmed traffic signals, six Factory controls, eight screens/panels, four Space gates and Oopi. Their identity and placement category are already usable.
+All 45 flagged records were rendered from local `+Z`, `-Z`, `+X`, `-X`, top and bottom views. Calibration yaw was deliberately excluded from the decision so the stored values remain model-local:
+
+- Industrial shells `building-a` through `building-t` use the door, loading-bay and window composition as evidence. Most face `-Z`; `building-g` and `building-m` face `+Z`.
+- Highway panels face `-Z`. The warning sign and all four signal variants face `-X`, where their colored panels or lenses are visible.
+- Empty sign mounts and the orthogonal street-name sign are axis-neutral because their geometry has no unique horizontal operating side.
+- Factory screens face `-Z`; lever controls face `+Z`; the four top-actuated floor buttons are axis-neutral.
+- Space gates expose equal `+Z` and `-Z` working faces because the passage is bidirectional.
+- Oopi's visible face points toward local `-X`. It remains a non-environment character reference and is not procedurally approved.
+
+These are catalog findings rather than human overrides. A developer may still save a confirmed annotation if an authored use needs a different interpretation.
 
 ### Machine connections
 
-Nine cog/piston components and seven complete machine variants have a reliable machine-family identity. Their exact port compatibility remains unresolved. This should be authored from actual seam tests rather than inferred from AABBs.
+All 16 Factory machinery flags were reviewed with six-axis renders, native bounds and pivots, animation inspection, and explicit native-scale seam assemblies:
 
-No asset in these review batches receives procedural approval merely by resolving its semantic question.
+- `machine-connection-hole` exposes a `factory_pipe` receiver at native local `(0, 1.293, 0.36)`, normal `+Y`.
+- `machine-connection-pipe` exposes a `factory_pipe` outlet at native local `(0, 1.75, 0.36)`, normal `+Y`.
+- The verified example mate uses the `pipe-large` local `-X` endpoint `(-0.5, 0.5, 0)`, rotated `+90°` around Z. Its pivot-aware origin is offset `(0.5, 0.5, 0)` from either machine socket. This transform was rendered directly; an unrotated bounds overlap is not accepted as evidence.
+- The five cogs are complete standalone machine props. Their central bores are not treated as verified sockets.
+- The four animated pistons are complete standalone machinery. Their animation and vertical operating clearance are preserved; matching envelopes do not establish compatibility.
+- The generic, bed, fortified, window and window-bar machine bodies have no verified external socket. Their top details are not general-purpose mounts.
+
+Opaque and glass pipes remain distinct connection families. No asset gained procedural approval during this review.
 
 ## Inspection workflow
 
@@ -86,6 +98,20 @@ godot_console --path . --script res://tests/semantic_asset_contact_sheet.gd -- C
 ```
 
 The command produces 17 labeled pages covering all 315 assets. Thumbnail cameras normalize framing only; the label preserves each model's native dimensions and no calibration data is changed.
+
+For a six-axis review of specific stable IDs, run:
+
+```powershell
+godot_console --path . --script res://tests/semantic_asset_review_capture.gd -- C:\path\to\output factory_kit/screen-wide modular_space_kit/gate-lasers
+```
+
+For the reviewed Factory seam study, run:
+
+```powershell
+godot_console --path . --script res://tests/semantic_machine_connection_capture.gd -- C:\path\to\machine-connections.png
+```
+
+Both are explicit graphical diagnostics. They never write calibration or semantic data.
 
 ## Trust and procedural use
 

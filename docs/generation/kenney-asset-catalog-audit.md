@@ -26,10 +26,10 @@ Persistent developer choices live in `tools/asset_lab/asset_calibrations.json`. 
 | Road lights | 6 | High | Curved/square single, double and cross variants. |
 | Construction furniture | 5 | High | One fence, one dumpster and three barrier/cone/light pieces. |
 | Factory structural modules | subset of 143 | High by name and render | Walls, entrances, corners, railings, platforms and catwalks are distinct semantic families; exact tactical modules remain separately authored. |
-| Factory machinery / interior props | subset of 143 | High identity, mixed connector confidence | Conveyors, cranes, robot arms, machines, pipes, boxes and controls are classified; machine-port questions remain flagged. |
+| Factory machinery / interior props | subset of 143 | High identity, reviewed connector scope | Conveyors, cranes, robot arms, machines, pipes, boxes and controls are classified. Two opaque-pipe machine sockets are verified; the other reviewed machine bodies remain intentionally socket-free. |
 | Space structural modules | subset of 40 | High by name and render | Floors, walls, open-top rooms, gates, corridors and stairs form a separate coherent 4-unit grammar. |
 
-`factory_kit/oopi` is identified as Kenney's Oopi alien character reference and excluded from environment use. Directional controls, displays, gates and several roadside objects retain explicit working-face review flags. Classification does not imply tactical occupancy.
+`factory_kit/oopi` is identified as Kenney's Oopi alien character reference and excluded from environment use. The later six-axis review resolved the directional controls, displays, gates, roadside objects and machine-connection questions without granting procedural eligibility. Classification does not imply tactical occupancy.
 
 ## Provisional developer observations
 

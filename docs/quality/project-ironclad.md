@@ -4,7 +4,7 @@ Project Ironclad is FuseFire's lightweight regression-testing practice. Its purp
 
 ## Current infrastructure
 
-The repository contains 93 top-level GDScript test executables under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. Godot's process exit code is therefore the authoritative suite result.
+The repository contains ordinary automated GDScript checks plus explicit-only rendered and extended diagnostics under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. Godot's process exit code is therefore the authoritative suite result.
 
 | Area | Existing coverage |
 | --- | --- |
@@ -19,7 +19,7 @@ The repository contains 93 top-level GDScript test executables under `tests/`. M
 
 The project currently targets Godot `4.7.2.stable`. Tests require `godot_console` on `PATH`, or an explicit executable passed to the runner. Debug Draw 3D 1.7.3 is vendored in the repository and its smoke check verifies that the matching native library loads; no separately installed test dependency is required.
 
-Two scripts (`asset_lab_capture.gd` and `industrial_warehouse_capture.gd`) produce rendered evidence and require an ordinary graphics run plus an output directory. They are manual visual workflows, not automated visual comparisons. Five long batch/stress scripts are also explicit-only. Existing naming varies between `smoke`, `test`, and `validation`; that inconsistency is harmless and has not been rewritten.
+Rendered capture scripts require an ordinary graphics run and, where documented, an output path. They are manual visual workflows, not automated visual comparisons. Five long batch/stress scripts are also explicit-only. Existing naming varies between `smoke`, `test`, and `validation`; that inconsistency is harmless and has not been rewritten.
 
 ## Unified runner
 
@@ -93,7 +93,13 @@ The full tier reports these as skipped by policy:
 - `map_quality_metrics_smoke.gd`
 - `prototype_1_milestone.gd`
 - `asset_lab_capture.gd`
+- `coherent_layout_capture.gd`
+- `debug_draw_3d_capture.gd`
 - `industrial_warehouse_capture.gd`
+- `semantic_asset_contact_sheet.gd`
+- `semantic_asset_review_capture.gd`
+- `semantic_machine_connection_capture.gd`
+- `structural_building_capture.gd`
 
 Run long scripts directly when their subsystem changes. Run capture scripts without `--headless` and inspect their images manually. Headless import or scene success does not establish visual correctness.
 
