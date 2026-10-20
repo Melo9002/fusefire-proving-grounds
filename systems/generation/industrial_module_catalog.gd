@@ -130,7 +130,9 @@ static func _road_straight() -> EnvironmentModuleDefinition:
 	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
-	item.add_catalog_visual(["city_kit_roads/road-straight"], Vector2(4.5, 4.5), 0, Vector3(0, 0.11, 0), &"road_surface", Vector3(2, 1, 2))
+	# The imported mesh's carriageway runs along model-local X. Normalize it
+	# once to the module's local Z road connectors before placement rotation.
+	item.add_catalog_visual(["city_kit_roads/road-straight"], Vector2(4.5, 4.5), 1, Vector3(0, 0.11, 0), &"road_surface", Vector3(2, 1, 2))
 	return item
 
 static func _road_corner() -> EnvironmentModuleDefinition:
@@ -141,7 +143,9 @@ static func _road_corner() -> EnvironmentModuleDefinition:
 	item.set_visual_convention(Vector2.ONE, Vector2(20, 20), "The calibrated curve occupies two ten-unit road pitches.")
 	item.add_connection(Vector2i(9, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(19, 9), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
-	item.add_catalog_visual(["city_kit_roads/road-curve"], Vector2(9.5, 9.5), 0, Vector3(0, 0.01, 0), &"road_surface", Vector3(2, 1, 2))
+	# Source openings are model-local -X/+Z; a half-turn aligns them with the
+	# module's local -Z/+X curve connectors.
+	item.add_catalog_visual(["city_kit_roads/road-curve"], Vector2(9.5, 9.5), 2, Vector3(0, 0.01, 0), &"road_surface", Vector3(2, 1, 2))
 	return item
 
 static func _paving() -> EnvironmentModuleDefinition:

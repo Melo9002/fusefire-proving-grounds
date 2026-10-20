@@ -104,6 +104,19 @@ func rotate_cell(cell: Vector2i, rotation: int) -> Vector2i:
 		3: return Vector2i(cell.y, size.x - 1 - cell.x)
 		_: return cell
 
+## Canonical module-local to placed-grid transform for continuous X/Z points.
+## Quarter turns follow rotate_cell/rotate_direction; Godot's positive Y yaw
+## turns the opposite way, so presentation must use placement_yaw_radians().
+func rotate_point(point: Vector2, rotation: int) -> Vector2:
+	match posmod(rotation, 4):
+		1: return Vector2(float(size.y - 1) - point.y, point.x)
+		2: return Vector2(float(size.x - 1) - point.x, float(size.y - 1) - point.y)
+		3: return Vector2(point.y, float(size.x - 1) - point.x)
+		_: return point
+
+func placement_yaw_radians(rotation: int) -> float:
+	return -float(posmod(rotation, 4)) * PI * 0.5
+
 func rotate_direction(direction: Vector2i, rotation: int) -> Vector2i:
 	var result := direction
 	for _step in posmod(rotation, 4):

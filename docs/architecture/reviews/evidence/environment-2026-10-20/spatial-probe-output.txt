@@ -1,0 +1,35 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ROAD_NATIVE root_transform=[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.0, 0.0, 0.0)]
+ROAD_NATIVE mesh_transform=[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (0.0, 0.0, 0.0)] parent=road-straight2
+ROAD_NATIVE mesh=road-straight bounds=[P: (-0.5, 0.0, -0.5), S: (1.0, 0.02, 1.0)] surfaces=1
+ROAD_NATIVE surface=0 material=colormap bounds=[P: (-0.5, 0.0, -0.5), S: (1.0, 0.02, 1.0)]
+ROAD_NATIVE y=0.02 xz=[(0.5, -0.4), (-0.5, -0.4), (-0.5, -0.5), (0.5, -0.5), (-0.5, 0.4), (0.5, 0.4), (0.5, 0.5), (-0.5, 0.5)]
+ROAD_NATIVE y=0.01 xz=[(0.5, -0.4), (-0.5, -0.4), (-0.5, 0.4), (0.5, 0.4), (0.5, 0.3), (0.5, 0.01), (0.5, -0.01), (0.5, -0.3), (-0.5, 0.3), (-0.5, 0.01), (-0.5, -0.01), (-0.5, -0.3)]
+ROAD_NATIVE y=0.0 xz=[(-0.5, -0.5), (0.5, -0.5), (-0.5, 0.5), (0.5, 0.5)]
+ROTATION r0 logical_front=(0, 1) rendered_normalized_front=(0.0, 0.0, 1.0) dot=1.0
+ROTATION r1 logical_front=(-1, 0) rendered_normalized_front=(1.0, 0.0, -0.0) dot=-1.0
+ROTATION r2 logical_front=(0, -1) rendered_normalized_front=(-0.0, 0.0, -1.0) dot=1.0
+ROTATION r3 logical_front=(1, 0) rendered_normalized_front=(-1.0, 0.0, 0.0) dot=-1.0
+ENVELOPE r0 actual=[P: (0.01, 0.01, 0.01), S: (1.98, 0.98, 4.98)]
+ENVELOPE r1 actual=[P: (-0.99, 0.01, 0.01), S: (4.98, 0.98, 1.98)]
+ENVELOPE r2 actual=[P: (2.01, 0.01, -0.99), S: (1.98, 0.98, 4.98)]
+ENVELOPE r3 actual=[P: (0.01, 0.01, 2.01), S: (4.98, 0.98, 1.98)]
+ROAD r0 bounds=[P: (-20.0, 0.01, -15.0), S: (10.0, 0.1, 10.0)] expected_center=(-15.0, 0.0, -10.0) delta=(0.0, 0.06, 0.0)
+ROAD r0 bounds=[P: (-20.0, 0.01, -25.0), S: (10.0, 0.1, 10.0)] expected_center=(-15.0, 0.0, -20.0) delta=(0.0, 0.06, 0.0)
+ROAD r0 bounds=[P: (-20.0, 0.01, 5.0), S: (10.0, 0.1, 10.0)] expected_center=(-15.0, 0.0, 10.0) delta=(0.0, 0.06, 0.0)
+ROAD r0 bounds=[P: (-20.0, 0.01, 15.0), S: (10.0, 0.1, 10.0)] expected_center=(-15.0, 0.0, 20.0) delta=(0.0, 0.06, 0.0)
+ROAD r1 bounds=[P: (-30.0, 0.01, -5.0), S: (10.0, 0.1, 10.0)] expected_center=(-25.0, 0.0, 0.0) delta=(0.0, 0.06, 0.0)
+ROAD r1 bounds=[P: (-10.0, 0.01, -5.0), S: (10.0, 0.1, 10.0)] expected_center=(-5.0, 0.0, 0.0) delta=(0.0, 0.06, 0.0)
+ROAD r1 bounds=[P: (0.0, 0.01, -5.0), S: (10.0, 0.1, 10.0)] expected_center=(5.0, 0.0, 0.0) delta=(0.0, 0.06, 0.0)
+ROAD r1 bounds=[P: (10.0, 0.01, -5.0), S: (10.0, 0.1, 10.0)] expected_center=(15.0, 0.0, 0.0) delta=(0.0, 0.06, 0.0)
+ROAD r1 bounds=[P: (20.0, 0.01, -5.0), S: (10.0, 0.1, 10.0)] expected_center=(25.0, 0.0, 0.0) delta=(0.0, 0.06, 0.0)
+GENERATED seed17 industrial_shell_k r0 logical=(0, 1) actual=(0.0, 0.0, 1.0) dot=1.0
+GENERATED seed17 industrial_shell_g r2 logical=(0, -1) actual=(-0.0, 0.0, -1.0) dot=1.0
+GENERATED seed17 industrial_shell_o r0 logical=(0, 1) actual=(0.0, 0.0, 1.0) dot=1.0
+REAL_SHELL r0 face=(0.0, 0.0, 1.0) logical=(0, 1)
+REAL_SHELL r1 face=(1.0, 0.0, -0.0) logical=(-1, 0)
+REAL_SHELL r2 face=(0.0, 0.0, -1.0) logical=(0, -1)
+REAL_SHELL r3 face=(-1.0, 0.0, 0.0) logical=(1, 0)

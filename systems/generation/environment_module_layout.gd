@@ -89,9 +89,8 @@ func world_visual_envelope(definition: EnvironmentModuleDefinition, placement: E
 	for x in [local.position.x, local.end.x]:
 		for y in [local.position.y, local.end.y]:
 			for z in [local.position.z, local.end.z]:
-				var point := Vector3(x, y, z)
-				for _step in posmod(placement.rotation, 4):
-					point = Vector3(float(definition.size.y - 1) - point.z, point.y, point.x)
+				var horizontal := definition.rotate_point(Vector2(x, z), placement.rotation)
+				var point := Vector3(horizontal.x, y, horizontal.y)
 				points.append(point + Vector3(placement.origin.x, placement.elevation, placement.origin.y))
 	var bounds := AABB(points[0], Vector3.ZERO)
 	for point in points:

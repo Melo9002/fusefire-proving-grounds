@@ -54,7 +54,7 @@ static func straight_fixture_slot(index: int, opposite_side := false) -> Diction
 		"yaw": 0 if side == 0 else 2,
 		# Curved and square lamp heads extend toward model-local -Z. These
 		# quarter turns point that working face inward from either sidewalk.
-		"inward_yaw": 3 if side == 0 else 1,
+		"inward_yaw": 1 if side == 0 else 3,
 	}
 
 static func sidewalk_cells(component_id: StringName) -> Array[Vector2i]:

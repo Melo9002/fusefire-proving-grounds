@@ -126,7 +126,7 @@ func _run() -> void:
 	preview._frame_camera()
 	check(preview.orbit.focus.is_equal_approx(Vector3(0, 4, 0)), "Preview frames the centered MapData world bounds")
 	check(preview.content.get_node_or_null("TacticalGrid") != null, "Preview exposes a grid overlay for visual footprint inspection")
-	check("VALID" in preview.status.text, "Preview reports the generated modular layout as valid")
+	check("TACTICAL VALID" in preview.status.text, "Preview identifies MapData validation as tactical rather than visual certification")
 	check(preview._focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0"), "Map Editor can frame the assembled corner for seam inspection")
 	check(preview.inspection_target == "factory corner — inner, scale 2.0" and "Target: factory corner" in preview.status.text, "Map Editor identifies its active inspection target and calibration")
 	var selected_module: Node3D = preview.inspection_module

@@ -165,7 +165,7 @@ func _rebuild() -> void:
 		TacticalUnit.Faction.PLAYER: 5,
 		TacticalUnit.Faction.ENEMY: 5,
 	})
-	_update_status(data.environment_modules.size(), "VALID" if validation.is_valid() else validation.describe(), data.environment_layout_plan)
+	_update_status(data.environment_modules.size(), "TACTICAL VALID" if validation.is_valid() else "TACTICAL %s" % validation.describe(), data.environment_layout_plan)
 	_update_composer_visibility()
 	if is_instance_valid(seed_input):
 		seed_input.set_value_no_signal(generation_seed)
@@ -959,7 +959,7 @@ func _save_custom_layout() -> void:
 		_set_composer_message(error, true)
 		return
 	custom_dirty = false
-	_update_status(custom_layout.placements.size(), "VALID")
+	_update_status(custom_layout.placements.size(), "TACTICAL VALID")
 	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), LayoutStore.DEFAULT_PATH])
 
 func _load_custom_layout(rebuild_after: bool) -> void:

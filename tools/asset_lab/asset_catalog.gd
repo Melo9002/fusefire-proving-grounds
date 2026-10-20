@@ -9,7 +9,7 @@ const DEFAULT_SCALE := 1.0
 const PROFILES := {
 	"city_kit_industrial/shipping-container-a": {"anchor": 0, "category": "cargo", "orientation": "Long axis Z; doors face +Z.", "note": "Reserve clearance separately."},
 	"city_kit_industrial/building-a": {"anchor": 0, "category": "exterior", "orientation": "Y-up closed shell; facade choice remains placement-specific.", "note": "Closed building; not an enterable warehouse module."},
-	"city_kit_roads/road-straight": {"anchor": 2, "category": "road", "orientation": "Traffic axis Z.", "note": "Road surface anchor is TOP_CENTER."},
+	"city_kit_roads/road-straight": {"anchor": 2, "category": "road", "orientation": "Source traffic axis X; environment modules normalize it to local Z.", "note": "Road surface anchor is TOP_CENTER."},
 	"city_kit_roads/road-side": {"anchor": 1, "anchor_position": [0.0, -0.12, 0.0], "category": "road", "orientation": "Traffic axis Z; sidewalk projects toward -Z in its source AABB.", "note": "Keep source origin and selection offset."},
 	"city_kit_roads/tile-low": {"anchor": 2, "category": "paving", "orientation": "Axis-neutral square tile.", "note": "Same scale as the road family."},
 	"factory_kit/structure-wall": {"anchor": 1, "category": "structure", "orientation": "Bay axis X; visible facade faces +Z.", "note": "Z bounds include projecting structure. Preserve origin."},

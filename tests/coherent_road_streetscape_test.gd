@@ -105,12 +105,7 @@ func _test_presented_sections() -> void:
 	root.add_child(presentation)
 	ModularEnvironmentPresenter.build(data, presentation, 1.0)
 	var streetscapes := presentation.find_children("RoadStreetscape", "Node3D", true, false)
-	check(streetscapes.size() == data.environment_layout_plan.road_cells.size(), "Every planned road tile builds one streetscape presentation root")
-	for streetscape in streetscapes:
-		check(is_equal_approx(float(streetscape.get_meta("carriageway_width")), 6.0), "Presented streets expose the six-cell carriageway contract")
-		check(is_equal_approx(float(streetscape.get_meta("sidewalk_width")), 2.0), "Presented streets expose the two-cell sidewalk contract")
-		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Presented streets include pavement")
-		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Presented streets include sidewalks")
+	check(streetscapes.is_empty(), "Normal presentation leaves visible road ownership to the imported kit surfaces")
 	var imported_surfaces := 0
 	for node in presentation.find_children("*", "TacticalVisualOccluder", true, false):
 		if node.get_meta("assembly_visual_role", &"") == &"road_surface":
@@ -118,6 +113,18 @@ func _test_presented_sections() -> void:
 			check(node.get_meta("scale_multiplier", Vector3.ONE).is_equal_approx(Vector3(2, 1, 2)), "Kit road surface uses the authored two-times horizontal streetscape adapter")
 	check(imported_surfaces == data.environment_layout_plan.road_cells.size(), "Every logical road tile presents one reviewed City Roads surface")
 	presentation.queue_free()
+
+	var diagnostics := Node3D.new()
+	root.add_child(diagnostics)
+	ModularEnvironmentPresenter.build(data, diagnostics, 1.0, true)
+	streetscapes = diagnostics.find_children("RoadStreetscape", "Node3D", true, false)
+	check(streetscapes.size() == data.environment_layout_plan.road_cells.size(), "Explicit road diagnostics reconstruct every authored cross-section")
+	for streetscape in streetscapes:
+		check(is_equal_approx(float(streetscape.get_meta("carriageway_width")), 6.0), "Diagnostic streets expose the six-cell carriageway contract")
+		check(is_equal_approx(float(streetscape.get_meta("sidewalk_width")), 2.0), "Diagnostic streets expose the two-cell sidewalk contract")
+		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Road diagnostics include pavement")
+		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Road diagnostics include sidewalks")
+	diagnostics.queue_free()
 
 func _section_count(sections: Array[Dictionary], kind: StringName) -> int:
 	var count := 0

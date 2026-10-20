@@ -1,6 +1,6 @@
 # Road Geometry and Streetscapes
 
-FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. Reviewed City Kit Roads meshes now provide the visible straight, crossroad, and T-junction surfaces. Exact derived roadbed, sidewalk, curb, and marking geometry remains underneath as a seam-safe fallback and diagnostic contract. The semantic catalog also supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
+FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. Reviewed City Kit Roads meshes own the normal visible straight, crossroad, and T-junction surfaces. Exact derived roadbed, sidewalk, curb, and marking geometry is available only through the presenter's explicit diagnostic mode; it is not drawn underneath imported streets. The semantic catalog also supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
 
 ## Street cross-section
 
@@ -13,7 +13,7 @@ Each straight street occupies a 10 × 10 tactical module:
 | Right sidewalk | 2 cells | raised concrete | ordinary open ground |
 | Curbs | 0.12 units | raised seam at both road edges | presentation only |
 
-Crossroads and T-junctions use the same widths. Their asphalt arms meet at exact centers and their sidewalk corner islands leave every active road approach open. Presentation surfaces sit slightly above the preview base plane to prevent z-fighting. Their height and material never create movement, collision, cover, or line of sight.
+Crossroads and T-junctions use the same widths. Their asphalt arms meet at exact centers and their sidewalk corner islands leave every active road approach open. Imported presentation surfaces sit slightly above the preview base plane to prevent z-fighting. The diagnostic cross-section's height and material never create movement, collision, cover, or line of sight.
 
 The calibrated kit road tile occupies 5 × 5 world units and already has the desired 3:1:1 carriageway-to-sidewalk ratio. Each ten-cell module applies an authored 2× horizontal presentation adapter, producing the exact 6 + 2 + 2 cross-section without changing the saved calibration. Matching `road-straight`, `road-crossroad`, and `road-intersection` meshes are selected through semantic approval. `road-curve` and `tile-low` use the same adapter in their authored modules. This non-uniform module transform is visual only and leaves the source GLB, calibration, and tactical cells unchanged.
 
@@ -67,7 +67,7 @@ Use **Inspect road seam** for a straight connection or select an intersection in
 godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- artifacts/streetscape-review
 ```
 
-`coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
+`coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, absence of duplicate normal surfaces, explicit diagnostic reconstruction, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
 
 ## Current limits
 

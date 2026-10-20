@@ -37,7 +37,9 @@ func _test_environment_generation(catalog: Dictionary) -> void:
 	check(_roads_reach_boundary(first), "Generated road approaches terminate at map boundaries")
 	check(_all_parcels_assigned(first.environment_layout_plan), "Every planned parcel receives an authored template or explicit fallback")
 	check(_tactical_map_is_valid(first), "The generated district passes shared tactical validation")
-	var alternative_seed := FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, 7, &"industrial_district")
+	# Seed 2 deliberately tries a shell whose service object conflicts with a
+	# streetlight, exercising bounded retry with the corrected visual envelopes.
+	var alternative_seed := FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, 2, &"industrial_district")
 	check(not alternative_seed.environment_layout_plan.rejected_candidates.is_empty(), "A constrained seed records a rejected visual or clearance conflict")
 	check(not alternative_seed.environment_layout_plan.fallback_used and _tactical_map_is_valid(alternative_seed), "Bounded search selects a valid alternative after rejecting a conflicting parcel template")
 
@@ -77,11 +79,12 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	var presentation := Node3D.new()
 	root.add_child(presentation)
 	ModularEnvironmentPresenter.build(data, presentation, 1.0)
-	var road_surfaces := presentation.find_children("RoadStreetscape", "Node3D", true, false)
-	check(road_surfaces.size() == data.environment_layout_plan.road_cells.size(), "Every logical road tile receives a complete derived streetscape")
-	for streetscape in road_surfaces:
-		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Every streetscape presents a continuous carriageway")
-		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Every streetscape presents authored sidewalks")
+	check(presentation.find_children("RoadStreetscape", "Node3D", true, false).is_empty(), "Normal districts do not layer derived streets underneath the imported road kit")
+	var imported_road_surfaces := 0
+	for visual in presentation.find_children("*", "TacticalVisualOccluder", true, false):
+		if visual.get_meta("assembly_visual_role", &"") == &"road_surface":
+			imported_road_surfaces += 1
+	check(imported_road_surfaces == data.environment_layout_plan.road_cells.size(), "Every logical road tile receives exactly one imported kit surface")
 	presentation.queue_free()
 
 func _test_expanded_district_catalog() -> void:
@@ -138,7 +141,7 @@ func _test_map_editor() -> void:
 	check(editor.content.get_node_or_null("SpatialPlan") != null, "Map Editor draws the generated road and parcel plan")
 	check(editor.preview_map_size == Vector2i(60, 50), "Map Editor frames the expanded coherent-generation canvas")
 	check("crossroad" in editor.status.text or "t junction" in editor.status.text, "Map Editor reports topology and generation diagnostics")
-	check("VALID" in editor.status.text, "Map Editor validates the procedural sample tactically")
+	check("TACTICAL VALID" in editor.status.text, "Map Editor labels its MapData result as tactical validation rather than visual certification")
 	editor.queue_free()
 	await process_frame
 
