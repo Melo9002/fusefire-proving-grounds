@@ -18,8 +18,11 @@ func _run() -> void:
 	await process_frame
 	for sample in [
 		[&"industrial_district", 17],
+		[&"industrial_district", 2208],
 		[&"commercial_street", 7319],
+		[&"commercial_street", 17],
 		[&"mixed_service", 11027],
+		[&"mixed_service", 2208],
 	]:
 		editor.layout_preset = sample[0]
 		editor.generation_seed = sample[1]
@@ -37,13 +40,13 @@ func _run() -> void:
 		]:
 			editor._set_plan_overlay_visible(view[3])
 			if view[0] == "street":
-				if sample[0] == &"industrial_district":
-					_focus_first_profiled_shell(editor)
-				elif not editor._focus_component(&"complete_service_building", "complete building street view"):
-					_focus_first_profiled_shell(editor)
+				if not _focus_first_profiled_shell(editor):
+					editor._frame_camera()
 			elif view[0] == "service":
 				if not editor._focus_component(&"machine_cover_cluster", "industrial service area"):
-					editor._focus_component(&"industrial_loading_canopy", "industrial loading area")
+					if not editor._focus_component(&"industrial_loading_canopy", "industrial loading area"):
+						if not editor._focus_component(&"cargo_container", "container staging area"):
+							editor._focus_component(&"service_dumpster", "service alley")
 			elif view[0] == "intersection":
 				if not editor._focus_component(&"road_crossroad", "road intersection view"):
 					editor._focus_component(&"road_intersection_t", "road intersection view")

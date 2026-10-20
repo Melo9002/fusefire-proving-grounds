@@ -1,6 +1,6 @@
 # Road Geometry and Streetscapes
 
-FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. The system combines exact derived surfaces with reviewed Kenney kit assets: generated boxes provide seamless roadbed, sidewalk, curb, and marking geometry; the semantic asset catalog supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
+FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. Reviewed City Kit Roads meshes now provide the visible straight, crossroad, and T-junction surfaces. Exact derived roadbed, sidewalk, curb, and marking geometry remains underneath as a seam-safe fallback and diagnostic contract. The semantic catalog also supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
 
 ## Street cross-section
 
@@ -15,7 +15,7 @@ Each straight street occupies a 10 × 10 tactical module:
 
 Crossroads and T-junctions use the same widths. Their asphalt arms meet at exact centers and their sidewalk corner islands leave every active road approach open. Presentation surfaces sit slightly above the preview base plane to prevent z-fighting. Their height and material never create movement, collision, cover, or line of sight.
 
-The original City Kit Roads meshes remain in the asset library as inspected source material. The coherent generator uses derived geometry because stretching a complete one-meter road tile across a ten-cell macro tile could not preserve a useful carriageway, sidewalk width, or exact intersection seam. The legacy 20 × 20 authored road corner still uses its imported mesh and is not part of the procedural grammar.
+The calibrated kit road tile occupies 5 × 5 world units and already has the desired 3:1:1 carriageway-to-sidewalk ratio. Each ten-cell module applies an authored 2× horizontal presentation adapter, producing the exact 6 + 2 + 2 cross-section without changing the saved calibration. Matching `road-straight`, `road-crossroad`, and `road-intersection` meshes are selected through semantic approval. `road-curve` and `tile-low` use the same adapter in their authored modules. This non-uniform module transform is visual only and leaves the source GLB, calibration, and tactical cells unchanged.
 
 ## Frontage and placement rules
 
@@ -24,6 +24,7 @@ Road furniture uses explicit rotation-aware sidewalk slots:
 - The outer sidewalk lane carries poles, lights, signals, signs, and occasional barriers.
 - The inner sidewalk lane remains clear for pedestrians and tactical traversal.
 - Straight-segment fixtures avoid the central frontage band used by entrances.
+- Curved and square streetlight heads face model-local `-Z`; their authored slot yaw points that face inward over the carriageway on either side and rotates with the road.
 - Each intersection receives one control asset per active approach. T-junctions therefore receive three rather than four.
 - A tactical obstacle appears only when deliberately requested by an environment rule. Construction barriers retain their explicit vaultable low-cover contract; ordinary furniture remains visual-only.
 
@@ -37,9 +38,9 @@ Road modules occupy the ground placement layer. Furniture and tactical obstacles
 | Commercial street | reviewed traffic lights | regular curved or square road lights | sidewalks remain uncluttered |
 | Mixed service | traffic lights at crossroads, stop signs at T-junctions | alternating lights and electricity poles | very sparse construction barriers |
 
-The visual variants are selected deterministically through the existing module placement variant. All references use stable semantic asset IDs and the Asset Lab's saved calibration at presentation time. No new procedural approvals or calibration changes are made by street generation.
+The visual variants are selected deterministically through the existing module placement variant. All references use stable semantic asset IDs and the Asset Lab's saved calibration at presentation time. Five road/paving meshes gained explicit procedural approval only after receiving these module contracts; no calibration value changed.
 
-Parcel templates continue to add context-specific kit assets: dumpsters near service alleys, containers and machinery in loading areas, construction fencing around yards, and complete reviewed structures facing the street. Expanded 60 × 50 previews reserve several large parcels. Industrial and mixed-service layouts select from calibrated per-building profiles whose working faces are normalized toward the sidewalk; commercial blocks use complete authored shop buildings. Landlocked parcels remain undeveloped ground instead of becoming disconnected paving slabs with isolated clutter. These objects belong to functional parcels rather than a random map-wide clutter pass.
+Parcel templates continue to add context-specific kit assets: dumpsters near service alleys, containers and machinery in loading areas, construction fencing around yards, and complete reviewed structures facing the street. Expanded 60 × 50 previews reserve several large parcels. Industrial and mixed-service layouts select from calibrated per-building profiles whose working faces are normalized toward the sidewalk; commercial blocks select the smaller complete shells explicitly confirmed for that context. Commercial small parcels use paved, lit forecourts rather than industrial container staging. Landlocked parcels remain designated district buffers instead of becoming disconnected paving slabs with isolated clutter. These objects belong to functional parcels rather than a random map-wide clutter pass.
 
 ## Adding a street detail
 
@@ -66,7 +67,7 @@ Use **Inspect road seam** for a straight connection or select an intersection in
 godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- artifacts/streetscape-review
 ```
 
-`coherent_road_streetscape_test.gd` protects exact cross-section widths, intersection pavement and corner islands, rotation-aware kit placement, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
+`coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
 
 ## Current limits
 

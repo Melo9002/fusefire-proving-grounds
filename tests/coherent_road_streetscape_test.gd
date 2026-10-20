@@ -66,6 +66,9 @@ func _check_straight_fixtures(environment_id: StringName, index: int, road: Envi
 	var fixture_id := CoherentEnvironmentAssembler._straight_fixture_id(environment_id, index)
 	var fixture_cell := road.origin + definition.rotate_cell(fixture.cell, road.rotation)
 	check(lookup.has("%s@%s" % [fixture_id, fixture_cell]), "%s places its reviewed %s kit asset in an outer sidewalk slot" % [environment_id, fixture_id])
+	if fixture_id == &"street_light" and lookup.has("%s@%s" % [fixture_id, fixture_cell]):
+		var light: EnvironmentModulePlacement = lookup["%s@%s" % [fixture_id, fixture_cell]]
+		check(light.rotation == posmod(int(fixture.inward_yaw) + road.rotation, 4), "Streetlight model-local -Z faces inward toward the carriageway")
 	if CoherentEnvironmentAssembler._should_add_street_obstacle(environment_id, index):
 		var obstacle := Streetscape.straight_fixture_slot(index, true)
 		var obstacle_cell := road.origin + definition.rotate_cell(obstacle.cell, road.rotation)
@@ -108,6 +111,12 @@ func _test_presented_sections() -> void:
 		check(is_equal_approx(float(streetscape.get_meta("sidewalk_width")), 2.0), "Presented streets expose the two-cell sidewalk contract")
 		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Presented streets include pavement")
 		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Presented streets include sidewalks")
+	var imported_surfaces := 0
+	for node in presentation.find_children("*", "TacticalVisualOccluder", true, false):
+		if node.get_meta("assembly_visual_role", &"") == &"road_surface":
+			imported_surfaces += 1
+			check(node.get_meta("scale_multiplier", Vector3.ONE).is_equal_approx(Vector3(2, 1, 2)), "Kit road surface uses the authored two-times horizontal streetscape adapter")
+	check(imported_surfaces == data.environment_layout_plan.road_cells.size(), "Every logical road tile presents one reviewed City Roads surface")
 	presentation.queue_free()
 
 func _section_count(sections: Array[Dictionary], kind: StringName) -> int:

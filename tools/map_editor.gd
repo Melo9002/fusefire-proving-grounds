@@ -11,14 +11,21 @@ const ASSEMBLY_VIEW_DECORATION := &"decoration"
 const INSPECTION_CONTROLS_TOP := 92.0
 const INSPECTION_ROW_SPACING := 32.0
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
-const EDITOR_LAYOUTS: Array[StringName] = [
+const NORMAL_LAYOUTS: Array[StringName] = [
 	CUSTOM_LAYOUT,
-	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery",
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
+const ENGINEERING_LAYOUTS: Array[StringName] = [
+	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery",
+]
+const EDITOR_LAYOUTS: Array[StringName] = NORMAL_LAYOUTS + ENGINEERING_LAYOUTS
+const ENGINEERING_ONLY_COMPONENTS: Array[StringName] = [
+	&"factory_wall_straight", &"factory_wall_corner", &"factory_doorway_wide", &"factory_window_wall",
+	&"factory_shop_front", &"factory_interior_floor", &"industrial_building_shell", &"complete_service_building",
+]
 
-@export var generation_seed := 2202
-@export var layout_preset: StringName = &"industrial_frontage"
+@export var generation_seed := 17
+@export var layout_preset: StringName = &"industrial_district"
 var content: Node3D
 var status: Label
 var seed_input: SpinBox
@@ -30,6 +37,7 @@ var adjustment_step: SpinBox
 var transform_label: Label
 var selection_outline_material: StandardMaterial3D
 var preset_picker: OptionButton
+var engineering_fixtures_toggle: CheckButton
 var spatial_contract_toggle: CheckButton
 var preview_map_size := Vector2i(40, 30)
 var show_plan_overlay := true
@@ -42,9 +50,11 @@ var variation_input: SpinBox
 var composer_message: Label
 var composer_panel: Control
 var inspection_shortcuts: Array[Control] = []
+var engineering_shortcuts: Array[Control] = []
 var editor_catalog: Dictionary = IndustrialModuleCatalog.create()
 var displayed_data: MapData
 var assembly_view: StringName = ASSEMBLY_VIEW_COMPLETE
+var show_engineering_fixtures := false
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -52,6 +62,7 @@ func _ready() -> void:
 		generation_seed = int(args[0])
 	if args.size() > 1 and StringName(args[1]) in EDITOR_LAYOUTS:
 		layout_preset = StringName(args[1])
+		show_engineering_fixtures = layout_preset in ENGINEERING_LAYOUTS
 	_build_ui()
 	_load_custom_layout(false)
 	_rebuild()
@@ -231,14 +242,15 @@ func _build_ui() -> void:
 	regenerate.pressed.connect(_rebuild)
 	controls.add_child(regenerate)
 	preset_picker = OptionButton.new()
-	for preset in EDITOR_LAYOUTS:
-		var kind := "Procedural" if preset in PROCEDURAL_LAYOUTS else "Authored"
-		preset_picker.add_item("%s — %s" % [kind, String(preset).capitalize()])
-		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
-		if preset == layout_preset:
-			preset_picker.select(preset_picker.item_count - 1)
+	_populate_preset_picker()
 	preset_picker.item_selected.connect(_select_preset)
 	controls.add_child(preset_picker)
+	engineering_fixtures_toggle = CheckButton.new()
+	engineering_fixtures_toggle.text = "Engineering fixtures"
+	engineering_fixtures_toggle.tooltip_text = "Show preserved component demonstrations and regression maps"
+	engineering_fixtures_toggle.button_pressed = show_engineering_fixtures
+	engineering_fixtures_toggle.toggled.connect(_set_engineering_fixtures_visible)
+	controls.add_child(engineering_fixtures_toggle)
 	var frame_button := Button.new()
 	frame_button.text = "Frame map"
 	frame_button.pressed.connect(_frame_camera)
@@ -265,6 +277,7 @@ func _build_ui() -> void:
 	corner_button.pressed.connect(func(): _focus_component(&"factory_wall_corner", "factory corner — inner, scale 2.0"))
 	controls.add_child(corner_button)
 	inspection_shortcuts.append(corner_button)
+	engineering_shortcuts.append(corner_button)
 	var road_button := Button.new()
 	road_button.text = "Inspect road seam"
 	road_button.tooltip_text = "Frame the road and paving connection (G)"
@@ -338,18 +351,12 @@ func _build_composer_ui(layer: Control) -> void:
 	component_picker = OptionButton.new()
 	component_picker.fit_to_longest_item = false
 	component_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var component_ids: Array = editor_catalog.keys()
-	component_ids.sort_custom(func(a, b):
-		var first: EnvironmentModuleDefinition = editor_catalog[a]
-		var second: EnvironmentModuleDefinition = editor_catalog[b]
-		return "%s/%s" % [first.family, first.component_id] < "%s/%s" % [second.family, second.component_id]
-	)
-	for component_id in component_ids:
-		var definition: EnvironmentModuleDefinition = editor_catalog[component_id]
-		component_picker.add_item("%s  [%d×%d]" % [String(component_id).replace("_", " "), definition.size.x, definition.size.y])
-		component_picker.set_item_metadata(component_picker.item_count - 1, component_id)
-		component_picker.set_item_tooltip(component_picker.item_count - 1, "%s / %s" % [definition.family, component_id])
+	_populate_component_picker()
 	column.add_child(component_picker)
+	var fixture_note := Label.new()
+	fixture_note.text = "Reviewed assets and authored assemblies. Enable Engineering fixtures for legacy fragments."
+	fixture_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(fixture_note)
 	var options := HBoxContainer.new()
 	column.add_child(options)
 	var rotation_label := Label.new()
@@ -384,6 +391,47 @@ func _build_composer_ui(layer: Control) -> void:
 	composer_message.custom_minimum_size.y = 45
 	column.add_child(composer_message)
 
+func _populate_preset_picker() -> void:
+	if not is_instance_valid(preset_picker):
+		return
+	preset_picker.clear()
+	for preset in NORMAL_LAYOUTS:
+		var kind := "Editable" if preset == CUSTOM_LAYOUT else "Environment"
+		preset_picker.add_item("%s — %s" % [kind, String(preset).capitalize()])
+		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
+	if show_engineering_fixtures:
+		for preset in ENGINEERING_LAYOUTS:
+			preset_picker.add_item("Fixture — %s" % String(preset).capitalize())
+			preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
+	for item_index in preset_picker.item_count:
+		if preset_picker.get_item_metadata(item_index) == layout_preset:
+			preset_picker.select(item_index)
+			return
+	preset_picker.select(0)
+
+func _populate_component_picker() -> void:
+	if not is_instance_valid(component_picker):
+		return
+	var selected_id: StringName = &""
+	if component_picker.item_count > 0 and component_picker.selected >= 0:
+		selected_id = component_picker.get_item_metadata(component_picker.selected)
+	component_picker.clear()
+	var component_ids: Array = editor_catalog.keys()
+	component_ids.sort_custom(func(a, b):
+		var first: EnvironmentModuleDefinition = editor_catalog[a]
+		var second: EnvironmentModuleDefinition = editor_catalog[b]
+		return "%s/%s" % [first.family, first.component_id] < "%s/%s" % [second.family, second.component_id]
+	)
+	for component_id in component_ids:
+		if not show_engineering_fixtures and component_id in ENGINEERING_ONLY_COMPONENTS:
+			continue
+		var definition: EnvironmentModuleDefinition = editor_catalog[component_id]
+		component_picker.add_item("%s  [%d×%d]" % [String(component_id).replace("_", " "), definition.size.x, definition.size.y])
+		component_picker.set_item_metadata(component_picker.item_count - 1, component_id)
+		component_picker.set_item_tooltip(component_picker.item_count - 1, "%s / %s" % [definition.family, component_id])
+		if component_id == selected_id:
+			component_picker.select(component_picker.item_count - 1)
+
 func _is_composing() -> bool:
 	return layout_preset == CUSTOM_LAYOUT
 
@@ -392,6 +440,8 @@ func _update_composer_visibility() -> void:
 		composer_panel.visible = _is_composing()
 	for control in inspection_shortcuts:
 		control.visible = not _is_composing()
+	for control in engineering_shortcuts:
+		control.visible = show_engineering_fixtures and not _is_composing()
 	if _is_composing():
 		_update_composer_message()
 	_update_transform_label()
@@ -437,6 +487,16 @@ func _select_preset(index: int) -> void:
 	_rebuild()
 	if _is_composing():
 		_set_composer_message("Composition mode. Click an empty grid cell to place the selected module.")
+
+func _set_engineering_fixtures_visible(visible: bool) -> void:
+	show_engineering_fixtures = visible
+	if not visible and layout_preset in ENGINEERING_LAYOUTS:
+		layout_preset = &"industrial_district"
+	_populate_preset_picker()
+	_populate_component_picker()
+	if is_instance_valid(engineering_fixtures_toggle):
+		engineering_fixtures_toggle.set_pressed_no_signal(visible)
+	_rebuild()
 
 func _frame_camera() -> void:
 	if is_instance_valid(orbit):

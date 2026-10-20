@@ -83,8 +83,12 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 	var node := AssetPlacement.instantiate_calibrated(parent, asset_path, at, factor, yaw, anchor)
 	if node == null:
 		return
+	var scale_multiplier: Vector3 = visual.get("scale_multiplier", Vector3.ONE)
+	if not scale_multiplier.is_equal_approx(Vector3.ONE):
+		node.scale *= scale_multiplier
 	node.set_meta("component_id", placement.component_id)
 	node.set_meta("asset_path", asset_path)
+	node.set_meta("scale_multiplier", scale_multiplier)
 	node.set_meta("assembly_visual_role", visual.get("visual_role", &"component"))
 
 static func _add_box_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:

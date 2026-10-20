@@ -2,7 +2,7 @@
 
 This report records the catalog-wide semantic pass over FuseFire's 315 imported Kenney environment models. It is based on stable asset IDs, source-pack naming, native geometry measurements, rendered family contact sheets, existing calibration profiles and established module contracts.
 
-Semantic interpretation remains separate from visual calibration and tactical authority. This pass changes no GLB, calibration value, reviewed-calibration state, `MapData` cell, collision, cover, traversal or procedural approval.
+Semantic interpretation remains separate from visual calibration and tactical authority. The original identification pass changed no GLB, calibration value, reviewed-calibration state, `MapData` cell, collision, cover, traversal or procedural approval. After the developer completed the rendered batch inspection, all current interpretations were promoted to confirmed records. Later environment work separately approved only assets that gained placement contracts.
 
 ## Coverage
 
@@ -14,7 +14,7 @@ Semantic interpretation remains separate from visual calibration and tactical au
 | Modular Space Kit | 40 | Corridors, open-top rooms, gates, stairs, walls, floors and utility details identified as a separate grammar. |
 | **Total** | **315** | **315 catalog identities; all scoped orientation and machine-connection reviews resolved.** |
 
-The effective catalog contains 12 existing human-confirmed records and 303 catalog classifications. Every stable ID has a supported identity and no catalog-inferred record retains a review flag. The existing 12 procedural approvals remain the only procedural approvals.
+The effective catalog now contains 315 human-confirmed records. Every stable ID has a supported identity and no record retains a review flag. Procedural eligibility remains narrower: 32 assets currently have explicit visual placement contracts.
 
 The catalog uses five independent review flags:
 
@@ -65,7 +65,7 @@ All 45 flagged records were rendered from local `+Z`, `-Z`, `+X`, `-X`, top and 
 - Space gates expose equal `+Z` and `-Z` working faces because the passage is bidirectional.
 - Oopi's visible face points toward local `-X`. It remains a non-environment character reference and is not procedurally approved.
 
-These are catalog findings rather than human overrides. A developer may still save a confirmed annotation if an authored use needs a different interpretation.
+These rendered findings were subsequently confirmed by the developer after batch inspection. A future correction can still replace an individual annotation without changing calibration or tactical authority.
 
 ### Machine connections
 
@@ -78,7 +78,7 @@ All 16 Factory machinery flags were reviewed with six-axis renders, native bound
 - The four animated pistons are complete standalone machinery. Their animation and vertical operating clearance are preserved; matching envelopes do not establish compatibility.
 - The generic, bed, fortified, window and window-bar machine bodies have no verified external socket. Their top details are not general-purpose mounts.
 
-Opaque and glass pipes remain distinct connection families. No asset gained procedural approval during this review.
+Opaque and glass pipes remain distinct connection families. The review itself granted no procedural approval; later building and streetscape work approved selected assets only after authoring placement contracts.
 
 ## Inspection workflow
 

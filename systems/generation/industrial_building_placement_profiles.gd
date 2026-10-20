@@ -32,6 +32,7 @@ const PROFILES := {
 }
 
 const FRONTAGE_DEPTH := 3
+const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 
 static func ids() -> Array[String]:
 	var result: Array[String] = []
@@ -51,14 +52,29 @@ static func profile_for_asset(asset_id: String) -> Dictionary:
 static func module_id_for_asset(asset_id: String) -> StringName:
 	return StringName("industrial_shell_%s" % asset_id.get_file().trim_prefix("building-"))
 
-static func fitting_module_ids(parcel_size: Vector2i, frontage_depth := FRONTAGE_DEPTH) -> Array[StringName]:
+static func fitting_module_ids(parcel_size: Vector2i, environment_id: StringName = &"industrial_district", frontage_depth := FRONTAGE_DEPTH) -> Array[StringName]:
 	var result: Array[StringName] = []
+	var semantic_data := Semantics.load_data()
+	var required_context := _semantic_context(environment_id)
 	for asset_id in ids():
 		var profile := profile_for_asset(asset_id)
 		var size: Vector2i = profile.size
-		if size.x <= parcel_size.x - 2 and size.y + frontage_depth <= parcel_size.y:
+		var meaning := Semantics.effective(asset_id, semantic_data)
+		var confirmed: bool = meaning.get("interpretation_source", "") == "confirmed"
+		var usable: bool = confirmed and bool(meaning.get("generation_ready", false)) \
+			and meaning.get("asset_kind", "") == "complete_building" \
+			and meaning.get("completeness", "") == "complete" \
+			and required_context in meaning.get("contexts", []) \
+			and not meaning.get("working_faces", []).is_empty()
+		if usable and size.x <= parcel_size.x - 2 and size.y + frontage_depth <= parcel_size.y:
 			result.append(module_id_for_asset(asset_id))
 	return result
+
+static func _semantic_context(environment_id: StringName) -> String:
+	match environment_id:
+		&"commercial_street": return "commercial"
+		&"mixed_service": return "mixed_service"
+		_: return "industrial"
 
 static func asset_id_for_module(module_id: StringName) -> String:
 	return "city_kit_industrial/building-%s" % String(module_id).trim_prefix("industrial_shell_")

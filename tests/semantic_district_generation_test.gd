@@ -18,6 +18,7 @@ func _run() -> void:
 func _test_profiled_shell_contracts(catalog: Dictionary) -> void:
 	check(Profiles.ids().size() == 20, "Every reviewed City Industrial shell has an explicit placement profile")
 	check(Profiles.fitting_module_ids(Vector2i(20, 20)).size() == 13, "The 20-cell frontage parcel admits only shells that fit at calibrated scale plus apron")
+	check(Profiles.fitting_module_ids(Vector2i(20, 20), &"commercial_street").size() == 4, "Commercial frontage selection is restricted to explicitly confirmed compact shells")
 	for asset_id in Profiles.ids():
 		var module_id := Profiles.module_id_for_asset(asset_id)
 		var definition: EnvironmentModuleDefinition = catalog.get(module_id)
@@ -44,7 +45,7 @@ func _test_semantic_district_composition(catalog: Dictionary) -> void:
 		check(_signature(first) == _signature(repeated), "Industrial showcase seed %d remains deterministic" % map_seed)
 		var has_functional_large_parcel := false
 		for parcel in first.environment_layout_plan.parcels:
-			if parcel.template in [&"industrial_shell_block", &"industrial_yard_block"]:
+			if String(parcel.template).begins_with("building_frontage/") or parcel.template == &"industrial_yard_block":
 				has_functional_large_parcel = true
 		check(has_functional_large_parcel, "Industrial showcase seed %d contains a building frontage or purposeful yard" % map_seed)
 		for placement in first.environment_modules:

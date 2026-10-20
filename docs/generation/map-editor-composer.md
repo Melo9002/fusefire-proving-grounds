@@ -8,13 +8,13 @@ Launch composition mode with:
 godot_console --path . res://tools/map_editor.tscn -- 2202 custom_layout
 ```
 
-You can also launch any existing Map Editor preset and choose **Authored — Custom Layout** from the preset list.
+The editor normally opens on **Environment — Industrial District**. Choose **Editable — Custom Layout** to author. Legacy component demonstrations are deliberately hidden from this creative workflow; enable **Engineering fixtures** when a traversal, structural, or compatibility fixture is needed.
 
 To use a generated or authored map as a starting point, display it first and click **Edit copy**. The editor copies its module placements into the custom working composition and leaves the source preset unchanged.
 
 ## Authoring workflow
 
-1. Choose a component from the **Map Composer** panel. Entries show their family and logical grid size.
+1. Choose a component from the **Map Composer** panel. Entries show their family and logical grid size. The normal list favors reviewed assets and reusable authored assemblies; **Engineering fixtures** also reveals loose legacy structure fragments.
 2. Choose a 90-degree rotation and visual variant.
 3. Click an empty grid cell to place the component. The component origin snaps to that cell.
 4. Click a component to select it. Its thin amber outline and status line show its component ID, origin, rotation, and variant.

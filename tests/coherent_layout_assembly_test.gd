@@ -57,9 +57,15 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 	var ids: Dictionary = {}
 	for placement in data.environment_modules:
 		ids[placement.component_id] = int(ids.get(placement.component_id, 0)) + 1
+	var commercial_shells := 0
 	for component_id in ids:
-		check(not String(component_id).begins_with("industrial_shell_"), "Commercial districts do not misuse industrial-only shell assets")
-	check(ids.has(&"complete_service_building"), "Commercial blocks reuse complete four-sided buildings around a shared frontage")
+		if String(component_id).begins_with("industrial_shell_"):
+			commercial_shells += int(ids[component_id])
+			var meaning := SemanticAssetCatalog.effective(IndustrialBuildingPlacementProfiles.asset_id_for_module(component_id))
+			check(meaning.interpretation_source == "confirmed" and "commercial" in meaning.contexts, "Commercial building candidates require confirmed commercial context")
+	check(commercial_shells >= 1, "Commercial blocks use reviewed complete asset shells around a shared frontage")
+	check(not ids.has(&"complete_service_building"), "Procedural districts no longer use the generic box-built service shell")
+	check(not ids.has(&"cargo_container"), "Commercial forecourts do not inherit industrial container staging")
 	check(not ids.has(&"factory_shop_front") and not ids.has(&"factory_window_wall"), "Procedural parcels do not expose freestanding facade samples as buildings")
 	check(ids.has(&"traffic_signal") and ids.has(&"street_light"), "Commercial road furniture is attached to the street plan")
 	var has_large_parcel := false
@@ -68,13 +74,6 @@ func _test_visual_composition(catalog: Dictionary) -> void:
 		if bounds.size.x > CoherentEnvironmentAssembler.MACRO_SIZE or bounds.size.y > CoherentEnvironmentAssembler.MACRO_SIZE:
 			has_large_parcel = true
 	check(has_large_parcel, "The plot grammar supports authored parcels larger than one macro tile")
-	var service_building: EnvironmentModuleDefinition = catalog.complete_service_building
-	var exterior_accesses := 0
-	for connection in service_building.connections:
-		if connection.type == EnvironmentModuleConnection.Type.EXTERIOR_ACCESS:
-			exterior_accesses += 1
-	check(service_building.assembly_complete and service_building.assembly_enclosure == &"closed", "Procedural service buildings come from a validated closed-building assembly")
-	check(exterior_accesses == 4, "Complete service buildings retain the authored four-cell street entrance")
 	var presentation := Node3D.new()
 	root.add_child(presentation)
 	ModularEnvironmentPresenter.build(data, presentation, 1.0)
@@ -98,18 +97,40 @@ func _test_expanded_district_catalog() -> void:
 			check(shell_count >= 2, "%s seed %d reserves multiple complete reviewed shell parcels" % [environment_id, map_seed])
 	var commercial := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, 7319, &"commercial_street")
 	var commercial_buildings := 0
+	var commercial_large_parcels := 0
+	for parcel in commercial.environment_layout_plan.parcels:
+		if parcel.bounds.size.x > CoherentEnvironmentAssembler.MACRO_SIZE:
+			commercial_large_parcels += 1
 	for placement in commercial.environment_modules:
-		check(not String(placement.component_id).begins_with("industrial_shell_"), "Commercial parcels exclude industrial-only semantic candidates")
-		if placement.component_id == &"complete_service_building":
+		if String(placement.component_id).begins_with("industrial_shell_"):
 			commercial_buildings += 1
-	check(commercial_buildings >= 2, "The expanded commercial district assembles multiple complete street buildings")
+			var asset_id := IndustrialBuildingPlacementProfiles.asset_id_for_module(placement.component_id)
+			check("commercial" in SemanticAssetCatalog.effective(asset_id).contexts, "Commercial parcels select only shells reviewed for that context")
+	check(commercial_buildings == commercial_large_parcels and commercial_buildings >= 2, "The constrained commercial topology fills every available large frontage with reviewed buildings")
+	var roomy_commercial := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, 17, &"commercial_street")
+	var roomy_shells := 0
+	var roomy_large_parcels := 0
+	for parcel in roomy_commercial.environment_layout_plan.parcels:
+		if parcel.bounds.size.x > CoherentEnvironmentAssembler.MACRO_SIZE:
+			roomy_large_parcels += 1
+	for placement in roomy_commercial.environment_modules:
+		if String(placement.component_id).begins_with("industrial_shell_"):
+			roomy_shells += 1
+	check(roomy_shells == roomy_large_parcels and roomy_shells >= 3, "A topology with three available commercial frontages uses all three reviewed building parcels")
 	check(seen_shell_variants.size() >= 3, "Representative industrial seeds exercise several reviewed shell assets")
 
 func _test_map_editor() -> void:
 	var editor = load("res://tools/map_editor.tscn").instantiate()
 	root.add_child(editor)
 	await process_frame
-	check(editor.preset_picker.item_count == editor.EDITOR_LAYOUTS.size(), "Map Editor offers authored and procedural layouts together")
+	check(editor.layout_preset == &"industrial_district", "Map Editor opens on the semantic-driven industrial environment")
+	check(editor.preset_picker.item_count == editor.NORMAL_LAYOUTS.size(), "Normal Map Editor choices contain environments and editable compositions")
+	for item_index in editor.preset_picker.item_count:
+		check(editor.preset_picker.get_item_metadata(item_index) not in editor.ENGINEERING_LAYOUTS, "Regression fixtures stay out of the normal environment list")
+	check(not _picker_has(editor.component_picker, &"factory_shop_front") and not _picker_has(editor.component_picker, &"complete_service_building"), "Normal composer choices hide façade samples and generic regression shells")
+	editor._set_engineering_fixtures_visible(true)
+	check(editor.preset_picker.item_count == editor.EDITOR_LAYOUTS.size(), "Engineering fixtures remain available through an explicit diagnostic toggle")
+	check(_picker_has(editor.component_picker, &"factory_shop_front") and _picker_has(editor.component_picker, &"complete_service_building"), "Engineering mode preserves direct access to legacy component fixtures")
 	editor.layout_preset = &"industrial_district"
 	editor.generation_seed = 2208
 	editor._rebuild()
@@ -120,6 +141,12 @@ func _test_map_editor() -> void:
 	check("VALID" in editor.status.text, "Map Editor validates the procedural sample tactically")
 	editor.queue_free()
 	await process_frame
+
+func _picker_has(picker: OptionButton, value: StringName) -> bool:
+	for item_index in picker.item_count:
+		if picker.get_item_metadata(item_index) == value:
+			return true
+	return false
 
 func _roads_are_connected(data: MapData, catalog: Dictionary) -> bool:
 	var layout := _reconstruct(data, catalog)

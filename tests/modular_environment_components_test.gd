@@ -60,7 +60,10 @@ func _run() -> void:
 	check(catalog.construction_barrier_vault.interaction_at(Vector2i.ZERO) == EnvironmentModuleDefinition.CellInteraction.VAULT, "Vault animation intent is explicit module metadata")
 	check(catalog.road_straight.tactical_role == EnvironmentModuleDefinition.TacticalRole.GROUND and catalog.road_straight.cell_effects.is_empty(), "Road visuals remain ordinary tactical ground")
 	check(catalog.road_straight.placement_layer == EnvironmentModuleDefinition.PlacementLayer.GROUND and catalog.cargo_container.placement_layer == EnvironmentModuleDefinition.PlacementLayer.OCCUPANT, "Ground and tactical obstacles reserve independent placement layers")
-	check(catalog.road_straight.visuals.is_empty() and is_equal_approx(RoadStreetscapeProfile.ROAD_HEIGHT, 0.035) and is_equal_approx(catalog.paving_square.visuals[0].offset.y, 0.02), "Derived roads and imported paving each retain an explicit raised presentation plane")
+	var road_visual: Dictionary = catalog.road_straight.visuals[0]
+	var paving_visual: Dictionary = catalog.paving_square.visuals[0]
+	check(road_visual.asset_ids == ["city_kit_roads/road-straight"] and paving_visual.asset_ids == ["city_kit_roads/tile-low"], "Road and paving modules resolve their reviewed City Roads surfaces through stable semantic IDs")
+	check(road_visual.scale_multiplier == Vector3(2, 1, 2) and paving_visual.scale_multiplier == Vector3(2, 1, 2) and is_equal_approx(RoadStreetscapeProfile.ROAD_HEIGHT, 0.035), "Kit surfaces use the authored horizontal adapter over the explicit seam-safe road plane")
 	check(catalog.factory_wall_corner.visuals[0].yaw_quarters == 0 and catalog.factory_wall_corner.visuals[0].anchor == 1, "Inner corner preserves its authored source orientation and seam")
 	check(catalog.factory_wall_straight.size == Vector2i(4, 1) and catalog.factory_doorway_wide.size == Vector2i(4, 1), "Scale-two wall and doorway modules use an integer four-cell rhythm")
 	check(catalog.factory_wall_straight.visuals[0].anchor == 1 and catalog.factory_wall_straight.visuals[0].offset == Vector3.ZERO and is_equal_approx(catalog.factory_wall_straight.visuals[0].scale, IndustrialModuleCatalog.STRUCTURE_PRESENTATION_SCALE), "Factory straight pieces preserve their source seam with the presentation-only bleed")
@@ -112,6 +115,10 @@ func _run() -> void:
 	presented.queue_free()
 	await process_frame
 	var preview = load("res://tools/map_editor.tscn").instantiate()
+	# This test intentionally exercises the preserved Goal 2.2 seam fixture;
+	# normal editor startup now opens the coherent industrial environment.
+	preview.layout_preset = &"industrial_frontage"
+	preview.show_engineering_fixtures = true
 	root.add_child(preview)
 	await process_frame
 	var editor_ui := preview.find_child("MapEditorUI", true, false) as Control

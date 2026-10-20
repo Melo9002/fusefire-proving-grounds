@@ -185,13 +185,14 @@ func add_visual(asset_path: String, local_cell: Vector2, scale: float, yaw_quart
 
 ## Uses the developer-reviewed Asset Lab calibration at presentation time. This
 ## keeps visual scale/anchor edits independent from the tactical definition.
-func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quarters := 0, offset := Vector3.ZERO, visual_role: StringName = &"component") -> EnvironmentModuleDefinition:
+func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quarters := 0, offset := Vector3.ZERO, visual_role: StringName = &"component", scale_multiplier := Vector3.ONE) -> EnvironmentModuleDefinition:
 	visuals.append({
 		"asset_ids": asset_ids,
 		"local_cell": local_cell,
 		"yaw_quarters": yaw_quarters,
 		"offset": offset,
 		"visual_role": visual_role,
+		"scale_multiplier": scale_multiplier,
 	})
 	return self
 

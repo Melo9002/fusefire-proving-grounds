@@ -123,13 +123,14 @@ static func _road_straight() -> EnvironmentModuleDefinition:
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.ROAD)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
-	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Derived ten-unit street section: six-unit carriageway, two-unit sidewalks, curbs and markings. Tactical cells remain ordinary ground.")
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Reviewed City Roads surface adapted to the ten-unit street section: six-unit carriageway, two-unit sidewalks, curbs and markings. Tactical cells remain ordinary ground.")
 	item.add_connection(Vector2i(4, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(5, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(4, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(5, 9), Vector2i.DOWN, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
+	item.add_catalog_visual(["city_kit_roads/road-straight"], Vector2(4.5, 4.5), 0, Vector3(0, 0.11, 0), &"road_surface", Vector3(2, 1, 2))
 	return item
 
 static func _road_corner() -> EnvironmentModuleDefinition:
@@ -140,7 +141,7 @@ static func _road_corner() -> EnvironmentModuleDefinition:
 	item.set_visual_convention(Vector2.ONE, Vector2(20, 20), "The calibrated curve occupies two ten-unit road pitches.")
 	item.add_connection(Vector2i(9, 0), Vector2i.UP, EnvironmentModuleConnection.Type.ROAD)
 	item.add_connection(Vector2i(19, 9), Vector2i.RIGHT, EnvironmentModuleConnection.Type.ROAD)
-	item.add_visual(ROADS + "road-curve.glb", Vector2(9.5, 9.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	item.add_catalog_visual(["city_kit_roads/road-curve"], Vector2(9.5, 9.5), 0, Vector3(0, 0.01, 0), &"road_surface", Vector3(2, 1, 2))
 	return item
 
 static func _paving() -> EnvironmentModuleDefinition:
@@ -156,7 +157,7 @@ static func _paving() -> EnvironmentModuleDefinition:
 	item.add_connection(Vector2i(6, 1), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
-	item.add_visual(ROADS + "tile-low.glb", Vector2(4.5, 4.5), 10.0, 0, 2, Vector3(0, 0.02, 0))
+	item.add_catalog_visual(["city_kit_roads/tile-low"], Vector2(4.5, 4.5), 0, Vector3(0, 0.11, 0), &"ground_surface", Vector3(2, 1, 2))
 	return item
 
 static func _cargo_container() -> EnvironmentModuleDefinition:
@@ -235,7 +236,9 @@ static func _road_tile(id: StringName, type: EnvironmentModuleDefinition.ModuleT
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(type)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.GROUND)
-	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "Derived intersection geometry follows the same six-unit carriageway and two-unit sidewalk contract as straight streets.")
+	item.set_visual_convention(Vector2.ONE, Vector2(10, 10), "A doubled calibrated City Roads surface matches the six-unit carriageway and two-unit sidewalk contract; exact derived geometry remains a seam-safe underlay.")
+	var asset_id := "city_kit_roads/road-crossroad" if id == &"road_crossroad" else "city_kit_roads/road-intersection"
+	item.add_catalog_visual([asset_id], Vector2(4.5, 4.5), 0, Vector3(0, 0.01, 0), &"road_surface", Vector3(2, 1, 2))
 	return item
 
 static func _shop_front() -> EnvironmentModuleDefinition:

@@ -13,12 +13,13 @@ Neither file authors tactical movement, occupancy, cover, collision, line of sig
 
 Entries in `asset_semantics.json` override those provisional fields. The Asset Lab writes only to the `confirmed` section, so a future measurement or filename scan cannot replace a developer decision. A confirmed record may separately opt into procedural visual selection with `generation_ready`. This approval still does not provide tactical behavior.
 
-The current baseline contains 12 confirmed procedural visuals: five complete City Industrial exterior shells and seven pieces of road furniture already used by reviewed environment modules. The other 303 assets have catalog classifications. All 315 stable IDs have a supported identity, and the catalog-wide working-face and Factory machine-connection review has resolved every inferred review flag. `factory_kit/oopi` remains a non-environment Oopi character reference. See `semantic-asset-identification-report.md` for the evidence and decisions.
+The completed family-by-family review is now recorded for all 315 stable IDs. The catalog-wide working-face and Factory machine-connection pass resolved every review flag, and the developer confirmed the resulting interpretations after rendered batch inspection. Semantic confirmation remains distinct from procedural selection: 32 assets have explicit visual placement contracts and `generation_ready`; the remaining confirmed assets stay available for authored work without entering procedural candidate pools. `factory_kit/oopi` remains a non-environment Oopi character reference. See `semantic-asset-identification-report.md` for the evidence and decisions.
 
 The approved baseline is:
 
-- Complete sealed shells: `building-h`, `building-i`, `building-j`, `building-k`, and `building-o` from City Kit Industrial.
+- Complete sealed shells: `building-a` through `building-t` from City Kit Industrial. Each remains an exterior-only obstacle with a calibrated profile; parcel fit and environment context further restrict actual selection.
 - Road context: `light-curved`, `light-square`, `traffic-light`, `road-sign-stop`, `dumpster`, `electricity-pole-single`, and `construction-fence` from City Kit Roads.
+- Road surfaces: `road-straight`, `road-crossroad`, `road-intersection`, `road-curve`, and `tile-low`, each backed by an explicit module presentation contract.
 
 ## Asset Lab annotation workflow
 
@@ -77,7 +78,7 @@ Do not copy calibration, pivots or socket transforms merely because a new model 
 
 ## Current limitations
 
-- Catalog classifications are supported by family evidence but remain distinct from human confirmation. Future catalog additions can reintroduce field-specific review flags where evidence is insufficient.
+- All current stable IDs are human-confirmed. Future catalog additions begin as evidence-backed inferences and can reintroduce field-specific review flags where evidence is insufficient.
 - Confirmed contexts and connections are descriptive tags. Module sockets and tactical placement rules remain explicit typed definitions.
 - Monolithic exterior shells do not become accessible interiors.
 - Semantic approval does not automatically add a new asset to a district grammar; a compatible module or parcel composition is still required.

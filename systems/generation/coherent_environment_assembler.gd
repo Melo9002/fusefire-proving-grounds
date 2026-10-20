@@ -48,9 +48,9 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			break
 		if not accepted:
 			plan.fallback_used = true
-			parcel.template = &"open_ground"
+			parcel.template = &"district_buffer"
 			parcel.rotation = 0
-			plan.decisions.append("%s -> open_ground fallback" % parcel.id)
+			plan.decisions.append("%s -> district_buffer fallback" % parcel.id)
 		plan.parcels.append(parcel)
 	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
 	_repair_deployment_cells(data, plan)
@@ -115,7 +115,8 @@ static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: Enviro
 			var fixture := Streetscape.straight_fixture_slot(straight_index)
 			var fixture_id := _straight_fixture_id(plan.environment_id, straight_index)
 			var fixture_cell: Vector2i = definition.rotate_cell(fixture.cell, placement.rotation)
-			var fixture_yaw := posmod(int(fixture.yaw) + placement.rotation, 4)
+			var local_yaw := int(fixture.inward_yaw) if fixture_id == &"street_light" else int(fixture.yaw)
+			var fixture_yaw := posmod(local_yaw + placement.rotation, 4)
 			if layout.try_add(catalog[fixture_id], EnvironmentModulePlacement.new(fixture_id, placement.origin + fixture_cell, fixture_yaw, rng.randi_range(0, 1)), map_size):
 				fixture_count += 1
 			if _should_add_street_obstacle(plan.environment_id, straight_index):
@@ -190,10 +191,10 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 			if valid and not _road_edges_for_macro_rect(origin, Vector2i(2, 2), road_lookup).is_empty():
 				large_origins.append(origin)
 	_shuffle_vector_cells(large_origins, rng)
-	var large_target := 2
+	var large_target := 3
 	match plan.environment_id:
-		&"industrial_district": large_target = 3
-		&"mixed_service": large_target = 2
+		&"industrial_district": large_target = 4
+		&"mixed_service": large_target = 3
 	var large_count := 0
 	for chosen in large_origins:
 		if large_count >= large_target:
@@ -257,37 +258,41 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 	var result: Array[StringName]
 	var bounds: Rect2i = parcel.bounds
 	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
-		if environment_id == &"commercial_street":
-			result.append(&"commercial_block")
-		else:
-			result = [&"industrial_shell_block", &"industrial_yard_block"]
+		var buildings := BuildingProfiles.fitting_module_ids(bounds.size, environment_id)
+		_shuffle(buildings, rng)
+		for module_id in buildings.slice(0, mini(MAX_TEMPLATE_ATTEMPTS - 1, buildings.size())):
+			result.append(StringName("building_frontage/%s" % module_id))
+		if environment_id != &"commercial_street":
+			result.append(&"industrial_yard_block")
 		return result
 	var has_frontage: bool = not (parcel.road_edges as Array).is_empty()
 	if not has_frontage:
-		# A landlocked parcel is intentionally undeveloped. Paving it and adding
-		# service clutter made the district read as disconnected tile chunks.
-		result = [&"open_ground"]
+		# This reserved service/buffer land is intentionally unbuilt. Naming that
+		# purpose in the plan distinguishes it from a failed or forgotten parcel.
+		result = [&"district_buffer"]
 	elif parcel_index == 0:
 		match environment_id:
-			&"industrial_district": result = [&"loading_bay", &"workshop", &"yard"]
-			&"commercial_street": result = [&"shop", &"courtyard", &"service_alley"]
-			_: result = [&"yard", &"shop", &"loading_bay"]
+			&"industrial_district": result = [&"loading_bay", &"equipment_compound", &"staging_pad"]
+			&"commercial_street": result = [&"service_alley", &"public_forecourt"]
+			_: result = [&"equipment_compound", &"loading_bay", &"service_alley"]
 	else:
 		match environment_id:
-			&"industrial_district": result = [&"loading_bay", &"yard", &"workshop", &"service_alley", &"courtyard"]
-			&"commercial_street": result = [&"shop", &"courtyard", &"service_alley", &"workshop"]
-			_: result = [&"shop", &"loading_bay", &"yard", &"courtyard", &"service_alley"]
+			&"industrial_district": result = [&"loading_bay", &"equipment_compound", &"service_alley", &"staging_pad"]
+			&"commercial_street": result = [&"service_alley", &"public_forecourt"]
+			_: result = [&"loading_bay", &"equipment_compound", &"service_alley", &"staging_pad"]
 	_shuffle(result, rng)
 	return result
 
 static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
 	var catalog := IndustrialModuleCatalog.create()
+	var template_name := String(template_id)
+	if template_name.begins_with("building_frontage/"):
+		var shell_id := StringName(template_name.trim_prefix("building_frontage/"))
+		local = _semantic_frontage_placements(parcel.size, catalog, rng, shell_id)
 	match template_id:
-		&"open_ground":
+		&"district_buffer":
 			local = []
-		&"industrial_shell_block":
-			local = _industrial_frontage_placements(parcel.size, catalog, rng)
 		&"industrial_yard_block":
 			local = [
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
@@ -298,47 +303,36 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 				EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(11, 11)),
 				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 17), 1, rng.randi_range(0, 2)),
 			]
-		&"commercial_block":
-			local = [
-				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
-				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
-				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
-				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
-				EnvironmentModulePlacement.new(&"complete_service_building", Vector2i(5, 0)),
-				EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 11), 0, rng.randi_range(0, 1)),
-				EnvironmentModulePlacement.new(&"street_light", Vector2i(18, 11), 2, rng.randi_range(0, 1)),
-			]
-		&"shop":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"complete_service_building", Vector2i.ZERO)]
 		&"loading_bay":
 			local = [
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(1, 2)),
 			]
-		&"yard":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 3)), EnvironmentModulePlacement.new(&"yard_fence", Vector2i(8, 2))]
-		&"workshop":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"complete_service_building", Vector2i.ZERO)]
+		&"equipment_compound":
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 3)), EnvironmentModulePlacement.new(&"yard_fence", Vector2i(9, 2))]
 		&"service_alley":
 			local = [EnvironmentModulePlacement.new(&"paved_alley", Vector2i(3, 0)), EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(0, 4)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(8, 6))]
+		&"staging_pad":
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"cargo_container", Vector2i(1, 2)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(7, 7))]
+		&"public_forecourt":
+			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"street_light", Vector2i(1, 8), 0, rng.randi_range(0, 1)), EnvironmentModulePlacement.new(&"street_light", Vector2i(8, 8), 0, rng.randi_range(0, 1))]
 		_:
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO)]
+			if local.is_empty() and template_id != &"district_buffer":
+				return []
 	var result: Array[EnvironmentModulePlacement] = []
 	for placement in local:
 		result.append(_rotate_into_parcel(placement, catalog[placement.component_id], parcel, rotation))
 	return result
 
-static func _industrial_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
+static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator, shell_id: StringName) -> Array[EnvironmentModulePlacement]:
 	var result: Array[EnvironmentModulePlacement] = [
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(0, 10)),
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 10)),
 	]
-	var candidates := BuildingProfiles.fitting_module_ids(parcel_size)
-	if candidates.is_empty():
+	if not catalog.has(shell_id):
 		return result
-	var shell_id: StringName = candidates[rng.randi_range(0, candidates.size() - 1)]
 	var shell: EnvironmentModuleDefinition = catalog[shell_id]
 	var shell_origin := Vector2i(floori(float(parcel_size.x - shell.size.x) * 0.5), 0)
 	result.append(EnvironmentModulePlacement.new(shell_id, shell_origin))
