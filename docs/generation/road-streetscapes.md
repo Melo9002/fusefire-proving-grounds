@@ -17,6 +17,19 @@ Crossroads and T-junctions use the same widths. Their asphalt arms meet at exact
 
 The calibrated kit road tile occupies 5 × 5 world units and already has the desired 3:1:1 carriageway-to-sidewalk ratio. Each ten-cell module applies an authored 2× horizontal presentation adapter, producing the exact 6 + 2 + 2 cross-section without changing the saved calibration. Matching `road-straight`, `road-crossroad`, and `road-intersection` meshes are selected through semantic approval. `road-curve` and `tile-low` use the same adapter in their authored modules. This non-uniform module transform is visual only and leaves the source GLB, calibration, and tactical cells unchanged.
 
+## Source orientation normalization
+
+Road geometry is normalized once in each module's visual contract, before ordinary module placement rotation. The imported mesh openings were derived from the bounded gaps in the highest horizontal pavement triangles rather than from square AABBs or filenames:
+
+| Module | Imported physical openings | Asset-local correction | Authored module openings |
+| --- | --- | ---: | --- |
+| `road_straight` | `-X`, `+X` | 1 quarter turn | `-Z`, `+Z` |
+| `road_intersection_t` | `-X`, `+X`, `+Z` | 0 | `-X`, `+X`, `+Z` |
+| `road_crossroad` | `-X`, `+X`, `-Z`, `+Z` | 0 | all four directions |
+| `road_corner` | `-X`, `+Z` | 2 quarter turns | `-Z`, `+X` |
+
+`yaw_quarters` expresses only this source-to-module correction. `EnvironmentModulePlacement.rotation` then rotates the normalized module through the canonical spatial transform. Asset calibration remains unchanged, and road meshes do not define tactical traversal.
+
 ## Frontage and placement rules
 
 Road furniture uses explicit rotation-aware sidewalk slots:
@@ -67,11 +80,12 @@ Use **Inspect road seam** for a straight connection or select an intersection in
 godot_console --path . --resolution 1440x900 --script res://tests/coherent_layout_capture.gd -- artifacts/streetscape-review
 ```
 
-`coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, absence of duplicate normal surfaces, explicit diagnostic reconstruction, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
+`coherent_geometry_contract_test.gd` extracts openings from actual imported triangle surfaces, compares their final rendered directions with connectors through all supported quarter turns, and verifies a connected straight/cross/curve fixture. `coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, absence of duplicate normal surfaces, explicit diagnostic reconstruction, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
 
 ## Current limits
 
-- The procedural grammar has straight approaches, crossroads, and T-junctions. Curves, medians, crosswalks, parking lanes, and secondary road widths need explicit profiles before use.
+- The procedural grammar emits straight approaches, crossroads, and T-junctions. The curve module has a verified visual/connector contract and is usable by authored layouts, but coherent procedural plans do not select it yet. Medians, crosswalks, parking lanes, and secondary road widths need explicit profiles before use.
+- Every supported imported road surface resolves to the same world Y `0.11` pavement top. The straight uses a top-center anchor at offset `0.11`; T, cross, and curve use their inherited floor anchor at offset `0.01`, compensating for their 0.10-unit mesh height. A presented-bounds regression protects the final geometric result rather than requiring misleadingly identical metadata offsets. Kit curb boundaries still overlap or terminate abruptly at some curve-to-square joins and require a Phase 2 certified transition policy.
 - The lane markings are a readable development baseline rather than a traffic simulation.
 - Fixture cadence is environment-specific but does not yet respond to building use, pedestrian demand, or power-grid continuity.
 - Imported traffic furniture still depends on its developer-reviewed calibration; the street system never rewrites those values.
