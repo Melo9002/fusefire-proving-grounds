@@ -26,6 +26,7 @@ var usable_floor_cells: Array[Vector2i] = []
 var roof_cells: Array[Vector2i] = []
 var entrance_directions: Dictionary = {}
 var source_assets: Array[String] = []
+var assembly_contract: EnvironmentAssemblyContract
 var notes := ""
 
 func _init(id: StringName, building_purpose: StringName, enclosure_kind: Enclosure, size: Vector2i) -> void:
@@ -47,6 +48,9 @@ func validate() -> PackedStringArray:
 		for asset_id in source_assets:
 			if not SemanticCatalog.compatible_as_complete_building(asset_id):
 				errors.append("%s uses %s without confirmed complete-building metadata" % [assembly_id, asset_id])
+		if assembly_contract != null:
+			for failure in assembly_contract.validate(self):
+				errors.append("%s certification %s" % [assembly_id, failure])
 		return errors
 	if usable_floor_cells.is_empty():
 		errors.append("%s has no usable floor" % assembly_id)

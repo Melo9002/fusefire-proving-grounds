@@ -48,6 +48,23 @@ Because openness is part of its contract, the missing walls are valid architectu
 
 This keeps the useful exterior massing without pretending that a closed GLB contains playable rooms. Thirteen profiles fit the current 20×20 procedural frontage parcel; the remaining large profiles stay registered for future campus parcels.
 
+### Certified building-i shell
+
+`city_industrial_shell_i` is the first shell promoted from reviewed building metadata to a reusable certified assembly. Its `EnvironmentAssemblyContract` binds the existing building definition to:
+
+- the stable `city_kit_industrial/building-i` asset ID and one required shell component;
+- the source-to-module transform that turns the reviewed model-local `-Z` face into module-local `+Z`;
+- the current GLB SHA-256 and a fingerprint of scale, anchor, corrective yaw and native bounds;
+- the resolved 10.281378 × 7.335410 × 13.000001 visual envelope;
+- an explicitly authored 11×13 solid tactical footprint;
+- a six-by-three exterior frontage apron;
+- all four canonical quarter-turn orientations; and
+- `complete_exterior`/`sealed_building_shell` classification.
+
+The tiny excess above 13 in the imported floating-point Z extent is treated as measurement noise for the 13-cell tactical reservation; the exact visual extent remains preserved. The entrance and garage door establish an exterior frontage relationship only. They do not create a walkable interior.
+
+Certification is intentionally pinned. Changing the GLB, resolved calibration, component transform, footprint, envelope, frontage, clearance or supported rotations makes validation fail. Other reviewed City Industrial shells continue to use their existing placement profiles but are not implicitly certified by this first record.
+
 ## Validation rules
 
 A closed building is reusable only when:
@@ -98,6 +115,15 @@ To author another reusable building:
 5. Author tactical effects independently of visual geometry.
 6. Add calibrated asset references or exact derived visuals.
 7. Run `validate()` and add the assembly to the building gallery before allowing procedural parcels to select it.
+
+For a certification-ready imported shell, also attach an `EnvironmentAssemblyContract`, pin its resolved dependencies, name its frontage/access relationship, and add both positive and negative validation cases. `IndustrialBuildingCatalog.certified_assemblies()` exposes only records whose current dependencies and spatial contract still validate.
+
+The focused automated check and clean rendered inspection are:
+
+```powershell
+godot_console --headless --path . --script res://tests/certified_building_assembly_contract_test.gd
+godot_console --path . --script res://tests/certified_building_shell_capture.gd -- artifacts/certified-building-shell
+```
 
 ## Current limits
 

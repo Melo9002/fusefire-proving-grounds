@@ -28,7 +28,9 @@ func _test_profiled_shell_contracts(catalog: Dictionary) -> void:
 		if definition == null:
 			continue
 		check(definition.assembly_complete and definition.assembly_enclosure == &"prebuilt_shell", "%s remains a complete sealed exterior" % asset_id)
-		check(definition.size == Vector2i(ceili(profile.bounds.x), ceili(profile.bounds.z)), "%s rounds calibrated bounds outward into its tactical footprint" % asset_id)
+		check(definition.size == profile.size, "%s uses its explicit reviewed tactical footprint" % asset_id)
+		check(float(definition.size.x) + 0.001 >= profile.bounds.x and float(definition.size.y) + 0.001 >= profile.bounds.z, "%s footprint contains calibrated bounds after tolerating import noise" % asset_id)
+		check(float(definition.size.x) - profile.bounds.x < 1.001 and float(definition.size.y) - profile.bounds.z < 1.001, "%s footprint rounds outward by less than one cell per axis" % asset_id)
 		check(definition.visual_envelope.size == profile.bounds, "%s rejects intersections with its measured visual envelope" % asset_id)
 		check(semantic.generation_ready and semantic.completeness == "complete", "%s is procedurally eligible only through its reviewed shell contract" % asset_id)
 		check(semantic.working_faces.size() == 1, "%s retains one reviewed working face" % asset_id)

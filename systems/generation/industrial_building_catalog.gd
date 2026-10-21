@@ -31,6 +31,13 @@ static func validation_errors() -> PackedStringArray:
 			result.append(message)
 	return result
 
+static func certified_assemblies() -> Dictionary:
+	var result := {}
+	for building: EnvironmentBuildingDefinition in create().values():
+		if building.assembly_contract != null and building.assembly_contract.is_certified(building):
+			result[building.assembly_id] = building
+	return result
+
 static func _service_building() -> EnvironmentBuildingDefinition:
 	var building := EnvironmentBuildingDefinition.new(&"service_building", &"street_service_shop", EnvironmentBuildingDefinition.Enclosure.CLOSED, Vector2i(10, 10))
 	building.notes = "Exact derived shell with one four-cell street entrance, a walkable interior and complete roof coverage."
@@ -175,7 +182,48 @@ static func _profiled_industrial_shell(asset_id: String) -> EnvironmentBuildingD
 	var visual_yaw := 2 if profile.face == "-z" else 0
 	item.add_catalog_visual([asset_id], center, visual_yaw, Vector3.ZERO, &"structural")
 	building.module = item
+	if asset_id == "city_kit_industrial/building-i":
+		building.assembly_contract = _certified_building_i_contract()
 	return building
+
+static func _certified_building_i_contract() -> EnvironmentAssemblyContract:
+	# These values are deliberately pinned rather than copied from the current
+	# module. A changed placement profile must fail revalidation instead of
+	# silently rewriting the certification record around the new values.
+	var contract := EnvironmentAssemblyContract.new(&"city_industrial_shell_i")
+	contract.role = EnvironmentAssemblyContract.AssemblyRole.SEALED_BUILDING_SHELL
+	contract.completeness = EnvironmentAssemblyContract.Completeness.COMPLETE_EXTERIOR
+	contract.components = [{
+		"asset_id": "city_kit_industrial/building-i",
+		"role": "shell",
+		"required": true,
+		"local_position": Vector3(5.0, 0.0, 6.0),
+		"yaw_quarters": 2,
+		"source_working_face": "-z",
+		"geometry_sha256": "12d9be598becf2b6d3758d23aba6c573ca2701fca5e77870d2ee5645647765ca",
+		"calibration_signature": "de03f9924c7afc0064c141aaec79605049453dddc10390bccbd461c6e415e773",
+	}]
+	for x in 11:
+		for z in 13:
+			contract.tactical_footprint.append(Vector2i(x, z))
+	contract.approved_visual_envelope = AABB(
+		Vector3(-0.1406890153885, 0.0, -0.50000035762785),
+		Vector3(10.281378030777, 7.33541011810303, 13.0000007152557)
+	)
+	for z in range(13, 16):
+		for x in range(2, 8):
+			contract.required_clearance_cells.append(Vector2i(x, z))
+	contract.relationships = {
+		"street_frontage": {
+			"direction": Vector2i.DOWN,
+			"access_kind": "exterior_frontage_apron",
+			"access_cells": contract.required_clearance_cells.duplicate(),
+			"interior_access": false,
+		}
+	}
+	contract.supported_rotations = [0, 1, 2, 3]
+	contract.certification_state = EnvironmentAssemblyContract.CertificationState.CERTIFIED
+	return contract
 
 static func _full_cover(height := 3.4) -> Dictionary:
 	return {

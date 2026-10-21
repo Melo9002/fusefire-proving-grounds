@@ -17,7 +17,10 @@ const PROFILES := {
 	"f": {"bounds": Vector3(17.90, 19.25, 12.80), "face": "-z"},
 	"g": {"bounds": Vector3(16.78, 12.80, 12.84), "face": "+z"},
 	"h": {"bounds": Vector3(13.22, 7.34, 13.10), "face": "-z"},
-	"i": {"bounds": Vector3(10.28, 7.34, 13.00), "face": "-z"},
+	# Native mesh bounds multiplied by the reviewed 10x building calibration.
+	# This shell is certified, so retain resolved precision rather than a rounded
+	# estimate that can under-reserve the imported geometry.
+	"i": {"bounds": Vector3(10.281378030777, 7.33541011810303, 13.0000007152557), "face": "-z", "size": Vector2i(11, 13)},
 	"j": {"bounds": Vector3(10.27, 8.61, 13.00), "face": "-z"},
 	"k": {"bounds": Vector3(13.03, 7.73, 9.14), "face": "-z"},
 	"l": {"bounds": Vector3(20.84, 19.25, 18.70), "face": "-z"},
@@ -44,7 +47,7 @@ static func ids() -> Array[String]:
 static func profile_for_asset(asset_id: String) -> Dictionary:
 	var suffix := asset_id.trim_prefix("city_kit_industrial/building-")
 	var result := (PROFILES.get(suffix, {}) as Dictionary).duplicate(true)
-	if result.has("bounds"):
+	if result.has("bounds") and not result.has("size"):
 		var bounds: Vector3 = result.bounds
 		result["size"] = Vector2i(ceili(bounds.x), ceili(bounds.z))
 	return result
