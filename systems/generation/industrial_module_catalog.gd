@@ -161,6 +161,10 @@ static func _paving() -> EnvironmentModuleDefinition:
 	item.add_connection(Vector2i(6, 1), Vector2i.UP, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(0, 4), Vector2i.LEFT, EnvironmentModuleConnection.Type.SIDEWALK)
 	item.add_connection(Vector2i(9, 4), Vector2i.RIGHT, EnvironmentModuleConnection.Type.SIDEWALK)
+	# Paving is deliberate open tactical ground. These cells let authored
+	# fixtures expose legal mission candidates without deriving them from mesh.
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.SPAWN, [Vector2i(1, 1)])
+	item.add_suitability(EnvironmentModuleDefinition.Suitability.OBJECTIVE, [Vector2i(8, 8)])
 	item.add_catalog_visual(["city_kit_roads/tile-low"], Vector2(4.5, 4.5), 0, Vector3(0, 0.11, 0), &"ground_surface", Vector3(2, 1, 2))
 	return item
 
@@ -304,7 +308,10 @@ static func _street_light() -> EnvironmentModuleDefinition:
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
 	item.set_visual_envelope(AABB(Vector3(-0.3, 0.0, -1.2), Vector3(0.6, 6.2, 2.4)))
-	item.add_catalog_visual(["city_kit_roads/light-square", "city_kit_roads/light-curved"], Vector2.ZERO)
+	# The calibrated source origin is the lamp's mounting foot. Raise it to the
+	# reviewed imported pavement top so normal road presentation neither buries
+	# the base nor leaves it floating.
+	item.add_catalog_visual(["city_kit_roads/light-square", "city_kit_roads/light-curved"], Vector2.ZERO, 0, Vector3(0, 0.11, 0))
 	return item
 
 static func _traffic_signal() -> EnvironmentModuleDefinition:

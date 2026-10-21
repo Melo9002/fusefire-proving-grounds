@@ -16,7 +16,7 @@ const NORMAL_LAYOUTS: Array[StringName] = [
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
 const ENGINEERING_LAYOUTS: Array[StringName] = [
-	&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery",
+	&"asset_first_frontage", &"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery",
 ]
 const EDITOR_LAYOUTS: Array[StringName] = NORMAL_LAYOUTS + ENGINEERING_LAYOUTS
 const ENGINEERING_ONLY_COMPONENTS: Array[StringName] = [

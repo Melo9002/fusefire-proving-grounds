@@ -43,6 +43,8 @@ Road furniture uses explicit rotation-aware sidewalk slots:
 
 Road modules occupy the ground placement layer. Furniture and tactical obstacles use the occupant layer, so a prop can stand on road or sidewalk presentation without deleting the ground underneath it. Parcel composition remains independent and cannot infer gameplay rules from mesh overlap.
 
+The bounded `asset_first_frontage` engineering fixture certifies one complete street-to-building relationship. Two imported `road-straight` tiles meet end-to-end; two imported `tile-low` surfaces meet their eastern sidewalks at the same X edge and the same Y `0.11` surface top. The paving ends exactly at the calibrated bounds of `building-i`. The building is quarter-turned so its reviewed working face points west toward the street, while its three-cell exterior apron remains unobstructed. Two reviewed lamps occupy outer sidewalk cells outside the central access band. Their model-local `-Z` heads face the carriageway, and their mounting feet are raised to the imported pavement top rather than buried at ground Y `0.0`.
+
 ## Environment identities
 
 | Identity | Intersection control | Edge fixtures | Tactical detail |
@@ -72,7 +74,10 @@ Launch the Map Editor directly:
 godot_console --path . res://tools/map_editor.tscn -- 2208 industrial_district
 godot_console --path . res://tools/map_editor.tscn -- 7319 commercial_street
 godot_console --path . res://tools/map_editor.tscn -- 11027 mixed_service
+godot_console --path . res://tools/map_editor.tscn -- 2303 asset_first_frontage
 ```
+
+The last command opens the Task 2.3 fixture and enables the editor's engineering-fixture view automatically. The shell is intentionally exterior-only; the white paving is a walkable frontage forecourt, not a playable building interior.
 
 Use **Inspect road seam** for a straight connection or select an intersection in the map. Right-drag orbits, middle-drag pans, and the wheel zooms. The rendered capture fixture records overhead and close intersection evidence for all three representative environments:
 
@@ -82,6 +87,8 @@ godot_console --path . --resolution 1440x900 --script res://tests/coherent_layou
 
 `coherent_geometry_contract_test.gd` extracts openings from actual imported triangle surfaces, compares their final rendered directions with connectors through all supported quarter turns, and verifies a connected straight/cross/curve fixture. `coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, absence of duplicate normal surfaces, explicit diagnostic reconstruction, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
 
+`coherent_asset_first_frontage_test.gd` protects the bounded fixture's physical seams, imported asset ownership, building and lamp facing, lamp mounting height, frontage clearance, sealed tactical shell, and street-to-apron path. `coherent_asset_first_frontage_capture.gd` records four clean views plus two engineering views. Green marks the access route, cyan the road/paving seams, gold the frontage apron, and magenta the lamp envelopes.
+
 ## Current limits
 
 - The procedural grammar emits straight approaches, crossroads, and T-junctions. The curve module has a verified visual/connector contract and is usable by authored layouts, but coherent procedural plans do not select it yet. Medians, crosswalks, parking lanes, and secondary road widths need explicit profiles before use.
@@ -89,3 +96,4 @@ godot_console --path . --resolution 1440x900 --script res://tests/coherent_layou
 - The lane markings are a readable development baseline rather than a traffic simulation.
 - Fixture cadence is environment-specific but does not yet respond to building use, pedestrian demand, or power-grid continuity.
 - Imported traffic furniture still depends on its developer-reviewed calibration; the street system never rewrites those values.
+- The certified frontage is one authored straight-street composition. It does not certify curve-to-parcel transitions, driveways, crosswalks, or a generalized parcel relationship solver.

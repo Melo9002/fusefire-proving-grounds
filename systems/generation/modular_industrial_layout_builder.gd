@@ -2,7 +2,13 @@ class_name ModularIndustrialLayoutBuilder
 extends RefCounted
 
 const SOURCE_KIND := "generated_modular_industrial"
-const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery"]
+const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery", &"asset_first_frontage"]
+
+# Task 2.3's bounded certification slice. These cells form one explicit access
+# route from the imported road's inner sidewalk lane, across the imported
+# paving forecourt, to the sealed shell's protected frontage apron.
+const REFERENCE_ROAD_ACCESS := Vector2i(12, 14)
+const REFERENCE_FRONTAGE_ACCESS := Vector2i(23, 14)
 
 static func apply(data: MapData, cell_size: float, map_seed: int, preset: StringName = &"industrial_frontage") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -32,7 +38,27 @@ static func _placements_for(preset: StringName, rng: RandomNumberGenerator) -> A
 		&"road_and_shops": return _road_and_shops()
 		&"vertical_works": return _vertical_works()
 		&"building_gallery": return _building_gallery()
+		&"asset_first_frontage": return _asset_first_frontage()
 		_: return []
+
+static func _asset_first_frontage() -> Array[EnvironmentModulePlacement]:
+	return [
+		# Two reviewed City Roads segments own the complete visible street section,
+		# including their sidewalks and curbs.
+		EnvironmentModulePlacement.new(&"road_straight", Vector2i(4, 5)),
+		EnvironmentModulePlacement.new(&"road_straight", Vector2i(4, 15)),
+		# Tile-low supplies an imported, flush pedestrian forecourt between the
+		# street edge and the building apron; no procedural sidewalk is layered in.
+		EnvironmentModulePlacement.new(&"paving_square", Vector2i(14, 5)),
+		EnvironmentModulePlacement.new(&"paving_square", Vector2i(14, 15)),
+		# building-i is a reviewed complete exterior shell. Quarter-turn 1 points
+		# its normalized +Z frontage west toward the road while keeping it sealed.
+		EnvironmentModulePlacement.new(&"industrial_shell_i", Vector2i(24, 10), 1),
+		# The model-local -Z lamp head points toward the carriageway. Both fixtures
+		# stay outside the central frontage band and the inner pedestrian lane.
+		EnvironmentModulePlacement.new(&"street_light", Vector2i(13, 7), 3, 0),
+		EnvironmentModulePlacement.new(&"street_light", Vector2i(13, 22), 3, 1),
+	]
 
 static func _industrial_frontage(rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
 	return [
@@ -112,6 +138,8 @@ static func _validate_layout(layout: EnvironmentModuleLayout, catalog: Dictionar
 		if stairs == null or platform == null or stairs.origin + Vector2i(0, 2) != platform.origin:
 			layout.errors.append("Stairs must terminate on the maintenance platform.")
 			return false
+	if layout.layout_id == &"asset_first_frontage" and not _validate_asset_first_frontage(layout, catalog, data):
+		return false
 	for placement in layout.placements:
 		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
 		for clearance in layout.world_clearance_cells(definition, placement):
@@ -122,6 +150,32 @@ static func _validate_layout(layout: EnvironmentModuleLayout, catalog: Dictionar
 			if _module_blocks(layout, catalog, clearance):
 				layout.errors.append("Required clearance is blocked at %s" % clearance)
 				return false
+	return true
+
+static func _validate_asset_first_frontage(layout: EnvironmentModuleLayout, catalog: Dictionary, data: MapData) -> bool:
+	var roads := _find_all(layout, &"road_straight")
+	var paving := _find_all(layout, &"paving_square")
+	var lights := _find_all(layout, &"street_light")
+	var building := _find(layout, &"industrial_shell_i")
+	if roads.size() != 2 or paving.size() != 2 or lights.size() != 2 or building == null:
+		layout.errors.append("Asset-first frontage requires two roads, two paving tiles, two streetlights and building-i.")
+		return false
+	if not layout.placements_connect(roads[0], roads[1], catalog):
+		layout.errors.append("Reference street segments must connect end-to-end.")
+		return false
+	for index in 2:
+		if not layout.placements_connect(roads[index], paving[index], catalog):
+			layout.errors.append("Reference sidewalk must meet its imported paving forecourt at segment %d." % index)
+			return false
+	var shell: EnvironmentModuleDefinition = catalog[building.component_id]
+	if shell.rotate_direction(Vector2i.DOWN, building.rotation) != Vector2i.LEFT:
+		layout.errors.append("Reference building frontage must face west toward the street.")
+		return false
+	for x in range(REFERENCE_ROAD_ACCESS.x, REFERENCE_FRONTAGE_ACCESS.x + 1):
+		var cell := data.get_cell(Vector3i(x, 0, REFERENCE_ROAD_ACCESS.y))
+		if cell == null or not cell.walkable or not cell.can_stop or _module_blocks(layout, catalog, Vector2i(x, REFERENCE_ROAD_ACCESS.y)):
+			layout.errors.append("Reference frontage access is obstructed at (%d, %d)." % [x, REFERENCE_ROAD_ACCESS.y])
+			return false
 	return true
 
 static func _validate_frontage_access(layout: EnvironmentModuleLayout, catalog: Dictionary) -> bool:
@@ -169,3 +223,10 @@ static func _find(layout: EnvironmentModuleLayout, id: StringName) -> Environmen
 		if placement.component_id == id:
 			return placement
 	return null
+
+static func _find_all(layout: EnvironmentModuleLayout, id: StringName) -> Array[EnvironmentModulePlacement]:
+	var result: Array[EnvironmentModulePlacement] = []
+	for placement in layout.placements:
+		if placement.component_id == id:
+			result.append(placement)
+	return result

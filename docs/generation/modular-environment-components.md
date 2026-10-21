@@ -40,7 +40,7 @@ The catalog contains:
 - Catwalk stairs, service ramp, maintenance platform, and elevated walkway with authored surfaces and vertical links.
 - Validated closed-building, open-shelter, and sealed prebuilt-shell assemblies. Their architectural contracts are documented in [Structural Building Assemblies](structural-building-assemblies.md).
 
-Five constrained presets exercise the catalog: `industrial_frontage`, `loading_yard`, `road_and_shops`, `vertical_works`, and `building_gallery`. They cover connected road approaches, entrances, open spaces, layered cargo and machinery, complete and intentionally open structures, and movement from ground to authored elevated surfaces. Every preset is deterministic for the same dimensions and seed. These remain working assembly fixtures rather than a general parcel grammar.
+Six constrained presets exercise the catalog: `industrial_frontage`, `loading_yard`, `road_and_shops`, `vertical_works`, `building_gallery`, and `asset_first_frontage`. They cover connected road approaches, entrances, open spaces, layered cargo and machinery, complete and intentionally open structures, movement from ground to authored elevated surfaces, and one certified imported street-to-building frontage. Every preset is deterministic for the same dimensions and seed. These remain working assembly fixtures rather than a general parcel grammar.
 
 Suitability metadata identifies candidate spawn, objective, and extraction cells without creating mission zones automatically. Generation and tests resolve those candidates against the final authoritative `MapData`, require them to remain stoppable, and verify representative spawn-to-objective paths. Mission-aware assembly can later consume the same metadata before committing its layout.
 
@@ -75,9 +75,10 @@ Choose any implemented preset from the selector. Press `R` to rebuild the same s
 ```powershell
 godot --path . res://tools/map_editor.tscn -- 7319
 godot --path . res://tools/map_editor.tscn -- 7319 vertical_works
+godot --path . res://tools/map_editor.tscn -- 2303 asset_first_frontage
 ```
 
-The Map Editor reports map validation status and presents all four authored presets plus the Goal 2.3 procedural identities through the same renderer. Its one-unit tactical grid makes visual overhang, elevated surfaces, and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
+The Map Editor reports map validation status and presents the normal Goal 2.3 procedural identities plus editable compositions. Turn on **Engineering fixtures** to expose the six bounded authored presets; supplying one on the command line enables that view automatically. Its one-unit tactical grid makes visual overhang, elevated surfaces, and authored footprints inspectable. Left-click any visible module to select it without disturbing the current camera; the selected meshes receive a thin amber outline. **Inspect corner**, **Inspect road seam**, and **Next piece** (`Tab`) select and frame useful targets. Right-drag orbits, middle-drag pans, and the wheel zooms. **Front**, **Side**, and **Top** (or `1`, `3`, and `7`) change angle without losing the current target.
 
 The selected-piece controls are a visual authoring scratchpad. Choose a step and use the X/Y/Z buttons or the arrow and Page Up/Page Down keys to move the module. `Q` and `E` rotate it by 90 degrees. **Reset** restores its authored transform, while **Copy transform** puts the component ID, offset, and yaw on the clipboard for transfer into the catalog. These edits affect only the current preview session; they never modify `MapData`, calibration JSON, or tactical footprints. `C`, `G`, and `F` focus the corner, road seam, and whole map.
 

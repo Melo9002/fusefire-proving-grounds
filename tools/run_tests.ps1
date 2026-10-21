@@ -71,6 +71,7 @@ $visualTests = @(
     "semantic_machine_connection_capture.gd",
     "spatial_transform_capture.gd",
     "coherent_road_orientation_capture.gd",
+	"coherent_asset_first_frontage_capture.gd",
     "structural_building_capture.gd"
 )
 $extendedTests = @(
