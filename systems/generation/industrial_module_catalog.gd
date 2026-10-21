@@ -32,6 +32,7 @@ static func create() -> Dictionary:
 	_register(catalog, _elevated_walkway())
 	for building_module: EnvironmentModuleDefinition in IndustrialBuildingCatalog.modules().values():
 		_register(catalog, building_module)
+	_register(catalog, IndustrialEquipmentAssemblyCatalog.module())
 	_register(catalog, _street_light())
 	_register(catalog, _traffic_signal())
 	_register(catalog, _stop_sign())

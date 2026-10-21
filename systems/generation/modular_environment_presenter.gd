@@ -53,6 +53,9 @@ static func build(data: MapData, parent: Node3D, cell_size: float, road_presenta
 			_add_visual(data, module_root, definition, placement, visual, cell_size)
 
 static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
+	if visual.get("kind", "asset") == "socket_assembly":
+		_add_socket_assembly_visual(data, parent, definition, placement, visual, cell_size)
+		return
 	if visual.get("kind", "asset") == "box":
 		_add_box_visual(data, parent, definition, placement, visual, cell_size)
 		return
@@ -97,6 +100,30 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 	node.set_meta("asset_path", asset_path)
 	node.set_meta("scale_multiplier", scale_multiplier)
 	node.set_meta("assembly_visual_role", visual.get("visual_role", &"component"))
+
+static func _add_socket_assembly_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
+	var local: Vector2 = visual.local_cell
+	var rotated := definition.rotate_point(local, placement.rotation)
+	var anchor := _world(data, placement.origin, rotated, cell_size) + Vector3.UP * float(placement.elevation) * cell_size
+	var module_basis := Basis(Vector3.UP, definition.placement_yaw_radians(placement.rotation))
+	for component: Dictionary in visual.components:
+		var asset_id: String = component.asset_id
+		var scene := load(AssetCatalog.path_for(asset_id)) as PackedScene
+		if scene == null: continue
+		var source := scene.instantiate() as Node3D
+		var transform: Transform3D = component.transform
+		var factor := float(component.scale)
+		var wrapper := TacticalVisualOccluder.new()
+		wrapper.name = String(component.component_id)
+		wrapper.position = anchor + module_basis * (transform.origin * factor)
+		wrapper.basis = module_basis * transform.basis.scaled(Vector3.ONE * factor)
+		wrapper.occlusion_bounds = AssetPlacement.mesh_bounds(source)
+		wrapper.set_meta("asset_id", asset_id)
+		wrapper.set_meta("asset_path", AssetCatalog.path_for(asset_id))
+		wrapper.set_meta("socket_assembly_id", definition.structural_assembly_id)
+		wrapper.set_meta("assembly_visual_role", visual.get("visual_role", &"equipment_assembly"))
+		wrapper.add_child(source)
+		parent.add_child(wrapper)
 
 static func _add_box_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
 	var authored_center: Vector3 = visual.get("local_center", Vector3.ZERO)

@@ -7,7 +7,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var catalog := IndustrialModuleCatalog.create()
-	check(catalog.size() == 51, "The modular catalog exposes the original set plus all twenty profiled industrial shells")
+	check(catalog.size() == 52, "The modular catalog exposes the original set, all twenty profiled industrial shells, and the certified socket equipment unit")
+	check(catalog.factory_pipe_receiver_unit.structural_assembly_id == &"pipe_receiver_unit", "The certified measured-socket assembly is available as a reusable module")
 	check(catalog.industrial_loading_canopy.assembly_enclosure == &"open_shelter", "The catalog distinguishes intentional shelters from incomplete buildings")
 	check(catalog.factory_window_wall.module_type == EnvironmentModuleDefinition.ModuleType.WINDOW, "Window sections are explicit module types")
 	check(catalog.paved_alley.module_type == EnvironmentModuleDefinition.ModuleType.ALLEY, "Alleys are explicit module types")
