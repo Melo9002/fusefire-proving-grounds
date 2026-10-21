@@ -46,7 +46,7 @@ static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
 	if map_data.source_kind == "generated_industrial_warehouse":
 		preload("res://systems/generation/industrial_warehouse_presenter.gd").build(map_data, parent, cell_size)
 	elif not map_data.environment_modules.is_empty():
-		ModularEnvironmentPresenter.build(map_data, parent, cell_size)
+		ModularEnvironmentPresenter.build(map_data, parent, cell_size, ModularEnvironmentPresenter.RoadPresentationMode.ASSET_FIRST)
 
 static func _build_platform(map_data: MapData, parent: Node3D, cell_size: float, platform: GeneratedPlatformData) -> void:
 	var first := map_data.get_cell(platform.cells[0])

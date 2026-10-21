@@ -6,10 +6,16 @@ const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 
-static func build(data: MapData, parent: Node3D, cell_size: float, show_derived_road_diagnostics := false) -> void:
+enum RoadPresentationMode {
+	ASSET_FIRST,
+	DERIVED_DIAGNOSTIC,
+}
+
+static func build(data: MapData, parent: Node3D, cell_size: float, road_presentation_mode := RoadPresentationMode.ASSET_FIRST) -> void:
 	var catalog := IndustrialModuleCatalog.create()
 	var root := Node3D.new()
 	root.name = "ModularEnvironment"
+	root.set_meta("road_presentation_mode", RoadPresentationMode.keys()[road_presentation_mode].to_lower())
 	parent.add_child(root)
 	for placement_index in data.environment_modules.size():
 		var placement: EnvironmentModulePlacement = data.environment_modules[placement_index]
@@ -40,7 +46,7 @@ static func build(data: MapData, parent: Node3D, cell_size: float, show_derived_
 			if block:
 				block.visible = false
 		_add_ground_marker(data, module_root, definition, placement, cell_size)
-		if show_derived_road_diagnostics:
+		if road_presentation_mode == RoadPresentationMode.DERIVED_DIAGNOSTIC:
 			_add_road_streetscape(data, module_root, definition, placement, cell_size)
 		_add_elevated_surface_markers(data, module_root, definition, placement, cell_size)
 		for visual in definition.visuals:

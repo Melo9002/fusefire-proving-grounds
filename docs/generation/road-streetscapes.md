@@ -1,6 +1,6 @@
 # Road Geometry and Streetscapes
 
-FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. Reviewed City Kit Roads meshes own the normal visible straight, crossroad, and T-junction surfaces. Exact derived roadbed, sidewalk, curb, and marking geometry is available only through the presenter's explicit diagnostic mode; it is not drawn underneath imported streets. The semantic catalog also supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
+FuseFire's coherent layouts use a shared street cross-section that joins the ten-cell road grammar to road-facing parcels. Reviewed City Kit Roads meshes own the normal visible straight, crossroad, and T-junction surfaces. `RoadPresentationMode.ASSET_FIRST` is the normal and generated-terrain path. Exact derived roadbed, sidewalk, curb, and marking geometry is available only through `RoadPresentationMode.DERIVED_DIAGNOSTIC`; it is not drawn underneath imported streets. The semantic catalog also supplies calibrated signals, signs, lights, poles, barriers, dumpsters, containers, fences, and parcel equipment.
 
 ## Street cross-section
 

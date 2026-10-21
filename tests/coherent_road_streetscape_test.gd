@@ -103,20 +103,28 @@ func _test_presented_sections() -> void:
 	var data := FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, 7319, &"commercial_street")
 	var presentation := Node3D.new()
 	root.add_child(presentation)
-	ModularEnvironmentPresenter.build(data, presentation, 1.0)
+	GeneratedTerrainPresenter.build(data, presentation, 1.0)
+	var modular_root := presentation.get_node("ModularEnvironment")
+	check(modular_root.get_meta("road_presentation_mode", "") == "asset_first", "GeneratedTerrainPresenter explicitly selects asset-first road ownership")
 	var streetscapes := presentation.find_children("RoadStreetscape", "Node3D", true, false)
 	check(streetscapes.is_empty(), "Normal presentation leaves visible road ownership to the imported kit surfaces")
 	var imported_surfaces := 0
+	var imported_surface_top := -INF
 	for node in presentation.find_children("*", "TacticalVisualOccluder", true, false):
 		if node.get_meta("assembly_visual_role", &"") == &"road_surface":
 			imported_surfaces += 1
 			check(node.get_meta("scale_multiplier", Vector3.ONE).is_equal_approx(Vector3(2, 1, 2)), "Kit road surface uses the authored two-times horizontal streetscape adapter")
+			var bounds: AABB = node.global_transform * node.occlusion_bounds
+			imported_surface_top = maxf(imported_surface_top, bounds.end.y)
 	check(imported_surfaces == data.environment_layout_plan.road_cells.size(), "Every logical road tile presents one reviewed City Roads surface")
+	check(is_equal_approx(imported_surface_top, 0.11), "Imported road surfaces resolve to the reviewed 0.11-unit pavement top")
 	presentation.queue_free()
 
 	var diagnostics := Node3D.new()
 	root.add_child(diagnostics)
-	ModularEnvironmentPresenter.build(data, diagnostics, 1.0, true)
+	ModularEnvironmentPresenter.build(data, diagnostics, 1.0, ModularEnvironmentPresenter.RoadPresentationMode.DERIVED_DIAGNOSTIC)
+	modular_root = diagnostics.get_node("ModularEnvironment")
+	check(modular_root.get_meta("road_presentation_mode", "") == "derived_diagnostic", "Derived road reconstruction identifies itself as diagnostic presentation")
 	streetscapes = diagnostics.find_children("RoadStreetscape", "Node3D", true, false)
 	check(streetscapes.size() == data.environment_layout_plan.road_cells.size(), "Explicit road diagnostics reconstruct every authored cross-section")
 	for streetscape in streetscapes:
@@ -124,6 +132,11 @@ func _test_presented_sections() -> void:
 		check(is_equal_approx(float(streetscape.get_meta("sidewalk_width")), 2.0), "Diagnostic streets expose the two-cell sidewalk contract")
 		check(not streetscape.find_children("Asphalt_*", "MeshInstance3D", true, false).is_empty(), "Road diagnostics include pavement")
 		check(not streetscape.find_children("Sidewalk_*", "MeshInstance3D", true, false).is_empty(), "Road diagnostics include sidewalks")
+	var diagnostic_curb_top := -INF
+	for curb: MeshInstance3D in diagnostics.find_children("Curb_*", "MeshInstance3D", true, false):
+		diagnostic_curb_top = maxf(diagnostic_curb_top, (curb.global_transform * curb.get_aabb()).end.y)
+	check(is_equal_approx(diagnostic_curb_top, Streetscape.CURB_HEIGHT), "Derived diagnostic curbs retain their measured 0.16-unit top")
+	check(diagnostic_curb_top > imported_surface_top, "Diagnostic curbs would visibly protrude above imported roads and therefore remain excluded from normal presentation")
 	diagnostics.queue_free()
 
 func _section_count(sections: Array[Dictionary], kind: StringName) -> int:

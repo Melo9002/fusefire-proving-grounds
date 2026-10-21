@@ -60,8 +60,8 @@ func _build_stage() -> Node:
 		EnvironmentModulePlacement.new(&"road_corner", Vector2i(20, 30)),
 		EnvironmentModulePlacement.new(&"road_straight", Vector2i(40, 35), 1),
 	]
-	# False is intentional: imported assets only, without derived roads or overlays.
-	ModularEnvironmentPresenter.build(data, world, 1.0, false)
+	# Asset-first is intentional: imported assets only, without derived roads or overlays.
+	ModularEnvironmentPresenter.build(data, world, 1.0, ModularEnvironmentPresenter.RoadPresentationMode.ASSET_FIRST)
 	var center := data.get_cell(Vector3i(30, 0, 26)).world_position
 	var curve_seam := data.get_cell(Vector3i(40, 0, 39)).world_position
 	var cross_seam := data.get_cell(Vector3i(30, 0, 20)).world_position

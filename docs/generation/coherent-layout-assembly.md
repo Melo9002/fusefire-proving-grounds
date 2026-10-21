@@ -37,7 +37,7 @@ The presenter resolves catalog visual references through the saved Asset Lab cal
 
 The first grammar includes:
 
-- Continuous reviewed City Roads surfaces for every logical road and intersection tile, backed by exact seam-safe roadbed, sidewalk, curb, and marking geometry.
+- Continuous reviewed City Roads surfaces for every logical road and intersection tile. Procedural roadbed, sidewalk, curb, and marking boxes are an explicit diagnostic reconstruction and never share normal visible ownership with the imported surfaces.
 - Large industrial frontage parcels using calibrated per-asset contracts for all twenty reviewed City Kit Industrial shells; thirteen currently fit the 20 × 20 parcel without changing their scale.
 - Purposeful industrial-yard alternatives with a loading canopy, machinery, staged cargo and continuous paving when a shell cannot be placed.
 - Commercial blocks that use the compact complete shells explicitly confirmed for commercial exterior use, around paved street frontage.
