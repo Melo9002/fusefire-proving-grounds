@@ -309,7 +309,9 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(1, 2)),
 			]
 		&"equipment_compound":
-			local = [EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO), EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(2, 3)), EnvironmentModulePlacement.new(&"yard_fence", Vector2i(9, 2))]
+			# The bounded Phase 3 parcel carries actual service/operator relations;
+			# the outer parcel rotation still aligns its west access edge to the road.
+			local = IndustrialEquipmentParcelDefinition.new().placements()
 		&"service_alley":
 			local = [EnvironmentModulePlacement.new(&"paved_alley", Vector2i(3, 0)), EnvironmentModulePlacement.new(&"service_dumpster", Vector2i(0, 4)), EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(8, 6))]
 		&"staging_pad":

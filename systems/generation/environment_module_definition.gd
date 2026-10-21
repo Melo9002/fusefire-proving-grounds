@@ -209,8 +209,8 @@ func add_catalog_visual(asset_ids: Array[String], local_cell: Vector2, yaw_quart
 	})
 	return self
 
-func add_socket_assembly_visual(components: Array, local_cell: Vector2, visual_role: StringName = &"equipment_assembly") -> EnvironmentModuleDefinition:
-	visuals.append({"kind": "socket_assembly", "components": components, "local_cell": local_cell, "visual_role": visual_role})
+func add_socket_assembly_visual(components: Array, local_cell: Vector2, visual_role: StringName = &"equipment_assembly", offset := Vector3.ZERO) -> EnvironmentModuleDefinition:
+	visuals.append({"kind": "socket_assembly", "components": components, "local_cell": local_cell, "visual_role": visual_role, "offset": offset})
 	return self
 
 ## Exact Godot geometry for seams whose imported meshes are unsuitable at the

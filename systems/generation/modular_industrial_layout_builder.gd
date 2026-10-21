@@ -2,7 +2,7 @@ class_name ModularIndustrialLayoutBuilder
 extends RefCounted
 
 const SOURCE_KIND := "generated_modular_industrial"
-const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery", &"asset_first_frontage"]
+const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"road_and_shops", &"vertical_works", &"building_gallery", &"asset_first_frontage", &"certified_equipment_parcel"]
 
 # Task 2.3's bounded certification slice. These cells form one explicit access
 # route from the imported road's inner sidewalk lane, across the imported
@@ -39,7 +39,13 @@ static func _placements_for(preset: StringName, rng: RandomNumberGenerator) -> A
 		&"vertical_works": return _vertical_works()
 		&"building_gallery": return _building_gallery()
 		&"asset_first_frontage": return _asset_first_frontage()
+		&"certified_equipment_parcel": return _certified_equipment_parcel()
 		_: return []
+
+static func _certified_equipment_parcel() -> Array[EnvironmentModulePlacement]:
+	var result: Array[EnvironmentModulePlacement] = [EnvironmentModulePlacement.new(&"road_straight", Vector2i(0, 10))]
+	result.append_array(IndustrialEquipmentParcelDefinition.new().placements(Vector2i(10, 10)))
+	return result
 
 static func _asset_first_frontage() -> Array[EnvironmentModulePlacement]:
 	return [
@@ -140,6 +146,14 @@ static func _validate_layout(layout: EnvironmentModuleLayout, catalog: Dictionar
 			return false
 	if layout.layout_id == &"asset_first_frontage" and not _validate_asset_first_frontage(layout, catalog, data):
 		return false
+	if layout.layout_id == &"certified_equipment_parcel":
+		var parcel := IndustrialEquipmentParcelDefinition.new()
+		for error in parcel.validate(): layout.errors.append(error)
+		var road := _find(layout, &"road_straight")
+		var paving := _find(layout, &"paved_courtyard")
+		if road == null or paving == null or not layout.placements_connect(road, paving, catalog):
+			layout.errors.append("Certified equipment parcel must connect its paving service edge to the road sidewalk.")
+		if not layout.errors.is_empty(): return false
 	for placement in layout.placements:
 		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
 		for clearance in layout.world_clearance_cells(definition, placement):

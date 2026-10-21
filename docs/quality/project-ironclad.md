@@ -94,6 +94,7 @@ The full tier reports these as skipped by policy:
 - `prototype_1_milestone.gd`
 - `asset_lab_capture.gd`
 - `coherent_layout_capture.gd`
+- `certified_equipment_parcel_capture.gd`
 - `debug_draw_3d_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`

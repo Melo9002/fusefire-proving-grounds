@@ -105,6 +105,7 @@ static func _add_socket_assembly_visual(data: MapData, parent: Node3D, definitio
 	var local: Vector2 = visual.local_cell
 	var rotated := definition.rotate_point(local, placement.rotation)
 	var anchor := _world(data, placement.origin, rotated, cell_size) + Vector3.UP * float(placement.elevation) * cell_size
+	anchor += visual.get("offset", Vector3.ZERO).rotated(Vector3.UP, definition.placement_yaw_radians(placement.rotation))
 	var module_basis := Basis(Vector3.UP, definition.placement_yaw_radians(placement.rotation))
 	for component: Dictionary in visual.components:
 		var asset_id: String = component.asset_id

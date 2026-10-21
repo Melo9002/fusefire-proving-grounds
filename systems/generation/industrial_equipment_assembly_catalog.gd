@@ -60,7 +60,7 @@ static func module() -> EnvironmentModuleDefinition:
 	for cell in item.footprint_cells:
 		item.set_effect(cell, {"interaction": EnvironmentModuleDefinition.CellInteraction.BLOCKED, "cover_type": MapCellData.CoverType.FULL, "cover_height": 3.45, "walkable": false, "can_stop": false, "blocks_los": true, "movement_cost": 1})
 	item.clearance_cells.assign([Vector2i(0, 3), Vector2i(1, 3)])
-	item.set_visual_envelope(AABB(Vector3(-0.4, 0, -0.125), Vector3(1.8, 3.44, 2.415)))
+	item.set_visual_envelope(AABB(Vector3(-0.4, 0.11, -0.125), Vector3(1.8, 3.44, 2.415)))
 	item.structural_assembly_id = &"pipe_receiver_unit"
 	item.architectural_purpose = &"factory_pipe_receiver"
 	item.assembly_enclosure = &"intentionally_open_equipment"
@@ -69,7 +69,7 @@ static func module() -> EnvironmentModuleDefinition:
 	item.add_socket_assembly_visual([
 		{"component_id": &"receiver_machine", "asset_id": RECEIVER, "transform": Transform3D.IDENTITY, "scale": 1.5},
 		{"component_id": &"vertical_pipe", "asset_id": PIPE, "transform": component_transforms().vertical_pipe, "scale": 1.5},
-	], Vector2(0.5, 1.0))
+	], Vector2(0.5, 1.0), &"equipment_assembly", Vector3(0, 0.11, 0))
 	return item
 
 static func validate(transforms := {}, external_interface_present := true, geometry_overlaps := false) -> PackedStringArray:
