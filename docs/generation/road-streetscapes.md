@@ -87,7 +87,9 @@ godot_console --path . --resolution 1440x900 --script res://tests/coherent_layou
 
 `coherent_geometry_contract_test.gd` extracts openings from actual imported triangle surfaces, compares their final rendered directions with connectors through all supported quarter turns, and verifies a connected straight/cross/curve fixture. `coherent_road_streetscape_test.gd` protects exact cross-section widths, one imported kit surface per road tile, absence of duplicate normal surfaces, explicit diagnostic reconstruction, the 2× horizontal adapter, inward-facing lights, intersection pavement and corner islands, clear inner sidewalk lanes, explicit barrier behavior, tactical authority, and presenter output across three identities and nine seeded maps.
 
-`coherent_asset_first_frontage_test.gd` protects the bounded fixture's physical seams, imported asset ownership, building and lamp facing, lamp mounting height, frontage clearance, sealed tactical shell, and street-to-apron path. `coherent_asset_first_frontage_capture.gd` records four clean views plus two engineering views. Green marks the access route, cyan the road/paving seams, gold the frontage apron, and magenta the lamp envelopes.
+`coherent_asset_first_frontage_test.gd` protects the bounded fixture's physical seams, imported asset ownership, building and lamp facing, lamp mounting height, frontage clearance, sealed tactical shell, and street-to-apron path. `coherent_asset_first_frontage_capture.gd` records five clean views, three engineering views, and a four-rotation certification matrix. Green marks the access route, cyan the road/paving seams, red the straight-road join, gold the frontage apron, and magenta the lamp envelopes.
+
+The [Task 2.4 certification record](../architecture/reviews/2026-10-21-task-2.4-asset-first-street-certification.md) pins the fixture's asset and catalog revisions, exercises the complete composition at all four quarter turns, and records objective checks plus clean inspection evidence. Its current status is **certification candidate** because final visual approval belongs to the project owner.
 
 ## Current limits
 
