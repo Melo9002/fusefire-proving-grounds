@@ -10,7 +10,7 @@ const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd
 const SCHEMA_VERSION := 1
 const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
 const ORIGINS := ["authored", "generated", "edited"]
-const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad"]
+const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
 const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v1"
 
@@ -104,6 +104,9 @@ func to_json() -> String:
 
 func signature() -> String:
 	return to_json().sha256_text()
+
+func map_size() -> Vector2i:
+	return _map_size()
 
 func editable_copy() -> BattlefieldLayoutDocument:
 	var result := BattlefieldLayoutDocument.from_dictionary(to_dictionary())
@@ -381,7 +384,9 @@ func _validate_dependencies(failures: Array[Dictionary]) -> void:
 				_fail(failures, "MISSING_DEPENDENCY", "dependencies", "%s required by %s is absent" % [key, record.get("placement_id", "")], key)
 				continue
 			var dependency: Dictionary = by_key[key]
-			if dependency.get("geometry_sha256", "") != EnvironmentAssemblyContract.current_geometry_sha256(asset_id): _fail(failures, "STALE_GEOMETRY_DEPENDENCY", "dependencies.%s.geometry_sha256" % key, "%s geometry revision changed" % asset_id, key)
+			var current_geometry := EnvironmentAssemblyContract.current_geometry_sha256(asset_id)
+			if current_geometry.is_empty(): _fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies.%s" % key, "%s required by %s is unavailable" % [asset_id, record.get("placement_id", "")], key)
+			elif dependency.get("geometry_sha256", "") != current_geometry: _fail(failures, "STALE_GEOMETRY_DEPENDENCY", "dependencies.%s.geometry_sha256" % key, "%s geometry revision changed" % asset_id, key)
 			if dependency.get("calibration_signature", "") != EnvironmentAssemblyContract.current_calibration_signature(asset_id): _fail(failures, "STALE_CALIBRATION_DEPENDENCY", "dependencies.%s.calibration_signature" % key, "%s calibration revision changed" % asset_id, key)
 		var assembly_id := str(record.get("assembly_ref", ""))
 		if not assembly_id.is_empty() and not by_key.has("assembly:%s" % assembly_id): _fail(failures, "MISSING_DEPENDENCY", "dependencies", "assembly:%s is absent" % assembly_id, assembly_id)
@@ -392,7 +397,12 @@ func _validate_dependencies(failures: Array[Dictionary]) -> void:
 		if key.begins_with("assembly:") and not by_key.has(key): _fail(failures, "MISSING_DEPENDENCY", "dependencies", "%s is absent" % key, key)
 	for key in by_key:
 		var dependency: Dictionary = by_key[key]
-		if dependency.get("kind", "") == "assembly":
+		if dependency.get("kind", "") == "asset":
+			var asset_id := str(dependency.get("id", ""))
+			var current_geometry := EnvironmentAssemblyContract.current_geometry_sha256(asset_id)
+			if current_geometry.is_empty() and bool(dependency.get("required", true)):
+				_fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies.%s" % key, "%s is unavailable" % key, key)
+		elif dependency.get("kind", "") == "assembly":
 			var current := _assembly_dependency(str(dependency.get("id", "")))
 			if dependency.get("certification_signature", "") != current.get("certification_signature", "missing"): _fail(failures, "STALE_ASSEMBLY_DEPENDENCY", "dependencies.%s.certification_signature" % key, "%s certification dependency changed" % key, key)
 		elif dependency.get("kind", "") == "template" and dependency.get("revision", "") != PARCEL_GRAMMAR_REVISION:

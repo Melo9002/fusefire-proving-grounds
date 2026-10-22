@@ -1,5 +1,7 @@
 extends SceneTree
 
+const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
+
 var failures := 0
 
 func _initialize() -> void: _run.call_deferred()
@@ -13,6 +15,7 @@ func _run() -> void:
 	_test_failed_repair()
 	await _test_presentation(generated, source)
 	await _test_map_editor_transition()
+	await _test_failed_load_transaction()
 	_test_rejections(source)
 	print("Battlefield layout lifecycle: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -99,6 +102,18 @@ func _test_map_editor_transition() -> void:
 	check(editor.displayed_data.battlefield_layout_document != original_document and editor.custom_build_errors.is_empty(), "Map Editor builds an independent validated document copy")
 	var modular: Node = editor.content.get_node_or_null("ModularEnvironment")
 	check(modular != null and modular.get_meta("environment_identity") == &"industrial_district", "edited Map Editor presentation keeps industrial identity")
+	editor.queue_free()
+	await process_frame
+
+func _test_failed_load_transaction() -> void:
+	var editor = load("res://tools/map_editor.tscn").instantiate()
+	root.add_child(editor)
+	await process_frame
+	var before: BattlefieldLayoutDocument = editor.custom_document
+	var before_signature := before.signature()
+	var rejected := LayoutStore.decode("{ corrupt", editor.editor_catalog)
+	check(not editor._adopt_loaded_custom_layout(rejected), "Map Editor refuses a failed persistence result at its transaction boundary")
+	check(editor.custom_document == before and editor.custom_document.signature() == before_signature, "failed load leaves the active editor document and composition untouched")
 	editor.queue_free()
 	await process_frame
 

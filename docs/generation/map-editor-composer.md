@@ -33,7 +33,11 @@ tools/map_editor/layouts/custom_layout.json
 
 The starter remains unchanged at `tools/map_editor/layouts/starter_layout.json`, so **Reload** always has a useful fallback after the custom file is removed or renamed.
 
-The JSON is deliberately small and readable. It stores schema version, map size, stable component IDs, grid origins, quarter-turn rotations, variants, and elevations. It does not copy visual scale or tactical effects into the layout.
+The JSON is a versioned persistence envelope containing the unified battlefield layout document. It preserves environment identity; authored, generated, or edited provenance; the original generator seed and configuration; map size; stable placement IDs and transforms; assembly and parcel relationships; pinned asset/calibration/assembly dependencies; mission zones; and presentation mode. It does not copy generated meshes, the full asset catalog, or compiled `MapData` internals.
+
+Loading is transactional. The complete document is parsed, its schema and references are checked, dependencies are resolved, placements are reconstructed, and mission data is validated before the editor replaces its working document. A missing required asset, stale calibration or assembly certification, unsupported version, broken relationship, or malformed file leaves the current composition untouched and reports the affected field or identity.
+
+The tracked starter still uses the old schema-1 placement format so compatibility remains continuously exercised. That format did not store environment identity, provenance, relationships, dependencies, or mission zones. It therefore loads only under the visibly labeled `legacy_compatibility` identity and remains dirty until the user explicitly saves it as the current format. The original file is never rewritten during load.
 
 Every edit rebuilds the candidate through `EnvironmentModuleLayout`. Out-of-bounds placement, same-layer overlap, clearance intrusion, unsupported rotation, and visual-envelope conflicts are rejected before they reach the saved composition. Ground modules and compatible occupants may share cells by design.
 

@@ -970,7 +970,7 @@ func _save_custom_layout() -> void:
 		_set_composer_message("Cannot save invalid composition: %s" % compiled.errors[0].message, true)
 		return
 	custom_document = compiled.document
-	var error := LayoutStore.save(custom_layout, preview_map_size)
+	var error := LayoutStore.save(custom_document)
 	if not error.is_empty():
 		_set_composer_message(error, true)
 		return
@@ -979,28 +979,45 @@ func _save_custom_layout() -> void:
 	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), LayoutStore.DEFAULT_PATH])
 
 func _load_custom_layout(rebuild_after: bool) -> void:
-	var result := LayoutStore.load(editor_catalog)
+	var result := LayoutStore.load(editor_catalog, LayoutStore.DEFAULT_PATH, &"legacy_compatibility")
 	var loaded_starter := false
-	if not result.ok:
-		result = LayoutStore.load(editor_catalog, LayoutStore.STARTER_PATH)
+	if not result.ok and result.code == "FILE_NOT_FOUND":
+		result = LayoutStore.load(editor_catalog, LayoutStore.STARTER_PATH, &"legacy_compatibility")
 		loaded_starter = result.ok
 		if not result.ok:
 			if rebuild_after:
 				_set_composer_message(result.error, true)
 			return
-	custom_layout = result.layout
-	custom_layout.layout_id = CUSTOM_LAYOUT
-	preview_map_size = result.map_size
-	# Schema-1 persistence has no environment/provenance fields. Keep its
-	# documented legacy identity until Task 4.3 migrates save/load.
-	custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
-	custom_dirty = loaded_starter
+	elif not result.ok:
+		if rebuild_after:
+			_set_composer_message("Load rejected; current composition was preserved: %s" % result.error, true)
+		return
+	if not _adopt_loaded_custom_layout(result):
+		return
+	var loaded_legacy: bool = result.legacy
+	var load_warnings: Array = result.warnings
+	custom_dirty = loaded_starter or loaded_legacy
 	if rebuild_after:
 		_rebuild()
 		if loaded_starter:
-			_set_composer_message("Loaded the starter composition. Save to create your custom layout.")
+			_set_composer_message("Loaded the legacy starter composition. Save to create a versioned custom document.")
+		elif loaded_legacy:
+			_set_composer_message("Loaded schema-1 composition in legacy compatibility mode. Save to migrate it explicitly.")
+		elif not load_warnings.is_empty():
+			_set_composer_message("Reloaded with warning: %s" % load_warnings[0])
 		else:
-			_set_composer_message("Reloaded %d saved modules." % custom_layout.placements.size())
+			_set_composer_message("Reloaded %d modules with %s identity." % [custom_layout.placements.size(), custom_document.environment_id])
+
+func _adopt_loaded_custom_layout(result: Dictionary) -> bool:
+	# The store validates the complete document before this transaction boundary.
+	# A failed parse or dependency resolution cannot partly replace editor state.
+	if not bool(result.get("ok", false)) or result.get("document") == null or result.get("layout") == null:
+		return false
+	custom_layout = result.layout
+	custom_layout.layout_id = CUSTOM_LAYOUT
+	preview_map_size = result.map_size
+	custom_document = result.document
+	return true
 
 func _clear_custom_layout() -> void:
 	custom_layout = EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
