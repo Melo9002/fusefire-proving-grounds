@@ -105,6 +105,88 @@ func to_json() -> String:
 func signature() -> String:
 	return to_json().sha256_text()
 
+func editable_copy() -> BattlefieldLayoutDocument:
+	var result := BattlefieldLayoutDocument.from_dictionary(to_dictionary())
+	var source_origin := str(result.provenance.get("source_origin", result.provenance.get("origin", "authored")))
+	result.provenance["source_origin"] = source_origin
+	result.provenance["origin"] = "edited"
+	result.provenance["edit_state"] = "unchanged_copy"
+	return result
+
+func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
+	var old_records: Array = spatial_layout.get("placements", []).duplicate(true)
+	var old_relationships := relationships.duplicate(true)
+	var id_by_signature: Dictionary = {}
+	var maximum_id := -1
+	for record in old_records:
+		if not record is Dictionary: continue
+		var key := _encoded_placement_signature(record)
+		if not id_by_signature.has(key): id_by_signature[key] = []
+		id_by_signature[key].append(record.get("placement_id", ""))
+		var suffix := str(record.get("placement_id", "")).trim_prefix("placement_")
+		if suffix.is_valid_int(): maximum_id = maxi(maximum_id, int(suffix))
+	relationships.clear()
+	_capture_spatial_layout(layout.placements, _map_size())
+	var changed: bool = old_records.size() != spatial_layout.placements.size()
+	for record in spatial_layout.placements:
+		var signature := _encoded_placement_signature(record)
+		var available: Array = id_by_signature.get(signature, [])
+		if not available.is_empty():
+			record.placement_id = available.pop_front()
+		else:
+			maximum_id += 1
+			record.placement_id = "placement_%04d" % maximum_id
+			changed = true
+	# Rebuild assembly relationships after stable IDs have been restored.
+	relationships.clear()
+	for record in spatial_layout.placements:
+		if not str(record.assembly_ref).is_empty(): relationships.append({"relationship_id": "assembly_%s" % record.placement_id, "kind": "assembly_instance", "subject_ref": record.placement_id, "object_ref": "assembly:%s" % record.assembly_ref, "required": true})
+	for relationship in old_relationships:
+		if relationship.get("kind", "") == "assembly_instance": continue
+		var retained: Dictionary = relationship.duplicate(true)
+		if changed: retained["validation_state"] = "requires_revalidation"
+		relationships.append(retained)
+	dependencies.clear()
+	_capture_dependencies()
+	provenance["source_origin"] = str(provenance.get("source_origin", provenance.get("origin", "authored")))
+	provenance["origin"] = "edited"
+	provenance["edit_state"] = "modified" if changed else "unchanged_copy"
+	mission_context["validation_state"] = "requires_revalidation" if changed else mission_context.get("validation_state", "validated")
+
+func replace_mission_from_map(data: MapData, source := "document_revalidated") -> void:
+	_capture_mission(data, source)
+	mission_context["validation_state"] = "validated"
+
+func restore_mission_to_map(data: MapData) -> void:
+	if mission_context.get("status", "") != "preserved": return
+	data.zones.clear()
+	for record in mission_context.get("zones", []):
+		if not record is Dictionary: continue
+		var cells: Array[Vector3i] = []
+		for encoded in record.get("cells", []):
+			if encoded is Array and encoded.size() == 3: cells.append(Vector3i(int(encoded[0]), int(encoded[1]), int(encoded[2])))
+		data.set_zone(MapZoneData.new(StringName(record.get("zone_id", "")), int(record.get("kind", MapZoneData.Kind.DEPLOYMENT)), cells, int(record.get("faction", -1))))
+
+func to_environment_layout_plan() -> EnvironmentLayoutPlan:
+	var plan := EnvironmentLayoutPlan.new(StringName(environment_id), int(provenance.get("generation_seed", 0)))
+	plan.topology = StringName(provenance.get("generation_config", {}).get("topology", "edited"))
+	plan.macro_size = int(provenance.get("generation_config", {}).get("macro_size", 10))
+	for relationship in relationships:
+		if relationship.get("kind", "") != "parcel_template": continue
+		var properties: Dictionary = relationship.get("properties", {})
+		var bounds = properties.get("bounds", [])
+		if not bounds is Array or bounds.size() != 4: continue
+		plan.parcels.append({"id": StringName(properties.get("parcel_id", "")), "bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])), "template": StringName(str(relationship.get("object_ref", "")).trim_prefix("template:")), "rotation": int(properties.get("rotation", 0)), "relationship_validation": relationship.get("validation_state", "validated")})
+	var catalog := IndustrialModuleCatalog.create()
+	for record in spatial_layout.get("placements", []):
+		var definition: EnvironmentModuleDefinition = catalog.get(StringName(record.get("component_id", "")))
+		if definition == null or definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]: continue
+		var origin = record.get("origin", [])
+		if origin is Array and origin.size() == 2:
+			var macro := Vector2i(int(origin[0]) / plan.macro_size, int(origin[1]) / plan.macro_size)
+			if macro not in plan.road_cells: plan.road_cells.append(macro)
+	return plan
+
 func to_module_layout(catalog := {}) -> EnvironmentModuleLayout:
 	if catalog.is_empty(): catalog = IndustrialModuleCatalog.create()
 	var layout := EnvironmentModuleLayout.new(StringName(document_id), int(provenance.get("generation_seed", 0)))
@@ -228,6 +310,10 @@ func _validate_provenance(failures: Array[Dictionary]) -> void:
 		if not provenance.get("generation_config", {}) is Dictionary or provenance.get("generation_config", {}).is_empty(): _fail(failures, "MISSING_GENERATION_CONFIG", "provenance.generation_config", "generated documents require their generation configuration")
 	elif origin == "authored" and (bool(provenance.get("has_generation_seed", false)) or not str(provenance.get("generator_id", "")).is_empty()):
 		_fail(failures, "INCONSISTENT_PROVENANCE", "provenance", "authored documents cannot claim generated provenance")
+	elif origin == "edited":
+		var source_origin := str(provenance.get("source_origin", ""))
+		if source_origin not in ["authored", "generated"]: _fail(failures, "INCONSISTENT_PROVENANCE", "provenance.source_origin", "edited documents must preserve their authored or generated source")
+		if source_origin == "generated" and (str(provenance.get("generator_id", "")).is_empty() or not bool(provenance.get("has_generation_seed", false))): _fail(failures, "INCONSISTENT_PROVENANCE", "provenance", "edited generated documents must retain their original generator and seed")
 
 func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
 	var encoded = spatial_layout.get("placements", null)
@@ -364,6 +450,10 @@ static func _asset_id_for_path(path: String) -> String:
 
 static func _append_unique(values: Array[String], value: String) -> void:
 	if not value.is_empty() and value not in values: values.append(value)
+
+static func _encoded_placement_signature(record: Dictionary) -> String:
+	var origin = record.get("origin", [0, 0])
+	return "%s@%s,%s,%s:r%s:v%s" % [record.get("component_id", ""), origin[0], record.get("elevation", 0), origin[1], record.get("rotation", 0), record.get("variation", 0)]
 
 static func _assembly_dependency(assembly_id: String) -> Dictionary:
 	var records := InitialEnvironmentAssemblyLibrary.records()

@@ -21,6 +21,9 @@ var environment_modules: Array[EnvironmentModulePlacement] = []
 var environment_module_seed: int = 0
 ## Optional hierarchical plan used by coherent modular generation and debug UI.
 var environment_layout_plan: EnvironmentLayoutPlan
+## Optional versioned construction intent used by authoring workflows. MapData
+## remains authoritative after the document is compiled.
+var battlefield_layout_document: BattlefieldLayoutDocument
 ## Optional presentation names keyed by authoritative grid elevation. Missing
 ## names fall back to Ground / Level N in generic floor controls.
 var elevation_labels: Dictionary[int, String] = {0: "Ground"}
@@ -131,6 +134,7 @@ func clear() -> void:
 	environment_modules.clear()
 	environment_module_seed = 0
 	environment_layout_plan = null
+	battlefield_layout_document = null
 	containers.clear()
 	buildings.clear()
 	platforms.clear()

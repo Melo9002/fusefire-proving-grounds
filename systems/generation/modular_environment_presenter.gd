@@ -16,7 +16,13 @@ static func build(data: MapData, parent: Node3D, cell_size: float, road_presenta
 	var root := Node3D.new()
 	root.name = "ModularEnvironment"
 	root.set_meta("road_presentation_mode", RoadPresentationMode.keys()[road_presentation_mode].to_lower())
+	var identity := resolve_environment_identity(data)
+	root.set_meta("environment_identity", identity.environment_id)
+	root.set_meta("environment_identity_source", identity.source)
 	parent.add_child(root)
+	if not identity.ok:
+		push_error("Modular environment presentation rejected: %s" % identity.error)
+		return
 	for placement_index in data.environment_modules.size():
 		var placement: EnvironmentModulePlacement = data.environment_modules[placement_index]
 		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
@@ -157,13 +163,25 @@ static func _add_road_streetscape(data: MapData, parent: Node3D, definition: Env
 	streetscape.set_meta("carriageway_width", Streetscape.CARRIAGEWAY_WIDTH)
 	streetscape.set_meta("sidewalk_width", Streetscape.SIDEWALK_WIDTH)
 	parent.add_child(streetscape)
-	var environment_id: StringName = data.environment_layout_plan.environment_id if data.environment_layout_plan != null else &"mixed_service"
+	var environment_id: StringName = resolve_environment_identity(data).environment_id
 	var counts := {}
 	for section in sections:
 		var kind: StringName = section.kind
 		var count := int(counts.get(kind, 0))
 		counts[kind] = count + 1
 		_add_street_section(data, streetscape, definition, placement, section, environment_id, cell_size, count)
+
+static func resolve_environment_identity(data: MapData) -> Dictionary:
+	if data.battlefield_layout_document != null:
+		var document_id := StringName(data.battlefield_layout_document.environment_id)
+		if String(document_id) in BattlefieldLayoutDocument.ENVIRONMENTS: return {"ok": true, "environment_id": document_id, "source": "layout_document"}
+		return {"ok": false, "environment_id": &"", "source": "invalid_layout_document", "error": "unsupported document environment identity '%s'" % document_id}
+	if data.environment_layout_plan != null:
+		if String(data.environment_layout_plan.environment_id) in BattlefieldLayoutDocument.ENVIRONMENTS: return {"ok": true, "environment_id": data.environment_layout_plan.environment_id, "source": "layout_plan"}
+		return {"ok": false, "environment_id": &"", "source": "invalid_layout_plan", "error": "unsupported plan environment identity '%s'" % data.environment_layout_plan.environment_id}
+	# Legacy modular fixtures predate the document and remain supported until
+	# their persistence migration. The metadata makes this fallback observable.
+	return {"ok": true, "environment_id": &"mixed_service", "source": "documented_legacy_fallback"}
 
 static func _add_street_section(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, section: Dictionary, environment_id: StringName, cell_size: float, index: int) -> void:
 	var kind: StringName = section.kind

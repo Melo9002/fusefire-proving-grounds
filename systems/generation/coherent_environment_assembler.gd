@@ -53,7 +53,11 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			plan.decisions.append("%s -> district_buffer fallback" % parcel.id)
 		plan.parcels.append(parcel)
 	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
-	_repair_deployment_cells(data, plan)
+	var deployment_result := EnvironmentDeploymentResolver.repair(data, EnvironmentDeploymentResolver.plan_anchors(plan))
+	for repair in deployment_result.repairs:
+		plan.decisions.append("deployment %s moved %s -> %s" % [repair.zone_id, repair.from, repair.to])
+	for failure in deployment_result.failures:
+		layout.errors.append("%s: %s needs %d deployment cells but placed %d" % [failure.code, failure.zone_id, failure.required, failure.placed])
 	data.source_kind = "%s_%s" % [SOURCE_KIND, environment_id]
 	data.environment_modules.assign(layout.placements)
 	data.environment_module_seed = map_seed
@@ -397,64 +401,3 @@ static func _shuffle_vector_cells(values: Array[Vector2i], rng: RandomNumberGene
 		var held := values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = held
-
-static func _repair_deployment_cells(data: MapData, plan: EnvironmentLayoutPlan) -> void:
-	# Flat generation establishes faction ownership and desired deployment sides.
-	# Parcel occupants may claim one of those cells, so relocate only invalid
-	# positions to the nearest legal cell instead of inventing a second spawn
-	# system or allowing presentation geometry to decide mission legality.
-	var used: Dictionary = {}
-	var reachable := _road_connected_ground(data, plan)
-	for faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ENEMY, TacticalUnit.Faction.ALLY]:
-		for zone in data.get_zones_by_kind(MapZoneData.Kind.DEPLOYMENT):
-			if zone.faction != faction:
-				continue
-			var repaired: Array[Vector3i] = []
-			for original in zone.cells:
-				var chosen: Vector3i = original
-				var cell := data.get_cell(chosen)
-				if cell == null or not cell.walkable or not cell.can_stop or used.has(chosen) or not reachable.has(chosen):
-					chosen = _nearest_deployment_cell(data, original, used, reachable)
-					plan.decisions.append("deployment %s moved %s -> %s" % [zone.zone_id, original, chosen])
-				if chosen != Vector3i(-1, -1, -1):
-					repaired.append(chosen)
-					used[chosen] = true
-			zone.cells.assign(repaired)
-
-static func _road_connected_ground(data: MapData, plan: EnvironmentLayoutPlan) -> Dictionary:
-	var reached: Dictionary = {}
-	if plan.road_cells.is_empty():
-		return reached
-	var road_macro: Vector2i = plan.road_cells[0]
-	var start := Vector3i(road_macro.x * plan.macro_size + plan.macro_size / 2, 0, road_macro.y * plan.macro_size + plan.macro_size / 2)
-	var start_cell := data.get_cell(start)
-	if start_cell == null or not start_cell.walkable:
-		return reached
-	var frontier: Array[Vector3i] = [start]
-	reached[start] = true
-	while not frontier.is_empty():
-		var current: Vector3i = frontier.pop_back()
-		for direction in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
-			var next_cell: Vector3i = current + direction
-			if reached.has(next_cell):
-				continue
-			var cell := data.get_cell(next_cell)
-			if cell == null or not cell.walkable:
-				continue
-			reached[next_cell] = true
-			frontier.append(next_cell)
-	return reached
-
-static func _nearest_deployment_cell(data: MapData, origin: Vector3i, used: Dictionary, allowed: Dictionary = {}) -> Vector3i:
-	var maximum_radius := maxi(data.map_size.x, data.map_size.y)
-	for radius in range(1, maximum_radius + 1):
-		for dz in range(-radius, radius + 1):
-			var remaining := radius - absi(dz)
-			for dx in ([-remaining] if remaining == 0 else [-remaining, remaining]):
-				var candidate := Vector3i(origin.x + dx, 0, origin.z + dz)
-				if candidate.x < 0 or candidate.z < 0 or candidate.x >= data.map_size.x or candidate.z >= data.map_size.y or used.has(candidate) or (not allowed.is_empty() and not allowed.has(candidate)):
-					continue
-				var cell := data.get_cell(candidate)
-				if cell != null and cell.walkable and cell.can_stop:
-					return candidate
-	return Vector3i(-1, -1, -1)

@@ -43,6 +43,8 @@ var preview_map_size := Vector2i(40, 30)
 var show_plan_overlay := true
 var show_spatial_contracts := false
 var custom_layout := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+var custom_document: BattlefieldLayoutDocument
+var custom_build_errors: Array[Dictionary] = []
 var custom_dirty := false
 var component_picker: OptionButton
 var rotation_picker: OptionButton
@@ -143,8 +145,12 @@ func _rebuild() -> void:
 		data = _build_custom_map()
 	elif layout_preset in PROCEDURAL_LAYOUTS:
 		data = FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, generation_seed, layout_preset)
+		data.battlefield_layout_document = BattlefieldLayoutDocument.from_generated(data)
 	else:
 		data = FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
+		var legacy_layout := EnvironmentModuleLayout.new(layout_preset, generation_seed)
+		legacy_layout.placements.assign(data.environment_modules)
+		data.battlefield_layout_document = BattlefieldLayoutDocument.from_authored(legacy_layout, data.map_size, &"mixed_service", "legacy_%s" % layout_preset, data)
 	displayed_data = data
 	preview_map_size = data.map_size
 	var ground_mesh := MeshInstance3D.new()
@@ -165,7 +171,9 @@ func _rebuild() -> void:
 		TacticalUnit.Faction.PLAYER: 5,
 		TacticalUnit.Faction.ENEMY: 5,
 	})
-	_update_status(data.environment_modules.size(), "TACTICAL VALID" if validation.is_valid() else "TACTICAL %s" % validation.describe(), data.environment_layout_plan)
+	var validation_text := "TACTICAL VALID" if validation.is_valid() else "TACTICAL %s" % validation.describe()
+	if _is_composing() and not custom_build_errors.is_empty(): validation_text = "DOCUMENT INVALID: %s" % custom_build_errors[0].message
+	_update_status(data.environment_modules.size(), validation_text, data.environment_layout_plan)
 	_update_composer_visibility()
 	if is_instance_valid(seed_input):
 		seed_input.set_value_no_signal(generation_seed)
@@ -447,13 +455,15 @@ func _update_composer_visibility() -> void:
 	_update_transform_label()
 
 func _build_custom_map() -> MapData:
-	var data := FlatMapGenerator.generate(preview_map_size.x, preview_map_size.y, 1.0, generation_seed)
-	data.source_kind = "authored_map_editor"
-	EnvironmentModuleMapWriter.apply(data, custom_layout, editor_catalog, 1.0)
-	data.environment_modules.assign(custom_layout.placements)
-	data.environment_module_seed = generation_seed
-	data.rebuild_los_index()
-	return data
+	if custom_document == null:
+		custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
+	var result := BattlefieldLayoutDocumentCompiler.compile(custom_document)
+	custom_build_errors.assign(result.errors)
+	if result.document != null: custom_document = result.document
+	if result.data != null: return result.data
+	# Invalid document shape cannot be compiled. Return a visible empty tactical
+	# canvas while the structured error remains in the editor status.
+	return FlatMapGenerator.generate(preview_map_size.x, preview_map_size.y, 1.0, 0)
 
 func _compose_current_layout() -> void:
 	if not is_instance_valid(displayed_data):
@@ -461,12 +471,16 @@ func _compose_current_layout() -> void:
 	if _is_composing():
 		_set_composer_message("This is already the editable composition.")
 		return
-	var copied := EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
-	for source in displayed_data.environment_modules:
-		var placement := EnvironmentModulePlacement.new(source.component_id, source.origin, source.rotation, source.variation, source.elevation)
-		if not copied.try_add(editor_catalog.get(placement.component_id), placement, displayed_data.map_size):
-			push_error("Could not copy displayed layout into composer: %s" % copied.errors.back())
-			return
+	var source_document := displayed_data.battlefield_layout_document
+	if source_document == null:
+		var source_layout := EnvironmentModuleLayout.new(StringName(displayed_data.source_kind), displayed_data.environment_module_seed)
+		source_layout.placements.assign(displayed_data.environment_modules)
+		source_document = BattlefieldLayoutDocument.from_authored(source_layout, displayed_data.map_size, &"mixed_service", "legacy_editor_copy", displayed_data)
+	custom_document = source_document.editable_copy()
+	var copied := custom_document.to_module_layout(editor_catalog)
+	if not copied.errors.is_empty():
+		push_error("Could not copy displayed layout into composer: %s" % copied.errors.back())
+		return
 	custom_layout = copied
 	preview_map_size = displayed_data.map_size
 	custom_dirty = true
@@ -662,8 +676,7 @@ func _place_selected_component_at_screen(screen_position: Vector2) -> bool:
 	var candidate := _layout_with_change(-1, placement)
 	if candidate == null:
 		return true
-	custom_layout = candidate
-	custom_dirty = true
+	_accept_custom_layout(candidate)
 	_rebuild()
 	_set_composer_message("Placed %s at %s." % [component_id, origin])
 	return true
@@ -709,8 +722,7 @@ func _move_selected_placement(delta: Vector2i) -> void:
 	var candidate := _layout_with_change(index, replacement)
 	if candidate == null:
 		return
-	custom_layout = candidate
-	custom_dirty = true
+	_accept_custom_layout(candidate)
 	_rebuild()
 	_select_placement_index(index)
 
@@ -724,8 +736,7 @@ func _rotate_selected_placement(quarter_turns: int) -> void:
 	var candidate := _layout_with_change(index, replacement)
 	if candidate == null:
 		return
-	custom_layout = candidate
-	custom_dirty = true
+	_accept_custom_layout(candidate)
 	_rebuild()
 	_select_placement_index(index)
 
@@ -738,8 +749,7 @@ func _delete_selected_placement() -> void:
 	var candidate := _layout_without(index)
 	if candidate == null:
 		return
-	custom_layout = candidate
-	custom_dirty = true
+	_accept_custom_layout(candidate)
 	_rebuild()
 	_set_composer_message("Removed %s." % removed)
 
@@ -954,6 +964,12 @@ func _refresh_status_target() -> void:
 	status.text = "\n".join(lines)
 
 func _save_custom_layout() -> void:
+	var compiled := BattlefieldLayoutDocumentCompiler.compile(custom_document)
+	if not compiled.ok:
+		custom_build_errors.assign(compiled.errors)
+		_set_composer_message("Cannot save invalid composition: %s" % compiled.errors[0].message, true)
+		return
+	custom_document = compiled.document
 	var error := LayoutStore.save(custom_layout, preview_map_size)
 	if not error.is_empty():
 		_set_composer_message(error, true)
@@ -975,6 +991,9 @@ func _load_custom_layout(rebuild_after: bool) -> void:
 	custom_layout = result.layout
 	custom_layout.layout_id = CUSTOM_LAYOUT
 	preview_map_size = result.map_size
+	# Schema-1 persistence has no environment/provenance fields. Keep its
+	# documented legacy identity until Task 4.3 migrates save/load.
+	custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
 	custom_dirty = loaded_starter
 	if rebuild_after:
 		_rebuild()
@@ -985,9 +1004,18 @@ func _load_custom_layout(rebuild_after: bool) -> void:
 
 func _clear_custom_layout() -> void:
 	custom_layout = EnvironmentModuleLayout.new(CUSTOM_LAYOUT, 0)
+	custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "new_custom_layout")
 	custom_dirty = true
 	_rebuild()
 	_set_composer_message("Cleared the working composition. Save only when this is intentional.")
+
+func _accept_custom_layout(candidate: EnvironmentModuleLayout) -> void:
+	custom_layout = candidate
+	if custom_document == null:
+		custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
+	else:
+		custom_document.apply_edited_layout(custom_layout)
+	custom_dirty = true
 
 func _set_composer_message(message: String, is_error := false) -> void:
 	if not is_instance_valid(composer_message):
