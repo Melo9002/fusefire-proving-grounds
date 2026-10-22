@@ -29,6 +29,7 @@ func _test_generated_document() -> BattlefieldLayoutDocument:
 	check(document.relationships.any(func(value): return value.kind == "parcel_template"), "generated parcel-template relationships are retained")
 	check(document.dependencies.any(func(value): return value.kind == "template"), "generated parcel grammar dependencies are explicit")
 	check(document.dependencies.any(func(value): return value.kind == "asset"), "resolved imported presentation assets are pinned")
+	check(document.dependencies.any(func(value): return value.kind == "assembly" and value.get("resolution", "") in ["certified_contract", "building_definition"] and value.get("certification_signature", "") != ""), "every referenced authored assembly resolves to a concrete revision source")
 	check(document.mission_context.status == "preserved" and document.mission_context.zones.size() == data.zones.size(), "generated and repaired deployment zones are preserved")
 	var rebuilt := document.to_module_layout()
 	check(rebuilt.errors.is_empty() and _placement_signature(rebuilt.placements) == _placement_signature(data.environment_modules), "document deterministically reconstructs the intended module placement list")
@@ -92,6 +93,10 @@ func _test_validation(generated: BattlefieldLayoutDocument, authored: Battlefiel
 	var assembly_index := _dependency_index(broken.dependencies, "assembly")
 	broken.dependencies[assembly_index].certification_signature = "stale"
 	check(_has_code(broken.validate(), "STALE_ASSEMBLY_DEPENDENCY"), "stale assembly certifications invalidate the document")
+
+	broken = BattlefieldLayoutDocument.from_dictionary(generated.to_dictionary())
+	broken.dependencies.append({"kind": "assembly", "id": "missing_assembly", "certification_signature": "", "required_by": []})
+	check(_has_code(broken.validate(), "MISSING_ASSEMBLY_DEPENDENCY"), "unresolved assembly dependencies cannot validate by comparing missing sentinels")
 
 	broken = BattlefieldLayoutDocument.from_dictionary(generated.to_dictionary())
 	broken.mission_context.zones[0].cells.append([999, 0, 999])

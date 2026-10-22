@@ -26,6 +26,8 @@ const ENGINEERING_ONLY_COMPONENTS: Array[StringName] = [
 
 @export var generation_seed := 17
 @export var layout_preset: StringName = &"industrial_district"
+@export var custom_layout_path := LayoutStore.DEFAULT_PATH
+@export var starter_layout_path := LayoutStore.STARTER_PATH
 var content: Node3D
 var status: Label
 var seed_input: SpinBox
@@ -970,19 +972,19 @@ func _save_custom_layout() -> void:
 		_set_composer_message("Cannot save invalid composition: %s" % compiled.errors[0].message, true)
 		return
 	custom_document = compiled.document
-	var error := LayoutStore.save(custom_document)
+	var error := LayoutStore.save(custom_document, custom_layout_path)
 	if not error.is_empty():
 		_set_composer_message(error, true)
 		return
 	custom_dirty = false
 	_update_status(custom_layout.placements.size(), "TACTICAL VALID")
-	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), LayoutStore.DEFAULT_PATH])
+	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), custom_layout_path])
 
 func _load_custom_layout(rebuild_after: bool) -> void:
-	var result := LayoutStore.load(editor_catalog, LayoutStore.DEFAULT_PATH, &"legacy_compatibility")
+	var result := LayoutStore.load(editor_catalog, custom_layout_path, &"legacy_compatibility")
 	var loaded_starter := false
 	if not result.ok and result.code == "FILE_NOT_FOUND":
-		result = LayoutStore.load(editor_catalog, LayoutStore.STARTER_PATH, &"legacy_compatibility")
+		result = LayoutStore.load(editor_catalog, starter_layout_path, &"legacy_compatibility")
 		loaded_starter = result.ok
 		if not result.ok:
 			if rebuild_after:

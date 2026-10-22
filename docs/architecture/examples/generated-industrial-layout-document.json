@@ -551,7 +551,11 @@
 		{
 			"kind": "assembly",
 			"id": "city_industrial_shell_t",
-			"certification_signature": "missing",
+			"available": true,
+			"valid": true,
+			"resolution": "building_definition",
+			"certification_state": "definition_only",
+			"certification_signature": "a5aeb8f56b82b98e8322de0de25d82f2127adeb438d8b09ddf509fdc6ff13f32",
 			"required_by": [
 				"assembly_0015",
 				"placement_0015"
@@ -560,6 +564,10 @@
 		{
 			"kind": "assembly",
 			"id": "pipe_receiver_unit",
+			"available": true,
+			"valid": true,
+			"resolution": "certified_contract",
+			"certification_state": "certified",
 			"certification_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
 			"required_by": [
 				"assembly_0025",

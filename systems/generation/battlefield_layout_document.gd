@@ -353,11 +353,10 @@ func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_
 func _validate_relationships(failures: Array[Dictionary]) -> void:
 	var references: Dictionary = {"document:%s" % document_id: true}
 	for assembly_id in InitialEnvironmentAssemblyLibrary.records().keys(): references["assembly:%s" % String(assembly_id)] = true
+	for assembly_id in IndustrialBuildingCatalog.create().keys(): references["assembly:%s" % String(assembly_id)] = true
 	for placement in spatial_layout.get("placements", []):
 		if placement is Dictionary:
 			references[str(placement.get("placement_id", ""))] = true
-			var assembly_ref := str(placement.get("assembly_ref", ""))
-			if not assembly_ref.is_empty(): references["assembly:%s" % assembly_ref] = true
 	for relationship in relationships:
 		if not relationship is Dictionary:
 			_fail(failures, "MALFORMED_RELATIONSHIP", "relationships", "relationship must be an object")
@@ -404,7 +403,12 @@ func _validate_dependencies(failures: Array[Dictionary]) -> void:
 				_fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies.%s" % key, "%s is unavailable" % key, key)
 		elif dependency.get("kind", "") == "assembly":
 			var current := _assembly_dependency(str(dependency.get("id", "")))
-			if dependency.get("certification_signature", "") != current.get("certification_signature", "missing"): _fail(failures, "STALE_ASSEMBLY_DEPENDENCY", "dependencies.%s.certification_signature" % key, "%s certification dependency changed" % key, key)
+			if not bool(current.get("available", false)):
+				_fail(failures, "MISSING_ASSEMBLY_DEPENDENCY", "dependencies.%s" % key, "%s does not resolve to an authored assembly" % key, key)
+			elif not bool(current.get("valid", false)):
+				_fail(failures, "INVALID_ASSEMBLY_DEPENDENCY", "dependencies.%s" % key, "%s no longer satisfies its authored assembly definition" % key, key)
+			elif dependency.get("certification_signature", "") != current.get("certification_signature", ""):
+				_fail(failures, "STALE_ASSEMBLY_DEPENDENCY", "dependencies.%s.certification_signature" % key, "%s assembly dependency changed" % key, key)
 		elif dependency.get("kind", "") == "template" and dependency.get("revision", "") != PARCEL_GRAMMAR_REVISION:
 			_fail(failures, "STALE_TEMPLATE_DEPENDENCY", "dependencies.%s.revision" % key, "%s template grammar revision changed" % key, key)
 
@@ -467,14 +471,44 @@ static func _encoded_placement_signature(record: Dictionary) -> String:
 
 static func _assembly_dependency(assembly_id: String) -> Dictionary:
 	var records := InitialEnvironmentAssemblyLibrary.records()
-	if not records.has(StringName(assembly_id)):
-		return {"kind": "assembly", "id": assembly_id, "certification_signature": "missing", "required_by": []}
-	var contract: EnvironmentAssemblyContract = records[StringName(assembly_id)].contract
-	var parts: Array[String] = [String(contract.assembly_id), str(contract.role), str(contract.completeness), str(contract.certification_state)]
-	for component in contract.components:
-		parts.append("%s:%s:%s" % [component.get("asset_id", ""), component.get("geometry_sha256", ""), component.get("calibration_signature", "")])
+	if records.has(StringName(assembly_id)):
+		var contract: EnvironmentAssemblyContract = records[StringName(assembly_id)].contract
+		var parts: Array[String] = [String(contract.assembly_id), str(contract.role), str(contract.completeness), str(contract.certification_state)]
+		for component in contract.components:
+			parts.append("%s:%s:%s" % [component.get("asset_id", ""), component.get("geometry_sha256", ""), component.get("calibration_signature", "")])
+		parts.sort()
+		return {"kind": "assembly", "id": assembly_id, "available": true, "valid": contract.certification_state == EnvironmentAssemblyContract.CertificationState.CERTIFIED, "resolution": "certified_contract", "certification_state": "certified", "certification_signature": "|".join(parts).sha256_text(), "required_by": []}
+	var buildings := IndustrialBuildingCatalog.create()
+	if buildings.has(StringName(assembly_id)):
+		var building: EnvironmentBuildingDefinition = buildings[StringName(assembly_id)]
+		return {"kind": "assembly", "id": assembly_id, "available": true, "valid": building.validate().is_empty(), "resolution": "building_definition", "certification_state": "definition_only", "certification_signature": _building_definition_signature(building), "required_by": []}
+	return {"kind": "assembly", "id": assembly_id, "available": false, "valid": false, "resolution": "missing", "certification_state": "missing", "certification_signature": "", "required_by": []}
+
+static func _building_definition_signature(building: EnvironmentBuildingDefinition) -> String:
+	var module: EnvironmentModuleDefinition = building.module
+	var parts: Array[String] = [
+		String(building.assembly_id), String(building.purpose), str(building.enclosure),
+		"parcel=%d,%d" % [building.parcel_size.x, building.parcel_size.y],
+		"module=%s:%d,%d:%d:%d:%s" % [module.component_id, module.size.x, module.size.y, module.tactical_role, module.module_type, module.visual_envelope],
+		"walls=" + _cells_signature(building.wall_cells),
+		"entrances=" + _cells_signature(building.entrance_cells),
+		"floors=" + _cells_signature(building.usable_floor_cells),
+		"roofs=" + _cells_signature(building.roof_cells),
+		"clearance=" + _cells_signature(module.clearance_cells),
+	]
+	for asset_id in building.source_assets:
+		parts.append("asset=%s:%s:%s" % [asset_id, EnvironmentAssemblyContract.current_geometry_sha256(asset_id), EnvironmentAssemblyContract.current_calibration_signature(asset_id)])
+	for connection: EnvironmentModuleConnection in module.connections:
+		parts.append("connection=%d,%d:%d,%d:%d:%d" % [connection.local_cell.x, connection.local_cell.y, connection.direction.x, connection.direction.y, connection.type, connection.elevation])
 	parts.sort()
-	return {"kind": "assembly", "id": assembly_id, "certification_signature": "|".join(parts).sha256_text(), "required_by": []}
+	return "|".join(parts).sha256_text()
+
+static func _cells_signature(cells: Array[Vector2i]) -> String:
+	var values: Array[String] = []
+	for cell in cells:
+		values.append("%d,%d" % [cell.x, cell.y])
+	values.sort()
+	return ";".join(values)
 
 static func _fail(target: Array[Dictionary], code: String, field: String, message: String, reference := "") -> void:
 	target.append({"code": code, "field": field, "reference": reference, "message": message})
