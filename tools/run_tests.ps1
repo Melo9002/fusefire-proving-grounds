@@ -75,6 +75,7 @@ $visualTests = @(
 	"coherent_asset_first_frontage_capture.gd",
     "certified_building_shell_capture.gd",
     "certified_equipment_parcel_capture.gd",
+	"parcel_functional_relationship_capture.gd",
     "structural_building_capture.gd"
 )
 $extendedTests = @(

@@ -9,6 +9,7 @@ const Streetscape = preload("res://systems/generation/road_streetscape_profile.g
 const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
+const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -42,16 +43,38 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 		var accepted := false
 		for template_id in candidates.slice(0, mini(MAX_TEMPLATE_ATTEMPTS, candidates.size())):
 			plan.search_attempts += 1
-			var facing: Vector2i = parcel.road_edges[0] if not parcel.road_edges.is_empty() else Vector2i.DOWN
-			var rotation := _rotation_facing(facing)
+			var frontage := RelationshipValidator.select_frontage(parcel, String(template_id))
+			var rotation := RelationshipValidator.rotation_for_frontage(String(template_id), frontage) if not frontage.is_empty() else 0
 			var batch := _template_placements(template_id, parcel.bounds, rotation, rng)
 			var candidate := _clone_layout(layout, catalog, data.map_size)
 			var candidate_reservations := reservations.duplicate_ledger()
-			var access_ok := _reserve_parcel_access(candidate_reservations, parcel, template_id)
+			var access_ok := _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
 			if candidate == null or not access_ok or not _try_batch(candidate, batch, catalog, data.map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id):
 				var reason: String = candidate.errors.back() if candidate != null and not candidate.errors.is_empty() else "candidate replay failed"
 				if not access_ok and not candidate_reservations.failures.is_empty(): reason = candidate_reservations.failures.back().message
 				plan.rejected_candidates.append("%s rejected %s: %s" % [parcel.id, template_id, reason])
+				continue
+			var checked_parcel := parcel.duplicate(true)
+			checked_parcel["rotation"] = rotation
+			var relationship_failures := RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
+			# Optional dressing is allowed to lose its placement independently when
+			# it is the only thing invalidating an otherwise functional parcel.
+			while not relationship_failures.is_empty():
+				var blocked_ref := str(relationship_failures[0].get("reference", ""))
+				var optional_index := -1
+				for index in batch.size():
+					if batch[index].signature() == blocked_ref and not _occupant_is_required(template_id, batch[index].component_id): optional_index = index
+				if optional_index < 0: break
+				var skipped: EnvironmentModulePlacement = batch.pop_at(optional_index)
+				candidate = _clone_layout(layout, catalog, data.map_size)
+				candidate_reservations = reservations.duplicate_ledger()
+				access_ok = _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
+				if not access_ok or not _try_batch(candidate, batch, catalog, data.map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id): break
+				relationship_failures = RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
+				plan.decisions.append("%s skipped optional %s to preserve %s" % [parcel.id, skipped.component_id, RelationshipValidator.contract_for(String(template_id)).kind])
+			if not relationship_failures.is_empty():
+				var failure: Dictionary = relationship_failures[0]
+				plan.rejected_candidates.append("%s rejected %s: %s %s" % [parcel.id, template_id, failure.code, failure.message])
 				continue
 			layout = candidate
 			reservations = candidate_reservations
@@ -74,6 +97,14 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	_decorate_road_network(layout, plan, catalog, data.map_size, streetscape_rng, reservations)
 	plan.reservations.assign(reservations.reservations.duplicate(true))
 	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
+	var relationship_graph := Pathfinder.new()
+	MapGraphBuilder.build(data, relationship_graph)
+	for parcel in plan.parcels:
+		var template_id := String(parcel.get("template", ""))
+		var frontage := RelationshipValidator.select_frontage(parcel, template_id)
+		for failure in RelationshipValidator.validate_tactical(parcel, template_id, data, relationship_graph, frontage):
+			plan.relationship_failures.append(failure)
+			layout.errors.append("%s: %s" % [failure.code, failure.message])
 	var deployment_result := EnvironmentDeploymentResolver.repair(data, EnvironmentDeploymentResolver.plan_anchors(plan))
 	for repair in deployment_result.repairs:
 		plan.decisions.append("deployment %s moved %s -> %s" % [repair.zone_id, repair.from, repair.to])
@@ -138,7 +169,9 @@ static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: Enviro
 				var signal_placement := EnvironmentModulePlacement.new(signal_id, placement.origin + local_cell, yaw)
 				if _try_add_reserved(layout, catalog[signal_id], signal_placement, map_size, reservations, "road_furniture"):
 					fixture_count += 1
-				else: skipped_count += 1
+				else:
+					skipped_count += 1
+					_record_skipped_streetscape(plan, signal_placement)
 		elif definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD:
 			var fixture := Streetscape.straight_fixture_slot(straight_index)
 			var fixture_id := _straight_fixture_id(plan.environment_id, straight_index)
@@ -148,7 +181,9 @@ static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: Enviro
 			var road_fixture := EnvironmentModulePlacement.new(fixture_id, placement.origin + fixture_cell, fixture_yaw, rng.randi_range(0, 1))
 			if _try_add_reserved(layout, catalog[fixture_id], road_fixture, map_size, reservations, "road_furniture"):
 				fixture_count += 1
-			else: skipped_count += 1
+			else:
+				skipped_count += 1
+				_record_skipped_streetscape(plan, road_fixture)
 			if _should_add_street_obstacle(plan.environment_id, straight_index):
 				var obstacle := Streetscape.straight_fixture_slot(straight_index, true)
 				var obstacle_cell: Vector2i = definition.rotate_cell(obstacle.cell, placement.rotation)
@@ -156,10 +191,15 @@ static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: Enviro
 				var barrier := EnvironmentModulePlacement.new(&"construction_barrier_vault", placement.origin + obstacle_cell, obstacle_yaw)
 				if _try_add_reserved(layout, catalog.construction_barrier_vault, barrier, map_size, reservations, "road_furniture"):
 					obstacle_count += 1
-				else: skipped_count += 1
+				else:
+					skipped_count += 1
+					_record_skipped_streetscape(plan, barrier)
 			straight_index += 1
 	plan.decisions.append("streetscape placed %d reviewed kit fixtures and %d deliberate tactical barriers" % [fixture_count, obstacle_count])
 	if skipped_count > 0: plan.decisions.append("streetscape skipped %d optional fixtures to preserve required reservations" % skipped_count)
+
+static func _record_skipped_streetscape(plan: EnvironmentLayoutPlan, placement: EnvironmentModulePlacement) -> void:
+	plan.decisions.append("streetscape skipped %s to preserve required access or occupied parcel geometry" % placement.signature())
 
 static func _intersection_fixture_id(environment_id: StringName, intersection_id: StringName) -> StringName:
 	if environment_id == &"commercial_street" or (environment_id == &"mixed_service" and intersection_id == &"road_crossroad"):
@@ -438,14 +478,6 @@ static func _rotate_into_parcel(placement: EnvironmentModulePlacement, definitio
 		minimum.y = mini(minimum.y, point.y)
 	return EnvironmentModulePlacement.new(placement.component_id, parcel.position + minimum, placement.rotation + rotation, placement.variation, placement.elevation)
 
-static func _rotation_facing(direction: Vector2i) -> int:
-	match direction:
-		Vector2i.DOWN: return 0
-		Vector2i.LEFT: return 1
-		Vector2i.UP: return 2
-		Vector2i.RIGHT: return 3
-		_: return 0
-
 static func _try_batch(layout: EnvironmentModuleLayout, batch: Array[EnvironmentModulePlacement], catalog: Dictionary, map_size: Vector2i, reservations = null, owner_ref := "", template_id: StringName = &"") -> bool:
 	var accepted: Array[EnvironmentModulePlacement] = []
 	for placement in batch:
@@ -474,15 +506,15 @@ static func _try_add_reserved(layout: EnvironmentModuleLayout, definition: Envir
 	if not accepted: layout.errors.resize(error_count)
 	return accepted
 
-static func _reserve_parcel_access(reservations, parcel: Dictionary, template_id: StringName) -> bool:
+static func _reserve_parcel_access(reservations, parcel: Dictionary, template_id: StringName, span := {}, placements: Array = [], catalog: Dictionary = {}) -> bool:
 	var role := ParcelContract.reservation_role_for_template(String(template_id))
 	if role.is_empty(): return true
-	var frontages: Array = parcel.get("frontage_spans", [])
-	if frontages.is_empty():
+	if span.is_empty():
 		reservations.failures.append({"code": "MISSING_REQUIRED_ACCESS", "reservation_id": "access_%s" % parcel.id, "message": "%s requires road frontage" % template_id})
 		return false
-	var span: Dictionary = frontages[0]
-	var cells := ReservationLedger.frontage_access_cells(span, parcel.bounds, role)
+	var checked_parcel := parcel.duplicate(true)
+	if not span.is_empty(): checked_parcel["rotation"] = RelationshipValidator.rotation_for_frontage(String(template_id), span)
+	var cells := RelationshipValidator.relationship_cells(checked_parcel, String(template_id), placements, catalog, span) if not placements.is_empty() else ReservationLedger.frontage_access_cells(span, parcel.bounds, role)
 	return reservations.try_reserve({
 		"reservation_id": "access_%s" % parcel.id,
 		"owner_ref": "parcel:%s" % parcel.id,

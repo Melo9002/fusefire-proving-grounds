@@ -44,7 +44,7 @@ func _test_environment_streetscapes() -> void:
 				if definition.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION:
 					_check_intersection_fixtures(environment_id, road, definition, placement_lookup)
 				else:
-					_check_straight_fixtures(environment_id, straight_index, road, definition, placement_lookup)
+					_check_straight_fixtures(environment_id, straight_index, road, definition, placement_lookup, data.environment_layout_plan)
 					_check_clear_sidewalk_path(data, road, definition)
 					straight_index += 1
 			check(_road_cells_preserve_tactical_authority(data, roads, catalog), "%s seed %d keeps streets tactically open except explicit barriers" % [environment_id, map_seed])
@@ -61,12 +61,18 @@ func _check_intersection_fixtures(environment_id: StringName, road: EnvironmentM
 		var world_cell := road.origin + definition.rotate_cell(fixture.cell, road.rotation)
 		check(lookup.has("%s@%s" % [fixture_id, world_cell]), "%s places a reviewed %s kit asset at every active intersection approach" % [environment_id, fixture_id])
 
-func _check_straight_fixtures(environment_id: StringName, index: int, road: EnvironmentModulePlacement, definition: EnvironmentModuleDefinition, lookup: Dictionary) -> void:
+func _check_straight_fixtures(environment_id: StringName, index: int, road: EnvironmentModulePlacement, definition: EnvironmentModuleDefinition, lookup: Dictionary, plan: EnvironmentLayoutPlan) -> void:
 	var fixture := Streetscape.straight_fixture_slot(index)
 	var fixture_id := CoherentEnvironmentAssembler._straight_fixture_id(environment_id, index)
 	var fixture_cell := road.origin + definition.rotate_cell(fixture.cell, road.rotation)
-	check(lookup.has("%s@%s" % [fixture_id, fixture_cell]), "%s places its reviewed %s kit asset in an outer sidewalk slot" % [environment_id, fixture_id])
-	if fixture_id == &"street_light" and lookup.has("%s@%s" % [fixture_id, fixture_cell]):
+	var placement_key := "%s@%s" % [fixture_id, fixture_cell]
+	var placed := lookup.has(placement_key)
+	var skipped_prefix := "streetscape skipped %s@%d,0,%d:" % [fixture_id, fixture_cell.x, fixture_cell.y]
+	var skipped_explicitly := plan.decisions.any(func(decision):
+		return decision.begins_with(skipped_prefix)
+	)
+	check(placed or skipped_explicitly, "%s either places its reviewed %s kit asset or records its optional rejection at the authored slot" % [environment_id, fixture_id])
+	if fixture_id == &"street_light" and placed:
 		var light: EnvironmentModulePlacement = lookup["%s@%s" % [fixture_id, fixture_cell]]
 		check(light.rotation == posmod(int(fixture.inward_yaw) + road.rotation, 4), "Streetlight model-local -Z faces inward toward the carriageway")
 	if CoherentEnvironmentAssembler._should_add_street_obstacle(environment_id, index):

@@ -89,6 +89,12 @@ func placement_allowed(definition: EnvironmentModuleDefinition, placement: Envir
 	occupied.append_array(layout.world_clearance_cells(definition, placement))
 	var visual_bounds := layout.world_visual_envelope(definition, placement) if definition.tactical_role == EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY else AABB()
 	for reservation in reservations:
+		# A parcel validates its own occupants against the more precise functional
+		# relationship contract after the batch is assembled. Allowing its owner
+		# through here avoids treating a shell's authored frontage clearance as an
+		# obstruction to its own access reservation. Other parcels and optional
+		# road furniture remain blocked by the reservation.
+		if not owner_ref.is_empty() and owner_ref == str(reservation.get("owner_ref", "")): continue
 		if _cells_intersect(occupied, reservation.cells) or _visual_intersects_cells(visual_bounds, reservation.cells):
 			return {
 				"ok": false,

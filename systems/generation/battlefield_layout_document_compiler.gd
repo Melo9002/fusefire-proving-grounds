@@ -4,6 +4,8 @@ extends RefCounted
 ## Module effects compile through EnvironmentModuleMapWriter; MapData remains
 ## the sole tactical authority.
 
+const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
+
 static func compile(source: BattlefieldLayoutDocument, cell_size := 1.0, legacy_spawn_capacity := 5) -> Dictionary:
 	var errors := source.validate()
 	if not errors.is_empty(): return {"ok": false, "data": null, "document": source, "errors": errors, "repairs": []}
@@ -34,6 +36,12 @@ static func compile(source: BattlefieldLayoutDocument, cell_size := 1.0, legacy_
 		var validation := MapValidator.validate(data, graph, _required_deployments(document))
 		for issue in validation.errors:
 			errors.append({"code": issue.code, "field": "compiled_map", "reference": issue.describe(), "message": issue.message})
+		for parcel in document.to_environment_layout_plan().parcels:
+			var template_id := str(parcel.get("template", ""))
+			var span := RelationshipValidator.select_frontage(parcel, template_id)
+			for issue in RelationshipValidator.validate_tactical(parcel, template_id, data, graph, span):
+				errors.append({"code": issue.code, "field": "relationships", "reference": issue.reference, "message": issue.message})
+	if errors.is_empty(): document.mark_functional_relationships_validated()
 	document.replace_mission_from_map(data)
 	data.battlefield_layout_document = document
 	return {"ok": errors.is_empty(), "data": data, "document": document, "errors": errors, "repairs": deployment.repairs}

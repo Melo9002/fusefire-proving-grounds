@@ -8,6 +8,7 @@ const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
+const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
 
 const SCHEMA_VERSION := 1
 const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
@@ -173,6 +174,13 @@ func replace_mission_from_map(data: MapData, source := "document_revalidated") -
 	for reservation in spatial_layout.get("reservations", []):
 		if reservation is Dictionary: reservation["validation_state"] = "validated"
 
+func mark_functional_relationships_validated() -> void:
+	for parcel in spatial_layout.get("parcels", []):
+		if parcel is Dictionary: parcel["validation_state"] = "validated"
+	for relationship in relationships:
+		if relationship is Dictionary and relationship.get("kind", "") in ParcelContract.FUNCTIONAL_RELATIONSHIPS + ["parcel_template"]:
+			relationship["validation_state"] = "validated"
+
 func restore_mission_to_map(data: MapData) -> void:
 	if mission_context.get("status", "") != "preserved": return
 	data.zones.clear()
@@ -251,6 +259,7 @@ func validate(catalog := {}) -> Array[Dictionary]:
 	_validate_reservations(failures, map_size)
 	_validate_reservation_placement_conflicts(failures, catalog, map_size)
 	_validate_relationships(failures)
+	_validate_functional_parcels(failures, catalog)
 	_validate_dependencies(failures)
 	_validate_mission(failures, map_size)
 	if presentation.get("road_presentation_mode", "") not in PRESENTATION_MODES: _fail(failures, "UNSUPPORTED_PRESENTATION", "presentation.road_presentation_mode", "presentation mode is missing or unsupported")
@@ -280,8 +289,14 @@ func _capture_spatial_layout(source_placements: Array, map_size: Vector2i) -> vo
 func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 	if plan == null: return
 	var placement_ids: Dictionary = {}
+	var runtime_by_signature: Dictionary = {}
 	for placement in spatial_layout.get("placements", []):
-		if placement is Dictionary: placement_ids[_encoded_placement_signature(placement)] = str(placement.get("placement_id", ""))
+		if placement is Dictionary:
+			var signature := _encoded_placement_signature(placement)
+			placement_ids[signature] = str(placement.get("placement_id", ""))
+			var origin = placement.get("origin", [])
+			if origin is Array and origin.size() == 2:
+				runtime_by_signature[signature] = EnvironmentModulePlacement.new(StringName(placement.get("component_id", "")), Vector2i(int(origin[0]), int(origin[1])), int(placement.get("rotation", 0)), int(placement.get("variation", 0)), int(placement.get("elevation", 0)))
 	var encoded_parcels: Array[Dictionary] = []
 	var parcels: Array = plan.parcels.duplicate()
 	parcels.sort_custom(func(a, b): return String(a.get("id", "")) < String(b.get("id", "")))
@@ -346,14 +361,24 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 					"properties": {"parcel_ref": "parcel:%s" % parcel_id, "width_cells": span.width_cells},
 				})
 		var access_kind: String = ParcelContract.relationship_kind_for_template(template)
-		if not access_kind.is_empty() and not frontages.is_empty():
+		var runtime_parcel: Dictionary = parcel.duplicate(true)
+		runtime_parcel["frontage_spans"] = frontages
+		var selected_frontage := RelationshipValidator.select_frontage(runtime_parcel, template)
+		if not access_kind.is_empty() and not selected_frontage.is_empty():
+			var runtime_placements: Array[EnvironmentModulePlacement] = []
+			for occupant in parcel.get("occupants", []):
+				var signature := str(occupant.get("placement_signature", ""))
+				if runtime_by_signature.has(signature): runtime_placements.append(runtime_by_signature[signature])
+			var properties := RelationshipValidator.relationship_properties(runtime_parcel, template, selected_frontage, runtime_placements, IndustrialModuleCatalog.create())
+			properties["access_region"] = "frontage_span"
+			properties["clearance_depth_cells"] = selected_frontage.clearance_depth_cells
 			relationships.append({
 				"relationship_id": "access_%s" % parcel_id,
 				"kind": access_kind,
 				"subject_ref": "parcel:%s" % parcel_id,
-				"object_ref": "frontage:%s" % frontages[0].frontage_id,
+				"object_ref": "frontage:%s" % selected_frontage.frontage_id,
 				"required": true,
-				"properties": {"access_region": "frontage_span", "clearance_depth_cells": frontages[0].clearance_depth_cells},
+				"properties": properties,
 			})
 	spatial_layout["parcels"] = encoded_parcels
 	spatial_layout["reservations"] = ReservationLedger.encoded_records(plan.reservations)
@@ -584,6 +609,11 @@ func _validate_reservation_placement_conflicts(failures: Array[Dictionary], cata
 	for record in ReservationLedger.decoded_records(spatial_layout.get("reservations", [])):
 		if not ledger.try_reserve(record): return
 	var transform_helper := EnvironmentModuleLayout.new(&"reservation_validation", 0)
+	var owner_by_placement: Dictionary = {}
+	for parcel in spatial_layout.get("parcels", []):
+		if not parcel is Dictionary: continue
+		for occupant in parcel.get("occupants", []):
+			if occupant is Dictionary: owner_by_placement[str(occupant.get("placement_ref", ""))] = "parcel:%s" % parcel.get("parcel_id", "")
 	for record in spatial_layout.get("placements", []):
 		if not record is Dictionary: continue
 		var component_id := StringName(record.get("component_id", ""))
@@ -591,7 +621,7 @@ func _validate_reservation_placement_conflicts(failures: Array[Dictionary], cata
 		var origin = record.get("origin", [])
 		if definition == null or not origin is Array or origin.size() != 2: continue
 		var placement := EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0)))
-		var allowed := ledger.placement_allowed(definition, placement, transform_helper)
+		var allowed := ledger.placement_allowed(definition, placement, transform_helper, str(owner_by_placement.get(str(record.get("placement_id", "")), "")))
 		if not allowed.ok:
 			_fail(failures, str(allowed.code), "spatial_layout.placements.%s" % record.get("placement_id", ""), str(allowed.message), str(allowed.reservation_id))
 
@@ -647,6 +677,48 @@ func _validate_relationships(failures: Array[Dictionary]) -> void:
 				_fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s" % relation_id, "occupant relationships must be owned by a parcel", relation_id)
 			elif kind in [ParcelContract.PEDESTRIAN_ACCESS, ParcelContract.LOADING_ACCESS, ParcelContract.SERVICE_CLEARANCE] and (not subject.begins_with("parcel:") or not object.begins_with("frontage:")):
 				_fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s" % relation_id, "functional access must connect a parcel to a frontage region", relation_id)
+
+func _validate_functional_parcels(failures: Array[Dictionary], catalog: Dictionary) -> void:
+	var placement_records: Dictionary = {}
+	for record in spatial_layout.get("placements", []):
+		if record is Dictionary: placement_records[str(record.get("placement_id", ""))] = record
+	var access_by_parcel: Dictionary = {}
+	for relationship in relationships:
+		if not relationship is Dictionary or relationship.get("kind", "") not in [ParcelContract.PEDESTRIAN_ACCESS, ParcelContract.LOADING_ACCESS, ParcelContract.SERVICE_CLEARANCE]: continue
+		access_by_parcel[str(relationship.get("subject_ref", "")).trim_prefix("parcel:")] = relationship
+	for encoded in spatial_layout.get("parcels", []):
+		if not encoded is Dictionary: continue
+		var template_id := str(encoded.get("template_id", ""))
+		var contract := RelationshipValidator.contract_for(template_id)
+		if contract.is_empty(): continue
+		var parcel_id := str(encoded.get("parcel_id", ""))
+		var bounds_data = encoded.get("bounds", [])
+		if not bounds_data is Array or bounds_data.size() != 4: continue
+		var parcel := {
+			"id": parcel_id,
+			"bounds": Rect2i(int(bounds_data[0]), int(bounds_data[1]), int(bounds_data[2]), int(bounds_data[3])),
+			"rotation": int(encoded.get("rotation", 0)),
+			"frontage_spans": encoded.get("frontage_spans", []).duplicate(true),
+		}
+		var placements: Array[EnvironmentModulePlacement] = []
+		for occupant in encoded.get("occupants", []):
+			if not occupant is Dictionary: continue
+			var record: Dictionary = placement_records.get(str(occupant.get("placement_ref", "")), {})
+			var origin = record.get("origin", [])
+			if origin is Array and origin.size() == 2:
+				placements.append(EnvironmentModulePlacement.new(StringName(record.get("component_id", "")), Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0))))
+		var relationship: Dictionary = access_by_parcel.get(parcel_id, {})
+		if relationship.is_empty():
+			_fail(failures, "MISSING_REQUIRED_RELATIONSHIP", "relationships", "%s requires a %s relationship" % [parcel_id, contract.kind], parcel_id)
+			continue
+		if relationship.get("kind", "") != contract.kind:
+			_fail(failures, "INVALID_RELATIONSHIP_KIND", "relationships.%s" % relationship.get("relationship_id", ""), "%s requires %s" % [template_id, contract.kind], parcel_id)
+		var selected := RelationshipValidator.select_frontage(parcel, template_id)
+		var referenced_id := str(relationship.get("object_ref", "")).trim_prefix("frontage:")
+		if selected.is_empty() or str(selected.get("frontage_id", "")) != referenced_id:
+			_fail(failures, "INVALID_FRONTAGE_REFERENCE", "relationships.%s.object_ref" % relationship.get("relationship_id", ""), "functional relationship does not reference the compatible frontage", parcel_id)
+		for issue in RelationshipValidator.validate_geometry(parcel, template_id, placements, catalog, selected):
+			_fail(failures, str(issue.code), "relationships.%s" % relationship.get("relationship_id", ""), str(issue.message), str(issue.reference))
 
 func _validate_dependencies(failures: Array[Dictionary]) -> void:
 	var by_key: Dictionary = {}

@@ -8,6 +8,7 @@ var macro_size := 10
 var road_cells: Array[Vector2i] = []
 var parcels: Array[Dictionary] = []
 var reservations: Array[Dictionary] = []
+var relationship_failures: Array[Dictionary] = []
 var rejected_candidates: Array[String] = []
 var decisions: Array[String] = []
 var fallback_used := false
@@ -43,4 +44,8 @@ func signature() -> String:
 		cells.sort()
 		reservation_parts.append("%s:%s:%s:%s" % [reservation.get("reservation_id", ""), reservation.get("role", ""), reservation.get("owner_ref", ""), ";".join(cells)])
 	reservation_parts.sort()
-	return "%s:%d:%s:%s:%s:%s" % [environment_id, generation_seed, topology, "|".join(roads), "|".join(parcel_parts), "|".join(reservation_parts)]
+	var relationship_parts: Array[String] = []
+	for failure in relationship_failures:
+		relationship_parts.append("%s:%s:%s" % [failure.get("code", ""), failure.get("parcel_id", ""), failure.get("reference", "")])
+	relationship_parts.sort()
+	return "%s:%d:%s:%s:%s:%s:%s" % [environment_id, generation_seed, topology, "|".join(roads), "|".join(parcel_parts), "|".join(reservation_parts), "|".join(relationship_parts)]
