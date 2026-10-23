@@ -13,11 +13,11 @@
 			"generation_config": {
 				"topology": "t_junction",
 				"macro_size": 10,
-				"plan_signature": "industrial_district:2208:t_junction:2,0|2,1|2,2|3,1:parcel_00@0,0:20,20:building_frontage/industrial_shell_t:r3|parcel_01@30,0:10,10:service_alley:r0|parcel_02@0,20:10,10:district_buffer:r0|parcel_03@10,20:10,10:staging_pad:r3|parcel_04@30,20:10,10:equipment_compound:r2"
+				"plan_signature": "industrial_district:2208:t_junction:2,0|2,1|2,2|3,1:parcel_00@0,0:20,20:building_frontage/industrial_shell_t:r3:s0d6d250c407dc3be323308860fd9323de1deb34e133c9330441a85006efbc100|parcel_01@30,0:10,10:service_alley:r0:scdd8879e2e5d38ad735759f8c1c812dcac02d85444b8d647aaa82bff86505591|parcel_02@0,20:10,10:district_buffer:r0:s6f56584bcf9764ac7d5323fad35158e157489e6bf76e619bfbd62b4ef9edc1e8|parcel_03@10,20:10,10:staging_pad:r3:s9a9b7eb71368b84efeb7f432652903bf57bc10db13745eb446816eb944378fe2|parcel_04@30,20:10,10:equipment_compound:r2:s3146e0ef86c4586e825e02ac87a1aaaf18efa76d25104b59539a9c93453ce7bc"
 			},
 			"algorithm_revisions": {
 				"layout_document": 1,
-				"parcel_grammar": "coherent_parcel_grammar_v1"
+				"parcel_grammar": "coherent_parcel_grammar_v2"
 			},
 			"source_origin": "generated",
 			"edit_state": "modified"
@@ -464,6 +464,291 @@
 						"city_kit_roads/construction-barrier"
 					]
 				}
+			],
+			"parcels": [
+				{
+					"parcel_id": "parcel_00",
+					"bounds": [
+						0,
+						0,
+						20,
+						20
+					],
+					"template_id": "building_frontage/industrial_shell_t",
+					"rotation": 3,
+					"occupants": [
+						{
+							"placement_ref": "placement_0011",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0012",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0013",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0014",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0015",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0016",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0017",
+							"required": false
+						}
+					],
+					"road_refs": [
+						"placement_0000",
+						"placement_0002"
+					],
+					"frontage_spans": [
+						{
+							"frontage_id": "parcel_00_frontage_00",
+							"outward_direction": [
+								1,
+								0
+							],
+							"start": [
+								20,
+								0
+							],
+							"end": [
+								20,
+								20
+							],
+							"width_cells": 20,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0000",
+								"placement_0002"
+							]
+						}
+					],
+					"validation_state": "requires_revalidation"
+				},
+				{
+					"parcel_id": "parcel_01",
+					"bounds": [
+						30,
+						0,
+						10,
+						10
+					],
+					"template_id": "service_alley",
+					"rotation": 0,
+					"occupants": [
+						{
+							"placement_ref": "placement_0018",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0019",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0020",
+							"required": false
+						}
+					],
+					"road_refs": [
+						"placement_0002",
+						"placement_0003"
+					],
+					"frontage_spans": [
+						{
+							"frontage_id": "parcel_01_frontage_00",
+							"outward_direction": [
+								0,
+								1
+							],
+							"start": [
+								30,
+								10
+							],
+							"end": [
+								40,
+								10
+							],
+							"width_cells": 10,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0003"
+							]
+						},
+						{
+							"frontage_id": "parcel_01_frontage_01",
+							"outward_direction": [
+								-1,
+								0
+							],
+							"start": [
+								30,
+								0
+							],
+							"end": [
+								30,
+								10
+							],
+							"width_cells": 10,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0002"
+							]
+						}
+					],
+					"validation_state": "requires_revalidation"
+				},
+				{
+					"parcel_id": "parcel_02",
+					"bounds": [
+						0,
+						20,
+						10,
+						10
+					],
+					"template_id": "district_buffer",
+					"rotation": 0,
+					"occupants": [],
+					"road_refs": [],
+					"frontage_spans": [],
+					"validation_state": "requires_revalidation"
+				},
+				{
+					"parcel_id": "parcel_03",
+					"bounds": [
+						10,
+						20,
+						10,
+						10
+					],
+					"template_id": "staging_pad",
+					"rotation": 3,
+					"occupants": [
+						{
+							"placement_ref": "placement_0021",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0022",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0023",
+							"required": false
+						}
+					],
+					"road_refs": [
+						"placement_0001"
+					],
+					"frontage_spans": [
+						{
+							"frontage_id": "parcel_03_frontage_00",
+							"outward_direction": [
+								1,
+								0
+							],
+							"start": [
+								20,
+								20
+							],
+							"end": [
+								20,
+								30
+							],
+							"width_cells": 10,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0001"
+							]
+						}
+					],
+					"validation_state": "requires_revalidation"
+				},
+				{
+					"parcel_id": "parcel_04",
+					"bounds": [
+						30,
+						20,
+						10,
+						10
+					],
+					"template_id": "equipment_compound",
+					"rotation": 2,
+					"occupants": [
+						{
+							"placement_ref": "placement_0024",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0025",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0026",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0027",
+							"required": false
+						}
+					],
+					"road_refs": [
+						"placement_0001",
+						"placement_0003"
+					],
+					"frontage_spans": [
+						{
+							"frontage_id": "parcel_04_frontage_00",
+							"outward_direction": [
+								0,
+								-1
+							],
+							"start": [
+								30,
+								20
+							],
+							"end": [
+								40,
+								20
+							],
+							"width_cells": 10,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0003"
+							]
+						},
+						{
+							"frontage_id": "parcel_04_frontage_01",
+							"outward_direction": [
+								-1,
+								0
+							],
+							"start": [
+								30,
+								20
+							],
+							"end": [
+								30,
+								30
+							],
+							"width_cells": 10,
+							"clearance_depth_cells": 1,
+							"road_refs": [
+								"placement_0001"
+							]
+						}
+					],
+					"validation_state": "requires_revalidation"
+				}
 			]
 		},
 		"relationships": [
@@ -484,7 +769,7 @@
 			{
 				"relationship_id": "parcel_parcel_00",
 				"kind": "parcel_template",
-				"subject_ref": "document:industrial_2208",
+				"subject_ref": "parcel:parcel_00",
 				"object_ref": "template:building_frontage/industrial_shell_t",
 				"required": true,
 				"properties": {
@@ -500,9 +785,101 @@
 				"validation_state": "requires_revalidation"
 			},
 			{
+				"relationship_id": "occupant_parcel_00_placement_0011",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0011",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0012",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0012",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0013",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0013",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0014",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0014",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0015",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0015",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0016",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0016",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_00_placement_0017",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "placement_0017",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_00_frontage_00_placement_0000",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_00_frontage_00",
+				"object_ref": "placement_0000",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_00",
+					"width_cells": 20
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_00_frontage_00_placement_0002",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_00_frontage_00",
+				"object_ref": "placement_0002",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_00",
+					"width_cells": 20
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "access_parcel_00",
+				"kind": "pedestrian_access",
+				"subject_ref": "parcel:parcel_00",
+				"object_ref": "frontage:parcel_00_frontage_00",
+				"required": true,
+				"properties": {
+					"access_region": "frontage_span",
+					"clearance_depth_cells": 1
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
 				"relationship_id": "parcel_parcel_01",
 				"kind": "parcel_template",
-				"subject_ref": "document:industrial_2208",
+				"subject_ref": "parcel:parcel_01",
 				"object_ref": "template:service_alley",
 				"required": true,
 				"properties": {
@@ -518,9 +895,69 @@
 				"validation_state": "requires_revalidation"
 			},
 			{
+				"relationship_id": "occupant_parcel_01_placement_0018",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_01",
+				"object_ref": "placement_0018",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_01_placement_0019",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_01",
+				"object_ref": "placement_0019",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_01_placement_0020",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_01",
+				"object_ref": "placement_0020",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_01_frontage_00_placement_0003",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_01_frontage_00",
+				"object_ref": "placement_0003",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_01",
+					"width_cells": 10
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_01_frontage_01_placement_0002",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_01_frontage_01",
+				"object_ref": "placement_0002",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_01",
+					"width_cells": 10
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "access_parcel_01",
+				"kind": "pedestrian_access",
+				"subject_ref": "parcel:parcel_01",
+				"object_ref": "frontage:parcel_01_frontage_00",
+				"required": true,
+				"properties": {
+					"access_region": "frontage_span",
+					"clearance_depth_cells": 1
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
 				"relationship_id": "parcel_parcel_02",
 				"kind": "parcel_template",
-				"subject_ref": "document:industrial_2208",
+				"subject_ref": "parcel:parcel_02",
 				"object_ref": "template:district_buffer",
 				"required": true,
 				"properties": {
@@ -538,7 +975,7 @@
 			{
 				"relationship_id": "parcel_parcel_03",
 				"kind": "parcel_template",
-				"subject_ref": "document:industrial_2208",
+				"subject_ref": "parcel:parcel_03",
 				"object_ref": "template:staging_pad",
 				"required": true,
 				"properties": {
@@ -554,9 +991,57 @@
 				"validation_state": "requires_revalidation"
 			},
 			{
+				"relationship_id": "occupant_parcel_03_placement_0021",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "placement_0021",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_03_placement_0022",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "placement_0022",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_03_placement_0023",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "placement_0023",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_03_frontage_00_placement_0001",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_03_frontage_00",
+				"object_ref": "placement_0001",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_03",
+					"width_cells": 10
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "access_parcel_03",
+				"kind": "loading_access",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "frontage:parcel_03_frontage_00",
+				"required": true,
+				"properties": {
+					"access_region": "frontage_span",
+					"clearance_depth_cells": 1
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
 				"relationship_id": "parcel_parcel_04",
 				"kind": "parcel_template",
-				"subject_ref": "document:industrial_2208",
+				"subject_ref": "parcel:parcel_04",
 				"object_ref": "template:equipment_compound",
 				"required": true,
 				"properties": {
@@ -568,6 +1053,74 @@
 						10
 					],
 					"rotation": 2
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0024",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0024",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0025",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0025",
+				"required": true,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0026",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0026",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0027",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0027",
+				"required": false,
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_04_frontage_00_placement_0003",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_04_frontage_00",
+				"object_ref": "placement_0003",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_04",
+					"width_cells": 10
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "street_parcel_04_frontage_01_placement_0001",
+				"kind": "frontage_to_street",
+				"subject_ref": "frontage:parcel_04_frontage_01",
+				"object_ref": "placement_0001",
+				"required": true,
+				"properties": {
+					"parcel_ref": "parcel:parcel_04",
+					"width_cells": 10
+				},
+				"validation_state": "requires_revalidation"
+			},
+			{
+				"relationship_id": "access_parcel_04",
+				"kind": "service_clearance",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "frontage:parcel_04_frontage_00",
+				"required": true,
+				"properties": {
+					"access_region": "frontage_span",
+					"clearance_depth_cells": 1
 				},
 				"validation_state": "requires_revalidation"
 			}
@@ -735,7 +1288,7 @@
 			{
 				"kind": "template",
 				"id": "building_frontage/industrial_shell_t",
-				"revision": "coherent_parcel_grammar_v1",
+				"revision": "coherent_parcel_grammar_v2",
 				"required_by": [
 					"parcel_parcel_00"
 				]
@@ -743,7 +1296,7 @@
 			{
 				"kind": "template",
 				"id": "district_buffer",
-				"revision": "coherent_parcel_grammar_v1",
+				"revision": "coherent_parcel_grammar_v2",
 				"required_by": [
 					"parcel_parcel_02"
 				]
@@ -751,7 +1304,7 @@
 			{
 				"kind": "template",
 				"id": "equipment_compound",
-				"revision": "coherent_parcel_grammar_v1",
+				"revision": "coherent_parcel_grammar_v2",
 				"required_by": [
 					"parcel_parcel_04"
 				]
@@ -759,7 +1312,7 @@
 			{
 				"kind": "template",
 				"id": "service_alley",
-				"revision": "coherent_parcel_grammar_v1",
+				"revision": "coherent_parcel_grammar_v2",
 				"required_by": [
 					"parcel_parcel_01"
 				]
@@ -767,7 +1320,7 @@
 			{
 				"kind": "template",
 				"id": "staging_pad",
-				"revision": "coherent_parcel_grammar_v1",
+				"revision": "coherent_parcel_grammar_v2",
 				"required_by": [
 					"parcel_parcel_03"
 				]

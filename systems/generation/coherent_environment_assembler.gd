@@ -7,6 +7,7 @@ const ENVIRONMENTS: Array[StringName] = [&"industrial_district", &"commercial_st
 const MAX_TEMPLATE_ATTEMPTS := 6
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
+const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -24,7 +25,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	if not _build_road_plot(layout, plan, catalog, data.map_size, rng):
 		return layout
 	_decorate_road_network(layout, plan, catalog, data.map_size, rng)
-	var parcels := _derive_parcels(plan, data.map_size, rng)
+	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng)
 	var populated := 0
 	for parcel in parcels:
 		var candidates := _template_candidates(environment_id, populated, parcel, rng)
@@ -42,6 +43,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			layout = candidate
 			parcel.template = template_id
 			parcel.rotation = rotation
+			parcel.occupants = _occupant_records(template_id, batch)
 			plan.decisions.append("%s -> %s r%d" % [parcel.id, template_id, rotation])
 			accepted = true
 			populated += 1
@@ -50,6 +52,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			plan.fallback_used = true
 			parcel.template = &"district_buffer"
 			parcel.rotation = 0
+			parcel.occupants = []
 			plan.decisions.append("%s -> district_buffer fallback" % parcel.id)
 		plan.parcels.append(parcel)
 	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
@@ -170,11 +173,12 @@ static func _road_network_connected(layout: EnvironmentModuleLayout, catalog: Di
 			frontier.append(neighbor)
 	return reached.size() == roads.size()
 
-static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng: RandomNumberGenerator) -> Array[Dictionary]:
+static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var road_lookup: Dictionary = {}
 	for road_cell in plan.road_cells:
 		road_lookup[road_cell] = true
+	var road_cell_owners := _road_cell_owners(layout, catalog)
 	var columns := floori(float(map_size.x) / float(MACRO_SIZE))
 	var rows := floori(float(map_size.y) / float(MACRO_SIZE))
 	var consumed: Dictionary = {}
@@ -213,11 +217,15 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 		for dz in 2:
 			for dx in 2:
 				consumed[chosen + Vector2i(dx, dz)] = true
+		var bounds := Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2))
+		var frontages := ParcelContract.frontage_spans(bounds, road_cell_owners, "parcel_%02d" % index)
 		result.append({
 			"id": StringName("parcel_%02d" % index),
-			"bounds": Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2)),
-			"road_edges": _road_edges_for_macro_rect(chosen, Vector2i(2, 2), road_lookup),
-			"template": &"unassigned", "rotation": 0, "boundary": _touches_map_boundary(Rect2i(chosen * MACRO_SIZE, Vector2i(MACRO_SIZE * 2, MACRO_SIZE * 2)), map_size),
+			"bounds": bounds,
+			"road_edges": ParcelContract.directions_for_spans(frontages),
+			"frontage_spans": frontages,
+			"occupants": [],
+			"template": &"unassigned", "rotation": 0, "boundary": _touches_map_boundary(bounds, map_size),
 		})
 		index += 1
 		large_count += 1
@@ -226,16 +234,47 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, map_size: Vector2i, rng
 			var macro := Vector2i(x, z)
 			if road_lookup.has(macro) or consumed.has(macro):
 				continue
+			var bounds := Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE))
+			var frontages := ParcelContract.frontage_spans(bounds, road_cell_owners, "parcel_%02d" % index)
 			result.append({
 				"id": StringName("parcel_%02d" % index),
-				"bounds": Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE)),
-				"road_edges": _road_edges_for_macro_rect(macro, Vector2i.ONE, road_lookup),
+				"bounds": bounds,
+				"road_edges": ParcelContract.directions_for_spans(frontages),
+				"frontage_spans": frontages,
+				"occupants": [],
 				"template": &"unassigned",
 				"rotation": 0,
 				"boundary": _touches_map_boundary(Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE)), map_size),
 			})
 			index += 1
 	return result
+
+static func _road_cell_owners(layout: EnvironmentModuleLayout, catalog: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	for placement in layout.placements:
+		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
+		if definition == null or definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]:
+			continue
+		for cell in layout.world_cells(definition, placement):
+			result[cell] = placement.signature()
+	return result
+
+static func _occupant_records(template_id: StringName, placements: Array[EnvironmentModulePlacement]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for placement in placements:
+		result.append({
+			"placement_signature": placement.signature(),
+			"required": _occupant_is_required(template_id, placement.component_id),
+		})
+	result.sort_custom(func(a, b): return str(a.placement_signature) < str(b.placement_signature))
+	return result
+
+static func _occupant_is_required(template_id: StringName, component_id: StringName) -> bool:
+	if template_id == &"equipment_compound":
+		return component_id in [&"paved_courtyard", &"factory_pipe_receiver_unit"]
+	if String(template_id).begins_with("building_frontage/"):
+		return component_id == StringName(String(template_id).trim_prefix("building_frontage/")) or component_id == &"paved_courtyard"
+	return component_id not in [&"street_light", &"service_dumpster", &"cargo_container", &"yard_fence", &"construction_barrier_vault"]
 
 static func _touches_map_boundary(bounds: Rect2i, map_size: Vector2i) -> bool:
 	return bounds.position.x == 0 or bounds.position.y == 0 or bounds.end.x == map_size.x or bounds.end.y == map_size.y

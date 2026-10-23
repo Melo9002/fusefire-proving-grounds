@@ -6,13 +6,14 @@ extends RefCounted
 
 const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
+const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 
 const SCHEMA_VERSION := 1
 const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
 const ORIGINS := ["authored", "generated", "edited"]
 const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
-const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v1"
+const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v2"
 
 static var _asset_ids_by_path: Dictionary = {}
 
@@ -118,6 +119,7 @@ func editable_copy() -> BattlefieldLayoutDocument:
 
 func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 	var old_records: Array = spatial_layout.get("placements", []).duplicate(true)
+	var old_parcels: Array = spatial_layout.get("parcels", []).duplicate(true)
 	var old_relationships := relationships.duplicate(true)
 	var id_by_signature: Dictionary = {}
 	var maximum_id := -1
@@ -140,6 +142,10 @@ func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 			maximum_id += 1
 			record.placement_id = "placement_%04d" % maximum_id
 			changed = true
+	spatial_layout["parcels"] = old_parcels
+	if changed:
+		for parcel in spatial_layout.parcels:
+			if parcel is Dictionary: parcel["validation_state"] = "requires_revalidation"
 	# Rebuild assembly relationships after stable IDs have been restored.
 	relationships.clear()
 	for record in spatial_layout.placements:
@@ -174,12 +180,28 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 	var plan := EnvironmentLayoutPlan.new(StringName(environment_id), int(provenance.get("generation_seed", 0)))
 	plan.topology = StringName(provenance.get("generation_config", {}).get("topology", "edited"))
 	plan.macro_size = int(provenance.get("generation_config", {}).get("macro_size", 10))
-	for relationship in relationships:
-		if relationship.get("kind", "") != "parcel_template": continue
-		var properties: Dictionary = relationship.get("properties", {})
-		var bounds = properties.get("bounds", [])
-		if not bounds is Array or bounds.size() != 4: continue
-		plan.parcels.append({"id": StringName(properties.get("parcel_id", "")), "bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])), "template": StringName(str(relationship.get("object_ref", "")).trim_prefix("template:")), "rotation": int(properties.get("rotation", 0)), "relationship_validation": relationship.get("validation_state", "validated")})
+	if spatial_layout.get("parcels", []) is Array and not spatial_layout.get("parcels", []).is_empty():
+		for record in spatial_layout.parcels:
+			if not record is Dictionary: continue
+			var bounds = record.get("bounds", [])
+			if not bounds is Array or bounds.size() != 4: continue
+			plan.parcels.append({
+				"id": StringName(record.get("parcel_id", "")),
+				"bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])),
+				"template": StringName(record.get("template_id", "empty")),
+				"rotation": int(record.get("rotation", 0)),
+				"frontage_spans": record.get("frontage_spans", []).duplicate(true),
+				"road_edges": ParcelContract.directions_for_spans(record.get("frontage_spans", [])),
+				"occupants": record.get("occupants", []).duplicate(true),
+				"relationship_validation": record.get("validation_state", "validated"),
+			})
+	else:
+		for relationship in relationships:
+			if relationship.get("kind", "") != "parcel_template": continue
+			var properties: Dictionary = relationship.get("properties", {})
+			var bounds = properties.get("bounds", [])
+			if not bounds is Array or bounds.size() != 4: continue
+			plan.parcels.append({"id": StringName(properties.get("parcel_id", "")), "bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])), "template": StringName(str(relationship.get("object_ref", "")).trim_prefix("template:")), "rotation": int(properties.get("rotation", 0)), "relationship_validation": relationship.get("validation_state", "validated")})
 	var catalog := IndustrialModuleCatalog.create()
 	for record in spatial_layout.get("placements", []):
 		var definition: EnvironmentModuleDefinition = catalog.get(StringName(record.get("component_id", "")))
@@ -217,6 +239,7 @@ func validate(catalog := {}) -> Array[Dictionary]:
 	if spatial_layout.get("grid_convention", "") != GRID_CONVENTION: _fail(failures, "UNSUPPORTED_GRID_CONVENTION", "spatial_layout.grid_convention", "only %s is supported" % GRID_CONVENTION)
 	if not is_equal_approx(float(spatial_layout.get("cell_size", 0.0)), 1.0): _fail(failures, "UNSUPPORTED_GRID_SCALE", "spatial_layout.cell_size", "Task 4.1 supports the established one-unit grid")
 	_validate_placements(failures, catalog, map_size)
+	_validate_parcels(failures, catalog, map_size)
 	_validate_relationships(failures)
 	_validate_dependencies(failures)
 	_validate_mission(failures, map_size)
@@ -246,19 +269,83 @@ func _capture_spatial_layout(source_placements: Array, map_size: Vector2i) -> vo
 
 func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 	if plan == null: return
+	var placement_ids: Dictionary = {}
+	for placement in spatial_layout.get("placements", []):
+		if placement is Dictionary: placement_ids[_encoded_placement_signature(placement)] = str(placement.get("placement_id", ""))
+	var encoded_parcels: Array[Dictionary] = []
 	var parcels: Array = plan.parcels.duplicate()
 	parcels.sort_custom(func(a, b): return String(a.get("id", "")) < String(b.get("id", "")))
 	for parcel in parcels:
+		var parcel_id := String(parcel.get("id", ""))
 		var bounds: Rect2i = parcel.get("bounds", Rect2i())
 		var template := String(parcel.get("template", "empty"))
+		var occupants: Array[Dictionary] = []
+		for occupant in parcel.get("occupants", []):
+			var placement_ref := str(placement_ids.get(str(occupant.get("placement_signature", "")), ""))
+			occupants.append({"placement_ref": placement_ref, "required": bool(occupant.get("required", true))})
+		occupants.sort_custom(func(a, b): return str(a.placement_ref) < str(b.placement_ref))
+		var frontages: Array[Dictionary] = []
+		var parcel_road_refs: Array[String] = []
+		for source_span in parcel.get("frontage_spans", []):
+			var span: Dictionary = source_span.duplicate(true)
+			var resolved_roads: Array[String] = []
+			for signature in source_span.get("road_refs", []):
+				var road_ref := str(placement_ids.get(str(signature), ""))
+				if not road_ref.is_empty() and road_ref not in resolved_roads: resolved_roads.append(road_ref)
+			resolved_roads.sort()
+			span["road_refs"] = resolved_roads
+			frontages.append(span)
+			for road_ref in resolved_roads:
+				if road_ref not in parcel_road_refs: parcel_road_refs.append(road_ref)
+		parcel_road_refs.sort()
+		encoded_parcels.append({
+			"parcel_id": parcel_id,
+			"bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
+			"template_id": template,
+			"rotation": int(parcel.get("rotation", 0)),
+			"occupants": occupants,
+			"road_refs": parcel_road_refs,
+			"frontage_spans": frontages,
+			"validation_state": "validated",
+		})
 		relationships.append({
-			"relationship_id": "parcel_%s" % String(parcel.get("id", "")),
+			"relationship_id": "parcel_%s" % parcel_id,
 			"kind": "parcel_template",
-			"subject_ref": "document:%s" % document_id,
+			"subject_ref": "parcel:%s" % parcel_id,
 			"object_ref": "template:%s" % template,
 			"required": true,
-			"properties": {"parcel_id": String(parcel.get("id", "")), "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y], "rotation": int(parcel.get("rotation", 0))},
+			"properties": {"parcel_id": parcel_id, "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y], "rotation": int(parcel.get("rotation", 0))},
 		})
+		for occupant in occupants:
+			relationships.append({
+				"relationship_id": "occupant_%s_%s" % [parcel_id, occupant.placement_ref],
+				"kind": ParcelContract.REQUIRED_OCCUPANT,
+				"subject_ref": "parcel:%s" % parcel_id,
+				"object_ref": occupant.placement_ref,
+				"required": occupant.required,
+			})
+		for span in frontages:
+			var frontage_ref := "frontage:%s" % span.frontage_id
+			for road_ref in span.road_refs:
+				relationships.append({
+					"relationship_id": "street_%s_%s" % [span.frontage_id, road_ref],
+					"kind": ParcelContract.FRONTAGE_TO_STREET,
+					"subject_ref": frontage_ref,
+					"object_ref": road_ref,
+					"required": true,
+					"properties": {"parcel_ref": "parcel:%s" % parcel_id, "width_cells": span.width_cells},
+				})
+		var access_kind: String = ParcelContract.relationship_kind_for_template(template)
+		if not access_kind.is_empty() and not frontages.is_empty():
+			relationships.append({
+				"relationship_id": "access_%s" % parcel_id,
+				"kind": access_kind,
+				"subject_ref": "parcel:%s" % parcel_id,
+				"object_ref": "frontage:%s" % frontages[0].frontage_id,
+				"required": true,
+				"properties": {"access_region": "frontage_span", "clearance_depth_cells": frontages[0].clearance_depth_cells},
+			})
+	spatial_layout["parcels"] = encoded_parcels
 
 func _capture_dependencies() -> void:
 	var by_key: Dictionary = {}
@@ -350,6 +437,106 @@ func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_
 		var placement := EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), rotation, int(record.get("variation", 0)), int(record.get("elevation", 0)))
 		if not layout.try_add(definition, placement, map_size): _fail(failures, "INVALID_PLACEMENT", field, layout.errors.back(), placement_id)
 
+func _validate_parcels(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
+	var parcels = spatial_layout.get("parcels", [])
+	if not parcels is Array:
+		_fail(failures, "MALFORMED_PARCELS", "spatial_layout.parcels", "parcels must be an array")
+		return
+	var placements: Dictionary = {}
+	for record in spatial_layout.get("placements", []):
+		if record is Dictionary: placements[str(record.get("placement_id", ""))] = record
+	var parcel_ids: Dictionary = {}
+	var frontage_ids: Dictionary = {}
+	var owner_by_placement: Dictionary = {}
+	for index in parcels.size():
+		var parcel = parcels[index]
+		var field := "spatial_layout.parcels[%d]" % index
+		if not parcel is Dictionary:
+			_fail(failures, "MALFORMED_PARCEL", field, "parcel must be an object")
+			continue
+		var parcel_id := str(parcel.get("parcel_id", ""))
+		if parcel_id.is_empty() or parcel_ids.has(parcel_id):
+			_fail(failures, "INVALID_PARCEL_ID", field + ".parcel_id", "parcel identity is missing or duplicated", parcel_id)
+		parcel_ids[parcel_id] = true
+		var encoded_bounds = parcel.get("bounds", [])
+		if not encoded_bounds is Array or encoded_bounds.size() != 4:
+			_fail(failures, "MALFORMED_PARCEL_BOUNDS", field + ".bounds", "bounds must contain x, z, width, and depth", parcel_id)
+			continue
+		var bounds := Rect2i(int(encoded_bounds[0]), int(encoded_bounds[1]), int(encoded_bounds[2]), int(encoded_bounds[3]))
+		if bounds.size.x <= 0 or bounds.size.y <= 0 or bounds.position.x < 0 or bounds.position.y < 0 or bounds.end.x > map_size.x or bounds.end.y > map_size.y:
+			_fail(failures, "INVALID_PARCEL_BOUNDS", field + ".bounds", "parcel bounds are empty or outside the map", parcel_id)
+		for occupant in parcel.get("occupants", []):
+			if not occupant is Dictionary: continue
+			var placement_ref := str(occupant.get("placement_ref", ""))
+			if not placements.has(placement_ref):
+				_fail(failures, "MISSING_PARCEL_OCCUPANT", field + ".occupants", "owned placement '%s' does not exist" % placement_ref, parcel_id)
+			elif owner_by_placement.has(placement_ref):
+				_fail(failures, "AMBIGUOUS_PARCEL_OWNERSHIP", field + ".occupants", "placement '%s' is already owned by parcel '%s'" % [placement_ref, owner_by_placement[placement_ref]], placement_ref)
+			else:
+				owner_by_placement[placement_ref] = parcel_id
+		for frontage in parcel.get("frontage_spans", []):
+			_validate_frontage_span(failures, frontage, parcel_id, bounds, placements, catalog, frontage_ids, field)
+
+func _validate_frontage_span(failures: Array[Dictionary], frontage, parcel_id: String, bounds: Rect2i, placements: Dictionary, catalog: Dictionary, frontage_ids: Dictionary, field: String) -> void:
+	if not frontage is Dictionary:
+		_fail(failures, "MALFORMED_FRONTAGE", field + ".frontage_spans", "frontage must be an object", parcel_id)
+		return
+	var frontage_id := str(frontage.get("frontage_id", ""))
+	if frontage_id.is_empty() or frontage_ids.has(frontage_id):
+		_fail(failures, "INVALID_FRONTAGE_ID", field + ".frontage_spans.frontage_id", "frontage identity is missing or duplicated", frontage_id)
+	frontage_ids[frontage_id] = true
+	var direction_data = frontage.get("outward_direction", [])
+	var start_data = frontage.get("start", [])
+	var end_data = frontage.get("end", [])
+	if not direction_data is Array or direction_data.size() != 2 or not start_data is Array or start_data.size() != 2 or not end_data is Array or end_data.size() != 2:
+		_fail(failures, "MALFORMED_FRONTAGE_GEOMETRY", field + ".frontage_spans", "direction and half-open endpoints must contain two coordinates", frontage_id)
+		return
+	var direction := Vector2i(int(direction_data[0]), int(direction_data[1]))
+	var start := Vector2i(int(start_data[0]), int(start_data[1]))
+	var finish := Vector2i(int(end_data[0]), int(end_data[1]))
+	if direction not in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT] or not _span_is_on_boundary(bounds, direction, start, finish):
+		_fail(failures, "INVALID_FRONTAGE_GEOMETRY", field + ".frontage_spans", "frontage interval is not a positive span on the claimed parcel boundary", frontage_id)
+		return
+	var width := absi(finish.x - start.x) + absi(finish.y - start.y)
+	if int(frontage.get("width_cells", -1)) != width:
+		_fail(failures, "INVALID_FRONTAGE_WIDTH", field + ".frontage_spans.width_cells", "stored width does not match the half-open interval", frontage_id)
+	var road_refs = frontage.get("road_refs", [])
+	if not road_refs is Array or road_refs.is_empty():
+		_fail(failures, "MISSING_FRONTAGE_ROAD", field + ".frontage_spans.road_refs", "frontage requires at least one adjacent road", frontage_id)
+		return
+	var road_cells: Dictionary = {}
+	for road_ref in road_refs:
+		var record: Dictionary = placements.get(str(road_ref), {})
+		var definition: EnvironmentModuleDefinition = catalog.get(StringName(record.get("component_id", "")))
+		if definition == null or definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]:
+			_fail(failures, "INVALID_FRONTAGE_ROAD", field + ".frontage_spans.road_refs", "'%s' is not a road placement" % road_ref, frontage_id)
+			continue
+		var origin = record.get("origin", [])
+		if origin is Array and origin.size() == 2:
+			var placement := EnvironmentModulePlacement.new(definition.component_id, Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0)))
+			for cell in definition.rotated_cells(definition.footprint_cells, placement.rotation): road_cells[placement.origin + cell] = true
+	for adjacent in _frontage_adjacent_cells(start, finish, direction):
+		if not road_cells.has(adjacent):
+			_fail(failures, "FRONTAGE_ROAD_GAP", field + ".frontage_spans", "frontage cell beside %s has no referenced road geometry" % adjacent, frontage_id)
+			break
+
+static func _span_is_on_boundary(bounds: Rect2i, direction: Vector2i, start: Vector2i, finish: Vector2i) -> bool:
+	if direction == Vector2i.UP or direction == Vector2i.DOWN:
+		var boundary_y := bounds.position.y if direction == Vector2i.UP else bounds.end.y
+		return start.y == boundary_y and finish.y == boundary_y and start.x >= bounds.position.x and finish.x <= bounds.end.x and finish.x > start.x
+	var boundary_x := bounds.position.x if direction == Vector2i.LEFT else bounds.end.x
+	return start.x == boundary_x and finish.x == boundary_x and start.y >= bounds.position.y and finish.y <= bounds.end.y and finish.y > start.y
+
+static func _frontage_adjacent_cells(start: Vector2i, finish: Vector2i, direction: Vector2i) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if direction.y != 0:
+		var z := start.y - 1 if direction == Vector2i.UP else start.y
+		for x in range(start.x, finish.x): result.append(Vector2i(x, z))
+	else:
+		var x := start.x - 1 if direction == Vector2i.LEFT else start.x
+		for z in range(start.y, finish.y): result.append(Vector2i(x, z))
+	return result
+
 func _validate_relationships(failures: Array[Dictionary]) -> void:
 	var references: Dictionary = {"document:%s" % document_id: true}
 	for assembly_id in InitialEnvironmentAssemblyLibrary.records().keys(): references["assembly:%s" % String(assembly_id)] = true
@@ -357,6 +544,12 @@ func _validate_relationships(failures: Array[Dictionary]) -> void:
 	for placement in spatial_layout.get("placements", []):
 		if placement is Dictionary:
 			references[str(placement.get("placement_id", ""))] = true
+	for parcel in spatial_layout.get("parcels", []):
+		if not parcel is Dictionary: continue
+		references["parcel:%s" % parcel.get("parcel_id", "")] = true
+		for frontage in parcel.get("frontage_spans", []):
+			if frontage is Dictionary: references["frontage:%s" % frontage.get("frontage_id", "")] = true
+	var relationship_ids: Dictionary = {}
 	for relationship in relationships:
 		if not relationship is Dictionary:
 			_fail(failures, "MALFORMED_RELATIONSHIP", "relationships", "relationship must be an object")
@@ -364,11 +557,21 @@ func _validate_relationships(failures: Array[Dictionary]) -> void:
 		var relation_id := str(relationship.get("relationship_id", ""))
 		var subject := str(relationship.get("subject_ref", ""))
 		var object := str(relationship.get("object_ref", ""))
-		if relation_id.is_empty(): _fail(failures, "MISSING_RELATIONSHIP_ID", "relationships", "relationship identity is required")
+		var kind := str(relationship.get("kind", ""))
+		if relation_id.is_empty() or relationship_ids.has(relation_id): _fail(failures, "MISSING_RELATIONSHIP_ID", "relationships", "relationship identity is missing or duplicated")
+		relationship_ids[relation_id] = true
 		if not references.has(subject): _fail(failures, "MISSING_RELATIONSHIP_REFERENCE", "relationships.%s.subject_ref" % relation_id, "subject '%s' does not exist" % subject, relation_id)
 		if object.begins_with("template:"):
 			if object.trim_prefix("template:").is_empty(): _fail(failures, "MISSING_RELATIONSHIP_REFERENCE", "relationships.%s.object_ref" % relation_id, "template reference is empty", relation_id)
 		elif not references.has(object): _fail(failures, "MISSING_RELATIONSHIP_REFERENCE", "relationships.%s.object_ref" % relation_id, "object '%s' does not exist" % object, relation_id)
+		if kind in ParcelContract.FUNCTIONAL_RELATIONSHIPS:
+			if not relationship.has("required"): _fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s.required" % relation_id, "functional relationships must state whether they are required", relation_id)
+			if kind == ParcelContract.FRONTAGE_TO_STREET and (not subject.begins_with("frontage:") or object.begins_with("frontage:")):
+				_fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s" % relation_id, "frontage-to-street must connect a frontage to a road placement", relation_id)
+			elif kind == ParcelContract.REQUIRED_OCCUPANT and not subject.begins_with("parcel:"):
+				_fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s" % relation_id, "occupant relationships must be owned by a parcel", relation_id)
+			elif kind in [ParcelContract.PEDESTRIAN_ACCESS, ParcelContract.LOADING_ACCESS, ParcelContract.SERVICE_CLEARANCE] and (not subject.begins_with("parcel:") or not object.begins_with("frontage:")):
+				_fail(failures, "MALFORMED_SPATIAL_RELATIONSHIP", "relationships.%s" % relation_id, "functional access must connect a parcel to a frontage region", relation_id)
 
 func _validate_dependencies(failures: Array[Dictionary]) -> void:
 	var by_key: Dictionary = {}
