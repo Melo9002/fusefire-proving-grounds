@@ -57,13 +57,9 @@ func _test_edit_revalidation(generated: MapData, source: BattlefieldLayoutDocume
 	var preserved_ids := _placement_ids(copied)
 	check(unchanged_ids.all(func(value): return value in preserved_ids), "unchanged placements retain stable identities across edit")
 	var result := BattlefieldLayoutDocumentCompiler.compile(copied)
-	check(result.ok, "edited document deterministically recompiles after deployment obstruction: %s" % _describe(result.errors))
-	check(not result.repairs.is_empty() and result.repairs.any(func(value): return value.from == blocked_spawn), "blocked deployment is relocated rather than silently reset to flat defaults")
-	var remaining_deployments: Array[Vector3i] = []
-	for zone in result.data.get_zones_by_kind(MapZoneData.Kind.DEPLOYMENT): remaining_deployments.append_array(zone.cells)
-	check(blocked_spawn not in remaining_deployments, "compiled deployments do not retain an illegal obstructed cell")
+	check(not result.ok and result.errors.any(func(value): return value.code == "RESERVED_REGION_BLOCKED"), "edited document explicitly rejects an obstruction of preserved deployment space")
 	var repeated := BattlefieldLayoutDocumentCompiler.compile(copied)
-	check(repeated.ok and _zone_signature(repeated.data) == _zone_signature(result.data), "equivalent edited inputs deterministically reproduce repaired deployments")
+	check(not repeated.ok and JSON.stringify(repeated.errors) == JSON.stringify(result.errors), "equivalent invalid edits deterministically reproduce reservation failures")
 
 func _test_failed_repair() -> void:
 	var data := FlatMapGenerator.generate(6, 6, 1.0, 9, 2)

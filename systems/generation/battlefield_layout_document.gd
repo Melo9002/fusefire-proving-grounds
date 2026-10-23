@@ -7,13 +7,14 @@ extends RefCounted
 const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
 const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
+const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 
 const SCHEMA_VERSION := 1
 const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
 const ORIGINS := ["authored", "generated", "edited"]
 const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
-const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v2"
+const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v3"
 
 static var _asset_ids_by_path: Dictionary = {}
 
@@ -120,6 +121,7 @@ func editable_copy() -> BattlefieldLayoutDocument:
 func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 	var old_records: Array = spatial_layout.get("placements", []).duplicate(true)
 	var old_parcels: Array = spatial_layout.get("parcels", []).duplicate(true)
+	var old_reservations: Array = spatial_layout.get("reservations", []).duplicate(true)
 	var old_relationships := relationships.duplicate(true)
 	var id_by_signature: Dictionary = {}
 	var maximum_id := -1
@@ -143,9 +145,12 @@ func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 			record.placement_id = "placement_%04d" % maximum_id
 			changed = true
 	spatial_layout["parcels"] = old_parcels
+	spatial_layout["reservations"] = old_reservations
 	if changed:
 		for parcel in spatial_layout.parcels:
 			if parcel is Dictionary: parcel["validation_state"] = "requires_revalidation"
+		for reservation in spatial_layout.reservations:
+			if reservation is Dictionary: reservation["validation_state"] = "requires_revalidation"
 	# Rebuild assembly relationships after stable IDs have been restored.
 	relationships.clear()
 	for record in spatial_layout.placements:
@@ -165,6 +170,8 @@ func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 func replace_mission_from_map(data: MapData, source := "document_revalidated") -> void:
 	_capture_mission(data, source)
 	mission_context["validation_state"] = "validated"
+	for reservation in spatial_layout.get("reservations", []):
+		if reservation is Dictionary: reservation["validation_state"] = "validated"
 
 func restore_mission_to_map(data: MapData) -> void:
 	if mission_context.get("status", "") != "preserved": return
@@ -202,6 +209,7 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 			var bounds = properties.get("bounds", [])
 			if not bounds is Array or bounds.size() != 4: continue
 			plan.parcels.append({"id": StringName(properties.get("parcel_id", "")), "bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])), "template": StringName(str(relationship.get("object_ref", "")).trim_prefix("template:")), "rotation": int(properties.get("rotation", 0)), "relationship_validation": relationship.get("validation_state", "validated")})
+	plan.reservations.assign(ReservationLedger.decoded_records(spatial_layout.get("reservations", [])))
 	var catalog := IndustrialModuleCatalog.create()
 	for record in spatial_layout.get("placements", []):
 		var definition: EnvironmentModuleDefinition = catalog.get(StringName(record.get("component_id", "")))
@@ -240,6 +248,8 @@ func validate(catalog := {}) -> Array[Dictionary]:
 	if not is_equal_approx(float(spatial_layout.get("cell_size", 0.0)), 1.0): _fail(failures, "UNSUPPORTED_GRID_SCALE", "spatial_layout.cell_size", "Task 4.1 supports the established one-unit grid")
 	_validate_placements(failures, catalog, map_size)
 	_validate_parcels(failures, catalog, map_size)
+	_validate_reservations(failures, map_size)
+	_validate_reservation_placement_conflicts(failures, catalog, map_size)
 	_validate_relationships(failures)
 	_validate_dependencies(failures)
 	_validate_mission(failures, map_size)
@@ -346,6 +356,7 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 				"properties": {"access_region": "frontage_span", "clearance_depth_cells": frontages[0].clearance_depth_cells},
 			})
 	spatial_layout["parcels"] = encoded_parcels
+	spatial_layout["reservations"] = ReservationLedger.encoded_records(plan.reservations)
 
 func _capture_dependencies() -> void:
 	var by_key: Dictionary = {}
@@ -519,6 +530,70 @@ func _validate_frontage_span(failures: Array[Dictionary], frontage, parcel_id: S
 		if not road_cells.has(adjacent):
 			_fail(failures, "FRONTAGE_ROAD_GAP", field + ".frontage_spans", "frontage cell beside %s has no referenced road geometry" % adjacent, frontage_id)
 			break
+
+func _validate_reservations(failures: Array[Dictionary], map_size: Vector2i) -> void:
+	var encoded = spatial_layout.get("reservations", [])
+	if not encoded is Array:
+		_fail(failures, "MALFORMED_RESERVATIONS", "spatial_layout.reservations", "reservations must be an array")
+		return
+	var parcel_refs: Dictionary = {}
+	var frontage_refs: Dictionary = {}
+	for parcel in spatial_layout.get("parcels", []):
+		if not parcel is Dictionary: continue
+		parcel_refs["parcel:%s" % parcel.get("parcel_id", "")] = true
+		for frontage in parcel.get("frontage_spans", []):
+			if frontage is Dictionary: frontage_refs["frontage:%s" % frontage.get("frontage_id", "")] = true
+	var zone_refs: Dictionary = {}
+	for zone in mission_context.get("zones", []):
+		if zone is Dictionary: zone_refs["zone:%s" % zone.get("zone_id", "")] = true
+	var seen: Dictionary = {}
+	var ledger := ReservationLedger.new()
+	for index in encoded.size():
+		var record = encoded[index]
+		var field := "spatial_layout.reservations[%d]" % index
+		if not record is Dictionary:
+			_fail(failures, "MALFORMED_RESERVATION", field, "reservation must be an object")
+			continue
+		var reservation_id := str(record.get("reservation_id", ""))
+		var owner_ref := str(record.get("owner_ref", ""))
+		var role := str(record.get("role", ""))
+		if reservation_id.is_empty() or seen.has(reservation_id): _fail(failures, "INVALID_RESERVATION_ID", field, "reservation identity is missing or duplicated", reservation_id)
+		seen[reservation_id] = true
+		if role not in ReservationLedger.ROLES: _fail(failures, "UNSUPPORTED_RESERVATION_ROLE", field + ".role", "reservation role '%s' is unsupported" % role, reservation_id)
+		if owner_ref.begins_with("parcel:") and not parcel_refs.has(owner_ref): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "parcel owner '%s' does not exist" % owner_ref, reservation_id)
+		elif owner_ref.begins_with("zone:") and not zone_refs.has(owner_ref): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "mission owner '%s' does not exist" % owner_ref, reservation_id)
+		elif not owner_ref.begins_with("parcel:") and not owner_ref.begins_with("zone:"): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "reservation owner must reference a parcel or mission zone", reservation_id)
+		var source_ref := str(record.get("source_ref", ""))
+		if source_ref.begins_with("frontage:") and not frontage_refs.has(source_ref): _fail(failures, "MISSING_RESERVATION_SOURCE", field + ".source_ref", "frontage source '%s' does not exist" % source_ref, reservation_id)
+		var cells: Array[Vector2i] = []
+		for encoded_cell in record.get("cells", []):
+			if not encoded_cell is Array or encoded_cell.size() != 2:
+				_fail(failures, "MALFORMED_RESERVATION_CELL", field + ".cells", "reservation cell must contain x and z", reservation_id)
+				continue
+			var cell := Vector2i(int(encoded_cell[0]), int(encoded_cell[1]))
+			cells.append(cell)
+			if cell.x < 0 or cell.y < 0 or cell.x >= map_size.x or cell.y >= map_size.y: _fail(failures, "RESERVATION_OUT_OF_BOUNDS", field + ".cells", "cell %s is outside the map" % cell, reservation_id)
+		var runtime: Dictionary = record.duplicate(true)
+		runtime["cells"] = cells
+		if not ledger.try_reserve(runtime):
+			var failure: Dictionary = ledger.failures.back()
+			_fail(failures, str(failure.code), field, str(failure.message), reservation_id)
+
+func _validate_reservation_placement_conflicts(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
+	var ledger := ReservationLedger.new()
+	for record in ReservationLedger.decoded_records(spatial_layout.get("reservations", [])):
+		if not ledger.try_reserve(record): return
+	var transform_helper := EnvironmentModuleLayout.new(&"reservation_validation", 0)
+	for record in spatial_layout.get("placements", []):
+		if not record is Dictionary: continue
+		var component_id := StringName(record.get("component_id", ""))
+		var definition: EnvironmentModuleDefinition = catalog.get(component_id)
+		var origin = record.get("origin", [])
+		if definition == null or not origin is Array or origin.size() != 2: continue
+		var placement := EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0)))
+		var allowed := ledger.placement_allowed(definition, placement, transform_helper)
+		if not allowed.ok:
+			_fail(failures, str(allowed.code), "spatial_layout.placements.%s" % record.get("placement_id", ""), str(allowed.message), str(allowed.reservation_id))
 
 static func _span_is_on_boundary(bounds: Rect2i, direction: Vector2i, start: Vector2i, finish: Vector2i) -> bool:
 	if direction == Vector2i.UP or direction == Vector2i.DOWN:

@@ -3,6 +3,8 @@ extends RefCounted
 ## Small, serializable vocabulary for parcel ownership and functional access.
 ## Frontage spans use half-open grid-line endpoints in world X/Z coordinates.
 
+const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
+
 const FRONTAGE_TO_STREET := "frontage_to_street"
 const PEDESTRIAN_ACCESS := "pedestrian_access"
 const LOADING_ACCESS := "loading_access"
@@ -68,6 +70,13 @@ static func relationship_kind_for_template(template_id: String) -> String:
 		return LOADING_ACCESS
 	if template_id == "equipment_compound":
 		return SERVICE_CLEARANCE
+	return ""
+
+static func reservation_role_for_template(template_id: String) -> String:
+	if template_id.begins_with("building_frontage/") or template_id in ["public_forecourt", "service_alley"]:
+		return ReservationLedger.PEDESTRIAN_ACCESS
+	if template_id in ["loading_bay", "industrial_yard_block", "staging_pad", "equipment_compound"]:
+		return ReservationLedger.LOADING_SERVICE_APPROACH
 	return ""
 
 static func _adjacent_cell(bounds: Rect2i, direction: Vector2i, offset: int) -> Vector2i:

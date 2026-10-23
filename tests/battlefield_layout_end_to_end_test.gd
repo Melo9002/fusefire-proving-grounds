@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var configurations: Array[Dictionary] = [
-		{"environment": &"industrial_district", "seed": 2208, "edit": "deployment_obstruction"},
+		{"environment": &"industrial_district", "seed": 2208, "edit": "visual_variation"},
 		{"environment": &"mixed_service", "seed": 11027, "edit": "visual_variation"},
 		{"environment": &"commercial_street", "seed": 7319, "edit": "visual_variation"},
 	]
@@ -114,16 +114,24 @@ func _apply_representative_edit(editor, kind: String) -> Dictionary:
 				editor._accept_custom_layout(candidate)
 				return {"ok": true, "blocked_spawn": spawn, "changed_signature": barrier.signature()}
 		return {"ok": false, "error": "no deployment cell accepted the authored barrier"}
+	var owned_refs: Dictionary = {}
+	for parcel in editor.custom_document.spatial_layout.get("parcels", []):
+		for occupant in parcel.get("occupants", []): owned_refs[str(occupant.get("placement_ref", ""))] = true
 	var target_index := -1
 	for preferred in [&"street_light", &"service_dumpster", &"cargo_container", &"construction_barrier_vault"]:
 		for index in editor.custom_layout.placements.size():
-			if editor.custom_layout.placements[index].component_id == preferred:
+			var placement_id := str(editor.custom_document.spatial_layout.placements[index].get("placement_id", ""))
+			if editor.custom_layout.placements[index].component_id == preferred and not owned_refs.has(placement_id):
 				target_index = index
 				break
 		if target_index >= 0:
 			break
 	if target_index < 0:
-		target_index = editor.custom_layout.placements.size() - 1
+		for index in editor.custom_layout.placements.size():
+			var placement_id := str(editor.custom_document.spatial_layout.placements[index].get("placement_id", ""))
+			if not owned_refs.has(placement_id):
+				target_index = index
+				break
 	if target_index < 0:
 		return {"ok": false, "error": "layout contains no placement to edit"}
 	var candidate := EnvironmentModuleLayout.new(editor.custom_layout.layout_id, editor.custom_layout.generation_seed)

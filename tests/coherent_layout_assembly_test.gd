@@ -37,11 +37,12 @@ func _test_environment_generation(catalog: Dictionary) -> void:
 	check(_roads_reach_boundary(first), "Generated road approaches terminate at map boundaries")
 	check(_all_parcels_assigned(first.environment_layout_plan), "Every planned parcel receives an authored template or explicit fallback")
 	check(_tactical_map_is_valid(first), "The generated district passes shared tactical validation")
-	# Seed 2 deliberately tries a shell whose service object conflicts with a
-	# streetlight, exercising bounded retry with the corrected visual envelopes.
+	# Seed 2 previously made a parcel yield to a streetlight because furniture
+	# committed first. Required parcel access now wins and the optional fixture
+	# is skipped after parcel assembly.
 	var alternative_seed := FlatMapGenerator.generate_coherent_environment(50, 40, 1.0, 2, &"industrial_district")
-	check(not alternative_seed.environment_layout_plan.rejected_candidates.is_empty(), "A constrained seed records a rejected visual or clearance conflict")
-	check(not alternative_seed.environment_layout_plan.fallback_used and _tactical_map_is_valid(alternative_seed), "Bounded search selects a valid alternative after rejecting a conflicting parcel template")
+	check(alternative_seed.environment_layout_plan.decisions.any(func(value): return "optional fixtures" in value), "A constrained seed skips optional furniture instead of displacing required parcel access")
+	check(not alternative_seed.environment_layout_plan.fallback_used and _tactical_map_is_valid(alternative_seed), "Furniture subordination preserves a valid authored parcel and tactical battlefield")
 
 	var distinct_signatures: Dictionary = {}
 	for environment_id in CoherentEnvironmentAssembler.ENVIRONMENTS:
@@ -109,7 +110,7 @@ func _test_expanded_district_catalog() -> void:
 			commercial_buildings += 1
 			var asset_id := IndustrialBuildingPlacementProfiles.asset_id_for_module(placement.component_id)
 			check("commercial" in SemanticAssetCatalog.effective(asset_id).contexts, "Commercial parcels select only shells reviewed for that context")
-	check(commercial_buildings == commercial_large_parcels and commercial_buildings >= 2, "The constrained commercial topology fills every available large frontage with reviewed buildings")
+	check(commercial_buildings >= 1 and _large_parcels_are_built_or_mission_buffers(commercial), "Every constrained large commercial frontage is a reviewed building or an explicit mission-space buffer")
 	var roomy_commercial := FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, 17, &"commercial_street")
 	var roomy_shells := 0
 	var roomy_large_parcels := 0
@@ -121,6 +122,21 @@ func _test_expanded_district_catalog() -> void:
 			roomy_shells += 1
 	check(roomy_shells == roomy_large_parcels and roomy_shells >= 3, "A topology with three available commercial frontages uses all three reviewed building parcels")
 	check(seen_shell_variants.size() >= 3, "Representative industrial seeds exercise several reviewed shell assets")
+
+func _large_parcels_are_built_or_mission_buffers(data: MapData) -> bool:
+	var deployment_cells: Dictionary = {}
+	for zone in data.get_zones_by_kind(MapZoneData.Kind.DEPLOYMENT):
+		for cell in zone.cells: deployment_cells[Vector2i(cell.x, cell.z)] = true
+	for parcel in data.environment_layout_plan.parcels:
+		if parcel.bounds.size.x <= CoherentEnvironmentAssembler.MACRO_SIZE: continue
+		if String(parcel.template).begins_with("building_frontage/"): continue
+		var protects_mission := false
+		for cell in deployment_cells:
+			if parcel.bounds.has_point(cell):
+				protects_mission = true
+				break
+		if not protects_mission: return false
+	return true
 
 func _test_map_editor() -> void:
 	var editor = load("res://tools/map_editor.tscn").instantiate()

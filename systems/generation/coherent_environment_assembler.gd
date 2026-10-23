@@ -8,6 +8,7 @@ const MAX_TEMPLATE_ATTEMPTS := 6
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
+const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
@@ -24,7 +25,16 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 		return layout
 	if not _build_road_plot(layout, plan, catalog, data.map_size, rng):
 		return layout
-	_decorate_road_network(layout, plan, catalog, data.map_size, rng)
+	# Furniture used to run before parcel planning and consumed one variation draw
+	# per straight road. Preserve that established parcel stream while deferring
+	# furniture commitment: its cloned stream owns presentation-only variation.
+	var streetscape_rng := RandomNumberGenerator.new()
+	streetscape_rng.state = rng.state
+	_advance_past_streetscape_variations(rng, layout, catalog)
+	var reservations := ReservationLedger.from_map(data)
+	if not reservations.validate_map_bounds(data.map_size) or not reservations.failures.is_empty():
+		for failure in reservations.failures: layout.errors.append("%s: %s" % [failure.code, failure.message])
+		return layout
 	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng)
 	var populated := 0
 	for parcel in parcels:
@@ -36,11 +46,15 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			var rotation := _rotation_facing(facing)
 			var batch := _template_placements(template_id, parcel.bounds, rotation, rng)
 			var candidate := _clone_layout(layout, catalog, data.map_size)
-			if candidate == null or not _try_batch(candidate, batch, catalog, data.map_size):
+			var candidate_reservations := reservations.duplicate_ledger()
+			var access_ok := _reserve_parcel_access(candidate_reservations, parcel, template_id)
+			if candidate == null or not access_ok or not _try_batch(candidate, batch, catalog, data.map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id):
 				var reason: String = candidate.errors.back() if candidate != null and not candidate.errors.is_empty() else "candidate replay failed"
+				if not access_ok and not candidate_reservations.failures.is_empty(): reason = candidate_reservations.failures.back().message
 				plan.rejected_candidates.append("%s rejected %s: %s" % [parcel.id, template_id, reason])
 				continue
 			layout = candidate
+			reservations = candidate_reservations
 			parcel.template = template_id
 			parcel.rotation = rotation
 			parcel.occupants = _occupant_records(template_id, batch)
@@ -55,6 +69,10 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 			parcel.occupants = []
 			plan.decisions.append("%s -> district_buffer fallback" % parcel.id)
 		plan.parcels.append(parcel)
+	# Optional presentation content is subordinate to mission and parcel access.
+	# Running it last avoids committing decorations before frontage is known.
+	_decorate_road_network(layout, plan, catalog, data.map_size, streetscape_rng, reservations)
+	plan.reservations.assign(reservations.reservations.duplicate(true))
 	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
 	var deployment_result := EnvironmentDeploymentResolver.repair(data, EnvironmentDeploymentResolver.plan_anchors(plan))
 	for repair in deployment_result.repairs:
@@ -97,13 +115,14 @@ static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentL
 	plan.decisions.append("road %s at macro %s with %d approaches" % [plan.topology, center, directions.size()])
 	return _road_network_connected(layout, catalog)
 
-static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> void:
+static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator, reservations) -> void:
 	# Furniture is attached to authored slots in the road cross-section. Reviewed
 	# kit assets give each identity character while the inner sidewalk lane,
 	# entrances, and carriageway remain unobstructed.
 	var straight_index := 0
 	var fixture_count := 0
 	var obstacle_count := 0
+	var skipped_count := 0
 	for placement in layout.placements.duplicate():
 		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
 		if definition.module_type == EnvironmentModuleDefinition.ModuleType.INTERSECTION:
@@ -116,29 +135,42 @@ static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: Enviro
 				var fixture := Streetscape.approach_fixture(connection.direction)
 				var local_cell: Vector2i = definition.rotate_cell(fixture.cell, placement.rotation)
 				var yaw := posmod(int(fixture.yaw) + placement.rotation, 4)
-				if layout.try_add(catalog[signal_id], EnvironmentModulePlacement.new(signal_id, placement.origin + local_cell, yaw), map_size):
+				var signal_placement := EnvironmentModulePlacement.new(signal_id, placement.origin + local_cell, yaw)
+				if _try_add_reserved(layout, catalog[signal_id], signal_placement, map_size, reservations, "road_furniture"):
 					fixture_count += 1
+				else: skipped_count += 1
 		elif definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD:
 			var fixture := Streetscape.straight_fixture_slot(straight_index)
 			var fixture_id := _straight_fixture_id(plan.environment_id, straight_index)
 			var fixture_cell: Vector2i = definition.rotate_cell(fixture.cell, placement.rotation)
 			var local_yaw := int(fixture.inward_yaw) if fixture_id == &"street_light" else int(fixture.yaw)
 			var fixture_yaw := posmod(local_yaw + placement.rotation, 4)
-			if layout.try_add(catalog[fixture_id], EnvironmentModulePlacement.new(fixture_id, placement.origin + fixture_cell, fixture_yaw, rng.randi_range(0, 1)), map_size):
+			var road_fixture := EnvironmentModulePlacement.new(fixture_id, placement.origin + fixture_cell, fixture_yaw, rng.randi_range(0, 1))
+			if _try_add_reserved(layout, catalog[fixture_id], road_fixture, map_size, reservations, "road_furniture"):
 				fixture_count += 1
+			else: skipped_count += 1
 			if _should_add_street_obstacle(plan.environment_id, straight_index):
 				var obstacle := Streetscape.straight_fixture_slot(straight_index, true)
 				var obstacle_cell: Vector2i = definition.rotate_cell(obstacle.cell, placement.rotation)
 				var obstacle_yaw := posmod(int(obstacle.yaw) + placement.rotation, 4)
-				if layout.try_add(catalog.construction_barrier_vault, EnvironmentModulePlacement.new(&"construction_barrier_vault", placement.origin + obstacle_cell, obstacle_yaw), map_size):
+				var barrier := EnvironmentModulePlacement.new(&"construction_barrier_vault", placement.origin + obstacle_cell, obstacle_yaw)
+				if _try_add_reserved(layout, catalog.construction_barrier_vault, barrier, map_size, reservations, "road_furniture"):
 					obstacle_count += 1
+				else: skipped_count += 1
 			straight_index += 1
 	plan.decisions.append("streetscape placed %d reviewed kit fixtures and %d deliberate tactical barriers" % [fixture_count, obstacle_count])
+	if skipped_count > 0: plan.decisions.append("streetscape skipped %d optional fixtures to preserve required reservations" % skipped_count)
 
 static func _intersection_fixture_id(environment_id: StringName, intersection_id: StringName) -> StringName:
 	if environment_id == &"commercial_street" or (environment_id == &"mixed_service" and intersection_id == &"road_crossroad"):
 		return &"traffic_signal"
 	return &"stop_sign"
+
+static func _advance_past_streetscape_variations(rng: RandomNumberGenerator, layout: EnvironmentModuleLayout, catalog: Dictionary) -> void:
+	for placement in layout.placements:
+		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
+		if definition != null and definition.module_type == EnvironmentModuleDefinition.ModuleType.ROAD:
+			rng.randi_range(0, 1)
 
 static func _straight_fixture_id(environment_id: StringName, index: int) -> StringName:
 	if environment_id == &"commercial_street":
@@ -414,11 +446,52 @@ static func _rotation_facing(direction: Vector2i) -> int:
 		Vector2i.RIGHT: return 3
 		_: return 0
 
-static func _try_batch(layout: EnvironmentModuleLayout, batch: Array[EnvironmentModulePlacement], catalog: Dictionary, map_size: Vector2i) -> bool:
+static func _try_batch(layout: EnvironmentModuleLayout, batch: Array[EnvironmentModulePlacement], catalog: Dictionary, map_size: Vector2i, reservations = null, owner_ref := "", template_id: StringName = &"") -> bool:
+	var accepted: Array[EnvironmentModulePlacement] = []
 	for placement in batch:
+		var required := _occupant_is_required(template_id, placement.component_id)
+		if reservations != null:
+			var reserved: Dictionary = reservations.placement_allowed(catalog[placement.component_id], placement, layout, owner_ref)
+			if not reserved.ok:
+				if not required: continue
+				layout.errors.append("%s: %s" % [reserved.code, reserved.message])
+				return false
+		var error_count := layout.errors.size()
 		if not layout.try_add(catalog[placement.component_id], placement, map_size):
+			if not required:
+				layout.errors.resize(error_count)
+				continue
 			return false
+		accepted.append(placement)
+	batch.assign(accepted)
 	return true
+
+static func _try_add_reserved(layout: EnvironmentModuleLayout, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, map_size: Vector2i, reservations, owner_ref := "") -> bool:
+	var allowed: Dictionary = reservations.placement_allowed(definition, placement, layout, owner_ref)
+	if not allowed.ok: return false
+	var error_count := layout.errors.size()
+	var accepted := layout.try_add(definition, placement, map_size)
+	if not accepted: layout.errors.resize(error_count)
+	return accepted
+
+static func _reserve_parcel_access(reservations, parcel: Dictionary, template_id: StringName) -> bool:
+	var role := ParcelContract.reservation_role_for_template(String(template_id))
+	if role.is_empty(): return true
+	var frontages: Array = parcel.get("frontage_spans", [])
+	if frontages.is_empty():
+		reservations.failures.append({"code": "MISSING_REQUIRED_ACCESS", "reservation_id": "access_%s" % parcel.id, "message": "%s requires road frontage" % template_id})
+		return false
+	var span: Dictionary = frontages[0]
+	var cells := ReservationLedger.frontage_access_cells(span, parcel.bounds, role)
+	return reservations.try_reserve({
+		"reservation_id": "access_%s" % parcel.id,
+		"owner_ref": "parcel:%s" % parcel.id,
+		"role": role,
+		"purpose": ParcelContract.relationship_kind_for_template(String(template_id)),
+		"cells": cells,
+		"required": true,
+		"source_ref": "frontage:%s" % span.get("frontage_id", ""),
+	})
 
 static func _clone_layout(source: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i) -> EnvironmentModuleLayout:
 	var result := EnvironmentModuleLayout.new(source.layout_id, source.generation_seed)
