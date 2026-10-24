@@ -15,7 +15,7 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[node name="MatchSetup" type="Control" unique_id=256885953 node_paths=PackedStringArray("player_count", "enemy_count", "ally_count", "start_button", "generated_map_toggle", "auto_seed_toggle", "seed_input", "map_size_option")]
+[node name="MatchSetup" type="Control" unique_id=256885953 node_paths=PackedStringArray("player_count", "enemy_count", "ally_count", "start_button", "generated_map_toggle", "generation_preset_option", "auto_seed_toggle", "seed_input", "map_size_option")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,6 +28,7 @@ enemy_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/
 ally_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/AllySide/AllyCount")
 start_button = NodePath("CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox/StartButton")
 generated_map_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/GeneratedMapToggle")
+generation_preset_option = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/GenerationPreset")
 auto_seed_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/AutoSeedToggle")
 seed_input = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/SeedInput")
 map_size_option = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/MapSize")
@@ -170,6 +171,10 @@ theme_override_constants/separation = 6
 layout_mode = 2
 button_pressed = true
 text = "USE GENERATED MAP"
+
+[node name="GenerationPreset" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation"]
+layout_mode = 2
+tooltip_text = "Select the legacy battlefield generator or explicitly opt in to the validated Generation 2.0 industrial pipeline."
 
 [node name="AutoSeedToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=551290734]
 layout_mode = 2

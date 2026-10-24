@@ -8,6 +8,7 @@ const BattleConfigurationData := preload("res://systems/battle_configuration.gd"
 @export var ally_count: SpinBox
 @export var start_button: Button
 @export var generated_map_toggle: CheckButton
+@export var generation_preset_option: OptionButton
 @export var auto_seed_toggle: CheckButton
 @export var seed_input: SpinBox
 @export var map_size_option: OptionButton
@@ -29,6 +30,7 @@ var reset_roster_button: Button
 var player_archetypes: Array[StringName] = []
 var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
+var _legacy_map_size_labels: Array[String] = []
 var _seed_rng := RandomNumberGenerator.new()
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
@@ -45,19 +47,26 @@ func _ready() -> void:
 	_build_roster_editor()
 	_seed_rng.randomize()
 	_prepare_new_seed()
+	generation_preset_option.add_item("Legacy generator")
+	generation_preset_option.set_item_metadata(0, BattleConfigurationData.BattlefieldPreset.LEGACY)
+	generation_preset_option.add_item("Generation 2.0 — Industrial District")
+	generation_preset_option.set_item_metadata(1, BattleConfigurationData.BattlefieldPreset.GENERATION_2_INDUSTRIAL)
+	generation_preset_option.select(0)
 	var size_names := ["Small", "Medium", "Large"]
 	for index in FlatMapGenerator.MAP_SIZES.size():
 		var dimensions := FlatMapGenerator.MAP_SIZES[index]
 		map_size_option.add_item("%s — %d × %d tiles" % [size_names[index], dimensions.x, dimensions.y])
 	map_size_option.add_item("Special — Refinery (40 × 30)")
 	map_size_option.add_item("Special — Industrial Warehouse (40 × 30)")
+	for index in map_size_option.item_count: _legacy_map_size_labels.append(map_size_option.get_item_text(index))
 	map_size_option.select(1)
-	map_size_option.disabled = not generated_map_toggle.button_pressed
+	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)
 	player_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.PLAYER))
 	enemy_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ENEMY))
 	ally_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ALLY))
 	generated_map_toggle.toggled.connect(_on_generation_toggled)
+	generation_preset_option.item_selected.connect(_on_generation_preset_selected)
 	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	player_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
@@ -404,7 +413,9 @@ func _on_objective_selected(index: int) -> void:
 func _update_summary(_value: float) -> void:
 	var map_label := "HANDMADE"
 	if generated_map_toggle.button_pressed:
-		if map_size_option.selected == 3:
+		if _selected_generation_preset() == BattleConfigurationData.BattlefieldPreset.GENERATION_2_INDUSTRIAL:
+			map_label = "GENERATION 2.0 — INDUSTRIAL DISTRICT — 60 × 50"
+		elif map_size_option.selected == 3:
 			map_label = "REFINERY"
 		elif map_size_option.selected == 4:
 			map_label = "INDUSTRIAL WAREHOUSE"
@@ -425,9 +436,28 @@ func _update_summary(_value: float) -> void:
 	start_button.text = "START BATTLE"
 
 func _on_generation_toggled(enabled: bool) -> void:
-	map_size_option.disabled = not enabled
+	if not enabled and _selected_generation_preset() != BattleConfigurationData.BattlefieldPreset.LEGACY:
+		generation_preset_option.select(0)
+	_refresh_generation_controls()
 	_refresh_seed_controls()
 	_update_summary(0.0)
+
+func _on_generation_preset_selected(_index: int) -> void:
+	_refresh_generation_controls()
+	_update_summary(0.0)
+
+func _refresh_generation_controls() -> void:
+	generation_preset_option.disabled = not generated_map_toggle.button_pressed
+	var generation_2 := _selected_generation_preset() == BattleConfigurationData.BattlefieldPreset.GENERATION_2_INDUSTRIAL
+	for index in mini(_legacy_map_size_labels.size(), map_size_option.item_count): map_size_option.set_item_text(index, _legacy_map_size_labels[index])
+	if generation_2 and map_size_option.selected >= 0:
+		map_size_option.set_item_text(map_size_option.selected, "Generation 2.0 fixed — 60 × 50 tiles")
+	map_size_option.disabled = not generated_map_toggle.button_pressed or generation_2
+
+func _selected_generation_preset() -> BattleConfigurationData.BattlefieldPreset:
+	if generation_preset_option == null or generation_preset_option.selected < 0:
+		return BattleConfigurationData.BattlefieldPreset.LEGACY
+	return int(generation_preset_option.get_item_metadata(generation_preset_option.selected)) as BattleConfigurationData.BattlefieldPreset
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -444,25 +474,30 @@ func _refresh_seed_controls() -> void:
 
 func _start_battle() -> void:
 	var battle = battle_scene.instantiate() as BattleLevel
+	var config := _build_battle_configuration()
+	battle.configure_battle(config)
+	get_tree().root.add_child(battle)
+	get_tree().current_scene = battle
+	queue_free()
+
+func _build_battle_configuration() -> BattleConfigurationData:
 	var config := BattleConfigurationData.new()
 	config.player_count = int(player_count.value)
 	config.enemy_count = int(enemy_count.value)
 	config.generated_map = generated_map_toggle.button_pressed
+	config.battlefield_preset = _selected_generation_preset()
 	config.battle_seed = int(seed_input.value)
 	config.ally_count = int(ally_count.value)
 	config.player_archetypes = player_archetypes.duplicate()
 	config.enemy_archetypes = enemy_archetypes.duplicate()
 	config.ally_archetypes = ally_archetypes.duplicate()
-	config.map_size = Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected]
+	config.map_size = BattleConfigurationData.GENERATION_2_MAP_SIZE if config.uses_generation_2() else (Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected])
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
-	config.refinery = map_size_option.selected == 3
-	config.industrial_warehouse = map_size_option.selected == 4
-	battle.configure_battle(config)
-	get_tree().root.add_child(battle)
-	get_tree().current_scene = battle
-	queue_free()
+	config.refinery = not config.uses_generation_2() and map_size_option.selected == 3
+	config.industrial_warehouse = not config.uses_generation_2() and map_size_option.selected == 4
+	return config

@@ -62,6 +62,7 @@ Use this page when you know what you want to change but not where FuseFire owns 
 | Change hypothetical continuation occupancy | `Pathfinder.calculate_path_with_occupancy()` and its single AI call in `_move_along_goal_path()` | Overwatch reaction fixture and stalemate seeds 25005/25100 |
 | Inspect an AI choice | Enable F3 AI decision/scoring overlays during AI control | `tests/ai_match_determinism_smoke.gd` |
 | Reproduce an AI match | Use a fixed seed in Match Setup | See `simulation.md` |
+| Play the Generation 2.0 industrial district | In Match Setup, open **Battlefield**, keep **Use Generated Map** enabled, select **Generation 2.0 — Industrial District**, disable **Automatic New Seed** for reproducibility, and enter a seed. The current validated contract is fixed at 60×50. | `tests/generation_2_battle_preset_test.gd` and a local battle |
 | Start a battle from code | Fill a `BattleConfiguration`, then call `BattleLevel.configure_battle()` | `tests/match_setup_smoke.gd` and `tests/battle_replay_smoke.gd` |
 | Inspect or extend replay records | `systems/replay/battle_replay_recording.gd` for the envelope and the action result's `to_replay_record()` | `tests/replay_schema_test.gd` plus the relevant end-to-end replay |
 
