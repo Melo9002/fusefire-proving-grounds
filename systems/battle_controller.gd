@@ -125,7 +125,13 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 		# Let CSG collision bodies enter the physics world before scanning.
 		await get_tree().create_timer(0.05, false).timeout
 		MapBuilder.scan_obstacles(get_world_3d(), grid_manager, pathfinder)
-	MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
+	# Unified-layout battles already carry objective zones selected before
+	# environment assembly and protected by mission reservations. Replanning here
+	# would make gameplay consume mission state that is absent from its document.
+	# Legacy and authored maps without the complete default set retain the
+	# established runtime planning path.
+	if not MissionZonePlanner.has_complete_defaults(grid_manager.map_data):
+		MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
 	_apply_authored_tile_hazards()
 	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
 	var faction_counts := {

@@ -15,6 +15,14 @@ static func build(config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
 		config.battle_seed,
 		spawn_capacity
 	)
+	# Generation 2.0 owns its mission-space decisions in the layout document.
+	# Plan the established objective zones on the authoritative flat graph before
+	# parcel assembly so the reservation ledger can protect them from structures
+	# and optional furniture. BattleController preserves these document-owned
+	# zones instead of selecting a second, post-assembly set at runtime.
+	var mission_graph := Pathfinder.new()
+	MapGraphBuilder.build(generated, mission_graph)
+	MissionZonePlanner.populate_defaults(generated, mission_graph)
 	var layout := CoherentEnvironmentAssembler.apply(generated, cell_size, config.battle_seed, BattleConfiguration.GENERATION_2_ENVIRONMENT)
 	if not layout.errors.is_empty():
 		var assembly_failures: Array[Dictionary] = []

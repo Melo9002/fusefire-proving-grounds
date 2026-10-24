@@ -3,6 +3,13 @@ extends RefCounted
 
 const ZONE_SIZE := 4
 const CARDINALS: Array[Vector3i] = [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]
+const DEFAULT_ZONE_IDS: Array[StringName] = [&"reach", &"extract", &"enemy_extract", &"rescue_spawn", &"terminal"]
+
+static func has_complete_defaults(map_data: MapData) -> bool:
+	for zone_id in DEFAULT_ZONE_IDS:
+		if map_data.get_objective_zone(zone_id).is_empty():
+			return false
+	return true
 
 static func populate_defaults(map_data: MapData, pathfinder: Pathfinder) -> void:
 	var evaluator := MissionPlacementEvaluator.new(map_data, pathfinder)

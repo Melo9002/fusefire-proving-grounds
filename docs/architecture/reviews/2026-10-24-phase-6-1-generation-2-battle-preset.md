@@ -15,6 +15,7 @@ The Generation 2.0 preset enters at that existing generated-map boundary:
 ```text
 BattleConfiguration preset + seed
   → FlatMapGenerator base MapData
+  → established mission-zone planning and reservation
   → CoherentEnvironmentAssembler
   → BattlefieldLayoutDocument
   → document validation and dependency resolution
@@ -43,7 +44,7 @@ The selector defaults to **Legacy generator**. Choosing Generation 2.0 disables 
 
 ## Authority and failure behavior
 
-`MapData` remains authoritative for traversal, occupancy, cover, LOS, elevation, deployment legality, and mission zones. Imported meshes and semantic assets remain presentation inputs. The runtime document preserves environment identity, placements, relationships, dependencies, provenance, and seed; it does not derive gameplay rules from visible geometry.
+`MapData` remains authoritative for traversal, occupancy, cover, LOS, elevation, deployment legality, and mission zones. Imported meshes and semantic assets remain presentation inputs. The runtime document preserves environment identity, placements, relationships, dependencies, provenance, seed, and the objective zones planned before coherent assembly; it does not derive gameplay rules from visible geometry.
 
 Generation 2.0 rejects:
 

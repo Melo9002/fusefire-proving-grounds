@@ -75,6 +75,14 @@ func _test_generation_2_battle() -> BattleLevel:
 	check(level.active_battlefield_document.validate().is_empty() and level.active_battlefield_document.provenance.generator_id == "coherent_environment_assembler", "runtime uses a dependency-valid coherent-generation document")
 	check(level.active_battlefield_document.environment_id == String(BattleConfiguration.GENERATION_2_ENVIRONMENT), "runtime document preserves the industrial environment identity")
 	check(level.active_battlefield_document.provenance.generation_seed == 17, "runtime document preserves the selected seed")
+	var objective_zone_ids: Array[StringName] = [&"reach", &"extract", &"enemy_extract", &"rescue_spawn", &"terminal"]
+	check(objective_zone_ids.all(func(zone_id): return not level.active_generated_map.get_objective_zone(zone_id).is_empty()), "Generation 2.0 plans every supported mission zone before battlefield activation")
+	var documented_zone_ids: Array[String] = []
+	for zone in level.active_battlefield_document.mission_context.get("zones", []): documented_zone_ids.append(str(zone.get("zone_id", "")))
+	check(objective_zone_ids.all(func(zone_id): return String(zone_id) in documented_zone_ids), "the unified document preserves the objective zones consumed by gameplay")
+	var reservation_owners: Array[String] = []
+	for reservation in level.active_battlefield_document.spatial_layout.get("reservations", []): reservation_owners.append(str(reservation.get("owner_ref", "")))
+	check(objective_zone_ids.all(func(zone_id): return "zone:%s" % zone_id in reservation_owners), "objective space is reserved before parcels and optional furniture are committed")
 	check(level.active_generated_map == level.battle_controller.grid_manager.map_data and level.active_generated_map.source_kind == "layout_document_generated", "battle tactics consume the MapData compiled from that document")
 	check(level.battle_controller.last_map_validation != null and level.battle_controller.last_map_validation.is_valid(), "the normal battle validation accepts the compiled tactical map")
 	check(level.turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN and level.turn_manager.current_round == 1, "the initialized battle reaches a controllable player turn")
