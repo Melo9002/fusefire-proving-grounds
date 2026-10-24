@@ -73,6 +73,7 @@ $visualTests = @(
     "spatial_transform_capture.gd",
     "coherent_road_orientation_capture.gd",
 	"coherent_asset_first_frontage_capture.gd",
+	"coherent_parcel_retry_capture.gd",
     "certified_building_shell_capture.gd",
     "certified_equipment_parcel_capture.gd",
 	"parcel_functional_relationship_capture.gd",

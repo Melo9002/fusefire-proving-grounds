@@ -4,6 +4,7 @@ const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
 const DebugDraw = preload("res://tools/diagnostics/fusefire_debug_draw_3d.gd")
+const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 const CUSTOM_LAYOUT := &"custom_layout"
 const ASSEMBLY_VIEW_COMPLETE := &"complete"
 const ASSEMBLY_VIEW_SHELL := &"shell"
@@ -945,9 +946,12 @@ func _update_transform_label(prefix := "") -> void:
 func _update_status(component_count: int, validation_text: String, plan: EnvironmentLayoutPlan = null) -> void:
 	var plan_text := "authored layout"
 	if plan != null:
-		plan_text = "%s · %d road tiles · %d parcels · %d rejected · fallback %s" % [
-			String(plan.topology).replace("_", " "), plan.road_cells.size(), plan.parcels.size(),
-			plan.rejected_candidates.size(), "yes" if plan.fallback_used else "no",
+		var summary := plan.generation_summary()
+		plan_text = "%s · %d roads · %d functional / %d buffers · %d attempts / %d rejected · %d fallback / %d exhausted" % [
+			String(plan.topology).replace("_", " "), plan.road_cells.size(),
+			int(summary.functional_parcels), int(summary.buffer_parcels),
+			int(summary.candidate_attempts), int(summary.candidate_rejections),
+			int(summary.fallback_outcomes), int(summary.search_budget_exhaustions),
 		]
 	var dirty_text := "  |  UNSAVED" if _is_composing() and custom_dirty else ""
 	var lmb_help := "select/place" if _is_composing() else "select"
@@ -1093,6 +1097,32 @@ func _add_spatial_plan_overlay(parent: Node3D, data: MapData) -> void:
 	for road_cell in plan.road_cells:
 		_add_plan_rect(mesh, Rect2i(road_cell * plan.macro_size, Vector2i.ONE * plan.macro_size), data.map_size, 0.15)
 	mesh.surface_end()
+	var frontage_material := StandardMaterial3D.new()
+	frontage_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	frontage_material.albedo_color = Color(0.30, 1.0, 0.35, 1.0)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, frontage_material)
+	for parcel in plan.parcels:
+		var selected_id := str(parcel.get("selected_frontage_id", ""))
+		for frontage in parcel.get("frontage_spans", []):
+			if str(frontage.get("frontage_id", "")) == selected_id:
+				_add_plan_segment(mesh, frontage.get("start", []), frontage.get("end", []), data.map_size, 0.19)
+	mesh.surface_end()
+	var access_material := StandardMaterial3D.new()
+	access_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	access_material.albedo_color = Color(1.0, 0.25, 0.82, 0.85)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, access_material)
+	for reservation in plan.reservations:
+		if reservation.get("role", "") in [ReservationLedger.PEDESTRIAN_ACCESS, ReservationLedger.LOADING_SERVICE_APPROACH, ReservationLedger.CIRCULATION_CLEARANCE]:
+			for cell: Vector2i in reservation.get("cells", []): _add_plan_rect(mesh, Rect2i(cell, Vector2i.ONE), data.map_size, 0.18)
+	mesh.surface_end()
+	var mission_material := StandardMaterial3D.new()
+	mission_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mission_material.albedo_color = Color(1.0, 0.92, 0.20, 0.8)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, mission_material)
+	for reservation in plan.reservations:
+		if reservation.get("role", "") in [ReservationLedger.DEPLOYMENT_REGION, ReservationLedger.OBJECTIVE_REGION]:
+			for cell: Vector2i in reservation.get("cells", []): _add_plan_rect(mesh, Rect2i(cell, Vector2i.ONE), data.map_size, 0.17)
+	mesh.surface_end()
 	var overlay := MeshInstance3D.new()
 	overlay.name = "SpatialPlan"
 	overlay.mesh = mesh
@@ -1111,3 +1141,11 @@ func _add_plan_rect(mesh: ImmediateMesh, bounds: Rect2i, map_size: Vector2i, hei
 	for index in 4:
 		mesh.surface_add_vertex(points[index])
 		mesh.surface_add_vertex(points[(index + 1) % 4])
+
+func _add_plan_segment(mesh: ImmediateMesh, start_data, end_data, map_size: Vector2i, height: float) -> void:
+	if not start_data is Array or not end_data is Array or start_data.size() != 2 or end_data.size() != 2: return
+	var half := Vector2(map_size) * 0.5
+	var start := Vector2(float(start_data[0]), float(start_data[1])) - half
+	var finish := Vector2(float(end_data[0]), float(end_data[1])) - half
+	mesh.surface_add_vertex(Vector3(start.x, height, start.y))
+	mesh.surface_add_vertex(Vector3(finish.x, height, finish.y))

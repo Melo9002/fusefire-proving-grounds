@@ -15,7 +15,7 @@ const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
 const ORIGINS := ["authored", "generated", "edited"]
 const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
-const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v3"
+const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v4_bounded_search"
 
 static var _asset_ids_by_path: Dictionary = {}
 
@@ -42,6 +42,8 @@ static func from_generated(data: MapData, id := "") -> BattlefieldLayoutDocument
 			"topology": String(plan.topology) if plan else "",
 			"macro_size": plan.macro_size if plan else 0,
 			"plan_signature": plan.signature() if plan else "",
+			"candidate_search": plan.search_budget.duplicate(true) if plan else {},
+			"generation_summary": plan.generation_summary() if plan else {},
 		},
 		"algorithm_revisions": {"layout_document": SCHEMA_VERSION, "parcel_grammar": PARCEL_GRAMMAR_REVISION},
 	}
@@ -195,6 +197,7 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 	var plan := EnvironmentLayoutPlan.new(StringName(environment_id), int(provenance.get("generation_seed", 0)))
 	plan.topology = StringName(provenance.get("generation_config", {}).get("topology", "edited"))
 	plan.macro_size = int(provenance.get("generation_config", {}).get("macro_size", 10))
+	plan.search_budget = provenance.get("generation_config", {}).get("candidate_search", {}).duplicate(true)
 	if spatial_layout.get("parcels", []) is Array and not spatial_layout.get("parcels", []).is_empty():
 		for record in spatial_layout.parcels:
 			if not record is Dictionary: continue
@@ -205,6 +208,8 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 				"bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])),
 				"template": StringName(record.get("template_id", "empty")),
 				"rotation": int(record.get("rotation", 0)),
+				"selected_frontage_id": str(record.get("selected_frontage_id", "")),
+				"placement_offset": int(record.get("placement_offset", 0)),
 				"frontage_spans": record.get("frontage_spans", []).duplicate(true),
 				"road_edges": ParcelContract.directions_for_spans(record.get("frontage_spans", [])),
 				"occupants": record.get("occupants", []).duplicate(true),
@@ -328,6 +333,8 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 			"bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
 			"template_id": template,
 			"rotation": int(parcel.get("rotation", 0)),
+			"selected_frontage_id": str(parcel.get("selected_frontage_id", "")),
+			"placement_offset": int(parcel.get("placement_offset", 0)),
 			"occupants": occupants,
 			"road_refs": parcel_road_refs,
 			"frontage_spans": frontages,
@@ -339,7 +346,7 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 			"subject_ref": "parcel:%s" % parcel_id,
 			"object_ref": "template:%s" % template,
 			"required": true,
-			"properties": {"parcel_id": parcel_id, "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y], "rotation": int(parcel.get("rotation", 0))},
+			"properties": {"parcel_id": parcel_id, "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y], "rotation": int(parcel.get("rotation", 0)), "selected_frontage_id": str(parcel.get("selected_frontage_id", "")), "placement_offset": int(parcel.get("placement_offset", 0))},
 		})
 		for occupant in occupants:
 			relationships.append({
@@ -698,6 +705,8 @@ func _validate_functional_parcels(failures: Array[Dictionary], catalog: Dictiona
 			"id": parcel_id,
 			"bounds": Rect2i(int(bounds_data[0]), int(bounds_data[1]), int(bounds_data[2]), int(bounds_data[3])),
 			"rotation": int(encoded.get("rotation", 0)),
+			"selected_frontage_id": str(encoded.get("selected_frontage_id", "")),
+			"placement_offset": int(encoded.get("placement_offset", 0)),
 			"frontage_spans": encoded.get("frontage_spans", []).duplicate(true),
 		}
 		var placements: Array[EnvironmentModulePlacement] = []

@@ -4,17 +4,20 @@ extends RefCounted
 const SOURCE_KIND := "generated_modular_coherent"
 const MACRO_SIZE := 10
 const ENVIRONMENTS: Array[StringName] = [&"industrial_district", &"commercial_street", &"mixed_service"]
-const MAX_TEMPLATE_ATTEMPTS := 6
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
+const CandidateSearch = preload("res://systems/generation/environment_parcel_candidate_search.gd")
+# Compatibility name retained for existing bounded-search assertions.
+const MAX_TEMPLATE_ATTEMPTS := CandidateSearch.MAX_CANDIDATE_ATTEMPTS_PER_PARCEL
 
 static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
 	var catalog := IndustrialModuleCatalog.create()
 	var plan := EnvironmentLayoutPlan.new(environment_id, map_seed)
 	plan.macro_size = MACRO_SIZE
+	plan.search_budget = CandidateSearch.configuration()
 	var layout := EnvironmentModuleLayout.new(&"coherent_%s" % environment_id, map_seed)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed ^ 0x23C0A11
@@ -39,58 +42,52 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng)
 	var populated := 0
 	for parcel in parcels:
-		var candidates := _template_candidates(environment_id, populated, parcel, rng)
+		var templates := _template_candidates(environment_id, populated, parcel, rng)
+		var specifications := CandidateSearch.specifications(parcel, templates, catalog)
+		var search_report := {"parcel_id": String(parcel.id), "available_candidates": specifications.size(), "attempts": 0, "accepted_candidate": "", "outcome": ""}
 		var accepted := false
-		for template_id in candidates.slice(0, mini(MAX_TEMPLATE_ATTEMPTS, candidates.size())):
+		for specification in specifications:
+			if int(search_report.attempts) >= CandidateSearch.MAX_CANDIDATE_ATTEMPTS_PER_PARCEL: break
+			var template_id: StringName = specification.template_id
 			plan.search_attempts += 1
-			var frontage := RelationshipValidator.select_frontage(parcel, String(template_id))
-			var rotation := RelationshipValidator.rotation_for_frontage(String(template_id), frontage) if not frontage.is_empty() else 0
-			var batch := _template_placements(template_id, parcel.bounds, rotation, rng)
-			var candidate := _clone_layout(layout, catalog, data.map_size)
-			var candidate_reservations := reservations.duplicate_ledger()
-			var access_ok := _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
-			if candidate == null or not access_ok or not _try_batch(candidate, batch, catalog, data.map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id):
-				var reason: String = candidate.errors.back() if candidate != null and not candidate.errors.is_empty() else "candidate replay failed"
-				if not access_ok and not candidate_reservations.failures.is_empty(): reason = candidate_reservations.failures.back().message
-				plan.rejected_candidates.append("%s rejected %s: %s" % [parcel.id, template_id, reason])
+			search_report.attempts = int(search_report.attempts) + 1
+			var result := _evaluate_candidate(layout, reservations, parcel, specification, catalog, data.map_size, map_seed)
+			plan.optional_dressing_failures += int(result.get("optional_failures", 0))
+			if int(result.get("optional_failures", 0)) > 0:
+				plan.decisions.append("%s candidate %s rejected %d optional dressing placement(s)" % [parcel.id, _candidate_label(specification), result.optional_failures])
+			if not result.ok:
+				var rejection := _candidate_rejection(parcel, specification, result)
+				plan.candidate_rejections.append(rejection)
+				plan.rejected_candidates.append("%s rejected %s: %s %s" % [parcel.id, template_id, rejection.code, rejection.message])
 				continue
-			var checked_parcel := parcel.duplicate(true)
-			checked_parcel["rotation"] = rotation
-			var relationship_failures := RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
-			# Optional dressing is allowed to lose its placement independently when
-			# it is the only thing invalidating an otherwise functional parcel.
-			while not relationship_failures.is_empty():
-				var blocked_ref := str(relationship_failures[0].get("reference", ""))
-				var optional_index := -1
-				for index in batch.size():
-					if batch[index].signature() == blocked_ref and not _occupant_is_required(template_id, batch[index].component_id): optional_index = index
-				if optional_index < 0: break
-				var skipped: EnvironmentModulePlacement = batch.pop_at(optional_index)
-				candidate = _clone_layout(layout, catalog, data.map_size)
-				candidate_reservations = reservations.duplicate_ledger()
-				access_ok = _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
-				if not access_ok or not _try_batch(candidate, batch, catalog, data.map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id): break
-				relationship_failures = RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
-				plan.decisions.append("%s skipped optional %s to preserve %s" % [parcel.id, skipped.component_id, RelationshipValidator.contract_for(String(template_id)).kind])
-			if not relationship_failures.is_empty():
-				var failure: Dictionary = relationship_failures[0]
-				plan.rejected_candidates.append("%s rejected %s: %s %s" % [parcel.id, template_id, failure.code, failure.message])
-				continue
-			layout = candidate
-			reservations = candidate_reservations
+			layout = result.layout
+			reservations = result.reservations
 			parcel.template = template_id
-			parcel.rotation = rotation
-			parcel.occupants = _occupant_records(template_id, batch)
-			plan.decisions.append("%s -> %s r%d" % [parcel.id, template_id, rotation])
+			parcel.rotation = int(specification.rotation)
+			parcel.selected_frontage_id = str(specification.frontage_id)
+			parcel.placement_offset = int(specification.tangent_offset)
+			parcel.occupants = _occupant_records(template_id, result.batch)
+			search_report.accepted_candidate = _candidate_label(specification)
+			search_report.outcome = "intentional_buffer" if template_id == &"district_buffer" else "functional_placement"
+			plan.decisions.append("%s -> %s r%d frontage=%s offset=%d" % [parcel.id, template_id, parcel.rotation, parcel.selected_frontage_id, parcel.placement_offset])
 			accepted = true
-			populated += 1
+			if template_id != &"district_buffer": populated += 1
 			break
 		if not accepted:
 			plan.fallback_used = true
+			var exhausted := CandidateSearch.budget_exhausted(specifications.size(), int(search_report.attempts), false)
+			if exhausted:
+				plan.search_budget_exhaustions += 1
+				parcel.fallback_reason = "SEARCH_BUDGET_EXHAUSTED"
+				search_report.outcome = "search_budget_exhausted"
+			else:
+				parcel.fallback_reason = "NO_COMPATIBLE_CANDIDATE" if specifications.is_empty() else "PROVEN_INCOMPATIBLE_WITHIN_SUPPORTED_CHOICES"
+				search_report.outcome = str(parcel.fallback_reason).to_lower()
 			parcel.template = &"district_buffer"
 			parcel.rotation = 0
 			parcel.occupants = []
-			plan.decisions.append("%s -> district_buffer fallback" % parcel.id)
+			plan.decisions.append("%s -> district_buffer fallback: %s" % [parcel.id, parcel.fallback_reason])
+		plan.parcel_search_reports.append(search_report)
 		plan.parcels.append(parcel)
 	# Optional presentation content is subordinate to mission and parcel access.
 	# Running it last avoids committing decorations before frontage is known.
@@ -375,7 +372,7 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
 		var buildings := BuildingProfiles.fitting_module_ids(bounds.size, environment_id)
 		_shuffle(buildings, rng)
-		for module_id in buildings.slice(0, mini(MAX_TEMPLATE_ATTEMPTS - 1, buildings.size())):
+		for module_id in buildings.slice(0, mini(CandidateSearch.MAX_TEMPLATE_CHOICES - 1, buildings.size())):
 			result.append(StringName("building_frontage/%s" % module_id))
 		if environment_id != &"commercial_street":
 			result.append(&"industrial_yard_block")
@@ -398,13 +395,89 @@ static func _template_candidates(environment_id: StringName, parcel_index: int, 
 	_shuffle(result, rng)
 	return result
 
-static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator) -> Array[EnvironmentModulePlacement]:
+static func _evaluate_candidate(source_layout: EnvironmentModuleLayout, source_reservations, parcel: Dictionary, specification: Dictionary, catalog: Dictionary, map_size: Vector2i, map_seed: int) -> Dictionary:
+	var template_id: StringName = specification.template_id
+	var frontage: Dictionary = specification.frontage
+	var candidate_rng := RandomNumberGenerator.new()
+	candidate_rng.seed = CandidateSearch.candidate_seed(map_seed, String(parcel.id), specification)
+	var batch := _template_placements(template_id, parcel.bounds, int(specification.rotation), candidate_rng, int(specification.tangent_offset))
+	var initial_optional := _optional_occupant_count(template_id, batch)
+	var candidate := _clone_layout(source_layout, catalog, map_size)
+	if candidate == null: return _candidate_failure("CANDIDATE_REPLAY_FAILED", "existing accepted layout could not be replayed")
+	var candidate_reservations = source_reservations.duplicate_ledger()
+	var access_ok := _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
+	if not access_ok:
+		var failure: Dictionary = candidate_reservations.failures.back() if not candidate_reservations.failures.is_empty() else {}
+		return _candidate_failure(str(failure.get("code", "MISSING_REQUIRED_ACCESS")), str(failure.get("message", "required access could not be reserved")))
+	if not _try_batch(candidate, batch, catalog, map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id):
+		var message: String = candidate.errors.back() if not candidate.errors.is_empty() else "required placement was rejected"
+		return _candidate_failure(_placement_failure_code(message), message, initial_optional - _optional_occupant_count(template_id, batch))
+	var checked_parcel := parcel.duplicate(true)
+	checked_parcel["rotation"] = int(specification.rotation)
+	checked_parcel["selected_frontage_id"] = str(specification.frontage_id)
+	var relationship_failures := RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
+	var optional_removals := initial_optional - _optional_occupant_count(template_id, batch)
+	while not relationship_failures.is_empty() and optional_removals < CandidateSearch.MAX_OPTIONAL_REMOVALS_PER_CANDIDATE:
+		var optional_index := _blocking_optional_index(template_id, batch, relationship_failures)
+		if optional_index < 0: break
+		batch.pop_at(optional_index)
+		optional_removals += 1
+		candidate = _clone_layout(source_layout, catalog, map_size)
+		candidate_reservations = source_reservations.duplicate_ledger()
+		access_ok = _reserve_parcel_access(candidate_reservations, parcel, template_id, frontage, batch, catalog)
+		if not access_ok or not _try_batch(candidate, batch, catalog, map_size, candidate_reservations, "parcel:%s" % parcel.id, template_id): break
+		relationship_failures = RelationshipValidator.validate_geometry(checked_parcel, String(template_id), batch, catalog, frontage)
+	if not relationship_failures.is_empty():
+		var failure: Dictionary = relationship_failures[0]
+		return _candidate_failure(str(failure.get("code", "FUNCTIONAL_RELATIONSHIP_FAILED")), str(failure.get("message", "functional relationship failed")), optional_removals)
+	if not access_ok:
+		return _candidate_failure("ACCESS_RESERVATION_FAILED", "required access could not be reconstructed after optional rejection", optional_removals)
+	if candidate == null or not candidate.errors.is_empty():
+		var message: String = candidate.errors.back() if candidate != null and not candidate.errors.is_empty() else "candidate reconstruction failed"
+		return _candidate_failure(_placement_failure_code(message), message, optional_removals)
+	return {"ok": true, "layout": candidate, "reservations": candidate_reservations, "batch": batch, "optional_failures": optional_removals}
+
+static func _blocking_optional_index(template_id: StringName, batch: Array[EnvironmentModulePlacement], failures: Array[Dictionary]) -> int:
+	for failure in failures:
+		var blocked_ref := str(failure.get("reference", ""))
+		for index in batch.size():
+			if batch[index].signature() == blocked_ref and not _occupant_is_required(template_id, batch[index].component_id): return index
+	return -1
+
+static func _optional_occupant_count(template_id: StringName, batch: Array[EnvironmentModulePlacement]) -> int:
+	var count := 0
+	for placement in batch:
+		if not _occupant_is_required(template_id, placement.component_id): count += 1
+	return count
+
+static func _candidate_failure(code: String, message: String, optional_failures := 0) -> Dictionary:
+	return {"ok": false, "code": code, "message": message, "optional_failures": optional_failures}
+
+static func _candidate_rejection(parcel: Dictionary, specification: Dictionary, result: Dictionary) -> Dictionary:
+	return {
+		"parcel_id": String(parcel.id),
+		"template_id": String(specification.template_id),
+		"frontage_id": str(specification.frontage_id),
+		"rotation": int(specification.rotation),
+		"tangent_offset": int(specification.tangent_offset),
+		"code": str(result.get("code", "UNKNOWN_REJECTION")),
+		"message": str(result.get("message", "candidate rejected")),
+	}
+
+static func _placement_failure_code(message: String) -> String:
+	var prefix := message.get_slice(":", 0).strip_edges()
+	return prefix if prefix.to_upper() == prefix and not prefix.contains(" ") else "PLACEMENT_CONFLICT"
+
+static func _candidate_label(specification: Dictionary) -> String:
+	return "%s@%s:r%d:o%d" % [specification.template_id, specification.frontage_id, specification.rotation, specification.tangent_offset]
+
+static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator, tangent_offset := 0) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
 	var catalog := IndustrialModuleCatalog.create()
 	var template_name := String(template_id)
 	if template_name.begins_with("building_frontage/"):
 		var shell_id := StringName(template_name.trim_prefix("building_frontage/"))
-		local = _semantic_frontage_placements(parcel.size, catalog, rng, shell_id)
+		local = _semantic_frontage_placements(parcel.size, catalog, rng, shell_id, tangent_offset)
 	match template_id:
 		&"district_buffer":
 			local = []
@@ -441,7 +514,7 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 		result.append(_rotate_into_parcel(placement, catalog[placement.component_id], parcel, rotation))
 	return result
 
-static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator, shell_id: StringName) -> Array[EnvironmentModulePlacement]:
+static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator, shell_id: StringName, tangent_offset := 0) -> Array[EnvironmentModulePlacement]:
 	var result: Array[EnvironmentModulePlacement] = [
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
@@ -451,7 +524,7 @@ static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictio
 	if not catalog.has(shell_id):
 		return result
 	var shell: EnvironmentModuleDefinition = catalog[shell_id]
-	var shell_origin := Vector2i(floori(float(parcel_size.x - shell.size.x) * 0.5), 0)
+	var shell_origin := Vector2i(floori(float(parcel_size.x - shell.size.x) * 0.5) + tangent_offset, 0)
 	result.append(EnvironmentModulePlacement.new(shell_id, shell_origin))
 	# The remaining authored pieces describe a purpose: a lit public frontage,
 	# plus either a side service machine, container staging, or waste pickup.

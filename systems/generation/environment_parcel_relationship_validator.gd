@@ -23,19 +23,26 @@ static func contract_for(template_id: String) -> Dictionary:
 	return (CONTRACTS.get(template_id, {}) as Dictionary).duplicate(true)
 
 static func select_frontage(parcel: Dictionary, template_id: String) -> Dictionary:
+	var candidates := frontage_candidates(parcel, template_id)
+	var selected_id := str(parcel.get("selected_frontage_id", ""))
+	if not selected_id.is_empty():
+		for candidate in candidates:
+			if str(candidate.get("frontage_id", "")) == selected_id: return candidate
+	return candidates[0] if not candidates.is_empty() else {}
+
+static func frontage_candidates(parcel: Dictionary, template_id: String) -> Array[Dictionary]:
 	var contract := contract_for(template_id)
-	if contract.is_empty(): return {}
+	if contract.is_empty(): return []
 	var candidates: Array[Dictionary] = []
 	for span in parcel.get("frontage_spans", []):
 		if span is Dictionary and int(span.get("width_cells", 0)) >= int(contract.minimum_width):
 			candidates.append(span)
-	if candidates.is_empty(): return {}
 	# Stable preference: widest span, then the authored boundary order already
 	# carried by frontage_id. This remains deterministic for equivalent input.
 	candidates.sort_custom(func(a, b):
 		if int(a.width_cells) != int(b.width_cells): return int(a.width_cells) > int(b.width_cells)
 		return str(a.frontage_id) < str(b.frontage_id))
-	return candidates[0]
+	return candidates
 
 static func rotation_for_frontage(template_id: String, span: Dictionary) -> int:
 	var contract := contract_for(template_id)
