@@ -16,9 +16,38 @@ static func compare_fields(expected: Dictionary, actual: Dictionary, path := "")
 		if expected_value is Dictionary and actual_value is Dictionary:
 			var nested := compare_fields(expected_value, actual_value, field_path)
 			if not nested.is_empty(): return nested
-		elif expected_value != actual_value:
+		elif expected_value is Array and actual_value is Array:
+			var nested := _compare_arrays(expected_value, actual_value, field_path)
+			if not nested.is_empty(): return nested
+		elif not _scalar_values_equal(expected_value, actual_value):
 			return "%s differs: expected %s, got %s" % [field_path, expected_value, actual_value]
 	return ""
+
+static func _compare_arrays(expected: Array, actual: Array, path: String) -> String:
+	if expected.size() != actual.size():
+		return "%s size differs: expected %d, got %d" % [path, expected.size(), actual.size()]
+	for index in expected.size():
+		var field_path := "%s[%d]" % [path, index]
+		var expected_value = expected[index]
+		var actual_value = actual[index]
+		if expected_value is Dictionary and actual_value is Dictionary:
+			var nested := compare_fields(expected_value, actual_value, field_path)
+			if not nested.is_empty(): return nested
+		elif expected_value is Array and actual_value is Array:
+			var nested := _compare_arrays(expected_value, actual_value, field_path)
+			if not nested.is_empty(): return nested
+		elif not _scalar_values_equal(expected_value, actual_value):
+			return "%s differs: expected %s, got %s" % [field_path, expected_value, actual_value]
+	return ""
+
+static func _scalar_values_equal(expected: Variant, actual: Variant) -> bool:
+	if expected == actual: return true
+	if expected is int or expected is float:
+		if actual is int or actual is float:
+			# JSON restores integral values as floating-point Variants. Permit the
+			# representation change, but retain exact replay-value comparison.
+			return float(expected) == float(actual)
+	return false
 
 static func validate_action_record(record: Dictionary, envelope_version: int) -> String:
 	for field in ["kind", "actor", "expected_state"]:

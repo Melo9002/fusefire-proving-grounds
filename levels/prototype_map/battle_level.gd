@@ -55,6 +55,7 @@ var _replay_configuration: Dictionary = {}
 var _replay_recorder
 var action_camera_director: Node
 var active_battlefield_document: BattlefieldLayoutDocument
+var pending_battlefield_document: BattlefieldLayoutDocument
 var active_generated_map: MapData
 var battle_initialization_attempted := false
 var battle_initialization_succeeded := false
@@ -150,7 +151,18 @@ func configure_replay(recording) -> void:
 	var config := BattleConfigurationData.new()
 	config.apply_replay(recording.configuration)
 	configure_battle(config)
+	if recording.battlefield_document is Dictionary and not recording.battlefield_document.is_empty():
+		pending_battlefield_document = BattlefieldLayoutDocument.from_dictionary(recording.battlefield_document)
 	battle_controller.replay_mode = true
+
+## Explicit document-driven runtime entry point shared by saved edited maps and
+## replay reconstruction. The caller supplies battle rules; the document owns
+## accepted environment construction. Both are validated during _ready().
+func configure_layout_document(config: BattleConfigurationData, document: BattlefieldLayoutDocument) -> void:
+	pending_battlefield_document = BattlefieldLayoutDocument.from_dictionary(document.to_dictionary()) if document else null
+	configure_battle(config)
+	if not config.uses_generation_2():
+		_configuration_errors.append(_diagnostic("DOCUMENT_REQUIRES_GENERATION_2", "battlefield_preset", "Unified layout battles require the Generation 2.0 preset"))
 
 func _ready() -> void:
 	action_camera_director = ActionCameraDirectorData.new()
@@ -186,7 +198,7 @@ func _initialize_generated_battle() -> void:
 	var preparation: Dictionary
 	if battlefield_preset == BattleConfigurationData.BattlefieldPreset.GENERATION_2_INDUSTRIAL:
 		var config := _runtime_configuration()
-		preparation = Generation2BattlefieldBuilder.build(config, grid.cell_size)
+		preparation = Generation2BattlefieldBuilder.compile_document(pending_battlefield_document, config, grid.cell_size) if pending_battlefield_document else Generation2BattlefieldBuilder.build(config, grid.cell_size)
 	else:
 		var legacy_map := FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
 		preparation = {"ok": true, "data": legacy_map, "document": null, "errors": []}
@@ -284,7 +296,7 @@ func _initialize_replay_support() -> void:
 		player.begin(self, pending_replay)
 		return
 	_replay_recorder = ReplayRecorderData.new()
-	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager)
+	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager, active_battlefield_document)
 
 func _configure_replay_presentation() -> void:
 	var hidden_paths := [

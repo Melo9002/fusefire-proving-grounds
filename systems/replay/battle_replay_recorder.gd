@@ -12,8 +12,9 @@ var _objective_manager: ObjectiveManager
 var _finalization_scheduled := false
 var _finalized := false
 
-func begin(configuration: Dictionary, battle_controller: BattleController, turn_manager: TurnManager, objective_manager: ObjectiveManager = null) -> void:
+func begin(configuration: Dictionary, battle_controller: BattleController, turn_manager: TurnManager, objective_manager: ObjectiveManager = null, battlefield_document: BattlefieldLayoutDocument = null) -> void:
 	recording.configuration = configuration.duplicate(true)
+	recording.capture_battlefield_document(battlefield_document)
 	_battle_controller = battle_controller
 	_turn_manager = turn_manager
 	_objective_manager = objective_manager

@@ -27,6 +27,8 @@ A current recording contains:
 - a typed request and resolved result for unit actions;
 - a post-commit state fingerprint.
 
+Generation 2.0 recordings additionally embed the validated unified battlefield layout document and a persistence-normalized SHA-256 signature. Playback compiles that exact accepted document, including edited placements, relationships, mission zones, and pinned asset/calibration dependencies. It does not rerun procedural generation from the seed. The seed remains useful provenance, but is not treated as a historical content snapshot.
+
 Requests use stable tactical actor IDs. Current Attack results include the deterministic roll, hit chance, damage, AP/HP changes, Supply Points before/cost/after, defeat, and battle result. Reload records AP and Supply Points before/after and consumes no combat RNG. Move results include origin, destination, AP, objective state, and carried actor. Mission results include objectives, extraction counters, and roster removal. Turn and departure records remain commands because they do not have unit-action target and cost semantics.
 
 Camera position, animation state, interpolation, particles, and UI are intentionally absent.
@@ -34,6 +36,8 @@ Camera position, animation state, interpolation, particles, and UI are intention
 ## Playback and divergence
 
 Playback first verifies the envelope and initial reconstructed state. Before each schema-3 record it verifies the base revision. Tactical requests retain their recorded revision and pass through `TacticalActionService`; playback does not repair stale data. After commit it compares transaction/revision identity, resolved fields, committed revision, and the full state fingerprint.
+
+For a Generation 2.0 recording, validation also requires a supported and dependency-current battlefield document. Reconstruction compares its normalized persisted signature before executing the first action. Missing assets, stale calibration/geometry, unsupported environment identities, and document-signature differences stop playback explicitly.
 
 The first failure stops playback and reports its stage:
 
@@ -57,6 +61,8 @@ if not recording.is_playable():
 ```
 
 The JSON contains plain arrays, dictionaries, numbers, strings, and booleans. Mission Resources and `Vector2i` values are converted explicitly at the envelope boundary.
+
+JSON represents all numbers through one persistence number type. Replay field comparison therefore treats numerically equal integer and floating representations as equivalent, including nested coordinate arrays, while continuing to report genuine value, array-length, and field differences.
 
 ## Compatibility policy
 
@@ -94,6 +100,7 @@ godot_console --headless --path . --script tests/replay_schema_test.gd
 godot_console --headless --path . --script tests/battle_replay_smoke.gd
 godot_console --headless --path . --script tests/rescue_battle_replay_smoke.gd
 godot_console --headless --path . --script tests/departure_replay_smoke.gd
+godot_console --headless --path . --script tests/generation_2_replay_edited_map_test.gd
 ```
 
 The complete release gate also runs action-service, AI determinism, objective, evacuation, traversal, dependency-isolation, and Prototype 1 milestone suites.

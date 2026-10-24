@@ -3,6 +3,7 @@ extends Node3D
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
 const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
+const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 const DebugDraw = preload("res://tools/diagnostics/fusefire_debug_draw_3d.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 const CUSTOM_LAYOUT := &"custom_layout"
@@ -396,6 +397,9 @@ func _build_composer_ui(layer: Control) -> void:
 	_add_action_button(file_actions, "Save (Ctrl+S)", _save_custom_layout)
 	_add_action_button(file_actions, "Reload", func(): _load_custom_layout(true))
 	_add_action_button(file_actions, "Clear", _clear_custom_layout)
+	var play_actions := HBoxContainer.new()
+	column.add_child(play_actions)
+	_add_action_button(play_actions, "Play edited battlefield", _play_custom_layout)
 	composer_message = Label.new()
 	composer_message.text = "Saved layouts are project-local JSON."
 	composer_message.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
@@ -983,6 +987,28 @@ func _save_custom_layout() -> void:
 	custom_dirty = false
 	_update_status(custom_layout.placements.size(), "TACTICAL VALID")
 	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), custom_layout_path])
+
+func _play_custom_layout() -> void:
+	if custom_document == null:
+		_set_composer_message("No unified layout document is available to play.", true)
+		return
+	var config := BattleConfiguration.new()
+	config.generated_map = true
+	config.battlefield_preset = BattleConfiguration.BattlefieldPreset.GENERATION_2_INDUSTRIAL
+	config.map_size = custom_document.map_size()
+	config.battle_seed = int(custom_document.provenance.get("generation_seed", generation_seed))
+	config.player_count = 2
+	config.enemy_count = 2
+	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, config.enemy_count, false)
+	var prepared := Generation2BattlefieldBuilder.compile_document(custom_document, config)
+	if not prepared.ok:
+		_set_composer_message("Cannot play edited battlefield: %s" % prepared.errors[0].get("message", "validation failed"), true)
+		return
+	var battle := BATTLE_SCENE.instantiate() as BattleLevel
+	battle.configure_layout_document(config, prepared.document)
+	get_tree().root.add_child(battle)
+	get_tree().current_scene = battle
+	queue_free()
 
 func _load_custom_layout(rebuild_after: bool) -> void:
 	var result := LayoutStore.load(editor_catalog, custom_layout_path, &"legacy_compatibility")

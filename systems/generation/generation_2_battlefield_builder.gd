@@ -39,6 +39,10 @@ static func build(config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
 static func compile_document(document: BattlefieldLayoutDocument, config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
 	var configuration_failures := config.validate_generation_selection()
 	if not configuration_failures.is_empty(): return _failure(configuration_failures, document)
+	if document == null:
+		return _failure([_diagnostic("MISSING_LAYOUT_DOCUMENT", "battlefield_document", "Generation 2.0 document compilation requires a unified layout document")])
+	if document.map_size() != config.map_size:
+		return _failure([_diagnostic("DOCUMENT_MAP_SIZE_MISMATCH", "spatial_layout.map_size", "battle configuration requires %s but the document defines %s" % [config.map_size, document.map_size()])], document)
 	var compiled := BattlefieldLayoutDocumentCompiler.compile(document, cell_size, maxi(5, maxi(config.player_count, maxi(config.enemy_count, config.ally_count))))
 	if not compiled.ok: return _failure(compiled.errors, compiled.document)
 	var data: MapData = compiled.data

@@ -55,6 +55,7 @@ func _run() -> void:
 	check(recording.save_json(path) == OK, "Replay saves as readable JSON")
 	var loaded := BattleReplayRecording.load_json(path)
 	check(loaded.is_playable() and loaded.actions.size() == 1, "Saved JSON replay loads and validates")
+	check(ReplayRecordTools.compare_fields(recording.actions[0].resolved, loaded.actions[0].resolved).is_empty(), "Replay comparison treats persistence-normalized integer coordinates as equivalent")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 	var unsupported := BattleReplayRecording.from_dictionary(recording.to_dictionary())

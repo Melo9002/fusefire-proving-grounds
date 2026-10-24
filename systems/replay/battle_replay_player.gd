@@ -50,6 +50,12 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 
 func _play() -> void:
 	print("[Replay] PLAYBACK — %d actions" % recording.actions.size())
+	if not recording.battlefield_document_signature.is_empty():
+		var reconstructed := level.active_battlefield_document
+		var reconstructed_signature := "" if reconstructed == null else BattleReplayRecording.stable_battlefield_document_signature(reconstructed.to_dictionary())
+		if reconstructed_signature != recording.battlefield_document_signature:
+			_fail("environment reconstruction", -1, {}, "battlefield layout signature differs")
+			return
 	var tracks_supply := bool(recording.configuration.get("supply_points_enabled", false))
 	var tracks_aim := bool(recording.configuration.get("aim_enabled", false))
 	var tracks_shield := bool(recording.configuration.get("shield_enabled", false))

@@ -76,6 +76,7 @@ $visualTests = @(
 	"coherent_parcel_retry_capture.gd",
 	"generation_2_battle_capture.gd",
 	"generation_2_tactical_gameplay_capture.gd",
+	"generation_2_replay_edited_map_capture.gd",
     "certified_building_shell_capture.gd",
     "certified_equipment_parcel_capture.gd",
 	"parcel_functional_relationship_capture.gd",
