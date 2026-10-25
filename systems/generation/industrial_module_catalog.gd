@@ -1,6 +1,8 @@
 class_name IndustrialModuleCatalog
 extends RefCounted
 
+const CargoAssembly = preload("res://systems/generation/industrial_cargo_assembly_catalog.gd")
+
 const FACTORY := "res://art/environments/kenney/factory_kit/models/"
 const INDUSTRIAL := "res://art/environments/kenney/city_kit_industrial/models/"
 const ROADS := "res://art/environments/kenney/city_kit_roads/models/"
@@ -170,18 +172,7 @@ static func _paving() -> EnvironmentModuleDefinition:
 	return item
 
 static func _cargo_container() -> EnvironmentModuleDefinition:
-	var item := EnvironmentModuleDefinition.new(&"cargo_container", &"industrial_cargo", Vector2i(2, 5))
-	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.SOLID_OBSTACLE)
-	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PROP)
-	item.set_visual_convention(Vector2(0.5, 0.5), Vector2.ZERO, "The calibrated container is a solid authored obstacle; its visual length slightly exceeds four cells.")
-	for cell in item.footprint_cells:
-		item.set_effect(cell, {"interaction": EnvironmentModuleDefinition.CellInteraction.BLOCKED, "cover_type": MapCellData.CoverType.FULL, "cover_height": 1.74, "walkable": false, "can_stop": false, "blocks_los": true, "movement_cost": 1})
-	item.set_visual_envelope(AABB(Vector3(-0.15, 0.0, -0.15), Vector3(2.3, 2.0, 5.3)))
-	item.visuals = [{
-		"asset_variants": [INDUSTRIAL + "shipping-container-a.glb", INDUSTRIAL + "shipping-container-b.glb", INDUSTRIAL + "shipping-container-c.glb"],
-		"local_cell": Vector2(0.5, 2.0), "scale": 5.0, "yaw_quarters": 0, "anchor": 0,
-	}]
-	return item
+	return CargoAssembly.module()
 
 static func _construction_barrier() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"construction_barrier_vault", &"road_furniture", Vector2i.ONE)

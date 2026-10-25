@@ -37,7 +37,7 @@ func _run() -> void:
 	check(audit.needs_review == 0 and audit.review_flags.is_empty(), "All scoped working-face and machine-connection questions are evidence-resolved")
 	check(Semantics.effective("factory_kit/oopi", data).asset_kind == "character_reference", "Oopi remains an easter-egg character rather than an environment prop")
 	check(Semantics.effective("factory_kit/oopi", data).working_faces == ["-x"], "Oopi's rendered face points toward local -X")
-	check(audit.generation_ready == 32, "Only assets backed by explicit procedural placement contracts are approved")
+	check(audit.generation_ready == 35, "Only assets backed by explicit procedural placement contracts are approved")
 	check(Semantics.effective("city_kit_roads/road-straight-barrier", data).semantic_category == "road_barrier_modules", "Road barrier overlays are not mistaken for complete road surfaces")
 	check(Semantics.effective("factory_kit/structure-high", data).structural_role == "railing", "Rendered Factory rail modules are not mistaken for building walls")
 	check(Semantics.effective("factory_kit/scanner-high", data).completeness == "intentionally_open", "Scanner arches preserve their pass-through opening")

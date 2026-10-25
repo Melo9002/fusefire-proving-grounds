@@ -81,6 +81,7 @@ $visualTests = @(
 	"generation_2_replay_edited_map_capture.gd",
     "certified_building_shell_capture.gd",
     "certified_equipment_parcel_capture.gd",
+	"certified_cargo_asset_family_capture.gd",
 	"parcel_functional_relationship_capture.gd",
     "structural_building_capture.gd"
 )
