@@ -43,7 +43,7 @@ func _exercise_editor_lifecycle(configuration: Dictionary) -> void:
 	var source_placement_count: int = source.spatial_layout.placements.size()
 	check(source.environment_id == String(environment), "%s/%d generation records the requested identity" % [environment, seed])
 	check(source.provenance.origin == "generated" and source.provenance.generation_seed == seed, "%s/%d records generated provenance and the original seed" % [environment, seed])
-	check(not source.provenance.generation_config.is_empty() and source.provenance.algorithm_revisions.parcel_grammar == BattlefieldLayoutDocument.PARCEL_GRAMMAR_REVISION, "%s/%d pins generator configuration and content revisions" % [environment, seed])
+	check(not source.provenance.generation_config.is_empty() and source.provenance.algorithm_revisions.parcel_grammar == BattlefieldLayoutDocument.PARCEL_GRAMMAR_REVISION and source.provenance.algorithm_revisions.road_topology == BattlefieldLayoutDocument.ROAD_TOPOLOGY_REVISION, "%s/%d pins generator configuration and content revisions" % [environment, seed])
 	check(source_placement_count > 5 and source.relationships.any(func(value): return value.get("kind", "") == "parcel_template"), "%s/%d is a nontrivial layout with required parcel relationships" % [environment, seed])
 	check(_presented_identity(editor) == environment and _presentation_matches_document(editor, source), "%s/%d tactical and visual construction consume the same identity, placements, and rotations" % [environment, seed])
 	_count_and_validate_assemblies(source)

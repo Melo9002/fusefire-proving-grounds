@@ -104,7 +104,8 @@ func _test_editor_size_matrix() -> void:
 		var fallbacks: Array = plan.parcels.filter(func(parcel): return not str(parcel.get("fallback_reason", "")).is_empty())
 		if item[0] == &"commercial_street":
 			check(fallbacks.size() == 1 and fallbacks[0].fallback_reason == "PROVEN_INCOMPATIBLE_WITHIN_SUPPORTED_CHOICES", "%s records the deployment-protected parcel as an explicit proven incompatibility" % label)
-			check(plan.candidate_rejections.filter(func(value): return value.parcel_id == String(fallbacks[0].id)).all(func(value): return value.code == "RESERVED_REGION_BLOCKED"), "%s retains the mission-reservation cause for every rejected supported alternative" % label)
+			var fallback_id := String(fallbacks[0].id) if fallbacks.size() == 1 else ""
+			check(not fallback_id.is_empty() and plan.candidate_rejections.filter(func(value): return value.parcel_id == fallback_id).all(func(value): return value.code == "RESERVED_REGION_BLOCKED"), "%s retains the mission-reservation cause for every rejected supported alternative" % label)
 		else:
 			check(fallbacks.is_empty(), "%s requires no invalid-content fallback" % label)
 

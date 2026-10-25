@@ -27,7 +27,11 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	if environment_id not in ENVIRONMENTS:
 		layout.errors.append("Unknown environment identity: %s" % environment_id)
 		return layout
-	if not _build_road_plot(layout, plan, catalog, data.map_size, rng):
+	var reservations := ReservationLedger.from_map(data)
+	if not reservations.validate_map_bounds(data.map_size) or not reservations.failures.is_empty():
+		for failure in reservations.failures: layout.errors.append("%s: %s" % [failure.code, failure.message])
+		return layout
+	if not _build_road_plot(layout, plan, catalog, data.map_size, rng, reservations):
 		return layout
 	# Furniture used to run before parcel planning and consumed one variation draw
 	# per straight road. Preserve that established parcel stream while deferring
@@ -35,10 +39,6 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	var streetscape_rng := RandomNumberGenerator.new()
 	streetscape_rng.state = rng.state
 	_advance_past_streetscape_variations(rng, layout, catalog)
-	var reservations := ReservationLedger.from_map(data)
-	if not reservations.validate_map_bounds(data.map_size) or not reservations.failures.is_empty():
-		for failure in reservations.failures: layout.errors.append("%s: %s" % [failure.code, failure.message])
-		return layout
 	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng)
 	var populated := 0
 	for parcel in parcels:
@@ -114,7 +114,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	data.rebuild_los_index()
 	return layout
 
-static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> bool:
+static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator, reservations = null) -> bool:
 	var columns := floori(float(map_size.x) / float(MACRO_SIZE))
 	var rows := floori(float(map_size.y) / float(MACRO_SIZE))
 	var center := Vector2i(rng.randi_range(1, columns - 2), rng.randi_range(1, rows - 2))
@@ -123,11 +123,11 @@ static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentL
 	var intersection_rotation := rng.randi_range(0, 3) if not use_crossroad else 0
 	plan.topology = &"crossroad" if use_crossroad else &"t_junction"
 	var intersection := EnvironmentModulePlacement.new(intersection_id, center * MACRO_SIZE, intersection_rotation)
-	if not layout.try_add(catalog[intersection_id], intersection, map_size):
-		return false
-	plan.road_cells.append(center)
+	var road_specs: Array[Dictionary] = [{"macro": center, "placement": intersection}]
+	var primary_macros: Dictionary = {center: true}
 	var directions: Array[Vector2i] = []
-	for connection in layout.world_connections(catalog[intersection_id], intersection):
+	var connection_probe := EnvironmentModuleLayout.new(&"road_connection_probe", plan.generation_seed)
+	for connection in connection_probe.world_connections(catalog[intersection_id], intersection):
 		var direction: Vector2i = connection.direction
 		if connection.type == EnvironmentModuleConnection.Type.ROAD and direction not in directions:
 			directions.append(direction)
@@ -136,12 +136,122 @@ static func _build_road_plot(layout: EnvironmentModuleLayout, plan: EnvironmentL
 		while macro.x >= 0 and macro.y >= 0 and macro.x < columns and macro.y < rows:
 			var rotation := 0 if direction.y != 0 else 1
 			var road := EnvironmentModulePlacement.new(&"road_straight", macro * MACRO_SIZE, rotation)
-			if not layout.try_add(catalog.road_straight, road, map_size):
-				return false
-			plan.road_cells.append(macro)
+			road_specs.append({"macro": macro, "placement": road})
+			primary_macros[macro] = true
 			macro += direction
-	plan.decisions.append("road %s at macro %s with %d approaches" % [plan.topology, center, directions.size()])
-	return _road_network_connected(layout, catalog)
+	var secondary := _select_secondary_branch(road_specs, primary_macros, catalog, columns, rows, plan.generation_seed, reservations)
+	if not secondary.is_empty():
+		var branch_macro: Vector2i = secondary.intersection_macro
+		for index in road_specs.size():
+			if road_specs[index].macro == branch_macro:
+				road_specs[index].placement = secondary.intersection
+				break
+		for branch_spec in secondary.segments: road_specs.append(branch_spec)
+		plan.topology = StringName("%s_secondary_branch" % plan.topology)
+		plan.decisions.append("secondary street branches %s from macro %s through %d segment(s)" % [secondary.direction, branch_macro, secondary.segments.size()])
+	elif columns >= 6 and rows >= 5:
+		plan.decisions.append("secondary street omitted: no reservation-safe certified branch was available")
+	if not _commit_road_specs(layout, road_specs, catalog, map_size):
+		return false
+	for spec in road_specs:
+		var macro: Vector2i = spec.macro
+		if macro not in plan.road_cells: plan.road_cells.append(macro)
+	plan.decisions.append("road %s at macro %s with %d primary approaches" % [plan.topology, center, directions.size()])
+	return _road_network_supported(layout, catalog, map_size)
+
+static func _select_secondary_branch(road_specs: Array[Dictionary], primary_macros: Dictionary, catalog: Dictionary, columns: int, rows: int, map_seed: int, reservations = null) -> Dictionary:
+	# The first certified expansion is intentionally tied to the established
+	# 60x50 pitch. Smaller layouts preserve their Phase 6 topology exactly.
+	if columns < 6 or rows < 5: return {}
+	var candidates: Array[Dictionary] = []
+	for spec in road_specs:
+		var placement: EnvironmentModulePlacement = spec.placement
+		var macro: Vector2i = spec.macro
+		if placement.component_id != &"road_straight" or _macro_on_boundary(macro, columns, rows): continue
+		var through := [Vector2i.UP, Vector2i.DOWN] if posmod(placement.rotation, 2) == 0 else [Vector2i.LEFT, Vector2i.RIGHT]
+		var branch_directions := [Vector2i.LEFT, Vector2i.RIGHT] if through[0].y != 0 else [Vector2i.UP, Vector2i.DOWN]
+		for branch_direction in branch_directions:
+			var segments: Array[Vector2i] = []
+			var cursor: Vector2i = macro + branch_direction
+			var blocked := false
+			while cursor.x >= 0 and cursor.y >= 0 and cursor.x < columns and cursor.y < rows:
+				if primary_macros.has(cursor) or _macro_hits_required_reservation(cursor, reservations):
+					blocked = true
+					break
+				segments.append(cursor)
+				cursor += branch_direction
+			if blocked or segments.is_empty() or _runs_beside_primary_road(segments, branch_direction, primary_macros): continue
+			var expected := [through[0], through[1], branch_direction]
+			var t_rotation := _rotation_for_road_directions(catalog.road_intersection_t, expected)
+			if t_rotation < 0: continue
+			candidates.append({"intersection_macro": macro, "direction": branch_direction, "rotation": t_rotation, "segments": segments})
+	if candidates.is_empty(): return {}
+	# Prefer the shortest certified branch. It creates a useful second junction
+	# while preserving the greatest amount of contiguous parcel land for the
+	# reviewed 20x20 building shells. Equivalent choices remain seed-driven.
+	var minimum_segments: int = candidates.reduce(func(value, candidate): return mini(value, candidate.segments.size()), 1 << 30)
+	var preferred: Array[Dictionary] = []
+	preferred.assign(candidates.filter(func(candidate): return candidate.segments.size() == minimum_segments))
+	# Candidate choice is isolated from the established parcel RNG stream.
+	var chooser := RandomNumberGenerator.new()
+	chooser.seed = map_seed ^ 0x5EC0D4A7
+	var selected: Dictionary = preferred[chooser.randi_range(0, preferred.size() - 1)]
+	var intersection_macro: Vector2i = selected.intersection_macro
+	var direction: Vector2i = selected.direction
+	var result_segments: Array[Dictionary] = []
+	for macro: Vector2i in selected.segments:
+		var rotation := 0 if direction.y != 0 else 1
+		result_segments.append({"macro": macro, "placement": EnvironmentModulePlacement.new(&"road_straight", macro * MACRO_SIZE, rotation)})
+	return {
+		"intersection_macro": intersection_macro,
+		"direction": direction,
+		"intersection": EnvironmentModulePlacement.new(&"road_intersection_t", intersection_macro * MACRO_SIZE, int(selected.rotation)),
+		"segments": result_segments,
+	}
+
+static func _commit_road_specs(layout: EnvironmentModuleLayout, road_specs: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> bool:
+	# Validate the complete road set before touching the accepted layout. This
+	# keeps a failed topology attempt transactional.
+	var trial := EnvironmentModuleLayout.new(&"road_topology_trial", layout.generation_seed)
+	for spec in road_specs:
+		var placement: EnvironmentModulePlacement = spec.placement
+		if not trial.try_add(catalog.get(placement.component_id), placement, map_size): return false
+	if not _road_network_supported(trial, catalog, map_size): return false
+	for spec in road_specs:
+		var placement: EnvironmentModulePlacement = spec.placement
+		if not layout.try_add(catalog.get(placement.component_id), placement, map_size): return false
+	return true
+
+static func _rotation_for_road_directions(definition: EnvironmentModuleDefinition, expected: Array) -> int:
+	for rotation in 4:
+		var actual: Array[Vector2i] = []
+		for connection in definition.connections:
+			if connection.type != EnvironmentModuleConnection.Type.ROAD: continue
+			var direction := definition.rotate_direction(connection.direction, rotation)
+			if direction not in actual: actual.append(direction)
+		if actual.size() == expected.size() and expected.all(func(direction): return direction in actual): return rotation
+	return -1
+
+static func _macro_hits_required_reservation(macro: Vector2i, reservations) -> bool:
+	if reservations == null: return false
+	var bounds := Rect2i(macro * MACRO_SIZE, Vector2i(MACRO_SIZE, MACRO_SIZE))
+	for reservation in reservations.reservations:
+		if not bool(reservation.get("required", true)): continue
+		for cell: Vector2i in reservation.get("cells", []):
+			if bounds.has_point(cell): return true
+	return false
+
+static func _runs_beside_primary_road(segments: Array[Vector2i], direction: Vector2i, primary_macros: Dictionary) -> bool:
+	# An immediately parallel primary carriageway creates a narrow, unusable
+	# strip rather than a meaningful side street. Require at least one macro of
+	# parcel depth between parallel road runs.
+	var lateral := Vector2i(-direction.y, direction.x)
+	for macro in segments:
+		if primary_macros.has(macro + lateral) or primary_macros.has(macro - lateral): return true
+	return false
+
+static func _macro_on_boundary(macro: Vector2i, columns: int, rows: int) -> bool:
+	return macro.x == 0 or macro.y == 0 or macro.x == columns - 1 or macro.y == rows - 1
 
 static func _decorate_road_network(layout: EnvironmentModuleLayout, plan: EnvironmentLayoutPlan, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator, reservations) -> void:
 	# Furniture is attached to authored slots in the road cross-section. Reviewed
@@ -241,6 +351,31 @@ static func _road_network_connected(layout: EnvironmentModuleLayout, catalog: Di
 			reached[neighbor] = true
 			frontier.append(neighbor)
 	return reached.size() == roads.size()
+
+static func _road_network_supported(layout: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i) -> bool:
+	if not _road_network_connected(layout, catalog): return false
+	var roads: Array[EnvironmentModulePlacement] = []
+	for placement in layout.placements:
+		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
+		if definition != null and definition.module_type in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]: roads.append(placement)
+	for placement in roads:
+		var definition: EnvironmentModuleDefinition = catalog[placement.component_id]
+		for opening in layout.world_connections(definition, placement):
+			if opening.type != EnvironmentModuleConnection.Type.ROAD: continue
+			var matched := false
+			for neighbor in roads:
+				if neighbor == placement: continue
+				var neighbor_definition: EnvironmentModuleDefinition = catalog[neighbor.component_id]
+				for candidate in layout.world_connections(neighbor_definition, neighbor):
+					if candidate.type == EnvironmentModuleConnection.Type.ROAD and opening.cell + opening.direction == candidate.cell and candidate.direction == -opening.direction and candidate.elevation == opening.elevation:
+						matched = true
+						break
+				if matched: break
+			if matched: continue
+			var outside: Vector2i = opening.cell + opening.direction
+			if outside.x >= 0 and outside.y >= 0 and outside.x < map_size.x and outside.y < map_size.y:
+				return false
+	return true
 
 static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []

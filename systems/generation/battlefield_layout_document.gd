@@ -16,6 +16,7 @@ const ORIGINS := ["authored", "generated", "edited"]
 const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
 const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v4_bounded_search"
+const ROAD_TOPOLOGY_REVISION := "certified_secondary_branch_v1"
 
 static var _asset_ids_by_path: Dictionary = {}
 
@@ -45,7 +46,7 @@ static func from_generated(data: MapData, id := "") -> BattlefieldLayoutDocument
 			"candidate_search": plan.search_budget.duplicate(true) if plan else {},
 			"generation_summary": plan.generation_summary() if plan else {},
 		},
-		"algorithm_revisions": {"layout_document": SCHEMA_VERSION, "parcel_grammar": PARCEL_GRAMMAR_REVISION},
+		"algorithm_revisions": {"layout_document": SCHEMA_VERSION, "parcel_grammar": PARCEL_GRAMMAR_REVISION, "road_topology": ROAD_TOPOLOGY_REVISION},
 	}
 	result._capture_spatial_layout(data.environment_modules, data.map_size)
 	result._capture_plan_relationships(plan)
