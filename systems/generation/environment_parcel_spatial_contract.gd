@@ -66,7 +66,7 @@ static func directions_for_spans(spans: Array) -> Array[Vector2i]:
 static func relationship_kind_for_template(template_id: String) -> String:
 	if template_id.begins_with("building_frontage/") or template_id in ["public_forecourt", "service_alley"]:
 		return PEDESTRIAN_ACCESS
-	if template_id in ["loading_bay", "industrial_yard_block", "staging_pad"]:
+	if template_id in ["loading_bay", "loading_service_strip", "industrial_yard_block", "staging_pad"]:
 		return LOADING_ACCESS
 	if template_id == "equipment_compound":
 		return SERVICE_CLEARANCE
@@ -75,7 +75,7 @@ static func relationship_kind_for_template(template_id: String) -> String:
 static func reservation_role_for_template(template_id: String) -> String:
 	if template_id.begins_with("building_frontage/") or template_id in ["public_forecourt", "service_alley"]:
 		return ReservationLedger.PEDESTRIAN_ACCESS
-	if template_id in ["loading_bay", "industrial_yard_block", "staging_pad", "equipment_compound"]:
+	if template_id in ["loading_bay", "loading_service_strip", "industrial_yard_block", "staging_pad", "equipment_compound"]:
 		return ReservationLedger.LOADING_SERVICE_APPROACH
 	return ""
 

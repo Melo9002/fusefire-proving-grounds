@@ -38,7 +38,7 @@
 			},
 			"algorithm_revisions": {
 				"layout_document": 1,
-				"parcel_grammar": "coherent_parcel_grammar_v4_bounded_search"
+				"parcel_grammar": "coherent_parcel_grammar_v5_elongated_service"
 			},
 			"source_origin": "generated",
 			"edit_state": "unchanged_copy"
@@ -1851,7 +1851,7 @@
 			{
 				"kind": "template",
 				"id": "building_frontage/industrial_shell_n",
-				"revision": "coherent_parcel_grammar_v4_bounded_search",
+				"revision": "coherent_parcel_grammar_v5_elongated_service",
 				"required_by": [
 					"parcel_parcel_00"
 				]
@@ -1859,7 +1859,7 @@
 			{
 				"kind": "template",
 				"id": "district_buffer",
-				"revision": "coherent_parcel_grammar_v4_bounded_search",
+				"revision": "coherent_parcel_grammar_v5_elongated_service",
 				"required_by": [
 					"parcel_parcel_02"
 				]
@@ -1867,7 +1867,7 @@
 			{
 				"kind": "template",
 				"id": "equipment_compound",
-				"revision": "coherent_parcel_grammar_v4_bounded_search",
+				"revision": "coherent_parcel_grammar_v5_elongated_service",
 				"required_by": [
 					"parcel_parcel_01",
 					"parcel_parcel_03",

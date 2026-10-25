@@ -15,7 +15,7 @@ const GRID_CONVENTION := "fusefire_grid_xz_y_up_cell_1"
 const ORIGINS := ["authored", "generated", "edited"]
 const ENVIRONMENTS := ["industrial_district", "commercial_street", "mixed_service", "industrial_service_pad", "legacy_compatibility"]
 const PRESENTATION_MODES := ["asset_first", "legacy"]
-const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v4_bounded_search"
+const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v5_elongated_service"
 const ROAD_TOPOLOGY_REVISION := "certified_secondary_branch_v1"
 
 static var _asset_ids_by_path: Dictionary = {}
@@ -207,6 +207,7 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 			plan.parcels.append({
 				"id": StringName(record.get("parcel_id", "")),
 				"bounds": Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])),
+				"configuration": StringName(record.get("configuration_id", "standard")),
 				"template": StringName(record.get("template_id", "empty")),
 				"rotation": int(record.get("rotation", 0)),
 				"selected_frontage_id": str(record.get("selected_frontage_id", "")),
@@ -332,6 +333,7 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 		encoded_parcels.append({
 			"parcel_id": parcel_id,
 			"bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
+			"configuration_id": str(parcel.get("configuration", "standard")),
 			"template_id": template,
 			"rotation": int(parcel.get("rotation", 0)),
 			"selected_frontage_id": str(parcel.get("selected_frontage_id", "")),
@@ -509,6 +511,11 @@ func _validate_parcels(failures: Array[Dictionary], catalog: Dictionary, map_siz
 		var bounds := Rect2i(int(encoded_bounds[0]), int(encoded_bounds[1]), int(encoded_bounds[2]), int(encoded_bounds[3]))
 		if bounds.size.x <= 0 or bounds.size.y <= 0 or bounds.position.x < 0 or bounds.position.y < 0 or bounds.end.x > map_size.x or bounds.end.y > map_size.y:
 			_fail(failures, "INVALID_PARCEL_BOUNDS", field + ".bounds", "parcel bounds are empty or outside the map", parcel_id)
+		var configuration_id := str(parcel.get("configuration_id", "standard"))
+		if configuration_id == "elongated_loading_service" and bounds.size not in [Vector2i(20, 10), Vector2i(10, 20)]:
+			_fail(failures, "INVALID_PARCEL_CONFIGURATION", field + ".configuration_id", "elongated loading/service parcels require 20x10 or 10x20 bounds", parcel_id)
+		if str(parcel.get("template_id", "")) == "loading_service_strip" and configuration_id != "elongated_loading_service":
+			_fail(failures, "UNSUPPORTED_PARCEL_CONFIGURATION", field + ".configuration_id", "loading_service_strip requires the curated elongated parcel configuration", parcel_id)
 		for occupant in parcel.get("occupants", []):
 			if not occupant is Dictionary: continue
 			var placement_ref := str(occupant.get("placement_ref", ""))

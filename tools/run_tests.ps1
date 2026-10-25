@@ -74,6 +74,7 @@ $visualTests = @(
     "coherent_road_orientation_capture.gd",
 	"coherent_asset_first_frontage_capture.gd",
 	"coherent_parcel_retry_capture.gd",
+	"coherent_parcel_size_expansion_capture.gd",
 	"coherent_secondary_road_capture.gd",
 	"generation_2_battle_capture.gd",
 	"generation_2_tactical_gameplay_capture.gd",

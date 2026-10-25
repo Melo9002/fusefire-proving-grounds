@@ -3,6 +3,7 @@ extends RefCounted
 
 const SOURCE_KIND := "generated_modular_coherent"
 const MACRO_SIZE := 10
+const ELONGATED_SERVICE_SIZE := Vector2i(20, 10)
 const ENVIRONMENTS: Array[StringName] = [&"industrial_district", &"commercial_street", &"mixed_service"]
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 const BuildingProfiles = preload("res://systems/generation/industrial_building_placement_profiles.gd")
@@ -39,7 +40,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	var streetscape_rng := RandomNumberGenerator.new()
 	streetscape_rng.state = rng.state
 	_advance_past_streetscape_variations(rng, layout, catalog)
-	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng)
+	var parcels := _derive_parcels(plan, layout, catalog, data.map_size, rng, reservations)
 	var populated := 0
 	for parcel in parcels:
 		var templates := _template_candidates(environment_id, populated, parcel, rng)
@@ -377,7 +378,7 @@ static func _road_network_supported(layout: EnvironmentModuleLayout, catalog: Di
 				return false
 	return true
 
-static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator) -> Array[Dictionary]:
+static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModuleLayout, catalog: Dictionary, map_size: Vector2i, rng: RandomNumberGenerator, reservations = null) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var road_lookup: Dictionary = {}
 	for road_cell in plan.road_cells:
@@ -433,6 +434,69 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModu
 		})
 		index += 1
 		large_count += 1
+	# A single curated 2x1 service parcel adds a useful loading frontage without
+	# replacing the established 2x2 building parcels.  The same authored recipe
+	# may occupy 20x10 or its canonical quarter-turned 10x20 form.  Selection is
+	# seed-stable and limited to one parcel, so this does not create an expanding
+	# subdivision/search grammar.
+	if plan.environment_id in [&"industrial_district", &"mixed_service"] and columns >= 6 and rows >= 5:
+		var elongated_candidates: Array[Dictionary] = []
+		for z in rows:
+			for x in columns:
+				var origin := Vector2i(x, z)
+				for macro_size in [Vector2i(2, 1), Vector2i(1, 2)]:
+					if origin.x + macro_size.x > columns or origin.y + macro_size.y > rows: continue
+					var available := true
+					for dz in macro_size.y:
+						for dx in macro_size.x:
+							var macro := origin + Vector2i(dx, dz)
+							if road_lookup.has(macro) or consumed.has(macro): available = false
+					if not available: continue
+					var bounds := Rect2i(origin * MACRO_SIZE, macro_size * MACRO_SIZE)
+					if _bounds_hit_required_reservation(bounds, reservations): continue
+					var frontages := ParcelContract.frontage_spans(bounds, road_cell_owners, "elongated_probe")
+					var supported_frontage := false
+					for frontage in frontages:
+						var encoded = frontage.get("outward_direction", [])
+						if not encoded is Array or encoded.size() != 2 or int(frontage.get("width_cells", 0)) < 4: continue
+						var direction := Vector2i(int(encoded[0]), int(encoded[1]))
+						if (macro_size == Vector2i(2, 1) and direction.y != 0) or (macro_size == Vector2i(1, 2) and direction.x != 0):
+							supported_frontage = true
+							break
+					if supported_frontage:
+						elongated_candidates.append({
+							"origin": origin,
+							"macro_size": macro_size,
+							"score": ("%d|%s|%s" % [plan.generation_seed, origin, macro_size]).hash(),
+						})
+		elongated_candidates.sort_custom(func(a, b):
+			if int(a.score) != int(b.score): return int(a.score) < int(b.score)
+			if (a.origin as Vector2i).y != (b.origin as Vector2i).y: return (a.origin as Vector2i).y < (b.origin as Vector2i).y
+			if (a.origin as Vector2i).x != (b.origin as Vector2i).x: return (a.origin as Vector2i).x < (b.origin as Vector2i).x
+			return (a.macro_size as Vector2i).x > (b.macro_size as Vector2i).x)
+		for candidate in elongated_candidates:
+			var origin: Vector2i = candidate.origin
+			var macro_size: Vector2i = candidate.macro_size
+			var overlaps := false
+			for dz in macro_size.y:
+				for dx in macro_size.x:
+					if consumed.has(origin + Vector2i(dx, dz)): overlaps = true
+			if overlaps: continue
+			for dz in macro_size.y:
+				for dx in macro_size.x: consumed[origin + Vector2i(dx, dz)] = true
+			var bounds := Rect2i(origin * MACRO_SIZE, macro_size * MACRO_SIZE)
+			var frontages := ParcelContract.frontage_spans(bounds, road_cell_owners, "parcel_%02d" % index)
+			result.append({
+				"id": StringName("parcel_%02d" % index),
+				"bounds": bounds,
+				"configuration": &"elongated_loading_service",
+				"road_edges": ParcelContract.directions_for_spans(frontages),
+				"frontage_spans": frontages,
+				"occupants": [],
+				"template": &"unassigned", "rotation": 0, "boundary": _touches_map_boundary(bounds, map_size),
+			})
+			index += 1
+			break
 	for z in rows:
 		for x in columns:
 			var macro := Vector2i(x, z)
@@ -452,6 +516,14 @@ static func _derive_parcels(plan: EnvironmentLayoutPlan, layout: EnvironmentModu
 			})
 			index += 1
 	return result
+
+static func _bounds_hit_required_reservation(bounds: Rect2i, reservations) -> bool:
+	if reservations == null: return false
+	for reservation in reservations.reservations:
+		if not bool(reservation.get("required", true)): continue
+		for cell: Vector2i in reservation.get("cells", []):
+			if bounds.has_point(cell): return true
+	return false
 
 static func _road_cell_owners(layout: EnvironmentModuleLayout, catalog: Dictionary) -> Dictionary:
 	var result: Dictionary = {}
@@ -504,6 +576,12 @@ static func _road_edges_for_macro_rect(origin: Vector2i, size: Vector2i, road_lo
 static func _template_candidates(environment_id: StringName, parcel_index: int, parcel: Dictionary, rng: RandomNumberGenerator) -> Array[StringName]:
 	var result: Array[StringName]
 	var bounds: Rect2i = parcel.bounds
+	if bounds.size in [ELONGATED_SERVICE_SIZE, Vector2i(ELONGATED_SERVICE_SIZE.y, ELONGATED_SERVICE_SIZE.x)]:
+		if not (parcel.road_edges as Array).is_empty() and environment_id in [&"industrial_district", &"mixed_service"]:
+			result.append(&"loading_service_strip")
+		else:
+			result.append(&"district_buffer")
+		return result
 	if bounds.size.x > MACRO_SIZE or bounds.size.y > MACRO_SIZE:
 		var buildings := BuildingProfiles.fitting_module_ids(bounds.size, environment_id)
 		_shuffle(buildings, rng)
@@ -631,6 +709,16 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
 				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(1, 2)),
 			]
+		&"loading_service_strip":
+			if _rotated_rect_size(ELONGATED_SERVICE_SIZE, rotation) != parcel.size:
+				return []
+			local = [
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i.ZERO),
+				EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(10, 0)),
+				EnvironmentModulePlacement.new(&"industrial_loading_canopy", Vector2i(0, 1)),
+				EnvironmentModulePlacement.new(&"cargo_container", Vector2i(17, 1), 0, rng.randi_range(0, 2)),
+				EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(15, 8)),
+			]
 		&"equipment_compound":
 			# The bounded Phase 3 parcel carries actual service/operator relations;
 			# the outer parcel rotation still aligns its west access edge to the road.
@@ -645,8 +733,9 @@ static func _template_placements(template_id: StringName, parcel: Rect2i, rotati
 			if local.is_empty() and template_id != &"district_buffer":
 				return []
 	var result: Array[EnvironmentModulePlacement] = []
+	var source_size := ELONGATED_SERVICE_SIZE if template_id == &"loading_service_strip" else parcel.size
 	for placement in local:
-		result.append(_rotate_into_parcel(placement, catalog[placement.component_id], parcel, rotation))
+		result.append(_rotate_into_parcel(placement, catalog[placement.component_id], parcel, rotation, source_size))
 	return result
 
 static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictionary, rng: RandomNumberGenerator, shell_id: StringName, tangent_offset := 0) -> Array[EnvironmentModulePlacement]:
@@ -673,18 +762,24 @@ static func _semantic_frontage_placements(parcel_size: Vector2i, catalog: Dictio
 		result.append(EnvironmentModulePlacement.new(&"street_light", Vector2i(parcel_size.x - 2, parcel_size.y - 2), 2, rng.randi_range(0, 1)))
 	return result
 
-static func _rotate_into_parcel(placement: EnvironmentModulePlacement, definition: EnvironmentModuleDefinition, parcel: Rect2i, rotation: int) -> EnvironmentModulePlacement:
+static func _rotate_into_parcel(placement: EnvironmentModulePlacement, definition: EnvironmentModuleDefinition, parcel: Rect2i, rotation: int, source_size := Vector2i.ZERO) -> EnvironmentModulePlacement:
+	if source_size == Vector2i.ZERO: source_size = parcel.size
 	var transformed: Array[Vector2i] = []
 	for cell in definition.rotated_cells(definition.footprint_cells, placement.rotation):
 		var point := placement.origin + cell
-		for _step in posmod(rotation, 4):
-			point = Vector2i(parcel.size.y - 1 - point.y, point.x)
+		match posmod(rotation, 4):
+			1: point = Vector2i(source_size.y - 1 - point.y, point.x)
+			2: point = Vector2i(source_size.x - 1 - point.x, source_size.y - 1 - point.y)
+			3: point = Vector2i(point.y, source_size.x - 1 - point.x)
 		transformed.append(point)
 	var minimum := transformed[0]
 	for point in transformed:
 		minimum.x = mini(minimum.x, point.x)
 		minimum.y = mini(minimum.y, point.y)
 	return EnvironmentModulePlacement.new(placement.component_id, parcel.position + minimum, placement.rotation + rotation, placement.variation, placement.elevation)
+
+static func _rotated_rect_size(source_size: Vector2i, rotation: int) -> Vector2i:
+	return source_size if posmod(rotation, 2) == 0 else Vector2i(source_size.y, source_size.x)
 
 static func _try_batch(layout: EnvironmentModuleLayout, batch: Array[EnvironmentModulePlacement], catalog: Dictionary, map_size: Vector2i, reservations = null, owner_ref := "", template_id: StringName = &"") -> bool:
 	var accepted: Array[EnvironmentModulePlacement] = []

@@ -11,6 +11,7 @@ const ReservationLedger = preload("res://systems/generation/environment_spatial_
 const CONTRACTS := {
 	"industrial_yard_block": {"kind": ParcelContract.LOADING_ACCESS, "local_edge": Vector2i.DOWN, "minimum_width": 4, "required": [&"paved_courtyard", &"industrial_loading_canopy", &"machine_cover_cluster"], "classification": "open_industrial_yard"},
 	"loading_bay": {"kind": ParcelContract.LOADING_ACCESS, "local_edge": Vector2i.DOWN, "minimum_width": 4, "required": [&"paved_courtyard", &"industrial_loading_canopy"], "classification": "open_loading_bay"},
+	"loading_service_strip": {"kind": ParcelContract.LOADING_ACCESS, "local_edge": Vector2i.DOWN, "minimum_width": 4, "required": [&"paved_courtyard", &"industrial_loading_canopy"], "classification": "open_loading_service_strip"},
 	"equipment_compound": {"kind": ParcelContract.SERVICE_CLEARANCE, "local_edge": Vector2i.LEFT, "minimum_width": 3, "required": [&"paved_courtyard", &"factory_pipe_receiver_unit"], "classification": "open_equipment_area"},
 	"service_alley": {"kind": ParcelContract.PEDESTRIAN_ACCESS, "local_edge": Vector2i.DOWN, "minimum_width": 2, "required": [&"paved_alley"], "classification": "open_service_alley"},
 	"staging_pad": {"kind": ParcelContract.LOADING_ACCESS, "local_edge": Vector2i.DOWN, "minimum_width": 4, "required": [&"paved_courtyard"], "classification": "open_staging_pad"},
@@ -35,8 +36,13 @@ static func frontage_candidates(parcel: Dictionary, template_id: String) -> Arra
 	if contract.is_empty(): return []
 	var candidates: Array[Dictionary] = []
 	for span in parcel.get("frontage_spans", []):
-		if span is Dictionary and int(span.get("width_cells", 0)) >= int(contract.minimum_width):
-			candidates.append(span)
+		if not span is Dictionary or int(span.get("width_cells", 0)) < int(contract.minimum_width): continue
+		if template_id == "loading_service_strip":
+			var rotation := rotation_for_frontage(template_id, span)
+			var bounds: Rect2i = parcel.get("bounds", Rect2i())
+			var expected_size := Vector2i(20, 10) if posmod(rotation, 2) == 0 else Vector2i(10, 20)
+			if rotation < 0 or bounds.size != expected_size: continue
+		candidates.append(span)
 	# Stable preference: widest span, then the authored boundary order already
 	# carried by frontage_id. This remains deterministic for equivalent input.
 	candidates.sort_custom(func(a, b):
@@ -145,6 +151,20 @@ static func relationship_cells(parcel: Dictionary, template_id: String, placemen
 		for cell in boundary:
 			if cell not in route: route.append(cell)
 		return route
+	if template_id == "loading_service_strip":
+		# The strip's four-cell service lane continues inward from the selected
+		# frontage.  This is a functional loading approach, not visual-envelope or
+		# tactical occupancy inference.
+		var outward_data = span.get("outward_direction", [])
+		if outward_data is Array and outward_data.size() == 2:
+			var inward := -Vector2i(int(outward_data[0]), int(outward_data[1]))
+			var route := boundary.duplicate()
+			for cell in boundary:
+				if not bounds.has_point(cell): continue
+				for depth in range(1, 4):
+					var approach: Vector2i = cell + inward * depth
+					if bounds.has_point(approach) and approach not in route: route.append(approach)
+			return route
 	if not template_id.begins_with("building_frontage/"): return boundary
 	var shell_id := StringName(template_id.trim_prefix("building_frontage/"))
 	var shell: EnvironmentModulePlacement
