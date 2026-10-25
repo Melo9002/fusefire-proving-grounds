@@ -3,7 +3,7 @@
 	"format": "fusefire_battlefield_layout",
 	"layout_document": {
 		"schema_version": 1,
-		"document_id": "generated_industrial_seed_2208",
+		"document_id": "persisted_generated_2208",
 		"environment_id": "industrial_district",
 		"provenance": {
 			"origin": "edited",
@@ -13,14 +13,35 @@
 			"generation_config": {
 				"topology": "t_junction",
 				"macro_size": 10,
-				"plan_signature": "industrial_district:2208:t_junction:2,0|2,1|2,2|3,1:parcel_00@0,0:20,20:building_frontage/industrial_shell_n:r3:s15bc3c9326cd92961797859713d3be86fef118e2759a97fd924acebcccb50609|parcel_01@30,0:10,10:equipment_compound:r0:s716036c4e15305abb773420bdbbc53fe7ff11e4a4490d77d396bf2fa001a51a7|parcel_02@0,20:10,10:district_buffer:r0:s6f56584bcf9764ac7d5323fad35158e157489e6bf76e619bfbd62b4ef9edc1e8|parcel_03@10,20:10,10:equipment_compound:r3:s7248d58da4487b7927b19e935459ce48d6e6b084861f4452cfe8d2c97fbe5c36|parcel_04@30,20:10,10:service_alley:r2:s5aa60ab779b7dca3ca6b5fb9a5d54416bfb16c795bd4e61a244b8e3228c0d222:access_parcel_00:pedestrian_access:parcel:parcel_00:19,10;19,9;20,10;20,9|access_parcel_01:loading_service_approach:parcel:parcel_01:33,10;33,9;34,10;34,9;35,10;35,9;36,10;36,9|access_parcel_03:loading_service_approach:parcel:parcel_03:19,23;19,24;19,25;19,26;20,23;20,24;20,25;20,26|access_parcel_04:pedestrian_access:parcel:parcel_04:34,19;34,20;35,19;35,20|mission_deployment_0:deployment_region:zone:deployment_0:38,13;38,18;38,2;38,27;38,9|mission_deployment_1:deployment_region:zone:deployment_1:1,15;1,16;1,17;1,21;1,4|mission_deployment_2:deployment_region:zone:deployment_2:37,10;37,14;37,20;37,26;37,5"
+				"plan_signature": "industrial_district:2208:t_junction:2,0|2,1|2,2|3,1:parcel_00@0,0:20,20:building_frontage/industrial_shell_n:r3:fparcel_00_frontage_00:o0:s15bc3c9326cd92961797859713d3be86fef118e2759a97fd924acebcccb50609|parcel_01@30,0:10,10:equipment_compound:r3:fparcel_01_frontage_00:o0:s8625eff22b43c3792d6f1890692183d2827105bb92538227b16f9e83875bc782|parcel_02@0,20:10,10:district_buffer:r0:f:o0:s6f56584bcf9764ac7d5323fad35158e157489e6bf76e619bfbd62b4ef9edc1e8|parcel_03@10,20:10,10:equipment_compound:r2:fparcel_03_frontage_00:o0:s89a6af44e27eb403f5ad131dce5e38cbcad4754b9c2e38fc4abe9298d274e9d1|parcel_04@30,20:10,10:equipment_compound:r1:fparcel_04_frontage_00:o0:sb313d48966e05eb8152b81f29a05a6b6fbf8d7c2dd2e1beff163f5d05f08f624:access_parcel_00:pedestrian_access:parcel:parcel_00:15,10;15,9;16,10;16,9;17,10;17,9;18,10;18,9;19,10;19,9;20,10;20,9|access_parcel_01:loading_service_approach:parcel:parcel_01:33,10;33,9;34,10;34,8;34,9;35,10;35,6;35,7;35,8;35,9;36,10;36,9|access_parcel_03:loading_service_approach:parcel:parcel_03:16,24;17,24;18,24;18,25;19,23;19,24;19,25;19,26;20,23;20,24;20,25;20,26|access_parcel_04:loading_service_approach:parcel:parcel_04:33,19;33,20;34,19;34,20;34,21;34,22;34,23;35,19;35,20;35,21;36,19;36,20|mission_deployment_0:deployment_region:zone:deployment_0:38,13;38,18;38,2;38,27;38,9|mission_deployment_1:deployment_region:zone:deployment_1:1,15;1,16;1,17;1,21;1,4|mission_deployment_2:deployment_region:zone:deployment_2:37,10;37,14;37,20;37,26;37,5::parcel_00:3:building_frontage/industrial_shell_n@parcel_00_frontage_00:r3:o0:functional_placement|parcel_01:1:equipment_compound@parcel_01_frontage_00:r3:o0:functional_placement|parcel_02:1:district_buffer@:r0:o0:intentional_buffer|parcel_03:1:equipment_compound@parcel_03_frontage_00:r2:o0:functional_placement|parcel_04:1:equipment_compound@parcel_04_frontage_00:r1:o0:functional_placement",
+				"candidate_search": {
+					"max_template_choices": 6,
+					"max_frontages_per_template": 4,
+					"max_tangent_offsets_per_frontage": 3,
+					"max_candidate_attempts_per_parcel": 12,
+					"max_optional_removals_per_candidate": 2
+				},
+				"generation_summary": {
+					"attempted_parcels": 5,
+					"functional_parcels": 4,
+					"buffer_parcels": 1,
+					"fallback_outcomes": 0,
+					"candidate_attempts": 7,
+					"candidate_rejections": 2,
+					"rejection_causes": {
+						"RESERVED_REGION_BLOCKED": 2
+					},
+					"optional_dressing_failures": 1,
+					"search_budget_exhaustions": 0,
+					"relationship_failures": 0
+				}
 			},
 			"algorithm_revisions": {
 				"layout_document": 1,
-				"parcel_grammar": "coherent_parcel_grammar_v3"
+				"parcel_grammar": "coherent_parcel_grammar_v4_bounded_search"
 			},
 			"source_origin": "generated",
-			"edit_state": "modified"
+			"edit_state": "unchanged_copy"
 		},
 		"spatial_layout": {
 			"map_size": [
@@ -202,7 +223,7 @@
 						30,
 						0
 					],
-					"rotation": 0,
+					"rotation": 3,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
@@ -215,9 +236,9 @@
 					"component_id": "factory_pipe_receiver_unit",
 					"origin": [
 						32,
-						2
+						6
 					],
-					"rotation": 0,
+					"rotation": 3,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "pipe_receiver_unit",
@@ -228,12 +249,27 @@
 				},
 				{
 					"placement_id": "placement_0013",
+					"component_id": "cargo_container",
+					"origin": [
+						30,
+						1
+					],
+					"rotation": 3,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_industrial/shipping-container-a"
+					]
+				},
+				{
+					"placement_id": "placement_0014",
 					"component_id": "yard_fence",
 					"origin": [
-						39,
-						6
+						36,
+						0
 					],
-					"rotation": 0,
+					"rotation": 3,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
@@ -242,13 +278,13 @@
 					]
 				},
 				{
-					"placement_id": "placement_0014",
+					"placement_id": "placement_0015",
 					"component_id": "paved_courtyard",
 					"origin": [
 						10,
 						20
 					],
-					"rotation": 3,
+					"rotation": 2,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
@@ -257,13 +293,13 @@
 					]
 				},
 				{
-					"placement_id": "placement_0015",
+					"placement_id": "placement_0016",
 					"component_id": "factory_pipe_receiver_unit",
 					"origin": [
-						12,
-						26
+						16,
+						25
 					],
-					"rotation": 3,
+					"rotation": 2,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "pipe_receiver_unit",
@@ -273,13 +309,28 @@
 					]
 				},
 				{
-					"placement_id": "placement_0016",
+					"placement_id": "placement_0017",
+					"component_id": "cargo_container",
+					"origin": [
+						11,
+						25
+					],
+					"rotation": 2,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_industrial/shipping-container-a"
+					]
+				},
+				{
+					"placement_id": "placement_0018",
 					"component_id": "yard_fence",
 					"origin": [
-						16,
+						10,
 						20
 					],
-					"rotation": 3,
+					"rotation": 2,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
@@ -288,50 +339,53 @@
 					]
 				},
 				{
-					"placement_id": "placement_0017",
-					"component_id": "paved_alley",
+					"placement_id": "placement_0019",
+					"component_id": "paved_courtyard",
 					"origin": [
-						33,
+						30,
 						20
 					],
-					"rotation": 2,
-					"variation": 0,
-					"elevation": 0,
-					"assembly_ref": "",
-					"asset_refs": []
-				},
-				{
-					"placement_id": "placement_0018",
-					"component_id": "service_dumpster",
-					"origin": [
-						38,
-						24
-					],
-					"rotation": 2,
+					"rotation": 1,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
 					"asset_refs": [
-						"city_kit_roads/dumpster"
-					]
-				},
-				{
-					"placement_id": "placement_0019",
-					"component_id": "construction_barrier_vault",
-					"origin": [
-						31,
-						23
-					],
-					"rotation": 2,
-					"variation": 0,
-					"elevation": 0,
-					"assembly_ref": "",
-					"asset_refs": [
-						"city_kit_roads/construction-barrier"
+						"city_kit_roads/tile-low"
 					]
 				},
 				{
 					"placement_id": "placement_0020",
+					"component_id": "factory_pipe_receiver_unit",
+					"origin": [
+						35,
+						22
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "pipe_receiver_unit",
+					"asset_refs": [
+						"factory_kit/machine-connection-hole",
+						"factory_kit/pipe-large"
+					]
+				},
+				{
+					"placement_id": "placement_0021",
+					"component_id": "yard_fence",
+					"origin": [
+						30,
+						29
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/construction-fence"
+					]
+				},
+				{
+					"placement_id": "placement_0022",
 					"component_id": "stop_sign",
 					"origin": [
 						21,
@@ -346,7 +400,7 @@
 					]
 				},
 				{
-					"placement_id": "placement_0021",
+					"placement_id": "placement_0023",
 					"component_id": "stop_sign",
 					"origin": [
 						28,
@@ -361,7 +415,7 @@
 					]
 				},
 				{
-					"placement_id": "placement_0022",
+					"placement_id": "placement_0024",
 					"component_id": "stop_sign",
 					"origin": [
 						28,
@@ -376,43 +430,13 @@
 					]
 				},
 				{
-					"placement_id": "placement_0023",
-					"component_id": "street_light",
-					"origin": [
-						29,
-						2
-					],
-					"rotation": 3,
-					"variation": 0,
-					"elevation": 0,
-					"assembly_ref": "",
-					"asset_refs": [
-						"city_kit_roads/light-square"
-					]
-				},
-				{
-					"placement_id": "placement_0024",
+					"placement_id": "placement_0025",
 					"component_id": "construction_barrier_vault",
 					"origin": [
 						32,
 						19
 					],
 					"rotation": 3,
-					"variation": 0,
-					"elevation": 0,
-					"assembly_ref": "",
-					"asset_refs": [
-						"city_kit_roads/construction-barrier"
-					]
-				},
-				{
-					"placement_id": "placement_0025",
-					"component_id": "construction_barrier_vault",
-					"origin": [
-						0,
-						0
-					],
-					"rotation": 0,
 					"variation": 0,
 					"elevation": 0,
 					"assembly_ref": "",
@@ -432,6 +456,8 @@
 					],
 					"template_id": "building_frontage/industrial_shell_n",
 					"rotation": 3,
+					"selected_frontage_id": "parcel_00_frontage_00",
+					"placement_offset": 0,
 					"occupants": [
 						{
 							"placement_ref": "placement_0004",
@@ -489,7 +515,7 @@
 							]
 						}
 					],
-					"validation_state": "requires_revalidation"
+					"validation_state": "validated"
 				},
 				{
 					"parcel_id": "parcel_01",
@@ -500,7 +526,9 @@
 						10
 					],
 					"template_id": "equipment_compound",
-					"rotation": 0,
+					"rotation": 3,
+					"selected_frontage_id": "parcel_01_frontage_00",
+					"placement_offset": 0,
 					"occupants": [
 						{
 							"placement_ref": "placement_0011",
@@ -512,6 +540,10 @@
 						},
 						{
 							"placement_ref": "placement_0013",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0014",
 							"required": false
 						}
 					],
@@ -561,7 +593,7 @@
 							]
 						}
 					],
-					"validation_state": "requires_revalidation"
+					"validation_state": "validated"
 				},
 				{
 					"parcel_id": "parcel_02",
@@ -573,10 +605,12 @@
 					],
 					"template_id": "district_buffer",
 					"rotation": 0,
+					"selected_frontage_id": "",
+					"placement_offset": 0,
 					"occupants": [],
 					"road_refs": [],
 					"frontage_spans": [],
-					"validation_state": "requires_revalidation"
+					"validation_state": "validated"
 				},
 				{
 					"parcel_id": "parcel_03",
@@ -587,18 +621,24 @@
 						10
 					],
 					"template_id": "equipment_compound",
-					"rotation": 3,
+					"rotation": 2,
+					"selected_frontage_id": "parcel_03_frontage_00",
+					"placement_offset": 0,
 					"occupants": [
-						{
-							"placement_ref": "placement_0014",
-							"required": true
-						},
 						{
 							"placement_ref": "placement_0015",
 							"required": true
 						},
 						{
 							"placement_ref": "placement_0016",
+							"required": true
+						},
+						{
+							"placement_ref": "placement_0017",
+							"required": false
+						},
+						{
+							"placement_ref": "placement_0018",
 							"required": false
 						}
 					],
@@ -627,7 +667,7 @@
 							]
 						}
 					],
-					"validation_state": "requires_revalidation"
+					"validation_state": "validated"
 				},
 				{
 					"parcel_id": "parcel_04",
@@ -637,19 +677,21 @@
 						10,
 						10
 					],
-					"template_id": "service_alley",
-					"rotation": 2,
+					"template_id": "equipment_compound",
+					"rotation": 1,
+					"selected_frontage_id": "parcel_04_frontage_00",
+					"placement_offset": 0,
 					"occupants": [
 						{
-							"placement_ref": "placement_0017",
+							"placement_ref": "placement_0019",
 							"required": true
 						},
 						{
-							"placement_ref": "placement_0018",
-							"required": false
+							"placement_ref": "placement_0020",
+							"required": true
 						},
 						{
-							"placement_ref": "placement_0019",
+							"placement_ref": "placement_0021",
 							"required": false
 						}
 					],
@@ -699,7 +741,7 @@
 							]
 						}
 					],
-					"validation_state": "requires_revalidation"
+					"validation_state": "validated"
 				}
 			],
 			"reservations": [
@@ -710,12 +752,44 @@
 					"purpose": "pedestrian_access",
 					"cells": [
 						[
+							15,
+							9
+						],
+						[
+							16,
+							9
+						],
+						[
+							17,
+							9
+						],
+						[
+							18,
+							9
+						],
+						[
 							19,
 							9
 						],
 						[
 							20,
 							9
+						],
+						[
+							15,
+							10
+						],
+						[
+							16,
+							10
+						],
+						[
+							17,
+							10
+						],
+						[
+							18,
+							10
 						],
 						[
 							19,
@@ -736,6 +810,22 @@
 					"role": "loading_service_approach",
 					"purpose": "service_clearance",
 					"cells": [
+						[
+							35,
+							6
+						],
+						[
+							35,
+							7
+						],
+						[
+							34,
+							8
+						],
+						[
+							35,
+							8
+						],
 						[
 							33,
 							9
@@ -788,12 +878,28 @@
 							23
 						],
 						[
+							16,
+							24
+						],
+						[
+							17,
+							24
+						],
+						[
+							18,
+							24
+						],
+						[
 							19,
 							24
 						],
 						[
 							20,
 							24
+						],
+						[
+							18,
+							25
 						],
 						[
 							19,
@@ -819,10 +925,14 @@
 				{
 					"reservation_id": "access_parcel_04",
 					"owner_ref": "parcel:parcel_04",
-					"role": "pedestrian_access",
-					"purpose": "pedestrian_access",
+					"role": "loading_service_approach",
+					"purpose": "service_clearance",
 					"cells": [
 						[
+							33,
+							19
+						],
+						[
 							34,
 							19
 						],
@@ -831,12 +941,40 @@
 							19
 						],
 						[
+							36,
+							19
+						],
+						[
+							33,
+							20
+						],
+						[
 							34,
 							20
 						],
 						[
 							35,
 							20
+						],
+						[
+							36,
+							20
+						],
+						[
+							34,
+							21
+						],
+						[
+							35,
+							21
+						],
+						[
+							34,
+							22
+						],
+						[
+							34,
+							23
 						]
 					],
 					"required": true,
@@ -940,23 +1078,30 @@
 		},
 		"relationships": [
 			{
-				"relationship_id": "assembly_placement_0008",
+				"relationship_id": "assembly_0008",
 				"kind": "assembly_instance",
 				"subject_ref": "placement_0008",
 				"object_ref": "assembly:city_industrial_shell_n",
 				"required": true
 			},
 			{
-				"relationship_id": "assembly_placement_0012",
+				"relationship_id": "assembly_0012",
 				"kind": "assembly_instance",
 				"subject_ref": "placement_0012",
 				"object_ref": "assembly:pipe_receiver_unit",
 				"required": true
 			},
 			{
-				"relationship_id": "assembly_placement_0015",
+				"relationship_id": "assembly_0016",
 				"kind": "assembly_instance",
-				"subject_ref": "placement_0015",
+				"subject_ref": "placement_0016",
+				"object_ref": "assembly:pipe_receiver_unit",
+				"required": true
+			},
+			{
+				"relationship_id": "assembly_0020",
+				"kind": "assembly_instance",
+				"subject_ref": "placement_0020",
 				"object_ref": "assembly:pipe_receiver_unit",
 				"required": true
 			},
@@ -974,65 +1119,59 @@
 						20,
 						20
 					],
-					"rotation": 3
-				},
-				"validation_state": "requires_revalidation"
+					"rotation": 3,
+					"selected_frontage_id": "parcel_00_frontage_00",
+					"placement_offset": 0
+				}
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0004",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0004",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0005",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0005",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0006",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0006",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0007",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0007",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0008",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0008",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0009",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0009",
-				"required": false,
-				"validation_state": "requires_revalidation"
+				"required": false
 			},
 			{
 				"relationship_id": "occupant_parcel_00_placement_0010",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_00",
 				"object_ref": "placement_0010",
-				"required": false,
-				"validation_state": "requires_revalidation"
+				"required": false
 			},
 			{
 				"relationship_id": "street_parcel_00_frontage_00_placement_0000",
@@ -1043,8 +1182,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_00",
 					"width_cells": 20
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "street_parcel_00_frontage_00_placement_0002",
@@ -1055,8 +1193,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_00",
 					"width_cells": 20
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "access_parcel_00",
@@ -1065,10 +1202,70 @@
 				"object_ref": "frontage:parcel_00_frontage_00",
 				"required": true,
 				"properties": {
+					"frontage_id": "parcel_00_frontage_00",
+					"minimum_width_cells": 2,
+					"local_access_direction": [
+						0,
+						1
+					],
+					"expected_outward_direction": [
+						1,
+						0
+					],
+					"access_cells": [
+						[
+							15,
+							10
+						],
+						[
+							16,
+							10
+						],
+						[
+							17,
+							10
+						],
+						[
+							18,
+							10
+						],
+						[
+							19,
+							10
+						],
+						[
+							20,
+							10
+						],
+						[
+							15,
+							9
+						],
+						[
+							16,
+							9
+						],
+						[
+							17,
+							9
+						],
+						[
+							18,
+							9
+						],
+						[
+							19,
+							9
+						],
+						[
+							20,
+							9
+						]
+					],
+					"classification": "sealed_exterior_frontage",
 					"access_region": "frontage_span",
 					"clearance_depth_cells": 1
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "parcel_parcel_01",
@@ -1084,33 +1281,38 @@
 						10,
 						10
 					],
-					"rotation": 0
-				},
-				"validation_state": "requires_revalidation"
+					"rotation": 3,
+					"selected_frontage_id": "parcel_01_frontage_00",
+					"placement_offset": 0
+				}
 			},
 			{
 				"relationship_id": "occupant_parcel_01_placement_0011",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_01",
 				"object_ref": "placement_0011",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_01_placement_0012",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_01",
 				"object_ref": "placement_0012",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_01_placement_0013",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_01",
 				"object_ref": "placement_0013",
-				"required": false,
-				"validation_state": "requires_revalidation"
+				"required": false
+			},
+			{
+				"relationship_id": "occupant_parcel_01_placement_0014",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_01",
+				"object_ref": "placement_0014",
+				"required": false
 			},
 			{
 				"relationship_id": "street_parcel_01_frontage_00_placement_0003",
@@ -1121,8 +1323,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_01",
 					"width_cells": 10
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "street_parcel_01_frontage_01_placement_0002",
@@ -1133,8 +1334,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_01",
 					"width_cells": 10
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "access_parcel_01",
@@ -1143,10 +1343,70 @@
 				"object_ref": "frontage:parcel_01_frontage_00",
 				"required": true,
 				"properties": {
+					"frontage_id": "parcel_01_frontage_00",
+					"minimum_width_cells": 3,
+					"local_access_direction": [
+						-1,
+						0
+					],
+					"expected_outward_direction": [
+						0,
+						1
+					],
+					"access_cells": [
+						[
+							34,
+							9
+						],
+						[
+							34,
+							8
+						],
+						[
+							35,
+							8
+						],
+						[
+							35,
+							7
+						],
+						[
+							35,
+							6
+						],
+						[
+							33,
+							9
+						],
+						[
+							33,
+							10
+						],
+						[
+							34,
+							10
+						],
+						[
+							35,
+							9
+						],
+						[
+							35,
+							10
+						],
+						[
+							36,
+							9
+						],
+						[
+							36,
+							10
+						]
+					],
+					"classification": "open_equipment_area",
 					"access_region": "frontage_span",
 					"clearance_depth_cells": 1
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "parcel_parcel_02",
@@ -1162,9 +1422,10 @@
 						10,
 						10
 					],
-					"rotation": 0
-				},
-				"validation_state": "requires_revalidation"
+					"rotation": 0,
+					"selected_frontage_id": "",
+					"placement_offset": 0
+				}
 			},
 			{
 				"relationship_id": "parcel_parcel_03",
@@ -1180,33 +1441,38 @@
 						10,
 						10
 					],
-					"rotation": 3
-				},
-				"validation_state": "requires_revalidation"
-			},
-			{
-				"relationship_id": "occupant_parcel_03_placement_0014",
-				"kind": "required_occupant",
-				"subject_ref": "parcel:parcel_03",
-				"object_ref": "placement_0014",
-				"required": true,
-				"validation_state": "requires_revalidation"
+					"rotation": 2,
+					"selected_frontage_id": "parcel_03_frontage_00",
+					"placement_offset": 0
+				}
 			},
 			{
 				"relationship_id": "occupant_parcel_03_placement_0015",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_03",
 				"object_ref": "placement_0015",
-				"required": true,
-				"validation_state": "requires_revalidation"
+				"required": true
 			},
 			{
 				"relationship_id": "occupant_parcel_03_placement_0016",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_03",
 				"object_ref": "placement_0016",
-				"required": false,
-				"validation_state": "requires_revalidation"
+				"required": true
+			},
+			{
+				"relationship_id": "occupant_parcel_03_placement_0017",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "placement_0017",
+				"required": false
+			},
+			{
+				"relationship_id": "occupant_parcel_03_placement_0018",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_03",
+				"object_ref": "placement_0018",
+				"required": false
 			},
 			{
 				"relationship_id": "street_parcel_03_frontage_00_placement_0001",
@@ -1217,8 +1483,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_03",
 					"width_cells": 10
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "access_parcel_03",
@@ -1227,16 +1492,76 @@
 				"object_ref": "frontage:parcel_03_frontage_00",
 				"required": true,
 				"properties": {
+					"frontage_id": "parcel_03_frontage_00",
+					"minimum_width_cells": 3,
+					"local_access_direction": [
+						-1,
+						0
+					],
+					"expected_outward_direction": [
+						1,
+						0
+					],
+					"access_cells": [
+						[
+							19,
+							25
+						],
+						[
+							18,
+							25
+						],
+						[
+							18,
+							24
+						],
+						[
+							17,
+							24
+						],
+						[
+							16,
+							24
+						],
+						[
+							19,
+							23
+						],
+						[
+							20,
+							23
+						],
+						[
+							19,
+							24
+						],
+						[
+							20,
+							24
+						],
+						[
+							20,
+							25
+						],
+						[
+							19,
+							26
+						],
+						[
+							20,
+							26
+						]
+					],
+					"classification": "open_equipment_area",
 					"access_region": "frontage_span",
 					"clearance_depth_cells": 1
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "parcel_parcel_04",
 				"kind": "parcel_template",
 				"subject_ref": "parcel:parcel_04",
-				"object_ref": "template:service_alley",
+				"object_ref": "template:equipment_compound",
 				"required": true,
 				"properties": {
 					"parcel_id": "parcel_04",
@@ -1246,33 +1571,31 @@
 						10,
 						10
 					],
-					"rotation": 2
-				},
-				"validation_state": "requires_revalidation"
-			},
-			{
-				"relationship_id": "occupant_parcel_04_placement_0017",
-				"kind": "required_occupant",
-				"subject_ref": "parcel:parcel_04",
-				"object_ref": "placement_0017",
-				"required": true,
-				"validation_state": "requires_revalidation"
-			},
-			{
-				"relationship_id": "occupant_parcel_04_placement_0018",
-				"kind": "required_occupant",
-				"subject_ref": "parcel:parcel_04",
-				"object_ref": "placement_0018",
-				"required": false,
-				"validation_state": "requires_revalidation"
+					"rotation": 1,
+					"selected_frontage_id": "parcel_04_frontage_00",
+					"placement_offset": 0
+				}
 			},
 			{
 				"relationship_id": "occupant_parcel_04_placement_0019",
 				"kind": "required_occupant",
 				"subject_ref": "parcel:parcel_04",
 				"object_ref": "placement_0019",
-				"required": false,
-				"validation_state": "requires_revalidation"
+				"required": true
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0020",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0020",
+				"required": true
+			},
+			{
+				"relationship_id": "occupant_parcel_04_placement_0021",
+				"kind": "required_occupant",
+				"subject_ref": "parcel:parcel_04",
+				"object_ref": "placement_0021",
+				"required": false
 			},
 			{
 				"relationship_id": "street_parcel_04_frontage_00_placement_0003",
@@ -1283,8 +1606,7 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_04",
 					"width_cells": 10
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "street_parcel_04_frontage_01_placement_0001",
@@ -1295,20 +1617,79 @@
 				"properties": {
 					"parcel_ref": "parcel:parcel_04",
 					"width_cells": 10
-				},
-				"validation_state": "requires_revalidation"
+				}
 			},
 			{
 				"relationship_id": "access_parcel_04",
-				"kind": "pedestrian_access",
+				"kind": "service_clearance",
 				"subject_ref": "parcel:parcel_04",
 				"object_ref": "frontage:parcel_04_frontage_00",
 				"required": true,
 				"properties": {
+					"frontage_id": "parcel_04_frontage_00",
+					"minimum_width_cells": 3,
+					"local_access_direction": [
+						-1,
+						0
+					],
+					"expected_outward_direction": [
+						0,
+						-1
+					],
+					"access_cells": [
+						[
+							35,
+							20
+						],
+						[
+							35,
+							21
+						],
+						[
+							34,
+							21
+						],
+						[
+							34,
+							22
+						],
+						[
+							34,
+							23
+						],
+						[
+							33,
+							20
+						],
+						[
+							33,
+							19
+						],
+						[
+							34,
+							20
+						],
+						[
+							34,
+							19
+						],
+						[
+							35,
+							19
+						],
+						[
+							36,
+							20
+						],
+						[
+							36,
+							19
+						]
+					],
+					"classification": "open_equipment_area",
 					"access_region": "frontage_span",
 					"clearance_depth_cells": 1
-				},
-				"validation_state": "requires_revalidation"
+				}
 			}
 		],
 		"dependencies": [
@@ -1321,7 +1702,7 @@
 				"certification_state": "definition_only",
 				"certification_signature": "f0b76c08c8da76a5abdac4a1108a99dcbedc7c2ed6e0979e8586d4e9f8a4315e",
 				"required_by": [
-					"assembly_placement_0008",
+					"assembly_0008",
 					"placement_0008"
 				]
 			},
@@ -1334,10 +1715,12 @@
 				"certification_state": "certified",
 				"certification_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
 				"required_by": [
-					"assembly_placement_0012",
-					"assembly_placement_0015",
+					"assembly_0012",
+					"assembly_0016",
+					"assembly_0020",
 					"placement_0012",
-					"placement_0015"
+					"placement_0016",
+					"placement_0020"
 				]
 			},
 			{
@@ -1351,12 +1734,20 @@
 			},
 			{
 				"kind": "asset",
+				"id": "city_kit_industrial/shipping-container-a",
+				"geometry_sha256": "7b2d5ca874c8e659ee6cfd1614f0470b70410b2ddc7620ac83b8954dedeb861d",
+				"calibration_signature": "654710e34683605e5ff036d2349e35a0810a41e1947afd2af72a4b65b4b328ff",
+				"required_by": [
+					"placement_0013",
+					"placement_0017"
+				]
+			},
+			{
+				"kind": "asset",
 				"id": "city_kit_roads/construction-barrier",
 				"geometry_sha256": "906f73a6d62d8de58a4c5a19e76ff95b460c42b37e5fa37478b8612f06793f26",
 				"calibration_signature": "47aacf8c4ef823f8842b3cf73e59fc2cb9c69fc476ff85b41b6ca5d4b9ff5362",
 				"required_by": [
-					"placement_0019",
-					"placement_0024",
 					"placement_0025"
 				]
 			},
@@ -1366,8 +1757,9 @@
 				"geometry_sha256": "8414c211efbc68358eb747cf6d0ad6b9ba4fbc5094603ddabaadf18e8573abbe",
 				"calibration_signature": "06f281d687d01724ea17564da4afc468a23acc04819d865e2a6eeeb181255624",
 				"required_by": [
-					"placement_0013",
-					"placement_0016"
+					"placement_0014",
+					"placement_0018",
+					"placement_0021"
 				]
 			},
 			{
@@ -1376,8 +1768,7 @@
 				"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
 				"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
 				"required_by": [
-					"placement_0009",
-					"placement_0018"
+					"placement_0009"
 				]
 			},
 			{
@@ -1386,8 +1777,7 @@
 				"geometry_sha256": "6230d136c8883d7f9bc1b86f0309077e452e26e5e1e587ef1b77abef3c5f047c",
 				"calibration_signature": "483997bf75f425ff6b9ff6cced6a10ec0f56d9db4226b9c91305d8330dedb785",
 				"required_by": [
-					"placement_0010",
-					"placement_0023"
+					"placement_0010"
 				]
 			},
 			{
@@ -1405,9 +1795,9 @@
 				"geometry_sha256": "0991181f37171daf8d2501e436a688e46ea2bcebb5e27aa451640fcbaab107ef",
 				"calibration_signature": "037146d11dd8435841cb8c325a04108d84964005408965165a21baffcf099a5c",
 				"required_by": [
-					"placement_0020",
-					"placement_0021",
-					"placement_0022"
+					"placement_0022",
+					"placement_0023",
+					"placement_0024"
 				]
 			},
 			{
@@ -1432,7 +1822,8 @@
 					"placement_0006",
 					"placement_0007",
 					"placement_0011",
-					"placement_0014"
+					"placement_0015",
+					"placement_0019"
 				]
 			},
 			{
@@ -1442,7 +1833,8 @@
 				"calibration_signature": "1912104ba9e6407b8a2122ca1c26d47653ebbf9e9cef23240f87a1731aa56ef5",
 				"required_by": [
 					"placement_0012",
-					"placement_0015"
+					"placement_0016",
+					"placement_0020"
 				]
 			},
 			{
@@ -1452,13 +1844,14 @@
 				"calibration_signature": "d0451c304d1b8dc4e56879fa17208082de066b298aaee532df4c3b62123473b3",
 				"required_by": [
 					"placement_0012",
-					"placement_0015"
+					"placement_0016",
+					"placement_0020"
 				]
 			},
 			{
 				"kind": "template",
 				"id": "building_frontage/industrial_shell_n",
-				"revision": "coherent_parcel_grammar_v3",
+				"revision": "coherent_parcel_grammar_v4_bounded_search",
 				"required_by": [
 					"parcel_parcel_00"
 				]
@@ -1466,7 +1859,7 @@
 			{
 				"kind": "template",
 				"id": "district_buffer",
-				"revision": "coherent_parcel_grammar_v3",
+				"revision": "coherent_parcel_grammar_v4_bounded_search",
 				"required_by": [
 					"parcel_parcel_02"
 				]
@@ -1474,24 +1867,17 @@
 			{
 				"kind": "template",
 				"id": "equipment_compound",
-				"revision": "coherent_parcel_grammar_v3",
+				"revision": "coherent_parcel_grammar_v4_bounded_search",
 				"required_by": [
 					"parcel_parcel_01",
-					"parcel_parcel_03"
-				]
-			},
-			{
-				"kind": "template",
-				"id": "service_alley",
-				"revision": "coherent_parcel_grammar_v3",
-				"required_by": [
+					"parcel_parcel_03",
 					"parcel_parcel_04"
 				]
 			}
 		],
 		"mission_context": {
 			"status": "preserved",
-			"zone_source": "document_revalidated",
+			"zone_source": "generated_repaired",
 			"zones": [
 				{
 					"zone_id": "deployment_0",
@@ -1590,8 +1976,7 @@
 					]
 				}
 			],
-			"objective_definitions": "not_represented_by_current_editor",
-			"validation_state": "validated"
+			"objective_definitions": "not_represented_by_current_editor"
 		},
 		"presentation": {
 			"road_presentation_mode": "asset_first"
