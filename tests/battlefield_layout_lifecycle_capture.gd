@@ -67,7 +67,7 @@ func _block_one_deployment(editor) -> bool:
 		for spawn in zone.cells:
 			var candidate := EnvironmentModuleLayout.new(editor.custom_layout.layout_id, editor.custom_layout.generation_seed)
 			for placement: EnvironmentModulePlacement in editor.custom_layout.placements:
-				var copy := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+				var copy := placement.copy()
 				if not candidate.try_add(editor.editor_catalog[copy.component_id], copy, editor.preview_map_size):
 					return false
 			var barrier := EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(spawn.x, spawn.z))

@@ -1,0 +1,1594 @@
+{
+	"compiler": "chunk-publication-1",
+	"dependencies": [
+		{
+			"available": true,
+			"certification_signature": "b0edacd366805a07b604815e116858158818ae80b600469a9be7d27ccbdab62e",
+			"id": "pipe_receiver_unit",
+			"kind": "assembly",
+			"legacy_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
+			"owner_visual_approval": false,
+			"required_by": [
+				"placement_0002"
+			],
+			"resolution": "certified_contract",
+			"valid": true
+		},
+		{
+			"available": true,
+			"certification_signature": "0aeaf51069b9bd925b07f1f8f583fb01f468315fec082ba53290ef50f75c18ac",
+			"id": "shipping_container_family",
+			"kind": "assembly",
+			"legacy_signature": "c615cfb9376bc922a661735ff82623f98f1c0622b168f95c84e3dd1a90dedec0",
+			"owner_visual_approval": false,
+			"required_by": [
+				"placement_0003"
+			],
+			"resolution": "certified_contract",
+			"valid": true
+		},
+		{
+			"calibration_signature": "c3aa2b57e78d0b7fa252b7a3c3808af6952bf257689a846d78880586893560f7",
+			"generation_eligible": true,
+			"geometry_sha256": "6a272420c37ccf4b354565d75c5d1fd889cd568297c215c681fcf11ef8c8ae13",
+			"id": "city_kit_industrial/shipping-container-c",
+			"kind": "asset",
+			"required_by": [
+				"placement_0003"
+			],
+			"semantic_signature": "2db4a4dacae28e4fbeae771a71da607913edd31e99726f8ea4c2e6987331ad03"
+		},
+		{
+			"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
+			"generation_eligible": true,
+			"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
+			"id": "city_kit_roads/dumpster",
+			"kind": "asset",
+			"required_by": [
+				"placement_0004"
+			],
+			"semantic_signature": "5b1f564e3cfd7e4ef9aca1f00744eeff25e90bce9eca5c7330185d1cc7d0f46a"
+		},
+		{
+			"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+			"generation_eligible": true,
+			"geometry_sha256": "23f54fced68c7647f6d851c8080791b56e2a7e7f541eac2e95c647006a5901c4",
+			"id": "city_kit_roads/tile-low",
+			"kind": "asset",
+			"required_by": [
+				"placement_0001"
+			],
+			"semantic_signature": "a84c45a2c5508ed394a86921ba4d8cb1db2041b4b9514f0871afdba15da6b0f3"
+		},
+		{
+			"calibration_signature": "1912104ba9e6407b8a2122ca1c26d47653ebbf9e9cef23240f87a1731aa56ef5",
+			"generation_eligible": false,
+			"geometry_sha256": "e49c9d701f802ca1b125c7ae55d8992e03710ea10838bf536bd4ddbb3da4bf9c",
+			"id": "factory_kit/machine-connection-hole",
+			"kind": "asset",
+			"required_by": [
+				"placement_0002"
+			],
+			"semantic_signature": "eb553167fd7cdd914851404d97a716fb2ed6ff21fe9646b6d57bb90583eea36a"
+		},
+		{
+			"calibration_signature": "d0451c304d1b8dc4e56879fa17208082de066b298aaee532df4c3b62123473b3",
+			"generation_eligible": false,
+			"geometry_sha256": "e30500f8ec6dc1fcc04c350ff9ecfd06470ec73e70d53b7b3b571031f30a3311",
+			"id": "factory_kit/pipe-large",
+			"kind": "asset",
+			"required_by": [
+				"placement_0002"
+			],
+			"semantic_signature": "84b92b947bffc1520faebcb4f52e269964ca59ee0bdb90499e517d91bf9509e2"
+		},
+		{
+			"id": "cargo_container",
+			"kind": "module",
+			"required_by": [
+				"placement_0003"
+			],
+			"revision": "e5beff85c5e1310c1f41a8897d6bdf99b84acc554f7e06326b1d150b407cfbb2"
+		},
+		{
+			"id": "factory_pipe_receiver_unit",
+			"kind": "module",
+			"required_by": [
+				"placement_0002"
+			],
+			"revision": "a19497c1361d3117019def59eaf1fe83a04302d5ab659f2ec63e8261926ae088"
+		},
+		{
+			"id": "paving_square",
+			"kind": "module",
+			"required_by": [
+				"placement_0001"
+			],
+			"revision": "c081f07244619391a7e9ab4c350cabd991fc7edb577aebcc1ee99bed40faa7c9"
+		},
+		{
+			"id": "service_dumpster",
+			"kind": "module",
+			"required_by": [
+				"placement_0004"
+			],
+			"revision": "372fd6df14b5f019b8b11091a16908335edcc081abd0aaa7eebfde14a892bb41"
+		}
+	],
+	"implementation": "2e9399d3e2b6822029dace390f5b02f2c989d530816e0aac8c6b5a4a69391880",
+	"profiles_sha256": "85a57c05946199bc7c6995a3147bb102fc793483a82f7e03708b809285baf4fb",
+	"revision": "6f439b458d92625ef0f08ad25384a0b3d8575865fb46b86b99f9334a9ec4d46a",
+	"schema_version": 1,
+	"source": {
+		"bounds": [
+			12.0,
+			10.0
+		],
+		"chunk_id": "service_yard",
+		"clearances": [
+			{
+				"cells": [
+					[
+						3.0,
+						0.0,
+						6.0
+					],
+					[
+						4.0,
+						0.0,
+						6.0
+					],
+					[
+						3.0,
+						0.0,
+						7.0
+					],
+					[
+						4.0,
+						0.0,
+						7.0
+					]
+				],
+				"height": 3.0,
+				"id": "machine_working_face",
+				"scope": "floor"
+			}
+		],
+		"dependencies": [
+			{
+				"available": true,
+				"certification_signature": "b0edacd366805a07b604815e116858158818ae80b600469a9be7d27ccbdab62e",
+				"id": "pipe_receiver_unit",
+				"kind": "assembly",
+				"legacy_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
+				"owner_visual_approval": false,
+				"required_by": [
+					"placement_0002"
+				],
+				"resolution": "certified_contract",
+				"valid": true
+			},
+			{
+				"available": true,
+				"certification_signature": "0aeaf51069b9bd925b07f1f8f583fb01f468315fec082ba53290ef50f75c18ac",
+				"id": "shipping_container_family",
+				"kind": "assembly",
+				"legacy_signature": "c615cfb9376bc922a661735ff82623f98f1c0622b168f95c84e3dd1a90dedec0",
+				"owner_visual_approval": false,
+				"required_by": [
+					"placement_0003"
+				],
+				"resolution": "certified_contract",
+				"valid": true
+			},
+			{
+				"calibration_signature": "c3aa2b57e78d0b7fa252b7a3c3808af6952bf257689a846d78880586893560f7",
+				"generation_eligible": true,
+				"geometry_sha256": "6a272420c37ccf4b354565d75c5d1fd889cd568297c215c681fcf11ef8c8ae13",
+				"id": "city_kit_industrial/shipping-container-c",
+				"kind": "asset",
+				"required_by": [
+					"placement_0003"
+				],
+				"semantic_signature": "2db4a4dacae28e4fbeae771a71da607913edd31e99726f8ea4c2e6987331ad03"
+			},
+			{
+				"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
+				"generation_eligible": true,
+				"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
+				"id": "city_kit_roads/dumpster",
+				"kind": "asset",
+				"required_by": [
+					"placement_0004"
+				],
+				"semantic_signature": "5b1f564e3cfd7e4ef9aca1f00744eeff25e90bce9eca5c7330185d1cc7d0f46a"
+			},
+			{
+				"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+				"generation_eligible": true,
+				"geometry_sha256": "23f54fced68c7647f6d851c8080791b56e2a7e7f541eac2e95c647006a5901c4",
+				"id": "city_kit_roads/tile-low",
+				"kind": "asset",
+				"required_by": [
+					"placement_0001"
+				],
+				"semantic_signature": "a84c45a2c5508ed394a86921ba4d8cb1db2041b4b9514f0871afdba15da6b0f3"
+			},
+			{
+				"calibration_signature": "1912104ba9e6407b8a2122ca1c26d47653ebbf9e9cef23240f87a1731aa56ef5",
+				"generation_eligible": false,
+				"geometry_sha256": "e49c9d701f802ca1b125c7ae55d8992e03710ea10838bf536bd4ddbb3da4bf9c",
+				"id": "factory_kit/machine-connection-hole",
+				"kind": "asset",
+				"required_by": [
+					"placement_0002"
+				],
+				"semantic_signature": "eb553167fd7cdd914851404d97a716fb2ed6ff21fe9646b6d57bb90583eea36a"
+			},
+			{
+				"calibration_signature": "d0451c304d1b8dc4e56879fa17208082de066b298aaee532df4c3b62123473b3",
+				"generation_eligible": false,
+				"geometry_sha256": "e30500f8ec6dc1fcc04c350ff9ecfd06470ec73e70d53b7b3b571031f30a3311",
+				"id": "factory_kit/pipe-large",
+				"kind": "asset",
+				"required_by": [
+					"placement_0002"
+				],
+				"semantic_signature": "84b92b947bffc1520faebcb4f52e269964ca59ee0bdb90499e517d91bf9509e2"
+			},
+			{
+				"id": "cargo_container",
+				"kind": "module",
+				"required_by": [
+					"placement_0003"
+				],
+				"revision": "e5beff85c5e1310c1f41a8897d6bdf99b84acc554f7e06326b1d150b407cfbb2"
+			},
+			{
+				"id": "factory_pipe_receiver_unit",
+				"kind": "module",
+				"required_by": [
+					"placement_0002"
+				],
+				"revision": "a19497c1361d3117019def59eaf1fe83a04302d5ab659f2ec63e8261926ae088"
+			},
+			{
+				"id": "paving_square",
+				"kind": "module",
+				"required_by": [
+					"placement_0001"
+				],
+				"revision": "c081f07244619391a7e9ab4c350cabd991fc7edb577aebcc1ee99bed40faa7c9"
+			},
+			{
+				"id": "service_dumpster",
+				"kind": "module",
+				"required_by": [
+					"placement_0004"
+				],
+				"revision": "372fd6df14b5f019b8b11091a16908335edcc081abd0aaa7eebfde14a892bb41"
+			}
+		],
+		"format": "fusefire_chunk_source",
+		"height": 6.0,
+		"instances": [
+			{
+				"component_id": "paving_square",
+				"elevation": 0.0,
+				"origin": [
+					0.0,
+					0.0
+				],
+				"placement_id": "placement_0001",
+				"rotation": 0.0,
+				"variation": 0.0
+			},
+			{
+				"component_id": "factory_pipe_receiver_unit",
+				"elevation": 0.0,
+				"origin": [
+					3.0,
+					3.0
+				],
+				"placement_id": "placement_0002",
+				"rotation": 0.0,
+				"variation": 0.0
+			},
+			{
+				"component_id": "cargo_container",
+				"elevation": 0.0,
+				"origin": [
+					8.0,
+					2.0
+				],
+				"placement_id": "placement_0003",
+				"rotation": 0.0,
+				"variation": 2.0
+			},
+			{
+				"component_id": "service_dumpster",
+				"elevation": 0.0,
+				"origin": [
+					0.0,
+					2.0
+				],
+				"placement_id": "placement_0004",
+				"rotation": 0.0,
+				"variation": 0.0
+			}
+		],
+		"name": "Service Yard",
+		"next_placement_id": 5.0,
+		"ports": [
+			{
+				"cells": [
+					[
+						4.0,
+						9.0
+					],
+					[
+						5.0,
+						9.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "maintenance_access",
+				"minimum_width": 2.0,
+				"normal": [
+					0.0,
+					1.0
+				],
+				"profile": "walkway_2",
+				"role": "pedestrian"
+			},
+			{
+				"cells": [
+					[
+						0.0,
+						7.0
+					],
+					[
+						0.0,
+						8.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "staff_access",
+				"minimum_width": 2.0,
+				"normal": [
+					-1.0,
+					0.0
+				],
+				"profile": "walkway_2",
+				"role": "pedestrian"
+			}
+		],
+		"provenance": {
+			"origin": "authored",
+			"pilot": "industrial-t07",
+			"review": "awaiting owner; no approval inferred"
+		},
+		"rotations": [
+			0.0,
+			1.0,
+			2.0,
+			3.0
+		],
+		"schema_version": 1.0,
+		"tactical": {
+			"components": [
+				"placement_0001",
+				"placement_0002",
+				"placement_0003",
+				"placement_0004"
+			],
+			"effects": [],
+			"links": [],
+			"surfaces": [
+				{
+					"cell": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						10.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						11.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				}
+			]
+		}
+	},
+	"source_hash": "5b9f3e570ade57eee416bdb4ec724027229cbd6f5e1ff092f9df2c406ca2814d"
+}

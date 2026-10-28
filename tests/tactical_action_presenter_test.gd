@@ -44,6 +44,19 @@ func run() -> void:
 	check(unit.global_position.is_equal_approx(Vector3(2.0, 0.0, 3.0)), "Suppressed movement synchronizes the visual transform")
 	check(unit.stats.current_hp == hp and unit.stats.current_ap == ap, "Presentation cannot change HP or AP")
 
+	# Remove the actor while the presenter is awaiting movement, as during
+	# scene teardown. A detached node is still valid but has no global transform.
+	move.presentation_suppressed = false
+	move.presentation_path = PackedVector3Array([unit.global_position, Vector3(50, 0, 3)])
+	root.remove_child.call_deferred(unit)
+	await presenter.present_move(move)
+	check(not unit.is_inside_tree() and not move.presentation_error.is_empty(), "Movement exits safely when its actor leaves the tree")
+	check(not move.presentation_error.contains("timed out"), "Teardown is not misreported as a movement timeout")
+	var detached_position := unit.position
+	presenter._snap_to_committed_destination(unit, move)
+	check(unit.position == detached_position, "Detached actors are not snapped using a global transform")
+	check(unit.stats.current_hp == hp and unit.stats.current_ap == ap, "Teardown does not alter authoritative HP or AP")
+
 	unit.queue_free()
 	enemy.queue_free()
 	presenter.queue_free()

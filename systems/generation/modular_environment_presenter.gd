@@ -1,9 +1,8 @@
 class_name ModularEnvironmentPresenter
 extends RefCounted
 
-const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
-const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
+const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
 const Streetscape = preload("res://systems/generation/road_streetscape_profile.gd")
 
 enum RoadPresentationMode {
@@ -12,7 +11,27 @@ enum RoadPresentationMode {
 }
 
 static func build(data: MapData, parent: Node3D, cell_size: float, road_presentation_mode := RoadPresentationMode.ASSET_FIRST) -> void:
-	var catalog := IndustrialModuleCatalog.create()
+	# Legacy fixtures have no document/compiler boundary. Resolve once through
+	# the same validator; a compiled document must already carry its snapshot.
+	if data.resolved_environment_modules.is_empty() and not data.environment_modules.is_empty():
+		if data.battlefield_layout_document != null:
+			push_error("Compiled environment is missing resolved presentation records")
+			return
+		var context := EnvironmentResolutionContext.new()
+		var layout := EnvironmentModuleLayout.new(&"legacy_presentation")
+		layout.placements.assign(data.environment_modules)
+		var resolved := context.resolve_layout(layout)
+		if not context.errors.is_empty():
+			push_error("Legacy environment resolution rejected: %s" % context.errors)
+			return
+		data.resolved_environment_modules = resolved
+	if data.resolved_environment_modules.size() != data.environment_modules.size():
+		push_error("Environment placements changed after resolution")
+		return
+	for index in data.environment_modules.size():
+		if EnvironmentResolutionContext.fingerprint(data.environment_modules[index]) != EnvironmentResolutionContext.fingerprint(data.resolved_environment_modules[index].placement):
+			push_error("Environment placement changed after resolution")
+			return
 	var root := Node3D.new()
 	root.name = "ModularEnvironment"
 	root.set_meta("road_presentation_mode", RoadPresentationMode.keys()[road_presentation_mode].to_lower())
@@ -24,14 +43,16 @@ static func build(data: MapData, parent: Node3D, cell_size: float, road_presenta
 		push_error("Modular environment presentation rejected: %s" % identity.error)
 		return
 	for placement_index in data.environment_modules.size():
-		var placement: EnvironmentModulePlacement = data.environment_modules[placement_index]
-		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
+		var record: Dictionary = data.resolved_environment_modules[placement_index]
+		var placement: EnvironmentModulePlacement = record.placement
+		var definition: EnvironmentModuleDefinition = record.definition
 		if definition == null:
 			continue
 		var module_root := Node3D.new()
 		module_root.name = "%s_%d_%d" % [placement.component_id, placement.origin.x, placement.origin.y]
 		module_root.set_meta("component_id", placement.component_id)
 		module_root.set_meta("placement_index", placement_index)
+		module_root.set_meta("placement_id", placement.placement_id)
 		module_root.set_meta("origin", placement.origin)
 		module_root.set_meta("rotation", placement.rotation)
 		module_root.set_meta("variation", placement.variation)
@@ -55,7 +76,7 @@ static func build(data: MapData, parent: Node3D, cell_size: float, road_presenta
 		if road_presentation_mode == RoadPresentationMode.DERIVED_DIAGNOSTIC:
 			_add_road_streetscape(data, module_root, definition, placement, cell_size)
 		_add_elevated_surface_markers(data, module_root, definition, placement, cell_size)
-		for visual in definition.visuals:
+		for visual in record.visuals:
 			_add_visual(data, module_root, definition, placement, visual, cell_size)
 
 static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, visual: Dictionary, cell_size: float) -> void:
@@ -65,28 +86,11 @@ static func _add_visual(data: MapData, parent: Node3D, definition: EnvironmentMo
 	if visual.get("kind", "asset") == "box":
 		_add_box_visual(data, parent, definition, placement, visual, cell_size)
 		return
-	var paths: Array = visual.get("asset_variants", [])
 	var asset_path: String = visual.get("asset_path", "")
 	var factor := float(visual.get("scale", 1.0))
 	var anchor := int(visual.get("anchor", 0))
-	var saved_yaw := 0.0
-	var saved_offset := Vector3.ZERO
-	var asset_ids: Array = visual.get("asset_ids", [])
-	if not asset_ids.is_empty():
-		var approved := SemanticCatalog.generation_candidates(asset_ids)
-		if approved.is_empty():
-			push_warning("No semantically approved visual candidates for %s" % definition.component_id)
-			return
-		var asset_id: String = approved[placement.variation % approved.size()]
-		var profile := AssetCatalog.profile(asset_id)
-		asset_path = AssetCatalog.path_for(asset_id)
-		factor = float(profile.scale)
-		anchor = int(profile.anchor)
-		saved_yaw = deg_to_rad(float(profile.yaw_degrees))
-		var saved: Array = profile.anchor_position
-		saved_offset = Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
-	if not paths.is_empty():
-		asset_path = paths[placement.variation % paths.size()]
+	var saved_yaw := float(visual.get("saved_yaw", 0.0))
+	var saved_offset: Vector3 = visual.get("saved_offset", Vector3.ZERO)
 	if asset_path.is_empty():
 		return
 	var local: Vector2 = visual.local_cell
@@ -115,7 +119,7 @@ static func _add_socket_assembly_visual(data: MapData, parent: Node3D, definitio
 	var module_basis := Basis(Vector3.UP, definition.placement_yaw_radians(placement.rotation))
 	for component: Dictionary in visual.components:
 		var asset_id: String = component.asset_id
-		var scene := load(AssetCatalog.path_for(asset_id)) as PackedScene
+		var scene := load(str(component.asset_path)) as PackedScene
 		if scene == null: continue
 		var source := scene.instantiate() as Node3D
 		var transform: Transform3D = component.transform
@@ -126,7 +130,7 @@ static func _add_socket_assembly_visual(data: MapData, parent: Node3D, definitio
 		wrapper.basis = module_basis * transform.basis.scaled(Vector3.ONE * factor)
 		wrapper.occlusion_bounds = AssetPlacement.mesh_bounds(source)
 		wrapper.set_meta("asset_id", asset_id)
-		wrapper.set_meta("asset_path", AssetCatalog.path_for(asset_id))
+		wrapper.set_meta("asset_path", str(component.asset_path))
 		wrapper.set_meta("socket_assembly_id", definition.structural_assembly_id)
 		wrapper.set_meta("assembly_visual_role", visual.get("visual_role", &"equipment_assembly"))
 		wrapper.add_child(source)
@@ -279,3 +283,33 @@ static func _add_elevated_surface_markers(data: MapData, parent: Node3D, definit
 		mesh.position = cell.world_position - Vector3.UP * 0.04
 		mesh.material_override = material
 		parent.add_child(mesh)
+
+## Local chunk review adapter: consumes exact compiler records; never rerolls.
+
+static func build_chunk_snapshot(compiled: Dictionary, parent: Node3D) -> void:
+	var size: Vector2i = compiled.data.map_size
+	var offset := Vector3(-size.x * 0.5 + 0.5, 0, -size.y * 0.5 + 0.5)
+	# Neutral base terrain is permitted pilot content, never substitute architecture.
+	var floor_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(size)
+	floor_mesh.mesh = plane
+	floor_mesh.position.y = -0.02
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("59636a")
+	floor_mesh.material_override = material
+	parent.add_child(floor_mesh)
+	for record in compiled.resolved:
+		var placement: EnvironmentModulePlacement = record.placement
+		if record.definition == null:
+			var profile: Dictionary = record.calibration
+			var saved: Array = profile.anchor_position
+			AssetPlacement.instantiate_calibrated(parent, AssetCatalog.path_for(record.asset_id), offset + Vector3(placement.origin.x + float(saved[0]), placement.elevation + float(saved[1]), placement.origin.y + float(saved[2])), float(profile.scale), -placement.rotation * PI * 0.5 + deg_to_rad(float(profile.yaw_degrees)), int(profile.anchor))
+			continue
+		var data := MapData.new()
+		data.add_cell(MapCellData.new(Vector3i(placement.origin.x, 0, placement.origin.y), offset + Vector3(placement.origin.x, 0, placement.origin.y)))
+		var node := Node3D.new()
+		parent.add_child(node)
+		ModularEnvironmentPresenter._add_ground_marker(data, node, record.definition, placement, 1.0)
+		for marker in node.get_children(): marker.position.y += placement.elevation
+		for visual in record.visuals: ModularEnvironmentPresenter._add_visual(data, node, record.definition, placement, visual, 1.0)

@@ -6,27 +6,37 @@ extends RefCounted
 
 const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
 
-static func compile(source: BattlefieldLayoutDocument, cell_size := 1.0, legacy_spawn_capacity := 5) -> Dictionary:
-	var errors := source.validate()
+static func compile(source: BattlefieldLayoutDocument, cell_size := 1.0, legacy_spawn_capacity := 5, context: EnvironmentResolutionContext = null) -> Dictionary:
+	if context == null: context = EnvironmentResolutionContext.new()
+	var errors := source.validate(context.catalog, context)
 	if not errors.is_empty(): return {"ok": false, "data": null, "document": source, "errors": errors, "repairs": []}
 	var document := BattlefieldLayoutDocument.from_dictionary(source.to_dictionary())
 	var encoded_size: Array = document.spatial_layout.map_size
 	var map_size := Vector2i(int(encoded_size[0]), int(encoded_size[1]))
-	var seed := int(document.provenance.get("generation_seed", 0)) if bool(document.provenance.get("has_generation_seed", false)) else 0
+	var generation_seed := int(document.provenance.get("generation_seed", 0)) if bool(document.provenance.get("has_generation_seed", false)) else 0
 	var spawn_capacity := _maximum_deployment_count(document, legacy_spawn_capacity)
-	var data := FlatMapGenerator.generate(map_size.x, map_size.y, cell_size, seed, spawn_capacity)
+	var data := FlatMapGenerator.generate(map_size.x, map_size.y, cell_size, generation_seed, spawn_capacity)
 	document.restore_mission_to_map(data)
-	var catalog := IndustrialModuleCatalog.create()
+	var catalog := context.catalog
 	var layout := document.to_module_layout(catalog)
 	if not layout.errors.is_empty():
 		for message in layout.errors: errors.append({"code": "LAYOUT_RECONSTRUCTION_FAILED", "field": "spatial_layout.placements", "reference": "", "message": message})
 		return {"ok": false, "data": data, "document": document, "errors": errors, "repairs": []}
-	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
+	data.resolved_environment_modules = context.resolve_layout(layout)
+	errors.append_array(context.errors)
+	if not errors.is_empty(): return {"ok": false, "data": null, "document": source, "errors": errors, "repairs": []}
+	errors.append_array(EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size))
+	if not errors.is_empty():
+		return {"ok": false, "data": null, "document": source, "errors": errors, "repairs": []}
+	errors.append_array(TacticalPopulationPass.verify(document, data, context))
+	if not errors.is_empty(): return {"ok": false, "data": null, "document": source, "errors": errors, "repairs": []}
 	var deployment := EnvironmentDeploymentResolver.repair(data, EnvironmentDeploymentResolver.road_anchors(layout, catalog))
+	if document.provenance.has("population") and not deployment.repairs.is_empty():
+		errors.append({"code": "POPULATION_CHANGED_MISSION", "field": "mission_context", "reference": "", "message": "Population must preserve authored deployments without repair"})
 	for failure in deployment.failures: errors.append({"code": failure.code, "field": "mission_context.zones", "reference": failure.zone_id, "message": failure.message})
 	data.source_kind = "layout_document_%s" % document.provenance.get("origin", "unknown")
 	data.environment_modules.assign(layout.placements)
-	data.environment_module_seed = seed
+	data.environment_module_seed = generation_seed
 	if document.provenance.get("source_origin", document.provenance.get("origin", "")) == "generated" or document.relationships.any(func(value): return value.get("kind", "") == "parcel_template"):
 		data.environment_layout_plan = document.to_environment_layout_plan()
 	data.rebuild_los_index()
@@ -39,7 +49,7 @@ static func compile(source: BattlefieldLayoutDocument, cell_size := 1.0, legacy_
 		for parcel in document.to_environment_layout_plan().parcels:
 			var template_id := str(parcel.get("template", ""))
 			var span := RelationshipValidator.select_frontage(parcel, template_id)
-			for issue in RelationshipValidator.validate_tactical(parcel, template_id, data, graph, span):
+			for issue in RelationshipValidator.validate_tactical(parcel, template_id, data, graph, span, catalog):
 				errors.append({"code": issue.code, "field": "relationships", "reference": issue.reference, "message": issue.message})
 	if errors.is_empty(): document.mark_functional_relationships_validated()
 	document.replace_mission_from_map(data)

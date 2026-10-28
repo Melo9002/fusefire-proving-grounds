@@ -54,9 +54,13 @@ func _test_file_persistence(catalog: Dictionary, edited: BattlefieldLayoutDocume
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func _test_representative_file(catalog: Dictionary) -> void:
-	var result := LayoutStore.load(catalog, "res://docs/architecture/examples/persisted-edited-industrial-layout.json")
-	check(result.ok and result.document.provenance.origin == "edited" and result.document.provenance.source_origin == "generated", "tracked representative generated-to-edited document remains loadable")
-	check(result.ok and result.document.environment_id == "industrial_district" and result.document.provenance.generation_seed == 2208, "representative file preserves identity and deterministic provenance")
+	# This historical document predates shipping_container_family and records
+	# cargo with an empty assembly_ref. T04 must not silently bless that change.
+	var path := "res://docs/architecture/examples/persisted-edited-industrial-layout.json"
+	var before := FileAccess.get_file_as_string(path)
+	var result := LayoutStore.load(catalog, path)
+	check(not result.ok and result.code == "ASSEMBLY_REFERENCE_MISMATCH", "historical cargo without its current assembly binding requires explicit migration")
+	check(FileAccess.get_file_as_string(path) == before, "rejected historical fixture remains unchanged on disk")
 
 func _test_dependency_failures(catalog: Dictionary, source: BattlefieldLayoutDocument) -> void:
 	var missing_required := BattlefieldLayoutDocument.from_dictionary(source.to_dictionary())

@@ -1,0 +1,1206 @@
+{
+	"compiler": "chunk-publication-1",
+	"dependencies": [
+		{
+			"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+			"generation_eligible": true,
+			"geometry_sha256": "f8f744fb6fc96dedd5ad1f763b550166f2624a3757bf36b4b39969d2e7cacac5",
+			"id": "city_kit_roads/road-straight",
+			"kind": "asset",
+			"required_by": [
+				"placement_0001"
+			],
+			"semantic_signature": "946bc6edb58cf1c41dadf681468ccfd21eeff132ee4487fa39e125dac4dcf794"
+		},
+		{
+			"id": "road_straight",
+			"kind": "module",
+			"required_by": [
+				"placement_0001"
+			],
+			"revision": "b4422dcf4c79b92c5b523d570c7b14cb259e83a23f3681f94ab557cc9984df09"
+		}
+	],
+	"implementation": "3841f463569d091bcb815d6b3530d2dd9cbae6112dec92a415364342659a2c12",
+	"profiles_sha256": "85a57c05946199bc7c6995a3147bb102fc793483a82f7e03708b809285baf4fb",
+	"revision": "7b4bd4e83aa452df289f9ed7707a2e6b7eca9392e4256116f9f04198cec1900f",
+	"schema_version": 1,
+	"source": {
+		"bounds": [
+			10.0,
+			10.0
+		],
+		"chunk_id": "street_straight",
+		"clearances": [],
+		"dependencies": [
+			{
+				"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+				"generation_eligible": true,
+				"geometry_sha256": "f8f744fb6fc96dedd5ad1f763b550166f2624a3757bf36b4b39969d2e7cacac5",
+				"id": "city_kit_roads/road-straight",
+				"kind": "asset",
+				"required_by": [
+					"placement_0001"
+				],
+				"semantic_signature": "946bc6edb58cf1c41dadf681468ccfd21eeff132ee4487fa39e125dac4dcf794"
+			},
+			{
+				"id": "road_straight",
+				"kind": "module",
+				"required_by": [
+					"placement_0001"
+				],
+				"revision": "b4422dcf4c79b92c5b523d570c7b14cb259e83a23f3681f94ab557cc9984df09"
+			}
+		],
+		"format": "fusefire_chunk_source",
+		"height": 3.0,
+		"instances": [
+			{
+				"component_id": "road_straight",
+				"elevation": 0.0,
+				"origin": [
+					0.0,
+					0.0
+				],
+				"placement_id": "placement_0001",
+				"rotation": 0.0,
+				"variation": 0.0
+			}
+		],
+		"name": "Street Straight",
+		"next_placement_id": 2.0,
+		"ports": [
+			{
+				"cells": [
+					[
+						0.0,
+						0.0
+					],
+					[
+						1.0,
+						0.0
+					],
+					[
+						2.0,
+						0.0
+					],
+					[
+						3.0,
+						0.0
+					],
+					[
+						4.0,
+						0.0
+					],
+					[
+						5.0,
+						0.0
+					],
+					[
+						6.0,
+						0.0
+					],
+					[
+						7.0,
+						0.0
+					],
+					[
+						8.0,
+						0.0
+					],
+					[
+						9.0,
+						0.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "street_0",
+				"minimum_width": 10.0,
+				"normal": [
+					0.0,
+					-1.0
+				],
+				"profile": "street_10",
+				"role": "street"
+			},
+			{
+				"cells": [
+					[
+						0.0,
+						9.0
+					],
+					[
+						1.0,
+						9.0
+					],
+					[
+						2.0,
+						9.0
+					],
+					[
+						3.0,
+						9.0
+					],
+					[
+						4.0,
+						9.0
+					],
+					[
+						5.0,
+						9.0
+					],
+					[
+						6.0,
+						9.0
+					],
+					[
+						7.0,
+						9.0
+					],
+					[
+						8.0,
+						9.0
+					],
+					[
+						9.0,
+						9.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "street_2",
+				"minimum_width": 10.0,
+				"normal": [
+					0.0,
+					1.0
+				],
+				"profile": "street_10",
+				"role": "street"
+			}
+		],
+		"provenance": {
+			"origin": "authored",
+			"pilot": "industrial-t07",
+			"review": "awaiting owner; no approval inferred"
+		},
+		"rotations": [
+			0.0,
+			1.0,
+			2.0,
+			3.0
+		],
+		"schema_version": 1.0,
+		"tactical": {
+			"components": [
+				"placement_0001"
+			],
+			"effects": [],
+			"links": [],
+			"surfaces": [
+				{
+					"cell": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						6.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						7.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						8.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						9.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				}
+			]
+		}
+	},
+	"source_hash": "a4d4d139fefbc2aa8b726e1b16661eba9f3234bcc52754bb18f21a9dea55f53e"
+}

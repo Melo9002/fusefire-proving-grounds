@@ -120,7 +120,7 @@ func present_overwatch(result: OverwatchActionResult) -> void:
 
 func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
-	if not is_instance_valid(unit):
+	if not _move_actor_available(unit):
 		result.presentation_error = "Move presenter could not find actor '%s'" % result.request.actor_id
 		return
 	if result.presentation_suppressed:
@@ -129,7 +129,7 @@ func present_move(result: MoveActionResult) -> void:
 	var camera_presented := false
 	if _camera_available():
 		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(result.target_cell), result.actor_ap_after)
-	if not is_instance_valid(unit):
+	if not _move_actor_available(unit):
 		result.presentation_error = "Move actor left the scene before traversal"
 		await _finish_camera(camera_presented)
 		return
@@ -149,17 +149,19 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 		reactions_by_checkpoint[event.checkpoint_index].append(event)
 	var reaction_camera_used := false
 	for index in range(1, result.presentation_path.size()):
-		if not is_instance_valid(unit): return reaction_camera_used
+		if not _move_actor_available(unit): return reaction_camera_used
 		var segment := PackedVector3Array([unit.global_position, result.presentation_path[index]])
 		var pose: StringName = result.visual_segments[index] if index < result.visual_segments.size() else &"move"
 		unit.move_along_path(segment, [&"move", pose])
 		await _wait_for_movement(unit, result)
+		if not _move_actor_available(unit): return reaction_camera_used
 		for event in reactions_by_checkpoint.get(index, []):
 			var watcher := _actor(event.watcher_id)
 			if not reaction_camera_used and is_instance_valid(watcher) and _camera_available():
 				var reaction_camera_subject := _attack_camera_subject(watcher, unit)
 				var reaction_camera_focus := watcher.global_position if reaction_camera_subject == unit else unit.global_position
 				reaction_camera_used = await action_camera_director.present(reaction_camera_subject, &"attack", reaction_camera_focus, 0, true)
+			if not _move_actor_available(unit): return reaction_camera_used
 			if is_instance_valid(watcher): watcher.present_attack(unit.global_position)
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
@@ -238,7 +240,13 @@ func _cleanup_extracted_actor(actor: TacticalUnit) -> void:
 		actor_registry.unregister_actor(actor)
 	actor.queue_free()
 
+func _move_actor_available(unit: TacticalUnit) -> bool:
+	return is_inside_tree() and not is_queued_for_deletion() and is_instance_valid(unit) and unit.is_inside_tree() and not unit.is_queued_for_deletion()
+
 func _snap_to_committed_destination(unit: TacticalUnit, result: MoveActionResult) -> void:
+	if not _move_actor_available(unit):
+		result.presentation_error = "Move actor left the scene during traversal"
+		return
 	if not result.presentation_path.is_empty(): unit.global_position = result.presentation_path[-1]
 	elif is_instance_valid(grid_manager): unit.global_position = grid_manager.grid_to_world(result.target_cell)
 
@@ -260,11 +268,15 @@ func _wait_for_movement(unit: TacticalUnit, result: MoveActionResult) -> void:
 	# Polling also observes scene teardown; awaiting movement_finished alone could
 	# strand the action barrier if the visual actor disappears mid-traversal.
 	var deadline := Time.get_ticks_msec() + 30000
-	while is_instance_valid(unit) and unit.is_moving and is_inside_tree() and Time.get_ticks_msec() < deadline:
+	while _move_actor_available(unit) and unit.is_moving and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
+	if not _move_actor_available(unit):
+		result.presentation_error = "Move actor left the scene during traversal"
+		return
 	if is_instance_valid(unit) and unit.is_moving:
 		result.presentation_error = "Movement presentation timed out; snapped to committed destination"
 		unit.is_moving = false
 
 func _finish_camera(was_presented: bool) -> void:
-	if was_presented and is_instance_valid(action_camera_director): await action_camera_director.finish_live_presentation(true)
+	if was_presented and is_inside_tree() and not is_queued_for_deletion() and is_instance_valid(action_camera_director) and action_camera_director.is_inside_tree() and not action_camera_director.is_queued_for_deletion():
+		await action_camera_director.finish_live_presentation(true)

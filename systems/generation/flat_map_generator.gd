@@ -105,9 +105,9 @@ static func generate_modular_industrial_sample(width: int, depth: int, cell_size
 
 ## Opt-in Goal 2.2 catalog presets. Every preset uses the same authoritative
 ## module translation path while preserving the original frontage entry point.
-static func generate_modular_environment_sample(width: int, depth: int, cell_size: float, map_seed: int, preset: StringName, spawn_capacity: int = 5) -> MapData:
+static func generate_modular_environment_sample(width: int, depth: int, cell_size: float, map_seed: int, preset: StringName, spawn_capacity: int = 5, context: EnvironmentResolutionContext = null) -> MapData:
 	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
-	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed, preset)
+	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed, preset, context)
 	if not layout.errors.is_empty():
 		push_error("Modular environment layout failed: %s" % "; ".join(layout.errors))
 	return map_data
@@ -115,9 +115,9 @@ static func generate_modular_environment_sample(width: int, depth: int, cell_siz
 ## Goal 2.3 opt-in hierarchical assembly. The flat map establishes authoritative
 ## cells and deployments; the assembler plans roads and parcels, then writes the
 ## same module definitions used by authored Goal 2.2 layouts.
-static func generate_coherent_environment(width: int, depth: int, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district", spawn_capacity: int = 5) -> MapData:
+static func generate_coherent_environment(width: int, depth: int, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district", spawn_capacity: int = 5, context: EnvironmentResolutionContext = null) -> MapData:
 	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
-	var layout := CoherentEnvironmentAssembler.apply(map_data, cell_size, map_seed, environment_id)
+	var layout := CoherentEnvironmentAssembler.apply(map_data, cell_size, map_seed, environment_id, context)
 	if not layout.errors.is_empty():
 		push_error("Coherent environment assembly failed: %s" % "; ".join(layout.errors))
 	return map_data
@@ -161,10 +161,7 @@ static func _can_place_formation(map_data: MapData, formation: Array, width: int
 			return false
 		if absi(grid_position.z - center_row) <= 1:
 			return false
-		var cell := map_data.get_cell(grid_position)
-		if not cell or not cell.walkable or cell.cover_type != MapCellData.CoverType.NONE:
-			return false
-		if cover_type == MapCellData.CoverType.FULL and _has_adjacent_full_cover(map_data, grid_position):
+		if not CoverPlacementPolicy.available(map_data, grid_position, cover_type == MapCellData.CoverType.FULL):
 			return false
 	return true
 
@@ -301,13 +298,6 @@ static func _shuffle_cells(values: Array[Vector3i], rng: RandomNumberGenerator) 
 		var held := values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = held
-
-static func _has_adjacent_full_cover(map_data: MapData, grid_position: Vector3i) -> bool:
-	for direction in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
-		var neighbor := map_data.get_cell(grid_position + direction)
-		if neighbor and neighbor.cover_type == MapCellData.CoverType.FULL:
-			return true
-	return false
 
 static func _is_generated_traversal_column(map_data: MapData, position: Vector3i) -> bool:
 	var column := Vector2i(position.x, position.z)

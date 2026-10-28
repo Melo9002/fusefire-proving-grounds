@@ -133,7 +133,8 @@ func _rotated_fixture(rotation: int) -> MapData:
 		)
 		if not layout.try_add(definition, rotated, result.map_size):
 			push_error("Rotation capture placement failed: %s" % "; ".join(layout.errors))
-	EnvironmentModuleMapWriter.apply(result, layout, catalog, 1.0)
+	for failure in EnvironmentModuleMapWriter.apply(result, layout, catalog, 1.0):
+		push_error("Rotation capture compilation failed: %s" % failure.message)
 	result.environment_modules.assign(layout.placements)
 	result.environment_module_seed = 2303
 	result.rebuild_los_index()

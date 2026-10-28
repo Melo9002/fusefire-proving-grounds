@@ -3,6 +3,10 @@ extends RefCounted
 ## Deterministic construction-time reservations. These records protect mission
 ## and functional access space; they never author MapData occupancy themselves.
 
+const Spatial = preload("res://systems/generation/environment_spatial_queries.gd")
+const WHOLE_COLUMN := "whole_column"
+const FLOOR := "floor"
+
 const DEPLOYMENT_REGION := "deployment_region"
 const OBJECTIVE_REGION := "objective_region"
 const PEDESTRIAN_ACCESS := "pedestrian_access"
@@ -35,6 +39,7 @@ static func from_map(data: MapData) -> EnvironmentSpatialReservationLedger:
 		var role := DEPLOYMENT_REGION if zone.kind == MapZoneData.Kind.DEPLOYMENT else OBJECTIVE_REGION
 		result.try_reserve({
 			"reservation_id": "mission_%s" % zone.zone_id,
+			"scope": WHOLE_COLUMN,
 			"owner_ref": "zone:%s" % zone.zone_id,
 			"role": role,
 			"purpose": "deployment" if zone.kind == MapZoneData.Kind.DEPLOYMENT else ("extraction" if zone.kind == MapZoneData.Kind.EXTRACTION else "objective"),
@@ -68,11 +73,22 @@ func try_reserve(value: Dictionary) -> bool:
 	if reservation_id.is_empty() or owner_ref.is_empty() or role not in ROLES or cells.is_empty():
 		_fail("INVALID_RESERVATION", reservation_id, "reservation requires an identity, owner, supported role, and at least one cell")
 		return false
+	# Old two-dimensional records explicitly retain whole-column behavior.
+	record["scope"] = str(record.get("scope", WHOLE_COLUMN))
+	if record.scope not in [WHOLE_COLUMN, FLOOR]:
+		_fail("INVALID_RESERVATION_SCOPE", reservation_id, "scope must be floor or whole_column")
+		return false
+	if record.scope == FLOOR:
+		if not (record.get("elevation") is int or record.get("elevation") is float) or not is_finite(float(record.elevation)) or float(record.elevation) != floorf(float(record.elevation)) or float(record.elevation) < 0 or not (record.get("height") is int or record.get("height") is float) or not is_finite(float(record.height)) or float(record.height) <= 0:
+			_fail("INVALID_RESERVATION_SPAN", reservation_id, "floor reservations require nonnegative integer elevation and positive finite height")
+			return false
+		record["elevation"] = int(record.elevation)
+		record["height"] = float(record.height)
 	if reservations.any(func(existing): return existing.reservation_id == reservation_id):
 		_fail("DUPLICATE_RESERVATION", reservation_id, "reservation identity is already present")
 		return false
 	for existing in reservations:
-		if _cells_intersect(cells, existing.cells) and not roles_are_compatible(role, str(existing.role), owner_ref, str(existing.owner_ref)):
+		if Spatial.interval_intersects(reservation_span(record), reservation_span(existing)) and Spatial.cells_intersect(cells, existing.cells) and not roles_are_compatible(role, str(existing.role), owner_ref, str(existing.owner_ref)):
 			_fail("INCOMPATIBLE_RESERVATION", reservation_id, "%s conflicts with %s" % [reservation_id, existing.reservation_id])
 			return false
 	record["cells"] = cells
@@ -82,12 +98,10 @@ func try_reserve(value: Dictionary) -> bool:
 	reservations.sort_custom(func(a, b): return str(a.reservation_id) < str(b.reservation_id))
 	return true
 
-func placement_allowed(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, layout: EnvironmentModuleLayout, owner_ref := "") -> Dictionary:
+func placement_allowed(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement, _layout: EnvironmentModuleLayout, owner_ref := "") -> Dictionary:
 	if definition.placement_layer == EnvironmentModuleDefinition.PlacementLayer.GROUND:
 		return {"ok": true}
-	var occupied := layout.world_cells(definition, placement)
-	occupied.append_array(layout.world_clearance_cells(definition, placement))
-	var visual_bounds := layout.world_visual_envelope(definition, placement) if definition.tactical_role == EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY else AABB()
+	var geometry := Spatial.record(definition, placement)
 	for reservation in reservations:
 		# A parcel validates its own occupants against the more precise functional
 		# relationship contract after the batch is assembled. Allowing its owner
@@ -95,7 +109,14 @@ func placement_allowed(definition: EnvironmentModuleDefinition, placement: Envir
 		# obstruction to its own access reservation. Other parcels and optional
 		# road furniture remain blocked by the reservation.
 		if not owner_ref.is_empty() and owner_ref == str(reservation.get("owner_ref", "")): continue
-		if _cells_intersect(occupied, reservation.cells) or _visual_intersects_cells(visual_bounds, reservation.cells):
+		var span := reservation_span(reservation)
+		var footprint_hit := Spatial.interval_intersects(geometry.occupied_span, span) and Spatial.cells_intersect(geometry.cells, reservation.cells)
+		var clearance_hit := Spatial.interval_intersects(geometry.clearance_span, span) and Spatial.cells_intersect(geometry.clearance, reservation.cells)
+		var surface_hit := false
+		for at: Vector3i in geometry.surfaces:
+			if Vector2i(at.x, at.z) in reservation.cells and span.x <= at.y and at.y < span.y: surface_hit = true
+		var visual_hit := definition.tactical_role == EnvironmentModuleDefinition.TacticalRole.VISUAL_ONLY and Spatial.visual_intersects_cells(geometry.visual, reservation.cells, span)
+		if footprint_hit or clearance_hit or surface_hit or visual_hit:
 			return {
 				"ok": false,
 				"code": "RESERVED_REGION_BLOCKED",
@@ -106,7 +127,14 @@ func placement_allowed(definition: EnvironmentModuleDefinition, placement: Envir
 	return {"ok": true}
 
 func contains(role: String, cell: Vector2i) -> bool:
+	# Deliberately projected query for existing two-dimensional parcel planning.
 	return reservations.any(func(record): return record.role == role and record.cells.has(cell))
+
+func contains_at(role: String, cell: Vector3i) -> bool:
+	for record in reservations:
+		var span := reservation_span(record)
+		if record.role == role and Vector2i(cell.x, cell.z) in record.cells and span.x <= cell.y and cell.y < span.y: return true
+	return false
 
 static func roles_are_compatible(first: String, second: String, first_owner := "", second_owner := "") -> bool:
 	if first_owner == second_owner and not first_owner.is_empty(): return true
@@ -128,7 +156,7 @@ static func frontage_access_cells(span: Dictionary, bounds: Rect2i, role: String
 	var outward := Vector2i(int(direction_data[0]), int(direction_data[1]))
 	var width := absi(end.x - start.x) + absi(end.y - start.y)
 	var desired := mini(width, 2 if role == PEDESTRIAN_ACCESS else 4)
-	var offset := maxi(0, (width - desired) / 2)
+	var offset := maxi(0, int((width - desired) / 2.0))
 	var tangent := Vector2i(signi(end.x - start.x), signi(end.y - start.y))
 	var first := start + tangent * offset
 	var result: Array[Vector2i] = []
@@ -179,17 +207,9 @@ static func _normalized_cells(source) -> Array[Vector2i]:
 	result.sort_custom(func(a, b): return a.y < b.y or (a.y == b.y and a.x < b.x))
 	return result
 
-static func _cells_intersect(first: Array, second: Array) -> bool:
-	for cell in first:
-		if second.has(cell): return true
-	return false
-
-static func _visual_intersects_cells(bounds: AABB, cells: Array) -> bool:
-	if bounds.size == Vector3.ZERO: return false
-	for cell: Vector2i in cells:
-		if bounds.position.x < float(cell.x + 1) and bounds.end.x > float(cell.x) and bounds.position.z < float(cell.y + 1) and bounds.end.z > float(cell.y):
-			return true
-	return false
+static func reservation_span(record: Dictionary) -> Vector2:
+	if record.get("scope", WHOLE_COLUMN) == WHOLE_COLUMN: return Vector2(-INF, INF)
+	return Vector2(float(record.elevation), float(record.elevation) + float(record.height))
 
 func _fail(code: String, reservation_id: String, message: String) -> void:
 	failures.append({"code": code, "reservation_id": reservation_id, "message": message})

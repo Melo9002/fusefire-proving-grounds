@@ -83,8 +83,6 @@ static func validate_geometry(parcel: Dictionary, template_id: String, placement
 	for required_id in contract.required:
 		if int(counts.get(required_id, 0)) == 0:
 			_fail(failures, "MISSING_REQUIRED_OCCUPANT", parcel_id, str(required_id), "%s requires %s" % [template_id, required_id])
-	var bounds: Rect2i = parcel.get("bounds", Rect2i())
-	var role := ParcelContract.reservation_role_for_template(template_id)
 	var access_cells := relationship_cells(parcel, template_id, placements, catalog, span)
 	for placement: EnvironmentModulePlacement in placements:
 		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
@@ -99,7 +97,7 @@ static func validate_geometry(parcel: Dictionary, template_id: String, placement
 		_validate_equipment_service(parcel, placements, catalog, span, failures)
 	return failures
 
-static func validate_tactical(parcel: Dictionary, template_id: String, data: MapData, graph: Pathfinder, span: Dictionary = {}) -> Array[Dictionary]:
+static func validate_tactical(parcel: Dictionary, template_id: String, data: MapData, graph: Pathfinder, span: Dictionary = {}, catalog: Dictionary = {}) -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
 	var contract := contract_for(template_id)
 	if contract.is_empty(): return failures
@@ -110,7 +108,8 @@ static func validate_tactical(parcel: Dictionary, template_id: String, data: Map
 	var placements: Array[EnvironmentModulePlacement] = []
 	for placement: EnvironmentModulePlacement in data.environment_modules:
 		if _placement_within_parcel(placement, bounds): placements.append(placement)
-	var cells := relationship_cells(parcel, template_id, placements, IndustrialModuleCatalog.create(), span)
+	if catalog.is_empty(): catalog = IndustrialModuleCatalog.create()
+	var cells := relationship_cells(parcel, template_id, placements, catalog, span)
 	var usable: Array[Vector3i] = []
 	for cell in cells:
 		var position := Vector3i(cell.x, 0, cell.y)
@@ -175,7 +174,7 @@ static func relationship_cells(parcel: Dictionary, template_id: String, placemen
 	var definition: EnvironmentModuleDefinition = catalog.get(shell_id)
 	if shell == null or definition == null: return boundary
 	var outward: Vector2i = definition.rotate_direction(Vector2i.DOWN, shell.rotation)
-	var center := (definition.size.x - 1) / 2
+	var center := int((definition.size.x - 1) / 2.0)
 	var result: Array[Vector2i] = []
 	for local_x in [center, mini(center + 1, definition.size.x - 1)]:
 		var edge := shell.origin + definition.rotate_cell(Vector2i(local_x, definition.size.y - 1), shell.rotation)
@@ -204,12 +203,10 @@ static func _validate_equipment_service(parcel: Dictionary, placements: Array, c
 				return
 
 static func _world_cells(definition: EnvironmentModuleDefinition, placement: EnvironmentModulePlacement) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	for cell in definition.rotated_cells(definition.footprint_cells, placement.rotation): result.append(placement.origin + cell)
-	return result
+	return EnvironmentModuleLayout.Spatial.cells(definition, placement, definition.footprint_cells)
 
 static func _placement_within_parcel(placement: EnvironmentModulePlacement, bounds: Rect2i) -> bool:
 	return bounds.has_point(placement.origin)
 
-static func _fail(target: Array[Dictionary], code: String, parcel_id: String, reference: String, message: String) -> void:
-	target.append({"code": code, "parcel_id": parcel_id, "reference": reference, "message": message})
+static func _fail(target: Array[Dictionary], code: String, parcel_id: String, source_reference: String, message: String) -> void:
+	target.append({"code": code, "parcel_id": parcel_id, "reference": source_reference, "message": message})

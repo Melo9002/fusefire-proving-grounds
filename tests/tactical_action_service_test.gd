@@ -8,6 +8,13 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	var detached_service := TacticalActionService.new()
+	_check(detached_service._validate_action_window().code == &"battle_unavailable", "Detached action service rejects without accessing a missing SceneTree")
+	root.add_child(detached_service)
+	_check(detached_service._validate_action_window().accepted, "Attached idle action service retains normal validation")
+	root.remove_child(detached_service)
+	_check(detached_service._validate_action_window().code == &"battle_unavailable", "Removed battle service rejects subsequent action queries")
+	detached_service.free()
 	await _check_move_and_wait_pipeline()
 	await _check_turn_progression_once()
 	var first := await _create_battle()

@@ -1,0 +1,61 @@
+extends SceneTree
+var failures := 0
+func _initialize(): run.call_deferred()
+func check(value: bool, label: String):
+	if value: print("PASS: ", label)
+	else: failures += 1; push_error(label)
+func run():
+	var session := ChunkEditorSession.new()
+	session.new_draft()
+	check(session.add("cargo_container", Vector2i(2, 3)), "place stable instance")
+	var original := session.selected_id
+	session.source.data.dependencies.append({"kind": "module", "id": "cargo_container", "revision": "unchanged", "required_by": [original]})
+	check(session.transform_selected(Vector2i(7, 4), 1, 3, 2), "snapped transform/elevation/variant")
+	check(session.selected_id == original and session.source.data.dependencies[0].required_by == [original], "transform preserves references")
+	check(session.duplicate_selected(), "overlapping duplicate remains editable")
+	var duplicate := session.selected_id
+	check(original != duplicate and session.source.data.tactical.components.has(duplicate) and session.source.data.dependencies[0].required_by.has(duplicate), "duplicate fresh identity and references")
+	check(session.undo() and session.source.data.instances.size() == 1 and session.selected_id == original, "undo duplication restores selection and records")
+	check(session.redo() and session.selected_id == duplicate and session.source.data.instances.size() == 2, "redo reuses command identity")
+	check(session.delete_selected() and not session.source.data.dependencies[0].required_by.has(duplicate), "delete cleans owned membership")
+	check(session.undo() and session.source.data.dependencies[0].required_by.has(duplicate), "undo deletion restores references")
+	check(session.undo() and session.undo() and session.selected().origin == [2, 3], "undo transform preserves identity")
+	check(session.redo() and session.selected().origin == [7, 4], "redo transform")
+	var before := session.signature()
+	check(not session.set_bounds(0, 2, 3) and before == session.signature(), "schema-invalid command transactional")
+	check(session.transform_selected(Vector2i(-30, 80), 2, 0, 1), "out-of-bounds draft remains editable")
+	var directory := output_root().path_join("t06-drafts")
+	check(session.save(directory, "history"), "named invalid draft saves")
+	check(not session.dirty(), "save marks exact state clean")
+	before = session.signature()
+	var history_size := session.undo_stack.size()
+	GenerationJsonStore.write(directory.path_join("malformed.json"), '{"schema_version":900}')
+	check(not session.load_draft(directory, "malformed") and before == session.signature() and session.undo_stack.size() == history_size, "rejected open preserves source and history")
+	check(session.load_draft(directory, "history") and session.signature() == before, "named load preserves stable records")
+	var other := session.source.copy()
+	check(session.insert_copy(other, Vector3i(1, 2, 3)), "insert chunk draft as independent copy")
+	var new_id := session.selected_id
+	check(new_id != original and session.source.data.dependencies[0].required_by.has(new_id), "insert remaps dependency membership")
+	check(session.transform_selected(Vector2i(1, 2), 0, 0, 0) and EnvironmentModulePlacement.from_record(other.data.instances[0]).origin == Vector2i(-30, 80), "copy edit leaves source independent")
+	check(session.undo() and session.undo() and session.source.data.instances.size() == 1, "insert is one undo command")
+	check(session.add("asset:factory_kit/structure-wall", Vector2i.ZERO), "manual raw asset authorship")
+	check(not session.source.data.tactical.components.has(session.selected_id), "raw visual does not invent tactical behavior")
+	var fresh := session.selected_id
+	check(session.undo() and session.add("cargo_container", Vector2i.ZERO) and session.selected_id != fresh, "branch after undo never reuses an abandoned ID")
+	var missing := session.source.copy()
+	missing.data.tactical.components.append("placement_9999")
+	before = session.signature()
+	check(not session.insert_copy(missing, Vector3i.ZERO) and session.signature() == before, "copy rejects dangling references without binding destination objects")
+	session.source.data.tactical.components.append("placement_9999")
+	check(session.add("cargo_container", Vector2i.ZERO) and session.selected_id == "placement_10000", "new placement does not claim unresolved reference identity")
+	var decoration := ChunkEditorSession.new()
+	decoration.new_draft()
+	decoration.add("asset:city_kit_roads/construction-cone",Vector2i.ZERO)
+	check(decoration.declare_visual_only() and decoration.duplicate_selected() and decoration.source.data.tactical.visual_only.size()==2,"visual-only declarations duplicate with fresh instance references")
+	check(decoration.delete_selected() and decoration.source.data.tactical.visual_only.size()==1 and decoration.undo() and decoration.source.data.tactical.visual_only.size()==2,"visual-only ownership deletes and restores through history")
+	print("T06 session failures: ", failures)
+	quit(1 if failures else 0)
+
+func output_root() -> String:
+	var output := OS.get_environment("FUSEFIRE_TEST_OUTPUT_DIR")
+	return "res://artifacts" if output.is_empty() else output

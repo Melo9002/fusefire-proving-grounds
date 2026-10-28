@@ -18,6 +18,8 @@ var transport_footprints: Dictionary = {}
 ## Opt-in modular-generation metadata. Placements describe presentation and
 ## authored component identity; MapCellData remains tactical authority.
 var environment_modules: Array[EnvironmentModulePlacement] = []
+## Exact operation-owned presentation records; never reroll during rendering.
+var resolved_environment_modules: Array[Dictionary] = []
 var environment_module_seed: int = 0
 ## Optional hierarchical plan used by coherent modular generation and debug UI.
 var environment_layout_plan: EnvironmentLayoutPlan

@@ -18,13 +18,9 @@ static func encode(document: BattlefieldLayoutDocument) -> String:
 	}, "\t", false) + "\n"
 
 static func decode(text: String, catalog: Dictionary, legacy_environment_id: StringName = &"") -> Dictionary:
-	var parser := JSON.new()
-	var parse_error := parser.parse(text)
-	if parse_error != OK:
-		return _failure("MALFORMED_JSON", "Layout JSON could not be parsed at line %d: %s" % [parser.get_error_line(), parser.get_error_message()])
-	var parsed = parser.data
-	if not parsed is Dictionary:
-		return _failure("MALFORMED_DOCUMENT", "Layout JSON must contain an object.")
+	var decoded := GenerationJsonStore.parse(text)
+	if not decoded.ok: return _failure(decoded.code, decoded.error)
+	var parsed: Dictionary = decoded.value
 	var version := int(parsed.get("schema_version", -1))
 	if version == LEGACY_SCHEMA_VERSION and parsed.has("map_size") and parsed.has("placements"):
 		return _decode_legacy(parsed, catalog, legacy_environment_id)
@@ -35,43 +31,26 @@ static func decode(text: String, catalog: Dictionary, legacy_environment_id: Str
 	var encoded_document = parsed.get("layout_document", null)
 	if not encoded_document is Dictionary:
 		return _failure("MISSING_LAYOUT_DOCUMENT", "layout_document must contain the unified battlefield document.")
+	var context := EnvironmentResolutionContext.new(catalog)
 	var document := BattlefieldLayoutDocument.from_dictionary(encoded_document)
-	var failures := document.validate(catalog)
+	var failures := document.validate(context.catalog, context)
 	if not failures.is_empty():
 		return _document_failure(failures)
-	var layout := document.to_module_layout(catalog)
+	var layout := document.to_module_layout(context.catalog)
 	if not layout.errors.is_empty():
 		return _failure("RECONSTRUCTION_FAILED", "Document placements could not be reconstructed: %s" % layout.errors[0])
 	return _success(document, layout, document.map_size(), false, _optional_dependency_warnings(document))
 
-static func save(document: BattlefieldLayoutDocument, path := DEFAULT_PATH) -> String:
-	var failures := document.validate()
+static func save(document: BattlefieldLayoutDocument, path := DEFAULT_PATH, context: EnvironmentResolutionContext = null) -> String:
+	var failures := document.validate({}, context)
 	if not failures.is_empty():
 		return "Cannot save invalid layout document: %s" % _failure_text(failures[0])
-	var absolute := ProjectSettings.globalize_path(path)
-	var directory_error := DirAccess.make_dir_recursive_absolute(absolute.get_base_dir())
-	if directory_error != OK:
-		return "Could not create layout directory: %s" % error_string(directory_error)
-	# Complete serialization and validation before opening the destination. A
-	# failed document never truncates the user's existing file.
-	var serialized := encode(document)
-	var file := FileAccess.open(absolute, FileAccess.WRITE)
-	if file == null:
-		return "Could not open layout for writing: %s" % error_string(FileAccess.get_open_error())
-	file.store_string(serialized)
-	file.close()
-	return ""
+	return GenerationJsonStore.write(path, encode(document))
 
 static func load(catalog: Dictionary, path := DEFAULT_PATH, legacy_environment_id: StringName = &"") -> Dictionary:
-	var absolute := ProjectSettings.globalize_path(path)
-	if not FileAccess.file_exists(absolute):
-		return _failure("FILE_NOT_FOUND", "No saved layout exists at %s." % path)
-	var file := FileAccess.open(absolute, FileAccess.READ)
-	if file == null:
-		return _failure("READ_FAILED", "Could not open layout: %s" % error_string(FileAccess.get_open_error()))
-	var text := file.get_as_text()
-	file.close()
-	return decode(text, catalog, legacy_environment_id)
+	var result := GenerationJsonStore.read(path)
+	if not result.ok: return _failure(result.code, result.error)
+	return decode(result.text, catalog, legacy_environment_id)
 
 static func _decode_legacy(parsed: Dictionary, catalog: Dictionary, legacy_environment_id: StringName) -> Dictionary:
 	var layout_result := _decode_legacy_layout(parsed, catalog)
@@ -160,8 +139,8 @@ static func _document_failure(failures: Array[Dictionary]) -> Dictionary:
 	return result
 
 static func _failure_text(failure: Dictionary) -> String:
-	var reference := str(failure.get("reference", ""))
-	return "%s%s: %s" % [failure.get("field", "document"), " [%s]" % reference if not reference.is_empty() else "", failure.get("message", "invalid")]
+	var source_reference := str(failure.get("reference", ""))
+	return "%s%s: %s" % [failure.get("field", "document"), " [%s]" % source_reference if not source_reference.is_empty() else "", failure.get("message", "invalid")]
 
 static func _failure(code: String, message: String) -> Dictionary:
 	return {

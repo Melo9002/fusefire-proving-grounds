@@ -58,7 +58,10 @@ func _capture_rejected_frontage(output: String) -> void:
 	data.environment_modules.assign(placements)
 	data.environment_module_seed = 5303
 	data.source_kind = "relationship_rejection_fixture"
-	EnvironmentModuleMapWriter.apply(data, _unsafe_layout(placements), catalog, 1.0)
+	# Negative visual fixtures intentionally bypass layout acceptance, but must
+	# expose tactical rejection rather than imply successful compilation.
+	for failure in EnvironmentModuleMapWriter.apply(data, _unsafe_layout(placements), catalog, 1.0):
+		push_warning("Negative capture tactical rejection: %s" % failure.message)
 	ModularEnvironmentPresenter.build(data, stage, 1.0)
 	_add_floor_and_light(stage, data)
 	var camera := Camera3D.new()

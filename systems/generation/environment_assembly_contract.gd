@@ -147,7 +147,7 @@ func _validate_component(component: Dictionary, building, semantic_data: Diction
 	if not actual_position.is_equal_approx(component.get("local_position", Vector3.ZERO)) or int(visual.get("yaw_quarters", 0)) != int(component.get("yaw_quarters", 0)):
 		_fail("COMPONENT_TRANSFORM_MISMATCH", "%s module transform does not match the certified local transform" % asset_id)
 
-func _validate_frontage(building) -> void:
+func _validate_frontage(_building) -> void:
 	var frontage: Dictionary = relationships.get("street_frontage", {})
 	if frontage.is_empty():
 		_fail("FRONTAGE_MISMATCH", "assembly has no named street frontage")

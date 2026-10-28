@@ -107,7 +107,7 @@ func _test_document_lifecycle() -> void:
 	if record_index >= 0:
 		var record: Dictionary = edited.spatial_layout.placements[record_index]
 		var original: Array = record.origin
-		var replacement := EnvironmentModulePlacement.new(StringName(record.component_id), Vector2i(int(original[0]), int(original[1])), int(record.rotation), int(record.variation) + 1, int(record.elevation))
+		var replacement := EnvironmentModulePlacement.new(StringName(record.component_id), Vector2i(int(original[0]), int(original[1])), int(record.rotation), int(record.variation) + 1, int(record.elevation), str(record.placement_id))
 		for index in layout.placements.size():
 			if layout.placements[index].signature() == EnvironmentModulePlacement.new(StringName(record.component_id), Vector2i(int(original[0]), int(original[1])), int(record.rotation), int(record.variation), int(record.elevation)).signature(): layout.placements[index] = replacement
 		edited.apply_edited_layout(layout)

@@ -851,6 +851,8 @@ func _validate_request(request: TacticalActionRequest) -> ActionValidationResult
 	return ActionValidationResult.allow(state_revision)
 
 func _validate_action_window() -> ActionValidationResult:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return ActionValidationResult.reject(&"battle_unavailable", "Battle has left the scene tree", state_revision)
 	if get_tree().paused:
 		return ActionValidationResult.reject(&"paused", "Battle is paused", state_revision)
 	if is_busy or is_committing:

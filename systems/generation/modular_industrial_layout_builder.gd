@@ -10,8 +10,9 @@ const PRESETS: Array[StringName] = [&"industrial_frontage", &"loading_yard", &"r
 const REFERENCE_ROAD_ACCESS := Vector2i(12, 14)
 const REFERENCE_FRONTAGE_ACCESS := Vector2i(23, 14)
 
-static func apply(data: MapData, cell_size: float, map_seed: int, preset: StringName = &"industrial_frontage") -> EnvironmentModuleLayout:
-	var catalog := IndustrialModuleCatalog.create()
+static func apply(data: MapData, cell_size: float, map_seed: int, preset: StringName = &"industrial_frontage", context: EnvironmentResolutionContext = null) -> EnvironmentModuleLayout:
+	if context == null: context = EnvironmentResolutionContext.new()
+	var catalog := context.catalog
 	var layout := EnvironmentModuleLayout.new(preset, map_seed)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed ^ 0x2202
@@ -24,8 +25,14 @@ static func apply(data: MapData, cell_size: float, map_seed: int, preset: String
 			return layout
 	if not _validate_layout(layout, catalog, data):
 		return layout
-	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
+	var resolved := context.resolve_layout(layout)
+	for failure in context.errors: layout.errors.append("%s: %s" % [failure.code, failure.message])
+	if not layout.errors.is_empty(): return layout
+	for failure in EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size):
+		layout.errors.append(failure.message)
+	if not layout.errors.is_empty(): return layout
 	data.source_kind = SOURCE_KIND if preset == &"industrial_frontage" else "%s_%s" % [SOURCE_KIND, preset]
+	data.resolved_environment_modules = resolved
 	data.environment_modules.assign(layout.placements)
 	data.environment_module_seed = map_seed
 	data.rebuild_los_index()
@@ -89,7 +96,8 @@ static func _loading_yard(rng: RandomNumberGenerator) -> Array[EnvironmentModule
 		EnvironmentModulePlacement.new(&"paved_courtyard", Vector2i(18, 4)),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(9, 5), 1, rng.randi_range(0, 2)),
 		EnvironmentModulePlacement.new(&"cargo_container", Vector2i(25, 8), 0, rng.randi_range(0, 2)),
-		EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(18, 4)),
+		# Keep the measured overhang out of the neighboring cargo service clearance.
+		EnvironmentModulePlacement.new(&"machine_cover_cluster", Vector2i(17, 4)),
 		EnvironmentModulePlacement.new(&"construction_barrier_vault", Vector2i(11, 8)),
 	]
 
@@ -112,7 +120,8 @@ static func _vertical_works() -> Array[EnvironmentModulePlacement]:
 		EnvironmentModulePlacement.new(&"catwalk_stairs", Vector2i(10, 10)),
 		EnvironmentModulePlacement.new(&"maintenance_platform", Vector2i(10, 12)),
 		EnvironmentModulePlacement.new(&"maintenance_walkway", Vector2i(14, 12)),
-		EnvironmentModulePlacement.new(&"factory_machine", Vector2i(8, 14)),
+		# The 2.7-cell machine envelope must not cut through the level-two platform.
+		EnvironmentModulePlacement.new(&"factory_machine", Vector2i(7, 14)),
 		EnvironmentModulePlacement.new(&"service_ramp", Vector2i(20, 8)),
 	]
 

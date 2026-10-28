@@ -14,8 +14,9 @@ const CandidateSearch = preload("res://systems/generation/environment_parcel_can
 # Compatibility name retained for existing bounded-search assertions.
 const MAX_TEMPLATE_ATTEMPTS := CandidateSearch.MAX_CANDIDATE_ATTEMPTS_PER_PARCEL
 
-static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district") -> EnvironmentModuleLayout:
-	var catalog := IndustrialModuleCatalog.create()
+static func apply(data: MapData, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district", context: EnvironmentResolutionContext = null) -> EnvironmentModuleLayout:
+	if context == null: context = EnvironmentResolutionContext.new()
+	var catalog := context.catalog
 	var plan := EnvironmentLayoutPlan.new(environment_id, map_seed)
 	plan.macro_size = MACRO_SIZE
 	plan.search_budget = CandidateSearch.configuration()
@@ -94,13 +95,18 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	# Running it last avoids committing decorations before frontage is known.
 	_decorate_road_network(layout, plan, catalog, data.map_size, streetscape_rng, reservations)
 	plan.reservations.assign(reservations.reservations.duplicate(true))
-	EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size)
+	var resolved := context.resolve_layout(layout)
+	for failure in context.errors: layout.errors.append("%s: %s" % [failure.code, failure.message])
+	if not layout.errors.is_empty(): return layout
+	for failure in EnvironmentModuleMapWriter.apply(data, layout, catalog, cell_size):
+		layout.errors.append(failure.message)
+	if not layout.errors.is_empty(): return layout
 	var relationship_graph := Pathfinder.new()
 	MapGraphBuilder.build(data, relationship_graph)
 	for parcel in plan.parcels:
 		var template_id := String(parcel.get("template", ""))
 		var frontage := RelationshipValidator.select_frontage(parcel, template_id)
-		for failure in RelationshipValidator.validate_tactical(parcel, template_id, data, relationship_graph, frontage):
+		for failure in RelationshipValidator.validate_tactical(parcel, template_id, data, relationship_graph, frontage, catalog):
 			plan.relationship_failures.append(failure)
 			layout.errors.append("%s: %s" % [failure.code, failure.message])
 	var deployment_result := EnvironmentDeploymentResolver.repair(data, EnvironmentDeploymentResolver.plan_anchors(plan))
@@ -109,6 +115,7 @@ static func apply(data: MapData, cell_size: float, map_seed: int, environment_id
 	for failure in deployment_result.failures:
 		layout.errors.append("%s: %s needs %d deployment cells but placed %d" % [failure.code, failure.zone_id, failure.required, failure.placed])
 	data.source_kind = "%s_%s" % [SOURCE_KIND, environment_id]
+	data.resolved_environment_modules = resolved
 	data.environment_modules.assign(layout.placements)
 	data.environment_module_seed = map_seed
 	data.environment_layout_plan = plan
@@ -613,7 +620,7 @@ static func _evaluate_candidate(source_layout: EnvironmentModuleLayout, source_r
 	var frontage: Dictionary = specification.frontage
 	var candidate_rng := RandomNumberGenerator.new()
 	candidate_rng.seed = CandidateSearch.candidate_seed(map_seed, String(parcel.id), specification)
-	var batch := _template_placements(template_id, parcel.bounds, int(specification.rotation), candidate_rng, int(specification.tangent_offset))
+	var batch := _template_placements(template_id, parcel.bounds, int(specification.rotation), candidate_rng, int(specification.tangent_offset), catalog)
 	var initial_optional := _optional_occupant_count(template_id, batch)
 	var candidate := _clone_layout(source_layout, catalog, map_size)
 	if candidate == null: return _candidate_failure("CANDIDATE_REPLAY_FAILED", "existing accepted layout could not be replayed")
@@ -684,9 +691,9 @@ static func _placement_failure_code(message: String) -> String:
 static func _candidate_label(specification: Dictionary) -> String:
 	return "%s@%s:r%d:o%d" % [specification.template_id, specification.frontage_id, specification.rotation, specification.tangent_offset]
 
-static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator, tangent_offset := 0) -> Array[EnvironmentModulePlacement]:
+static func _template_placements(template_id: StringName, parcel: Rect2i, rotation: int, rng: RandomNumberGenerator, tangent_offset := 0, catalog: Dictionary = {}) -> Array[EnvironmentModulePlacement]:
 	var local: Array[EnvironmentModulePlacement] = []
-	var catalog := IndustrialModuleCatalog.create()
+	if catalog.is_empty(): catalog = IndustrialModuleCatalog.create()
 	var template_name := String(template_id)
 	if template_name.begins_with("building_frontage/"):
 		var shell_id := StringName(template_name.trim_prefix("building_frontage/"))

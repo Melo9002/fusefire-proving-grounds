@@ -394,6 +394,7 @@ static func _ramp() -> EnvironmentModuleDefinition:
 
 static func _elevated_platform() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"maintenance_platform", &"factory_vertical", Vector2i(4, 4))
+	item.occupancy_height = 0.0 # Floor planes, not a solid column below the platform.
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.PLATFORM)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OVERHEAD)
@@ -406,6 +407,7 @@ static func _elevated_platform() -> EnvironmentModuleDefinition:
 
 static func _elevated_walkway() -> EnvironmentModuleDefinition:
 	var item := EnvironmentModuleDefinition.new(&"maintenance_walkway", &"factory_vertical", Vector2i(2, 6))
+	item.occupancy_height = 0.0
 	item.set_tactical_role(EnvironmentModuleDefinition.TacticalRole.GROUND)
 	item.set_module_type(EnvironmentModuleDefinition.ModuleType.WALKWAY)
 	item.set_placement_layer(EnvironmentModuleDefinition.PlacementLayer.OVERHEAD)

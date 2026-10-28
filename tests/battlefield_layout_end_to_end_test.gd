@@ -138,7 +138,8 @@ func _apply_representative_edit(editor, kind: String) -> Dictionary:
 	var changed: EnvironmentModulePlacement
 	for index in editor.custom_layout.placements.size():
 		var source: EnvironmentModulePlacement = editor.custom_layout.placements[index]
-		var copy := EnvironmentModulePlacement.new(source.component_id, source.origin, source.rotation, source.variation + (1 if index == target_index else 0), source.elevation)
+		var copy := source.copy()
+		copy.variation += 1 if index == target_index else 0
 		if not candidate.try_add(editor.editor_catalog[copy.component_id], copy, editor.preview_map_size):
 			return {"ok": false, "error": candidate.errors.back()}
 		if index == target_index:
@@ -149,7 +150,7 @@ func _apply_representative_edit(editor, kind: String) -> Dictionary:
 func _clone_layout(source: EnvironmentModuleLayout, map_size: Vector2i, catalog: Dictionary) -> EnvironmentModuleLayout:
 	var result := EnvironmentModuleLayout.new(source.layout_id, source.generation_seed)
 	for placement: EnvironmentModulePlacement in source.placements:
-		var copy := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		var copy := placement.copy()
 		if not result.try_add(catalog[copy.component_id], copy, map_size):
 			return result
 	return result

@@ -83,7 +83,7 @@ func _test_generated_ownership_and_relationships() -> void:
 	for record in edited.spatial_layout.placements:
 		var origin: Array = record.origin
 		var variation := int(record.variation) + (1 if record.placement_id == owned_ref else 0)
-		changed_layout.try_add(catalog[StringName(record.component_id)], EnvironmentModulePlacement.new(StringName(record.component_id), Vector2i(int(origin[0]), int(origin[1])), int(record.rotation), variation, int(record.elevation)), edited.map_size())
+		changed_layout.try_add(catalog[StringName(record.component_id)], EnvironmentModulePlacement.new(StringName(record.component_id), Vector2i(int(origin[0]), int(origin[1])), int(record.rotation), variation, int(record.elevation), str(record.placement_id)), edited.map_size())
 	edited.apply_edited_layout(changed_layout)
 	check(edited.spatial_layout.parcels.all(func(value): return value.validation_state == "requires_revalidation"), "editing an owned placement explicitly invalidates preserved parcel contracts")
 	check(edited.relationships.any(func(value): return value.kind == ParcelContract.REQUIRED_OCCUPANT and value.get("validation_state", "") == "requires_revalidation"), "dependent ownership relationships require revalidation after an edit")

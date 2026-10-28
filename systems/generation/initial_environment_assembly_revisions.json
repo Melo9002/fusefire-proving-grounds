@@ -1,0 +1,1006 @@
+{
+	"assemblies": {
+		"certified_pipe_service_pad": {
+			"available": true,
+			"certification_signature": "cb36ffd5279c9f47c7b124e6191f5337608ad05a243cc635e9a1c3683ad68dc2",
+			"id": "certified_pipe_service_pad",
+			"kind": "assembly",
+			"legacy_signature": "0bce3abd64a612d05ec18fb5c82ea602c40c9dcba913956db286e71b6d9815f9",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell": {
+			"available": true,
+			"certification_signature": "acb63993706cd1d261aa0bab0db90ddbe6601a1c2c2d6e02b0786071e622aa15",
+			"id": "city_industrial_shell",
+			"kind": "assembly",
+			"legacy_signature": "46fb9289b0549f636585aab907579a2586868e4f37110cfdd441d9f6d0c6dd62",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_a": {
+			"available": true,
+			"certification_signature": "727f7434fa915b01d1ab973a36dbaaa0170733a0171e3fc3a8d00b4c3a1ab17c",
+			"id": "city_industrial_shell_a",
+			"kind": "assembly",
+			"legacy_signature": "0269e5e76c819f6053db452e7f47ea1fcfb2cff91a57cf014bec68c1d0e45a53",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_b": {
+			"available": true,
+			"certification_signature": "3d3620a5cc7acaea7a1caec5e7d920c10590161b67371eec2793bfcb98e63d29",
+			"id": "city_industrial_shell_b",
+			"kind": "assembly",
+			"legacy_signature": "b2c4a82095b35f4161903d848dce5f60529684a65c1b0f92f1321fe1ec6b984a",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_c": {
+			"available": true,
+			"certification_signature": "a04bda15f09b707d23a378ef861f6b10719decfe9065af76fd656a2ebcb2ef5e",
+			"id": "city_industrial_shell_c",
+			"kind": "assembly",
+			"legacy_signature": "675fdb3f620b4ed2ee7288b5d9abc789689312a68248aa00c044ce1edb310299",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_d": {
+			"available": true,
+			"certification_signature": "3c78208af11d20f0f60a939026970a36defd51e03c3bd9c6a2862c6205d7107e",
+			"id": "city_industrial_shell_d",
+			"kind": "assembly",
+			"legacy_signature": "9c1006341f94ffaf4bf2b70b41a8080195680453f1d86ffc5b18cf7fb41ac6d1",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_e": {
+			"available": true,
+			"certification_signature": "3a4b7c32ddc500241827a15152f3af62225a438cd83b61fc63b7f900d867c0fb",
+			"id": "city_industrial_shell_e",
+			"kind": "assembly",
+			"legacy_signature": "481dd4e259f88ffc14d467023b66b65f15d46841c45a4641a423907e7ea590be",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_f": {
+			"available": true,
+			"certification_signature": "355fc7a3b099262fa0ebfa84bae494fd53f25a1947374692d6b817e94ae75a6a",
+			"id": "city_industrial_shell_f",
+			"kind": "assembly",
+			"legacy_signature": "79a1888ef02e45f4f0251fd0e826b0f73a51ba772760c7c539cb61319bf56693",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_g": {
+			"available": true,
+			"certification_signature": "b4b7ccd8a736cc52a27e8803650ee55dabcac96565af4cdb249c5e777864677f",
+			"id": "city_industrial_shell_g",
+			"kind": "assembly",
+			"legacy_signature": "d3e08722a24614c4913fbfa3466ba85071ed8003232fd58e1202b7240ee00882",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_h": {
+			"available": true,
+			"certification_signature": "7e5b809085f93686640b2e0c796b671e14538252a9b6c86501d11e9b5e5337b5",
+			"id": "city_industrial_shell_h",
+			"kind": "assembly",
+			"legacy_signature": "0f2e2a5efa9843a62bc37f1f7180db67b2d99dad4ef072998160648a8136ef63",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_i": {
+			"available": true,
+			"certification_signature": "e5837431fc97a6fa390209fe22288cd9b508be0cd616218b66e15183463ae87e",
+			"id": "city_industrial_shell_i",
+			"kind": "assembly",
+			"legacy_signature": "fc0a5cc0a12e4bd61af4dd2ce19011fee5c80780d7e523fe2893430e88163117",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_j": {
+			"available": true,
+			"certification_signature": "47399205e7c04b97c896f96cb774bf7d8b0af70064ef923a8e56db39528ac347",
+			"id": "city_industrial_shell_j",
+			"kind": "assembly",
+			"legacy_signature": "9f922299bf423716d247b7e36caea131f673cc7c7c27fbb2b40be9c5713e0a3d",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_k": {
+			"available": true,
+			"certification_signature": "0d94a4e4441b890bfc030d103f1394b7afa2a874f40be0ca8e5585f4c58e0012",
+			"id": "city_industrial_shell_k",
+			"kind": "assembly",
+			"legacy_signature": "085490af76c2b8617413b1c7e21fb69f8ce36f38f359bb819259d28b31b03606",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_l": {
+			"available": true,
+			"certification_signature": "a956050d720be814b03aa76583bcdbc2a454b7743bc0d67c45c6f9d08fcf2108",
+			"id": "city_industrial_shell_l",
+			"kind": "assembly",
+			"legacy_signature": "5c7532342280b95141b90d3f69bad279b3ce2d274bf2932fb75121066aac2a30",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_m": {
+			"available": true,
+			"certification_signature": "70be01f13831e4d6b95a6d765d5562627a846ca7e303751e4a5385f508d13ea4",
+			"id": "city_industrial_shell_m",
+			"kind": "assembly",
+			"legacy_signature": "8eda3c361042da71be3a9d2a85aa35823306c9054ab673641e00bffab9baa8d1",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_n": {
+			"available": true,
+			"certification_signature": "ef7ed13fdcb32cceb3cc7a83c1d38d9722679fd5a366c6f99c2f24b80483a9bc",
+			"id": "city_industrial_shell_n",
+			"kind": "assembly",
+			"legacy_signature": "f0b76c08c8da76a5abdac4a1108a99dcbedc7c2ed6e0979e8586d4e9f8a4315e",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_o": {
+			"available": true,
+			"certification_signature": "b3780a03d9aa04072fda8809cc99f0b355dbd382b3cfb1f9a8ba0ae5208c804e",
+			"id": "city_industrial_shell_o",
+			"kind": "assembly",
+			"legacy_signature": "f31bb6b85f9a26351293b57f3e674b8def6a873ab0a9a26af1318660e31ca7b4",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_p": {
+			"available": true,
+			"certification_signature": "cd0f93627117a7f25633363ad0054dda06f190ed7915bd27a4b2d57007e0d85b",
+			"id": "city_industrial_shell_p",
+			"kind": "assembly",
+			"legacy_signature": "4f0b3537f3f8db0ee4f200aaccbfee1dce4b5d886ea3ed7c368df3dde4ebedaf",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_q": {
+			"available": true,
+			"certification_signature": "fee85666144263318c72ec1be2078d954d96fd4933d0cb032708a3cfe827a422",
+			"id": "city_industrial_shell_q",
+			"kind": "assembly",
+			"legacy_signature": "2a6ec27513d3c95628e4d03bf890b9bbfacd700fca51373fb6e414fbd3a79f0b",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_r": {
+			"available": true,
+			"certification_signature": "f02a71499519bdedd3fc5191cc33bde5a9044f4f200d4ef9f437216325e9bede",
+			"id": "city_industrial_shell_r",
+			"kind": "assembly",
+			"legacy_signature": "93c8ae9b4c8f34fb361ef13fe8aa162364b69e39b3e38fe88c39cb693e7389f5",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_s": {
+			"available": true,
+			"certification_signature": "86acae4ed3fe010e323424407ed89b1f855f8c1ed3e2d39e7a1f2f92cead25f4",
+			"id": "city_industrial_shell_s",
+			"kind": "assembly",
+			"legacy_signature": "e60be14727be5137069fe9667e937a988049b07e32aed9b82b6023bee91ae86c",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"city_industrial_shell_t": {
+			"available": true,
+			"certification_signature": "c73b08d9ff38bc12da02c58ffc037fde50798e4cf02d6c8cfa18b9202ff52feb",
+			"id": "city_industrial_shell_t",
+			"kind": "assembly",
+			"legacy_signature": "a5aeb8f56b82b98e8322de0de25d82f2127adeb438d8b09ddf509fdc6ff13f32",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"loading_canopy": {
+			"available": true,
+			"certification_signature": "49782dcebffe63b78531e5b2046d4031fca515b654dc59c53fce2058f1e27bb0",
+			"id": "loading_canopy",
+			"kind": "assembly",
+			"legacy_signature": "5bc0bf8b2cd4d0f1d548ef2a3699e94f536c1f7c4afc890c92ba2264f1b2aab5",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"pipe_receiver_unit": {
+			"available": true,
+			"certification_signature": "b0edacd366805a07b604815e116858158818ae80b600469a9be7d27ccbdab62e",
+			"id": "pipe_receiver_unit",
+			"kind": "assembly",
+			"legacy_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"service_building": {
+			"available": true,
+			"certification_signature": "37c4ae21f84ca35d4a7cd8795b9110590ace767a78e82285ee5070e572414457",
+			"id": "service_building",
+			"kind": "assembly",
+			"legacy_signature": "fbf7c4041c59fe1c93852aeb618a892a83eb22b0f0408184dd2a218d055d41b5",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		},
+		"shipping_container_family": {
+			"available": true,
+			"certification_signature": "0aeaf51069b9bd925b07f1f8f583fb01f468315fec082ba53290ef50f75c18ac",
+			"id": "shipping_container_family",
+			"kind": "assembly",
+			"legacy_signature": "c615cfb9376bc922a661735ff82623f98f1c0622b168f95c84e3dd1a90dedec0",
+			"owner_visual_approval": false,
+			"required_by": [],
+			"valid": true
+		}
+	},
+	"assets": {
+		"city_kit_industrial/building-a": {
+			"calibration_signature": "80ea25840f4d08a537683667f4b0a9173c6f9e1f4f105bfd4cd6e1e7cdd41f85",
+			"generation_eligible": true,
+			"geometry_sha256": "0e6ef8eb1e1bdbb9d06b5496b5daf3066e00eaf74b3fcd61b74072116a1c86cf",
+			"id": "city_kit_industrial/building-a",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "9615f8f4d94255458f20fa3c006610ffc6e07a81271b4bf086257b51d1ffa6a7"
+		},
+		"city_kit_industrial/building-b": {
+			"calibration_signature": "fb53caaf4d7b1c5122069f9c0c0b00d5202011446f53fb966d9c8d0b88320574",
+			"generation_eligible": true,
+			"geometry_sha256": "2ae65bd9166449f0bef438fbefb75d57451cb15c16659d7f22a7d895296a46af",
+			"id": "city_kit_industrial/building-b",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "c4a9ff2216c7ffa571a428ee72f569ecf7213889d5a4b770d2b4c9e89bc45668"
+		},
+		"city_kit_industrial/building-c": {
+			"calibration_signature": "0895409b291c6970f4a46877c25923ebff79b0ad999924675f953b95101ae3e6",
+			"generation_eligible": true,
+			"geometry_sha256": "94eb05acef8d8e4c1d817eb12e1c2a1287ffed625879170663a8c4f48786b465",
+			"id": "city_kit_industrial/building-c",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "7cb49a0a172a13e339a4dc55e7808ddf589b115e7bc541e5cefd98a0c980ba70"
+		},
+		"city_kit_industrial/building-d": {
+			"calibration_signature": "364cb510b94a09d7206655d396673a8df1166e3abdd284150ffe4f09726f9087",
+			"generation_eligible": true,
+			"geometry_sha256": "72b9e9e29986df0778ffa7c56e2f92fcfadfaa0f89bf167603877db4f38a789e",
+			"id": "city_kit_industrial/building-d",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "fcec0c2ed19c1c23ef6b9bd97271a9eb4d0bf54bbc113fd617840380699fa9bd"
+		},
+		"city_kit_industrial/building-e": {
+			"calibration_signature": "4c0dea5f8c5f5a47139d4ad56165ef43105ea8b37f54b6090c549501a4cd0e0b",
+			"generation_eligible": true,
+			"geometry_sha256": "d61fed5e9502af9c698367ab69d5bc50b673375929e51c22af247dfb1db6cd16",
+			"id": "city_kit_industrial/building-e",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "831fcda470aaa969b9d6e786d2edc7a53471984152db64d9e450f9cc7075dd33"
+		},
+		"city_kit_industrial/building-f": {
+			"calibration_signature": "6b79026ee478da0e44327b20297d7ee16c01612e15d0b892533f781db2bde49b",
+			"generation_eligible": true,
+			"geometry_sha256": "05a91ab02f424ca4f4819c1749e014bc4404cdf2a75242190c066bb24b59cde7",
+			"id": "city_kit_industrial/building-f",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "fdf35f4bd7551d85b46d2e4bc88599048e47a0827f1f39936b1caf3267a10d2c"
+		},
+		"city_kit_industrial/building-g": {
+			"calibration_signature": "f6295249f62eb5c8ec820c0f6e6e23a91686122e822c34936fe6d502e814418b",
+			"generation_eligible": true,
+			"geometry_sha256": "d09d0d53e85989870f39087435f3c8fc788fe68e87589439fa6bf227c2e4a611",
+			"id": "city_kit_industrial/building-g",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "eac19279df53fa23b730ae44439e10fc2b0ad01e35c9e80ecfbfe86ca734e66e"
+		},
+		"city_kit_industrial/building-h": {
+			"calibration_signature": "a7f2ca8f1d71092ded5d3927d75625f523e646cb803ff03ea041a737b447beb3",
+			"generation_eligible": true,
+			"geometry_sha256": "5a6a6c6824467972ba00b5a3c3cbb19da6e96673bc4e42daf1f09cfd4d2ed0e1",
+			"id": "city_kit_industrial/building-h",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "f5480a90e76259abf1bf50738b76dbaeec560692f4fe1e95f94e36da28548a72"
+		},
+		"city_kit_industrial/building-i": {
+			"calibration_signature": "de03f9924c7afc0064c141aaec79605049453dddc10390bccbd461c6e415e773",
+			"generation_eligible": true,
+			"geometry_sha256": "12d9be598becf2b6d3758d23aba6c573ca2701fca5e77870d2ee5645647765ca",
+			"id": "city_kit_industrial/building-i",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "4f6b6f805f1bc29d365f2d10ba6137e83f9d27fc4427176adf857326866f1b17"
+		},
+		"city_kit_industrial/building-j": {
+			"calibration_signature": "71c3c3e266539df1ac4eddbeff66bf724bec48e66506019adfeac653938ab9f8",
+			"generation_eligible": true,
+			"geometry_sha256": "58f135e706662a201bc0c660c2c680ec6bf2997233dd61fe03c28d4965b45bc9",
+			"id": "city_kit_industrial/building-j",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "e1a6362ba8005eef9efcd0cc76f3bdc7178206377b50f42bdb7defd5452c4da9"
+		},
+		"city_kit_industrial/building-k": {
+			"calibration_signature": "a116954a223bb7f0758cac696221fab17cc1413bbff1d6bc6c57f5814283f271",
+			"generation_eligible": true,
+			"geometry_sha256": "ae0692f7a9fa20bb4ae6cc4deb56d5e1919b1ba2188a1f282295ab2be5e9645d",
+			"id": "city_kit_industrial/building-k",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "d9b84c3ae7cf36e1020651377e737f81637e8fa42ec5da72c883afff43a2c390"
+		},
+		"city_kit_industrial/building-l": {
+			"calibration_signature": "3bf0a7441f7196fdc6961102fbc3d34a91fdfdb2d8654e79fa93c008a9a41179",
+			"generation_eligible": true,
+			"geometry_sha256": "86f03eb0b0c5882c59de79b505ffba4377a9b4591588215aa880ab6362087066",
+			"id": "city_kit_industrial/building-l",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "966d9856692b8e9dca09c6a7dcae68c797cb0409bec44e2fcdd05b7b756ffb2d"
+		},
+		"city_kit_industrial/building-m": {
+			"calibration_signature": "b1da7040eba475bc6d536bf52a04b51967b8455203a14d70b5dfc0b9184b896d",
+			"generation_eligible": true,
+			"geometry_sha256": "526881cb1851120a60195f76bd4d8c1963653cdda66e4d1d53f085b3395fb8a9",
+			"id": "city_kit_industrial/building-m",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "8bc52e1215f8355d6becefcccaf248c20961284b90571bc14b211708995a8d5e"
+		},
+		"city_kit_industrial/building-n": {
+			"calibration_signature": "ef4e17598066a8ee67ab5cde4232d5b089563342550434b4882c32843ad105a3",
+			"generation_eligible": true,
+			"geometry_sha256": "56b895860fb841ecee3e4d13d0745c6cd838da231af79cd90fb8dc0e32a97a96",
+			"id": "city_kit_industrial/building-n",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "75de635f2d7eb6a46b115f4b9c2e7f417d6554870696c753586efc85c242da2a"
+		},
+		"city_kit_industrial/building-o": {
+			"calibration_signature": "4fa71dd19b7035a73164a2799ba856d0f4e14b300d500889e0ecc62c1633e8b4",
+			"generation_eligible": true,
+			"geometry_sha256": "eec5728a268e122da91fa2cc4ed571a0b12e2cdd5c200828ab0d4f31ab1c8765",
+			"id": "city_kit_industrial/building-o",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "b9f381c9c0e0ad050e553e3d11a2757615de4d5a695655d1c56a0b9f089f0943"
+		},
+		"city_kit_industrial/building-p": {
+			"calibration_signature": "def15ab5a30c0d4c169b236c2d793871577d5821976fc62845846cd6d32f9423",
+			"generation_eligible": true,
+			"geometry_sha256": "d3e701ba7bf548519731d9c68d5a47d09654bccef6f93be759eaafb55cdb2f78",
+			"id": "city_kit_industrial/building-p",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "80111ce791b8b4d1630ebacb7912d947289f952cc025ebb26dcbadda08f18545"
+		},
+		"city_kit_industrial/building-q": {
+			"calibration_signature": "029a427b4224284aff5efbc31a30037c4a2fab2e838ad6951caa14913fd62f9f",
+			"generation_eligible": true,
+			"geometry_sha256": "19e65a2547db017af11dedc00a772e0421e580eb31815d8788ab11db232f89d2",
+			"id": "city_kit_industrial/building-q",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "5d5c62f561ed1f397b2101760e804d7987a7fdc75b93c2e29f46f7dfa245ee57"
+		},
+		"city_kit_industrial/building-r": {
+			"calibration_signature": "6242ac729ae4747d2b68e10fb30ddb372d37938e8c6c662b86c9bfb7f256138e",
+			"generation_eligible": true,
+			"geometry_sha256": "3bf50032b629c97e249a9219851fd385347608bcb896c5bed06870e3957de5fe",
+			"id": "city_kit_industrial/building-r",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "118b6b04aee0603ec330bca23973f5d3032378acc8518d58ab89a8ef925bf8ce"
+		},
+		"city_kit_industrial/building-s": {
+			"calibration_signature": "bbfca29f00be44eafac24ea6804bdd8d2bff02513fece6590207945fd8e5f6de",
+			"generation_eligible": true,
+			"geometry_sha256": "065fbcbeb5e79ab21d8cd71b69b925a41d842e6f61296078619e6682d4487a82",
+			"id": "city_kit_industrial/building-s",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "9ba78fc958d90d2e289f9f4bef995639a04046dc09664ed02ba95ee877dc36c7"
+		},
+		"city_kit_industrial/building-t": {
+			"calibration_signature": "5abc4c4d0e5c4670f076caeaefcda60240b011449b6a02d404ef438d3361c87e",
+			"generation_eligible": true,
+			"geometry_sha256": "865f92dc0ca0ce147c2b784bfda0773698e80896c372146e2b53811f1758607f",
+			"id": "city_kit_industrial/building-t",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "626384837eda5766e3657ef1c0e70a8039fa23e2c7d71fa60ef0f57f31a7a66e"
+		},
+		"city_kit_industrial/shipping-container-a": {
+			"calibration_signature": "654710e34683605e5ff036d2349e35a0810a41e1947afd2af72a4b65b4b328ff",
+			"generation_eligible": true,
+			"geometry_sha256": "7b2d5ca874c8e659ee6cfd1614f0470b70410b2ddc7620ac83b8954dedeb861d",
+			"id": "city_kit_industrial/shipping-container-a",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "f50ac060b936358c9cf15b09034613ad59759dea35cdef80c99a1feeb0b9bb73"
+		},
+		"city_kit_industrial/shipping-container-b": {
+			"calibration_signature": "f6c3f49c91029646f77c73108494eb813f32a367c358a03c985c43e45c86b470",
+			"generation_eligible": true,
+			"geometry_sha256": "290b3808149f8a9456ee96ff682fcf6a99f76adeac8e3b7b38234be434ea455c",
+			"id": "city_kit_industrial/shipping-container-b",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "dd61ff84e9cd2120f522c7f73423f5b53c03dfa3f6f59462fd81e8a9d0358099"
+		},
+		"city_kit_industrial/shipping-container-c": {
+			"calibration_signature": "c3aa2b57e78d0b7fa252b7a3c3808af6952bf257689a846d78880586893560f7",
+			"generation_eligible": true,
+			"geometry_sha256": "6a272420c37ccf4b354565d75c5d1fd889cd568297c215c681fcf11ef8c8ae13",
+			"id": "city_kit_industrial/shipping-container-c",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "2db4a4dacae28e4fbeae771a71da607913edd31e99726f8ea4c2e6987331ad03"
+		},
+		"city_kit_roads/construction-barrier": {
+			"calibration_signature": "47aacf8c4ef823f8842b3cf73e59fc2cb9c69fc476ff85b41b6ca5d4b9ff5362",
+			"generation_eligible": false,
+			"geometry_sha256": "906f73a6d62d8de58a4c5a19e76ff95b460c42b37e5fa37478b8612f06793f26",
+			"id": "city_kit_roads/construction-barrier",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "7708901f51a48c9fc8d15b3026eab5f144581170dfcdb6d9ecf45ef4eeff6b2b"
+		},
+		"city_kit_roads/construction-fence": {
+			"calibration_signature": "06f281d687d01724ea17564da4afc468a23acc04819d865e2a6eeeb181255624",
+			"generation_eligible": true,
+			"geometry_sha256": "8414c211efbc68358eb747cf6d0ad6b9ba4fbc5094603ddabaadf18e8573abbe",
+			"id": "city_kit_roads/construction-fence",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "de5bca51dbc6ad861952f9ec5fdfeb01a2eebc7261b3e901e5909ece4c504a11"
+		},
+		"city_kit_roads/dumpster": {
+			"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
+			"generation_eligible": true,
+			"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
+			"id": "city_kit_roads/dumpster",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "5b1f564e3cfd7e4ef9aca1f00744eeff25e90bce9eca5c7330185d1cc7d0f46a"
+		},
+		"city_kit_roads/electricity-pole-single": {
+			"calibration_signature": "a84d4905bab507f4625efe4da50286bace6a9d888d98b899737df78288a80bdf",
+			"generation_eligible": true,
+			"geometry_sha256": "28d9b7a7ee300999b4ea59c1a5fd9ad197c599ad5be5ab299d63483049af337d",
+			"id": "city_kit_roads/electricity-pole-single",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "80c60cfce7b2273d97e6e4075f02145586d8a6cbce6f010eb64fdce410cd15f9"
+		},
+		"city_kit_roads/light-curved": {
+			"calibration_signature": "cbe012d265d905cfcfec95f54eee581fc6d17bef22e233fced11f9f5f132e162",
+			"generation_eligible": true,
+			"geometry_sha256": "154dcce9d58ec2cd165e26c91a89c97bdd2838cf06d255099b3570df84f82ec6",
+			"id": "city_kit_roads/light-curved",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "b727706317f40b9fb6a255986a88e5f76c04bde4a9c930807c66ea3c2a5afa4d"
+		},
+		"city_kit_roads/light-square": {
+			"calibration_signature": "483997bf75f425ff6b9ff6cced6a10ec0f56d9db4226b9c91305d8330dedb785",
+			"generation_eligible": true,
+			"geometry_sha256": "6230d136c8883d7f9bc1b86f0309077e452e26e5e1e587ef1b77abef3c5f047c",
+			"id": "city_kit_roads/light-square",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "7d0db61b03d3e268b25e0b2cda222e32775bc1ac994db2e9356118ad86c601c3"
+		},
+		"city_kit_roads/road-crossroad": {
+			"calibration_signature": "43975170f7a81463eba2a0ee3af8f1c5a74fc2780b80dce0666cfe37113db2a7",
+			"generation_eligible": true,
+			"geometry_sha256": "2dc52a28cf89ec88025a047c0f6fff4c643f16b0f50f0e9a1140f16230c28b12",
+			"id": "city_kit_roads/road-crossroad",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "ad15787f2c9e730a866af6c8a6ab50e08a6b235802fe6ac11845db8be7239b16"
+		},
+		"city_kit_roads/road-curve": {
+			"calibration_signature": "62ac5cbb193d05f5f0f54f87c1dfc37354e41cf46692d5bdbf33a79ace0298be",
+			"generation_eligible": true,
+			"geometry_sha256": "d076717bfe3493dfd5a4b4207a7825e4aff1876273f0d58f5e16e8e8670906f7",
+			"id": "city_kit_roads/road-curve",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "c48a624fc918e17bbe01489f2932712ea20d99ef40815dcd9877f697d20e1922"
+		},
+		"city_kit_roads/road-intersection": {
+			"calibration_signature": "7a1cebf8fc6e6c1652fd4331a4d1b9568c620717a66e7d4c4853831d6a45c3ff",
+			"generation_eligible": true,
+			"geometry_sha256": "fdf4f213abe41ddfe2a7e798a0ef1c3de5b7a68143e21c44f1893985ec6aae58",
+			"id": "city_kit_roads/road-intersection",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "eefed7e981ffacb2390f7ddab45dd8fd298dc83f2347d9dec37081cb85b5d11a"
+		},
+		"city_kit_roads/road-sign-stop": {
+			"calibration_signature": "037146d11dd8435841cb8c325a04108d84964005408965165a21baffcf099a5c",
+			"generation_eligible": true,
+			"geometry_sha256": "0991181f37171daf8d2501e436a688e46ea2bcebb5e27aa451640fcbaab107ef",
+			"id": "city_kit_roads/road-sign-stop",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "6cd108eddb45ca0c9137482951734eba54c9cfc97192f26d670b21b547f73165"
+		},
+		"city_kit_roads/road-slant": {
+			"calibration_signature": "f5dcc916b37b98c3a6e6e8ab51e52bc251a6efbfbd1a502d15693a66115cd774",
+			"generation_eligible": false,
+			"geometry_sha256": "c14bb57253db5cae32c4a10b572b9ddd7e3aa6fedad9f5e49ce92e1ca24f0a41",
+			"id": "city_kit_roads/road-slant",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "871c62c1a0a9217696b246e3ce57134b348168ef50ebadfa04c9b313fd10889f"
+		},
+		"city_kit_roads/road-straight": {
+			"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+			"generation_eligible": true,
+			"geometry_sha256": "f8f744fb6fc96dedd5ad1f763b550166f2624a3757bf36b4b39969d2e7cacac5",
+			"id": "city_kit_roads/road-straight",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "946bc6edb58cf1c41dadf681468ccfd21eeff132ee4487fa39e125dac4dcf794"
+		},
+		"city_kit_roads/tile-low": {
+			"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+			"generation_eligible": true,
+			"geometry_sha256": "23f54fced68c7647f6d851c8080791b56e2a7e7f541eac2e95c647006a5901c4",
+			"id": "city_kit_roads/tile-low",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "a84c45a2c5508ed394a86921ba4d8cb1db2041b4b9514f0871afdba15da6b0f3"
+		},
+		"city_kit_roads/traffic-light": {
+			"calibration_signature": "de70925d60796c8137c57e0fcffac945c379cb5e7355735bae59c3201c5d8959",
+			"generation_eligible": true,
+			"geometry_sha256": "6c9ee253b7370e1043168493b2e662b349484a0cdd02100cff04d9d8d1bd9abb",
+			"id": "city_kit_roads/traffic-light",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "eeef92424ad4350fe08951ff98b099a424edd884963a75c4c7e86c191190e15f"
+		},
+		"factory_kit/catwalk-stairs": {
+			"calibration_signature": "48299fb585cdf9dbbcf10ac57b4d12bcd864116ab85e58b4dae4739a6155d9b2",
+			"generation_eligible": false,
+			"geometry_sha256": "0356a040ebbf632cd20dfe384a13108270df26426ad1dd51a2c767c8f6a6960c",
+			"id": "factory_kit/catwalk-stairs",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "e14ec0ef5cf6a47a33c016e1853358b28c2bd2466b55beebe4ce393375dd63e8"
+		},
+		"factory_kit/catwalk-straight": {
+			"calibration_signature": "a0ab32ab50f583df785b5905052917430a85c0ec32ac119ce2d90ebcf342fd9e",
+			"generation_eligible": false,
+			"geometry_sha256": "85797c6ce53e3f4373bc59ecd3ce951a3f6b707651def5e0bae46756051cd18d",
+			"id": "factory_kit/catwalk-straight",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "b2a5e56c94273f2a3a0a094e00a7706e461e0945337a2d76bbcc0315e0afd8db"
+		},
+		"factory_kit/machine": {
+			"calibration_signature": "15ea37416508e8db702311c995a1addcb0fc84b8ce386dc79f47e4e244e38e57",
+			"generation_eligible": false,
+			"geometry_sha256": "a39e3042bcb7789274428357383317d70e1c31906e5301c99e7d9e90ac584863",
+			"id": "factory_kit/machine",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "50244305283ac58aa2b155cd193bcef8269812eb6393369daaf843a6e39f52a9"
+		},
+		"factory_kit/machine-connection-hole": {
+			"calibration_signature": "1912104ba9e6407b8a2122ca1c26d47653ebbf9e9cef23240f87a1731aa56ef5",
+			"generation_eligible": false,
+			"geometry_sha256": "e49c9d701f802ca1b125c7ae55d8992e03710ea10838bf536bd4ddbb3da4bf9c",
+			"id": "factory_kit/machine-connection-hole",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "eb553167fd7cdd914851404d97a716fb2ed6ff21fe9646b6d57bb90583eea36a"
+		},
+		"factory_kit/machine-fortified": {
+			"calibration_signature": "b21f6d6cbaac58c29113a368315f37e239b43a2215c9f3f7c868b02565386692",
+			"generation_eligible": false,
+			"geometry_sha256": "0907f6616f49bbdaa20241ac4b568b780f30352f204851c53568b8e7df59b528",
+			"id": "factory_kit/machine-fortified",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "3b77c6d9bb539cf17469a55f064b73b51e8ee85e27a75acf2143b72e7c77c7e0"
+		},
+		"factory_kit/pipe-large": {
+			"calibration_signature": "d0451c304d1b8dc4e56879fa17208082de066b298aaee532df4c3b62123473b3",
+			"generation_eligible": false,
+			"geometry_sha256": "e30500f8ec6dc1fcc04c350ff9ecfd06470ec73e70d53b7b3b571031f30a3311",
+			"id": "factory_kit/pipe-large",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "84b92b947bffc1520faebcb4f52e269964ca59ee0bdb90499e517d91bf9509e2"
+		},
+		"factory_kit/structure-corner-inner": {
+			"calibration_signature": "afa779d2512d66edaba7fd747d07342762b3c3d1c71b8e02a490a7a964a6bdd5",
+			"generation_eligible": false,
+			"geometry_sha256": "24be86d7dcb0e70e2c8380624e2bfaa1f25f75957472eef08d2cac1a8b6bb341",
+			"id": "factory_kit/structure-corner-inner",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "50935479dd7efa045641faf1a3146f9f243e0965e90781b19506bfb8ce13ff3d"
+		},
+		"factory_kit/structure-doorway-wide": {
+			"calibration_signature": "e57d6709f7d0ac793f4828b7fff4e77d94d850c883a4d9218b21daa87f41aea4",
+			"generation_eligible": false,
+			"geometry_sha256": "588655c5594b55d6f715ca6251febb18f9636f6804e0e193e31d68643e7b2107",
+			"id": "factory_kit/structure-doorway-wide",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "8fe1bc4dd232ed7b02e04c3e59081cb06f0b28eccc2d90900bfb6d53741170ad"
+		},
+		"factory_kit/structure-wall": {
+			"calibration_signature": "46ecfd0d5de5bf91a7fcf9e4f472af8e963ea7f13329af89f464f8387a0071e9",
+			"generation_eligible": false,
+			"geometry_sha256": "3bdcb31d693b4e97a9fa198e9de1a47bfd14e829520da08ceaacadbdb258582c",
+			"id": "factory_kit/structure-wall",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "f7497e6591758ac4c24b79d4f8e6f07529b0712696d4aa0a67d64d3c7fec104e"
+		},
+		"factory_kit/structure-window-wide": {
+			"calibration_signature": "6be6c5f9fec4290a074043a10ef3c1ba24744a325928a080cf8b858e5840030b",
+			"generation_eligible": false,
+			"geometry_sha256": "447f0e5a4eca379a02c3ade829e04b4df2fc517ab23f0b4f99fd31ae439ac19e",
+			"id": "factory_kit/structure-window-wide",
+			"kind": "asset",
+			"required_by": [],
+			"semantic_signature": "c4ef529c463ec99e12d6e1886dfc459b1977f341e6bce423a11b4e0ed46856e7"
+		}
+	},
+	"modules": {
+		"cargo_container": {
+			"id": "cargo_container",
+			"kind": "module",
+			"required_by": [],
+			"revision": "e5beff85c5e1310c1f41a8897d6bdf99b84acc554f7e06326b1d150b407cfbb2"
+		},
+		"catwalk_stairs": {
+			"id": "catwalk_stairs",
+			"kind": "module",
+			"required_by": [],
+			"revision": "52770c82719645837e958bc29c07b312df10ecd05fd57345214f578f2b766786"
+		},
+		"complete_service_building": {
+			"id": "complete_service_building",
+			"kind": "module",
+			"required_by": [],
+			"revision": "054dc364cc140d2fc564fd51dc12bf09f448a9a65fd3c3e75f7c02ab2285db0c"
+		},
+		"construction_barrier_vault": {
+			"id": "construction_barrier_vault",
+			"kind": "module",
+			"required_by": [],
+			"revision": "8d191fa305af7470369ef7b3256a69a207a22aa0733c98a5f67f8446a983a1b7"
+		},
+		"factory_doorway_wide": {
+			"id": "factory_doorway_wide",
+			"kind": "module",
+			"required_by": [],
+			"revision": "b96ab2e393f60651edb929e43f80ffb2b27fbea6a7a62831e533f3a79409af1c"
+		},
+		"factory_interior_floor": {
+			"id": "factory_interior_floor",
+			"kind": "module",
+			"required_by": [],
+			"revision": "fa69013abe3047a1caeddd8caffcf928d80cc2c011d6d148a344014f328e1072"
+		},
+		"factory_machine": {
+			"id": "factory_machine",
+			"kind": "module",
+			"required_by": [],
+			"revision": "9c20837b214fe3f803d731447ffa286c7b4c97f1c575610120e992edc0690c2b"
+		},
+		"factory_pipe_receiver_unit": {
+			"id": "factory_pipe_receiver_unit",
+			"kind": "module",
+			"required_by": [],
+			"revision": "a19497c1361d3117019def59eaf1fe83a04302d5ab659f2ec63e8261926ae088"
+		},
+		"factory_shop_front": {
+			"id": "factory_shop_front",
+			"kind": "module",
+			"required_by": [],
+			"revision": "5adcf5ae559457174e6593e99b0d098bbd4ab52b4f9123250556e12d9eecbfe4"
+		},
+		"factory_wall_corner": {
+			"id": "factory_wall_corner",
+			"kind": "module",
+			"required_by": [],
+			"revision": "7f4339f6a3b51f525449870f76994224eda205dcf4e9949d669ed46e43e3e649"
+		},
+		"factory_wall_straight": {
+			"id": "factory_wall_straight",
+			"kind": "module",
+			"required_by": [],
+			"revision": "4c464dee424c1951e65e4fdc67d9b20a2b1048c33f66dc231a019356a142c9c6"
+		},
+		"factory_window_wall": {
+			"id": "factory_window_wall",
+			"kind": "module",
+			"required_by": [],
+			"revision": "0cd6d95872fa4303e3cd4840dc27d21b05fd9aa957fae4d9c74fc4c52bdb25ac"
+		},
+		"industrial_building_shell": {
+			"id": "industrial_building_shell",
+			"kind": "module",
+			"required_by": [],
+			"revision": "b5371ef4b789743dd4c734752345cfb8903e17cc92e4db5c0f7ea25f79686991"
+		},
+		"industrial_loading_canopy": {
+			"id": "industrial_loading_canopy",
+			"kind": "module",
+			"required_by": [],
+			"revision": "97d417e386fe049a87924adacb14b132c07a28212313f75332e37baeaa78065b"
+		},
+		"industrial_loading_dock": {
+			"id": "industrial_loading_dock",
+			"kind": "module",
+			"required_by": [],
+			"revision": "85797a0d70cd888a028c39349c0910311a56ac4499938f6dfcaaac8447a2090a"
+		},
+		"industrial_shell_a": {
+			"id": "industrial_shell_a",
+			"kind": "module",
+			"required_by": [],
+			"revision": "2c834b2b4bd8931e7b30fc0b22d84b2a6863b194a988c57871eac0a671c12215"
+		},
+		"industrial_shell_b": {
+			"id": "industrial_shell_b",
+			"kind": "module",
+			"required_by": [],
+			"revision": "5274f01b92083208dd952f63a0b7282d8d2fb00bc7f0abd497f59c81dad02166"
+		},
+		"industrial_shell_c": {
+			"id": "industrial_shell_c",
+			"kind": "module",
+			"required_by": [],
+			"revision": "4a5019cec0425014b06697d2c45373f12b9c1e070025a20437cd956bad4363b5"
+		},
+		"industrial_shell_d": {
+			"id": "industrial_shell_d",
+			"kind": "module",
+			"required_by": [],
+			"revision": "c8b16fd24638f38a0757bd7ad0731f382e626d6ff4e2e62b5f9aee138d093c79"
+		},
+		"industrial_shell_e": {
+			"id": "industrial_shell_e",
+			"kind": "module",
+			"required_by": [],
+			"revision": "663bb54c5e4f779d171762ed571caadbbe30ceca7dd4eeeffd3abd0b42779b8b"
+		},
+		"industrial_shell_f": {
+			"id": "industrial_shell_f",
+			"kind": "module",
+			"required_by": [],
+			"revision": "8e40847e6b456670c79ff12978cccbd1a17af59d0ff5c02e18f94cdb5de0a330"
+		},
+		"industrial_shell_g": {
+			"id": "industrial_shell_g",
+			"kind": "module",
+			"required_by": [],
+			"revision": "58692e6fb4c526ad97e88bf35cdec352276dc66e228c17527a7146fa153d88e7"
+		},
+		"industrial_shell_h": {
+			"id": "industrial_shell_h",
+			"kind": "module",
+			"required_by": [],
+			"revision": "3702fa9a916a66ad4d21a3292522696f4a875c7dd99153a1ae1da1dd8c959603"
+		},
+		"industrial_shell_i": {
+			"id": "industrial_shell_i",
+			"kind": "module",
+			"required_by": [],
+			"revision": "3b2b3330e6fa88e54d0f77028690d06473b74f050e2600ed0bda027ccd086aa2"
+		},
+		"industrial_shell_j": {
+			"id": "industrial_shell_j",
+			"kind": "module",
+			"required_by": [],
+			"revision": "2262bf90570ecf902d875b12948bc31cad8b7d687400d0877e51c7377ded618b"
+		},
+		"industrial_shell_k": {
+			"id": "industrial_shell_k",
+			"kind": "module",
+			"required_by": [],
+			"revision": "df75ba8d133847b245e4de02647276e529120412b20e4845d8ce0f0be526fdde"
+		},
+		"industrial_shell_l": {
+			"id": "industrial_shell_l",
+			"kind": "module",
+			"required_by": [],
+			"revision": "d5e66d2036b9350540acd6f9ba1f6a1950f81f10df78d272ecc6e03ead4d785e"
+		},
+		"industrial_shell_m": {
+			"id": "industrial_shell_m",
+			"kind": "module",
+			"required_by": [],
+			"revision": "0fbd335ec51c0537bbae32ea84fcad4fa24adbab8693a578381cd494daa29868"
+		},
+		"industrial_shell_n": {
+			"id": "industrial_shell_n",
+			"kind": "module",
+			"required_by": [],
+			"revision": "3c189cea138135ef8cfb0bb91974233fd21baf54b8490b53fb989b3525646a22"
+		},
+		"industrial_shell_o": {
+			"id": "industrial_shell_o",
+			"kind": "module",
+			"required_by": [],
+			"revision": "e301958ab29f4980eecb45b596c7dc823d07194ec128d0364fb85a01e90cc858"
+		},
+		"industrial_shell_p": {
+			"id": "industrial_shell_p",
+			"kind": "module",
+			"required_by": [],
+			"revision": "04e8ac1815fbb5207f4360dcd23ce7459089d8d8165238a6a892eee3655b8a95"
+		},
+		"industrial_shell_q": {
+			"id": "industrial_shell_q",
+			"kind": "module",
+			"required_by": [],
+			"revision": "6b4d2800c4af9e416cf659624c3febba25b6aae1165bc749e418684fcfdf3ca1"
+		},
+		"industrial_shell_r": {
+			"id": "industrial_shell_r",
+			"kind": "module",
+			"required_by": [],
+			"revision": "226fb4316caa1e3939cac79b60b82bfbbc1f64031e13f5aaa50e829ee72c3256"
+		},
+		"industrial_shell_s": {
+			"id": "industrial_shell_s",
+			"kind": "module",
+			"required_by": [],
+			"revision": "9a3aef12812df9324198378fe69724a8f9129b77bbd6c02a654b4e362399040c"
+		},
+		"industrial_shell_t": {
+			"id": "industrial_shell_t",
+			"kind": "module",
+			"required_by": [],
+			"revision": "f6115f4c37985fca9250391f0b6198159a5aafe6f62d82432aaa53d18940bc2f"
+		},
+		"machine_cover_cluster": {
+			"id": "machine_cover_cluster",
+			"kind": "module",
+			"required_by": [],
+			"revision": "74490f210ea301014000040aca696919ab4bb36f1423bd1a39fd5f18aebbcc47"
+		},
+		"maintenance_platform": {
+			"id": "maintenance_platform",
+			"kind": "module",
+			"required_by": [],
+			"revision": "7153c616406f8d35c8c81a3e738c3c663c2c197ed821ae2c5312d1492efb4842"
+		},
+		"maintenance_walkway": {
+			"id": "maintenance_walkway",
+			"kind": "module",
+			"required_by": [],
+			"revision": "18709644a7bc106a92f1e4c87176659995991e1174df5f852f2cd902bcd25fd8"
+		},
+		"paved_alley": {
+			"id": "paved_alley",
+			"kind": "module",
+			"required_by": [],
+			"revision": "9a36c28aedc792a5b295a8271f31340c4b90b5e753ac6334e96d372686c7c8df"
+		},
+		"paved_courtyard": {
+			"id": "paved_courtyard",
+			"kind": "module",
+			"required_by": [],
+			"revision": "6d7c303aa6a5c2dde3ddfc2cb43961eed27441339d772bff372624ff7af28986"
+		},
+		"paving_square": {
+			"id": "paving_square",
+			"kind": "module",
+			"required_by": [],
+			"revision": "c081f07244619391a7e9ab4c350cabd991fc7edb577aebcc1ee99bed40faa7c9"
+		},
+		"road_corner": {
+			"id": "road_corner",
+			"kind": "module",
+			"required_by": [],
+			"revision": "0d7b58cccdbf8431731c8b1d51bbbb2d6aa20dd12a78faecc1898196e4e36fd3"
+		},
+		"road_crossroad": {
+			"id": "road_crossroad",
+			"kind": "module",
+			"required_by": [],
+			"revision": "86cc43d3c279b305f5610271e947670f5622ff7dda22c35bc74b9f694f3105e8"
+		},
+		"road_intersection_t": {
+			"id": "road_intersection_t",
+			"kind": "module",
+			"required_by": [],
+			"revision": "55860bc25f4cc5d2a4e04ef5898c9ad99ca00068f7c57749756d96261646d979"
+		},
+		"road_straight": {
+			"id": "road_straight",
+			"kind": "module",
+			"required_by": [],
+			"revision": "b4422dcf4c79b92c5b523d570c7b14cb259e83a23f3681f94ab557cc9984df09"
+		},
+		"service_dumpster": {
+			"id": "service_dumpster",
+			"kind": "module",
+			"required_by": [],
+			"revision": "372fd6df14b5f019b8b11091a16908335edcc081abd0aaa7eebfde14a892bb41"
+		},
+		"service_ramp": {
+			"id": "service_ramp",
+			"kind": "module",
+			"required_by": [],
+			"revision": "34561e23f6ac724d6a1f2a6ed402f319dcc37de19083f4b831f9db1e3c218501"
+		},
+		"stop_sign": {
+			"id": "stop_sign",
+			"kind": "module",
+			"required_by": [],
+			"revision": "bc8d10b301edde45a6f3452d6370a2ca97bd234613d7fdb877f4ffcbcb72ff25"
+		},
+		"street_light": {
+			"id": "street_light",
+			"kind": "module",
+			"required_by": [],
+			"revision": "3466f8ad6f7b793f37263c38ee26ac5eb04600a47c49987ee375dc9be553ffb8"
+		},
+		"traffic_signal": {
+			"id": "traffic_signal",
+			"kind": "module",
+			"required_by": [],
+			"revision": "63bc13b0b0e6bec1330c7578b6ff55e42804ca8e4295e251715e49075832ae4d"
+		},
+		"utility_pole": {
+			"id": "utility_pole",
+			"kind": "module",
+			"required_by": [],
+			"revision": "e6e6d2b96de366a4fcc17e3b59a05335f1e1af8d0e26b0d77f12f62554008d98"
+		},
+		"yard_fence": {
+			"id": "yard_fence",
+			"kind": "module",
+			"required_by": [],
+			"revision": "4170404e74777883edf74c26ead3cbedce70a174eb312c4cd3c63905532e5857"
+		}
+	},
+	"origin": "T04 frozen legacy compatibility and existing eligibility; not new human approval",
+	"owner_visual_approval": false,
+	"version": 1
+}

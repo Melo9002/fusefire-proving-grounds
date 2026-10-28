@@ -4,8 +4,6 @@ extends RefCounted
 ## MapData remains the compiled tactical authority; this record never infers
 ## traversal, cover, occupancy, or LOS from imported geometry.
 
-const AssetCatalog = preload("res://tools/asset_lab/asset_catalog.gd")
-const SemanticCatalog = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const ParcelContract = preload("res://systems/generation/environment_parcel_spatial_contract.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
 const RelationshipValidator = preload("res://systems/generation/environment_parcel_relationship_validator.gd")
@@ -18,8 +16,6 @@ const PRESENTATION_MODES := ["asset_first", "legacy"]
 const PARCEL_GRAMMAR_REVISION := "coherent_parcel_grammar_v5_elongated_service"
 const ROAD_TOPOLOGY_REVISION := "certified_secondary_branch_v1"
 
-static var _asset_ids_by_path: Dictionary = {}
-
 var document_id := ""
 var environment_id := ""
 var provenance: Dictionary = {}
@@ -29,7 +25,8 @@ var dependencies: Array[Dictionary] = []
 var mission_context: Dictionary = {}
 var presentation: Dictionary = {}
 
-static func from_generated(data: MapData, id := "") -> BattlefieldLayoutDocument:
+static func from_generated(data: MapData, id := "", context: EnvironmentResolutionContext = null) -> BattlefieldLayoutDocument:
+	if context == null: context = EnvironmentResolutionContext.new()
 	var result := BattlefieldLayoutDocument.new()
 	var plan: EnvironmentLayoutPlan = data.environment_layout_plan
 	result.document_id = id if not id.is_empty() else "generated_%s_%d" % [String(plan.environment_id) if plan else "unknown", data.environment_module_seed]
@@ -48,14 +45,15 @@ static func from_generated(data: MapData, id := "") -> BattlefieldLayoutDocument
 		},
 		"algorithm_revisions": {"layout_document": SCHEMA_VERSION, "parcel_grammar": PARCEL_GRAMMAR_REVISION, "road_topology": ROAD_TOPOLOGY_REVISION},
 	}
-	result._capture_spatial_layout(data.environment_modules, data.map_size)
-	result._capture_plan_relationships(plan)
-	result._capture_dependencies()
+	result._capture_spatial_layout(data.environment_modules, data.map_size, context)
+	result._capture_plan_relationships(plan, context.catalog)
+	result._capture_dependencies(context)
 	result._capture_mission(data, "generated_repaired")
 	result.presentation = {"road_presentation_mode": "asset_first"}
 	return result
 
-static func from_authored(layout: EnvironmentModuleLayout, map_size: Vector2i, environment: StringName, id := "", data: MapData = null) -> BattlefieldLayoutDocument:
+static func from_authored(layout: EnvironmentModuleLayout, map_dimensions: Vector2i, environment: StringName, id := "", data: MapData = null, context: EnvironmentResolutionContext = null) -> BattlefieldLayoutDocument:
+	if context == null: context = EnvironmentResolutionContext.new()
 	var result := BattlefieldLayoutDocument.new()
 	result.document_id = id if not id.is_empty() else String(layout.layout_id)
 	result.environment_id = String(environment)
@@ -67,10 +65,10 @@ static func from_authored(layout: EnvironmentModuleLayout, map_size: Vector2i, e
 		"generation_config": {},
 		"algorithm_revisions": {"layout_document": SCHEMA_VERSION},
 	}
-	result._capture_spatial_layout(layout.placements, map_size)
+	result._capture_spatial_layout(layout.placements, map_dimensions, context)
 	if layout.layout_id == &"certified_equipment_parcel":
 		result.relationships.append({"relationship_id": "authored_equipment_parcel", "kind": "assembly_template", "subject_ref": "document:%s" % result.document_id, "object_ref": "assembly:%s" % IndustrialEquipmentParcelDefinition.PARCEL_ID, "required": true})
-	result._capture_dependencies()
+	result._capture_dependencies(context)
 	if data == null:
 		result.mission_context = {"status": "not_represented", "zone_source": "not_available", "zones": []}
 	else:
@@ -122,32 +120,24 @@ func editable_copy() -> BattlefieldLayoutDocument:
 	result.provenance["edit_state"] = "unchanged_copy"
 	return result
 
-func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
+func apply_edited_layout(layout: EnvironmentModuleLayout, context: EnvironmentResolutionContext = null) -> Array[Dictionary]:
+	# IDs, not mutable geometry, identify existing objects. Reject required
+	# reference loss transactionally; blank IDs describe genuinely new objects.
+	var failures := removal_failures(layout)
+	if not failures.is_empty(): return failures
+	if context == null: context = EnvironmentResolutionContext.new()
 	var old_records: Array = spatial_layout.get("placements", []).duplicate(true)
 	var old_parcels: Array = spatial_layout.get("parcels", []).duplicate(true)
 	var old_reservations: Array = spatial_layout.get("reservations", []).duplicate(true)
 	var old_relationships := relationships.duplicate(true)
-	var id_by_signature: Dictionary = {}
-	var maximum_id := -1
-	for record in old_records:
-		if not record is Dictionary: continue
-		var key := _encoded_placement_signature(record)
-		if not id_by_signature.has(key): id_by_signature[key] = []
-		id_by_signature[key].append(record.get("placement_id", ""))
-		var suffix := str(record.get("placement_id", "")).trim_prefix("placement_")
-		if suffix.is_valid_int(): maximum_id = maxi(maximum_id, int(suffix))
 	relationships.clear()
-	_capture_spatial_layout(layout.placements, _map_size())
-	var changed: bool = old_records.size() != spatial_layout.placements.size()
-	for record in spatial_layout.placements:
-		var signature := _encoded_placement_signature(record)
-		var available: Array = id_by_signature.get(signature, [])
-		if not available.is_empty():
-			record.placement_id = available.pop_front()
-		else:
-			maximum_id += 1
-			record.placement_id = "placement_%04d" % maximum_id
-			changed = true
+	_capture_spatial_layout(layout.placements, _map_size(), context)
+	var changed: bool = old_records != spatial_layout.placements
+	var retained_ids: Dictionary = {}
+	for record in spatial_layout.placements: retained_ids[record.placement_id] = true
+	for parcel in old_parcels:
+		parcel["occupants"] = parcel.get("occupants", []).filter(func(value): return retained_ids.has(str(value.get("placement_ref", ""))))
+	old_reservations = old_reservations.filter(func(value): return not _references_removed_placement(value, old_records, retained_ids))
 	spatial_layout["parcels"] = old_parcels
 	spatial_layout["reservations"] = old_reservations
 	if changed:
@@ -161,15 +151,120 @@ func apply_edited_layout(layout: EnvironmentModuleLayout) -> void:
 		if not str(record.assembly_ref).is_empty(): relationships.append({"relationship_id": "assembly_%s" % record.placement_id, "kind": "assembly_instance", "subject_ref": record.placement_id, "object_ref": "assembly:%s" % record.assembly_ref, "required": true})
 	for relationship in old_relationships:
 		if relationship.get("kind", "") == "assembly_instance": continue
+		if _references_removed_placement(relationship, old_records, retained_ids): continue
 		var retained: Dictionary = relationship.duplicate(true)
 		if changed: retained["validation_state"] = "requires_revalidation"
 		relationships.append(retained)
 	dependencies.clear()
-	_capture_dependencies()
+	_capture_dependencies(context)
 	provenance["source_origin"] = str(provenance.get("source_origin", provenance.get("origin", "authored")))
 	provenance["origin"] = "edited"
 	provenance["edit_state"] = "modified" if changed else "unchanged_copy"
 	mission_context["validation_state"] = "requires_revalidation" if changed else mission_context.get("validation_state", "validated")
+	return []
+
+func removal_failures(layout: EnvironmentModuleLayout) -> Array[Dictionary]:
+	var failures: Array[Dictionary] = []
+	var retained: Dictionary = {}
+	for placement in layout.placements:
+		if placement.placement_id.is_empty(): continue
+		if retained.has(placement.placement_id):
+			_fail(failures, "INVALID_PLACEMENT_ID", "placements", "Duplicate placement identity", placement.placement_id)
+		retained[placement.placement_id] = true
+	var records: Array = spatial_layout.get("placements", [])
+	for relation in relationships:
+		if relation.get("kind", "") == "assembly_instance" or not relation.get("required", true): continue
+		if _references_removed_placement(relation, records, retained):
+			_fail(failures, "REQUIRED_REFERENCE_LOSS", "relationships", "Deletion would break required relationship %s" % relation.get("relationship_id", ""), str(relation.get("relationship_id", "")))
+	for parcel in spatial_layout.get("parcels", []):
+		for occupant in parcel.get("occupants", []):
+			if occupant.get("required", true) and not retained.has(str(occupant.get("placement_ref", ""))):
+				_fail(failures, "REQUIRED_REFERENCE_LOSS", "parcels", "Deletion would remove a required parcel occupant", str(occupant.get("placement_ref", "")))
+		for road_ref in parcel.get("road_refs", []):
+			if not retained.has(str(road_ref)):
+				_fail(failures, "REQUIRED_REFERENCE_LOSS", "parcels.road_refs", "Deletion would remove a frontage road", str(road_ref))
+	for reservation in spatial_layout.get("reservations", []):
+		if reservation.get("required", true) and _references_removed_placement(reservation, records, retained):
+			_fail(failures, "REQUIRED_REFERENCE_LOSS", "reservations", "Deletion would orphan a required reservation", str(reservation.get("reservation_id", "")))
+	return failures
+
+static func _references_removed_placement(value, records: Array, retained: Dictionary) -> bool:
+	var refs := _placement_references(value)
+	for record in records:
+		var id := str(record.get("placement_id", ""))
+		if id in refs and not retained.has(id): return true
+	return false
+
+static func _placement_references(value) -> Array[String]:
+	var refs: Array[String] = []
+	if value is Dictionary:
+		for key in value:
+			if str(key).ends_with("_ref"): refs.append(str(value[key]))
+			elif str(key).ends_with("_refs") and value[key] is Array:
+				for ref in value[key]: refs.append(str(ref))
+			else: refs.append_array(_placement_references(value[key]))
+	elif value is Array:
+		for item in value: refs.append_array(_placement_references(item))
+	return refs
+
+## Duplicate selected placements and their internal relationships. Parcel
+## membership and external access obligations are not copied into a new parcel.
+## Returns a candidate document so callers can accept it atomically.
+func duplicate_placements(ids: Array[String], offset: Vector2i, catalog := {}, context: EnvironmentResolutionContext = null, instance_rotation_delta := 0) -> Dictionary:
+	if context == null: context = EnvironmentResolutionContext.new(catalog)
+	catalog = context.catalog
+	var candidate := BattlefieldLayoutDocument.from_dictionary(to_dictionary())
+	var layout := candidate.to_module_layout(catalog)
+	var id_map: Dictionary = {}
+	var next_id := _next_placement_number(layout.placements)
+	for placement in layout.placements.duplicate():
+		if placement.placement_id not in ids: continue
+		var copied: EnvironmentModulePlacement = placement.copy()
+		copied.origin += offset
+		copied.rotation = posmod(copied.rotation + instance_rotation_delta, 4)
+		copied.placement_id = "placement_%04d" % next_id
+		next_id += 1
+		id_map[placement.placement_id] = copied.placement_id
+		if not layout.try_add(catalog[copied.component_id], copied, map_size()):
+			return {"ok": false, "error": layout.errors.back()}
+	if id_map.size() != ids.size() or ids.is_empty(): return {"ok": false, "error": "Select existing, distinct placement IDs to duplicate."}
+	var errors := candidate.apply_edited_layout(layout, context)
+	if not errors.is_empty(): return {"ok": false, "error": errors[0].message}
+	var relation_ids: Dictionary = {}
+	for relation in candidate.relationships: relation_ids[str(relation.relationship_id)] = true
+	for relation in relationships:
+		if not id_map.has(str(relation.get("subject_ref", ""))) or not id_map.has(str(relation.get("object_ref", ""))): continue
+		var copied: Dictionary = _remap_placement_references(relation, id_map)
+		var id := "%s_copy" % relation.relationship_id
+		while relation_ids.has(id): id += "_copy"
+		copied.relationship_id = id
+		copied["validation_state"] = "requires_revalidation"
+		relation_ids[id] = true
+		candidate.relationships.append(copied)
+	return {"ok": true, "document": candidate, "layout": layout, "id_map": id_map}
+
+static func _remap_placement_references(value, id_map: Dictionary):
+	if value is Dictionary:
+		var result: Dictionary = value.duplicate(true)
+		for key in result:
+			if str(key).ends_with("_ref"): result[key] = id_map.get(str(result[key]), result[key])
+			elif str(key).ends_with("_refs") and result[key] is Array:
+				result[key] = result[key].map(func(ref): return id_map.get(str(ref), ref))
+			else: result[key] = _remap_placement_references(result[key], id_map)
+		return result
+	if value is Array:
+		return value.map(func(item): return _remap_placement_references(item, id_map))
+	return value
+
+func _next_placement_number(placements: Array) -> int:
+	var next_id := int(spatial_layout.get("next_placement_id", 0))
+	for record in spatial_layout.get("placements", []):
+		var suffix := str(record.get("placement_id", "")).trim_prefix("placement_")
+		if suffix.is_valid_int(): next_id = maxi(next_id, int(suffix) + 1)
+	for placement in placements:
+		var suffix: String = placement.placement_id.trim_prefix("placement_")
+		if suffix.is_valid_int(): next_id = maxi(next_id, int(suffix) + 1)
+	return next_id
 
 func replace_mission_from_map(data: MapData, source := "document_revalidated") -> void:
 	_capture_mission(data, source)
@@ -231,25 +326,26 @@ func to_environment_layout_plan() -> EnvironmentLayoutPlan:
 		if definition == null or definition.module_type not in [EnvironmentModuleDefinition.ModuleType.ROAD, EnvironmentModuleDefinition.ModuleType.INTERSECTION]: continue
 		var origin = record.get("origin", [])
 		if origin is Array and origin.size() == 2:
-			var macro := Vector2i(int(origin[0]) / plan.macro_size, int(origin[1]) / plan.macro_size)
+			var macro := Vector2i(int(float(int(origin[0])) / plan.macro_size), int(float(int(origin[1])) / plan.macro_size))
 			if macro not in plan.road_cells: plan.road_cells.append(macro)
 	return plan
 
 func to_module_layout(catalog := {}) -> EnvironmentModuleLayout:
 	if catalog.is_empty(): catalog = IndustrialModuleCatalog.create()
 	var layout := EnvironmentModuleLayout.new(StringName(document_id), int(provenance.get("generation_seed", 0)))
-	var map_size := _map_size()
+	var map_dimensions := _map_size()
 	for record in spatial_layout.get("placements", []):
 		if not record is Dictionary: continue
 		var component_id := StringName(record.get("component_id", ""))
 		var definition: EnvironmentModuleDefinition = catalog.get(component_id)
 		var origin = record.get("origin", [])
 		if definition == null or not origin is Array or origin.size() != 2: continue
-		layout.try_add(definition, EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0))), map_size)
+		layout.try_add(definition, EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), int(record.get("rotation", 0)), int(record.get("variation", 0)), int(record.get("elevation", 0)), str(record.get("placement_id", ""))), map_dimensions)
 	return layout
 
-func validate(catalog := {}) -> Array[Dictionary]:
-	if catalog.is_empty(): catalog = IndustrialModuleCatalog.create()
+func validate(catalog := {}, context: EnvironmentResolutionContext = null) -> Array[Dictionary]:
+	if context == null: context = EnvironmentResolutionContext.new(catalog)
+	catalog = context.catalog
 	var failures: Array[Dictionary] = []
 	var encoded_version := int(spatial_layout.get("_document_schema_version", SCHEMA_VERSION))
 	if encoded_version != SCHEMA_VERSION: _fail(failures, "UNSUPPORTED_SCHEMA_VERSION", "schema_version", "version %d is not supported" % encoded_version)
@@ -257,53 +353,49 @@ func validate(catalog := {}) -> Array[Dictionary]:
 	if environment_id.is_empty(): _fail(failures, "MISSING_ENVIRONMENT_ID", "environment_id", "environment identity is required")
 	elif environment_id not in ENVIRONMENTS: _fail(failures, "UNSUPPORTED_ENVIRONMENT", "environment_id", "environment '%s' is not supported" % environment_id)
 	_validate_provenance(failures)
-	var map_size := _map_size()
-	if map_size.x < 4 or map_size.y < 4: _fail(failures, "INVALID_MAP_DIMENSIONS", "spatial_layout.map_size", "width and depth must both be at least four")
+	var map_dimensions := _map_size()
+	if map_dimensions.x < 4 or map_dimensions.y < 4: _fail(failures, "INVALID_MAP_DIMENSIONS", "spatial_layout.map_size", "width and depth must both be at least four")
 	if spatial_layout.get("grid_convention", "") != GRID_CONVENTION: _fail(failures, "UNSUPPORTED_GRID_CONVENTION", "spatial_layout.grid_convention", "only %s is supported" % GRID_CONVENTION)
 	if not is_equal_approx(float(spatial_layout.get("cell_size", 0.0)), 1.0): _fail(failures, "UNSUPPORTED_GRID_SCALE", "spatial_layout.cell_size", "Task 4.1 supports the established one-unit grid")
-	_validate_placements(failures, catalog, map_size)
-	_validate_parcels(failures, catalog, map_size)
-	_validate_reservations(failures, map_size)
-	_validate_reservation_placement_conflicts(failures, catalog, map_size)
+	_validate_placements(failures, catalog, map_dimensions)
+	_validate_parcels(failures, catalog, map_dimensions)
+	_validate_reservations(failures, map_dimensions)
+	_validate_reservation_placement_conflicts(failures, catalog)
 	_validate_relationships(failures)
 	_validate_functional_parcels(failures, catalog)
-	_validate_dependencies(failures)
-	_validate_mission(failures, map_size)
+	_validate_dependencies(failures, context)
+	_validate_mission(failures, map_dimensions)
 	if presentation.get("road_presentation_mode", "") not in PRESENTATION_MODES: _fail(failures, "UNSUPPORTED_PRESENTATION", "presentation.road_presentation_mode", "presentation mode is missing or unsupported")
 	return failures
 
-func _capture_spatial_layout(source_placements: Array, map_size: Vector2i) -> void:
+func _capture_spatial_layout(source_placements: Array, map_dimensions: Vector2i, context: EnvironmentResolutionContext) -> void:
 	var encoded: Array[Dictionary] = []
-	var catalog := IndustrialModuleCatalog.create()
+	var catalog := context.catalog
+	var next_id := EnvironmentModulePlacement.ensure_identities(source_placements, _next_placement_number(source_placements))
 	for index in source_placements.size():
 		var placement: EnvironmentModulePlacement = source_placements[index]
 		var definition: EnvironmentModuleDefinition = catalog.get(placement.component_id)
-		var record := {
-			"placement_id": "placement_%04d" % index,
-			"component_id": String(placement.component_id),
-			"origin": [placement.origin.x, placement.origin.y],
-			"rotation": placement.rotation,
-			"variation": placement.variation,
-			"elevation": placement.elevation,
-			"assembly_ref": String(definition.structural_assembly_id) if definition and not definition.structural_assembly_id.is_empty() else "",
-			"asset_refs": _resolved_assets(definition, placement.variation) if definition else [],
-		}
+		var record := placement.to_record()
+		record["assembly_ref"] = String(definition.structural_assembly_id) if definition and not definition.structural_assembly_id.is_empty() else ""
+		record["asset_refs"] = context.resolved_assets(definition, placement.variation) if definition else []
 		encoded.append(record)
 		if not record.assembly_ref.is_empty():
 			relationships.append({"relationship_id": "assembly_%04d" % index, "kind": "assembly_instance", "subject_ref": record.placement_id, "object_ref": "assembly:%s" % record.assembly_ref, "required": true})
-	spatial_layout = {"map_size": [map_size.x, map_size.y], "grid_convention": GRID_CONVENTION, "cell_size": 1.0, "placements": encoded}
+	spatial_layout = {"resolution_version": 1, "map_size": [map_dimensions.x, map_dimensions.y], "grid_convention": GRID_CONVENTION, "cell_size": 1.0, "placements": encoded, "next_placement_id": next_id}
 
-func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
+func _capture_plan_relationships(plan: EnvironmentLayoutPlan, catalog: Dictionary) -> void:
+	# One-time import bridge for the existing generator's signature-based plan.
+	# Persisted documents and subsequent edits use placement IDs exclusively.
 	if plan == null: return
 	var placement_ids: Dictionary = {}
 	var runtime_by_signature: Dictionary = {}
 	for placement in spatial_layout.get("placements", []):
 		if placement is Dictionary:
-			var signature := _encoded_placement_signature(placement)
-			placement_ids[signature] = str(placement.get("placement_id", ""))
+			var placement_signature := _encoded_placement_signature(placement)
+			placement_ids[placement_signature] = str(placement.get("placement_id", ""))
 			var origin = placement.get("origin", [])
 			if origin is Array and origin.size() == 2:
-				runtime_by_signature[signature] = EnvironmentModulePlacement.new(StringName(placement.get("component_id", "")), Vector2i(int(origin[0]), int(origin[1])), int(placement.get("rotation", 0)), int(placement.get("variation", 0)), int(placement.get("elevation", 0)))
+				runtime_by_signature[placement_signature] = EnvironmentModulePlacement.new(StringName(placement.get("component_id", "")), Vector2i(int(origin[0]), int(origin[1])), int(placement.get("rotation", 0)), int(placement.get("variation", 0)), int(placement.get("elevation", 0)))
 	var encoded_parcels: Array[Dictionary] = []
 	var parcels: Array = plan.parcels.duplicate()
 	parcels.sort_custom(func(a, b): return String(a.get("id", "")) < String(b.get("id", "")))
@@ -321,8 +413,8 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 		for source_span in parcel.get("frontage_spans", []):
 			var span: Dictionary = source_span.duplicate(true)
 			var resolved_roads: Array[String] = []
-			for signature in source_span.get("road_refs", []):
-				var road_ref := str(placement_ids.get(str(signature), ""))
+			for placement_signature in source_span.get("road_refs", []):
+				var road_ref := str(placement_ids.get(str(placement_signature), ""))
 				if not road_ref.is_empty() and road_ref not in resolved_roads: resolved_roads.append(road_ref)
 			resolved_roads.sort()
 			span["road_refs"] = resolved_roads
@@ -377,9 +469,9 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 		if not access_kind.is_empty() and not selected_frontage.is_empty():
 			var runtime_placements: Array[EnvironmentModulePlacement] = []
 			for occupant in parcel.get("occupants", []):
-				var signature := str(occupant.get("placement_signature", ""))
-				if runtime_by_signature.has(signature): runtime_placements.append(runtime_by_signature[signature])
-			var properties := RelationshipValidator.relationship_properties(runtime_parcel, template, selected_frontage, runtime_placements, IndustrialModuleCatalog.create())
+				var placement_signature := str(occupant.get("placement_signature", ""))
+				if runtime_by_signature.has(placement_signature): runtime_placements.append(runtime_by_signature[placement_signature])
+			var properties := RelationshipValidator.relationship_properties(runtime_parcel, template, selected_frontage, runtime_placements, catalog)
 			properties["access_region"] = "frontage_span"
 			properties["clearance_depth_cells"] = selected_frontage.clearance_depth_cells
 			relationships.append({
@@ -393,25 +485,28 @@ func _capture_plan_relationships(plan: EnvironmentLayoutPlan) -> void:
 	spatial_layout["parcels"] = encoded_parcels
 	spatial_layout["reservations"] = ReservationLedger.encoded_records(plan.reservations)
 
-func _capture_dependencies() -> void:
+func _capture_dependencies(context: EnvironmentResolutionContext) -> void:
 	var by_key: Dictionary = {}
 	for record in spatial_layout.get("placements", []):
+		var module_key := "module:%s" % record.component_id
+		if not by_key.has(module_key): by_key[module_key] = context.module_dependency(StringName(record.component_id))
+		by_key[module_key].required_by.append(record.placement_id)
 		for asset_id in record.get("asset_refs", []):
 			var key := "asset:%s" % asset_id
 			if not by_key.has(key):
-				by_key[key] = {"kind": "asset", "id": asset_id, "geometry_sha256": EnvironmentAssemblyContract.current_geometry_sha256(asset_id), "calibration_signature": EnvironmentAssemblyContract.current_calibration_signature(asset_id), "required_by": []}
+				by_key[key] = context.asset_dependency(asset_id)
 			by_key[key].required_by.append(record.placement_id)
 		var assembly_id := String(record.get("assembly_ref", ""))
 		if not assembly_id.is_empty():
 			var assembly_key := "assembly:%s" % assembly_id
-			if not by_key.has(assembly_key): by_key[assembly_key] = _assembly_dependency(assembly_id)
+			if not by_key.has(assembly_key): by_key[assembly_key] = context.assembly_dependency(assembly_id)
 			by_key[assembly_key].required_by.append(record.placement_id)
 	for relationship in relationships:
 		if str(relationship.get("object_ref", "")).begins_with("assembly:"):
 			var assembly_id := str(relationship.object_ref).trim_prefix("assembly:")
-			var key := "assembly:%s" % assembly_id
-			if not by_key.has(key): by_key[key] = _assembly_dependency(assembly_id)
-			by_key[key].required_by.append(relationship.relationship_id)
+			var assembly_key := "assembly:%s" % assembly_id
+			if not by_key.has(assembly_key): by_key[assembly_key] = context.assembly_dependency(assembly_id)
+			by_key[assembly_key].required_by.append(relationship.relationship_id)
 		if relationship.kind != "parcel_template": continue
 		var template_id := String(relationship.object_ref).trim_prefix("template:")
 		var key := "template:%s" % template_id
@@ -451,7 +546,7 @@ func _validate_provenance(failures: Array[Dictionary]) -> void:
 		if source_origin not in ["authored", "generated"]: _fail(failures, "INCONSISTENT_PROVENANCE", "provenance.source_origin", "edited documents must preserve their authored or generated source")
 		if source_origin == "generated" and (str(provenance.get("generator_id", "")).is_empty() or not bool(provenance.get("has_generation_seed", false))): _fail(failures, "INCONSISTENT_PROVENANCE", "provenance", "edited generated documents must retain their original generator and seed")
 
-func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
+func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_dimensions: Vector2i) -> void:
 	var encoded = spatial_layout.get("placements", null)
 	if not encoded is Array:
 		_fail(failures, "MALFORMED_PLACEMENTS", "spatial_layout.placements", "placements must be an array")
@@ -480,10 +575,12 @@ func _validate_placements(failures: Array[Dictionary], catalog: Dictionary, map_
 		if rotation not in definition.allowed_rotations:
 			_fail(failures, "UNSUPPORTED_ROTATION", field + ".rotation", "rotation %d is not supported by %s" % [rotation, component_id], placement_id)
 			continue
-		var placement := EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), rotation, int(record.get("variation", 0)), int(record.get("elevation", 0)))
-		if not layout.try_add(definition, placement, map_size): _fail(failures, "INVALID_PLACEMENT", field, layout.errors.back(), placement_id)
+		var placement := EnvironmentModulePlacement.new(component_id, Vector2i(int(origin[0]), int(origin[1])), rotation, int(record.get("variation", 0)), int(record.get("elevation", 0)), placement_id)
+		if not layout.try_add(definition, placement, map_dimensions): _fail(failures, "INVALID_PLACEMENT", field, layout.errors.back(), placement_id)
 
-func _validate_parcels(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
+	failures.append_array(EnvironmentModuleLayout.Spatial.source_support_errors(layout, catalog, map_dimensions))
+
+func _validate_parcels(failures: Array[Dictionary], catalog: Dictionary, map_dimensions: Vector2i) -> void:
 	var parcels = spatial_layout.get("parcels", [])
 	if not parcels is Array:
 		_fail(failures, "MALFORMED_PARCELS", "spatial_layout.parcels", "parcels must be an array")
@@ -509,7 +606,7 @@ func _validate_parcels(failures: Array[Dictionary], catalog: Dictionary, map_siz
 			_fail(failures, "MALFORMED_PARCEL_BOUNDS", field + ".bounds", "bounds must contain x, z, width, and depth", parcel_id)
 			continue
 		var bounds := Rect2i(int(encoded_bounds[0]), int(encoded_bounds[1]), int(encoded_bounds[2]), int(encoded_bounds[3]))
-		if bounds.size.x <= 0 or bounds.size.y <= 0 or bounds.position.x < 0 or bounds.position.y < 0 or bounds.end.x > map_size.x or bounds.end.y > map_size.y:
+		if bounds.size.x <= 0 or bounds.size.y <= 0 or bounds.position.x < 0 or bounds.position.y < 0 or bounds.end.x > map_dimensions.x or bounds.end.y > map_dimensions.y:
 			_fail(failures, "INVALID_PARCEL_BOUNDS", field + ".bounds", "parcel bounds are empty or outside the map", parcel_id)
 		var configuration_id := str(parcel.get("configuration_id", "standard"))
 		if configuration_id == "elongated_loading_service" and bounds.size not in [Vector2i(20, 10), Vector2i(10, 20)]:
@@ -571,7 +668,7 @@ func _validate_frontage_span(failures: Array[Dictionary], frontage, parcel_id: S
 			_fail(failures, "FRONTAGE_ROAD_GAP", field + ".frontage_spans", "frontage cell beside %s has no referenced road geometry" % adjacent, frontage_id)
 			break
 
-func _validate_reservations(failures: Array[Dictionary], map_size: Vector2i) -> void:
+func _validate_reservations(failures: Array[Dictionary], map_dimensions: Vector2i) -> void:
 	var encoded = spatial_layout.get("reservations", [])
 	if not encoded is Array:
 		_fail(failures, "MALFORMED_RESERVATIONS", "spatial_layout.reservations", "reservations must be an array")
@@ -612,14 +709,14 @@ func _validate_reservations(failures: Array[Dictionary], map_size: Vector2i) -> 
 				continue
 			var cell := Vector2i(int(encoded_cell[0]), int(encoded_cell[1]))
 			cells.append(cell)
-			if cell.x < 0 or cell.y < 0 or cell.x >= map_size.x or cell.y >= map_size.y: _fail(failures, "RESERVATION_OUT_OF_BOUNDS", field + ".cells", "cell %s is outside the map" % cell, reservation_id)
+			if cell.x < 0 or cell.y < 0 or cell.x >= map_dimensions.x or cell.y >= map_dimensions.y: _fail(failures, "RESERVATION_OUT_OF_BOUNDS", field + ".cells", "cell %s is outside the map" % cell, reservation_id)
 		var runtime: Dictionary = record.duplicate(true)
 		runtime["cells"] = cells
 		if not ledger.try_reserve(runtime):
 			var failure: Dictionary = ledger.failures.back()
 			_fail(failures, str(failure.code), field, str(failure.message), reservation_id)
 
-func _validate_reservation_placement_conflicts(failures: Array[Dictionary], catalog: Dictionary, map_size: Vector2i) -> void:
+func _validate_reservation_placement_conflicts(failures: Array[Dictionary], catalog: Dictionary) -> void:
 	var ledger := ReservationLedger.new()
 	for record in ReservationLedger.decoded_records(spatial_layout.get("reservations", [])):
 		if not ledger.try_reserve(record): return
@@ -737,49 +834,66 @@ func _validate_functional_parcels(failures: Array[Dictionary], catalog: Dictiona
 		for issue in RelationshipValidator.validate_geometry(parcel, template_id, placements, catalog, selected):
 			_fail(failures, str(issue.code), "relationships.%s" % relationship.get("relationship_id", ""), str(issue.message), str(issue.reference))
 
-func _validate_dependencies(failures: Array[Dictionary]) -> void:
-	var by_key: Dictionary = {}
+func _validate_dependencies(failures: Array[Dictionary], context: EnvironmentResolutionContext) -> void:
+	var version := int(spatial_layout.get("resolution_version", 0))
+	if version not in [0, 1]: _fail(failures, "UNSUPPORTED_RESOLUTION_VERSION", "dependencies", "Unsupported resolution contract")
+	var by_key := {}
+	var required_keys := {}
 	for dependency in dependencies:
-		if not dependency is Dictionary: continue
-		by_key["%s:%s" % [dependency.get("kind", ""), dependency.get("id", "")]] = dependency
+		var key := "%s:%s" % [dependency.get("kind", ""), dependency.get("id", "")]
+		if by_key.has(key): _fail(failures, "DUPLICATE_DEPENDENCY", "dependencies", key)
+		by_key[key] = dependency
 	for record in spatial_layout.get("placements", []):
 		if not record is Dictionary: continue
+		var definition: EnvironmentModuleDefinition = context.catalog.get(StringName(record.get("component_id", "")))
+		if definition == null: continue
+		context.check_baseline("modules", str(definition.component_id), context.module_dependency(definition.component_id))
 		for asset_id in record.get("asset_refs", []):
-			var key := "asset:%s" % asset_id
-			if not by_key.has(key):
-				_fail(failures, "MISSING_DEPENDENCY", "dependencies", "%s required by %s is absent" % [key, record.get("placement_id", "")], key)
-				continue
-			var dependency: Dictionary = by_key[key]
-			var current_geometry := EnvironmentAssemblyContract.current_geometry_sha256(asset_id)
-			if current_geometry.is_empty(): _fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies.%s" % key, "%s required by %s is unavailable" % [asset_id, record.get("placement_id", "")], key)
-			elif dependency.get("geometry_sha256", "") != current_geometry: _fail(failures, "STALE_GEOMETRY_DEPENDENCY", "dependencies.%s.geometry_sha256" % key, "%s geometry revision changed" % asset_id, key)
-			if dependency.get("calibration_signature", "") != EnvironmentAssemblyContract.current_calibration_signature(asset_id): _fail(failures, "STALE_CALIBRATION_DEPENDENCY", "dependencies.%s.calibration_signature" % key, "%s calibration revision changed" % asset_id, key)
-		var assembly_id := str(record.get("assembly_ref", ""))
-		if not assembly_id.is_empty() and not by_key.has("assembly:%s" % assembly_id): _fail(failures, "MISSING_DEPENDENCY", "dependencies", "assembly:%s is absent" % assembly_id, assembly_id)
+			if str(context.asset(str(asset_id)).geometry_sha256).is_empty(): _fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies", str(asset_id) + " unavailable", str(asset_id))
+		var expected_assets := context.resolved_assets(definition, int(record.get("variation", 0)))
+		if Array(record.get("asset_refs", [])) != Array(expected_assets): _fail(failures, "VISUAL_DEPENDENCY_MISMATCH", "dependencies", "Placement visual references differ from resolved choices", str(record.get("placement_id", "")))
+		var required: Array[String] = []
+		for asset_id in expected_assets: required.append("asset:" + asset_id)
+		if version == 1: required.append("module:" + str(definition.component_id))
+		if str(record.get("assembly_ref", "")) != str(definition.structural_assembly_id): _fail(failures, "ASSEMBLY_REFERENCE_MISMATCH", "dependencies", "Placement assembly reference changed")
+		if not definition.structural_assembly_id.is_empty(): required.append("assembly:" + str(definition.structural_assembly_id))
+		for key in required:
+			required_keys[key] = true
+			if not by_key.has(key): _fail(failures, "MISSING_DEPENDENCY", "dependencies", key + " is absent", key)
 	for relationship in relationships:
-		if not relationship is Dictionary: continue
 		var key := str(relationship.get("object_ref", ""))
-		if relationship.get("kind", "") == "parcel_template" and not by_key.has(key): _fail(failures, "MISSING_DEPENDENCY", "dependencies", "%s is absent" % key, key)
-		if key.begins_with("assembly:") and not by_key.has(key): _fail(failures, "MISSING_DEPENDENCY", "dependencies", "%s is absent" % key, key)
+		if (key.begins_with("assembly:") or relationship.get("kind", "") == "parcel_template") and not by_key.has(key): _fail(failures, "MISSING_DEPENDENCY", "dependencies", key + " is absent", key)
 	for key in by_key:
 		var dependency: Dictionary = by_key[key]
-		if dependency.get("kind", "") == "asset":
-			var asset_id := str(dependency.get("id", ""))
-			var current_geometry := EnvironmentAssemblyContract.current_geometry_sha256(asset_id)
-			if current_geometry.is_empty() and bool(dependency.get("required", true)):
-				_fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies.%s" % key, "%s is unavailable" % key, key)
-		elif dependency.get("kind", "") == "assembly":
-			var current := _assembly_dependency(str(dependency.get("id", "")))
-			if not bool(current.get("available", false)):
-				_fail(failures, "MISSING_ASSEMBLY_DEPENDENCY", "dependencies.%s" % key, "%s does not resolve to an authored assembly" % key, key)
-			elif not bool(current.get("valid", false)):
-				_fail(failures, "INVALID_ASSEMBLY_DEPENDENCY", "dependencies.%s" % key, "%s no longer satisfies its authored assembly definition" % key, key)
-			elif dependency.get("certification_signature", "") != current.get("certification_signature", ""):
-				_fail(failures, "STALE_ASSEMBLY_DEPENDENCY", "dependencies.%s.certification_signature" % key, "%s assembly dependency changed" % key, key)
-		elif dependency.get("kind", "") == "template" and dependency.get("revision", "") != PARCEL_GRAMMAR_REVISION:
-			_fail(failures, "STALE_TEMPLATE_DEPENDENCY", "dependencies.%s.revision" % key, "%s template grammar revision changed" % key, key)
+		var id := str(dependency.get("id", ""))
+		match dependency.get("kind", ""):
+			"asset":
+				if not dependency.get("required", true) and not required_keys.has(key): continue
+				var current := context.asset_dependency(id)
+				context.check_baseline("assets", id, current)
+				for field in ["geometry_sha256", "calibration_signature", "semantic_signature"]:
+					if version == 0 and field == "semantic_signature": continue
+					if dependency.get(field, "") != current.get(field): _fail(failures, "STALE_%s_DEPENDENCY" % {"geometry_sha256": "GEOMETRY", "calibration_signature": "CALIBRATION", "semantic_signature": "SEMANTIC"}[field], "dependencies", id + " changed " + field, key)
+				if str(current.geometry_sha256).is_empty(): _fail(failures, "MISSING_ASSET_DEPENDENCY", "dependencies", id + " unavailable", key)
+			"module":
+				var current := context.module_dependency(StringName(id))
+				context.check_baseline("modules", id, current)
+				if dependency.get("revision", "") != current.revision: _fail(failures, "STALE_MODULE_DEPENDENCY", "dependencies", id + " changed", key)
+			"assembly":
+				var current := context.assembly_dependency(id)
+				context.check_baseline("assemblies", id, current)
+				if not current.available: _fail(failures, "MISSING_ASSEMBLY_DEPENDENCY", "dependencies", id + " unavailable", key)
+				elif not current.valid: _fail(failures, "INVALID_ASSEMBLY_DEPENDENCY", "dependencies", id + " failed substantive validation", key)
+				var expected := str(current.certification_signature)
+				# Only the frozen old signature is importable; live content must still match its full baseline.
+				if version == 0: expected = str(context.baselines.get("assemblies", {}).get(id, {}).get("legacy_signature", ""))
+				if expected.is_empty() or dependency.get("certification_signature", "") != expected: _fail(failures, "STALE_ASSEMBLY_DEPENDENCY", "dependencies", id + " changed", key)
+			"template":
+				if dependency.get("revision", "") != PARCEL_GRAMMAR_REVISION: _fail(failures, "STALE_TEMPLATE_DEPENDENCY", "dependencies", id + " changed", key)
+			_: _fail(failures, "UNKNOWN_DEPENDENCY_KIND", "dependencies", key)
+	failures.append_array(context.errors)
 
-func _validate_mission(failures: Array[Dictionary], map_size: Vector2i) -> void:
+func _validate_mission(failures: Array[Dictionary], map_dimensions: Vector2i) -> void:
 	var status := str(mission_context.get("status", ""))
 	if status not in ["preserved", "not_represented"]: _fail(failures, "INVALID_MISSION_CONTEXT", "mission_context.status", "mission context status is unsupported")
 	if status == "not_represented": return
@@ -795,7 +909,7 @@ func _validate_mission(failures: Array[Dictionary], map_size: Vector2i) -> void:
 			if not cell is Array or cell.size() != 3:
 				_fail(failures, "MALFORMED_ZONE_CELL", "mission_context.zones.%s.cells" % zone_id, "zone cell must contain x, y, z", zone_id)
 				continue
-			if int(cell[0]) < 0 or int(cell[2]) < 0 or int(cell[0]) >= map_size.x or int(cell[2]) >= map_size.y: _fail(failures, "ZONE_CELL_OUT_OF_BOUNDS", "mission_context.zones.%s.cells" % zone_id, "cell %s is outside the map" % [cell], zone_id)
+			if int(cell[0]) < 0 or int(cell[2]) < 0 or int(cell[0]) >= map_dimensions.x or int(cell[2]) >= map_dimensions.y: _fail(failures, "ZONE_CELL_OUT_OF_BOUNDS", "mission_context.zones.%s.cells" % zone_id, "cell %s is outside the map" % [cell], zone_id)
 
 func _map_size() -> Vector2i:
 	var encoded = spatial_layout.get("map_size", [])
@@ -806,76 +920,9 @@ func _public_spatial_layout() -> Dictionary:
 	result.erase("_document_schema_version")
 	return result
 
-static func _resolved_assets(definition: EnvironmentModuleDefinition, variation: int) -> Array[String]:
-	var result: Array[String] = []
-	for visual in definition.visuals:
-		if visual.get("kind", "asset") == "socket_assembly":
-			for component in visual.get("components", []): _append_unique(result, str(component.get("asset_id", "")))
-			continue
-		var candidates: Array = visual.get("asset_ids", [])
-		if not candidates.is_empty():
-			var approved := SemanticCatalog.generation_candidates(candidates)
-			if not approved.is_empty(): _append_unique(result, str(approved[variation % approved.size()]))
-			continue
-		var paths: Array = visual.get("asset_variants", [])
-		var path := str(visual.get("asset_path", ""))
-		if not paths.is_empty(): path = str(paths[variation % paths.size()])
-		_append_unique(result, _asset_id_for_path(path))
-	return result
-
-static func _asset_id_for_path(path: String) -> String:
-	if path.is_empty(): return ""
-	if _asset_ids_by_path.is_empty():
-		for asset_id in AssetCatalog.all_ids(): _asset_ids_by_path[AssetCatalog.path_for(asset_id)] = asset_id
-	return str(_asset_ids_by_path.get(path, ""))
-
-static func _append_unique(values: Array[String], value: String) -> void:
-	if not value.is_empty() and value not in values: values.append(value)
-
 static func _encoded_placement_signature(record: Dictionary) -> String:
 	var origin = record.get("origin", [0, 0])
 	return "%s@%s,%s,%s:r%s:v%s" % [record.get("component_id", ""), origin[0], record.get("elevation", 0), origin[1], record.get("rotation", 0), record.get("variation", 0)]
 
-static func _assembly_dependency(assembly_id: String) -> Dictionary:
-	var records := InitialEnvironmentAssemblyLibrary.records()
-	if records.has(StringName(assembly_id)):
-		var contract: EnvironmentAssemblyContract = records[StringName(assembly_id)].contract
-		var parts: Array[String] = [String(contract.assembly_id), str(contract.role), str(contract.completeness), str(contract.certification_state)]
-		for component in contract.components:
-			parts.append("%s:%s:%s" % [component.get("asset_id", ""), component.get("geometry_sha256", ""), component.get("calibration_signature", "")])
-		parts.sort()
-		return {"kind": "assembly", "id": assembly_id, "available": true, "valid": contract.certification_state == EnvironmentAssemblyContract.CertificationState.CERTIFIED, "resolution": "certified_contract", "certification_state": "certified", "certification_signature": "|".join(parts).sha256_text(), "required_by": []}
-	var buildings := IndustrialBuildingCatalog.create()
-	if buildings.has(StringName(assembly_id)):
-		var building: EnvironmentBuildingDefinition = buildings[StringName(assembly_id)]
-		return {"kind": "assembly", "id": assembly_id, "available": true, "valid": building.validate().is_empty(), "resolution": "building_definition", "certification_state": "definition_only", "certification_signature": _building_definition_signature(building), "required_by": []}
-	return {"kind": "assembly", "id": assembly_id, "available": false, "valid": false, "resolution": "missing", "certification_state": "missing", "certification_signature": "", "required_by": []}
-
-static func _building_definition_signature(building: EnvironmentBuildingDefinition) -> String:
-	var module: EnvironmentModuleDefinition = building.module
-	var parts: Array[String] = [
-		String(building.assembly_id), String(building.purpose), str(building.enclosure),
-		"parcel=%d,%d" % [building.parcel_size.x, building.parcel_size.y],
-		"module=%s:%d,%d:%d:%d:%s" % [module.component_id, module.size.x, module.size.y, module.tactical_role, module.module_type, module.visual_envelope],
-		"walls=" + _cells_signature(building.wall_cells),
-		"entrances=" + _cells_signature(building.entrance_cells),
-		"floors=" + _cells_signature(building.usable_floor_cells),
-		"roofs=" + _cells_signature(building.roof_cells),
-		"clearance=" + _cells_signature(module.clearance_cells),
-	]
-	for asset_id in building.source_assets:
-		parts.append("asset=%s:%s:%s" % [asset_id, EnvironmentAssemblyContract.current_geometry_sha256(asset_id), EnvironmentAssemblyContract.current_calibration_signature(asset_id)])
-	for connection: EnvironmentModuleConnection in module.connections:
-		parts.append("connection=%d,%d:%d,%d:%d:%d" % [connection.local_cell.x, connection.local_cell.y, connection.direction.x, connection.direction.y, connection.type, connection.elevation])
-	parts.sort()
-	return "|".join(parts).sha256_text()
-
-static func _cells_signature(cells: Array[Vector2i]) -> String:
-	var values: Array[String] = []
-	for cell in cells:
-		values.append("%d,%d" % [cell.x, cell.y])
-	values.sort()
-	return ";".join(values)
-
-static func _fail(target: Array[Dictionary], code: String, field: String, message: String, reference := "") -> void:
-	target.append({"code": code, "field": field, "reference": reference, "message": message})
+static func _fail(target: Array[Dictionary], code: String, field: String, message: String, source_reference := "") -> void:
+	target.append({"code": code, "field": field, "reference": source_reference, "message": message})

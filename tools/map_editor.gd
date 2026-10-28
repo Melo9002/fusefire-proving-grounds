@@ -6,6 +6,8 @@ const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 const DebugDraw = preload("res://tools/diagnostics/fusefire_debug_draw_3d.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
+const CHUNK_LAYOUT := &"chunk_authoring"
+const POPULATION_LAYOUT := &"fixed_population"
 const CUSTOM_LAYOUT := &"custom_layout"
 const ASSEMBLY_VIEW_COMPLETE := &"complete"
 const ASSEMBLY_VIEW_SHELL := &"shell"
@@ -14,7 +16,7 @@ const INSPECTION_CONTROLS_TOP := 92.0
 const INSPECTION_ROW_SPACING := 32.0
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const NORMAL_LAYOUTS: Array[StringName] = [
-	CUSTOM_LAYOUT,
+	CHUNK_LAYOUT, CUSTOM_LAYOUT, POPULATION_LAYOUT,
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
 const ENGINEERING_LAYOUTS: Array[StringName] = [
@@ -58,9 +60,25 @@ var composer_panel: Control
 var inspection_shortcuts: Array[Control] = []
 var engineering_shortcuts: Array[Control] = []
 var editor_catalog: Dictionary = IndustrialModuleCatalog.create()
+var preview_placement: EnvironmentModulePlacement
+var preview_source_id := ""
+var preview_is_duplicate := false
+var preview_obstacles: EnvironmentModuleLayout
+var preview_visual: Node3D
+var preview_actions: Control
+var preview_definition: EnvironmentModuleDefinition
+var preview_visuals: Array[Dictionary] = []
+var pending_resolution: EnvironmentResolutionContext
+var pending_compilation: Dictionary = {}
 var displayed_data: MapData
 var assembly_view: StringName = ASSEMBLY_VIEW_COMPLETE
 var show_engineering_fixtures := false
+var population_save_directory := "res://tools/map_editor/layouts"
+var pending_population: Dictionary = {}
+var population_panel: VBoxContainer
+var population_message: Label
+var chunk_authoring: ChunkAuthoringController
+var legacy_edit_controls: Array[Control] = []
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -74,10 +92,20 @@ func _ready() -> void:
 	_rebuild()
 
 func _process(_delta: float) -> void:
+	if layout_preset == CHUNK_LAYOUT and chunk_authoring != null:
+		chunk_authoring.draw()
+		return
 	if show_spatial_contracts:
 		_draw_selected_spatial_contracts()
 
 func _shortcut_input(event: InputEvent) -> void:
+	if chunk_authoring != null and chunk_authoring.publication != null and chunk_authoring.publication.busy: return
+	if layout_preset == CHUNK_LAYOUT:
+		chunk_authoring.shortcut(event)
+		return
+	if preview_placement != null and _preview_shortcut(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
 			_rebuild()
@@ -125,6 +153,22 @@ func _shortcut_input(event: InputEvent) -> void:
 			_set_seed(generation_seed - 1)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if chunk_authoring != null and chunk_authoring.publication != null and chunk_authoring.publication.busy: return
+	if layout_preset == CHUNK_LAYOUT:
+		if event is InputEventMouseMotion and event.button_mask == 0:
+			chunk_authoring.move_pending(event.position)
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			chunk_authoring.click(event.position)
+		elif is_instance_valid(orbit): orbit.handle_mouse(event)
+		return
+	if preview_placement != null:
+		if event is InputEventMouseMotion and event.button_mask == 0:
+			_move_preview_at_screen(event.position)
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_move_preview_at_screen(event.position)
+			_confirm_placement_preview()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if _select_module_at_screen(event.position):
 			get_viewport().set_input_as_handled()
@@ -136,6 +180,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _rebuild() -> void:
+	if chunk_authoring != null: chunk_authoring.cancel_pending()
+	_cancel_placement_preview(false)
+	_update_composer_visibility()
+	if layout_preset == CHUNK_LAYOUT:
+		displayed_data = null
+		chunk_authoring.rebuild()
+		_frame_camera()
+		chunk_authoring.update_status()
+		return
 	if content:
 		content.free()
 	inspection_module = null
@@ -147,9 +200,20 @@ func _rebuild() -> void:
 	var data: MapData
 	if layout_preset == CUSTOM_LAYOUT:
 		data = _build_custom_map()
+	elif layout_preset == POPULATION_LAYOUT:
+		var populated := pending_population if not pending_population.is_empty() else FixedEnvironmentPopulation.build(generation_seed)
+		pending_population = {}
+		if not populated.ok:
+			displayed_data = null
+			population_message.text = "Population rejected: " + str(populated.errors)
+			status.text = "Fixed environment population failed; no playable snapshot."
+			return
+		data = populated.data
+		population_message.text = "Fixed industrial base · seed %d\n8 additions in declared yards. Street and mission access stay protected.\nSave keeps the exact accepted choices." % generation_seed
 	elif layout_preset in PROCEDURAL_LAYOUTS:
-		data = FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, generation_seed, layout_preset)
-		data.battlefield_layout_document = BattlefieldLayoutDocument.from_generated(data)
+		var context := EnvironmentResolutionContext.new()
+		data = FlatMapGenerator.generate_coherent_environment(60, 50, 1.0, generation_seed, layout_preset, 5, context)
+		data.battlefield_layout_document = BattlefieldLayoutDocument.from_generated(data, "", context)
 	else:
 		data = FlatMapGenerator.generate_modular_environment_sample(40, 30, 1.0, generation_seed, layout_preset)
 		var legacy_layout := EnvironmentModuleLayout.new(layout_preset, generation_seed)
@@ -334,6 +398,24 @@ func _build_ui() -> void:
 	transform_label.text = "Left-click any piece to select it, then adjust its transform."
 	ui_root.add_child(transform_label)
 	_build_composer_ui(ui_root)
+	legacy_edit_controls.assign([nudges, transform_label, previous, seed_input, next, regenerate, plan_toggle, spatial_contract_toggle, edit_copy])
+	for control in views.get_children().slice(3): legacy_edit_controls.append(control)
+	chunk_authoring = ChunkAuthoringController.new(self)
+	chunk_authoring.build_ui(ui_root)
+	population_panel = VBoxContainer.new()
+	ui_root.add_child(population_panel)
+	population_panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	population_panel.offset_left = -340
+	population_panel.offset_right = -12
+	population_panel.offset_top = 220
+	population_message = Label.new()
+	population_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	population_panel.add_child(population_message)
+	_add_action_button(population_panel, "Save populated battlefield", _save_population)
+	_add_action_button(population_panel, "Reload saved seed", _reload_population)
+	_add_action_button(population_panel, "Play — Eliminate", func(): _play_population(MissionObjectiveDefinition.Kind.ELIMINATE))
+	_add_action_button(population_panel, "Play — Terminal", func(): _play_population(MissionObjectiveDefinition.Kind.INTERACT_TERMINAL))
+	population_panel.hide()
 
 func _build_composer_ui(layer: Control) -> void:
 	var panel := PanelContainer.new()
@@ -392,11 +474,20 @@ func _build_composer_ui(layer: Control) -> void:
 	column.add_child(edit_actions)
 	_add_action_button(edit_actions, "Rotate selected", func(): _rotate_selected_placement(1))
 	_add_action_button(edit_actions, "Delete selected", _delete_selected_placement)
+	var instance_actions := HBoxContainer.new()
+	column.add_child(instance_actions)
+	_add_action_button(instance_actions, "Duplicate selected", _duplicate_selected_placement)
+	_add_action_button(instance_actions, "Apply variant", _change_selected_variation)
 	var file_actions := HBoxContainer.new()
 	column.add_child(file_actions)
 	_add_action_button(file_actions, "Save (Ctrl+S)", _save_custom_layout)
 	_add_action_button(file_actions, "Reload", func(): _load_custom_layout(true))
 	_add_action_button(file_actions, "Clear", _clear_custom_layout)
+	preview_actions = HBoxContainer.new()
+	column.add_child(preview_actions)
+	_add_action_button(preview_actions, "Confirm (Enter)", _confirm_placement_preview)
+	_add_action_button(preview_actions, "Cancel (Esc)", _cancel_placement_preview)
+	preview_actions.visible = false
 	var play_actions := HBoxContainer.new()
 	column.add_child(play_actions)
 	_add_action_button(play_actions, "Play edited battlefield", _play_custom_layout)
@@ -411,7 +502,7 @@ func _populate_preset_picker() -> void:
 		return
 	preset_picker.clear()
 	for preset in NORMAL_LAYOUTS:
-		var kind := "Editable" if preset == CUSTOM_LAYOUT else "Environment"
+		var kind := "Author" if preset == CHUNK_LAYOUT else ("Editable" if preset == CUSTOM_LAYOUT else "Environment")
 		preset_picker.add_item("%s — %s" % [kind, String(preset).capitalize()])
 		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
 	if show_engineering_fixtures:
@@ -451,20 +542,32 @@ func _is_composing() -> bool:
 	return layout_preset == CUSTOM_LAYOUT
 
 func _update_composer_visibility() -> void:
+	if is_instance_valid(population_panel): population_panel.visible = layout_preset == POPULATION_LAYOUT
+	var chunk_mode := layout_preset == CHUNK_LAYOUT
+	if chunk_authoring != null: chunk_authoring.panel.visible = chunk_mode
+	for control in legacy_edit_controls: control.visible = not chunk_mode
 	if is_instance_valid(composer_panel):
 		composer_panel.visible = _is_composing()
 	for control in inspection_shortcuts:
-		control.visible = not _is_composing()
+		control.visible = not _is_composing() and not chunk_mode
 	for control in engineering_shortcuts:
-		control.visible = show_engineering_fixtures and not _is_composing()
+		control.visible = show_engineering_fixtures and not _is_composing() and not chunk_mode
 	if _is_composing():
 		_update_composer_message()
 	_update_transform_label()
 
 func _build_custom_map() -> MapData:
+	if not pending_compilation.is_empty():
+		var accepted := pending_compilation
+		pending_compilation = {}
+		if accepted.document.signature() == custom_document.signature():
+			custom_build_errors.clear()
+			return accepted.data
+	var context := pending_resolution if pending_resolution != null else EnvironmentResolutionContext.new()
+	pending_resolution = null
 	if custom_document == null:
-		custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
-	var result := BattlefieldLayoutDocumentCompiler.compile(custom_document)
+		custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout", null, context)
+	var result := BattlefieldLayoutDocumentCompiler.compile(custom_document, 1.0, 5, context)
 	custom_build_errors.assign(result.errors)
 	if result.document != null: custom_document = result.document
 	if result.data != null: return result.data
@@ -509,14 +612,14 @@ func _select_preset(index: int) -> void:
 	if _is_composing():
 		_set_composer_message("Composition mode. Click an empty grid cell to place the selected module.")
 
-func _set_engineering_fixtures_visible(visible: bool) -> void:
-	show_engineering_fixtures = visible
-	if not visible and layout_preset in ENGINEERING_LAYOUTS:
+func _set_engineering_fixtures_visible(show_enabled: bool) -> void:
+	show_engineering_fixtures = show_enabled
+	if not show_enabled and layout_preset in ENGINEERING_LAYOUTS:
 		layout_preset = &"industrial_district"
 	_populate_preset_picker()
 	_populate_component_picker()
 	if is_instance_valid(engineering_fixtures_toggle):
-		engineering_fixtures_toggle.set_pressed_no_signal(visible)
+		engineering_fixtures_toggle.set_pressed_no_signal(show_enabled)
 	_rebuild()
 
 func _frame_camera() -> void:
@@ -527,18 +630,18 @@ func _frame_camera() -> void:
 		inspection_target = "whole map"
 		_refresh_status_target()
 
-func _set_plan_overlay_visible(visible: bool) -> void:
-	show_plan_overlay = visible
+func _set_plan_overlay_visible(show_enabled: bool) -> void:
+	show_plan_overlay = show_enabled
 	if is_instance_valid(content):
 		var overlay := content.get_node_or_null("SpatialPlan")
 		if overlay != null:
-			overlay.visible = visible
+			overlay.visible = show_enabled
 
-func _set_spatial_contracts_visible(visible: bool) -> void:
-	show_spatial_contracts = visible
+func _set_spatial_contracts_visible(show_enabled: bool) -> void:
+	show_spatial_contracts = show_enabled
 	if is_instance_valid(spatial_contract_toggle):
-		spatial_contract_toggle.set_pressed_no_signal(visible)
-	if not visible:
+		spatial_contract_toggle.set_pressed_no_signal(show_enabled)
+	if not show_enabled:
 		DebugDraw.clear_all()
 	elif not DebugDraw.is_available():
 		_update_transform_label("Debug Draw 3D is unavailable. Run a project import and verify the vendored native library.")
@@ -678,12 +781,12 @@ func _place_selected_component_at_screen(screen_position: Vector2) -> bool:
 	var point := hit as Vector3
 	var origin := Vector2i(floori(point.x + float(preview_map_size.x) * 0.5), floori(point.z + float(preview_map_size.y) * 0.5))
 	var component_id: StringName = component_picker.get_item_metadata(component_picker.selected)
-	var rotation := int(rotation_picker.get_item_metadata(rotation_picker.selected))
-	var placement := EnvironmentModulePlacement.new(component_id, origin, rotation, int(variation_input.value))
+	var quarter_turns := int(rotation_picker.get_item_metadata(rotation_picker.selected))
+	var placement := EnvironmentModulePlacement.new(component_id, origin, quarter_turns, int(variation_input.value))
 	var candidate := _layout_with_change(-1, placement)
 	if candidate == null:
 		return true
-	_accept_custom_layout(candidate)
+	if not _accept_custom_layout(candidate): return true
 	_rebuild()
 	_set_composer_message("Placed %s at %s." % [component_id, origin])
 	return true
@@ -698,7 +801,7 @@ func _layout_with_change(replace_index: int, replacement: EnvironmentModulePlace
 			placement = replacement
 		else:
 			placement = custom_layout.placements[index]
-		var copied := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		var copied := placement.copy()
 		if not candidate.try_add(editor_catalog.get(copied.component_id), copied, preview_map_size):
 			_set_composer_message("Cannot place: %s" % candidate.errors.back(), true)
 			return null
@@ -710,44 +813,33 @@ func _layout_without(index_to_remove: int) -> EnvironmentModuleLayout:
 		if index == index_to_remove:
 			continue
 		var placement := custom_layout.placements[index]
-		var copied := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		var copied := placement.copy()
 		if not candidate.try_add(editor_catalog.get(copied.component_id), copied, preview_map_size):
 			_set_composer_message("Could not rebuild composition: %s" % candidate.errors.back(), true)
 			return null
 	return candidate
 
 func _selected_placement_index() -> int:
-	return int(inspection_module.get_meta("placement_index", -1)) if is_instance_valid(inspection_module) else -1
+	if not is_instance_valid(inspection_module): return -1
+	var id := str(inspection_module.get_meta("placement_id", ""))
+	for index in custom_layout.placements.size():
+		if custom_layout.placements[index].placement_id == id and not id.is_empty(): return index
+	return -1
 
 func _move_selected_placement(delta: Vector2i) -> void:
-	var index := _selected_placement_index()
-	if index < 0 or index >= custom_layout.placements.size():
-		_set_composer_message("Select a placed module first.", true)
-		return
-	var current := custom_layout.placements[index]
-	var replacement := EnvironmentModulePlacement.new(current.component_id, current.origin + delta, current.rotation, current.variation, current.elevation)
-	var candidate := _layout_with_change(index, replacement)
-	if candidate == null:
-		return
-	_accept_custom_layout(candidate)
-	_rebuild()
-	_select_placement_index(index)
+	if preview_placement == null and not _begin_placement_preview(false): return
+	preview_placement.origin += delta
+	_refresh_placement_preview()
 
 func _rotate_selected_placement(quarter_turns: int) -> void:
-	var index := _selected_placement_index()
-	if index < 0 or index >= custom_layout.placements.size():
-		_set_composer_message("Select a placed module first.", true)
-		return
-	var current := custom_layout.placements[index]
-	var replacement := EnvironmentModulePlacement.new(current.component_id, current.origin, current.rotation + quarter_turns, current.variation, current.elevation)
-	var candidate := _layout_with_change(index, replacement)
-	if candidate == null:
-		return
-	_accept_custom_layout(candidate)
-	_rebuild()
-	_select_placement_index(index)
+	if preview_placement == null and not _begin_placement_preview(false): return
+	preview_placement.rotation = posmod(preview_placement.rotation + quarter_turns, 4)
+	_refresh_placement_preview()
 
 func _delete_selected_placement() -> void:
+	if preview_placement != null:
+		_set_composer_message("Confirm or cancel the preview first.", true)
+		return
 	var index := _selected_placement_index()
 	if index < 0 or index >= custom_layout.placements.size():
 		_set_composer_message("Select a placed module first.", true)
@@ -756,16 +848,183 @@ func _delete_selected_placement() -> void:
 	var candidate := _layout_without(index)
 	if candidate == null:
 		return
-	_accept_custom_layout(candidate)
+	if not _accept_custom_layout(candidate): return
 	_rebuild()
 	_set_composer_message("Removed %s." % removed)
+
+func _change_selected_variation() -> void:
+	if preview_placement != null:
+		_set_composer_message("Confirm or cancel the preview first.", true)
+		return
+	var index := _selected_placement_index()
+	if index < 0:
+		_set_composer_message("Select a placed module first.", true)
+		return
+	var replacement := custom_layout.placements[index].copy()
+	replacement.variation = int(variation_input.value)
+	var candidate := _layout_with_change(index, replacement)
+	if candidate == null or not _accept_custom_layout(candidate): return
+	_rebuild()
+	_select_placement_index(index)
+
+func _duplicate_selected_placement() -> void:
+	if preview_placement != null:
+		_set_composer_message("Confirm or cancel the current preview first.", true)
+		return
+	_begin_placement_preview(true)
+
+func _begin_placement_preview(is_duplicate: bool) -> bool:
+	var index := _selected_placement_index()
+	if index < 0:
+		_set_composer_message("Select a placed module first.", true)
+		return false
+	var source := custom_layout.placements[index]
+	preview_source_id = source.placement_id
+	preview_is_duplicate = is_duplicate
+	preview_placement = source.copy()
+	if is_duplicate: preview_placement.placement_id = ""
+	preview_definition = editor_catalog[source.component_id]
+	preview_visuals.clear()
+	if displayed_data != null:
+		for record in displayed_data.resolved_environment_modules:
+			if record.placement.placement_id == source.placement_id:
+				preview_definition = record.definition
+				preview_visuals.assign(record.visuals)
+				break
+	preview_obstacles = EnvironmentModuleLayout.new(&"placement_preview")
+	for placement in custom_layout.placements:
+		if not is_duplicate and placement.placement_id == preview_source_id: continue
+		if not preview_obstacles.try_add(editor_catalog[placement.component_id], placement.copy(), preview_map_size):
+			_cancel_placement_preview(false)
+			_set_composer_message("Existing composition needs repair before placement.", true)
+			return false
+	if not is_duplicate and is_instance_valid(inspection_module): inspection_module.visible = false
+	if is_instance_valid(preview_actions): preview_actions.show()
+	_refresh_placement_preview()
+	return true
+
+func _placement_preview_error() -> String:
+	if preview_placement == null: return "No active preview."
+	var error := preview_obstacles.placement_error(preview_definition, preview_placement, preview_map_size)
+	if not error.is_empty(): return error
+	var candidate := EnvironmentModuleLayout.new(&"preview_support")
+	candidate.placements.assign(preview_obstacles.placements)
+	candidate.placements.append(preview_placement)
+	var support := EnvironmentModuleLayout.Spatial.source_support_errors(candidate, editor_catalog, preview_map_size)
+	return str(support[0].message) if not support.is_empty() else ""
+
+func _refresh_placement_preview() -> void:
+	var error := _placement_preview_error()
+	_set_composer_message(("Blocked: %s. Move preview; Esc cancels." % error) if not error.is_empty() else "Preview: click / Enter to validate and place; Q/E rotates; Esc cancels.", not error.is_empty())
+	if is_instance_valid(preview_visual): preview_visual.free()
+	if displayed_data == null or not is_inside_tree(): return
+	preview_visual = Node3D.new()
+	preview_visual.name = "PlacementPreview"
+	add_child(preview_visual)
+	for visual in preview_visuals:
+		ModularEnvironmentPresenter._add_visual(displayed_data, preview_visual, preview_definition, preview_placement, visual, 1.0)
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(0.2, 1.0, 0.45, 0.5) if error.is_empty() else Color(1.0, 0.15, 0.1, 0.5)
+	for node in preview_visual.find_children("*", "MeshInstance3D", true, false):
+		node.material_override = material
+		node.material_overlay = null
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func _move_preview_at_screen(screen_position: Vector2) -> void:
+	if not is_instance_valid(camera): return
+	var plane := Plane(Vector3.UP, float(preview_placement.elevation))
+	var hit = plane.intersects_ray(camera.project_ray_origin(screen_position), camera.project_ray_normal(screen_position))
+	if hit == null: return
+	var at := Vector2i(floori(hit.x + float(preview_map_size.x) * 0.5), floori(hit.z + float(preview_map_size.y) * 0.5))
+	if at == preview_placement.origin: return
+	preview_placement.origin = at
+	_refresh_placement_preview()
+
+func _preview_shortcut(event: InputEvent) -> bool:
+	if not event is InputEventKey or not event.pressed or event.echo: return false
+	match event.keycode:
+		KEY_ESCAPE: _cancel_placement_preview()
+		KEY_ENTER, KEY_KP_ENTER: _confirm_placement_preview()
+		KEY_Q: _rotate_selected_placement(-1)
+		KEY_E: _rotate_selected_placement(1)
+		KEY_LEFT: _move_selected_placement(Vector2i.LEFT)
+		KEY_RIGHT: _move_selected_placement(Vector2i.RIGHT)
+		KEY_UP: _move_selected_placement(Vector2i.UP)
+		KEY_DOWN: _move_selected_placement(Vector2i.DOWN)
+		_: return false
+	return true
+
+func _cancel_placement_preview(show_message := true) -> void:
+	if preview_placement == null: return
+	if is_instance_valid(inspection_module): inspection_module.visible = true
+	if is_instance_valid(preview_visual): preview_visual.free()
+	preview_visual = null
+	preview_placement = null
+	preview_source_id = ""
+	preview_obstacles = null
+	preview_visuals.clear()
+	if is_instance_valid(preview_actions): preview_actions.hide()
+	if show_message: _set_composer_message("Preview cancelled; composition unchanged.")
+
+func _confirm_placement_preview() -> bool:
+	if preview_placement == null: return false
+	var error := _placement_preview_error()
+	if not error.is_empty():
+		_set_composer_message("Cannot confirm: " + error, true)
+		return false
+	var source_index := -1
+	for index in custom_layout.placements.size():
+		if custom_layout.placements[index].placement_id == preview_source_id: source_index = index
+	if source_index < 0:
+		_set_composer_message("Source placement no longer exists; cancel this preview.", true)
+		return false
+	var context := EnvironmentResolutionContext.new()
+	var candidate: BattlefieldLayoutDocument
+	var selected_id := preview_source_id
+	if preview_is_duplicate:
+		var source := custom_layout.placements[source_index]
+		var ids: Array[String] = [preview_source_id]
+		var copied := custom_document.duplicate_placements(ids, preview_placement.origin - source.origin, context.catalog, context, preview_placement.rotation - source.rotation)
+		if not copied.ok:
+			_set_composer_message("Cannot confirm: " + str(copied.error), true)
+			return false
+		candidate = copied.document
+		selected_id = copied.id_map[preview_source_id]
+	else:
+		var layout := _layout_with_change(source_index, preview_placement)
+		if layout == null: return false
+		candidate = BattlefieldLayoutDocument.from_dictionary(custom_document.to_dictionary())
+		var failures := candidate.apply_edited_layout(layout, context)
+		if not failures.is_empty():
+			_set_composer_message("Cannot confirm: " + str(failures[0].message), true)
+			return false
+	var compiled := BattlefieldLayoutDocumentCompiler.compile(candidate, 1.0, 5, context)
+	if not compiled.ok:
+		_set_composer_message("Cannot confirm: " + str(compiled.errors[0].message), true)
+		return false
+	_cancel_placement_preview(false)
+	custom_document = compiled.document
+	custom_layout = custom_document.to_module_layout(context.catalog)
+	custom_dirty = true
+	pending_resolution = null
+	pending_compilation = compiled
+	_rebuild()
+	for index in custom_layout.placements.size():
+		if custom_layout.placements[index].placement_id == selected_id: _select_placement_index(index)
+	_set_composer_message("Placement confirmed. Save to keep this composition.")
+	return true
 
 func _select_placement_index(index: int) -> void:
 	var root := content.get_node_or_null("ModularEnvironment") if is_instance_valid(content) else null
 	if root == null:
 		return
+	var placements: Array = custom_layout.placements if _is_composing() else (displayed_data.environment_modules if displayed_data != null else [])
+	if index < 0 or index >= placements.size(): return
+	var selected_id: String = placements[index].placement_id
 	for candidate in root.get_children():
-		if int(candidate.get_meta("placement_index", -1)) == index:
+		if not selected_id.is_empty() and str(candidate.get_meta("placement_id", "")) == selected_id:
 			_prepare_inspection_module(candidate as Node3D)
 			inspection_target = str(candidate.get_meta("component_id", &"unknown"))
 			_sync_composer_to_selection(candidate)
@@ -964,6 +1223,9 @@ func _update_status(component_count: int, validation_text: String, plan: Environ
 	]
 
 func _refresh_status_target() -> void:
+	if layout_preset == CHUNK_LAYOUT and chunk_authoring != null:
+		chunk_authoring.update_status()
+		return
 	if not is_instance_valid(status):
 		return
 	var lines := status.text.split("\n")
@@ -974,13 +1236,17 @@ func _refresh_status_target() -> void:
 	status.text = "\n".join(lines)
 
 func _save_custom_layout() -> void:
-	var compiled := BattlefieldLayoutDocumentCompiler.compile(custom_document)
+	if preview_placement != null:
+		_set_composer_message("Confirm or cancel the preview first.", true)
+		return
+	var context := EnvironmentResolutionContext.new()
+	var compiled := BattlefieldLayoutDocumentCompiler.compile(custom_document, 1.0, 5, context)
 	if not compiled.ok:
 		custom_build_errors.assign(compiled.errors)
 		_set_composer_message("Cannot save invalid composition: %s" % compiled.errors[0].message, true)
 		return
 	custom_document = compiled.document
-	var error := LayoutStore.save(custom_document, custom_layout_path)
+	var error := LayoutStore.save(custom_document, custom_layout_path, context)
 	if not error.is_empty():
 		_set_composer_message(error, true)
 		return
@@ -989,6 +1255,9 @@ func _save_custom_layout() -> void:
 	_set_composer_message("Saved %d modules to %s." % [custom_layout.placements.size(), custom_layout_path])
 
 func _play_custom_layout() -> void:
+	if preview_placement != null:
+		_set_composer_message("Confirm or cancel the preview first.", true)
+		return
 	if custom_document == null:
 		_set_composer_message("No unified layout document is available to play.", true)
 		return
@@ -1058,13 +1327,23 @@ func _clear_custom_layout() -> void:
 	_rebuild()
 	_set_composer_message("Cleared the working composition. Save only when this is intentional.")
 
-func _accept_custom_layout(candidate: EnvironmentModuleLayout) -> void:
-	custom_layout = candidate
+func _accept_custom_layout(candidate: EnvironmentModuleLayout) -> bool:
+	var context := EnvironmentResolutionContext.new()
+	var support_failures := EnvironmentModuleLayout.Spatial.source_support_errors(candidate, editor_catalog, preview_map_size)
+	if not support_failures.is_empty():
+		_set_composer_message("%s: %s" % [support_failures[0].code, support_failures[0].message], true)
+		return false
 	if custom_document == null:
-		custom_document = BattlefieldLayoutDocument.from_authored(custom_layout, preview_map_size, &"mixed_service", "legacy_custom_layout")
+		custom_document = BattlefieldLayoutDocument.from_authored(candidate, preview_map_size, &"mixed_service", "legacy_custom_layout")
 	else:
-		custom_document.apply_edited_layout(custom_layout)
+		var errors := custom_document.apply_edited_layout(candidate, context)
+		if not errors.is_empty():
+			_set_composer_message("%s: %s" % [errors[0].code, errors[0].message], true)
+			return false
+	pending_resolution = context
+	custom_layout = candidate
 	custom_dirty = true
+	return true
 
 func _set_composer_message(message: String, is_error := false) -> void:
 	if not is_instance_valid(composer_message):
@@ -1175,3 +1454,36 @@ func _add_plan_segment(mesh: ImmediateMesh, start_data, end_data, map_size: Vect
 	var finish := Vector2(float(end_data[0]), float(end_data[1])) - half
 	mesh.surface_add_vertex(Vector3(start.x, height, start.y))
 	mesh.surface_add_vertex(Vector3(finish.x, height, finish.y))
+
+func _save_population() -> void:
+	if displayed_data == null or displayed_data.battlefield_layout_document == null: return
+	var path := population_save_directory.path_join("population_%d.json" % generation_seed)
+	var error := LayoutStore.save(displayed_data.battlefield_layout_document, path)
+	population_message.text = "Saved exact populated battlefield: " + path if error.is_empty() else error
+
+func _play_population(kind: MissionObjectiveDefinition.Kind) -> void:
+	if displayed_data == null or displayed_data.battlefield_layout_document == null: return
+	var config := FixedEnvironmentPopulation.configuration(generation_seed, kind)
+	var prepared := Generation2BattlefieldBuilder.compile_document(displayed_data.battlefield_layout_document, config)
+	if not prepared.ok:
+		population_message.text = "Cannot play: " + str(prepared.errors)
+		return
+	var battle := BATTLE_SCENE.instantiate() as BattleLevel
+	battle.configure_layout_document(config, prepared.document)
+	get_tree().root.add_child(battle)
+	get_tree().current_scene = battle
+	queue_free()
+
+func _reload_population() -> void:
+	var path := population_save_directory.path_join("population_%d.json" % generation_seed)
+	var loaded := LayoutStore.load(editor_catalog, path)
+	if not loaded.ok:
+		population_message.text = "Cannot reload saved seed: " + str(loaded.get("error", "invalid file"))
+		return
+	var compiled := BattlefieldLayoutDocumentCompiler.compile(loaded.document)
+	if not compiled.ok or not loaded.document.provenance.has("population"):
+		population_message.text = "Saved file is not a valid populated battlefield: " + str(compiled.errors)
+		return
+	pending_population = compiled
+	_rebuild()
+	population_message.text = "Loaded exact saved population from " + path + ". No reroll."

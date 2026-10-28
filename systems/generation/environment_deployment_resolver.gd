@@ -41,7 +41,7 @@ static func road_anchors(layout: EnvironmentModuleLayout, catalog: Dictionary) -
 static func plan_anchors(plan: EnvironmentLayoutPlan) -> Array[Vector3i]:
 	var result: Array[Vector3i] = []
 	for road_macro in plan.road_cells:
-		result.append(Vector3i(road_macro.x * plan.macro_size + plan.macro_size / 2, 0, road_macro.y * plan.macro_size + plan.macro_size / 2))
+		result.append(Vector3i(road_macro.x * plan.macro_size + int(plan.macro_size / 2.0), 0, road_macro.y * plan.macro_size + int(plan.macro_size / 2.0)))
 	return result
 
 static func _connected_ground(data: MapData, anchors: Array[Vector3i]) -> Dictionary:

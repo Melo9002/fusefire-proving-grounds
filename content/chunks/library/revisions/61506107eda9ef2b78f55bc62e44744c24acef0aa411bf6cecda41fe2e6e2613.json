@@ -1,0 +1,1174 @@
+{
+	"compiler": "chunk-publication-1",
+	"dependencies": [
+		{
+			"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
+			"generation_eligible": true,
+			"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
+			"id": "city_kit_roads/dumpster",
+			"kind": "asset",
+			"required_by": [
+				"placement_0002",
+				"placement_0003"
+			],
+			"semantic_signature": "5b1f564e3cfd7e4ef9aca1f00744eeff25e90bce9eca5c7330185d1cc7d0f46a"
+		},
+		{
+			"id": "paved_alley",
+			"kind": "module",
+			"required_by": [
+				"placement_0001"
+			],
+			"revision": "9a36c28aedc792a5b295a8271f31340c4b90b5e753ac6334e96d372686c7c8df"
+		},
+		{
+			"id": "service_dumpster",
+			"kind": "module",
+			"required_by": [
+				"placement_0002",
+				"placement_0003"
+			],
+			"revision": "372fd6df14b5f019b8b11091a16908335edcc081abd0aaa7eebfde14a892bb41"
+		}
+	],
+	"implementation": "43b4109bd3bc5ca4715b229de335796cd67011ec598e52abaa829cabdc659bce",
+	"profiles_sha256": "85a57c05946199bc7c6995a3147bb102fc793483a82f7e03708b809285baf4fb",
+	"revision": "61506107eda9ef2b78f55bc62e44744c24acef0aa411bf6cecda41fe2e6e2613",
+	"schema_version": 1,
+	"source": {
+		"bounds": [
+			6.0,
+			14.0
+		],
+		"chunk_id": "alley_courtyard",
+		"clearances": [
+			{
+				"cells": [
+					[
+						3.0,
+						0.0,
+						0.0
+					],
+					[
+						4.0,
+						0.0,
+						0.0
+					],
+					[
+						3.0,
+						0.0,
+						1.0
+					],
+					[
+						4.0,
+						0.0,
+						1.0
+					],
+					[
+						3.0,
+						0.0,
+						2.0
+					],
+					[
+						4.0,
+						0.0,
+						2.0
+					],
+					[
+						3.0,
+						0.0,
+						3.0
+					],
+					[
+						4.0,
+						0.0,
+						3.0
+					],
+					[
+						3.0,
+						0.0,
+						4.0
+					],
+					[
+						4.0,
+						0.0,
+						4.0
+					],
+					[
+						3.0,
+						0.0,
+						5.0
+					],
+					[
+						4.0,
+						0.0,
+						5.0
+					],
+					[
+						3.0,
+						0.0,
+						6.0
+					],
+					[
+						4.0,
+						0.0,
+						6.0
+					],
+					[
+						3.0,
+						0.0,
+						7.0
+					],
+					[
+						4.0,
+						0.0,
+						7.0
+					],
+					[
+						3.0,
+						0.0,
+						8.0
+					],
+					[
+						4.0,
+						0.0,
+						8.0
+					],
+					[
+						3.0,
+						0.0,
+						9.0
+					],
+					[
+						4.0,
+						0.0,
+						9.0
+					],
+					[
+						3.0,
+						0.0,
+						10.0
+					],
+					[
+						4.0,
+						0.0,
+						10.0
+					],
+					[
+						3.0,
+						0.0,
+						11.0
+					],
+					[
+						4.0,
+						0.0,
+						11.0
+					],
+					[
+						3.0,
+						0.0,
+						12.0
+					],
+					[
+						4.0,
+						0.0,
+						12.0
+					],
+					[
+						3.0,
+						0.0,
+						13.0
+					],
+					[
+						4.0,
+						0.0,
+						13.0
+					]
+				],
+				"height": 2.0,
+				"id": "pedestrian_route",
+				"scope": "whole_column"
+			}
+		],
+		"dependencies": [
+			{
+				"calibration_signature": "e36a0dfb97cdea4d23910c8865d892b84db77f87446f6ae7765fec1084482cb2",
+				"generation_eligible": true,
+				"geometry_sha256": "d87d4a812567d0e8b91c545387d758aa18f7652eb8fc0aed2513a83abb988dd6",
+				"id": "city_kit_roads/dumpster",
+				"kind": "asset",
+				"required_by": [
+					"placement_0002",
+					"placement_0003"
+				],
+				"semantic_signature": "5b1f564e3cfd7e4ef9aca1f00744eeff25e90bce9eca5c7330185d1cc7d0f46a"
+			},
+			{
+				"id": "paved_alley",
+				"kind": "module",
+				"required_by": [
+					"placement_0001"
+				],
+				"revision": "9a36c28aedc792a5b295a8271f31340c4b90b5e753ac6334e96d372686c7c8df"
+			},
+			{
+				"id": "service_dumpster",
+				"kind": "module",
+				"required_by": [
+					"placement_0002",
+					"placement_0003"
+				],
+				"revision": "372fd6df14b5f019b8b11091a16908335edcc081abd0aaa7eebfde14a892bb41"
+			}
+		],
+		"format": "fusefire_chunk_source",
+		"height": 4.0,
+		"instances": [
+			{
+				"component_id": "paved_alley",
+				"elevation": 0.0,
+				"origin": [
+					1.0,
+					2.0
+				],
+				"placement_id": "placement_0001",
+				"rotation": 0.0,
+				"variation": 0.0
+			},
+			{
+				"component_id": "service_dumpster",
+				"elevation": 0.0,
+				"origin": [
+					0.0,
+					5.0
+				],
+				"placement_id": "placement_0002",
+				"rotation": 0.0,
+				"variation": 0.0
+			},
+			{
+				"component_id": "service_dumpster",
+				"elevation": 0.0,
+				"origin": [
+					0.0,
+					9.0
+				],
+				"placement_id": "placement_0003",
+				"rotation": 0.0,
+				"variation": 0.0
+			}
+		],
+		"name": "Alley Courtyard",
+		"next_placement_id": 4.0,
+		"ports": [
+			{
+				"cells": [
+					[
+						3.0,
+						0.0
+					],
+					[
+						4.0,
+						0.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "north_access",
+				"minimum_width": 2.0,
+				"normal": [
+					0.0,
+					-1.0
+				],
+				"profile": "walkway_2",
+				"role": "pedestrian"
+			},
+			{
+				"cells": [
+					[
+						3.0,
+						13.0
+					],
+					[
+						4.0,
+						13.0
+					]
+				],
+				"connection": "required",
+				"elevation": 0.0,
+				"id": "south_access",
+				"minimum_width": 2.0,
+				"normal": [
+					0.0,
+					1.0
+				],
+				"profile": "walkway_2",
+				"role": "pedestrian"
+			}
+		],
+		"provenance": {
+			"origin": "authored",
+			"pilot": "industrial-t07",
+			"review": "awaiting owner; no approval inferred"
+		},
+		"rotations": [
+			0.0,
+			1.0,
+			2.0,
+			3.0
+		],
+		"schema_version": 1.0,
+		"tactical": {
+			"components": [
+				"placement_0001",
+				"placement_0002",
+				"placement_0003"
+			],
+			"effects": [],
+			"links": [],
+			"surfaces": [
+				{
+					"cell": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						0.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						1.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						2.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						3.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						4.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						0.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						1.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						2.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						3.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						4.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						5.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						6.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						7.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						8.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						9.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						10.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						11.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						12.0
+					],
+					"values": {
+						"walkable": true
+					}
+				},
+				{
+					"cell": [
+						5.0,
+						0.0,
+						13.0
+					],
+					"values": {
+						"walkable": true
+					}
+				}
+			]
+		}
+	},
+	"source_hash": "c7d164a08660f8338eb115a64a9f34300bc57d38312350508927cdd341ac266a"
+}

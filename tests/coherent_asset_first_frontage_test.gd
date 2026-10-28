@@ -180,7 +180,8 @@ func _rotated_fixture(rotation: int, catalog: Dictionary) -> MapData:
 		var rotated_origin := _rotate_square_rect_origin(placement.origin, placed_size, rotation)
 		var rotated := EnvironmentModulePlacement.new(placement.component_id, rotated_origin, posmod(placement.rotation + rotation, 4), placement.variation, placement.elevation)
 		check(layout.try_add(definition, rotated, result.map_size), "r%d accepts transformed %s at %s" % [rotation, placement.component_id, rotated.origin])
-	EnvironmentModuleMapWriter.apply(result, layout, catalog, 1.0)
+	var compilation_errors := EnvironmentModuleMapWriter.apply(result, layout, catalog, 1.0)
+	check(compilation_errors.is_empty(), "Rotated frontage compiles: %s" % [compilation_errors])
 	result.source_kind = "certification_asset_first_frontage_r%d" % rotation
 	result.environment_modules.assign(layout.placements)
 	result.environment_module_seed = 2303

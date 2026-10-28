@@ -409,10 +409,10 @@ func select_asset(id: String) -> void:
 	factor.value = profile.scale
 	angle.value = profile.yaw_degrees
 	anchor.select(profile.anchor)
-	var position: Array = profile.anchor_position
-	x_offset.value = position[0]
-	y_offset.value = position[1]
-	z_offset.value = position[2]
+	var anchor_position: Array = profile.anchor_position
+	x_offset.value = anchor_position[0]
+	y_offset.value = anchor_position[1]
+	z_offset.value = anchor_position[2]
 	var category: String = profile.calibration_category
 	category_label.text = "Semantic: %s (%s)\nScale group: %s" % [interpretation.semantic_category, interpretation.interpretation_source, category]
 	category_scale.value = float(calibration_data.get("category_presets", {}).get(category, calibration_data.fallback).scale)
@@ -523,7 +523,7 @@ func rebuild(frame := false) -> void:
 func _build_assembly(index: int) -> void:
 	match index:
 		1:
-			var previous_road: TacticalVisualOccluder
+			var previous_road: TacticalVisualOccluder = null
 			for _index in 3:
 				var road := _assembly_piece("city_kit_roads/road-side")
 				if previous_road:
@@ -554,7 +554,7 @@ func _build_assembly(index: int) -> void:
 				_box(content, Vector3(2, 0.4, 1), Vector3(x, 0.2, 4), Color("555e68"))
 				Catalog.place(content, "factory_kit/conveyor-long", Vector3(x, 0.4, 4), 0, calibration_data)
 		4:
-			var previous_floor: TacticalVisualOccluder
+			var previous_floor: TacticalVisualOccluder = null
 			for _index in 2:
 				var floor_piece := _assembly_piece("modular_space_kit/template-floor")
 				if previous_floor:
@@ -796,22 +796,22 @@ static func _tag_list(text: String) -> Array[String]:
 			result.append(tag)
 	return result
 
-static func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color) -> void:
+static func _box(parent: Node3D, dimensions: Vector3, at: Vector3, color: Color) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = BoxMesh.new()
-	mesh.mesh.size = size
+	mesh.mesh.size = dimensions
 	mesh.position = at
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	mesh.material_override = material
+	var box_material := StandardMaterial3D.new()
+	box_material.albedo_color = color
+	mesh.material_override = box_material
 	parent.add_child(mesh)
 
 static func _lines(parent: Node3D, points: PackedVector3Array, color: Color) -> void:
 	var immediate := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = color
-	immediate.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var line_material := StandardMaterial3D.new()
+	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_material.albedo_color = color
+	immediate.surface_begin(Mesh.PRIMITIVE_LINES, line_material)
 	for point in points:
 		immediate.surface_add_vertex(point)
 	immediate.surface_end()

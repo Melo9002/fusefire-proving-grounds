@@ -1,0 +1,6 @@
+{
+  "pedestrian_1": {"role": "pedestrian", "width": 1},
+  "walkway_2": {"role": "pedestrian", "width": 2},
+  "loading_4": {"role": "loading", "width": 4},
+  "street_10": {"role": "street", "width": 10, "sidewalk_lanes": [0, 1, 8, 9], "carriageway_lanes": [2, 3, 4, 5, 6, 7]}
+}

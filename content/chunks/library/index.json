@@ -1,0 +1,468 @@
+{
+	"active": {},
+	"revisions": {
+		"1fc099a4f9121c68818f02650bc2f4294d71b31b10661de01f5c78d2c152f23b": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/1fc099a4f9121c68818f02650bc2f4294d71b31b10661de01f5c78d2c152f23b/overview-a98a0176dfae8a23a59b2a32e733a8456b09c16963e9537eeff6c0849ebdd071.png",
+					"sha256": "a98a0176dfae8a23a59b2a32e733a8456b09c16963e9537eeff6c0849ebdd071",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/1fc099a4f9121c68818f02650bc2f4294d71b31b10661de01f5c78d2c152f23b/opposite-501ecd25a192c303df92834eb009806500fceff133586718cfedeb058b7df3e1.png",
+					"sha256": "501ecd25a192c303df92834eb009806500fceff133586718cfedeb058b7df3e1",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/1fc099a4f9121c68818f02650bc2f4294d71b31b10661de01f5c78d2c152f23b/overhead-533fa01dcdb2b98ff0374d3b0ec32dca0ab341a56f33f8e5a788971c70cec8fd.png",
+					"sha256": "533fa01dcdb2b98ff0374d3b0ec32dca0ab341a56f33f8e5a788971c70cec8fd",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/service_yard.json"
+		},
+		"25fadd548a1b60b280b23006dc0ba030cfeab60cbf64aab75e196d4518b40661": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/25fadd548a1b60b280b23006dc0ba030cfeab60cbf64aab75e196d4518b40661/overview-d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8.png",
+					"sha256": "d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/25fadd548a1b60b280b23006dc0ba030cfeab60cbf64aab75e196d4518b40661/opposite-47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c.png",
+					"sha256": "47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/25fadd548a1b60b280b23006dc0ba030cfeab60cbf64aab75e196d4518b40661/overhead-506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9.png",
+					"sha256": "506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_cross.json"
+		},
+		"267095e24ab270b1cfac9c803f8dd7d214bea46469e1cf94d10286f50b3feed2": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/267095e24ab270b1cfac9c803f8dd7d214bea46469e1cf94d10286f50b3feed2/overview-57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029.png",
+					"sha256": "57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/267095e24ab270b1cfac9c803f8dd7d214bea46469e1cf94d10286f50b3feed2/opposite-c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4.png",
+					"sha256": "c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/267095e24ab270b1cfac9c803f8dd7d214bea46469e1cf94d10286f50b3feed2/overhead-6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f.png",
+					"sha256": "6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_straight.json"
+		},
+		"2bc86a84e05fd381abf5eeea70d651131db8952e25060312455ad1e3b06db5b3": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/2bc86a84e05fd381abf5eeea70d651131db8952e25060312455ad1e3b06db5b3/overview-de18ecae0ad534b87ddf44d0bee588c5098936c4a09dae81a9de8d0760b5c432.png",
+					"sha256": "de18ecae0ad534b87ddf44d0bee588c5098936c4a09dae81a9de8d0760b5c432",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/2bc86a84e05fd381abf5eeea70d651131db8952e25060312455ad1e3b06db5b3/opposite-807df1438521d3acfb7cd469f3296c9a984747e9a8dcff2cb28a2f33a8840162.png",
+					"sha256": "807df1438521d3acfb7cd469f3296c9a984747e9a8dcff2cb28a2f33a8840162",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/2bc86a84e05fd381abf5eeea70d651131db8952e25060312455ad1e3b06db5b3/overhead-cdeee9d7aeb37e704c558c252d092b11dcd395b8ccf445872fe6f32d98c9197b.png",
+					"sha256": "cdeee9d7aeb37e704c558c252d092b11dcd395b8ccf445872fe6f32d98c9197b",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/service_yard.json"
+		},
+		"2c72d3721bb61417b8852810e3b22c9457522d7f9e3a6f04db3426677e52fe07": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/2c72d3721bb61417b8852810e3b22c9457522d7f9e3a6f04db3426677e52fe07/overview-57dbf6a699fce83830fa9d788a343ae12c1ea4dcdd2f7f0631495940ebff69bb.png",
+					"sha256": "57dbf6a699fce83830fa9d788a343ae12c1ea4dcdd2f7f0631495940ebff69bb",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/2c72d3721bb61417b8852810e3b22c9457522d7f9e3a6f04db3426677e52fe07/opposite-283cccb5b6a8e4a4f437cfff53f8968938aec9ba044a9b9639afea2097c9f817.png",
+					"sha256": "283cccb5b6a8e4a4f437cfff53f8968938aec9ba044a9b9639afea2097c9f817",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/2c72d3721bb61417b8852810e3b22c9457522d7f9e3a6f04db3426677e52fe07/overhead-5d127ca48fe3d0a0abf3cc0b7341ffb773dec5902777ebea41e2442230ae3e55.png",
+					"sha256": "5d127ca48fe3d0a0abf3cc0b7341ffb773dec5902777ebea41e2442230ae3e55",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/loading_yard.json"
+		},
+		"36240785af5b2517c5fa6c460d96bc41a447538b604f91ad2179d1b06a447f7d": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/36240785af5b2517c5fa6c460d96bc41a447538b604f91ad2179d1b06a447f7d/overview-525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e.png",
+					"sha256": "525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/36240785af5b2517c5fa6c460d96bc41a447538b604f91ad2179d1b06a447f7d/opposite-1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f.png",
+					"sha256": "1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/36240785af5b2517c5fa6c460d96bc41a447538b604f91ad2179d1b06a447f7d/overhead-7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57.png",
+					"sha256": "7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/warehouse_frontage.json"
+		},
+		"3930748042caa67e3aa4e6e863cc134a8d1aa7c3b0574a838440be4f0bab0f72": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/3930748042caa67e3aa4e6e863cc134a8d1aa7c3b0574a838440be4f0bab0f72/overview-f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047.png",
+					"sha256": "f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/3930748042caa67e3aa4e6e863cc134a8d1aa7c3b0574a838440be4f0bab0f72/opposite-be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765.png",
+					"sha256": "be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/3930748042caa67e3aa4e6e863cc134a8d1aa7c3b0574a838440be4f0bab0f72/overhead-aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f.png",
+					"sha256": "aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/alley_courtyard.json"
+		},
+		"5063ef4e005b8a2032f8aba4c54041b1a9804bbcb98a4ba395da466d0e81f987": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/5063ef4e005b8a2032f8aba4c54041b1a9804bbcb98a4ba395da466d0e81f987/overview-f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047.png",
+					"sha256": "f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/5063ef4e005b8a2032f8aba4c54041b1a9804bbcb98a4ba395da466d0e81f987/opposite-be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765.png",
+					"sha256": "be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/5063ef4e005b8a2032f8aba4c54041b1a9804bbcb98a4ba395da466d0e81f987/overhead-aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f.png",
+					"sha256": "aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/alley_courtyard.json"
+		},
+		"58183867c9619712d53d5b57315464d8665b32dfc9e6d95e3e74ea6e6c050fd4": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/58183867c9619712d53d5b57315464d8665b32dfc9e6d95e3e74ea6e6c050fd4/overview-804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444.png",
+					"sha256": "804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/58183867c9619712d53d5b57315464d8665b32dfc9e6d95e3e74ea6e6c050fd4/opposite-efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89.png",
+					"sha256": "efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/58183867c9619712d53d5b57315464d8665b32dfc9e6d95e3e74ea6e6c050fd4/overhead-5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c.png",
+					"sha256": "5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_t.json"
+		},
+		"61506107eda9ef2b78f55bc62e44744c24acef0aa411bf6cecda41fe2e6e2613": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/61506107eda9ef2b78f55bc62e44744c24acef0aa411bf6cecda41fe2e6e2613/overview-f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047.png",
+					"sha256": "f4e99099f6acd9965e25dc748503615c964d9e10cb9c7c1c55227f011a7bd047",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/61506107eda9ef2b78f55bc62e44744c24acef0aa411bf6cecda41fe2e6e2613/opposite-be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765.png",
+					"sha256": "be4c2a69c2f7a5a7467510eb7288b490e703831306f4c159e5f0c2fcd4477765",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/61506107eda9ef2b78f55bc62e44744c24acef0aa411bf6cecda41fe2e6e2613/overhead-aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f.png",
+					"sha256": "aee0e821a33883bd84a73df12145e3196fe009327f47ea65ed1fe72897b9282f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/alley_courtyard.json"
+		},
+		"6f439b458d92625ef0f08ad25384a0b3d8575865fb46b86b99f9334a9ec4d46a": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/6f439b458d92625ef0f08ad25384a0b3d8575865fb46b86b99f9334a9ec4d46a/overview-de18ecae0ad534b87ddf44d0bee588c5098936c4a09dae81a9de8d0760b5c432.png",
+					"sha256": "de18ecae0ad534b87ddf44d0bee588c5098936c4a09dae81a9de8d0760b5c432",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/6f439b458d92625ef0f08ad25384a0b3d8575865fb46b86b99f9334a9ec4d46a/opposite-807df1438521d3acfb7cd469f3296c9a984747e9a8dcff2cb28a2f33a8840162.png",
+					"sha256": "807df1438521d3acfb7cd469f3296c9a984747e9a8dcff2cb28a2f33a8840162",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/6f439b458d92625ef0f08ad25384a0b3d8575865fb46b86b99f9334a9ec4d46a/overhead-cdeee9d7aeb37e704c558c252d092b11dcd395b8ccf445872fe6f32d98c9197b.png",
+					"sha256": "cdeee9d7aeb37e704c558c252d092b11dcd395b8ccf445872fe6f32d98c9197b",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/service_yard.json"
+		},
+		"7b4bd4e83aa452df289f9ed7707a2e6b7eca9392e4256116f9f04198cec1900f": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/7b4bd4e83aa452df289f9ed7707a2e6b7eca9392e4256116f9f04198cec1900f/overview-57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029.png",
+					"sha256": "57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/7b4bd4e83aa452df289f9ed7707a2e6b7eca9392e4256116f9f04198cec1900f/opposite-c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4.png",
+					"sha256": "c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/7b4bd4e83aa452df289f9ed7707a2e6b7eca9392e4256116f9f04198cec1900f/overhead-6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f.png",
+					"sha256": "6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_straight.json"
+		},
+		"83f180be6bcfadfc61bc1634da08633ddf31bfcaf03fede7cb21e7134e1c0ee5": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/83f180be6bcfadfc61bc1634da08633ddf31bfcaf03fede7cb21e7134e1c0ee5/overview-227aef3f6e085b9fd686058f8e4c6423e53a78cdc117b098a2f7ef3d60580c31.png",
+					"sha256": "227aef3f6e085b9fd686058f8e4c6423e53a78cdc117b098a2f7ef3d60580c31",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/83f180be6bcfadfc61bc1634da08633ddf31bfcaf03fede7cb21e7134e1c0ee5/opposite-4680c004a4849341c8f786768edc3caa9a7c577dd00645a4f11d2471914b15eb.png",
+					"sha256": "4680c004a4849341c8f786768edc3caa9a7c577dd00645a4f11d2471914b15eb",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/83f180be6bcfadfc61bc1634da08633ddf31bfcaf03fede7cb21e7134e1c0ee5/overhead-18fe40c3ad1c2d7c46c4120be983c9e1e029011d03e77b14c6af9d6eb36ad358.png",
+					"sha256": "18fe40c3ad1c2d7c46c4120be983c9e1e029011d03e77b14c6af9d6eb36ad358",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/loading_yard.json"
+		},
+		"8ef5483f478ff6b956cb89975893d94542a297bab1a62ecbf09d2415d40769c8": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/8ef5483f478ff6b956cb89975893d94542a297bab1a62ecbf09d2415d40769c8/overview-804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444.png",
+					"sha256": "804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/8ef5483f478ff6b956cb89975893d94542a297bab1a62ecbf09d2415d40769c8/opposite-efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89.png",
+					"sha256": "efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/8ef5483f478ff6b956cb89975893d94542a297bab1a62ecbf09d2415d40769c8/overhead-5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c.png",
+					"sha256": "5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_t.json"
+		},
+		"a99193f9efcce98d4fd941b049d679ff0d707be07378f716b2da1e265db63dd0": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/a99193f9efcce98d4fd941b049d679ff0d707be07378f716b2da1e265db63dd0/overview-804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444.png",
+					"sha256": "804b1117af5cec93acd3be7737c7a73e19f4de8d12109f3ed5286c7caca87444",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/a99193f9efcce98d4fd941b049d679ff0d707be07378f716b2da1e265db63dd0/opposite-efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89.png",
+					"sha256": "efaac9bd7585fb0add9923e5d6ed618f07eeeb02a1f9929f0cabf8341da2df89",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/a99193f9efcce98d4fd941b049d679ff0d707be07378f716b2da1e265db63dd0/overhead-5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c.png",
+					"sha256": "5283cdd7448c85fd3842efd6fbb43255dea779e03dd0bdc5019c31740f450e5c",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_t.json"
+		},
+		"b1dfd6ff29fe4c78aaebeda2a0eded962967f5cea0564a2acba0c57bf95ab91f": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/b1dfd6ff29fe4c78aaebeda2a0eded962967f5cea0564a2acba0c57bf95ab91f/overview-57dbf6a699fce83830fa9d788a343ae12c1ea4dcdd2f7f0631495940ebff69bb.png",
+					"sha256": "57dbf6a699fce83830fa9d788a343ae12c1ea4dcdd2f7f0631495940ebff69bb",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b1dfd6ff29fe4c78aaebeda2a0eded962967f5cea0564a2acba0c57bf95ab91f/opposite-283cccb5b6a8e4a4f437cfff53f8968938aec9ba044a9b9639afea2097c9f817.png",
+					"sha256": "283cccb5b6a8e4a4f437cfff53f8968938aec9ba044a9b9639afea2097c9f817",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b1dfd6ff29fe4c78aaebeda2a0eded962967f5cea0564a2acba0c57bf95ab91f/overhead-5d127ca48fe3d0a0abf3cc0b7341ffb773dec5902777ebea41e2442230ae3e55.png",
+					"sha256": "5d127ca48fe3d0a0abf3cc0b7341ffb773dec5902777ebea41e2442230ae3e55",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/loading_yard.json"
+		},
+		"b798a7e1af0a300f5fccd7ef0bb68282f15be2a0cacee943ea1890497cfd719a": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/b798a7e1af0a300f5fccd7ef0bb68282f15be2a0cacee943ea1890497cfd719a/overview-d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8.png",
+					"sha256": "d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b798a7e1af0a300f5fccd7ef0bb68282f15be2a0cacee943ea1890497cfd719a/opposite-47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c.png",
+					"sha256": "47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b798a7e1af0a300f5fccd7ef0bb68282f15be2a0cacee943ea1890497cfd719a/overhead-506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9.png",
+					"sha256": "506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_cross.json"
+		},
+		"b91cb002a438fc9c2cffd8fbc5865a22445df3822d5bb97d8a5174d9b462b9d4": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/b91cb002a438fc9c2cffd8fbc5865a22445df3822d5bb97d8a5174d9b462b9d4/overview-525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e.png",
+					"sha256": "525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b91cb002a438fc9c2cffd8fbc5865a22445df3822d5bb97d8a5174d9b462b9d4/opposite-1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f.png",
+					"sha256": "1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/b91cb002a438fc9c2cffd8fbc5865a22445df3822d5bb97d8a5174d9b462b9d4/overhead-7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57.png",
+					"sha256": "7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/warehouse_frontage.json"
+		},
+		"bc3178c88fdb12d02aa8f878f6468c89543947bb0cdf007fca915a81d04a9ded": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/bc3178c88fdb12d02aa8f878f6468c89543947bb0cdf007fca915a81d04a9ded/overview-57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029.png",
+					"sha256": "57552d7c22b03bb5c3f235ac616853b43afebf90db364e403f9d0ed72bc5c029",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/bc3178c88fdb12d02aa8f878f6468c89543947bb0cdf007fca915a81d04a9ded/opposite-c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4.png",
+					"sha256": "c724108fd7b651fbec49e153dc28c494e96c0f1b7733c74a5bc3d706d1b787a4",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/bc3178c88fdb12d02aa8f878f6468c89543947bb0cdf007fca915a81d04a9ded/overhead-6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f.png",
+					"sha256": "6cf03e28e4bc9ec0e281df75917cf319d79e5a2cb948d3055adf7a1328b76c7f",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_straight.json"
+		},
+		"e1a896e5ff8c5655041cced7168e633d9fd8042aa6e162eb07cb930254bec615": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/e1a896e5ff8c5655041cced7168e633d9fd8042aa6e162eb07cb930254bec615/overview-d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8.png",
+					"sha256": "d6ea17b7058436310e7e62ff21867ee2bcbbf1fe227550cdb2cd124d9cdd82d8",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/e1a896e5ff8c5655041cced7168e633d9fd8042aa6e162eb07cb930254bec615/opposite-47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c.png",
+					"sha256": "47aa3d330ea22b7ddb82e7c873527498c05fd58d173288c4dc93824a7fffef7c",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/e1a896e5ff8c5655041cced7168e633d9fd8042aa6e162eb07cb930254bec615/overhead-506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9.png",
+					"sha256": "506264822523ebe17df93447554b28aac11db5af89794d42f88c0a219f337bd9",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/street_cross.json"
+		},
+		"f4542866644fa5190a8463e870092f80909d179a41a802bd37dcadab8bc21767": {
+			"evidence": [
+				{
+					"path": "res://content/chunks/library/evidence/f4542866644fa5190a8463e870092f80909d179a41a802bd37dcadab8bc21767/overview-525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e.png",
+					"sha256": "525df2eb9f20818dac323e6bee27fddd64022e3665e05c0d87c807489f32bd0e",
+					"view": "overview"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/f4542866644fa5190a8463e870092f80909d179a41a802bd37dcadab8bc21767/opposite-1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f.png",
+					"sha256": "1e89eabe318f9d66d1b42f824178dd75f89407047603edb49f39984bd2c4430f",
+					"view": "opposite"
+				},
+				{
+					"path": "res://content/chunks/library/evidence/f4542866644fa5190a8463e870092f80909d179a41a802bd37dcadab8bc21767/overhead-7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57.png",
+					"sha256": "7568a412ff0e9c74d1bf749f58ac69566ddde81db3cf1396e72821d18c5fbf57",
+					"view": "overhead"
+				}
+			],
+			"registered": false,
+			"review": {},
+			"source_path": "res://content/chunks/industrial/warehouse_frontage.json"
+		}
+	},
+	"schema_version": 1.0
+}

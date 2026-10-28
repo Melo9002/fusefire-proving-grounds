@@ -23,7 +23,8 @@ static func build(config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
 	var mission_graph := Pathfinder.new()
 	MapGraphBuilder.build(generated, mission_graph)
 	MissionZonePlanner.populate_defaults(generated, mission_graph)
-	var layout := CoherentEnvironmentAssembler.apply(generated, cell_size, config.battle_seed, BattleConfiguration.GENERATION_2_ENVIRONMENT)
+	var context := EnvironmentResolutionContext.new()
+	var layout := CoherentEnvironmentAssembler.apply(generated, cell_size, config.battle_seed, BattleConfiguration.GENERATION_2_ENVIRONMENT, context)
 	if not layout.errors.is_empty():
 		var assembly_failures: Array[Dictionary] = []
 		for message in layout.errors: assembly_failures.append(_diagnostic("COHERENT_ASSEMBLY_FAILED", "generation", message))
@@ -33,17 +34,17 @@ static func build(config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
 		return _failure([_diagnostic("MISSING_GENERATION_PLAN", "generation", "coherent generation did not produce an environment plan")])
 	if not plan.relationship_failures.is_empty():
 		return _failure(_relationship_diagnostics(plan.relationship_failures))
-	var document := BattlefieldLayoutDocument.from_generated(generated, "runtime_%s_%d" % [BattleConfiguration.GENERATION_2_ENVIRONMENT, config.battle_seed])
-	return compile_document(document, config, cell_size)
+	var document := BattlefieldLayoutDocument.from_generated(generated, "runtime_%s_%d" % [BattleConfiguration.GENERATION_2_ENVIRONMENT, config.battle_seed], context)
+	return compile_document(document, config, cell_size, context)
 
-static func compile_document(document: BattlefieldLayoutDocument, config: BattleConfiguration, cell_size := 1.0) -> Dictionary:
+static func compile_document(document: BattlefieldLayoutDocument, config: BattleConfiguration, cell_size := 1.0, context: EnvironmentResolutionContext = null) -> Dictionary:
 	var configuration_failures := config.validate_generation_selection()
 	if not configuration_failures.is_empty(): return _failure(configuration_failures, document)
 	if document == null:
 		return _failure([_diagnostic("MISSING_LAYOUT_DOCUMENT", "battlefield_document", "Generation 2.0 document compilation requires a unified layout document")])
 	if document.map_size() != config.map_size:
 		return _failure([_diagnostic("DOCUMENT_MAP_SIZE_MISMATCH", "spatial_layout.map_size", "battle configuration requires %s but the document defines %s" % [config.map_size, document.map_size()])], document)
-	var compiled := BattlefieldLayoutDocumentCompiler.compile(document, cell_size, maxi(5, maxi(config.player_count, maxi(config.enemy_count, config.ally_count))))
+	var compiled := BattlefieldLayoutDocumentCompiler.compile(document, cell_size, maxi(5, maxi(config.player_count, maxi(config.enemy_count, config.ally_count))), context)
 	if not compiled.ok: return _failure(compiled.errors, compiled.document)
 	var data: MapData = compiled.data
 	var deployment_failures := _deployment_failures(data, config)
@@ -79,5 +80,5 @@ static func _relationship_diagnostics(source: Array[Dictionary]) -> Array[Dictio
 static func _failure(errors: Array, document: BattlefieldLayoutDocument = null) -> Dictionary:
 	return {"ok": false, "data": null, "document": document, "errors": errors.duplicate(true), "repairs": []}
 
-static func _diagnostic(code: String, field: String, message: String, reference := "") -> Dictionary:
-	return {"code": code, "field": field, "reference": reference, "message": message}
+static func _diagnostic(code: String, field: String, message: String, source_reference := "") -> Dictionary:
+	return {"code": code, "field": field, "reference": source_reference, "message": message}

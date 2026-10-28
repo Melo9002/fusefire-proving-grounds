@@ -64,6 +64,10 @@ var module_type: ModuleType = ModuleType.PROP
 ## Components collide only with reservations on the same placement layer.
 ## This allows an obstacle to occupy cells that already have a ground surface.
 var placement_layer: PlacementLayer = PlacementLayer.OCCUPANT
+## Floor-local construction reservations in cell units; not tactical LOS height.
+## Zero occupancy is reserved for surface-only modules, not physical props.
+var occupancy_height := 1.0
+var clearance_height := 2.0
 ## Presentation authoring convention only. Tactical placement remains integer-cell based.
 var visual_origin_snap := Vector2(0.5, 0.5)
 var visual_assembly_pitch := Vector2.ZERO

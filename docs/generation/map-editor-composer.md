@@ -18,8 +18,10 @@ To use a generated or authored map as a starting point, display it first and cli
 2. Choose a 90-degree rotation and visual variant.
 3. Click an empty grid cell to place the component. The component origin snaps to that cell.
 4. Click a component to select it. Its thin amber outline and status line show its component ID, origin, rotation, and variant.
-5. Use the arrow keys to move it one cell, `Q` / `E` to rotate it, or `Delete` to remove it. The panel buttons provide the same rotate and delete actions.
-6. Press `Ctrl+S` or **Save** to write the composition. **Reload** discards unsaved edits and restores the saved file. **Clear** clears only the working composition until it is saved.
+5. Arrow keys or `Q` / `E` start a move/rotation preview. **Duplicate selected** starts a duplicate preview at the original position, even when that position overlaps. The ghost follows the mouse over the map; arrows nudge and `Q` / `E` rotate it. Red indicates a spatial conflict; green indicates spatial clearance, with full validation still required.
+6. Click the map or press **Enter** / **Confirm** to validate and commit. Press **Esc** / **Cancel** to discard the preview. Invalid confirmation preserves both the original composition and the preview. Transforming preserves the ID; confirming duplication allocates a fresh ID and uses shared reference remapping. Duplicates do not inherit parcel ownership.
+7. **Apply variant** updates the selected committed object. **Delete selected** rejects required-reference loss. Finish or cancel a preview before changing variants, deleting, saving or playing.
+8. Press `Ctrl+S` or **Save** to write the composition. **Reload** restores the saved file; **Clear** clears the working composition. These controls still use one custom-layout slot.
 
 Camera controls remain available while composing: right-drag orbits, middle-drag pans, the wheel zooms, `F` frames the map, and `1`, `3`, and `7` select standard views.
 
@@ -43,4 +45,19 @@ Every edit rebuilds the candidate through `EnvironmentModuleLayout`. Out-of-boun
 
 Asset Lab calibration continues to control presentation scale, yaw, anchor, and visual offset. Component definitions continue to control authoritative movement, cover, line of sight, traversal, and suitability. Editing one does not silently rewrite the other.
 
-The current composer saves one working layout. Named composition libraries, copy/paste, undo/redo, drag placement, socket visualization, and direct promotion of a selection into a procedural parcel template are natural follow-up tools.
+Placement IDs are carried by the shared placement model, including through save/load. The document stores an additive `next_placement_id` high-water mark so deleted IDs are not reused. Existing document IDs remain valid; older schema-1 placement files receive deterministic IDs through their explicit import path, without gaining approval. Transform signatures describe geometry and no longer infer identity during edits.
+
+The current composer saves one working layout. Named composition libraries, multi-selection copy/paste, undo/redo, drag placement, socket visualization, and direct promotion of a selection into a procedural parcel template are natural follow-up tools.
+
+
+## Placement preview and latency correction - 2026-10-26
+
+Previews are presentation-only: no tactical write, dependency approval, ID allocation or whole-map rebuild on each mouse move/rotation. Confirmation runs the shared document/compiler validation atomically and reuses that result for the immediate rebuild. Save/play start fresh validation operations. This is a bounded correction to existing asset placement, not a wall-building system or full T06 implementation.
+
+Generation/capture/tactical relationship validation now reuse the operation catalog instead of reconstructing it per candidate/parcel. A local 60x50 industrial seed-17 probe measured generation at 4.90 s before / 1.42 s after; document capture 1.54 s / 0.003 s; shared compilation 3.11 s / 1.57 s. These are single-run phase measurements, not guaranteed total loading times. In the rendered two-container fixture, 20 preview rotations averaged 1.10 ms each; final confirmation remains more expensive.
+
+Verification: placement-preview and identity tests, revision-enforcement negatives, elevation, document/editor lifecycle, and replay (35/35 actions) passed. Rendered blocked/clear ghosts inspected in `artifacts/placement-preview-blocked.png` and `artifacts/placement-preview-clear.png`. Timing logs: `artifacts/editor-latency-before.log`, `artifacts/editor-latency-after.log`, `artifacts/placement-preview-capture.log`. No full-suite claim; root-certificate-store diagnostic remains.
+
+## Chunk authoring (T06)
+
+For local chunk drafts, choose **Author — Chunk Authoring** in the existing preset selector. See [the chunk authoring guide](chunk-authoring-editor.md) for gallery previews, stable-ID history, snapped edits, ports and named save/open. The instructions above describe the battlefield compatibility composer; its commit policy differs from incomplete chunk drafts.

@@ -1,0 +1,153 @@
+{
+	"format": "fusefire_chunk_source",
+	"schema_version": 1,
+	"chunk_id": "chunk_10184_2670997",
+	"name": "New chunk",
+	"bounds": [
+		25,
+		20
+	],
+	"height": 12,
+	"rotations": [
+		0,
+		1,
+		2,
+		3
+	],
+	"next_placement_id": 12,
+	"instances": [
+		{
+			"placement_id": "placement_0001",
+			"component_id": "asset:city_kit_roads/construction-barrier",
+			"origin": [
+				10,
+				6
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0002",
+			"component_id": "asset:city_kit_roads/construction-cone",
+			"origin": [
+				13,
+				12
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0003",
+			"component_id": "asset:city_kit_roads/construction-barrier",
+			"origin": [
+				11,
+				11
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0004",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				15,
+				15
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0005",
+			"component_id": "asset:city_kit_roads/electricity-pole",
+			"origin": [
+				23,
+				8
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0006",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				11,
+				16
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0007",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				9,
+				14
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0008",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				14,
+				11
+			],
+			"rotation": 1,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0009",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				14,
+				6
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0010",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				11,
+				2
+			],
+			"rotation": 0,
+			"variation": 0,
+			"elevation": 0
+		},
+		{
+			"placement_id": "placement_0011",
+			"component_id": "asset:city_kit_roads/dumpster",
+			"origin": [
+				3,
+				8
+			],
+			"rotation": 1,
+			"variation": 0,
+			"elevation": 0
+		}
+	],
+	"ports": [],
+	"clearances": [],
+	"tactical": {
+		"components": [],
+		"surfaces": [],
+		"effects": [],
+		"links": []
+	},
+	"dependencies": [],
+	"provenance": {
+		"origin": "authored"
+	}
+}

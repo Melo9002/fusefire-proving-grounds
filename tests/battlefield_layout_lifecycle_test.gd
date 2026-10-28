@@ -126,7 +126,7 @@ func _test_rejections(source: BattlefieldLayoutDocument) -> void:
 func _clone_layout(source: EnvironmentModuleLayout, map_size: Vector2i, catalog: Dictionary) -> EnvironmentModuleLayout:
 	var result := EnvironmentModuleLayout.new(source.layout_id, source.generation_seed)
 	for placement in source.placements:
-		var copy := EnvironmentModulePlacement.new(placement.component_id, placement.origin, placement.rotation, placement.variation, placement.elevation)
+		var copy := placement.copy()
 		if not result.try_add(catalog[copy.component_id], copy, map_size): return result
 	return result
 

@@ -1,0 +1,667 @@
+{
+	"schema_version": 2,
+	"format": "fusefire_battlefield_layout",
+	"layout_document": {
+		"schema_version": 1,
+		"document_id": "fixed_industrial_population",
+		"environment_id": "industrial_district",
+		"provenance": {
+			"origin": "authored",
+			"generator_id": "",
+			"has_generation_seed": false,
+			"generation_seed": 0,
+			"generation_config": {},
+			"algorithm_revisions": {
+				"layout_document": 1
+			}
+		},
+		"spatial_layout": {
+			"resolution_version": 1,
+			"map_size": [
+				60,
+				50
+			],
+			"grid_convention": "fusefire_grid_xz_y_up_cell_1",
+			"cell_size": 1.0,
+			"placements": [
+				{
+					"placement_id": "fixed_00",
+					"component_id": "road_straight",
+					"origin": [
+						0,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_01",
+					"component_id": "road_straight",
+					"origin": [
+						10,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_02",
+					"component_id": "road_straight",
+					"origin": [
+						20,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_03",
+					"component_id": "road_straight",
+					"origin": [
+						30,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_04",
+					"component_id": "road_straight",
+					"origin": [
+						40,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_05",
+					"component_id": "road_straight",
+					"origin": [
+						50,
+						20
+					],
+					"rotation": 1,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/road-straight"
+					]
+				},
+				{
+					"placement_id": "fixed_06",
+					"component_id": "industrial_shell_i",
+					"origin": [
+						8,
+						2
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "city_industrial_shell_i",
+					"asset_refs": [
+						"city_kit_industrial/building-i"
+					]
+				},
+				{
+					"placement_id": "fixed_07",
+					"component_id": "industrial_shell_i",
+					"origin": [
+						38,
+						2
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "city_industrial_shell_i",
+					"asset_refs": [
+						"city_kit_industrial/building-i"
+					]
+				},
+				{
+					"placement_id": "fixed_08",
+					"component_id": "paving_square",
+					"origin": [
+						8,
+						30
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_09",
+					"component_id": "paving_square",
+					"origin": [
+						8,
+						40
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_10",
+					"component_id": "paving_square",
+					"origin": [
+						18,
+						30
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_11",
+					"component_id": "paving_square",
+					"origin": [
+						18,
+						40
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_12",
+					"component_id": "paving_square",
+					"origin": [
+						35,
+						30
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_13",
+					"component_id": "paving_square",
+					"origin": [
+						35,
+						40
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_14",
+					"component_id": "paving_square",
+					"origin": [
+						45,
+						30
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_15",
+					"component_id": "paving_square",
+					"origin": [
+						45,
+						40
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "",
+					"asset_refs": [
+						"city_kit_roads/tile-low"
+					]
+				},
+				{
+					"placement_id": "fixed_16",
+					"component_id": "factory_pipe_receiver_unit",
+					"origin": [
+						27,
+						35
+					],
+					"rotation": 0,
+					"variation": 0,
+					"elevation": 0,
+					"assembly_ref": "pipe_receiver_unit",
+					"asset_refs": [
+						"factory_kit/machine-connection-hole",
+						"factory_kit/pipe-large"
+					]
+				}
+			],
+			"next_placement_id": 0
+		},
+		"relationships": [
+			{
+				"relationship_id": "assembly_0006",
+				"kind": "assembly_instance",
+				"subject_ref": "fixed_06",
+				"object_ref": "assembly:city_industrial_shell_i",
+				"required": true
+			},
+			{
+				"relationship_id": "assembly_0007",
+				"kind": "assembly_instance",
+				"subject_ref": "fixed_07",
+				"object_ref": "assembly:city_industrial_shell_i",
+				"required": true
+			},
+			{
+				"relationship_id": "assembly_0016",
+				"kind": "assembly_instance",
+				"subject_ref": "fixed_16",
+				"object_ref": "assembly:pipe_receiver_unit",
+				"required": true
+			}
+		],
+		"dependencies": [
+			{
+				"kind": "assembly",
+				"id": "city_industrial_shell_i",
+				"available": true,
+				"valid": true,
+				"resolution": "certified_contract",
+				"certification_signature": "e5837431fc97a6fa390209fe22288cd9b508be0cd616218b66e15183463ae87e",
+				"legacy_signature": "fc0a5cc0a12e4bd61af4dd2ce19011fee5c80780d7e523fe2893430e88163117",
+				"owner_visual_approval": false,
+				"required_by": [
+					"assembly_0006",
+					"assembly_0007",
+					"fixed_06",
+					"fixed_07"
+				]
+			},
+			{
+				"kind": "assembly",
+				"id": "pipe_receiver_unit",
+				"available": true,
+				"valid": true,
+				"resolution": "certified_contract",
+				"certification_signature": "b0edacd366805a07b604815e116858158818ae80b600469a9be7d27ccbdab62e",
+				"legacy_signature": "53f7a77d37bdc0f59d6ab213b8068f6371c3562a2ee1e20e2d0a98bfa4925d4c",
+				"owner_visual_approval": false,
+				"required_by": [
+					"assembly_0016",
+					"fixed_16"
+				]
+			},
+			{
+				"kind": "asset",
+				"id": "city_kit_industrial/building-i",
+				"geometry_sha256": "12d9be598becf2b6d3758d23aba6c573ca2701fca5e77870d2ee5645647765ca",
+				"calibration_signature": "de03f9924c7afc0064c141aaec79605049453dddc10390bccbd461c6e415e773",
+				"semantic_signature": "4f6b6f805f1bc29d365f2d10ba6137e83f9d27fc4427176adf857326866f1b17",
+				"generation_eligible": true,
+				"required_by": [
+					"fixed_06",
+					"fixed_07"
+				]
+			},
+			{
+				"kind": "asset",
+				"id": "city_kit_roads/road-straight",
+				"geometry_sha256": "f8f744fb6fc96dedd5ad1f763b550166f2624a3757bf36b4b39969d2e7cacac5",
+				"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+				"semantic_signature": "946bc6edb58cf1c41dadf681468ccfd21eeff132ee4487fa39e125dac4dcf794",
+				"generation_eligible": true,
+				"required_by": [
+					"fixed_00",
+					"fixed_01",
+					"fixed_02",
+					"fixed_03",
+					"fixed_04",
+					"fixed_05"
+				]
+			},
+			{
+				"kind": "asset",
+				"id": "city_kit_roads/tile-low",
+				"geometry_sha256": "23f54fced68c7647f6d851c8080791b56e2a7e7f541eac2e95c647006a5901c4",
+				"calibration_signature": "0b5fd4c800571903b59fd71e448f4a335863c805390e0e5b64c50dc0f6a9c1d3",
+				"semantic_signature": "a84c45a2c5508ed394a86921ba4d8cb1db2041b4b9514f0871afdba15da6b0f3",
+				"generation_eligible": true,
+				"required_by": [
+					"fixed_08",
+					"fixed_09",
+					"fixed_10",
+					"fixed_11",
+					"fixed_12",
+					"fixed_13",
+					"fixed_14",
+					"fixed_15"
+				]
+			},
+			{
+				"kind": "asset",
+				"id": "factory_kit/machine-connection-hole",
+				"geometry_sha256": "e49c9d701f802ca1b125c7ae55d8992e03710ea10838bf536bd4ddbb3da4bf9c",
+				"calibration_signature": "1912104ba9e6407b8a2122ca1c26d47653ebbf9e9cef23240f87a1731aa56ef5",
+				"semantic_signature": "eb553167fd7cdd914851404d97a716fb2ed6ff21fe9646b6d57bb90583eea36a",
+				"generation_eligible": false,
+				"required_by": [
+					"fixed_16"
+				]
+			},
+			{
+				"kind": "asset",
+				"id": "factory_kit/pipe-large",
+				"geometry_sha256": "e30500f8ec6dc1fcc04c350ff9ecfd06470ec73e70d53b7b3b571031f30a3311",
+				"calibration_signature": "d0451c304d1b8dc4e56879fa17208082de066b298aaee532df4c3b62123473b3",
+				"semantic_signature": "84b92b947bffc1520faebcb4f52e269964ca59ee0bdb90499e517d91bf9509e2",
+				"generation_eligible": false,
+				"required_by": [
+					"fixed_16"
+				]
+			},
+			{
+				"kind": "module",
+				"id": "factory_pipe_receiver_unit",
+				"revision": "a19497c1361d3117019def59eaf1fe83a04302d5ab659f2ec63e8261926ae088",
+				"required_by": [
+					"fixed_16"
+				]
+			},
+			{
+				"kind": "module",
+				"id": "industrial_shell_i",
+				"revision": "3b2b3330e6fa88e54d0f77028690d06473b74f050e2600ed0bda027ccd086aa2",
+				"required_by": [
+					"fixed_06",
+					"fixed_07"
+				]
+			},
+			{
+				"kind": "module",
+				"id": "paving_square",
+				"revision": "c081f07244619391a7e9ab4c350cabd991fc7edb577aebcc1ee99bed40faa7c9",
+				"required_by": [
+					"fixed_08",
+					"fixed_09",
+					"fixed_10",
+					"fixed_11",
+					"fixed_12",
+					"fixed_13",
+					"fixed_14",
+					"fixed_15"
+				]
+			},
+			{
+				"kind": "module",
+				"id": "road_straight",
+				"revision": "b4422dcf4c79b92c5b523d570c7b14cb259e83a23f3681f94ab557cc9984df09",
+				"required_by": [
+					"fixed_00",
+					"fixed_01",
+					"fixed_02",
+					"fixed_03",
+					"fixed_04",
+					"fixed_05"
+				]
+			}
+		],
+		"mission_context": {
+			"status": "preserved",
+			"zone_source": "document_revalidated",
+			"zones": [
+				{
+					"zone_id": "deployment_0",
+					"kind": 0,
+					"faction": 0,
+					"cells": [
+						[
+							54,
+							0,
+							36
+						],
+						[
+							54,
+							0,
+							40
+						],
+						[
+							54,
+							0,
+							44
+						],
+						[
+							54,
+							0,
+							46
+						],
+						[
+							54,
+							0,
+							48
+						]
+					]
+				},
+				{
+					"zone_id": "deployment_1",
+					"kind": 0,
+					"faction": 1,
+					"cells": [
+						[
+							6,
+							0,
+							36
+						],
+						[
+							6,
+							0,
+							40
+						],
+						[
+							6,
+							0,
+							44
+						],
+						[
+							6,
+							0,
+							46
+						],
+						[
+							6,
+							0,
+							48
+						]
+					]
+				},
+				{
+					"zone_id": "deployment_2",
+					"kind": 0,
+					"faction": 2,
+					"cells": [
+						[
+							56,
+							0,
+							36
+						],
+						[
+							56,
+							0,
+							40
+						],
+						[
+							56,
+							0,
+							44
+						],
+						[
+							56,
+							0,
+							46
+						],
+						[
+							56,
+							0,
+							48
+						]
+					]
+				},
+				{
+					"zone_id": "enemy_extract",
+					"kind": 2,
+					"faction": -1,
+					"cells": [
+						[
+							58,
+							0,
+							8
+						],
+						[
+							59,
+							0,
+							7
+						],
+						[
+							59,
+							0,
+							8
+						],
+						[
+							59,
+							0,
+							9
+						]
+					]
+				},
+				{
+					"zone_id": "extract",
+					"kind": 2,
+					"faction": -1,
+					"cells": [
+						[
+							0,
+							0,
+							8
+						],
+						[
+							0,
+							0,
+							9
+						],
+						[
+							0,
+							0,
+							10
+						],
+						[
+							1,
+							0,
+							9
+						]
+					]
+				},
+				{
+					"zone_id": "reach",
+					"kind": 1,
+					"faction": -1,
+					"cells": [
+						[
+							20,
+							0,
+							0
+						],
+						[
+							21,
+							0,
+							0
+						],
+						[
+							21,
+							0,
+							1
+						],
+						[
+							22,
+							0,
+							0
+						]
+					]
+				},
+				{
+					"zone_id": "rescue_spawn",
+					"kind": 1,
+					"faction": -1,
+					"cells": [
+						[
+							22,
+							0,
+							1
+						]
+					]
+				},
+				{
+					"zone_id": "terminal",
+					"kind": 1,
+					"faction": -1,
+					"cells": [
+						[
+							45,
+							0,
+							36
+						]
+					]
+				}
+			],
+			"objective_definitions": "not_represented_by_current_editor",
+			"validation_state": "validated"
+		},
+		"presentation": {
+			"road_presentation_mode": "asset_first"
+		}
+	}
+}
