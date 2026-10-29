@@ -4,6 +4,9 @@ extends RefCounted
 const Assets = preload("res://tools/asset_lab/asset_catalog.gd")
 const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const BASELINE_PATH := "res://systems/generation/initial_environment_assembly_revisions.json"
+var chunk_library := ChunkPublicationLibrary.new()
+var chunk_revision_cache := {}
+var composition_cache := {}
 var catalog: Dictionary
 var calibration_data: Dictionary
 var semantic_data: Dictionary

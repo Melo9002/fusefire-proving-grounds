@@ -65,6 +65,8 @@ $visualTests = @(
     "asset_lab_capture.gd",
     "chunk_publication_capture.gd",
     "tactical_population_capture.gd",
+    "plot_composition_capture.gd",
+    "plot_review_capture.gd",
     "coherent_layout_capture.gd",
 	"battlefield_layout_lifecycle_capture.gd",
     "debug_draw_3d_capture.gd",

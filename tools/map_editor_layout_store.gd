@@ -17,7 +17,7 @@ static func encode(document: BattlefieldLayoutDocument) -> String:
 		"layout_document": document.to_dictionary(),
 	}, "\t", false) + "\n"
 
-static func decode(text: String, catalog: Dictionary, legacy_environment_id: StringName = &"") -> Dictionary:
+static func decode(text: String, catalog: Dictionary, legacy_environment_id: StringName = &"", context: EnvironmentResolutionContext = null) -> Dictionary:
 	var decoded := GenerationJsonStore.parse(text)
 	if not decoded.ok: return _failure(decoded.code, decoded.error)
 	var parsed: Dictionary = decoded.value
@@ -31,7 +31,7 @@ static func decode(text: String, catalog: Dictionary, legacy_environment_id: Str
 	var encoded_document = parsed.get("layout_document", null)
 	if not encoded_document is Dictionary:
 		return _failure("MISSING_LAYOUT_DOCUMENT", "layout_document must contain the unified battlefield document.")
-	var context := EnvironmentResolutionContext.new(catalog)
+	if context == null: context = EnvironmentResolutionContext.new(catalog)
 	var document := BattlefieldLayoutDocument.from_dictionary(encoded_document)
 	var failures := document.validate(context.catalog, context)
 	if not failures.is_empty():
@@ -47,10 +47,10 @@ static func save(document: BattlefieldLayoutDocument, path := DEFAULT_PATH, cont
 		return "Cannot save invalid layout document: %s" % _failure_text(failures[0])
 	return GenerationJsonStore.write(path, encode(document))
 
-static func load(catalog: Dictionary, path := DEFAULT_PATH, legacy_environment_id: StringName = &"") -> Dictionary:
+static func load(catalog: Dictionary, path := DEFAULT_PATH, legacy_environment_id: StringName = &"", context: EnvironmentResolutionContext = null) -> Dictionary:
 	var result := GenerationJsonStore.read(path)
 	if not result.ok: return _failure(result.code, result.error)
-	return decode(result.text, catalog, legacy_environment_id)
+	return decode(result.text, catalog, legacy_environment_id, context)
 
 static func _decode_legacy(parsed: Dictionary, catalog: Dictionary, legacy_environment_id: StringName) -> Dictionary:
 	var layout_result := _decode_legacy_layout(parsed, catalog)

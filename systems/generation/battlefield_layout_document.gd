@@ -347,6 +347,11 @@ func validate(catalog := {}, context: EnvironmentResolutionContext = null) -> Ar
 	if context == null: context = EnvironmentResolutionContext.new(catalog)
 	catalog = context.catalog
 	var failures: Array[Dictionary] = []
+	if provenance.has("composition"):
+		var prepared := PlotCompositionSnapshot.prepare(self,context)
+		if not prepared.ok:
+			failures.append_array(prepared.errors)
+			return failures
 	var encoded_version := int(spatial_layout.get("_document_schema_version", SCHEMA_VERSION))
 	if encoded_version != SCHEMA_VERSION: _fail(failures, "UNSUPPORTED_SCHEMA_VERSION", "schema_version", "version %d is not supported" % encoded_version)
 	if document_id.is_empty(): _fail(failures, "MISSING_IDENTITY", "document_id", "document identity is required")
@@ -381,7 +386,7 @@ func _capture_spatial_layout(source_placements: Array, map_dimensions: Vector2i,
 		encoded.append(record)
 		if not record.assembly_ref.is_empty():
 			relationships.append({"relationship_id": "assembly_%04d" % index, "kind": "assembly_instance", "subject_ref": record.placement_id, "object_ref": "assembly:%s" % record.assembly_ref, "required": true})
-	spatial_layout = {"resolution_version": 1, "map_size": [map_dimensions.x, map_dimensions.y], "grid_convention": GRID_CONVENTION, "cell_size": 1.0, "placements": encoded, "next_placement_id": next_id}
+	spatial_layout = {"resolution_version": 2 if provenance.has("composition") else 1, "map_size": [map_dimensions.x, map_dimensions.y], "grid_convention": GRID_CONVENTION, "cell_size": 1.0, "placements": encoded, "next_placement_id": next_id}
 
 func _capture_plan_relationships(plan: EnvironmentLayoutPlan, catalog: Dictionary) -> void:
 	# One-time import bridge for the existing generator's signature-based plan.
@@ -699,7 +704,7 @@ func _validate_reservations(failures: Array[Dictionary], map_dimensions: Vector2
 		if role not in ReservationLedger.ROLES: _fail(failures, "UNSUPPORTED_RESERVATION_ROLE", field + ".role", "reservation role '%s' is unsupported" % role, reservation_id)
 		if owner_ref.begins_with("parcel:") and not parcel_refs.has(owner_ref): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "parcel owner '%s' does not exist" % owner_ref, reservation_id)
 		elif owner_ref.begins_with("zone:") and not zone_refs.has(owner_ref): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "mission owner '%s' does not exist" % owner_ref, reservation_id)
-		elif not owner_ref.begins_with("parcel:") and not owner_ref.begins_with("zone:"): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "reservation owner must reference a parcel or mission zone", reservation_id)
+		elif not owner_ref.begins_with("parcel:") and not owner_ref.begins_with("zone:") and not (provenance.has("composition") and owner_ref == "plot:"+str(provenance.composition.plot.plot_id)): _fail(failures, "MISSING_RESERVATION_OWNER", field + ".owner_ref", "reservation owner must reference a parcel or mission zone", reservation_id)
 		var source_ref := str(record.get("source_ref", ""))
 		if source_ref.begins_with("frontage:") and not frontage_refs.has(source_ref): _fail(failures, "MISSING_RESERVATION_SOURCE", field + ".source_ref", "frontage source '%s' does not exist" % source_ref, reservation_id)
 		var cells: Array[Vector2i] = []
@@ -836,7 +841,7 @@ func _validate_functional_parcels(failures: Array[Dictionary], catalog: Dictiona
 
 func _validate_dependencies(failures: Array[Dictionary], context: EnvironmentResolutionContext) -> void:
 	var version := int(spatial_layout.get("resolution_version", 0))
-	if version not in [0, 1]: _fail(failures, "UNSUPPORTED_RESOLUTION_VERSION", "dependencies", "Unsupported resolution contract")
+	if version not in [0, 1, 2] or (version == 2 and not provenance.has("composition")): _fail(failures, "UNSUPPORTED_RESOLUTION_VERSION", "dependencies", "Unsupported resolution contract")
 	var by_key := {}
 	var required_keys := {}
 	for dependency in dependencies:
@@ -854,7 +859,7 @@ func _validate_dependencies(failures: Array[Dictionary], context: EnvironmentRes
 		if Array(record.get("asset_refs", [])) != Array(expected_assets): _fail(failures, "VISUAL_DEPENDENCY_MISMATCH", "dependencies", "Placement visual references differ from resolved choices", str(record.get("placement_id", "")))
 		var required: Array[String] = []
 		for asset_id in expected_assets: required.append("asset:" + asset_id)
-		if version == 1: required.append("module:" + str(definition.component_id))
+		if version >= 1: required.append("module:" + str(definition.component_id))
 		if str(record.get("assembly_ref", "")) != str(definition.structural_assembly_id): _fail(failures, "ASSEMBLY_REFERENCE_MISMATCH", "dependencies", "Placement assembly reference changed")
 		if not definition.structural_assembly_id.is_empty(): required.append("assembly:" + str(definition.structural_assembly_id))
 		for key in required:

@@ -25,6 +25,17 @@ func _run() -> void:
 		"expected_state": "round=1|phase=0|active=PlayerUnit1",
 	})
 
+	var terminal_recording := BattleReplayRecording.from_dictionary(recording.to_dictionary())
+	var terminal_mission := MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.INTERACT_TERMINAL,2,false)
+	terminal_mission.terminals[0].grid_position = Vector3i(7,2,11)
+	terminal_mission.terminals[0].initially_activated = true
+	terminal_recording.configuration.mission = terminal_mission
+	var terminal_copy := BattleReplayRecording.from_dictionary(JSON.parse_string(JSON.stringify(terminal_recording.to_dictionary())))
+	var restored_terminals: Array = terminal_copy.configuration.mission.terminals
+	check(restored_terminals.size() == 1,"Terminal definition survives replay JSON serialization")
+	if restored_terminals.size() == 1:
+		check(restored_terminals[0].terminal_id == &"main_terminal" and restored_terminals[0].objective_id == &"activate_terminal" and restored_terminals[0].grid_position == Vector3i(7,2,11) and restored_terminals[0].initially_activated,"Replay preserves terminal identity, objective, elevation and initial state")
+
 	var rebuilt := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	check(rebuilt.is_playable(), "Current replay schema round trip is playable")
 	check(rebuilt.schema_version == BattleReplayRecording.CURRENT_SCHEMA_VERSION, "Envelope version survives round trip")

@@ -32,7 +32,7 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	level = p_level
 	recording = p_recording
-	var validation: String = "Replay recording is missing" if recording == null else recording.validation_message()
+	var validation: String = "Replay recording is missing" if recording == null else recording.validation_message(level.preparation_context)
 	if not validation.is_empty():
 		last_divergence = "reconstruction: %s" % validation
 		push_error("[Replay] %s" % last_divergence)

@@ -30,3 +30,9 @@
 !/artifacts/architecture-redesign-research/boundary_probe.gd
 !/artifacts/architecture-redesign-research/boundary_probe.gd.uid
 /docs/**/*.png.import
+
+# T11 review evidence; keep synthetic libraries and accepted test documents local.
+!/artifacts/t11-review/
+/artifacts/t11-review/*
+!/artifacts/t11-review/*.png
+!/artifacts/t11-review/manifest.json

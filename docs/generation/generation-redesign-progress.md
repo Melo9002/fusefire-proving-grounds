@@ -1,8 +1,8 @@
 # Generation redesign — progress ledger
 
-Updated 2026-10-26. Baseline: `fb373e6` plus uncommitted T01/T02/T03/T04 and playtest fixes. Execution is **one task at a time**.
+Updated 2026-10-29. Current implementation: T01–T11; detailed evidence and open gates below. Execution is **one task at a time**.
 
-Current decisions: [T00 defaults](C:/Users/Blue/Documents/Codex/git/fusefire-proving-grounds/docs/generation/generation-redesign-decisions.md). Owner authorized T01 through T05 explicitly. Later tasks remain separately authorized.
+Current decisions: [T00 defaults](C:/Users/Blue/Documents/Codex/git/fusefire-proving-grounds/docs/generation/generation-redesign-decisions.md). Owner commissioned T01 through T11. Later tasks remain separately authorized.
 
 ## Task order and gates
 
@@ -10,9 +10,9 @@ Current decisions: [T00 defaults](C:/Users/Blue/Documents/Codex/git/fusefire-pro
 | --- | --- | --- |
 | A | T00 → owner acceptance of contracts/scope | Complete; owner proceeded to T01 |
 | B | T01 → T02 → T03 → T04 → fresh review | T01 complete: seven selected suites passed. T02 complete: five selected suites passed. T03 complete: eight selected suites passed. T04 implemented: ten selected suites passed; Gate B source/negative-test self-review complete (not independent signoff) |
-| C | T05 → T06 → T07 → usable-authoring/owner visual gate | T05 source/store implemented; T06/T07 not started |
+| C | T05 → T06 → T07 → usable-authoring/owner visual gate | T05–T07 implemented; per-revision publication/owner gates remain explicit |
 | D | T08 → independent population proof | Implemented; technical gameplay/replay proof passed; owner playtest remains |
-| E | T09 → T10 → T11 → architectural and visual/playability gate | Not started; T09 needs C; T10 also needs T08 |
+| E | T09 → T10 → T11 → architectural and visual/playability gate | T09–T11 implemented and technically tested; Gate E independent review and owner playtesting remain; improve pilot tactical composition before scaling |
 | F | T12 and T13 → vertical/modular convergence gate | Not started; default sequence after E; T13 technically needs C |
 | G | T14 → T15 → T16 → release/continued-opt-in decision | Not started; integrated full scope needs E/F |
 | Optional | T17 analysis after accepted E or later | Not commissioned |
@@ -160,3 +160,28 @@ Open name, Open selected draft and New now share a discard confirmation for unsa
 - **Pre-push follow-up:** smoke identified an inspector regression from stable-ID migration; fixed displayed-layout selection and preserved all diagnostic assertions. Temporary evidence/probe outputs and external reference downloads stay local; source, authored content and original review captures are versioned.
 
 Final pre-push Ironclad smoke: **10 passed, 0 failed, 0 skipped** (2026-10-28); original failure diagnosed and fixed, not waived.
+
+## T09 implementation — 2026-10-28
+
+- **Scope:** [Authored plots](authored-plots.md), versioned source + existing-editor workspace + individual slot/library feasibility. Two industrial plot files, fixed street/sidewalk ownership, variable slots, actual port/frontage obligations, scoped reservations, active Eliminate/Terminal requirements. No T10 solver or road graph.
+- **Evidence:** source/negative tests and rendered editor workflow passed; both plots × both missions feasible against technical drafts. Existing chunk-editor workflow passed. Ironclad smoke **10/10**, no skips. Inspected `artifacts/t09-through-street.png` and `artifacts/t09-service-access.png` (Terminal); unapproved content remains ineligible. Initial UI callback-lifetime and transparent-background overlay defects were fixed, not waived.
+- **Enxugar:** shared persistence, canonical transforms, spatial predicates, publication compiler/index and existing derived `EnvironmentLayoutPlan`. No second tactical writer, registry or road/parcel planner. Existing runtime orchestration remains an explicit T10–T11/T15 adapter obligation until consumers migrate.
+- **Gate:** owner commissioned T09 authoring. Publication approvals were not invented; no playable composed-map or Gate E claim. T10 must solve combinations, establish open-space surfaces, bind exact content/mission data and verify the complete result.
+
+## T10 implementation — 2026-10-28
+
+- **Scope:** [Deterministic plot composition](plot-composition.md). Constrained-first seeded candidate ordering, bounded backtracking, exact registered revisions, actual connection/frontage checks and active mission binding. T08 population runs only in explicit plot-owned regions. Shared accepted document/compiler/presenter, not a second tactical writer.
+- **Compatibility:** plot schema 2 introduces population regions; schema 1 remains readable without rewrite. Composed battlefield resolution contract 2 rejects in old readers. Old module documents retain their existing contracts. Raw chunk visuals and explicit tactical contributions now cross the common compilation boundary.
+- **Approval:** production registration was not fabricated. Tests use an isolated synthetic approval library; production generation remains blocked until the owner reviews/registers exact content and pins streets.
+- **Enxugar:** migrated authored-plot composition has no recipe-name dispatch. Retain old assembler/search/relationship adapters for existing runtime reference presets until T11 gameplay/replay migration and T15 caller audit permit removal.
+- **Owner:** playtesting deferred at owner's request. A durable checklist is included in `plot-composition.md`; Gate E remains open.
+- **Final verification:** 51 composition checks, 33 plot-source checks, 20 plot-editor checks; existing T08 gameplay/replay passes including 47/47 replay actions; smoke **10/10**, no skips. Both rendered compositions inspected. Removed redundant base compilation; focused repeat-seed/round-trip/budget proof passed after normalization moved inside the population boundary. Existing certificate-store warnings remain.
+
+
+## Owner direction — 2026-10-29
+
+Preserve the authored Refinery structure for future refinement and migration into the new pipeline. Do not delete or flatten it during retirement. Other old maps need not all be migrated: they may be removed after their useful gameplay/test coverage has a replacement. Before T15 removal, identify and snapshot the exact Refinery source, dependencies and representative output; preserve its structure independently of old orchestration. This does not waive replay compatibility or justify deleting still-relevant regression assertions.
+
+## T11 implementation and composition review — 2026-10-29
+
+See [T11 review and playtest checklist](plot-gameplay-review.md). Common document preparation, appended authored-plot preset, exact saved-map reopening and editor-to-play flow implemented. No new battle scene/simulation. Fixed Terminal replay data loss and empty diagnostic-mesh surfaces. Shared smoke 10/10; 29 focused runtime/editor checks including natural Eliminate 26/26 replay and Terminal 15/15 replay; existing industrial edited-map replay, standard replay and terminal interaction pass. Rendered matrix: two plots × five fixed/five holdout seeds, 20/20 compile/save, 60 captures, no replaced seeds. Visual sampling finds sparse composition/limited seed variety, not a finished tactical-content proof. Gate E remains open for fresh independent review, owner playtest, and authored tactical improvements. Refinery preservation is explicit above and in the retirement register.

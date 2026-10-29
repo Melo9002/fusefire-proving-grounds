@@ -1,0 +1,500 @@
+{
+  "format": "fusefire_plot_source",
+  "schema_version": 2,
+  "plot_id": "through_street_industrial",
+  "map_size": [
+    60,
+    50
+  ],
+  "active_mission": "eliminate",
+  "fixed_streets": [
+    {
+      "id": "street_0",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        0,
+        20
+      ],
+      "rotation": 1,
+      "exits": [
+        "street_2"
+      ]
+    },
+    {
+      "id": "street_1",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        10,
+        20
+      ],
+      "rotation": 1,
+      "exits": []
+    },
+    {
+      "id": "street_2",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        20,
+        20
+      ],
+      "rotation": 1,
+      "exits": []
+    },
+    {
+      "id": "street_3",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        30,
+        20
+      ],
+      "rotation": 1,
+      "exits": []
+    },
+    {
+      "id": "street_4",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        40,
+        20
+      ],
+      "rotation": 1,
+      "exits": []
+    },
+    {
+      "id": "street_5",
+      "chunk_id": "street_straight",
+      "revision": "",
+      "origin": [
+        50,
+        20
+      ],
+      "rotation": 1,
+      "exits": [
+        "street_0"
+      ]
+    }
+  ],
+  "slots": [
+    {
+      "id": "west_frontage",
+      "bounds": [
+        5,
+        0,
+        16,
+        20
+      ],
+      "candidates": [
+        "warehouse_frontage"
+      ],
+      "rotations": [
+        0
+      ],
+      "required": true,
+      "obligations": [
+        {
+          "port_id": "loading_apron",
+          "profile": "loading_4",
+          "target_ref": "street_1",
+          "kind": "frontage"
+        },
+        {
+          "port_id": "public_access",
+          "profile": "walkway_2",
+          "target_ref": "west_frontage_access",
+          "kind": "access"
+        }
+      ]
+    },
+    {
+      "id": "east_frontage",
+      "bounds": [
+        35,
+        0,
+        16,
+        20
+      ],
+      "candidates": [
+        "warehouse_frontage"
+      ],
+      "rotations": [
+        0
+      ],
+      "required": true,
+      "obligations": [
+        {
+          "port_id": "loading_apron",
+          "profile": "loading_4",
+          "target_ref": "street_4",
+          "kind": "frontage"
+        },
+        {
+          "port_id": "public_access",
+          "profile": "walkway_2",
+          "target_ref": "east_frontage_access",
+          "kind": "access"
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "bounds": [
+        4,
+        30,
+        14,
+        12
+      ],
+      "candidates": [
+        "service_yard"
+      ],
+      "rotations": [
+        2
+      ],
+      "required": true,
+      "obligations": [
+        {
+          "port_id": "maintenance_access",
+          "profile": "walkway_2",
+          "target_ref": "street_1",
+          "kind": "frontage"
+        },
+        {
+          "port_id": "staff_access",
+          "profile": "walkway_2",
+          "target_ref": "service_access",
+          "kind": "access"
+        }
+      ]
+    },
+    {
+      "id": "loading",
+      "bounds": [
+        32,
+        30,
+        22,
+        14
+      ],
+      "candidates": [
+        "loading_yard"
+      ],
+      "rotations": [
+        2
+      ],
+      "required": true,
+      "obligations": [
+        {
+          "port_id": "loading_gate",
+          "profile": "loading_4",
+          "target_ref": "street_4",
+          "kind": "frontage"
+        },
+        {
+          "port_id": "staff_access",
+          "profile": "walkway_2",
+          "target_ref": "loading_access",
+          "kind": "access"
+        }
+      ]
+    }
+  ],
+  "reservations": [
+    {
+      "id": "west_frontage_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          17
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          4,
+          19
+        ],
+        [
+          4,
+          20
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "east_frontage_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          34,
+          16
+        ],
+        [
+          34,
+          17
+        ],
+        [
+          34,
+          18
+        ],
+        [
+          34,
+          19
+        ],
+        [
+          34,
+          20
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "service_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          16,
+          29
+        ],
+        [
+          16,
+          30
+        ],
+        [
+          16,
+          31
+        ],
+        [
+          16,
+          32
+        ],
+        [
+          16,
+          33
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "loading_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          52,
+          29
+        ],
+        [
+          52,
+          30
+        ],
+        [
+          52,
+          31
+        ],
+        [
+          52,
+          32
+        ],
+        [
+          52,
+          33
+        ],
+        [
+          52,
+          34
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "player_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          1,
+          25
+        ],
+        [
+          2,
+          25
+        ],
+        [
+          3,
+          25
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "enemy_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          56,
+          25
+        ],
+        [
+          57,
+          25
+        ],
+        [
+          58,
+          25
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    },
+    {
+      "id": "terminal_access",
+      "role": "pedestrian_access",
+      "cells": [
+        [
+          28,
+          29
+        ],
+        [
+          28,
+          30
+        ],
+        [
+          28,
+          31
+        ],
+        [
+          28,
+          32
+        ],
+        [
+          28,
+          33
+        ],
+        [
+          28,
+          34
+        ]
+      ],
+      "scope": "whole_column",
+      "elevation": 0,
+      "height": 3
+    }
+  ],
+  "mission_requirements": [
+    {
+      "id": "player",
+      "mission": "all",
+      "kind": "deployment",
+      "faction": 0,
+      "capacity": 2,
+      "cells": [
+        [
+          1,
+          25
+        ],
+        [
+          2,
+          25
+        ]
+      ],
+      "access_ref": "player_access"
+    },
+    {
+      "id": "enemy",
+      "mission": "all",
+      "kind": "deployment",
+      "faction": 1,
+      "capacity": 2,
+      "cells": [
+        [
+          57,
+          25
+        ],
+        [
+          58,
+          25
+        ]
+      ],
+      "access_ref": "enemy_access"
+    },
+    {
+      "id": "terminal",
+      "mission": "terminal",
+      "kind": "objective",
+      "faction": -1,
+      "capacity": 1,
+      "cells": [
+        [
+          28,
+          34
+        ]
+      ],
+      "access_ref": "terminal_access"
+    }
+  ],
+  "population": {
+    "version": 1,
+    "regions": [
+      {
+        "id": "cargo_staging",
+        "bounds": [
+          18,
+          32,
+          10,
+          16
+        ],
+        "elevation": 0,
+        "count": 2,
+        "anchors": [
+          [
+            20,
+            34
+          ],
+          [
+            24,
+            38
+          ],
+          [
+            20,
+            43
+          ],
+          [
+            24,
+            44
+          ]
+        ],
+        "choices": [
+          {
+            "component_id": "service_dumpster",
+            "rotation": 0,
+            "variation": 0
+          },
+          {
+            "component_id": "cargo_container",
+            "rotation": 0,
+            "variation": 0
+          }
+        ]
+      }
+    ],
+    "routes": []
+  }
+}

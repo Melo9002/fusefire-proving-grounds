@@ -47,6 +47,15 @@ static func build(data: MapData, parent: Node3D, cell_size: float, road_presenta
 		var placement: EnvironmentModulePlacement = record.placement
 		var definition: EnvironmentModuleDefinition = record.definition
 		if definition == null:
+			if record.has("chunk_transform"):
+				var raw_root := Node3D.new(); root.add_child(raw_root)
+				raw_root.set_meta("placement_id",placement.placement_id)
+				var offset := Vector3(-data.map_size.x*0.5+0.5,0,-data.map_size.y*0.5+0.5)*cell_size
+				raw_root.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*cell_size),offset)*record.chunk_transform
+				var local: EnvironmentModulePlacement = record.local_placement
+				var profile: Dictionary = record.calibration
+				var anchor: Array = profile.anchor_position
+				AssetPlacement.instantiate_calibrated(raw_root,AssetCatalog.path_for(record.asset_id),Vector3(local.origin.x+float(anchor[0]),local.elevation+float(anchor[1]),local.origin.y+float(anchor[2])),float(profile.scale),-local.rotation*PI*0.5+deg_to_rad(float(profile.yaw_degrees)),int(profile.anchor))
 			continue
 		var module_root := Node3D.new()
 		module_root.name = "%s_%d_%d" % [placement.component_id, placement.origin.x, placement.origin.y]

@@ -21,19 +21,19 @@ var validation_error := ""
 func append_action(record: Dictionary) -> void:
 	actions.append(record.duplicate(true))
 
-func is_playable() -> bool:
-	return validation_message().is_empty()
+func is_playable(context: EnvironmentResolutionContext = null) -> bool:
+	return validation_message(context).is_empty()
 
-func validation_message() -> String:
+func validation_message(context: EnvironmentResolutionContext = null) -> String:
 	if not validation_error.is_empty():
 		return validation_error
 	if schema_version not in [LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
 	if configuration.is_empty(): return "Replay has no battle_configuration"
-	if int(configuration.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)) == BattleConfiguration.BattlefieldPreset.GENERATION_2_INDUSTRIAL:
+	if int(configuration.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)) in [BattleConfiguration.BattlefieldPreset.GENERATION_2_INDUSTRIAL, BattleConfiguration.BattlefieldPreset.AUTHORED_PLOT]:
 		if battlefield_document.is_empty(): return "Generation 2.0 replay has no battlefield_layout_document"
 		var document := BattlefieldLayoutDocument.from_dictionary(battlefield_document)
-		var document_failures := document.validate()
+		var document_failures := document.validate({}, context)
 		if not document_failures.is_empty():
 			return "Generation 2.0 replay battlefield document is invalid: %s" % document_failures[0].get("message", "unknown document failure")
 		if battlefield_document_signature.is_empty() or stable_battlefield_document_signature(battlefield_document) != battlefield_document_signature:
@@ -57,7 +57,7 @@ func to_dictionary() -> Dictionary:
 		"ordered_records": actions.duplicate(true),
 	}
 
-static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
+static func from_dictionary(data: Dictionary, context: EnvironmentResolutionContext = null) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
 	replay.schema_version = int(data.get("schema_version", -1))
 	replay.simulation_version = String(data.get("simulation_version", "prototype-1" if replay.schema_version == LEGACY_SCHEMA_VERSION else "unknown"))
@@ -70,7 +70,7 @@ static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
 	var records: Array = data.get("ordered_records", data.get("actions", []))
 	for record in records:
 		if record is Dictionary: replay.actions.append(record.duplicate(true))
-	replay.validation_error = replay.validation_message()
+	replay.validation_error = replay.validation_message(context)
 	return replay
 
 func capture_battlefield_document(document: BattlefieldLayoutDocument) -> void:
@@ -96,7 +96,7 @@ func save_json(path: String) -> Error:
 	file.store_string(JSON.stringify(to_dictionary(), "\t", false))
 	return OK
 
-static func load_json(path: String) -> BattleReplayRecording:
+static func load_json(path: String, context: EnvironmentResolutionContext = null) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -108,7 +108,7 @@ static func load_json(path: String) -> BattleReplayRecording:
 		replay.schema_version = -1
 		replay.validation_error = "Replay JSON root must be an object"
 		return replay
-	return from_dictionary(parsed)
+	return from_dictionary(parsed, context)
 
 static func _configuration_to_data(source: Dictionary) -> Dictionary:
 	var size: Vector2i = source.get("map_size", Vector2i(32, 24))
@@ -195,7 +195,10 @@ static func _mission_to_data(mission: MissionDefinition) -> Variant:
 			"target_ids": Array(objective.target_ids).map(func(value): return String(value)),
 			"zone_id": String(objective.zone_id), "pursuing_factions": objective.pursuing_factions,
 		})
-	return {"mission_id": String(mission.mission_id), "title": mission.title, "objectives": objectives}
+	var terminals: Array[Dictionary] = []
+	for terminal in mission.terminals:
+		terminals.append({"terminal_id":String(terminal.terminal_id),"objective_id":String(terminal.objective_id),"grid_position":[terminal.grid_position.x,terminal.grid_position.y,terminal.grid_position.z],"initially_activated":terminal.initially_activated})
+	return {"mission_id": String(mission.mission_id), "title": mission.title, "objectives": objectives, "terminals":terminals}
 
 static func _mission_from_data(data: Dictionary) -> MissionDefinition:
 	var mission := MissionDefinition.new()
@@ -214,4 +217,13 @@ static func _mission_from_data(data: Dictionary) -> MissionDefinition:
 		objective.zone_id = StringName(raw.get("zone_id", ""))
 		objective.pursuing_factions = int(raw.get("pursuing_factions", 0))
 		mission.objectives.append(objective)
+	for raw in data.get("terminals", []):
+		if not raw is Dictionary: continue
+		var terminal := MissionTerminalDefinition.new()
+		terminal.terminal_id = StringName(raw.get("terminal_id", "terminal"))
+		terminal.objective_id = StringName(raw.get("objective_id", ""))
+		var position_data: Array = raw.get("grid_position", [-1,-1,-1])
+		if position_data.size() == 3: terminal.grid_position = Vector3i(int(position_data[0]),int(position_data[1]),int(position_data[2]))
+		terminal.initially_activated = bool(raw.get("initially_activated", false))
+		mission.terminals.append(terminal)
 	return mission

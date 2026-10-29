@@ -1,0 +1,262 @@
+[
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-17-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-17-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-17-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 17,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-42-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-42-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-42-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 42,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-73-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-73-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-73-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 73,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-101-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-101-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-101-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 101,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-211-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-211-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-211-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 211,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-307-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-307-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-307-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 307,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-419-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-419-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-419-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 419,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-563-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-563-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-563-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 563,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-701-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-701-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-701-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 701,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/through_street_industrial-887-overhead.png",
+			"res://artifacts/t11-review/through_street_industrial-887-oblique.png",
+			"res://artifacts/t11-review/through_street_industrial-887-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "through_street_industrial",
+		"save_error": "",
+		"seed": 887,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-17-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-17-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-17-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 17,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-42-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-42-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-42-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 42,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-73-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-73-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-73-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 73,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-101-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-101-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-101-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 101,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-211-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-211-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-211-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 211,
+		"set": "fixed"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-307-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-307-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-307-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 307,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-419-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-419-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-419-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 419,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-563-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-563-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-563-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 563,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-701-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-701-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-701-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 701,
+		"set": "holdout"
+	},
+	{
+		"captures": [
+			"res://artifacts/t11-review/yard_service_access-887-overhead.png",
+			"res://artifacts/t11-review/yard_service_access-887-oblique.png",
+			"res://artifacts/t11-review/yard_service_access-887-diagnostic.png"
+		],
+		"errors": [],
+		"ok": true,
+		"plot": "yard_service_access",
+		"save_error": "",
+		"seed": 887,
+		"set": "holdout"
+	}
+]

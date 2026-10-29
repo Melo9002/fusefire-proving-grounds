@@ -6,6 +6,7 @@ const LayoutStore = preload("res://tools/map_editor_layout_store.gd")
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 const DebugDraw = preload("res://tools/diagnostics/fusefire_debug_draw_3d.gd")
 const ReservationLedger = preload("res://systems/generation/environment_spatial_reservation_ledger.gd")
+const PLOT_LAYOUT := &"plot_authoring"
 const CHUNK_LAYOUT := &"chunk_authoring"
 const POPULATION_LAYOUT := &"fixed_population"
 const CUSTOM_LAYOUT := &"custom_layout"
@@ -16,7 +17,7 @@ const INSPECTION_CONTROLS_TOP := 92.0
 const INSPECTION_ROW_SPACING := 32.0
 const PROCEDURAL_LAYOUTS: Array[StringName] = CoherentEnvironmentAssembler.ENVIRONMENTS
 const NORMAL_LAYOUTS: Array[StringName] = [
-	CHUNK_LAYOUT, CUSTOM_LAYOUT, POPULATION_LAYOUT,
+	CHUNK_LAYOUT, PLOT_LAYOUT, CUSTOM_LAYOUT, POPULATION_LAYOUT,
 	&"industrial_district", &"commercial_street", &"mixed_service",
 ]
 const ENGINEERING_LAYOUTS: Array[StringName] = [
@@ -77,6 +78,7 @@ var population_save_directory := "res://tools/map_editor/layouts"
 var pending_population: Dictionary = {}
 var population_panel: VBoxContainer
 var population_message: Label
+var plot_authoring: PlotAuthoringController
 var chunk_authoring: ChunkAuthoringController
 var legacy_edit_controls: Array[Control] = []
 
@@ -92,6 +94,7 @@ func _ready() -> void:
 	_rebuild()
 
 func _process(_delta: float) -> void:
+	if layout_preset == PLOT_LAYOUT: return
 	if layout_preset == CHUNK_LAYOUT and chunk_authoring != null:
 		chunk_authoring.draw()
 		return
@@ -99,6 +102,9 @@ func _process(_delta: float) -> void:
 		_draw_selected_spatial_contracts()
 
 func _shortcut_input(event: InputEvent) -> void:
+	if layout_preset == PLOT_LAYOUT:
+		plot_authoring.shortcut(event)
+		return
 	if chunk_authoring != null and chunk_authoring.publication != null and chunk_authoring.publication.busy: return
 	if layout_preset == CHUNK_LAYOUT:
 		chunk_authoring.shortcut(event)
@@ -153,6 +159,11 @@ func _shortcut_input(event: InputEvent) -> void:
 			_set_seed(generation_seed - 1)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if layout_preset == PLOT_LAYOUT:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			plot_authoring.click(event.position)
+		elif is_instance_valid(orbit): orbit.handle_mouse(event)
+		return
 	if chunk_authoring != null and chunk_authoring.publication != null and chunk_authoring.publication.busy: return
 	if layout_preset == CHUNK_LAYOUT:
 		if event is InputEventMouseMotion and event.button_mask == 0:
@@ -183,6 +194,10 @@ func _rebuild() -> void:
 	if chunk_authoring != null: chunk_authoring.cancel_pending()
 	_cancel_placement_preview(false)
 	_update_composer_visibility()
+	if layout_preset == PLOT_LAYOUT:
+		plot_authoring.changed()
+		_frame_camera()
+		return
 	if layout_preset == CHUNK_LAYOUT:
 		displayed_data = null
 		chunk_authoring.rebuild()
@@ -402,6 +417,8 @@ func _build_ui() -> void:
 	for control in views.get_children().slice(3): legacy_edit_controls.append(control)
 	chunk_authoring = ChunkAuthoringController.new(self)
 	chunk_authoring.build_ui(ui_root)
+	plot_authoring = PlotAuthoringController.new(self)
+	plot_authoring.build_ui(ui_root)
 	population_panel = VBoxContainer.new()
 	ui_root.add_child(population_panel)
 	population_panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
@@ -502,7 +519,7 @@ func _populate_preset_picker() -> void:
 		return
 	preset_picker.clear()
 	for preset in NORMAL_LAYOUTS:
-		var kind := "Author" if preset == CHUNK_LAYOUT else ("Editable" if preset == CUSTOM_LAYOUT else "Environment")
+		var kind := "Author" if preset in [CHUNK_LAYOUT, PLOT_LAYOUT] else ("Editable" if preset == CUSTOM_LAYOUT else "Environment")
 		preset_picker.add_item("%s — %s" % [kind, String(preset).capitalize()])
 		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
 	if show_engineering_fixtures:
@@ -543,15 +560,17 @@ func _is_composing() -> bool:
 
 func _update_composer_visibility() -> void:
 	if is_instance_valid(population_panel): population_panel.visible = layout_preset == POPULATION_LAYOUT
+	var plot_mode := layout_preset == PLOT_LAYOUT
+	if plot_authoring != null: plot_authoring.panel.visible = plot_mode
 	var chunk_mode := layout_preset == CHUNK_LAYOUT
 	if chunk_authoring != null: chunk_authoring.panel.visible = chunk_mode
-	for control in legacy_edit_controls: control.visible = not chunk_mode
+	for control in legacy_edit_controls: control.visible = not chunk_mode and not plot_mode
 	if is_instance_valid(composer_panel):
 		composer_panel.visible = _is_composing()
 	for control in inspection_shortcuts:
-		control.visible = not _is_composing() and not chunk_mode
+		control.visible = not _is_composing() and not chunk_mode and not plot_mode
 	for control in engineering_shortcuts:
-		control.visible = show_engineering_fixtures and not _is_composing() and not chunk_mode
+		control.visible = show_engineering_fixtures and not _is_composing() and not chunk_mode and not plot_mode
 	if _is_composing():
 		_update_composer_message()
 	_update_transform_label()
@@ -1223,6 +1242,7 @@ func _update_status(component_count: int, validation_text: String, plan: Environ
 	]
 
 func _refresh_status_target() -> void:
+	if layout_preset == PLOT_LAYOUT: return
 	if layout_preset == CHUNK_LAYOUT and chunk_authoring != null:
 		chunk_authoring.update_status()
 		return
@@ -1382,56 +1402,42 @@ func _add_grid_overlay(parent: Node3D, map_size: Vector2i, cell_size: float) -> 
 	parent.add_child(overlay)
 
 func _add_spatial_plan_overlay(parent: Node3D, data: MapData) -> void:
-	if data.environment_layout_plan == null:
-		return
+	if data.environment_layout_plan == null: return
 	var plan := data.environment_layout_plan
+	var groups := [
+		{"color":Color(1.0,0.65,0.16,0.75),"height":0.13,"rects":[],"segments":[]},
+		{"color":Color(0.15,0.92,1.0,0.9),"height":0.15,"rects":[],"segments":[]},
+		{"color":Color(0.30,1.0,0.35,1.0),"height":0.19,"rects":[],"segments":[]},
+		{"color":Color(1.0,0.25,0.82,0.85),"height":0.18,"rects":[],"segments":[]},
+		{"color":Color(1.0,0.92,0.20,0.8),"height":0.17,"rects":[],"segments":[]},
+	]
+	for parcel in plan.parcels:
+		groups[0].rects.append(parcel.bounds)
+		for frontage in parcel.get("frontage_spans",[]):
+			if str(frontage.get("frontage_id","")) != str(parcel.get("selected_frontage_id","")): continue
+			var start = frontage.get("start",[]); var finish = frontage.get("end",[])
+			if start is Array and finish is Array and start.size() == 2 and finish.size() == 2: groups[2].segments.append([start,finish])
+	for cell in plan.road_cells: groups[1].rects.append(Rect2i(cell*plan.macro_size,Vector2i.ONE*plan.macro_size))
+	for reservation in plan.reservations:
+		var group := -1
+		if reservation.get("role","") in [ReservationLedger.PEDESTRIAN_ACCESS,ReservationLedger.LOADING_SERVICE_APPROACH,ReservationLedger.CIRCULATION_CLEARANCE]: group = 3
+		elif reservation.get("role","") in [ReservationLedger.DEPLOYMENT_REGION,ReservationLedger.OBJECTIVE_REGION]: group = 4
+		if group >= 0:
+			for cell: Vector2i in reservation.get("cells",[]): groups[group].rects.append(Rect2i(cell,Vector2i.ONE))
 	var mesh := ImmediateMesh.new()
-	var parcel_material := StandardMaterial3D.new()
-	parcel_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	parcel_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	parcel_material.albedo_color = Color(1.0, 0.65, 0.16, 0.75)
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, parcel_material)
-	for parcel in plan.parcels:
-		_add_plan_rect(mesh, parcel.bounds, data.map_size, 0.13)
-	mesh.surface_end()
-	var road_material := StandardMaterial3D.new()
-	road_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	road_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	road_material.albedo_color = Color(0.15, 0.92, 1.0, 0.9)
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, road_material)
-	for road_cell in plan.road_cells:
-		_add_plan_rect(mesh, Rect2i(road_cell * plan.macro_size, Vector2i.ONE * plan.macro_size), data.map_size, 0.15)
-	mesh.surface_end()
-	var frontage_material := StandardMaterial3D.new()
-	frontage_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	frontage_material.albedo_color = Color(0.30, 1.0, 0.35, 1.0)
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, frontage_material)
-	for parcel in plan.parcels:
-		var selected_id := str(parcel.get("selected_frontage_id", ""))
-		for frontage in parcel.get("frontage_spans", []):
-			if str(frontage.get("frontage_id", "")) == selected_id:
-				_add_plan_segment(mesh, frontage.get("start", []), frontage.get("end", []), data.map_size, 0.19)
-	mesh.surface_end()
-	var access_material := StandardMaterial3D.new()
-	access_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	access_material.albedo_color = Color(1.0, 0.25, 0.82, 0.85)
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, access_material)
-	for reservation in plan.reservations:
-		if reservation.get("role", "") in [ReservationLedger.PEDESTRIAN_ACCESS, ReservationLedger.LOADING_SERVICE_APPROACH, ReservationLedger.CIRCULATION_CLEARANCE]:
-			for cell: Vector2i in reservation.get("cells", []): _add_plan_rect(mesh, Rect2i(cell, Vector2i.ONE), data.map_size, 0.18)
-	mesh.surface_end()
-	var mission_material := StandardMaterial3D.new()
-	mission_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mission_material.albedo_color = Color(1.0, 0.92, 0.20, 0.8)
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, mission_material)
-	for reservation in plan.reservations:
-		if reservation.get("role", "") in [ReservationLedger.DEPLOYMENT_REGION, ReservationLedger.OBJECTIVE_REGION]:
-			for cell: Vector2i in reservation.get("cells", []): _add_plan_rect(mesh, Rect2i(cell, Vector2i.ONE), data.map_size, 0.17)
-	mesh.surface_end()
+	for group in groups:
+		# Empty road/frontage/mission layers are legitimate in authored plots.
+		if group.rects.is_empty() and group.segments.is_empty(): continue
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.albedo_color = group.color
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES,material)
+		for bounds: Rect2i in group.rects: _add_plan_rect(mesh,bounds,data.map_size,group.height)
+		for segment in group.segments: _add_plan_segment(mesh,segment[0],segment[1],data.map_size,group.height)
+		mesh.surface_end()
 	var overlay := MeshInstance3D.new()
-	overlay.name = "SpatialPlan"
-	overlay.mesh = mesh
-	overlay.visible = show_plan_overlay
+	overlay.name = "SpatialPlan"; overlay.mesh = mesh; overlay.visible = show_plan_overlay
 	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(overlay)
 

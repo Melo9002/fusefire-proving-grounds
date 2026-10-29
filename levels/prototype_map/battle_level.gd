@@ -158,6 +158,8 @@ func configure_replay(recording) -> void:
 ## Explicit document-driven runtime entry point shared by saved edited maps and
 ## replay reconstruction. The caller supplies battle rules; the document owns
 ## accepted environment construction. Both are validated during _ready().
+var preparation_context: EnvironmentResolutionContext
+
 func configure_layout_document(config: BattleConfigurationData, document: BattlefieldLayoutDocument) -> void:
 	pending_battlefield_document = BattlefieldLayoutDocument.from_dictionary(document.to_dictionary()) if document else null
 	configure_battle(config)
@@ -196,9 +198,12 @@ func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
 	var preparation: Dictionary
-	if battlefield_preset == BattleConfigurationData.BattlefieldPreset.GENERATION_2_INDUSTRIAL:
+	if _runtime_configuration().uses_generation_2():
 		var config := _runtime_configuration()
-		preparation = Generation2BattlefieldBuilder.compile_document(pending_battlefield_document, config, grid.cell_size) if pending_battlefield_document else Generation2BattlefieldBuilder.build(config, grid.cell_size)
+		if pending_battlefield_document or battlefield_preset == BattleConfigurationData.BattlefieldPreset.AUTHORED_PLOT:
+			preparation = BattlefieldRuntimePreparation.compile_document(pending_battlefield_document, config, grid.cell_size, preparation_context)
+		else:
+			preparation = Generation2BattlefieldBuilder.build(config, grid.cell_size)
 	else:
 		var legacy_map := FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
 		preparation = {"ok": true, "data": legacy_map, "document": null, "errors": []}

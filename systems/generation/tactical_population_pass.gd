@@ -59,9 +59,12 @@ static func populate(base: BattlefieldLayoutDocument, rules: Dictionary, populat
 	var error := rules_error(rules, base.map_size(), context.catalog)
 	if not error.is_empty(): return fail(error)
 	if base.mission_context.get("status") != "preserved": return fail("Bind mission space before population")
+	var source_signature := base.signature()
 	var baseline := BattlefieldLayoutDocumentCompiler.compile(base, 1.0, 5, context)
 	if not baseline.ok: return baseline
 	if not baseline.repairs.is_empty(): return fail("Base deployment requires repair; correct the authored source first")
+	# Own the normalization boundary; callers need not precompile the same base.
+	base = baseline.document
 	var accepted: BattlefieldLayoutDocument = BattlefieldLayoutDocument.from_dictionary(base.to_dictionary())
 	var current: MapData = baseline.data
 	var layout := base.to_module_layout(context.catalog)
@@ -130,11 +133,11 @@ static func populate(base: BattlefieldLayoutDocument, rules: Dictionary, populat
 		if placed < int(region.count): return fail("Region %s exhausted %d candidates: accepted %d of %d required additions" % [region.id, candidates.size(), placed, region.count], "POPULATION_EXHAUSTED")
 	accepted.provenance = base.provenance.duplicate(true)
 	accepted.provenance["origin"] = "edited"
-	accepted.provenance["source_origin"] = "authored"
+	accepted.provenance["source_origin"] = base.provenance.get("source_origin",base.provenance.get("origin","authored"))
 	accepted.provenance["generator_id"] = "bounded_tactical_population"
 	accepted.provenance["has_generation_seed"] = true
 	accepted.provenance["generation_seed"] = population_seed
-	accepted.provenance["population"] = {"version": VERSION, "seed": population_seed, "base_signature": base.signature(), "base_placements": base.spatial_layout.placements.duplicate(true), "base_mission": base.mission_context.duplicate(true), "base_relationships": base.relationships.duplicate(true), "base_reservations": base.spatial_layout.get("reservations", []).duplicate(true), "base_parcels": base.spatial_layout.get("parcels", []).duplicate(true), "rules": rules.duplicate(true), "choices": choices, "attempts": attempts}
+	accepted.provenance["population"] = {"version": VERSION, "seed": population_seed, "base_signature": source_signature, "base_placements": base.spatial_layout.placements.duplicate(true), "base_mission": base.mission_context.duplicate(true), "base_relationships": base.relationships.duplicate(true), "base_reservations": base.spatial_layout.get("reservations", []).duplicate(true), "base_parcels": base.spatial_layout.get("parcels", []).duplicate(true), "rules": rules.duplicate(true), "choices": choices, "attempts": attempts}
 	var result := BattlefieldLayoutDocumentCompiler.compile(accepted, 1.0, 5, context)
 	result["diagnostics"] = diagnostics
 	return result

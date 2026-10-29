@@ -7,6 +7,7 @@ extends RefCounted
 enum BattlefieldPreset {
 	LEGACY,
 	GENERATION_2_INDUSTRIAL,
+	AUTHORED_PLOT,
 }
 
 const GENERATION_2_MAP_SIZE := Vector2i(60, 50)
@@ -103,14 +104,14 @@ func to_replay() -> Dictionary:
 	}
 
 func uses_generation_2() -> bool:
-	return battlefield_preset == BattlefieldPreset.GENERATION_2_INDUSTRIAL
+	return battlefield_preset in [BattlefieldPreset.GENERATION_2_INDUSTRIAL, BattlefieldPreset.AUTHORED_PLOT]
 
 func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
 	if not uses_generation_2(): return failures
 	if not generated_map:
 		failures.append(_failure("GENERATION_2_REQUIRES_GENERATED_MAP", "generated_map", "Generation 2.0 requires generated battlefield mode"))
-	if map_size != GENERATION_2_MAP_SIZE:
+	if battlefield_preset == BattlefieldPreset.GENERATION_2_INDUSTRIAL and map_size != GENERATION_2_MAP_SIZE:
 		failures.append(_failure("UNSUPPORTED_GENERATION_2_MAP_SIZE", "map_size", "Generation 2.0 Industrial requires a %d x %d map" % [GENERATION_2_MAP_SIZE.x, GENERATION_2_MAP_SIZE.y]))
 	if refinery or industrial_warehouse:
 		failures.append(_failure("INCOMPATIBLE_GENERATION_PRESET", "battlefield_preset", "Generation 2.0 cannot be combined with legacy special-map flags"))
