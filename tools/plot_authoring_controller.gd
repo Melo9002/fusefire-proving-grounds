@@ -19,7 +19,14 @@ var saved_picker: OptionButton
 var mission: OptionButton
 var records: ItemList
 var form: VBoxContainer
+var validation_details: Label
 var feedback: Label
+var guide: Label
+var edit_settings: VBoxContainer
+var settings_toggle: CheckButton
+var build_button: Button
+var save_map_button: Button
+var play_map_button: Button
 var fields := {}
 var selected_group := ""
 var selected_id := ""
@@ -62,36 +69,50 @@ func build_ui(parent: Control) -> void:
 	panel.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var background := StyleBoxFlat.new(); background.bg_color = Color("172631"); panel.add_theme_stylebox_override("panel",background)
 	column = VBoxContainer.new(); column.custom_minimum_size.x = 340; column.size_flags_horizontal = Control.SIZE_EXPAND_FILL; panel.add_child(column)
-	label(column,"AUTHOR A PLOT")
-	label(column,"Street owns its sidewalk. Slots keep original chunk sizes. Click a region to select it.")
-	filename = LineEdit.new(); filename.text = "new_plot"; column.add_child(filename)
-	var files := row(column); button(files,"New",func(): request_open("__new__")); button(files,"Save draft",save)
+	label(column,"BUILD A BATTLEFIELD")
+	guide = label(column,"1. Open a layout below.\n2. Build map to fill its spaces.\n3. Save or play the result.")
 	saved_picker = OptionButton.new(); column.add_child(saved_picker)
 	button(column,"Open selected plot",func():
 		if saved_picker.selected >= 0: request_open(str(saved_picker.get_item_metadata(saved_picker.selected))))
-	var history := row(column); button(history,"Undo",undo); button(history,"Redo",redo); button(history,"Refresh library",refresh_library)
-	mission = OptionButton.new(); mission.add_item("Eliminate"); mission.add_item("Terminal"); column.add_child(mission)
+	button(column,"Open saved battlefield",choose_composed)
+	var options := row(column)
+	mission = OptionButton.new(); mission.add_item("Eliminate"); mission.add_item("Terminal"); options.add_child(mission)
+	mission.tooltip_text = "Choose the mission before building the map."
 	mission.item_selected.connect(func(index): checkpoint(); source.data.active_mission = "eliminate" if index == 0 else "terminal"; changed())
-	plot_identity = LineEdit.new(); plot_identity.text = source.data.plot_id; plot_identity.tooltip_text = "Persistent plot source ID"; column.add_child(plot_identity)
-	var bounds := row(column); number(bounds,"Map W",60,1); number(bounds,"Map D",50,1)
-	button(column,"Apply plot ID / boundary",func(): checkpoint(); source.data.plot_id = plot_identity.text.strip_edges(); source.data.map_size = [n("Map W"),n("Map D")]; changed())
-	records = ItemList.new(); records.custom_minimum_size.y = 110; column.add_child(records); records.item_selected.connect(select_record)
-	var add := row(column); button(add,"+ Street",func(): add_record("fixed_streets")); button(add,"+ Slot",func(): add_record("slots")); button(add,"+ Access",func(): add_record("reservations")); button(add,"+ Mission",func(): add_record("mission_requirements"))
-	var edits := row(column); button(edits,"Move on grid",func(): moving = not selected_id.is_empty(); feedback.text = "Click the grid for the new origin. Escape cancels."); button(edits,"Delete selected",delete_selected)
-	form = VBoxContainer.new(); column.add_child(form)
+	compose_seed = number(options,"Seed",17,0,2147483647)
+	compose_seed.tooltip_text = "The same seed and content produce the same arrangement. Change it, then Build map."
+	build_button = button(column,"Build map",build_map)
+	build_button.custom_minimum_size.y = 42
+	build_button.tooltip_text = "Fill the layout with approved chunks. Unset streets use their registered revision; existing pins stay unchanged. This does not approve content."
+	var actions := row(column)
+	save_map_button = button(actions,"Save map",save_composed)
+	play_map_button = button(actions,"Play map",play_composed)
+	save_map_button.disabled = true; play_map_button.disabled = true
+	save_map_button.tooltip_text = "Build a valid map first. Saves the exact arrangement."
+	play_map_button.tooltip_text = "Build a valid map first. Starts the selected mission."
+	button(actions,"Back to plan",changed)
+	label(column,"Save name")
+	filename = LineEdit.new(); filename.text = "new_plot"; column.add_child(filename)
 	feedback = label(column,"")
-	button(column,"Check plot feasibility",validate)
+	settings_toggle = CheckButton.new(); settings_toggle.text = "Edit layout / advanced settings"; column.add_child(settings_toggle)
+	edit_settings = VBoxContainer.new(); column.add_child(edit_settings); edit_settings.hide()
+	settings_toggle.toggled.connect(func(enabled): edit_settings.visible = enabled)
+	label(edit_settings,"Blue areas hold chunks. Green strips keep access clear. Pink cells mark mission positions. Click an area to edit it.")
+	var files := row(edit_settings); button(files,"New",func(): request_open("__new__")); button(files,"Save draft",save)
+	var history := row(edit_settings); button(history,"Undo",undo); button(history,"Redo",redo); button(history,"Refresh library",refresh_library)
+	plot_identity = LineEdit.new(); plot_identity.text = source.data.plot_id; plot_identity.tooltip_text = "Persistent plot source ID"; edit_settings.add_child(plot_identity)
+	var bounds := row(edit_settings); number(bounds,"Map W",60,1); number(bounds,"Map D",50,1)
+	button(edit_settings,"Apply plot ID / boundary",func(): checkpoint(); source.data.plot_id = plot_identity.text.strip_edges(); source.data.map_size = [n("Map W"),n("Map D")]; changed())
+	records = ItemList.new(); records.custom_minimum_size.y = 110; edit_settings.add_child(records); records.item_selected.connect(select_record)
+	var add := row(edit_settings); button(add,"+ Street",func(): add_record("fixed_streets")); button(add,"+ Slot",func(): add_record("slots")); button(add,"+ Access",func(): add_record("reservations")); button(add,"+ Mission",func(): add_record("mission_requirements"))
+	var edits := row(edit_settings); button(edits,"Move on grid",func(): moving = not selected_id.is_empty(); feedback.text = "Click the grid for the new origin. Escape cancels."); button(edits,"Delete selected",delete_selected)
+	form = VBoxContainer.new(); edit_settings.add_child(form)
+	button(edit_settings,"Check plot feasibility",validate)
+	validation_details = label(edit_settings,"")
+	compose_budget = number(edit_settings,"Budget",64,0,128)
+	button(edit_settings,"Pin registered streets",pin_streets).tooltip_text = "Explicitly update all streets to their current approved revision. Build map only fills missing pins."
 	discard = ConfirmationDialog.new(); discard.title = "Discard unsaved plot changes?"; discard.dialog_text = "Open another plot without saving these edits? Saved files remain intact."; discard.ok_button_text = "Discard and open"; discard.cancel_button_text = "Keep editing"; panel.add_child(discard)
 	discard.confirmed.connect(open_pending); discard.canceled.connect(func(): pending_open = "")
-	var generation := row(column)
-	compose_seed = number(generation,"Seed",17,0,2147483647)
-	compose_budget = number(generation,"Budget",64,0,128)
-	button(column,"Pin registered streets",pin_streets)
-	button(column,"Compose registered battlefield",compose)
-	button(column,"Save composed battlefield",save_composed)
-	button(column,"Play composed battlefield",play_composed)
-	button(column,"Open saved battlefield",choose_composed)
-	button(column,"Back to plot",changed)
 	populate_files(); panel.hide()
 func populate_files() -> void:
 	saved_picker.clear()
@@ -119,6 +140,8 @@ func open_pending() -> void:
 		var loaded := EnvironmentPlotSource.load_file(path)
 		if not loaded.ok: feedback.text = loaded.error; return
 		source = loaded.source; filename.text = requested.get_basename()
+		for index in saved_picker.item_count:
+			if str(saved_picker.get_item_metadata(index)).get_basename() == requested.get_basename(): saved_picker.select(index)
 	saved_signature = signature(); undo_stack.clear(); redo_stack.clear(); selected_id = ""; moving = false; changed(); host._frame_camera()
 func save() -> void:
 	var path := ChunkSourceStore.path_for(directory,filename.text)
@@ -157,6 +180,7 @@ func delete_selected() -> void:
 	if selected().is_empty(): return
 	checkpoint(); source.data[selected_group] = source.data[selected_group].filter(func(r): return r.id != selected_id); selected_id = ""; changed()
 func select_record(index: int) -> void:
+	settings_toggle.button_pressed = true
 	var key: Array = records.get_item_metadata(index); selected_group = key[0]; selected_id = key[1]; records.release_focus(); moving = false; build_form()
 func choices(parent: Node, key: String, options: Array, current: String) -> OptionButton:
 	label(parent,key)
@@ -271,6 +295,8 @@ func build_obligations(record: Dictionary) -> void:
 		checkpoint(); record.obligations.remove_at(obligations.get_selected_items()[0]); changed())
 func changed() -> void:
 	composed = {}
+	save_map_button.disabled = true; play_map_button.disabled = true
+	guide.text = "This is the plan, not the finished map.\nClick Build map to place buildings and props."
 	records.clear()
 	for group in ["fixed_streets","slots","reservations","mission_requirements"]:
 		for record in source.data[group]:
@@ -283,12 +309,14 @@ func changed() -> void:
 func validate() -> void:
 	if library.is_empty(): library = PlotFeasibility.library_catalog().entries
 	assessment = PlotFeasibility.assess(source,library)
-	var lines: Array[String] = ["Geometry feasible; publication still required." if assessment.ok and not assessment.generation_ready else ("Ready for composition checks in T10." if assessment.generation_ready else "Plot needs attention:")]
-	for item in assessment.errors.slice(0,4): lines.append("%s: %s" % [item.field,item.message])
-	if assessment.errors.size() > 4: lines.append("%d additional issues; fix these and recheck." % (assessment.errors.size()-4))
-	if not assessment.warnings.is_empty(): lines.append("%d publication gates pending. %s: %s" % [assessment.warnings.size(),assessment.warnings[0].field,assessment.warnings[0].message])
+	var lines: Array[String] = ["The layout fits. Click Build map to check its approved chunks." if assessment.ok and not assessment.generation_ready else ("Ready. Click Build map." if assessment.generation_ready else "The layout needs attention:")]
+	for item in assessment.errors.slice(0,2): lines.append("%s: %s" % [item.field,item.message])
+	if assessment.errors.size() > 2: lines.append("%d additional issues; fix these and recheck." % (assessment.errors.size()-2))
+	var details: Array[String] = []
+	for issue in assessment.errors + assessment.warnings: details.append("%s: %s" % [issue.field,issue.message])
+	validation_details.text = "\n".join(details)
 	feedback.text = "\n".join(lines)
-	host.status.text = "PLOT DRAFT · %s%s · %s\nCyan slots · green access · magenta active mission. Right-drag orbit; wheel zoom; F frame.\nPlanning only: no chunk selection, asset stretching or publication approval." % [source.data.plot_id," *unsaved" if signature()!=saved_signature else "",source.data.active_mission]
+	host.status.text = "PLOT DRAFT · %s%s · %s\nBlue = building spaces · green = clear access · pink = mission positions.\nThis is a plan. Use Build map on the right to see the finished arrangement." % [source.data.plot_id," *unsaved" if signature()!=saved_signature else "",source.data.active_mission]
 func offset() -> Vector3: return Vector3(-float(source.data.map_size[0])*0.5+0.5,0,-float(source.data.map_size[1])*0.5+0.5)
 func marker(bounds: Rect2i, color: Color, title: String, height := 0.14) -> void:
 	var mesh := MeshInstance3D.new(); var box := BoxMesh.new(); box.size = Vector3(bounds.size.x,0.05,bounds.size.y); mesh.mesh = box
@@ -347,7 +375,25 @@ func pin_streets() -> void:
 	checkpoint()
 	for street in source.data.fixed_streets: street.revision = by_id[street.chunk_id]
 	refresh_library()
+func build_map() -> void:
+	# Pin only missing revisions, from the existing approved registry. Never approve
+	# content or silently upgrade an already pinned source while simplifying the UI.
+	var missing: Array = source.data.fixed_streets.filter(func(street): return str(street.revision).is_empty())
+	if not missing.is_empty():
+		var by_id := {}
+		for entry in ChunkPublicationLibrary.new().eligible(): by_id[entry.id] = entry.revision
+		for street in missing:
+			if not by_id.has(street.chunk_id):
+				feedback.text = "Cannot build yet: '%s' needs an approved chunk.\nSwitch to Author - Chunk Authoring, open that chunk, then validate, review and register it. Return here and click Build map again." % street.chunk_id
+				panel.scroll_vertical = 0
+				return
+		checkpoint()
+		for street in missing: street.revision = by_id[street.chunk_id]
+		changed()
+	compose()
+
 func compose() -> void:
+	save_map_button.disabled = true; play_map_button.disabled = true
 	composition_context = EnvironmentResolutionContext.new()
 	composed = AuthoredPlotComposer.compose(source,int(compose_seed.value),composition_context,int(compose_budget.value))
 	if not composed.ok:
@@ -359,14 +405,18 @@ func compose() -> void:
 	show_composed()
 
 func show_composed() -> void:
+	save_map_button.disabled = false; play_map_button.disabled = false
+	guide.text = "Map built. Save it or start playing.\nBack to plan lets you change the layout."
+	settings_toggle.button_pressed = false
+	panel.scroll_vertical = 0
 	if is_instance_valid(host.content): host.content.free()
 	host.content = Node3D.new(); host.add_child(host.content)
 	host.displayed_data = composed.data
 	marker(Rect2i(Vector2i.ZERO,composed.data.map_size),Color("303a3f"),"",-0.06)
 	GeneratedTerrainPresenter.build(composed.data,host.content,1.0)
 	host._frame_camera()
-	host.status.text = "COMPOSED PLOT · %s · seed %d · %d search attempts\nExact registered chunks + declared population. Back to plot returns to authoring." % [source.data.plot_id,int(compose_seed.value),composed.get("attempts",0)]
-	feedback.text = "Compiled successfully. Save records exact choices; it does not reroll on load."
+	host.status.text = "COMPOSED PLOT · %s · seed %d · %d search attempts\nExact registered chunks + declared population. Back to plan returns to editing." % [source.data.plot_id,int(compose_seed.value),composed.get("attempts",0)]
+	feedback.text = "Map ready. Save map keeps this exact arrangement."
 func save_composed() -> void:
 	if not composed.get("ok",false): feedback.text = "Compose a valid registered battlefield first."; return
 	var path := ChunkSourceStore.path_for("res://tools/map_editor/layouts",filename.text+"_composed_"+str(int(composed.document.provenance.generation_seed)))
@@ -419,4 +469,4 @@ func load_composed(path: String, context: EnvironmentResolutionContext = null) -
 	composed = compiled
 	composition_context = context
 	show_composed()
-	feedback.text = "Opened exact saved choices. Back to plot edits its source; compose again to accept a new arrangement."
+	feedback.text = "Opened exact saved choices. Back to plan edits its layout; build again to accept a new arrangement."

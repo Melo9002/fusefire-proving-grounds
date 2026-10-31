@@ -17,19 +17,32 @@ func capture(name: String):
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://artifacts/"+name+".png")
 func run():
-	root.size = Vector2i(1440,1000)
+	root.size = Vector2i(1280,720)
 	var editor := Editor.new(); editor.layout_preset = &"plot_authoring"; root.add_child(editor)
 	editor._build_ui(); editor._rebuild()
 	var ui: PlotAuthoringController = editor.plot_authoring
 	check(ui.panel.visible and not editor.chunk_authoring.panel.visible,"workspace switches inside same editor")
 	press(ui.panel,"Open selected plot")
 	check(ui.assessment.ok and not ui.source.data.slots.is_empty(),"saved plot browser opens proof")
-	await capture("t09-through-street")
+	await process_frame
+	await process_frame
+	check(not ui.edit_settings.visible,"advanced layout settings start collapsed")
+	check(ui.build_button.get_global_rect().end.y < root.size.y and ui.play_map_button.get_global_rect().end.y < root.size.y,"build/save/play are visible without scrolling at 720p")
+	check(ui.save_map_button.disabled and ui.play_map_button.disabled,"unbuilt plans cannot save or launch as accepted maps")
+	var original := ui.source.copy()
+	ui.source.data.fixed_streets[0].chunk_id = "missing_ui_test_chunk"
+	ui.source.data.fixed_streets[0].revision = ""
+	var before_block := ui.signature()
+	ui.build_map()
+	check(ui.feedback.text.contains("missing_ui_test_chunk") and ui.feedback.text.contains("Chunk Authoring"),"blocked build names the chunk and next action")
+	check(ui.signature() == before_block,"blocked automatic pinning leaves source untouched")
+	ui.source = original; ui.changed()
+	await capture("plot-ui-through-street")
 	ui.request_open("yard_service_access.json")
 	check(ui.assessment.ok,"second plot opens")
 	ui.mission.select(1); ui.mission.item_selected.emit(1)
 	check(ui.source.data.active_mission == "terminal" and ui.assessment.ok,"active mission picker updates requirements")
-	await capture("t09-service-access")
+	await capture("plot-ui-service-access")
 	ui.selected_group = "slots"; ui.selected_id = ui.source.data.slots[0].id; ui.build_form()
 	var before := ui.signature()
 	ui.fields.Width.value = 1; press(ui.panel,"Apply selected fields")
