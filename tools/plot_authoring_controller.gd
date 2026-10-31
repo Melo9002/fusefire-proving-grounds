@@ -33,6 +33,11 @@ var selected_id := ""
 var undo_stack: Array[Dictionary] = []
 var redo_stack: Array[Dictionary] = []
 var moving := false
+var move_origin := Vector2i.ZERO
+var move_bounds := Rect2i()
+var move_ghost: Node3D
+var move_tint: StandardMaterial3D
+var move_actions: HBoxContainer
 var discard: ConfirmationDialog
 var pending_open := ""
 var port_picker: OptionButton
@@ -91,6 +96,11 @@ func build_ui(parent: Control) -> void:
 	save_map_button.tooltip_text = "Build a valid map first. Saves the exact arrangement."
 	play_map_button.tooltip_text = "Build a valid map first. Starts the selected mission."
 	button(actions,"Back to plan",changed)
+	button(column,"Move selected (M)",begin_move)
+	move_actions = row(column)
+	button(move_actions,"Place here (Enter)",confirm_move)
+	button(move_actions,"Cancel (Esc)",cancel_move)
+	move_actions.hide()
 	label(column,"Save name")
 	filename = LineEdit.new(); filename.text = "new_plot"; column.add_child(filename)
 	feedback = label(column,"")
@@ -105,7 +115,7 @@ func build_ui(parent: Control) -> void:
 	button(edit_settings,"Apply plot ID / boundary",func(): checkpoint(); source.data.plot_id = plot_identity.text.strip_edges(); source.data.map_size = [n("Map W"),n("Map D")]; changed())
 	records = ItemList.new(); records.custom_minimum_size.y = 110; edit_settings.add_child(records); records.item_selected.connect(select_record)
 	var add := row(edit_settings); button(add,"+ Street",func(): add_record("fixed_streets")); button(add,"+ Slot",func(): add_record("slots")); button(add,"+ Access",func(): add_record("reservations")); button(add,"+ Mission",func(): add_record("mission_requirements"))
-	var edits := row(edit_settings); button(edits,"Move on grid",func(): moving = not selected_id.is_empty(); feedback.text = "Click the grid for the new origin. Escape cancels."); button(edits,"Delete selected",delete_selected)
+	var edits := row(edit_settings); button(edits,"Move on grid",begin_move); button(edits,"Delete selected",delete_selected)
 	form = VBoxContainer.new(); edit_settings.add_child(form)
 	button(edit_settings,"Check plot feasibility",validate)
 	validation_details = label(edit_settings,"")
@@ -144,6 +154,7 @@ func open_pending() -> void:
 			if str(saved_picker.get_item_metadata(index)).get_basename() == requested.get_basename(): saved_picker.select(index)
 	saved_signature = signature(); undo_stack.clear(); redo_stack.clear(); selected_id = ""; moving = false; changed(); host._frame_camera()
 func save() -> void:
+	if moving: feedback.text = "Place or cancel the moving piece before saving."; return
 	var path := ChunkSourceStore.path_for(directory,filename.text)
 	if path.is_empty(): feedback.text = "Choose a valid plot filename"; return
 	var error := source.save_file(path)
@@ -180,6 +191,7 @@ func delete_selected() -> void:
 	if selected().is_empty(): return
 	checkpoint(); source.data[selected_group] = source.data[selected_group].filter(func(r): return r.id != selected_id); selected_id = ""; changed()
 func select_record(index: int) -> void:
+	cancel_move()
 	settings_toggle.button_pressed = true
 	var key: Array = records.get_item_metadata(index); selected_group = key[0]; selected_id = key[1]; records.release_focus(); moving = false; build_form()
 func choices(parent: Node, key: String, options: Array, current: String) -> OptionButton:
@@ -294,6 +306,7 @@ func build_obligations(record: Dictionary) -> void:
 		if obligations.get_selected_items().is_empty(): return
 		checkpoint(); record.obligations.remove_at(obligations.get_selected_items()[0]); changed())
 func changed() -> void:
+	cancel_move()
 	composed = {}
 	save_map_button.disabled = true; play_map_button.disabled = true
 	guide.text = "This is the plan, not the finished map.\nClick Build map to place buildings and props."
@@ -347,7 +360,8 @@ func click(screen: Vector2) -> void:
 	var hit = Plane(Vector3.UP,0).intersects_ray(host.camera.project_ray_origin(screen),host.camera.project_ray_normal(screen))
 	if hit == null: return
 	var local: Vector3 = hit-offset(); var at := Vector2i(roundi(local.x),roundi(local.z))
-	if moving and not selected().is_empty(): fields.X.value = at.x; fields.Z.value = at.y; moving = false; apply_fields(); return
+	if moving:
+		set_move_origin(at); confirm_move(); return
 	for i in records.item_count:
 		var key: Array = records.get_item_metadata(i)
 		for record in source.data[key[0]]:
@@ -361,7 +375,9 @@ func click(screen: Vector2) -> void:
 			if bounds.has_point(at): records.select(i); select_record(i); return
 func shortcut(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
-	if event.keycode == KEY_ESCAPE: moving = false
+	if event.keycode == KEY_ESCAPE: cancel_move()
+	elif event.keycode == KEY_M: begin_move()
+	elif event.keycode == KEY_ENTER and moving: confirm_move()
 	elif event.ctrl_pressed and event.keycode == KEY_Z: redo() if event.shift_pressed else undo()
 	elif event.ctrl_pressed and event.keycode == KEY_S: save()
 	elif event.keycode == KEY_F: host._frame_camera()
@@ -376,6 +392,7 @@ func pin_streets() -> void:
 	for street in source.data.fixed_streets: street.revision = by_id[street.chunk_id]
 	refresh_library()
 func build_map() -> void:
+	if moving: feedback.text = "Place or cancel the moving piece before building."; return
 	# Pin only missing revisions, from the existing approved registry. Never approve
 	# content or silently upgrade an already pinned source while simplifying the UI.
 	var missing: Array = source.data.fixed_streets.filter(func(street): return str(street.revision).is_empty())
@@ -470,3 +487,68 @@ func load_composed(path: String, context: EnvironmentResolutionContext = null) -
 	composition_context = context
 	show_composed()
 	feedback.text = "Opened exact saved choices. Back to plan edits its layout; build again to accept a new arrangement."
+
+func begin_move() -> void:
+	if composed.get("ok",false): feedback.text = "Use Back to plan before moving layout pieces."; return
+	var record := selected()
+	if record.is_empty(): feedback.text = "Click a road or blue area first, then Move selected (M)."; return
+	cancel_move()
+	if selected_group == "fixed_streets":
+		if not library.has(record.chunk_id) or not PlotFeasibility.available(library[record.chunk_id]): feedback.text = "This street's chunk is unavailable; choose a valid chunk first."; return
+		move_bounds = Rect2i(Vector2i(record.origin[0],record.origin[1]),PlotFeasibility.extent(library[record.chunk_id].source,record.rotation))
+	elif selected_group == "slots": move_bounds = PlotFeasibility.rect(record.bounds)
+	else: move_bounds = cell_bounds(record.cells)
+	move_ghost = Node3D.new(); host.content.add_child(move_ghost)
+	if selected_group == "fixed_streets":
+		var street := Node3D.new(); move_ghost.add_child(street)
+		street.position = Vector3((move_bounds.size.x-1)*0.5,0.2,(move_bounds.size.y-1)*0.5)
+		street.rotation.y = -int(record.rotation)*PI*0.5
+		ModularEnvironmentPresenter.build_chunk_snapshot(library[record.chunk_id].compiled,street)
+	else:
+		var marker_mesh := MeshInstance3D.new(); var box := BoxMesh.new()
+		box.size = Vector3(move_bounds.size.x,0.12,move_bounds.size.y); marker_mesh.mesh = box
+		marker_mesh.position = Vector3((move_bounds.size.x-1)*0.5,0.3,(move_bounds.size.y-1)*0.5); move_ghost.add_child(marker_mesh)
+	move_tint = StandardMaterial3D.new(); move_tint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	move_tint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	for mesh in move_ghost.find_children("*","MeshInstance3D",true,false):
+		mesh.material_override = move_tint
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	moving = true; move_actions.show(); panel.scroll_vertical = 0
+	set_move_origin(move_bounds.position)
+
+func move_pending(screen: Vector2) -> void:
+	if not moving: return
+	var hit = Plane(Vector3.UP,0).intersects_ray(host.camera.project_ray_origin(screen),host.camera.project_ray_normal(screen))
+	if hit == null: return
+	var local: Vector3 = hit-offset()
+	set_move_origin(Vector2i(roundi(local.x),roundi(local.z)))
+
+func move_inside_map() -> bool:
+	return Rect2i(Vector2i.ZERO,Vector2i(source.data.map_size[0],source.data.map_size[1])).encloses(Rect2i(move_origin,move_bounds.size))
+
+func set_move_origin(at: Vector2i) -> void:
+	move_origin = at
+	move_ghost.position = offset()+Vector3(at.x,0,at.y)
+	move_tint.albedo_color = Color(0.2,0.9,1.0,0.55) if move_inside_map() else Color(1.0,0.2,0.2,0.65)
+	feedback.text = "Moving %s to %s. Click / Enter to place; Esc cancels. Access is checked after placement." % [selected_id,at] if move_inside_map() else "Outside the map. Move the preview back onto the grid or press Esc."
+
+func confirm_move() -> void:
+	if not moving or selected().is_empty(): return
+	if not move_inside_map(): feedback.text = "Cannot place outside the map. Move back onto the grid or press Esc."; return
+	var delta := move_origin-move_bounds.position
+	if delta == Vector2i.ZERO: cancel_move(); return
+	checkpoint()
+	var record := selected()
+	if selected_group == "fixed_streets": record.origin = [move_origin.x,move_origin.y]
+	elif selected_group == "slots": record.bounds[0] = move_origin.x; record.bounds[1] = move_origin.y
+	else:
+		for cell in record.cells: cell[0] += delta.x; cell[1] += delta.y
+	changed()
+
+func cancel_move() -> void:
+	var was_moving := moving
+	moving = false
+	if is_instance_valid(move_ghost): move_ghost.free()
+	move_ghost = null
+	if is_instance_valid(move_actions): move_actions.hide()
+	if was_moving: feedback.text = "Move cancelled. The original position is unchanged."

@@ -160,7 +160,9 @@ func _shortcut_input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if layout_preset == PLOT_LAYOUT:
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if event is InputEventMouseMotion and event.button_mask == 0:
+			plot_authoring.move_pending(event.position)
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			plot_authoring.click(event.position)
 		elif is_instance_valid(orbit): orbit.handle_mouse(event)
 		return
