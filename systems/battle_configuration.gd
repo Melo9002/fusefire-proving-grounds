@@ -4,14 +4,12 @@ extends RefCounted
 ## Named inputs used to start a battle. Keep match setup, simulations, and
 ## replay restoration readable by assigning these fields before configuration.
 
+# Keep retired numeric IDs for explicit rejection of saved configurations.
 enum BattlefieldPreset {
 	LEGACY,
 	GENERATION_2_INDUSTRIAL,
 	AUTHORED_PLOT,
 }
-
-const GENERATION_2_MAP_SIZE := Vector2i(60, 50)
-const GENERATION_2_ENVIRONMENT := &"industrial_district"
 
 var player_count: int = 2
 var enemy_count: int = 2
@@ -103,18 +101,10 @@ func to_replay() -> Dictionary:
 		"industrial_warehouse": industrial_warehouse,
 	}
 
-func uses_generation_2() -> bool:
-	return battlefield_preset in [BattlefieldPreset.GENERATION_2_INDUSTRIAL, BattlefieldPreset.AUTHORED_PLOT]
-
 func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
-	if not uses_generation_2(): return failures
-	if not generated_map:
-		failures.append(_failure("GENERATION_2_REQUIRES_GENERATED_MAP", "generated_map", "Generation 2.0 requires generated battlefield mode"))
-	if battlefield_preset == BattlefieldPreset.GENERATION_2_INDUSTRIAL and map_size != GENERATION_2_MAP_SIZE:
-		failures.append(_failure("UNSUPPORTED_GENERATION_2_MAP_SIZE", "map_size", "Generation 2.0 Industrial requires a %d x %d map" % [GENERATION_2_MAP_SIZE.x, GENERATION_2_MAP_SIZE.y]))
-	if refinery or industrial_warehouse:
-		failures.append(_failure("INCOMPATIBLE_GENERATION_PRESET", "battlefield_preset", "Generation 2.0 cannot be combined with legacy special-map flags"))
+	if battlefield_preset != BattlefieldPreset.LEGACY:
+		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Generator 2 is quarantined; use the local archived project for its maps and recordings"))
 	return failures
 
 static func _failure(code: String, field: String, message: String) -> Dictionary:

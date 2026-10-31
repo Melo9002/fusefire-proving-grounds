@@ -99,29 +99,6 @@ static func generate_with_cover(width: int, depth: int, cell_size: float, map_se
 	map_data.rebuild_los_index()
 	return map_data
 
-## Goal 2.2 opt-in vertical slice. Existing generation modes do not call this.
-static func generate_modular_industrial_sample(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5) -> MapData:
-	return generate_modular_environment_sample(width, depth, cell_size, map_seed, &"industrial_frontage", spawn_capacity)
-
-## Opt-in Goal 2.2 catalog presets. Every preset uses the same authoritative
-## module translation path while preserving the original frontage entry point.
-static func generate_modular_environment_sample(width: int, depth: int, cell_size: float, map_seed: int, preset: StringName, spawn_capacity: int = 5, context: EnvironmentResolutionContext = null) -> MapData:
-	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
-	var layout := ModularIndustrialLayoutBuilder.apply(map_data, cell_size, map_seed, preset, context)
-	if not layout.errors.is_empty():
-		push_error("Modular environment layout failed: %s" % "; ".join(layout.errors))
-	return map_data
-
-## Goal 2.3 opt-in hierarchical assembly. The flat map establishes authoritative
-## cells and deployments; the assembler plans roads and parcels, then writes the
-## same module definitions used by authored Goal 2.2 layouts.
-static func generate_coherent_environment(width: int, depth: int, cell_size: float, map_seed: int, environment_id: StringName = &"industrial_district", spawn_capacity: int = 5, context: EnvironmentResolutionContext = null) -> MapData:
-	var map_data := generate(width, depth, cell_size, map_seed, spawn_capacity)
-	var layout := CoherentEnvironmentAssembler.apply(map_data, cell_size, map_seed, environment_id, context)
-	if not layout.errors.is_empty():
-		push_error("Coherent environment assembly failed: %s" % "; ".join(layout.errors))
-	return map_data
-
 static func _formation_templates() -> Array[Array]:
 	return [
 		[[Vector2i(0, 0), MapCellData.CoverType.LOW], [Vector2i(1, 0), MapCellData.CoverType.FULL], [Vector2i(2, 0), MapCellData.CoverType.LOW]],

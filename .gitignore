@@ -13,26 +13,7 @@
 # Local Project Ironclad output.
 /artifacts/test-results/
 
-# Local investigation/test products. Keep original review images and the tiny
-# architecture oracle, not generated fixture libraries, logs or downloaded talks.
-/artifacts/*
-!/artifacts/*.png
-!/artifacts/consultation-2026-10-20/
-/artifacts/consultation-2026-10-20/*
-!/artifacts/consultation-2026-10-20/captures/
-/artifacts/consultation-2026-10-20/captures/*
-!/artifacts/consultation-2026-10-20/captures/*.png
-!/artifacts/spatial-transform-task-1.2/
-/artifacts/spatial-transform-task-1.2/*
-!/artifacts/spatial-transform-task-1.2/*.png
-!/artifacts/architecture-redesign-research/
-/artifacts/architecture-redesign-research/*
-!/artifacts/architecture-redesign-research/boundary_probe.gd
-!/artifacts/architecture-redesign-research/boundary_probe.gd.uid
+# Generated local diagnostics and captures stay out of the game repository.
+# Reviewed evidence belongs beside the current documentation when needed.
+/artifacts/
 /docs/**/*.png.import
-
-# T11 review evidence; keep synthetic libraries and accepted test documents local.
-!/artifacts/t11-review/
-/artifacts/t11-review/*
-!/artifacts/t11-review/*.png
-!/artifacts/t11-review/manifest.json

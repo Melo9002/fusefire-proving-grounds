@@ -121,8 +121,6 @@ These dimensions come from Godot's imported mesh hierarchy, including descendant
 - City Kit Industrial buildings are closed exterior shells. Enlarging one produces convincing exterior massing but does not create an enterable building or tactical collision.
 - The existing Industrial Warehouse remains unchanged: its fit-to-envelope placement is runtime presentation data and does not consume this laboratory default.
 
-## Boundaries and Goal 2.2 requirements
+## Current boundary
 
-New assets begin unreviewed regardless of whether they inherit a category preset. Forward direction is visual and family-specific; filenames and AABBs do not prove entrances or connectors. Decorative details, openings and sparse machinery require authored tactical meaning.
-
-Goal 2.2 should define its first real module records from the verified road/paving and Factory entrance assemblies. A module needs an authoritative cell footprint separate from its visual envelope, allowed quarter-turn rotations, explicit connection points, clearance, presentation placements and suitability tags. Door and road connectors should be authored; bounds should validate clearance and seams rather than generate gameplay state.
+Calibration and the Asset Lab remain available. The former Generator 2 module roadmap is archived; asset calibration does not confer tactical behavior or publication approval.

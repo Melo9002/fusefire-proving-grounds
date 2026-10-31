@@ -54,8 +54,6 @@ var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
 var action_camera_director: Node
-var active_battlefield_document: BattlefieldLayoutDocument
-var pending_battlefield_document: BattlefieldLayoutDocument
 var active_generated_map: MapData
 var battle_initialization_attempted := false
 var battle_initialization_succeeded := false
@@ -86,7 +84,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	config.normalize_rosters()
 	_configuration_errors = config.validate_generation_selection()
 	battlefield_preset = config.battlefield_preset
-	generated_size = config.map_size if config.uses_generation_2() or FlatMapGenerator.MAP_SIZES.has(config.map_size) else Vector2i(32, 24)
+	generated_size = config.map_size if FlatMapGenerator.MAP_SIZES.has(config.map_size) else Vector2i(32, 24)
 	player_unit_count = clampi(config.player_count, 1, 5)
 	enemy_unit_count = clampi(config.enemy_count, 1, 5)
 	allied_unit_count = clampi(config.ally_count, 0, 5)
@@ -151,20 +149,9 @@ func configure_replay(recording) -> void:
 	var config := BattleConfigurationData.new()
 	config.apply_replay(recording.configuration)
 	configure_battle(config)
-	if recording.battlefield_document is Dictionary and not recording.battlefield_document.is_empty():
-		pending_battlefield_document = BattlefieldLayoutDocument.from_dictionary(recording.battlefield_document)
+	if not recording.is_playable():
+		_configuration_errors.append(_diagnostic("UNSUPPORTED_REPLAY", "replay", recording.validation_message()))
 	battle_controller.replay_mode = true
-
-## Explicit document-driven runtime entry point shared by saved edited maps and
-## replay reconstruction. The caller supplies battle rules; the document owns
-## accepted environment construction. Both are validated during _ready().
-var preparation_context: EnvironmentResolutionContext
-
-func configure_layout_document(config: BattleConfigurationData, document: BattlefieldLayoutDocument) -> void:
-	pending_battlefield_document = BattlefieldLayoutDocument.from_dictionary(document.to_dictionary()) if document else null
-	configure_battle(config)
-	if not config.uses_generation_2():
-		_configuration_errors.append(_diagnostic("DOCUMENT_REQUIRES_GENERATION_2", "battlefield_preset", "Unified layout battles require the Generation 2.0 preset"))
 
 func _ready() -> void:
 	action_camera_director = ActionCameraDirectorData.new()
@@ -197,22 +184,8 @@ func _ready() -> void:
 func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
-	var preparation: Dictionary
-	if _runtime_configuration().uses_generation_2():
-		var config := _runtime_configuration()
-		if pending_battlefield_document or battlefield_preset == BattleConfigurationData.BattlefieldPreset.AUTHORED_PLOT:
-			preparation = BattlefieldRuntimePreparation.compile_document(pending_battlefield_document, config, grid.cell_size, preparation_context)
-		else:
-			preparation = Generation2BattlefieldBuilder.build(config, grid.cell_size)
-	else:
-		var legacy_map := FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
-		preparation = {"ok": true, "data": legacy_map, "document": null, "errors": []}
-	if not preparation.ok:
-		_fail_battle_initialization(preparation.errors)
-		return
-	var generated_map: MapData = preparation.data
+	var generated_map := FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
 	active_generated_map = generated_map
-	active_battlefield_document = preparation.document
 	generated_size = generated_map.map_size
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size
@@ -231,7 +204,7 @@ func _initialize_generated_battle() -> void:
 	_spawn_generated_vip(generated_map)
 	_spawn_generated_team(enemy_unit_count, TacticalUnit.Faction.ENEMY, enemy_units_parent, generated_map)
 	var cover_counts := _count_cover(generated_map)
-	var generator_label := "GENERATION 2.0" if active_battlefield_document else "COVER"
+	var generator_label := "COVER"
 	print_rich("[color=cyan][MapGenerator][/color] %s — seed %d, %dx%d, %d low, %d full, %d building(s), %d platform(s), %d hill(s)" % [generator_label, generation_seed, generated_size.x, generated_size.y, cover_counts.x, cover_counts.y, generated_map.buildings.size(), generated_map.platforms.size(), generated_map.hills.size()])
 	if await battle_controller.initialize_battle(generated_map, mission_definition):
 		_initialize_objectives()
@@ -241,20 +214,6 @@ func _initialize_generated_battle() -> void:
 		var message := battle_controller.last_map_validation.describe() if battle_controller.last_map_validation else "compiled battlefield initialization failed"
 		_abort_generated_state()
 		_fail_battle_initialization([_diagnostic("TACTICAL_INITIALIZATION_FAILED", "compiled_map", message)])
-
-func _runtime_configuration() -> BattleConfigurationData:
-	var config := BattleConfigurationData.new()
-	config.player_count = player_unit_count
-	config.enemy_count = enemy_unit_count
-	config.ally_count = allied_unit_count
-	config.generated_map = use_generated_map
-	config.battlefield_preset = battlefield_preset
-	config.battle_seed = generation_seed
-	config.map_size = generated_size
-	config.mission = mission_definition
-	config.refinery = use_refinery_map
-	config.industrial_warehouse = use_industrial_warehouse
-	return config
 
 func _complete_battle_initialization() -> void:
 	battle_initialization_attempted = true
@@ -287,7 +246,6 @@ func _abort_generated_state() -> void:
 		battle_controller.action_service.queue_free()
 		battle_controller.action_service = null
 	active_generated_map = null
-	active_battlefield_document = null
 
 static func _diagnostic(code: String, field: String, message: String) -> Dictionary:
 	return {"code": code, "field": field, "reference": "", "message": message}
@@ -301,7 +259,7 @@ func _initialize_replay_support() -> void:
 		player.begin(self, pending_replay)
 		return
 	_replay_recorder = ReplayRecorderData.new()
-	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager, active_battlefield_document)
+	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager)
 
 func _configure_replay_presentation() -> void:
 	var hidden_paths := [

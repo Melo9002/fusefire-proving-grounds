@@ -53,7 +53,7 @@ $subsystemPatterns = @{
     movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault"
     ai         = "^ai_|commander|objective_ai|protect_rescue_ai|rescue_carrier|rescue_refinery|squad_context|survive_ai"
     replay     = "replay|determinism|seed_failure"
-    generation = "battlefield|certified_building|certified_equipment|certified_socket|coherent_|container_maps|flat_map|generated_|generation_2|industrial_|modular_|parcel_|semantic_district|structural_|map_generation|map_quality|map_validation|transport_placement"
+    generation = "battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
     assets     = "asset|environment_asset|locomotion|pose|unit_visual"
     ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
@@ -63,31 +63,10 @@ $subsystemPatterns = @{
 # batches are valuable but too expensive for the ordinary full tier.
 $visualTests = @(
     "asset_lab_capture.gd",
-    "chunk_publication_capture.gd",
-    "tactical_population_capture.gd",
-    "plot_composition_capture.gd",
-    "plot_review_capture.gd",
-    "coherent_layout_capture.gd",
-	"battlefield_layout_lifecycle_capture.gd",
-    "debug_draw_3d_capture.gd",
     "industrial_warehouse_capture.gd",
     "semantic_asset_contact_sheet.gd",
     "semantic_asset_review_capture.gd",
-    "semantic_machine_connection_capture.gd",
-    "spatial_transform_capture.gd",
-    "coherent_road_orientation_capture.gd",
-	"coherent_asset_first_frontage_capture.gd",
-	"coherent_parcel_retry_capture.gd",
-	"coherent_parcel_size_expansion_capture.gd",
-	"coherent_secondary_road_capture.gd",
-	"generation_2_battle_capture.gd",
-	"generation_2_tactical_gameplay_capture.gd",
-	"generation_2_replay_edited_map_capture.gd",
-    "certified_building_shell_capture.gd",
-    "certified_equipment_parcel_capture.gd",
-	"certified_cargo_asset_family_capture.gd",
-	"parcel_functional_relationship_capture.gd",
-    "structural_building_capture.gd"
+    "semantic_machine_connection_capture.gd"
 )
 $extendedTests = @(
     "ai_match_simulation_smoke.gd",

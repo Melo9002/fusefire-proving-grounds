@@ -13,7 +13,7 @@ The repository contains ordinary automated GDScript checks plus explicit-only re
 | Movement | Pathfinding, diagonal movement, traversal links, elevation selection, vaulting and locomotion |
 | Missions | Objective state, terminals, rescue/extraction, evacuation, survival and placement |
 | AI | Difficulty, commanders, position/target scoring, abilities, stalemate recovery and deterministic match simulation |
-| Generation | Map data/validation, fixed-seed generation, modular components, multi-seed batches, buildings, elevation, traversal, mission placement and quality metrics |
+| Generation | Map data/validation, fixed-seed generation, multi-seed batches, buildings, elevation, traversal, mission placement and quality metrics |
 | Replay | Schema compatibility, recording/playback, actor continuity, rescue/departure flows and state determinism |
 | Assets/presentation | Imports, calibration precedence/persistence, camera behavior, HUD/overlays and visual adapters |
 
@@ -93,14 +93,10 @@ The full tier reports these as skipped by policy:
 - `map_quality_metrics_smoke.gd`
 - `prototype_1_milestone.gd`
 - `asset_lab_capture.gd`
-- `coherent_layout_capture.gd`
-- `certified_equipment_parcel_capture.gd`
-- `debug_draw_3d_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`
 - `semantic_asset_review_capture.gd`
 - `semantic_machine_connection_capture.gd`
-- `structural_building_capture.gd`
 
 Run long scripts directly when their subsystem changes. Run capture scripts without `--headless` and inspect their images manually. Headless import or scene success does not establish visual correctness.
 

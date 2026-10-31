@@ -8,9 +8,8 @@ const SIMULATION_VERSION := "prototype-1.5-action-pipeline"
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
 var configuration: Dictionary = {}
-## Generation 2.0 replays preserve accepted construction intent rather than
-## assuming that a seed can reproduce the same content forever. Legacy replay
-## envelopes intentionally leave this empty.
+## Read old document fields only to reject retired recordings explicitly.
+## Generator 1 replay data and simulation semantics are unchanged.
 var battlefield_document: Dictionary = {}
 var battlefield_document_signature := ""
 var initial_state_fingerprint := ""
@@ -21,23 +20,17 @@ var validation_error := ""
 func append_action(record: Dictionary) -> void:
 	actions.append(record.duplicate(true))
 
-func is_playable(context: EnvironmentResolutionContext = null) -> bool:
-	return validation_message(context).is_empty()
+func is_playable() -> bool:
+	return validation_message().is_empty()
 
-func validation_message(context: EnvironmentResolutionContext = null) -> String:
+func validation_message() -> String:
 	if not validation_error.is_empty():
 		return validation_error
 	if schema_version not in [LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
 	if configuration.is_empty(): return "Replay has no battle_configuration"
-	if int(configuration.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)) in [BattleConfiguration.BattlefieldPreset.GENERATION_2_INDUSTRIAL, BattleConfiguration.BattlefieldPreset.AUTHORED_PLOT]:
-		if battlefield_document.is_empty(): return "Generation 2.0 replay has no battlefield_layout_document"
-		var document := BattlefieldLayoutDocument.from_dictionary(battlefield_document)
-		var document_failures := document.validate({}, context)
-		if not document_failures.is_empty():
-			return "Generation 2.0 replay battlefield document is invalid: %s" % document_failures[0].get("message", "unknown document failure")
-		if battlefield_document_signature.is_empty() or stable_battlefield_document_signature(battlefield_document) != battlefield_document_signature:
-			return "Generation 2.0 replay battlefield document signature differs"
+	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
+		return "Generator 2 is quarantined; open this recording with the local archived project"
 	if actions.is_empty(): return "Replay has no ordered_records"
 	for index in actions.size():
 		var issue := ReplayRecordTools.validate_action_record(actions[index], schema_version)
@@ -57,7 +50,7 @@ func to_dictionary() -> Dictionary:
 		"ordered_records": actions.duplicate(true),
 	}
 
-static func from_dictionary(data: Dictionary, context: EnvironmentResolutionContext = null) -> BattleReplayRecording:
+static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
 	replay.schema_version = int(data.get("schema_version", -1))
 	replay.simulation_version = String(data.get("simulation_version", "prototype-1" if replay.schema_version == LEGACY_SCHEMA_VERSION else "unknown"))
@@ -70,23 +63,8 @@ static func from_dictionary(data: Dictionary, context: EnvironmentResolutionCont
 	var records: Array = data.get("ordered_records", data.get("actions", []))
 	for record in records:
 		if record is Dictionary: replay.actions.append(record.duplicate(true))
-	replay.validation_error = replay.validation_message(context)
+	replay.validation_error = replay.validation_message()
 	return replay
-
-func capture_battlefield_document(document: BattlefieldLayoutDocument) -> void:
-	battlefield_document.clear()
-	battlefield_document_signature = ""
-	if document == null: return
-	# Normalize through the persistence representation once. Godot JSON restores
-	# all numbers through Variant's JSON number type, so hashing the in-memory
-	# pre-serialization dictionary would reject an otherwise identical reload.
-	var normalized = JSON.parse_string(JSON.stringify(document.to_dictionary()))
-	if normalized is Dictionary: battlefield_document = normalized
-	battlefield_document_signature = stable_battlefield_document_signature(battlefield_document)
-
-static func stable_battlefield_document_signature(encoded: Dictionary) -> String:
-	var normalized = JSON.parse_string(JSON.stringify(encoded))
-	return JSON.stringify(normalized if normalized is Dictionary else encoded).sha256_text()
 
 func save_json(path: String) -> Error:
 	var file := FileAccess.open(path, FileAccess.WRITE)
@@ -96,7 +74,7 @@ func save_json(path: String) -> Error:
 	file.store_string(JSON.stringify(to_dictionary(), "\t", false))
 	return OK
 
-static func load_json(path: String, context: EnvironmentResolutionContext = null) -> BattleReplayRecording:
+static func load_json(path: String) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -108,7 +86,7 @@ static func load_json(path: String, context: EnvironmentResolutionContext = null
 		replay.schema_version = -1
 		replay.validation_error = "Replay JSON root must be an object"
 		return replay
-	return from_dictionary(parsed, context)
+	return from_dictionary(parsed)
 
 static func _configuration_to_data(source: Dictionary) -> Dictionary:
 	var size: Vector2i = source.get("map_size", Vector2i(32, 24))
