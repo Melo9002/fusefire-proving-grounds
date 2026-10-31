@@ -73,4 +73,4 @@ The later semantic pass rendered all 315 assets in 17 family contact sheets. Tho
 5. Industrial `building-r/c/l`, `water-tower`, both windmills, large tank and grouped solar panels: decide whether landmark-specific overrides are necessary before procedural placement.
 6. Space `template-floor`, `template-wall`, corridor, gate and stairs: retain as a separate 4-unit construction grammar unless a deliberate adapter module is authored.
 
-For Goal 2.2, add semantic subcategories only as real modules consume them. Store visual placement, authoritative footprint, connectors, clearance and allowed rotations separately. Expand checked-in bounds baselines around the module shortlist rather than freezing all decorative assets at once.
+For future authoring, add semantic subcategories only when concrete content needs them. Store visual placement, authoritative footprint, connectors, clearance and allowed rotations separately. Expand checked-in bounds baselines around the module shortlist rather than freezing all decorative assets at once.

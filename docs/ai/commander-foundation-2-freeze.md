@@ -2,7 +2,7 @@
 
 ## Status
 
-Commander Foundation 2.x is frozen on the implementation containing Default, Cautious, and Aggressive. A freeze means the policy boundary, team ownership, configuration, diagnostics, and replay identity are stable enough for Battlefield Generation 2.0. It does not claim that the doctrines are perfectly balanced on every map.
+Commander Foundation 2.x is frozen on the implementation containing Default, Cautious, and Aggressive. A freeze means the policy boundary, team ownership, configuration, diagnostics, and replay identity are stable enough for future environment generation. It does not claim that the doctrines are perfectly balanced on every map.
 
 All three doctrines use the same ordered unit action policy and authoritative action services. Default preserves the prior behavior. Cautious changes protection and exposure preferences. Aggressive changes progress, firing-position, finishing, and calculated-risk preferences. Difficulty remains an independent competence policy.
 
@@ -40,7 +40,7 @@ The implemented sequence is:
 
 This explains why AI-versus-AI Rescue battles can continue after the rescued VIP leaves. The current AI does not choose Depart; it continues the existing full-squad extraction policy. `tests/core_objectives_smoke.gd` verifies both continued evacuation and deliberate early departure.
 
-Ordinary live battles have no fixed round limit. Therefore, a surviving unit that can neither reach extraction nor be defeated could theoretically prolong a completed Rescue indefinitely. Existing route urgency, carrier routing, defeat handling, simulator stall detection, focused congestion fixtures, and the validation matrices reduce this risk, but they do not constitute a proof for every future battlefield. Battlefield Generation 2.0 must preserve reachable extraction routes and should validate post-objective accessibility.
+Ordinary live battles have no fixed round limit. Therefore, a surviving unit that can neither reach extraction nor be defeated could theoretically prolong a completed Rescue indefinitely. Existing route urgency, carrier routing, defeat handling, simulator stall detection, focused congestion fixtures, and the validation matrices reduce this risk, but they do not constitute a proof for every future battlefield. future environment generation must preserve reachable extraction routes and should validate post-objective accessibility.
 
 ## Future post-objective strategic intent
 
@@ -63,4 +63,4 @@ This is an extension point, not implemented Commander Foundation behavior. `Obje
 - The startup narrative logs `Player + Ally` and `Enemy` commander names beside difficulty and seed for reproducible playtest reports.
 - Replay configuration stores both doctrine identities; older recordings default to Default.
 - Dynamic strategic intent, distributed command, obedience, succession, Player Echo learning, and post-objective doctrine changes remain future work.
-- Battlefield Generation 2.0 may provide richer tactical opportunities but should not rewrite this commander foundation without a demonstrated requirement.
+- future environment generation may provide richer tactical opportunities but should not rewrite this commander foundation without a demonstrated requirement.

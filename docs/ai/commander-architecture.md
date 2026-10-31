@@ -51,9 +51,9 @@ The F3 AI decision explanation displays policy, intent, and the base difficulty 
 
 Target weights, lapse probability, lapse margin, and action priority are unchanged. `survival_cover_weight` remains inactive and unmodified. No Guard-specific hook exists.
 
-The deterministic `ai_cautious_commander_smoke.gd` fixture places two hostiles near an actor and scores the same authoritative legal movement destinations under Normal+Default and Normal+Cautious. It requires an actual preference reversal where Default favors one progress/offense trade-off and Cautious favors the alternative with the better combined cover, exposure, and danger result. A separate Hard+Cautious Reach simulation verifies required objective movement and completion. These fixtures demonstrate the doctrine boundary; they are not broad balance evidence for future Battlefield Generation 2.0 layouts.
+The deterministic `ai_cautious_commander_smoke.gd` fixture places two hostiles near an actor and scores the same authoritative legal movement destinations under Normal+Default and Normal+Cautious. It requires an actual preference reversal where Default favors one progress/offense trade-off and Cautious favors the alternative with the better combined cover, exposure, and danger result. A separate Hard+Cautious Reach simulation verifies required objective movement and completion. These fixtures demonstrate the doctrine boundary; they are not broad balance evidence for future future battlefield layouts.
 
-One paired exploratory measurement used authored Eliminate seed `23231`, Hard difficulty, identical 2v2 rosters, and both teams on the same doctrine. Default completed in defeat after 6 rounds and 58 decisions; Cautious completed in victory after 8 rounds and 61 decisions. Their first trace difference was Default choosing Move while Cautious chose the existing Guard fallback. This single seed confirms an observable downstream difference, not that Cautious is generally stronger or that it intentionally prefers Guard. A broader comparison should wait for representative Generation 2.0 maps.
+One paired exploratory measurement used authored Eliminate seed `23231`, Hard difficulty, identical 2v2 rosters, and both teams on the same doctrine. Default completed in defeat after 6 rounds and 58 decisions; Cautious completed in victory after 8 rounds and 61 decisions. Their first trace difference was Default choosing Move while Cautious chose the existing Guard fallback. This single seed confirms an observable downstream difference, not that Cautious is generally stronger or that it intentionally prefers Guard. A broader comparison should wait for representative representative authored maps.
 
 ## Implemented Aggressive doctrine
 
@@ -198,4 +198,4 @@ level.configure_battle(config)
 
 ## Recommended next task
 
-Run a broader three-doctrine comparison after Battlefield Generation 2.0 provides representative streets, interiors, alleys, and vertical routes. Use those measurements to tune values before considering dynamic strategic intent or any narrow action-ladder hook.
+Run a broader three-doctrine comparison after future environment generation provides representative streets, interiors, alleys, and vertical routes. Use those measurements to tune values before considering dynamic strategic intent or any narrow action-ladder hook.

@@ -107,7 +107,7 @@ Weights alone cannot express every personality because action categories are cho
 - Measure how often candidate movement is rejected as outside route, unsafe, below threshold, or squad-reserved.
 - Compare high-ground selection frequency with equivalent ground positions before proposing an elevation bonus.
 - Identify equal-score frequency and whether roster/iteration tie behavior is visible in play.
-- Test Guard plausibility on walls, multi-floor interiors, alleys, and long route detours expected from Battlefield Generation 2.0.
+- Test Guard plausibility on walls, multi-floor interiors, alleys, and long route detours expected from future environment generation.
 - Test whether richer maps cause maximum urgency to accept tactically poor but technically legal detours.
 - Decide whether future hidden interiors create a real visibility model; if so, define observable state before changing AI.
 

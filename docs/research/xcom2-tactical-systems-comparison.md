@@ -12,7 +12,7 @@ The primary XCOM evidence is the installed War of the Chosen SDK at:
 
 The investigation used `Development\SrcOrig\XComGame\Classes` and the shipped `XComGame\Config` files. The base-game SDK was checked where useful, but the War of the Chosen source is the more complete reference for the installed game. A statement marked **verified** is visible in UnrealScript, configuration, or a caller-visible native declaration. A statement marked **inference** follows from those interfaces but cannot be confirmed because its native C++ body is absent from the SDK.
 
-The comparison uses the current FuseFire implementation and the verified baseline in `docs/research/prototype-1.5-baseline.md`, rather than planned features. This report describes architectural principles, not permission to implement every candidate.
+The comparison uses the current FuseFire implementation and the historical Prototype 1.5 baseline (now in the local quarantine), rather than planned features. This report describes architectural principles, not permission to implement every candidate.
 
 ## Executive finding
 

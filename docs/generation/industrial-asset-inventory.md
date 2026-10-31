@@ -33,7 +33,7 @@ The canonical assets are binary glTF (`.glb`) scenes with embedded mesh data. Ea
 
 Kenney assets use the conventional Godot-compatible orientation observed on import: Y-up models with their authored forward orientation preserved. Source dimensions are expressed in glTF metres, but individual pieces vary substantially in footprint. Pivots are the pack-authored pivots and have not been normalized. Generation work must measure actual imported bounds rather than infer grid footprint from filenames.
 
-No collision meshes, tactical cover definitions, grid footprints, entrances, traversal links, elevation metadata, spawn suitability, or objective suitability have been generated. Those belong to later Battlefield Generation 2.0 authoring and validation tasks.
+No collision meshes, tactical cover definitions, grid footprints, entrances, traversal links, elevation metadata, spawn suitability, or objective suitability have been generated. Those belong to later future environment generation authoring and validation tasks.
 
 Goal 2.1 adds a separate FuseFire-owned visual calibration catalog for 14 representative assets and a laboratory that can browse the entire library. See [Environment Asset Calibration Laboratory](asset-calibration-laboratory.md). Its measured bounds and scales remain presentation metadata; no imported mesh creates tactical occupancy.
 
@@ -60,4 +60,4 @@ art/environments/
         └── LICENSE.txt
 ```
 
-Runtime wrapper scenes and shared materials should be created only when Battlefield Generation 2.0 establishes their actual contracts. Do not edit the vendor GLBs in place; place FuseFire-authored metadata and wrappers under a future `art/environments/runtime/` structure.
+Runtime wrapper scenes and shared materials should be created only when future environment generation establishes their actual contracts. Do not edit the vendor GLBs in place; place FuseFire-authored metadata and wrappers under a future `art/environments/runtime/` structure.

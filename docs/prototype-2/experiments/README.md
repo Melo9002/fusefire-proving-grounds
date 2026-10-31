@@ -20,7 +20,7 @@ to turn SDK observations into small, reversible FuseFire experiments.
 - **Release:** `v1.0.0`
 - **Commit:** `43c95675d2abb5c61fa964c55aed27b51a292a9f`
 - **Reference:** [Prototype 1 release](../../prototype-1-release.md)
-- **Architecture evidence:** [27A audit](../../prototype-1-audit-27a.md)
+- **Architecture evidence:** [current architecture](../../architecture.md)
 
 ## Minimum regression check
 

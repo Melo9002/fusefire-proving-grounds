@@ -5,7 +5,7 @@ FuseFire records two independent kinds of asset knowledge:
 - `asset_calibrations.json` stores visual measurements and placement calibration: scale, yaw, anchor, offsets and measured bounds.
 - `asset_semantics.json` stores human-confirmed meaning: what an asset represents, whether it is complete or fragmentary, where it belongs and whether procedural presentation may select it.
 
-Neither file authors tactical movement, occupancy, cover, collision, line of sight or traversal. Those remain explicit properties of `MapData` and environment module definitions.
+Neither file authors tactical movement, occupancy, cover, collision, line of sight or traversal. Those remain explicit properties of `MapData` and explicit tactical authoring.
 
 ## Resolution and trust
 

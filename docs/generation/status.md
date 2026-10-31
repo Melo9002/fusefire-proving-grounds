@@ -7,7 +7,7 @@ Generator 2 code, plots, chunks, Map Editor tools, dedicated tests, certificates
 Local archive: `C:/Users/Blue/Documents/Codex/quarantine/fusefire-before-simplification-2026-10-31/`.
 
 - `project/`: complete pre-cleanup project snapshot, including uncommitted and ignored drafts; excludes `.git` and generated `.godot` caches. Open its `project.godot` with Godot 4.7.2 to consult the old tools (first import rebuilds caches).
-- `retired-code/`, `retired-content/`, `retired-docs-and-data/`: moved originals.
+- `retired-code/`, `retired-content/`, `retired-docs-and-data/`, `retired-history/`: moved originals.
 - Inventory JSON files and `base-commit.txt` document provenance. This archive stays local and is not included in Git pushes.
 
 The chunk creator is a useful reference, especially placement, duplication, history and draft persistence. Recover specific capabilities when needed; do not restore the entire retired dependency chain by default. Preserve user drafts in the archive unchanged.
@@ -25,3 +25,5 @@ Next design discussion: one authored environment, contextual tactical population
 - Initial restricted import failed to load a native extension; import with normal filesystem access passed. A rendered capture attempt triggered the existing renderer-preference restart and produced no reviewable screenshots. No new visual certification is claimed; the owner began a manual match. Restart an already-open game to load the replay fix.
 
 Scope: approximately 18,500 fewer GDScript lines (including retired tests) and 5,900 fewer documentation lines. Obsolete certificates, fixtures and investigation captures also moved out. Combat, assets, animation, Generator 1 and the original Refinery remain. Archived content is recoverable locally, not shipped or pushed with this cleanup.
+
+Historical Prototype 1.5 audits, the superseded action migration plan, the 27A recovery audit and retired VRoid roadmap were also quarantined. Current gameplay, asset, animation and research references remain indexed.

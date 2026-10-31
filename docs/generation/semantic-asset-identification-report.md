@@ -50,7 +50,7 @@ Each family now provides, where supported:
 - Orientation, clearance and assembly guidance.
 - Explicit unresolved-field flags where evidence is insufficient.
 
-These tags describe visual meaning. Exact tactical footprints, interaction cells, cover, line of sight and traversal still belong to environment module definitions and `MapData`.
+These tags describe visual meaning. Exact tactical footprints, interaction cells, cover, line of sight and traversal still belong to explicit tactical authoring and `MapData`.
 
 ## Resolved review batches
 

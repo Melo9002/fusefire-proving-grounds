@@ -14,21 +14,12 @@ Reference SHA-256 values for the reviewed package are:
 
 Project code uses `FuseFireDebugDraw3D`, never the vendor singleton directly. The wrapper reports availability and owns the small set of supported drawing calls. This keeps diagnostics removable and prevents visual debug state from becoming tactical authority.
 
-The Map Editor is the first consumer. Select a module and enable **Spatial contracts** or press `D`:
-
-- green boxes: authored tactical footprint;
-- amber boxes: required functional clearance;
-- magenta box: calibrated visual envelope;
-- cyan arrows: rotated semantic connection sockets.
-
-The overlay is regenerated each frame while enabled. Turning it off calls the add-on's explicit clear operation. Release binaries supplied by the add-on disable drawing by default; FuseFire does not use the forced-debug release feature.
+The former Map Editor overlays are preserved in the local quarantine. The vendored add-on and small wrapper remain available for diagnostics; they do not define tactical behavior.
 
 The upstream editor-enabled library offers optional anonymous editor-usage telemetry. It does not run in exported game libraries. Developers who prefer to disable it can set **Editor Settings → Debug Draw 3D → Settings → Telemetry State** to disabled; this is a per-user Godot editor preference and is intentionally not stored in the project.
 
 ## Verification and updates
 
-`tests/debug_draw_3d_integration_test.gd` verifies the pinned record, descriptor, native singleton, wrapper calls, explicit clearing, and Map Editor contract extraction. It is part of the Ironclad smoke tier, so GitHub's clean Windows checkout must load the vendored DLL before the rest of the suite can pass. `tests/debug_draw_3d_capture.gd` is the explicit GPU workflow for visual inspection.
+`tests/debug_draw_3d_integration_test.gd` verifies the pinned record, descriptor, native singleton, wrapper drawing calls and explicit clearing. It remains in the Ironclad smoke tier. The old Map Editor extraction checks and capture script are quarantined with that editor.
 
-To update the dependency, replace the entire add-on directory with one reviewed upstream release, retain its license, update the wrapper version and hashes, run the smoke tier, and capture the Map Editor overlay. Do not combine descriptors and binaries from different releases.
-
-To remove it, delete the Map Editor toggle and calls, remove the project wrapper and focused tests, then delete `addons/debug_draw_3d`. Tactical modules, generation, calibration, and `MapData` require no migration.
+Update the entire add-on release together, retain its license, update the wrapper version and hashes, and run the smoke tier. Do not mix descriptors and binaries from different releases. Removal requires checking current wrapper consumers first; the retired Map Editor is no longer an active dependency.

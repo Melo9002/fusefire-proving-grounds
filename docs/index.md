@@ -1,45 +1,39 @@
-# Fuse Fire Documentation
+# FuseFire documentation
 
-This directory contains the project documentation intended for developers, designers, and future manual editing. Commands in these guides assume the terminal is open at the repository root.
+## Start here
 
-## Guides
+- [Human editing guide](human-editing-guide.md): assets, units, animation and focused checks.
+- [Architecture](architecture.md) and [code organization](code-organization.md): current ownership and entry points.
+- [Generation status](generation/status.md): Generator 1, preserved Refinery and local quarantine recovery.
+- [Project Ironclad](quality/project-ironclad.md): test commands and failure investigation.
 
-- [Generation status and quarantine](generation/status.md) — what still runs, what was archived, and how to recover the tools.
+## Gameplay and engineering
 
-- [Industrial warehouse slice](generation/industrial-warehouse-vertical-slice.md) — playable warehouse, walkable roof, camera cutaway, floor inspection, validation and remaining limits.
-- [Industrial asset inventory](generation/industrial-asset-inventory.md) — retained Kenney packs, formats, licenses and import validation.
-- [Environment asset calibration laboratory](generation/asset-calibration-laboratory.md) — launch instructions, scale and anchor conventions, verified profiles, measured asset conventions.
+- [Simulation and reproducibility](simulation.md)
+- [Battle replay](replay.md)
+- [AI documentation](ai/README.md)
+- [Tactical Tempo contracts](architecture/tactical-tempo-freeze.md)
+- [Tactical conditions reference](architecture/tactical-conditions-fictional-systems-reference.md)
+- [Debug map inspection](debug-map-inspection.md)
+- [Industrial Warehouse](generation/industrial-warehouse-vertical-slice.md)
 
-- [Human editing map](human-editing-guide.md) — the quickest route to replacing characters and weapons, tuning animations and camera behavior, editing units, and running focused checks.
-- [Tactical conditions and fictional systems reference](architecture/tactical-conditions-fictional-systems-reference.md) — implemented 01.12 condition behavior, the three-second fictional beat, MIRA damage interpretation, and clearly separated future questions.
-- [01.13.0 AP architecture audit and XCOM study](research/01.13.0-ap-architecture-audit-xcom-study.md) — current AP and movement ownership, tactical-beat ordering, source-grounded XCOM comparison, and the proposed Tactical Tempo state model.
-- [Tactical Tempo validation and freeze](architecture/tactical-tempo-freeze.md) — finalized AP invariants, lifecycle ordering, supported integrations, regression matrix, and deferred features after Tasks 01.13.1–01.13.6.
-- [Prototype 1 release](prototype-1-release.md) — release scope, known limits, packaging checks, and maintainer entry points.
-- [Prototype 2 idea vault](prototype-2/idea-vault.md) — wishes, experiments, dependencies, external resources, and scope boundaries for the next prototype.
-- [Pre-production workshop](prototype-2/preproduction-plan.md) — start-now proofs, incubation work packages, task cards, decision gates, and parked ideas.
-- [Prototype 2 experiment notebook](prototype-2/experiments/README.md) — protected P1 baseline, reusable experiment record, outcomes, and minimum regression checks.
-- [Operation XCOM research ledger](prototype-2/operation-xcom/research-ledger.md) — sourced observations, FuseFire hypotheses, experiment status, and rollback notes.
-- [External resource ledger](prototype-2/external-resources.md) — dependency candidates, licenses, risks, removal paths, and decisions.
-- [Debug Draw 3D integration](dependencies/debug-draw-3d.md) — pinned version, license, project wrapper, Map Editor diagnostics, verification, and removal path.
-- [Animation source survey](prototype-2/animation-source-survey.md) — free motion sources, Godot 4.7 retargeting, candidate tools, and the first clip test.
+## Assets and animation
 
-- [Prototype 1 27A recovery audit](prototype-1-audit-27a.md) — canonical verified findings, protected invariants, optimization targets, and the recovery sequence.
+- [Asset import](asset-import.md)
+- [Animation editing](animation-editing-guide.md)
+- [Industrial asset inventory](generation/industrial-asset-inventory.md)
+- [Asset calibration laboratory](generation/asset-calibration-laboratory.md)
+- [Semantic asset metadata](generation/semantic-asset-catalog.md)
+- [Debug Draw dependency](dependencies/debug-draw-3d.md)
 
-- [Code organization](code-organization.md) — current folder responsibilities, dependency wiring and migration notes.
+## Ideas and research — not an implementation queue
 
-- [Architecture](architecture.md) — ownership boundaries, combat flow, objectives, AI, generation, validation, and known limits.
-- [Simulation and reproducibility](simulation.md) — AI-versus-AI batches, seeds, map sizes, output interpretation, and deterministic checks.
-- [Battle replay](replay.md) — action recording, deterministic playback, end-screen controls, testing, and future camera modes.
-- [Debug map inspection](debug-map-inspection.md) — F3 cell details, zones, traversal links, elevation, and map metadata.
-- [Asset import](asset-import.md) — a practical Godot workflow for importing models, textures, rigs, animations, and the future humanoid test character.
-- [Character presentation roadmap](character-presentation-roadmap.md) — historical Prototype 1 VRoid plan and the transition toward original character presentation.
-- [Character animation editing guide](animation-editing-guide.md) — refining generated clips, authoring in Blender, weapon contacts, hand poses, VRoid reuse, and validation.
+- [Idea vault](prototype-2/idea-vault.md) and [pre-production workshop](prototype-2/preproduction-plan.md)
+- [Experiment notebook](prototype-2/experiments/README.md)
+- [Operation XCOM research](prototype-2/operation-xcom/research-ledger.md)
+- [External resources](prototype-2/external-resources.md) and [animation sources](prototype-2/animation-source-survey.md)
+- [Prototype 1 release reference](prototype-1-release.md)
 
-## Files that intentionally remain outside `docs/`
+Superseded generator reports, completed migration audits and the retired character roadmap are preserved outside the project in the [local quarantine](generation/status.md). They are historical evidence, not current editing instructions. The chunk authoring tool remains recoverable there.
 
-- `README.md` is the repository landing page.
-- `.gitignore` and `.gitattributes` configure Git.
-- `project.godot` configures the Godot project.
-- `.godot/` and `*.import` files are generated by Godot and are not documentation.
-
-Do not edit files inside `.godot/` by hand. Edit source assets, scenes, scripts, and documentation instead, then allow Godot to regenerate its import cache.
+Commands assume the repository root. Do not edit generated `.godot/` files; edit sources and let Godot rebuild its cache.
