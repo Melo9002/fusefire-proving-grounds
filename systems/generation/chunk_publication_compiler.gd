@@ -47,11 +47,11 @@ static func compile(source: EnvironmentChunkSource, context: EnvironmentResoluti
 			if meaning.completeness not in ["complete", "not_applicable"] or meaning.structural_role in ["wall", "corner", "entrance", "window", "roof", "stairs", "platform", "floor", "shell"]:
 				fail(errors, "INCOMPLETE_STRUCTURE", id, "Raw structural fragments require a complete validated assembly; visual-only cannot waive this")
 			pin(dependencies, context.asset_dependency(asset_id), id)
-			var root := Node3D.new()
-			Assets.place(root, asset_id, Vector3(placement.origin.x, placement.elevation, placement.origin.y), -float(placement.rotation) * PI * 0.5, context.calibration_data)
-			var bounds := Placement.mesh_bounds(root)
+			var asset_preview_root := Node3D.new()
+			Assets.place(asset_preview_root, asset_id, Vector3(placement.origin.x, placement.elevation, placement.origin.y), -float(placement.rotation) * PI * 0.5, context.calibration_data)
+			var bounds := Placement.mesh_bounds(asset_preview_root)
 			check_envelope(bounds, size, height, errors, id)
-			root.free()
+			asset_preview_root.free()
 			records.append({"placement": placement, "definition": null, "asset_id": asset_id, "calibration": context.asset(asset_id).profile.duplicate(true), "visual_bounds": bounds})
 			continue
 		if not contributes and id not in visual_only: fail(errors, "UNDECLARED_TACTICAL_ROLE", id, "Declare component contribution or visual-only")

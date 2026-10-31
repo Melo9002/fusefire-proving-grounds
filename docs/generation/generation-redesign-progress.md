@@ -195,3 +195,16 @@ Owner playtest found the planning view confusing and the build controls buried b
 ## Plot mouse placement — 2026-10-30
 
 Added Move selected (M) in the main plot controls: a snapped, tinted mouse-following preview for streets, slots, access regions and mission regions; click/Enter confirms, Esc cancels. Out-of-map previews are red and cannot commit. Preview motion does not mutate source or run composition/validation on each frame. Confirmation changes only position/cells, preserves stable IDs/revisions/reference metadata and cell shape, and creates one undo entry. Shared source validation reports connection/access issues after draft placement; moving a piece does not automatically move linked roads or reservations. Build/save-draft request confirmation/cancellation first. No new placement identity system. Rendered workflow suite: 34 passing checks including real mouse-ray input, bounds rejection, cancellation, reference preservation and undo/redo. Evidence: `artifacts/plot-mouse-preview.png`.
+
+
+## Owner playtest and warning cleanup — 2026-10-30
+
+Owner loaded and edited an existing plot and approved what they saw, while still finding parts of the workflow confusing. This records that observed review only; it does not certify all natural mission/replay checks or close the independent architectural review. Owner's saved `through_street_industrial.json` edits are preserved separately from this cleanup.
+
+Direction: environments need not contain streets (Refinery remains a preservation target). Retain seeded tactical population, using downloaded assets appropriate to the setting: containers in distribution centers, traffic barriers on streets, dumpsters in plausible service locations rather than arbitrary carriageway placements. Future cover design should consider width and directional character occlusion as well as height; a tall narrow pole is not complete protection. Exact protection percentages and their interaction with existing hit/LOS rules remain a separate design/implementation task, not implemented here.
+
+Immediate focus proposed: prove one tactically interesting distribution-center encounter and meaningful variation before expanding infrastructure. Owner expressed concern about scope and the game's direction; further generator complexity is not itself evidence of gameplay value.
+
+Warnings cleaned: inner asset-preview `root`, manifest write `error`, built-in-shadowing `hash`, and standalone ternaries in plot keyboard history and capture camera selection. No gameplay semantics or content approvals changed. Publication/compiler implementation hashes intentionally remain strict: these source edits make previous validation records stale; they require revalidation rather than silently inheriting approval. Production library had no active registered revisions at cleanup time.
+
+Verification: chunk publication regression passed; all four affected scripts passed targeted shadowed-variable/global-identifier/standalone-ternary checks with those warnings treated as errors.

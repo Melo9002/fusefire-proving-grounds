@@ -378,7 +378,9 @@ func shortcut(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE: cancel_move()
 	elif event.keycode == KEY_M: begin_move()
 	elif event.keycode == KEY_ENTER and moving: confirm_move()
-	elif event.ctrl_pressed and event.keycode == KEY_Z: redo() if event.shift_pressed else undo()
+	elif event.ctrl_pressed and event.keycode == KEY_Z:
+		if event.shift_pressed: redo()
+		else: undo()
 	elif event.ctrl_pressed and event.keycode == KEY_S: save()
 	elif event.keycode == KEY_F: host._frame_camera()
 

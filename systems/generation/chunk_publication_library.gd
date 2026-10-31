@@ -32,8 +32,8 @@ func validate_and_store(source: EnvironmentChunkSource, source_path: String, con
 		var existing := GenerationJsonStore.parse(FileAccess.get_file_as_string(path))
 		if not existing.ok or Compiler.canonical(existing.value) != Compiler.canonical(manifest): return failure("Immutable revision file differs; refusing overwrite")
 	else:
-		var error := GenerationJsonStore.write(path, JSON.stringify(manifest, "\t"))
-		if not error.is_empty(): return failure(error)
+		var manifest_error := GenerationJsonStore.write(path, JSON.stringify(manifest, "\t"))
+		if not manifest_error.is_empty(): return failure(manifest_error)
 	if not index.revisions.has(revision): index.revisions[revision] = {"source_path": source_path, "evidence": [], "review": {}, "registered": false}
 	var error := _write(index)
 	if not error.is_empty(): return failure(error)
@@ -64,10 +64,10 @@ func capture_evidence(revision: String, picture: Image, view_name: String) -> Di
 	if view_name not in ["overview", "opposite", "overhead"]: return failure("Use overview, opposite or overhead view")
 	if not checked.record.review.is_empty(): return failure("Review evidence is sealed; revoke review before replacing it")
 	var png := picture.save_png_to_buffer()
-	var hash := HashingContext.new()
-	hash.start(HashingContext.HASH_SHA256)
-	hash.update(png)
-	var digest := hash.finish().hex_encode()
+	var capture_hasher := HashingContext.new()
+	capture_hasher.start(HashingContext.HASH_SHA256)
+	capture_hasher.update(png)
+	var digest := capture_hasher.finish().hex_encode()
 	var path := directory.path_join("evidence").path_join(revision).path_join(view_name + "-" + digest + ".png")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
 	if not FileAccess.file_exists(path):

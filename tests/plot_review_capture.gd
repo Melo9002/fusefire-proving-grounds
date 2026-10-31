@@ -38,7 +38,8 @@ func run():
 				scale_marker.position = editor.plot_authoring.offset()+Vector3(cell.x,0.9,cell.z)
 				var material := StandardMaterial3D.new(); material.albedo_color = Color.ORANGE; scale_marker.material_override = material; editor.content.add_child(scale_marker)
 			for view in ["overhead","oblique","diagnostic"]:
-				editor._set_camera_view(0.0,1.5) if view == "overhead" else editor._set_camera_view(0.65,0.8)
+				if view == "overhead": editor._set_camera_view(0.0,1.5)
+				else: editor._set_camera_view(0.65,0.8)
 				if view == "diagnostic": editor._add_spatial_plan_overlay(editor.content,result.data)
 				await create_timer(0.2).timeout; await RenderingServer.frame_post_draw
 				var path: String = prefix+"-"+view+".png"
