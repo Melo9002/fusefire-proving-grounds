@@ -1,6 +1,6 @@
 # FuseFire maps: XCOM 2 study and proposed requirements
 
-Status: research and proposed requirements, 2026-11-01. No production implementation or new roadmap is approved by this document. This is the current starting point for discussing task 02.
+Status: research and proposed requirements, 2026-11-01. Blue approved using XCOM-inspired standards as the starting point, including parcel footprints of 16 x 16, 16 x 32 and 32 x 32 tactical tiles. The remaining design and implementation roadmap remain proposals. This is the current starting point for discussing task 02.
 
 ## Where we are
 
@@ -29,7 +29,7 @@ The SDK maps exist as `.umap` files. This pass read the guide, definitions and s
 
 1. **Three modes:** a completely authored map; a fixed place with varied movable tactical content; and a generated arrangement of authored areas. All use the existing tactical game and support missions, save/replay and clear errors.
 2. **Plot:** an authored site layout and playable boundary, with slots, fixed routes or terrain, mission/deployment/extraction capacity and a relationship to its surroundings. A plot may be a city block, refinery, or container yard; roads are not universal.
-3. **Parcel:** an authored area such as a tank yard, loading yard, street corner or building. Define dimensions, allowed rotations, entry/connection geometry, ground/elevation, tactical surfaces and obstacles, mission suitability and asset dependencies. A human must be able to inspect and edit it. Start with a few standard footprints; add exceptions only when real content demands them.
+3. **Parcel:** an authored area such as a tank yard, loading yard, street corner or building. Define dimensions, allowed rotations, entry/connection geometry, ground/elevation, tactical surfaces and obstacles, mission suitability and asset dependencies. A human must be able to inspect and edit it. Start with owner-approved footprints of 16 x 16, 16 x 32 and 32 x 32 tactical tiles; allow a quarter-turn to make 32 x 16. Evaluate exceptions when real content demands them.
 4. **Connectors:** the plot owns the required connection positions. Parcel interfaces declare what physically meets them, including direction and elevation. Verify that frontage, paths, pipe/road continuity and clearances actually align. Avoid automatic asset orientation based on names alone.
 5. **Surroundings:** near-edge pieces continue roads, terrain or industrial structures past the boundary; a simpler distant backdrop establishes the horizon. The initial version can be authored with each plot and later made interchangeable if useful. Out-of-bounds scenery cannot be targeted or navigated. Visuals, ground and lighting should blend across the edge; camera behavior must be checked at normal and cinematic angles.
 6. **Selection and failure:** choose compatible plot, mission-suitable slots and parcel rotations; use seeded deterministic ordering and bounded attempts. A missing required parcel/connection gives a clear reason, never a silent empty space. Produce resolved choices before activating battle.
@@ -52,9 +52,9 @@ A second urban proof should follow before generalizing the content model. Demons
 ## Decisions to discuss
 
 1. **Initial scope:** recommended industrial proof first, urban second; use the existing refinery as reference, not automatically a finished parcel.
-2. **Parcel sizing:** recommended a small set of grid-aligned footprints with rotations; choose concrete dimensions only after fitting two real pieces and measuring movement pacing.
+2. **Parcel sizing — decided:** start with 16 x 16, 16 x 32 and 32 x 32 tactical tiles, with quarter-turns where connections permit. Fit real pieces and measure movement pacing; revise the standard if evidence warrants it. A footprint includes its authored access and clearances, and assets must not be stretched to fill it.
 3. **Periphery:** recommended authored near/far scene pieces per plot at first; interchangeability follows demonstrated benefit. These pieces are visual-only unless explicitly brought into the playable area.
 4. **Editor:** recommended use Godot's existing scene editing and targeted validation initially; recover the quarantined chunk editor selectively if actual authoring proves too awkward. No second application.
 5. **Generator 1:** keep it and its replay compatibility until the replacement meets its obligations and Blue agrees to retire it.
 
-These are recommendations for discussion, not owner approvals. Next: review representative SDK plots/parcels/periphery visually if the editor can open them, and turn the first refinery proof into a short implementation task pack after the owner chooses the scope.
+Parcel sizes and using XCOM-inspired standards as an initial reference are owner decisions. The other choices are recommendations for discussion, not owner approvals. Next: review representative SDK plots/parcels/periphery visually if the editor can open them, and turn the first refinery proof into a short implementation task pack after the owner chooses the scope.
