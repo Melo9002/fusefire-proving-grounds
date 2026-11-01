@@ -49,7 +49,7 @@
 			"yaw_degrees": 0.0
 		},
 		"car_kit/debris-bolt": {
-			"anchor": 1.0,
+			"anchor": 1,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -57,7 +57,21 @@
 			],
 			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
 			"classification": "unclassified",
+			"measured_calibrated_size": [
+				0.216506347060204,
+				0.324999988079071,
+				0.25
+			],
+			"measured_native_size": [
+				0.173205077648163,
+				0.259999990463257,
+				0.200000002980232
+			],
 			"scale": 1.25,
+			"suggested_footprint": [
+				0,
+				0
+			],
 			"yaw_degrees": 0.0
 		},
 		"car_kit/debris-bumper": {
@@ -1383,7 +1397,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-c": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1394,7 +1408,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-d": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1405,7 +1419,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-e": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1416,7 +1430,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-f": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1427,7 +1441,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-g": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1438,7 +1452,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-h": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1449,7 +1463,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-i": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1460,7 +1474,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-j": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1471,7 +1485,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-k": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1482,7 +1496,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-l": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1493,7 +1507,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-m": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1504,7 +1518,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-n": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1515,7 +1529,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-o": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1526,7 +1540,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-p": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1537,7 +1551,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-q": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1548,7 +1562,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-r": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1559,7 +1573,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-s": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1570,7 +1584,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/building-t": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1685,7 +1699,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/detail-tank": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1696,7 +1710,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/detail-tank-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1915,7 +1929,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/water-tower": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1926,7 +1940,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/windmill": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1937,7 +1951,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/windmill-low": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1948,7 +1962,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/bridge-pillar": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1959,7 +1973,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/bridge-pillar-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1970,7 +1984,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/construction-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1981,7 +1995,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/construction-cone": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -1992,7 +2006,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/construction-fence": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2003,7 +2017,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/construction-light": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2014,7 +2028,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/dumpster": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2025,7 +2039,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-pole": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2036,7 +2050,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-pole-single": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2047,7 +2061,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-pole-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2058,7 +2072,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-side": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2069,7 +2083,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-side-single": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2080,7 +2094,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-side-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2091,7 +2105,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-wires": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2102,7 +2116,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/electricity-wires-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2113,7 +2127,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-curved": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2124,7 +2138,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-curved-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2135,7 +2149,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-curved-double": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2146,7 +2160,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2157,7 +2171,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-square-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2168,7 +2182,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/light-square-double": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2179,7 +2193,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bend": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2190,7 +2204,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bend-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2201,7 +2215,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bend-sidewalk": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2212,7 +2226,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bend-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2223,7 +2237,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bend-square-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2234,7 +2248,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-bridge": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2245,7 +2259,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-crossing": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2256,7 +2270,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-crossroad": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2267,7 +2281,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-crossroad-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2278,7 +2292,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-crossroad-line": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2289,7 +2303,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-crossroad-path": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2300,7 +2314,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-curve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2311,7 +2325,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-curve-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2322,7 +2336,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-curve-intersection": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2333,7 +2347,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-curve-intersection-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2344,7 +2358,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-curve-pavement": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2355,7 +2369,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-driveway-double": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2366,7 +2380,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-driveway-double-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2377,7 +2391,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-driveway-single": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2388,7 +2402,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-driveway-single-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2399,7 +2413,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2410,7 +2424,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-end-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2421,7 +2435,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-end-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2432,7 +2446,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-end-round-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2443,7 +2457,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-intersection": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2454,7 +2468,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-intersection-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2465,7 +2479,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-intersection-line": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2476,7 +2490,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-intersection-path": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2487,7 +2501,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-roundabout": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2498,7 +2512,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-roundabout-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2509,7 +2523,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				-0.12,
@@ -2520,7 +2534,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2531,7 +2545,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side-entry": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2542,7 +2556,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side-entry-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2553,7 +2567,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side-exit": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2564,7 +2578,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-side-exit-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2575,7 +2589,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-empty": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2586,7 +2600,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-empty-hanging": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2597,7 +2611,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-object-stop": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2608,7 +2622,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-object-street": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2619,7 +2633,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-object-warning": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2630,7 +2644,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-stop": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2641,7 +2655,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-street": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2652,7 +2666,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-sign-warning": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2663,7 +2677,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2674,7 +2688,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2685,7 +2699,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-curve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2696,7 +2710,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-curve-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2707,7 +2721,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-flat": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2718,7 +2732,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-flat-curve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2729,7 +2743,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-flat-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2740,7 +2754,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2751,7 +2765,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-slant-high-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2762,7 +2776,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-split": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2773,7 +2787,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-split-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2784,7 +2798,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2795,7 +2809,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-square-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2806,7 +2820,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-straight": {
-			"anchor": 2,
+			"anchor": 2.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2817,7 +2831,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-straight-barrier": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2828,7 +2842,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-straight-barrier-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2839,7 +2853,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-straight-barrier-half": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2850,7 +2864,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/road-straight-half": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2861,7 +2875,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/sign-highway": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2872,7 +2886,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/sign-highway-detailed": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2883,7 +2897,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/sign-highway-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2894,7 +2908,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/tile-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2905,7 +2919,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/tile-low": {
-			"anchor": 2,
+			"anchor": 2.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2916,7 +2930,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/tile-slant": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2927,7 +2941,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/tile-slantHigh": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2938,7 +2952,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/traffic-light": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2949,7 +2963,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/traffic-light-hanging": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2960,7 +2974,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/traffic-light-object-hanging": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2971,7 +2985,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/traffic-light-object-horizontal": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -2982,7 +2996,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_roads/traffic-light-object-vertical": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3269,7 +3283,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3280,7 +3294,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-1x2": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3291,7 +3305,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-1x3": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3302,7 +3316,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-1x4": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3313,7 +3327,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-2x2": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3324,7 +3338,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-2x3": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3335,7 +3349,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-3x2": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3346,7 +3360,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-3x3": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3357,7 +3371,7 @@
 			"yaw_degrees": 0.0
 		},
 		"city_kit_suburban/fence-low": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3464,7 +3478,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/arrow": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3475,7 +3489,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/arrow-basic": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3486,7 +3500,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/arrow-basic-rounded": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3497,7 +3511,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/arrow-rounded": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3508,7 +3522,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/box-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3519,7 +3533,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/box-long": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3530,7 +3544,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/box-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3541,7 +3555,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/box-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3552,7 +3566,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/button-floor-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3563,7 +3577,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/button-floor-round-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3574,7 +3588,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/button-floor-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3585,7 +3599,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/button-floor-square-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3596,7 +3610,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3607,7 +3621,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3618,7 +3632,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-junction": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3629,7 +3643,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-stairs": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3640,7 +3654,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-stairs-loop": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3651,7 +3665,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/catwalk-straight": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3662,7 +3676,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cog-a": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3673,7 +3687,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cog-b": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3684,7 +3698,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cog-c": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3695,7 +3709,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cog-d": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3706,7 +3720,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cog-e": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3717,7 +3731,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/cone": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3728,7 +3742,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3739,7 +3753,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3750,7 +3764,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-fence": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3761,7 +3775,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-fence-slope": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3772,7 +3786,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3783,7 +3797,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-high-slope": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3794,7 +3808,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-sides": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3805,7 +3819,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3816,7 +3830,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe-fence": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3827,7 +3841,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe-fence-slope": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3838,7 +3852,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3849,7 +3863,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe-high-slope": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3860,7 +3874,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-bars-stripe-side": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3871,7 +3885,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3882,7 +3896,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3893,7 +3907,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-junction-t": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3904,7 +3918,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3915,7 +3929,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-part-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3926,7 +3940,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-part-middle": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3937,7 +3951,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-sides": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3948,7 +3962,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-sides-part-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3959,7 +3973,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-sides-part-middle": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3970,7 +3984,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-stripe": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3981,7 +3995,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-stripe-sides": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -3992,7 +4006,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-stripe-sides-part-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4003,7 +4017,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-long-stripe-sides-part-middle": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4014,7 +4028,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-sides": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4025,7 +4039,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-sides-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4036,7 +4050,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-sides-junction-t": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4047,7 +4061,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4058,7 +4072,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4069,7 +4083,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4080,7 +4094,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-junction-t": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4091,7 +4105,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-part-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4102,7 +4116,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-part-middle": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4113,7 +4127,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-sides": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4124,7 +4138,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-sides-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4135,7 +4149,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/conveyor-stripe-sides-junction-t": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4146,7 +4160,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/crane": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4157,7 +4171,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/crane-lift": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4168,7 +4182,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/crane-magnet": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4179,7 +4193,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/door": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4190,7 +4204,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/door-wide-closed": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4201,7 +4215,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/door-wide-half": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4212,7 +4226,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/door-wide-open": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4223,7 +4237,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/floor": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4234,7 +4248,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/floor-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4245,7 +4259,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/hopper-high-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4256,7 +4270,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/hopper-high-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4267,7 +4281,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/hopper-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4278,7 +4292,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/hopper-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4289,7 +4303,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/indicator-special-area": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4300,7 +4314,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/indicator-special-arrow": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4311,7 +4325,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/indicator-special-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4322,7 +4336,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/indicator-special-lines": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4333,7 +4347,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/lever-double": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4344,7 +4358,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/lever-single": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4355,7 +4369,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4366,7 +4380,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-bed": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4377,7 +4391,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-connection-hole": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4388,7 +4402,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-connection-pipe": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4399,7 +4413,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-fortified": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4410,7 +4424,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-window": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4421,7 +4435,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/machine-window-bar": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4432,7 +4446,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/oopi": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4443,7 +4457,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4454,7 +4468,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-bend": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4465,7 +4479,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-bump": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4476,7 +4490,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4487,7 +4501,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-curve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4498,7 +4512,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-junction": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4509,7 +4523,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-long": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4520,7 +4534,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-side": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4531,7 +4545,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-glass-large-valve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4542,7 +4556,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4553,7 +4567,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-bend": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4564,7 +4578,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-bump": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4575,7 +4589,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-cross": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4586,7 +4600,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-curve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4597,7 +4611,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-junction": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4608,7 +4622,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-long": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4619,7 +4633,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-side": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4630,7 +4644,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/pipe-large-valve": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4641,7 +4655,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/piston-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4652,7 +4666,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/piston-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4663,7 +4677,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/piston-thin-round": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4674,7 +4688,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/piston-thin-square": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4685,7 +4699,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/robot-arm-a": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4696,7 +4710,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/robot-arm-b": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4707,7 +4721,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/scanner-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4718,7 +4732,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/scanner-low": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4729,7 +4743,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-flat": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4740,7 +4754,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-hanging-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4751,7 +4765,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-hanging-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4762,7 +4776,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-panel-flat": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4773,7 +4787,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-panel-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4784,7 +4798,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-panel-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4795,7 +4809,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4806,7 +4820,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/screen-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4817,7 +4831,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-corner-inner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4828,7 +4842,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-corner-outer": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4839,7 +4853,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-doorway": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4850,7 +4864,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-doorway-wide": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4861,7 +4875,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4872,7 +4886,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-medium": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4883,7 +4897,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-short": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4894,7 +4908,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-tall": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4905,7 +4919,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-wall": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4916,7 +4930,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-window": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4927,7 +4941,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-window-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4938,7 +4952,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-yellow-high": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4949,7 +4963,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-yellow-medium": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4960,7 +4974,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-yellow-short": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4971,7 +4985,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/structure-yellow-tall": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4982,7 +4996,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/top": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -4993,7 +5007,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/top-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5004,7 +5018,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/top-large-checkerboard": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5015,7 +5029,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/warning-orange": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5026,7 +5040,7 @@
 			"yaw_degrees": 0.0
 		},
 		"factory_kit/warning-traffic": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5037,7 +5051,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/cables": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5048,7 +5062,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5059,7 +5073,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5070,7 +5084,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5081,7 +5095,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-intersection": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5092,7 +5106,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-junction": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5103,7 +5117,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-transition": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5114,7 +5128,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5125,7 +5139,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-wide-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5136,7 +5150,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-wide-end": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5147,7 +5161,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-wide-intersection": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5158,7 +5172,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/corridor-wide-junction": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5169,7 +5183,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/gate": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5180,7 +5194,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/gate-door": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5191,7 +5205,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/gate-door-window": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5202,7 +5216,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/gate-lasers": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5213,7 +5227,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5224,7 +5238,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5235,7 +5249,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-large-variation": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5246,7 +5260,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5257,7 +5271,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-small-variation": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5268,7 +5282,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-wide": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5279,7 +5293,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/room-wide-variation": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5290,7 +5304,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/stairs": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5327,7 +5341,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5338,7 +5352,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-detail": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5349,7 +5363,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5360,7 +5374,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-big": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5371,7 +5385,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-detail": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5382,7 +5396,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-detail-a": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5393,7 +5407,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-layer": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5404,7 +5418,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-layer-hole": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5415,7 +5429,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-floor-layer-raised": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5426,7 +5440,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5437,7 +5451,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall-corner": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5448,7 +5462,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall-detail-a": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5459,7 +5473,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall-half": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5470,7 +5484,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall-stairs": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -5481,7 +5495,7 @@
 			"yaw_degrees": 0.0
 		},
 		"modular_space_kit/template-wall-top": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,

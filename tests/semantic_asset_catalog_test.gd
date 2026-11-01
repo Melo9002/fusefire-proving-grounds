@@ -41,12 +41,24 @@ func _run() -> void:
 			check(Semantics.generation_candidates([id], data).is_empty(), id + " has no fabricated generation approval")
 	check(Catalog.all_ids().size() == 549, "Catalog includes 234 new visual-only assets")
 	var sedan := Semantics.effective("car_kit/sedan", data)
-	check(sedan.working_faces.is_empty() and "working_faces" in sedan.review_flags, "Vehicle direction remains explicitly unresolved")
+	check(sedan.working_faces == ["+z"] and "working_faces" not in sedan.review_flags, "Rendered vehicle nose defines native +Z without leaving a stale face-review flag")
 	check(Semantics.effective("car_kit/wheel-default", data).completeness == "fragment", "Detached wheel is not a complete vehicle")
 	check(Semantics.effective("city_kit_commercial/low-detail-building-a", data).architectural_purpose == "urban_background_massing", "Low-detail buildings represent full-size background massing")
 	check(Semantics.effective("city_kit_suburban/building-type-a", data).connections.is_empty(), "House meaning does not invent an entrance or socket")
 	check(Semantics.effective("train_kit/railroad-straight", data).structural_role == "rail_track", "Rail geometry is not classified as a street")
 	check("connections" in Semantics.effective("train_kit/railroad-straight", data).review_flags, "Track connections remain explicit review work")
+	check(Semantics.effective("car_kit/wheel-default", data).working_faces == ["+x"], "Outer wheel hub is native +X")
+	check(Semantics.effective("city_kit_commercial/building-a", data).working_faces == ["-z"], "Storefront is native -Z")
+	check(Semantics.effective("city_kit_suburban/building-type-f", data).working_faces == ["-z", "-x"], "Corner house retains both entrance frontages")
+	check(Semantics.effective("city_kit_suburban/fence-1x2", data).working_faces == ["-z"], "U fence faces its open approach rather than closed back panel")
+	check(Semantics.effective("train_kit/train-carriage-container-blue", data).working_faces == ["+z"], "Freight container face follows its locking doors")
+	check(Semantics.effective("city_kit_commercial/low-detail-building-a", data).front_face == "axis_neutral", "Background massing does not acquire a fabricated entrance")
+	check(Semantics.effective("train_kit/railroad-curve", data).sockets.is_empty(), "A face review does not fabricate track sockets")
+	for id in Catalog.all_ids():
+		if id not in established_ids:
+			var reviewed_face := Semantics.effective(id, data)
+			check(reviewed_face.front_face != "unknown" and "working_faces" not in reviewed_face.review_flags, id + " has a directional or explicitly neutral face finding")
+
 
 	check(Semantics.audit(Catalog.all_ids(), data).generation_ready == 35, "New meaning records do not expand procedural approval")
 	var audit := Semantics.audit(established_ids, data)
