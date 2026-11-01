@@ -20,7 +20,7 @@ const STRUCTURAL_ROLES := [
 	"driveway", "crossing", "slope", "sidewalk", "door", "stairs",
 	"platform", "railing", "barrier", "bridge_support", "corridor", "room",
 	"gate", "machinery", "conveyor", "pipe", "control", "cargo", "container",
-	"sign", "light", "marking", "utility", "character", "detail",
+	"sign", "light", "marking", "utility", "character", "detail", "rail_track",
 ]
 const COMPLETENESS := ["unknown", "complete", "fragment", "intentionally_open", "not_applicable"]
 const FRONT_FACES := ["unknown", "+z", "-z", "+x", "-x", "axis_neutral"]

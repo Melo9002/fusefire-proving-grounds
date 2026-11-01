@@ -453,7 +453,7 @@ func _filter(query: String) -> void:
 		var selected_semantic: String = "" if semantic_filter.selected == 0 else str(semantic_filter.get_item_metadata(semantic_filter.selected))
 		var semantic_matches: bool = selected_semantic.is_empty() or interpretation.semantic_category == selected_semantic
 		if review_matches and interpretation_matches and semantic_matches and (selected_pack.is_empty() or id.begins_with(selected_pack + "/")) and (query.is_empty() or query.to_lower() in id.to_lower()):
-			var marker := "✓ " if confirmed else ("? " if interpretation.needs_identification else ("! " if interpretation.needs_review else "· "))
+			var marker := "? " if interpretation.needs_identification else ("! " if interpretation.needs_review else ("✓ " if confirmed else "· "))
 			var index := asset_list.add_item(marker + id)
 			asset_list.set_item_metadata(index, id)
 			asset_list.set_item_tooltip(index, "%s\n%s · %s · %s" % [id, interpretation.asset_kind, interpretation.structural_role, interpretation.interpretation_source])

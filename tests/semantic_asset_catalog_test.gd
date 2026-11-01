@@ -36,9 +36,19 @@ func _run() -> void:
 		if id.get_slice("/", 0) in ["city_kit_industrial", "city_kit_roads", "factory_kit", "modular_space_kit"]:
 			established_ids.append(id)
 		else:
-			check(Semantics.needs_identification(id, data), id + " remains pending semantic identification")
+			check(not Semantics.needs_identification(id, data), id + " has an authored first-pass identity")
+			check(Semantics.effective(id, data).semantic_category != "unknown_manual_review", id + " has a useful authored category")
 			check(Semantics.generation_candidates([id], data).is_empty(), id + " has no fabricated generation approval")
 	check(Catalog.all_ids().size() == 549, "Catalog includes 234 new visual-only assets")
+	var sedan := Semantics.effective("car_kit/sedan", data)
+	check(sedan.working_faces.is_empty() and "working_faces" in sedan.review_flags, "Vehicle direction remains explicitly unresolved")
+	check(Semantics.effective("car_kit/wheel-default", data).completeness == "fragment", "Detached wheel is not a complete vehicle")
+	check(Semantics.effective("city_kit_commercial/low-detail-building-a", data).architectural_purpose == "urban_background_massing", "Low-detail buildings represent full-size background massing")
+	check(Semantics.effective("city_kit_suburban/building-type-a", data).connections.is_empty(), "House meaning does not invent an entrance or socket")
+	check(Semantics.effective("train_kit/railroad-straight", data).structural_role == "rail_track", "Rail geometry is not classified as a street")
+	check("connections" in Semantics.effective("train_kit/railroad-straight", data).review_flags, "Track connections remain explicit review work")
+
+	check(Semantics.audit(Catalog.all_ids(), data).generation_ready == 35, "New meaning records do not expand procedural approval")
 	var audit := Semantics.audit(established_ids, data)
 	check(audit.total == 315 and audit.confirmed == 315, "All 315 stable IDs retain the completed human semantic review")
 	check(audit.unknown_identity == 0 and not Semantics.needs_identification("factory_kit/oopi", data), "Every stable asset now has a supported catalog identity")

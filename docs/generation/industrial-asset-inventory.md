@@ -111,3 +111,12 @@ Rendered experiment: `artifacts/additional-calibration/counterpart-scale-compari
 The owner explicitly reported that everything had been visually inspected and requested marking the catalog reviewed. All 549 assets are now visually reviewed. Existing 33 saved individual records and all category presets were preserved exactly, including the owner's scale adjustments. Remaining inherited calibrations were frozen into per-asset records so later category edits cannot silently change the approved baseline. Individual overrides now take precedence for the entire reviewed catalog.
 
 This records approval of saved on-disk calibration; any unsaved viewport edits are outside that record. Semantic data, generation eligibility and tactical properties were not changed. Earlier pending-visual-review notes describe historical stages, not current visual approval. Semantic interpretation remains pending for the 234 newly imported assets.
+
+
+### Agent-authored meaning pass - 2026-11-01
+
+At the owner's request, all 234 new assets now have explicit meaning records in the existing semantic catalog. The original 315 records and all visual calibrations remain unchanged. This supersedes the earlier pending-identity status: basic identities/purposes are filled, but uncertain working faces, clearance and assembly relationships retain review flags. The schema calls persisted annotations `confirmed`; for this pass that means an authored record, not owner approval of every directional/assembly detail. Evidence fields describe the naming/bounds/reference basis. No new six-axis geometry certification is claimed.
+
+Commercial/Suburban buildings are exterior shells; low-detail buildings represent full-size background massing. Cars are separated from detached wheels/debris and standalone props. Tracks have a distinct rail_track role; damaged/curved/spline pieces do not acquire invented connection contracts. Train carriages retain cargo-specific descriptions. Contexts and clearance notes describe intended placement without authoring gameplay collision, cover, interiors or walkability.
+
+All new generation_ready flags remain false. Browser `!` markers prioritize outstanding review questions over the saved-meaning checkmark. Use Meaning to refine descriptions; Advanced > Needs semantic review filters the remaining questions. Existing socket data and the original 35 visual-generation approvals were preserved.

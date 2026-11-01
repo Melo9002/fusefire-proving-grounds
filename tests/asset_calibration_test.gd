@@ -40,10 +40,10 @@ func run() -> void:
 		check(Catalog.inferred_classification(id) in ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"], id + " has a broad classification")
 		if Catalog.semantic_category(id) == "unknown_manual_review":
 			unknown_semantics.append(id)
-	check(unknown_semantics.size() == 234, "New visual-only packs retain pending semantic interpretation")
+	check(unknown_semantics.size() == 234, "New packs retain provisional filename inference beneath authored meaning")
 	for id in unknown_semantics:
 		check(id.split("/")[0] in ["car_kit", "city_kit_commercial", "city_kit_suburban", "train_kit"], "Established semantic classifications remain intact")
-		check(Catalog.profile(id, catalog_data).reviewed, "Owner visual approval is recorded independently of pending semantics")
+		check(Catalog.profile(id, catalog_data).reviewed, "Owner visual approval is recorded independently of semantic review")
 	var resolved_sources := {"default": 0, "category": 0, "asset override": 0}
 	for id in Catalog.all_ids():
 		var expected := Catalog.scale_for(id, catalog_data)
