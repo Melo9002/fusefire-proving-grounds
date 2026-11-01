@@ -398,6 +398,16 @@
 		"chimneys": {
 			"scale": 5.0
 		},
+		"commercial_buildings": {
+			"anchor": 1,
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"scale": 10.0
+		},
+		"commercial_details": {
+			"anchor": 1,
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"scale": 10.0
+		},
 		"construction_equipment": {
 			"scale": 5.0
 		},
@@ -416,6 +426,21 @@
 		"industrial_other": {
 			"scale": 5.0
 		},
+		"rail_tracks": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"scale": 2.0
+		},
+		"rail_vehicles": {
+			"anchor": 1,
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"scale": 2.0
+		},
 		"road_lights": {
 			"scale": 5.0
 		},
@@ -433,6 +458,21 @@
 		},
 		"space_unclassified": {
 			"scale": 1.0
+		},
+		"suburban_family": {
+			"anchor": 1,
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"scale": 10.0
+		},
+		"vehicle_family": {
+			"anchor": 0,
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"scale": 1.25
+		},
+		"vehicle_parts": {
+			"anchor": 1,
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"scale": 1.25
 		},
 		"water_tanks": {
 			"scale": 5.0

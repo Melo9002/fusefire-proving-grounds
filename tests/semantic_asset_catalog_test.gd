@@ -31,7 +31,15 @@ func _run() -> void:
 				check(mate.rotation_degrees is Array and mate.rotation_degrees.size() == 3 and mate.origin_offset is Array and mate.origin_offset.size() == 3, id + " example mate records its required transform")
 		for flag in record.review_flags:
 			check(flag in Semantics.REVIEW_FLAGS, id + " has a valid unresolved-field flag")
-	var audit := Semantics.audit(Catalog.all_ids(), data)
+	var established_ids: Array[String] = []
+	for id in Catalog.all_ids():
+		if id.get_slice("/", 0) in ["city_kit_industrial", "city_kit_roads", "factory_kit", "modular_space_kit"]:
+			established_ids.append(id)
+		else:
+			check(Semantics.needs_identification(id, data), id + " remains pending semantic identification")
+			check(Semantics.generation_candidates([id], data).is_empty(), id + " has no fabricated generation approval")
+	check(Catalog.all_ids().size() == 549, "Catalog includes 234 new visual-only assets")
+	var audit := Semantics.audit(established_ids, data)
 	check(audit.total == 315 and audit.confirmed == 315, "All 315 stable IDs retain the completed human semantic review")
 	check(audit.unknown_identity == 0 and not Semantics.needs_identification("factory_kit/oopi", data), "Every stable asset now has a supported catalog identity")
 	check(audit.needs_review == 0 and audit.review_flags.is_empty(), "All scoped working-face and machine-connection questions are evidence-resolved")

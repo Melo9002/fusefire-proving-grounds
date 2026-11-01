@@ -97,8 +97,8 @@ func _ready() -> void:
 	mode.item_selected.connect(func(_i): rebuild(true))
 	family_filter = OptionButton.new()
 	family_filter.add_item("All asset families")
-	for label in ["City Kit Industrial", "City Kit Roads", "Factory Kit", "Modular Space Kit"]:
-		family_filter.add_item(label)
+	for pack in Catalog.PACKS:
+		family_filter.add_item(pack.replace("_", " ").capitalize())
 	panel.add_child(family_filter)
 	review_filter = OptionButton.new()
 	for label in ["All review states", "Unreviewed only", "Reviewed only"]:
@@ -121,7 +121,7 @@ func _ready() -> void:
 		semantic_filter.set_item_metadata(semantic_filter.item_count - 1, semantic)
 	panel.add_child(semantic_filter)
 	search = LineEdit.new()
-	search.placeholder_text = "Search pack/model (all 315)"
+	search.placeholder_text = "Search pack/model (all %d)" % Catalog.all_ids().size()
 	panel.add_child(search)
 	asset_list = ItemList.new()
 	asset_list.custom_minimum_size.y = 220

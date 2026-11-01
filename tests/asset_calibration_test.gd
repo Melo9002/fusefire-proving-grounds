@@ -33,14 +33,17 @@ func run() -> void:
 	check(orbit.handle_mouse(motion) and not orbit.focus.is_equal_approx(old_focus), "Shared inspection camera pans")
 	var records: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/asset_lab/native_bounds.json"))
 	var catalog_data := Catalog.load_calibrations()
-	check(Catalog.all_ids().size() == 315, "All four packs must be browsable")
+	check(Catalog.all_ids().size() == 549, "All eight packs must be browsable")
 	var unknown_semantics: Array[String] = []
 	for id in Catalog.all_ids():
 		check(not Catalog.semantic_category(id).is_empty(), id + " has a semantic category")
 		check(Catalog.inferred_classification(id) in ["unclassified", "structural", "ground", "entrance", "tactical_obstacle", "decorative"], id + " has a broad classification")
 		if Catalog.semantic_category(id) == "unknown_manual_review":
 			unknown_semantics.append(id)
-	check(unknown_semantics.is_empty(), "Every catalog asset has a supported semantic category")
+	check(unknown_semantics.size() == 234, "New visual-only packs retain pending semantic interpretation")
+	for id in unknown_semantics:
+		check(id.split("/")[0] in ["car_kit", "city_kit_commercial", "city_kit_suburban", "train_kit"], "Established semantic classifications remain intact")
+		check(not Catalog.profile(id, catalog_data).reviewed, "Proposed calibration does not fabricate human approval")
 	var resolved_sources := {"default": 0, "category": 0, "asset override": 0}
 	for id in Catalog.all_ids():
 		var expected := Catalog.scale_for(id, catalog_data)
@@ -107,6 +110,24 @@ func run() -> void:
 					check(absf(box.get_center().x - at.x) < 0.0001 and absf(box.get_center().z - at.z) < 0.0001, "Horizontal anchor")
 					check(absf((box.position.y if anchor == 0 else box.end.y) - at.y) < 0.0001, "Vertical anchor")
 				piece.free()
+	# New-family contracts: plausible scale, preserved connected geometry, no approval.
+	var sedan := Catalog.place(parent, "car_kit/sedan", Vector3.ZERO, 0.0, catalog_data)
+	var sedan_bounds: AABB = sedan.transform * sedan.occlusion_bounds
+	check(sedan_bounds.size.x < 2.5 and sedan_bounds.size.y > 1.3 and sedan_bounds.size.y < 1.9, "Sedan fits a half-width reviewed road while retaining a human-scale cabin")
+	sedan.free()
+	var fence := Catalog.place(parent, "city_kit_suburban/fence", Vector3.ZERO, 0.0, catalog_data)
+	var fence_bounds: AABB = fence.transform * fence.occlusion_bounds
+	check(is_equal_approx(fence_bounds.size.y, 1.35) and Catalog.scale_for("city_kit_suburban/fence", catalog_data) == Catalog.scale_for("city_kit_roads/construction-fence", catalog_data), "Suburban fence uses established fence scale (5x, 1.35 m tall)")
+	fence.free()
+	var rail_a := Catalog.place(parent, "train_kit/railroad-straight", Vector3.ZERO, 0.0, catalog_data)
+	var rail_b := Catalog.place(parent, "train_kit/railroad-straight", Vector3(0, 0, 8), 0.0, catalog_data)
+	var rail_a_bounds: AABB = rail_a.transform * rail_a.occlusion_bounds
+	var rail_b_bounds: AABB = rail_b.transform * rail_b.occlusion_bounds
+	check(is_zero_approx(rail_a_bounds.position.y), "Track family offset grounds the native minus-one pivot")
+	check(is_equal_approx(rail_a_bounds.end.z, rail_b_bounds.position.z), "Straight rails connect at shared family pitch without recentering")
+	check(Catalog.profile("train_kit/railroad-straight-hill-beginning", catalog_data).anchor == Placement.Anchor.SOURCE_ORIGIN, "Slopes preserve authored connection geometry rather than individual floor centering")
+	rail_a.free()
+	rail_b.free()
 	var persistence_path := "res://tests/_asset_calibration_test.json"
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(persistence_path))
 	check(Catalog.save_calibrations(Catalog.default_data(), persistence_path) == OK, "Calibration fixture saved")
@@ -114,7 +135,7 @@ func run() -> void:
 	lab.calibration_path = persistence_path
 	root.add_child(lab)
 	await process_frame
-	check(lab.asset_list.item_count == 315, "Empty search shows every asset")
+	check(lab.asset_list.item_count == 549, "Empty search shows every asset")
 	check(lab.comparison.scale.is_equal_approx(Vector3.ONE), "Laboratory MIRA reference preserves the intended 1.60 m runtime height")
 	lab.family_filter.select(1)
 	lab._filter("")
@@ -128,6 +149,10 @@ func run() -> void:
 	lab.family_filter.select(4)
 	lab._filter("")
 	check(lab.asset_list.item_count == 40, "Space family filter")
+	for pack_index in range(4, 8):
+		lab.family_filter.select(pack_index + 1)
+		lab._filter("")
+		check(lab.asset_list.item_count == [50, 41, 40, 103][pack_index - 4], "New family filter contains its exact imported model count")
 	lab.family_filter.select(0)
 	lab._filter("")
 	lab._filter("structure-doorway-wide")
@@ -194,7 +219,7 @@ func run() -> void:
 	check(lab.asset_list.item_count == 1, "Reviewed-only filter")
 	lab.review_filter.select(1)
 	lab._filter("")
-	check(lab.asset_list.item_count == 314, "Unreviewed-only filter")
+	check(lab.asset_list.item_count == 548, "Unreviewed-only filter")
 	var reviewed_id: String = lab.selected
 	lab._next_unreviewed()
 	check(lab.selected != reviewed_id and lab.selected not in persisted.reviewed, "Next unreviewed navigation")

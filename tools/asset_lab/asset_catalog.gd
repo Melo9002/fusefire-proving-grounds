@@ -2,7 +2,7 @@ extends RefCounted
 ## Visual calibration catalog. Tactical occupancy remains authored separately in MapData/modules.
 const ROOT := "res://art/environments/kenney/"
 const DATA_PATH := "res://tools/asset_lab/asset_calibrations.json"
-const PACKS := ["city_kit_industrial", "city_kit_roads", "factory_kit", "modular_space_kit"]
+const PACKS := ["city_kit_industrial", "city_kit_roads", "factory_kit", "modular_space_kit", "car_kit", "city_kit_commercial", "city_kit_suburban", "train_kit"]
 const Placement = preload("res://presentation/environment_asset_placement.gd")
 const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const DEFAULT_SCALE := 1.0
@@ -36,7 +36,14 @@ static func default_data() -> Dictionary:
 			"construction_fences": {"scale": 5.0}, "dumpsters": {"scale": 5.0},
 			"construction_equipment": {"scale": 5.0},
 			"factory_unclassified": {"scale": 1.5},
-			"space_unclassified": {"scale": 1.0}
+			"space_unclassified": {"scale": 1.0},
+			"commercial_buildings": {"scale": 10.0, "anchor": 1, "calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only."},
+			"commercial_details": {"scale": 10.0, "anchor": 1, "calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot."},
+			"suburban_family": {"scale": 10.0, "anchor": 1, "calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots."},
+			"vehicle_family": {"scale": 1.25, "anchor": 0, "calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions."},
+			"vehicle_parts": {"scale": 1.25, "anchor": 1, "calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them."},
+			"rail_vehicles": {"scale": 2.0, "anchor": 1, "calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim."},
+			"rail_tracks": {"scale": 2.0, "anchor": 1, "anchor_position": [0.0, 2.0, 0.0], "calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied."}
 		},
 		"asset_overrides": {}, "reviewed": []
 	}
@@ -92,6 +99,14 @@ static func calibration_category(id: String) -> String:
 		if name.begins_with("light-"): return "road_lights"
 		if name.begins_with("sign-") or name.begins_with("road-sign-") or name.begins_with("traffic-light-"): return "signs_and_signals"
 		return "roads_and_paving"
+	if id.begins_with("city_kit_commercial/"):
+		return "commercial_details" if name.begins_with("detail-") else "commercial_buildings"
+	if id.begins_with("city_kit_suburban/"):
+		return "construction_fences" if name.begins_with("fence") else "suburban_family"
+	if id.begins_with("car_kit/"):
+		return "vehicle_parts" if name.begins_with("wheel-") or name.begins_with("debris-") else "vehicle_family"
+	if id.begins_with("train_kit/"):
+		return "rail_tracks" if name.begins_with("railroad-") else "rail_vehicles"
 	if id.begins_with("factory_kit/"): return "factory_unclassified"
 	if id.begins_with("modular_space_kit/"): return "space_unclassified"
 	return "unclassified"

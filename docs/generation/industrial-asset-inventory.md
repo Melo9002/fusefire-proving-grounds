@@ -71,7 +71,20 @@ Runtime wrapper scenes and shared materials should be created only when future e
 | City Kit Suburban | 2.0 | 40 | `art/environments/kenney/city_kit_suburban/` |
 | Train Kit | 1.1 | 103 | `art/environments/kenney/train_kit/` |
 
-These 234 models are imported only: no calibration approval, tactical behavior or generator eligibility is implied. The Asset Lab still lists the original four calibrated packs; extending its catalog and reviewing the new packs is pending. Existing calibration data is unchanged.
+The Asset Lab now lists all eight packs (549 assets), with native bounds and family-scale calibration baselines for the 234 additions. No new calibration approval, tactical behavior or generator eligibility is implied. The original 315 calibration/review records and original bounds are unchanged.
+
+### Calibration baseline — 2026-11-01
+
+Open Asset Lab (F6), select the family filter, and use Unreviewed to inspect the new assets beside MIRA. Save individual scale overrides where needed, then mark reviewed only after inspection. The owner will assign special-item scales.
+
+- Commercial buildings and details, including parasols: 10x, matching established industrial buildings.
+- Suburban houses and paths: 10x; fences: established construction-fence category at 5x (standard fence height 1.35 m).
+- Cars and parts: provisional shared 1.25x, because native dimensions differ from the City Kits.
+- Trains and track: provisional shared 2x. Track uses a common +2 m vertical origin correction to preserve ramp/curve alignment; straight pitch is 8 m. Rail vehicles preserve source pivots; the comparison uses +0.2 m placement for rail contact.
+
+No per-asset overrides were added. Building and fence scales follow the owner-requested existing family values rather than the earlier experimental 7x calibration. Representative rendered inspections were performed; the new catalog is not individually visually certified. Semantic classification remains explicitly pending for all 234 additions.
+
+Focused verification: asset calibration and semantic catalog suites; original calibration and bounds records compared structurally against Git HEAD. Existing sandbox certificate-store warnings do not indicate an asset-load failure.
 
 Each new pack retains its supplied CC0 license and the `models/Textures/colormap.png` referenced by its GLBs. Copied source hashes match. Godot instantiated all 234 scenes with nonempty mesh bounds; no visual/scale certification was performed. The sandbox import reported certificate-store/editor-settings access warnings; the model-load check passed.
 
