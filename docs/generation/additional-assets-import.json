@@ -1,0 +1,30 @@
+[
+  {
+    "pack": "car_kit",
+    "source_folder": "kenney_car-kit",
+    "models": 50,
+    "files": 52,
+    "status": "imported; calibration and tactical authoring pending"
+  },
+  {
+    "pack": "city_kit_commercial",
+    "source_folder": "kenney_city-kit-commercial_2.1",
+    "models": 41,
+    "files": 43,
+    "status": "imported; calibration and tactical authoring pending"
+  },
+  {
+    "pack": "city_kit_suburban",
+    "source_folder": "kenney_city-kit-suburban_20",
+    "models": 40,
+    "files": 42,
+    "status": "imported; calibration and tactical authoring pending"
+  },
+  {
+    "pack": "train_kit",
+    "source_folder": "kenney_train-kit",
+    "models": 103,
+    "files": 105,
+    "status": "imported; calibration and tactical authoring pending"
+  }
+]

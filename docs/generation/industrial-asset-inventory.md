@@ -61,3 +61,18 @@ art/environments/
 ```
 
 Runtime wrapper scenes and shared materials should be created only when future environment generation establishes their actual contracts. Do not edit the vendor GLBs in place; place FuseFire-authored metadata and wrappers under a future `art/environments/runtime/` structure.
+
+## Additional packs imported 2026-10-31
+
+| Pack | Version | Imported GLB models | Project folder |
+| --- | --- | ---: | --- |
+| Car Kit | 3.1 | 50 | `art/environments/kenney/car_kit/` |
+| City Kit Commercial | 2.1 | 41 | `art/environments/kenney/city_kit_commercial/` |
+| City Kit Suburban | 2.0 | 40 | `art/environments/kenney/city_kit_suburban/` |
+| Train Kit | 1.1 | 103 | `art/environments/kenney/train_kit/` |
+
+These 234 models are imported only: no calibration approval, tactical behavior or generator eligibility is implied. The Asset Lab still lists the original four calibrated packs; extending its catalog and reviewing the new packs is pending. Existing calibration data is unchanged.
+
+Each new pack retains its supplied CC0 license and the `models/Textures/colormap.png` referenced by its GLBs. Copied source hashes match. Godot instantiated all 234 scenes with nonempty mesh bounds; no visual/scale certification was performed. The sandbox import reported certificate-store/editor-settings access warnings; the model-load check passed.
+
+The complete original packages (including alternate formats and previews) were moved out of `additional assets` to `C:/Users/Blue/Documents/Codex/asset-sources/fusefire/2026-10-31/`. Every moved source file was hash-verified against that archive's manifest. The incoming folder is empty. This source archive is local and is not pushed to Git.
