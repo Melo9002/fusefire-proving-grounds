@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="m435458"]
+albedo_color = Color(0.2627450980392157, 0.32941176470588235, 0.34509803921568627, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b1"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b2"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b3"]
+size = Vector3(0.400000, 0.300000, 5.700000)
+material = SubResource("m435458")
+
+[node name="pipe_rack_support" type="Node3D"]
+
+[node name="Post0" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, -2.500000)
+mesh = SubResource("b1")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="Post1" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, 2.500000)
+mesh = SubResource("b2")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="Beam" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 7.300000, 0.000000)
+mesh = SubResource("b3")

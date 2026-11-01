@@ -1,7 +1,7 @@
 {
 	"asset_overrides": {
 		"car_kit/ambulance": {
-			"anchor": 0.0,
+			"anchor": 0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -9,7 +9,21 @@
 			],
 			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
 			"classification": "unclassified",
+			"measured_calibrated_size": [
+				1.875,
+				2.25,
+				4.06249952316284
+			],
+			"measured_native_size": [
+				1.5,
+				1.80000007152557,
+				3.24999976158142
+			],
 			"scale": 1.25,
+			"suggested_footprint": [
+				0,
+				0
+			],
 			"yaw_degrees": 0.0
 		},
 		"car_kit/box": {
@@ -49,7 +63,7 @@
 			"yaw_degrees": 0.0
 		},
 		"car_kit/debris-bolt": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -69,8 +83,8 @@
 			],
 			"scale": 1.25,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
 			"yaw_degrees": 0.0
 		},

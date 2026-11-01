@@ -116,6 +116,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"enemy_commander": int(source.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"refinery": bool(source.get("refinery", false)),
 		"industrial_warehouse": bool(source.get("industrial_warehouse", false)),
+		"refinery_2": bool(source.get("refinery_2", false)),
 	}
 
 static func _configuration_from_data(data: Dictionary) -> Dictionary:
@@ -148,6 +149,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"enemy_commander": int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"refinery": bool(data.get("refinery", false)),
 		"industrial_warehouse": bool(data.get("industrial_warehouse", false)),
+		"refinery_2": bool(data.get("refinery_2", false)),
 	}
 
 static func _string_array(values: Variant) -> Array[String]:

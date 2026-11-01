@@ -38,6 +38,7 @@ var generation_seed: int = 1
 var generated_size := Vector2i(32, 24)
 var use_refinery_map := false
 var use_industrial_warehouse := false
+var use_refinery_2 := false
 var include_vip := false
 var vip_behavior := MissionActor.VIPBehavior.PLAYER_CONTROLLED
 var mission_definition: MissionDefinition
@@ -94,6 +95,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	use_generated_map = config.generated_map
 	use_refinery_map = config.refinery
 	use_industrial_warehouse = config.industrial_warehouse
+	use_refinery_2 = config.refinery_2
 	battle_seed = config.battle_seed
 	generation_seed = config.battle_seed
 	include_vip = config.include_vip
@@ -142,6 +144,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.tactical_tempo_enabled = tactical_tempo_enabled
 	normalized.refinery = use_refinery_map
 	normalized.industrial_warehouse = use_industrial_warehouse
+	normalized.refinery_2 = use_refinery_2
 	_replay_configuration = normalized.to_replay()
 
 func configure_replay(recording) -> void:
@@ -184,12 +187,17 @@ func _ready() -> void:
 func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
-	var generated_map := FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
+	var generated_map := preload("res://systems/generation/refinery_2_layout.gd").generate(generation_seed, grid.cell_size) if use_refinery_2 else FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
 	active_generated_map = generated_map
 	generated_size = generated_map.map_size
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size
 	grid.map_floor.size.z = generated_size.y * grid.cell_size
+	if use_refinery_2:
+		var earth := StandardMaterial3D.new()
+		earth.albedo_color = Color("865b46")
+		earth.roughness = 0.9
+		grid.map_floor.material = earth
 	(get_node("Visualizers/GridVisualizer") as GridVisualizer).generate_grid_lines()
 	var rig := get_node("CameraRig") as TacticalCamera
 	var scale_factor := maxf(float(generated_size.x) / 32.0, float(generated_size.y) / 24.0)

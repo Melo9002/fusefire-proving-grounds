@@ -4,6 +4,9 @@ extends RefCounted
 const HILL_SKIRT_CLEARANCE := 0.015
 
 static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
+	if map_data.source_kind == "authored_refinery_2":
+		preload("res://systems/generation/refinery_2_layout.gd").present(parent, cell_size)
+		return
 	if map_data.source_kind == "generated_refinery":
 		preload("res://systems/generation/refinery_presenter.gd").build(map_data, parent, cell_size)
 	var container_cells: Dictionary = {}

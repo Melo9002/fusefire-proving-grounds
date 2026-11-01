@@ -41,6 +41,7 @@ var player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFA
 var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var refinery := false
 var industrial_warehouse := false
+var refinery_2 := false
 
 
 func apply_replay(data: Dictionary) -> void:
@@ -70,6 +71,7 @@ func apply_replay(data: Dictionary) -> void:
 	enemy_commander = int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
 	refinery = data.get("refinery", false)
 	industrial_warehouse = data.get("industrial_warehouse", false)
+	refinery_2 = data.get("refinery_2", false)
 
 
 func to_replay() -> Dictionary:
@@ -99,6 +101,7 @@ func to_replay() -> Dictionary:
 		"enemy_commander": enemy_commander,
 		"refinery": refinery,
 		"industrial_warehouse": industrial_warehouse,
+		"refinery_2": refinery_2,
 	}
 
 func validate_generation_selection() -> Array[Dictionary]:

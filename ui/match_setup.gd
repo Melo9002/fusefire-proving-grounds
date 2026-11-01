@@ -51,6 +51,7 @@ func _ready() -> void:
 		map_size_option.add_item("%s — %d × %d tiles" % [size_names[index], dimensions.x, dimensions.y])
 	map_size_option.add_item("Special — Refinery (40 × 30)")
 	map_size_option.add_item("Special — Industrial Warehouse (40 × 30)")
+	map_size_option.add_item("Authored - Refinery 2.0 (96 x 80)")
 	map_size_option.select(1)
 	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)
@@ -406,6 +407,8 @@ func _update_summary(_value: float) -> void:
 	if generated_map_toggle.button_pressed:
 		if map_size_option.selected == 3:
 			map_label = "REFINERY"
+		elif map_size_option.selected == 5:
+			map_label = "REFINERY 2.0"
 		elif map_size_option.selected == 4:
 			map_label = "INDUSTRIAL WAREHOUSE"
 		else:
@@ -463,7 +466,7 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.player_archetypes = player_archetypes.duplicate()
 	config.enemy_archetypes = enemy_archetypes.duplicate()
 	config.ally_archetypes = ally_archetypes.duplicate()
-	config.map_size = (Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected])
+	config.map_size = Vector2i(96, 80) if map_size_option.selected == 5 else (Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected])
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
@@ -472,4 +475,5 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
 	config.refinery = map_size_option.selected == 3
 	config.industrial_warehouse = map_size_option.selected == 4
+	config.refinery_2 = map_size_option.selected == 5
 	return config

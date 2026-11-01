@@ -29,6 +29,7 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		"map_size": _serializable_value(config.get("map_size", Vector2i(32, 24))),
 		"refinery": bool(config.get("refinery", false)),
 		"industrial_warehouse": bool(config.get("industrial_warehouse", false)),
+		"refinery_2": bool(config.get("refinery_2", false)),
 		"difficulty": AIDifficultyPolicy.Tier.keys()[result.difficulty],
 		"player_commander": AICommanderPolicy.get_label(config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"enemy_commander": AICommanderPolicy.get_label(config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
@@ -55,6 +56,7 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.enemy_commander = config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)
 	battle_config.refinery = config.get("refinery", false)
 	battle_config.industrial_warehouse = config.get("industrial_warehouse", false)
+	battle_config.refinery_2 = config.get("refinery_2", false)
 	level.configure_battle(battle_config)
 	add_child(level)
 	var setup_deadline := Time.get_ticks_msec() + 10000

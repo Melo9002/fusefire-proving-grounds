@@ -1,0 +1,119 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="mdfb64c"]
+albedo_color = Color(0.8745098039215686, 0.7137254901960784, 0.2980392156862745, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b1"]
+size = Vector3(0.060000, 4.000000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b2"]
+size = Vector3(0.060000, 4.000000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b3"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b4"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b5"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b6"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b7"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b8"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b9"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b10"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b11"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b12"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b13"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b14"]
+size = Vector3(0.760000, 0.045000, 0.045000)
+material = SubResource("mdfb64c")
+
+[node name="maintenance_ladder_4m" type="Node3D"]
+
+[node name="Side0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.350000, 2.000000, 0.000000)
+mesh = SubResource("b1")
+
+[node name="Side1" type="MeshInstance3D" parent="."]
+position = Vector3(0.350000, 2.000000, 0.000000)
+mesh = SubResource("b2")
+
+[node name="Rung0" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.200000, 0.000000)
+mesh = SubResource("b3")
+
+[node name="Rung1" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.530000, 0.000000)
+mesh = SubResource("b4")
+
+[node name="Rung2" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.860000, 0.000000)
+mesh = SubResource("b5")
+
+[node name="Rung3" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 1.190000, 0.000000)
+mesh = SubResource("b6")
+
+[node name="Rung4" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 1.520000, 0.000000)
+mesh = SubResource("b7")
+
+[node name="Rung5" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 1.850000, 0.000000)
+mesh = SubResource("b8")
+
+[node name="Rung6" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 2.180000, 0.000000)
+mesh = SubResource("b9")
+
+[node name="Rung7" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 2.510000, 0.000000)
+mesh = SubResource("b10")
+
+[node name="Rung8" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 2.840000, 0.000000)
+mesh = SubResource("b11")
+
+[node name="Rung9" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.170000, 0.000000)
+mesh = SubResource("b12")
+
+[node name="Rung10" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.500000, 0.000000)
+mesh = SubResource("b13")
+
+[node name="Rung11" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.830000, 0.000000)
+mesh = SubResource("b14")

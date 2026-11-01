@@ -27,3 +27,7 @@ Next design discussion: one authored environment, contextual tactical population
 Scope: approximately 18,500 fewer GDScript lines (including retired tests) and 5,900 fewer documentation lines. Obsolete certificates, fixtures and investigation captures also moved out. Combat, assets, animation, Generator 1 and the original Refinery remain. Archived content is recoverable locally, not shipped or pushed with this cleanup.
 
 Historical Prototype 1.5 audits, the superseded action migration plan, the 27A recovery audit and retired VRoid roadmap were also quarantined. Current gameplay, asset, animation and research references remain indexed.
+
+## Authored replacement pilot — 2026-11-01
+
+Refinery 2.0 is now a fixed 96 x 80 environment using the reviewed downloaded assets and reusable custom catwalk components. Original Generator 1 and Refinery remain unchanged. See [the map handoff](refinery-2.md) for opening instructions, boundaries, verification and the next agent-authoring task.

@@ -1,0 +1,3493 @@
+[gd_scene load_steps=202 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-a.glb" id="asset_city_kit_industrial_building_a"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-b.glb" id="asset_city_kit_industrial_building_b"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/chimney-large.glb" id="asset_city_kit_industrial_chimney_large"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/chimney-medium.glb" id="asset_city_kit_industrial_chimney_medium"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank-large.glb" id="asset_city_kit_industrial_detail_tank_large"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-p.glb" id="asset_city_kit_industrial_building_p"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-i.glb" id="asset_city_kit_industrial_building_i"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/water-tower.glb" id="asset_city_kit_industrial_water_tower"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/pipe-large-long.glb" id="asset_factory_kit_pipe_large_long"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/machine-connection-pipe.glb" id="asset_factory_kit_machine_connection_pipe"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="asset_city_kit_industrial_shipping_container_a"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="asset_city_kit_industrial_shipping_container_b"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-c.glb" id="asset_city_kit_industrial_shipping_container_c"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/delivery.glb" id="asset_car_kit_delivery"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/truck.glb" id="asset_car_kit_truck"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/van.glb" id="asset_car_kit_van"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/crane.glb" id="asset_factory_kit_crane"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="asset_factory_kit_box_large"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/pipe-large-bend.glb" id="asset_factory_kit_pipe_large_bend"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_suburban/models/tree-large.glb" id="asset_city_kit_suburban_tree_large"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_suburban/models/tree-small.glb" id="asset_city_kit_suburban_tree_small"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/solar-panel-landscape-group.glb" id="asset_city_kit_industrial_solar_panel_landscape_group"]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/light-curved.glb" id="asset_city_kit_roads_light_curved"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/pipe_rack_support.tscn" id="component_pipe_rack_support"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_deck_2x2.tscn" id="component_catwalk_deck_2x2"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_support_2m.tscn" id="component_catwalk_support_2m"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="component_maintenance_ladder_4m"]
+
+[sub_resource type="StandardMaterial3D" id="m865b46"]
+albedo_color = Color(0.5254901960784314, 0.3568627450980392, 0.27450980392156865, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b1"]
+size = Vector3(116.000000, 0.160000, 100.000000)
+material = SubResource("m865b46")
+
+[sub_resource type="StandardMaterial3D" id="ma88a6c"]
+albedo_color = Color(0.6588235294117647, 0.5411764705882353, 0.4235294117647059, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b2"]
+size = Vector3(6.000000, 0.012000, 70.000000)
+material = SubResource("ma88a6c")
+
+[sub_resource type="BoxMesh" id="b3"]
+size = Vector3(6.000000, 0.012000, 70.000000)
+material = SubResource("ma88a6c")
+
+[sub_resource type="BoxMesh" id="b4"]
+size = Vector3(87.000000, 0.012000, 6.000000)
+material = SubResource("ma88a6c")
+
+[sub_resource type="BoxMesh" id="b5"]
+size = Vector3(87.000000, 0.012000, 6.000000)
+material = SubResource("ma88a6c")
+
+[sub_resource type="BoxMesh" id="b6"]
+size = Vector3(81.000000, 0.012000, 6.000000)
+material = SubResource("ma88a6c")
+
+[sub_resource type="StandardMaterial3D" id="maaa99b"]
+albedo_color = Color(0.6666666666666666, 0.6627450980392157, 0.6078431372549019, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b7"]
+size = Vector3(63.000000, 0.020000, 22.000000)
+material = SubResource("maaa99b")
+
+[sub_resource type="BoxMesh" id="b8"]
+size = Vector3(20.000000, 0.020000, 31.000000)
+material = SubResource("maaa99b")
+
+[sub_resource type="BoxMesh" id="b9"]
+size = Vector3(36.000000, 0.020000, 27.000000)
+material = SubResource("maaa99b")
+
+[sub_resource type="BoxMesh" id="b10"]
+size = Vector3(32.000000, 0.020000, 16.000000)
+material = SubResource("maaa99b")
+
+[sub_resource type="BoxMesh" id="b11"]
+size = Vector3(12.000000, 0.020000, 16.000000)
+material = SubResource("maaa99b")
+
+[sub_resource type="StandardMaterial3D" id="mcdc8b3"]
+albedo_color = Color(0.803921568627451, 0.7843137254901961, 0.7019607843137254, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b12"]
+size = Vector3(0.350000, 0.600000, 25.000000)
+material = SubResource("mcdc8b3")
+
+[sub_resource type="BoxMesh" id="b13"]
+size = Vector3(0.350000, 0.600000, 25.000000)
+material = SubResource("mcdc8b3")
+
+[sub_resource type="BoxMesh" id="b14"]
+size = Vector3(34.000000, 0.600000, 0.350000)
+material = SubResource("mcdc8b3")
+
+[sub_resource type="BoxMesh" id="b15"]
+size = Vector3(17.000000, 0.600000, 0.350000)
+material = SubResource("mcdc8b3")
+
+[sub_resource type="BoxMesh" id="b16"]
+size = Vector3(17.000000, 0.600000, 0.350000)
+material = SubResource("mcdc8b3")
+
+[sub_resource type="StandardMaterial3D" id="m435458"]
+albedo_color = Color(0.2627450980392157, 0.32941176470588235, 0.34509803921568627, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b17"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b18"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b19"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b20"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b21"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b22"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b23"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b24"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b25"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b26"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b27"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b28"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b29"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b30"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b31"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b32"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b33"]
+size = Vector3(0.300000, 7.500000, 0.300000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b34"]
+size = Vector3(3.600000, 0.300000, 0.400000)
+material = SubResource("m435458")
+
+[sub_resource type="StandardMaterial3D" id="mdfb64c"]
+albedo_color = Color(0.8745098039215686, 0.7137254901960784, 0.2980392156862745, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b35"]
+size = Vector3(54.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b36"]
+size = Vector3(54.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b37"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b38"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b39"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b40"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b41"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b42"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b43"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b44"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b45"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b46"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b47"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b48"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b49"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b50"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b51"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b52"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b53"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b54"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b55"]
+size = Vector3(2.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b56"]
+size = Vector3(2.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b57"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b58"]
+size = Vector3(26.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b59"]
+size = Vector3(26.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b60"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b61"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b62"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b63"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b64"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b65"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b66"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b67"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b68"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b69"]
+size = Vector3(30.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b70"]
+size = Vector3(30.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b71"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b72"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b73"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b74"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b75"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b76"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b77"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b78"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b79"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b80"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b81"]
+size = Vector3(28.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b82"]
+size = Vector3(28.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b83"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b84"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b85"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b86"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b87"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b88"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b89"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b90"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b91"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b92"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b93"]
+size = Vector3(27.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b94"]
+size = Vector3(27.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b95"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b96"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b97"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b98"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b99"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b100"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b101"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b102"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b103"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b104"]
+size = Vector3(29.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b105"]
+size = Vector3(29.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b106"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b107"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b108"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b109"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b110"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b111"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b112"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b113"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b114"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b115"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b116"]
+size = Vector3(30.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b117"]
+size = Vector3(30.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b118"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b119"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b120"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b121"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b122"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b123"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b124"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b125"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b126"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b127"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b128"]
+size = Vector3(1.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b129"]
+size = Vector3(1.000000, 0.060000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b130"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b131"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b132"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b133"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b134"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b135"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b136"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b137"]
+size = Vector3(0.060000, 0.060000, 23.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b138"]
+size = Vector3(0.060000, 0.060000, 23.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b139"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b140"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b141"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b142"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b143"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b144"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b145"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b146"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b147"]
+size = Vector3(0.060000, 0.060000, 3.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b148"]
+size = Vector3(0.060000, 0.060000, 3.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b149"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b150"]
+size = Vector3(0.060000, 0.060000, 14.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b151"]
+size = Vector3(0.060000, 0.060000, 14.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b152"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b153"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b154"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b155"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b156"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b157"]
+size = Vector3(0.060000, 0.060000, 12.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b158"]
+size = Vector3(0.060000, 0.060000, 12.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b159"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b160"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b161"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b162"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b163"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b164"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b165"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b166"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b167"]
+size = Vector3(0.060000, 0.060000, 2.000000)
+material = SubResource("mdfb64c")
+
+[sub_resource type="BoxMesh" id="b168"]
+size = Vector3(0.060000, 0.900000, 0.060000)
+material = SubResource("mdfb64c")
+
+[node name="Refinery2" type="Node3D"]
+metadata/map_size = Vector2i(96, 80)
+metadata/revision = 1
+
+[node name="RedEarth" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, -0.100000, 0.000000)
+mesh = SubResource("b1")
+
+[node name="WestServiceRoad" type="MeshInstance3D" parent="."]
+position = Vector3(-40.500000, 0.005000, -0.500000)
+mesh = SubResource("b2")
+
+[node name="EastServiceRoad" type="MeshInstance3D" parent="."]
+position = Vector3(40.500000, 0.005000, -0.500000)
+mesh = SubResource("b3")
+
+[node name="NorthServiceRoad" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.005000, -33.500000)
+mesh = SubResource("b4")
+
+[node name="SouthServiceRoad" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.005000, 33.500000)
+mesh = SubResource("b5")
+
+[node name="CrossSiteServiceRoad" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 0.005000, -1.500000)
+mesh = SubResource("b6")
+
+[node name="ProcessHallPad" type="MeshInstance3D" parent="."]
+position = Vector3(-7.500000, 0.020000, -20.500000)
+mesh = SubResource("b7")
+
+[node name="BoilerPad" type="MeshInstance3D" parent="."]
+position = Vector3(29.500000, 0.020000, -15.500000)
+mesh = SubResource("b8")
+
+[node name="TankContainment" type="MeshInstance3D" parent="."]
+position = Vector3(-22.500000, 0.020000, 13.500000)
+mesh = SubResource("b9")
+
+[node name="LoadingApron" type="MeshInstance3D" parent="."]
+position = Vector3(15.500000, 0.020000, 22.500000)
+mesh = SubResource("b10")
+
+[node name="ControlApron" type="MeshInstance3D" parent="."]
+position = Vector3(34.500000, 0.020000, 15.500000)
+mesh = SubResource("b11")
+
+[node name="PrimaryProcessHall" type="Node3D" parent="."]
+position = Vector3(-22.500000, 0.000000, -20.500000)
+metadata/asset_id = "city_kit_industrial/building-a"
+
+[node name="Visual" parent="PrimaryProcessHall" instance=ExtResource("asset_city_kit_industrial_building_a")]
+transform = Transform3D(-10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, -10.0000000, 0.0072753, -0.0000000, 0.0000006)
+
+[node name="TacticalVolume" type="Node3D" parent="PrimaryProcessHall"]
+position = Vector3(0.000000, 7.350000, 0.000000)
+metadata/solid_size = Vector3(20.835881, 14.700000, 12.420001)
+metadata/round_volume = false
+
+[node name="SecondaryProcessHall" type="Node3D" parent="."]
+position = Vector3(6.500000, 0.000000, -20.500000)
+metadata/asset_id = "city_kit_industrial/building-b"
+
+[node name="Visual" parent="SecondaryProcessHall" instance=ExtResource("asset_city_kit_industrial_building_b")]
+transform = Transform3D(-10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, -10.0000000, 0.0072777, 0.0000000, -0.0799990)
+
+[node name="TacticalVolume" type="Node3D" parent="SecondaryProcessHall"]
+position = Vector3(0.000000, 7.350000, 0.000000)
+metadata/solid_size = Vector3(20.835881, 14.700000, 12.620001)
+metadata/round_volume = false
+
+[node name="BoilerStack" type="Node3D" parent="."]
+position = Vector3(30.500000, 0.000000, -21.500000)
+metadata/asset_id = "city_kit_industrial/chimney-large"
+
+[node name="Visual" parent="BoilerStack" instance=ExtResource("asset_city_kit_industrial_chimney_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="BoilerStack"]
+position = Vector3(0.000000, 8.500000, 0.000000)
+metadata/solid_size = Vector3(10.799999, 17.000000, 10.799999)
+metadata/round_volume = true
+
+[node name="ProcessColumn73" type="Node3D" parent="."]
+position = Vector3(25.500000, 0.000000, -6.500000)
+metadata/asset_id = "city_kit_industrial/chimney-medium"
+
+[node name="Visual" parent="ProcessColumn73" instance=ExtResource("asset_city_kit_industrial_chimney_medium")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="ProcessColumn73"]
+position = Vector3(0.000000, 9.625000, 0.000000)
+metadata/solid_size = Vector3(4.500000, 19.250000, 4.500000)
+metadata/round_volume = true
+
+[node name="ProcessColumn82" type="Node3D" parent="."]
+position = Vector3(34.500000, 0.000000, -6.500000)
+metadata/asset_id = "city_kit_industrial/chimney-medium"
+
+[node name="Visual" parent="ProcessColumn82" instance=ExtResource("asset_city_kit_industrial_chimney_medium")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="ProcessColumn82"]
+position = Vector3(0.000000, 9.625000, 0.000000)
+metadata/solid_size = Vector3(4.500000, 19.250000, 4.500000)
+metadata/round_volume = true
+
+[node name="Tank_0_0" type="Node3D" parent="."]
+position = Vector3(-33.500000, 0.000000, 7.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_0_0" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_0_0"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="Tank_0_1" type="Node3D" parent="."]
+position = Vector3(-22.500000, 0.000000, 7.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_0_1" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_0_1"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="Tank_0_2" type="Node3D" parent="."]
+position = Vector3(-11.500000, 0.000000, 7.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_0_2" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_0_2"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="Tank_1_0" type="Node3D" parent="."]
+position = Vector3(-33.500000, 0.000000, 19.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_1_0" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_1_0"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="Tank_1_1" type="Node3D" parent="."]
+position = Vector3(-22.500000, 0.000000, 19.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_1_1" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_1_1"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="Tank_1_2" type="Node3D" parent="."]
+position = Vector3(-11.500000, 0.000000, 19.500000)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="Tank_1_2" instance=ExtResource("asset_city_kit_industrial_detail_tank_large")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, 0.0000000, 0.3500000)
+
+[node name="TacticalVolume" type="Node3D" parent="Tank_1_2"]
+position = Vector3(0.000000, 2.404015, 0.000000)
+metadata/solid_size = Vector3(7.542080, 4.808030, 8.242080)
+metadata/round_volume = true
+
+[node name="BundSide9_5" type="MeshInstance3D" parent="."]
+position = Vector3(-38.000000, 0.300000, 14.500000)
+mesh = SubResource("b12")
+metadata/solid_size = Vector3(0.350000, 0.600000, 25.000000)
+
+[node name="BundSide43_5" type="MeshInstance3D" parent="."]
+position = Vector3(-4.000000, 0.300000, 14.500000)
+mesh = SubResource("b13")
+metadata/solid_size = Vector3(0.350000, 0.600000, 25.000000)
+
+[node name="BundNorth" type="MeshInstance3D" parent="."]
+position = Vector3(-21.000000, 0.300000, 2.000000)
+mesh = SubResource("b14")
+metadata/solid_size = Vector3(34.000000, 0.600000, 0.350000)
+
+[node name="BundSouth15" type="MeshInstance3D" parent="."]
+position = Vector3(-32.500000, 0.300000, 27.000000)
+mesh = SubResource("b15")
+metadata/solid_size = Vector3(17.000000, 0.600000, 0.350000)
+
+[node name="BundSouth35" type="MeshInstance3D" parent="."]
+position = Vector3(-12.500000, 0.300000, 27.000000)
+mesh = SubResource("b16")
+metadata/solid_size = Vector3(17.000000, 0.600000, 0.350000)
+
+[node name="LoadingWarehouse" type="Node3D" parent="."]
+position = Vector3(15.500000, 0.000000, 12.500000)
+metadata/asset_id = "city_kit_industrial/building-p"
+
+[node name="Visual" parent="LoadingWarehouse" instance=ExtResource("asset_city_kit_industrial_building_p")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000006, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="LoadingWarehouse"]
+position = Vector3(0.000000, 3.572761, 0.000000)
+metadata/solid_size = Vector3(16.835879, 7.145522, 9.920000)
+metadata/round_volume = false
+
+[node name="ControlBuilding" type="Node3D" parent="."]
+position = Vector3(34.500000, 0.000000, 12.500000)
+metadata/asset_id = "city_kit_industrial/building-i"
+
+[node name="Visual" parent="ControlBuilding" instance=ExtResource("asset_city_kit_industrial_building_i")]
+transform = Transform3D(-10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, -10.0000000, -4.3413711, -0.0000000, 2.7399999)
+
+[node name="TacticalVolume" type="Node3D" parent="ControlBuilding"]
+position = Vector3(0.000000, 3.667705, 0.000000)
+metadata/solid_size = Vector3(10.281378, 7.335410, 13.000001)
+metadata/round_volume = false
+
+[node name="WaterSupplyTower" type="Node3D" parent="."]
+position = Vector3(34.500000, 0.000000, 25.500000)
+metadata/asset_id = "city_kit_industrial/water-tower"
+
+[node name="Visual" parent="WaterSupplyTower" instance=ExtResource("asset_city_kit_industrial_water_tower")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000022, 0.0000000, -0.0000001)
+
+[node name="TacticalVolume" type="Node3D" parent="WaterSupplyTower"]
+position = Vector3(0.000000, 5.354164, 0.000000)
+metadata/solid_size = Vector3(4.261079, 10.708327, 4.158998)
+metadata/round_volume = true
+
+[node name="Header_00_0" type="Node3D" parent="."]
+position = Vector3(-34.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_00_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_00_1" type="Node3D" parent="."]
+position = Vector3(-34.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_00_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_01_0" type="Node3D" parent="."]
+position = Vector3(-31.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_01_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_01_1" type="Node3D" parent="."]
+position = Vector3(-31.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_01_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_02_0" type="Node3D" parent="."]
+position = Vector3(-28.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_02_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_02_1" type="Node3D" parent="."]
+position = Vector3(-28.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_02_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_03_0" type="Node3D" parent="."]
+position = Vector3(-25.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_03_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_03_1" type="Node3D" parent="."]
+position = Vector3(-25.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_03_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_04_0" type="Node3D" parent="."]
+position = Vector3(-22.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_04_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_04_1" type="Node3D" parent="."]
+position = Vector3(-22.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_04_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_05_0" type="Node3D" parent="."]
+position = Vector3(-19.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_05_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_05_1" type="Node3D" parent="."]
+position = Vector3(-19.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_05_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_06_0" type="Node3D" parent="."]
+position = Vector3(-16.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_06_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_06_1" type="Node3D" parent="."]
+position = Vector3(-16.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_06_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_07_0" type="Node3D" parent="."]
+position = Vector3(-13.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_07_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_07_1" type="Node3D" parent="."]
+position = Vector3(-13.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_07_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_08_0" type="Node3D" parent="."]
+position = Vector3(-10.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_08_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_08_1" type="Node3D" parent="."]
+position = Vector3(-10.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_08_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_09_0" type="Node3D" parent="."]
+position = Vector3(-7.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_09_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_09_1" type="Node3D" parent="."]
+position = Vector3(-7.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_09_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_10_0" type="Node3D" parent="."]
+position = Vector3(-4.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_10_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_10_1" type="Node3D" parent="."]
+position = Vector3(-4.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_10_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_11_0" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_11_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_11_1" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_11_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_12_0" type="Node3D" parent="."]
+position = Vector3(1.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_12_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_12_1" type="Node3D" parent="."]
+position = Vector3(1.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_12_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_13_0" type="Node3D" parent="."]
+position = Vector3(4.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_13_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_13_1" type="Node3D" parent="."]
+position = Vector3(4.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_13_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_14_0" type="Node3D" parent="."]
+position = Vector3(7.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_14_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_14_1" type="Node3D" parent="."]
+position = Vector3(7.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_14_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_15_0" type="Node3D" parent="."]
+position = Vector3(10.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_15_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_15_1" type="Node3D" parent="."]
+position = Vector3(10.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_15_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_16_0" type="Node3D" parent="."]
+position = Vector3(13.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_16_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_16_1" type="Node3D" parent="."]
+position = Vector3(13.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_16_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_17_0" type="Node3D" parent="."]
+position = Vector3(16.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_17_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_17_1" type="Node3D" parent="."]
+position = Vector3(16.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_17_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_18_0" type="Node3D" parent="."]
+position = Vector3(19.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_18_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_18_1" type="Node3D" parent="."]
+position = Vector3(19.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_18_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_19_0" type="Node3D" parent="."]
+position = Vector3(22.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_19_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_19_1" type="Node3D" parent="."]
+position = Vector3(22.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_19_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_20_0" type="Node3D" parent="."]
+position = Vector3(25.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_20_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_20_1" type="Node3D" parent="."]
+position = Vector3(25.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_20_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_21_0" type="Node3D" parent="."]
+position = Vector3(28.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_21_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_21_1" type="Node3D" parent="."]
+position = Vector3(28.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_21_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_22_0" type="Node3D" parent="."]
+position = Vector3(31.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_22_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_22_1" type="Node3D" parent="."]
+position = Vector3(31.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_22_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_23_0" type="Node3D" parent="."]
+position = Vector3(34.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_23_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Header_23_1" type="Node3D" parent="."]
+position = Vector3(34.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="Header_23_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="RackSupport13" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(-34.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport22" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(-25.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport31" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(-16.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport40" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(-7.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport49" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(1.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport58" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(10.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport67" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(19.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RackSupport76" parent="." instance=ExtResource("component_pipe_rack_support")]
+position = Vector3(28.500000, 0.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="CrossingHeader00" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -21.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader00" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader01" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -18.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader01" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader02" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -15.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader02" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader03" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -12.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader03" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader04" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader04" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader05" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader05" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader06" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -3.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader06" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader07" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, -0.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader07" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader08" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 2.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader08" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader09" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 5.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader09" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader10" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 8.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader10" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader11" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 11.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader11" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader12" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 14.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader12" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader13" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 17.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader13" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader14" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 20.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader14" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossingHeader15" type="Node3D" parent="."]
+position = Vector3(-1.500000, 7.500000, 23.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="CrossingHeader15" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="CrossPost_44_5_19" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, -20.500000)
+mesh = SubResource("b17")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_19" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, -20.500000)
+mesh = SubResource("b18")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam19" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, -20.500000)
+mesh = SubResource("b19")
+
+[node name="CrossPost_44_5_28" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, -11.500000)
+mesh = SubResource("b20")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_28" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, -11.500000)
+mesh = SubResource("b21")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam28" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, -11.500000)
+mesh = SubResource("b22")
+
+[node name="CrossPost_44_5_37" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, -2.500000)
+mesh = SubResource("b23")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_37" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, -2.500000)
+mesh = SubResource("b24")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam37" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, -2.500000)
+mesh = SubResource("b25")
+
+[node name="CrossPost_44_5_46" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, 6.500000)
+mesh = SubResource("b26")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_46" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, 6.500000)
+mesh = SubResource("b27")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam46" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, 6.500000)
+mesh = SubResource("b28")
+
+[node name="CrossPost_44_5_55" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, 15.500000)
+mesh = SubResource("b29")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_55" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, 15.500000)
+mesh = SubResource("b30")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam55" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, 15.500000)
+mesh = SubResource("b31")
+
+[node name="CrossPost_44_5_64" type="MeshInstance3D" parent="."]
+position = Vector3(-3.000000, 3.750000, 24.500000)
+mesh = SubResource("b32")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossPost_47_5_64" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, 3.750000, 24.500000)
+mesh = SubResource("b33")
+metadata/solid_size = Vector3(0.300000, 7.500000, 0.300000)
+
+[node name="CrossBeam64" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 7.300000, 24.500000)
+mesh = SubResource("b34")
+
+[node name="PumpSkid00" type="Node3D" parent="."]
+position = Vector3(-31.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid00" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid00"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid01" type="Node3D" parent="."]
+position = Vector3(-22.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid01" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid01"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid02" type="Node3D" parent="."]
+position = Vector3(-13.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid02" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid02"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid03" type="Node3D" parent="."]
+position = Vector3(4.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid03" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid03"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid04" type="Node3D" parent="."]
+position = Vector3(13.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid04" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid04"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid05" type="Node3D" parent="."]
+position = Vector3(22.500000, 0.000000, 2.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid05" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid05"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="PumpSkid06" type="Node3D" parent="."]
+position = Vector3(1.500000, 0.000000, 20.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="PumpSkid06" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="PumpSkid06"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="DispatchContainer0" type="Node3D" parent="."]
+position = Vector3(5.500000, 0.000000, 23.500000)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="Visual" parent="DispatchContainer0" instance=ExtResource("asset_city_kit_industrial_shipping_container_a")]
+transform = Transform3D(0.0000000, 0.0000000, 5.0000000, 0.0000000, 5.0000000, 0.0000000, -5.0000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000008)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchContainer0"]
+position = Vector3(0.000000, 0.870200, 0.000000)
+metadata/solid_size = Vector3(4.113000, 1.740400, 1.863001)
+metadata/round_volume = false
+
+[node name="DispatchContainer1" type="Node3D" parent="."]
+position = Vector3(12.500000, 0.000000, 23.500000)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+
+[node name="Visual" parent="DispatchContainer1" instance=ExtResource("asset_city_kit_industrial_shipping_container_b")]
+transform = Transform3D(0.0000000, 0.0000000, 5.0000000, 0.0000000, 5.0000000, 0.0000000, -5.0000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000006)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchContainer1"]
+position = Vector3(0.000000, 0.870200, 0.000000)
+metadata/solid_size = Vector3(4.113000, 1.740400, 1.863001)
+metadata/round_volume = false
+
+[node name="DispatchContainer2" type="Node3D" parent="."]
+position = Vector3(19.500000, 0.000000, 23.500000)
+metadata/asset_id = "city_kit_industrial/shipping-container-c"
+
+[node name="Visual" parent="DispatchContainer2" instance=ExtResource("asset_city_kit_industrial_shipping_container_c")]
+transform = Transform3D(0.0000000, 0.0000000, 5.0000000, 0.0000000, 5.0000000, 0.0000000, -5.0000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000005)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchContainer2"]
+position = Vector3(0.000000, 0.870200, 0.000000)
+metadata/solid_size = Vector3(4.113000, 1.740400, 1.863001)
+metadata/round_volume = false
+
+[node name="ServiceVehicle0" type="Node3D" parent="."]
+position = Vector3(4.500000, 0.000000, 28.500000)
+metadata/asset_id = "car_kit/delivery"
+
+[node name="Visual" parent="ServiceVehicle0" instance=ExtResource("asset_car_kit_delivery")]
+transform = Transform3D(0.0000000, 0.0000000, 1.2500000, 0.0000000, 1.2500000, 0.0000000, -1.2500000, 0.0000000, 0.0000000, 0.0312500, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceVehicle0"]
+position = Vector3(0.000000, 1.031250, 0.000000)
+metadata/solid_size = Vector3(4.062500, 2.062500, 1.875000)
+metadata/round_volume = false
+
+[node name="ServiceVehicle1" type="Node3D" parent="."]
+position = Vector3(15.500000, 0.000000, 28.500000)
+metadata/asset_id = "car_kit/truck"
+
+[node name="Visual" parent="ServiceVehicle1" instance=ExtResource("asset_car_kit_truck")]
+transform = Transform3D(0.0000000, 0.0000000, 1.2500000, 0.0000000, 1.2500000, 0.0000000, -1.2500000, 0.0000000, 0.0000000, 0.0312500, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceVehicle1"]
+position = Vector3(0.000000, 0.812500, 0.000000)
+metadata/solid_size = Vector3(3.687499, 1.625000, 1.875000)
+metadata/round_volume = false
+
+[node name="ServiceVehicle2" type="Node3D" parent="."]
+position = Vector3(29.500000, 0.000000, 28.500000)
+metadata/asset_id = "car_kit/van"
+
+[node name="Visual" parent="ServiceVehicle2" instance=ExtResource("asset_car_kit_van")]
+transform = Transform3D(0.0000000, 0.0000000, 1.2500000, 0.0000000, 1.2500000, 0.0000000, -1.2500000, 0.0000000, 0.0000000, 0.0312500, -0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceVehicle2"]
+position = Vector3(0.000000, 0.843750, 0.000000)
+metadata/solid_size = Vector3(3.437500, 1.687500, 1.875000)
+metadata/round_volume = false
+
+[node name="LoadingCrane" type="Node3D" parent="."]
+position = Vector3(1.500000, 0.000000, 12.500000)
+metadata/asset_id = "factory_kit/crane"
+
+[node name="Visual" parent="LoadingCrane" instance=ExtResource("asset_factory_kit_crane")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, 1.7250001, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="LoadingCrane"]
+position = Vector3(0.000000, 2.664989, 0.000000)
+metadata/solid_size = Vector3(5.520375, 5.329979, 2.889038)
+metadata/round_volume = false
+
+[node name="CargoPallet0" type="Node3D" parent="."]
+position = Vector3(3.500000, 0.000000, 19.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet0" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet0"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet1" type="Node3D" parent="."]
+position = Vector3(7.500000, 0.000000, 19.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet1" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet1"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet2" type="Node3D" parent="."]
+position = Vector3(20.500000, 0.000000, 18.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet2" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet2"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet3" type="Node3D" parent="."]
+position = Vector3(22.500000, 0.000000, 25.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet3" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet3"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet4" type="Node3D" parent="."]
+position = Vector3(-36.500000, 0.000000, 2.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet4" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet4"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet5" type="Node3D" parent="."]
+position = Vector3(-8.500000, 0.000000, 20.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet5" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet5"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet6" type="Node3D" parent="."]
+position = Vector3(20.500000, 0.000000, -11.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet6" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet6"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="CargoPallet7" type="Node3D" parent="."]
+position = Vector3(-29.500000, 0.000000, -9.500000)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CargoPallet7" instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoPallet7"]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false
+
+[node name="HallFeed25_25" type="Node3D" parent="."]
+position = Vector3(-22.500000, 7.500000, -14.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HallFeed25_25" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="HallFeed25_28" type="Node3D" parent="."]
+position = Vector3(-22.500000, 7.500000, -11.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HallFeed25_28" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="HallFeed54_25" type="Node3D" parent="."]
+position = Vector3(6.500000, 7.500000, -14.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HallFeed54_25" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="HallFeed54_28" type="Node3D" parent="."]
+position = Vector3(6.500000, 7.500000, -11.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HallFeed54_28" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TankLink0_0_0" type="Node3D" parent="."]
+position = Vector3(-28.500000, 0.100000, 7.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink0_0_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink0_0_0"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink0_0_1" type="Node3D" parent="."]
+position = Vector3(-27.500000, 0.100000, 7.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink0_0_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink0_0_1"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink0_1_0" type="Node3D" parent="."]
+position = Vector3(-17.500000, 0.100000, 7.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink0_1_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink0_1_0"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink0_1_1" type="Node3D" parent="."]
+position = Vector3(-16.500000, 0.100000, 7.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink0_1_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink0_1_1"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink1_0_0" type="Node3D" parent="."]
+position = Vector3(-28.500000, 0.100000, 19.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink1_0_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink1_0_0"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink1_0_1" type="Node3D" parent="."]
+position = Vector3(-27.500000, 0.100000, 19.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink1_0_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink1_0_1"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink1_1_0" type="Node3D" parent="."]
+position = Vector3(-17.500000, 0.100000, 19.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink1_1_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink1_1_0"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankLink1_1_1" type="Node3D" parent="."]
+position = Vector3(-16.500000, 0.100000, 19.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="TankLink1_1_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankLink1_1_1"]
+position = Vector3(0.000000, 0.750000, 0.000000)
+metadata/solid_size = Vector3(3.000000, 1.500000, 1.500000)
+metadata/round_volume = false
+
+[node name="TankPump0" type="Node3D" parent="."]
+position = Vector3(-7.500000, 0.000000, 7.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="TankPump0" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankPump0"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="TankPump1" type="Node3D" parent="."]
+position = Vector3(-7.500000, 0.000000, 19.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="TankPump1" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="TankPump1"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="HeaderReturnElbow0" type="Node3D" parent="."]
+position = Vector3(-36.000000, 8.250000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-bend"
+
+[node name="Visual" parent="HeaderReturnElbow0" instance=ExtResource("asset_factory_kit_pipe_large_bend")]
+transform = Transform3D(1.5000000, -0.0000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, -0.0000000, -1.5000000, 0.0000000, -1.5000000, -0.0000000, 0.7500000)
+
+[node name="HeaderReturnDrop0_0" type="Node3D" parent="."]
+position = Vector3(-38.100000, 6.150000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HeaderReturnDrop0_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnDrop0_0"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="HeaderReturnDrop0_1" type="Node3D" parent="."]
+position = Vector3(-38.100000, 3.150000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HeaderReturnDrop0_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnDrop0_1"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="HeaderReturnPump0" type="Node3D" parent="."]
+position = Vector3(-38.100000, 0.000000, -9.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="HeaderReturnPump0" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnPump0"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="HeaderReturnElbow1" type="Node3D" parent="."]
+position = Vector3(-36.000000, 8.250000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-bend"
+
+[node name="Visual" parent="HeaderReturnElbow1" instance=ExtResource("asset_factory_kit_pipe_large_bend")]
+transform = Transform3D(1.5000000, -0.0000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, -0.0000000, -1.5000000, 0.0000000, -1.5000000, -0.0000000, 0.7500000)
+
+[node name="HeaderReturnDrop1_0" type="Node3D" parent="."]
+position = Vector3(-38.100000, 6.150000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HeaderReturnDrop1_0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnDrop1_0"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="HeaderReturnDrop1_1" type="Node3D" parent="."]
+position = Vector3(-38.100000, 3.150000, -6.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="HeaderReturnDrop1_1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnDrop1_1"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="HeaderReturnPump1" type="Node3D" parent="."]
+position = Vector3(-38.100000, 0.000000, -6.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="HeaderReturnPump1" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="HeaderReturnPump1"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="BoilerReturnElbow" type="Node3D" parent="."]
+position = Vector3(36.000000, 8.250000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-bend"
+
+[node name="Visual" parent="BoilerReturnElbow" instance=ExtResource("asset_factory_kit_pipe_large_bend")]
+transform = Transform3D(-1.5000000, -0.0000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, -0.0000000, 1.5000000, -0.0000000, 1.5000000, -0.0000000, -0.7500000)
+
+[node name="BoilerReturnDrop0" type="Node3D" parent="."]
+position = Vector3(38.100000, 6.150000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="BoilerReturnDrop0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="BoilerReturnDrop0"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="BoilerReturnDrop1" type="Node3D" parent="."]
+position = Vector3(38.100000, 3.150000, -9.500000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="BoilerReturnDrop1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="BoilerReturnDrop1"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="BoilerReturnPump" type="Node3D" parent="."]
+position = Vector3(38.100000, 0.000000, -9.500000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="BoilerReturnPump" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(0.0000000, 0.0000000, 1.5000000, 0.0000000, 1.5000000, 0.0000000, -1.5000000, 0.0000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="BoilerReturnPump"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(2.250000, 2.625000, 1.800000)
+metadata/round_volume = false
+
+[node name="DispatchReturnElbow" type="Node3D" parent="."]
+position = Vector3(-1.500000, 8.250000, 25.000000)
+metadata/asset_id = "factory_kit/pipe-large-bend"
+
+[node name="Visual" parent="DispatchReturnElbow" instance=ExtResource("asset_factory_kit_pipe_large_bend")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, -1.5000000, -0.0000000, 0.0000000, 0.7500000, -0.0000000, 1.5000000)
+
+[node name="DispatchReturnDrop0" type="Node3D" parent="."]
+position = Vector3(-1.500000, 6.150000, 27.100000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="DispatchReturnDrop0" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchReturnDrop0"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="DispatchReturnDrop1" type="Node3D" parent="."]
+position = Vector3(-1.500000, 3.150000, 27.100000)
+metadata/asset_id = "factory_kit/pipe-large-long"
+
+[node name="Visual" parent="DispatchReturnDrop1" instance=ExtResource("asset_factory_kit_pipe_large_long")]
+transform = Transform3D(0.0000000, -1.5000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.7500000, -1.5000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchReturnDrop1"]
+position = Vector3(-0.000000, -1.500000, 0.000000)
+metadata/solid_size = Vector3(1.500000, 3.000000, 1.500000)
+
+[node name="DispatchReturnPump" type="Node3D" parent="."]
+position = Vector3(-1.500000, 0.000000, 27.100000)
+metadata/asset_id = "factory_kit/machine-connection-pipe"
+
+[node name="Visual" parent="DispatchReturnPump" instance=ExtResource("asset_factory_kit_machine_connection_pipe")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, 0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="DispatchReturnPump"]
+position = Vector3(0.000000, 1.312500, 0.000000)
+metadata/solid_size = Vector3(1.800000, 2.625000, 2.250000)
+metadata/round_volume = false
+
+[node name="ProcessGallery" type="Node3D" parent="."]
+metadata/deck_rect = Rect2i(15, 27, 58, 2)
+metadata/deck_level = 4
+
+
+[node name="ProcessGalleryTile15_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-32.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile17_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-30.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile19_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-28.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile21_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-26.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile23_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-24.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile25_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-22.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile27_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-20.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile29_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-18.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile31_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-16.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile33_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-14.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile35_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-12.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile37_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-10.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile39_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-8.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile41_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile43_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-4.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile45_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-2.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile47_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(0.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile49_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(2.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile51_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(4.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile53_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(6.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile55_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(8.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile57_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(10.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile59_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(12.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile61_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(14.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile63_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(16.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile65_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(18.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile67_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(20.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile69_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(22.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="ProcessGalleryTile71_27" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(24.000000, 4.000000, -12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierProcessGallery_17" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-30.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_23" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-24.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_29" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-18.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_35" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-12.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_41" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_47" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-0.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_53" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(5.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_59" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(11.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_65" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(17.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierProcessGallery_71" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(23.500000, 0.000000, -12.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="MaintenanceDeck" type="Node3D" parent="."]
+metadata/deck_rect = Rect2i(41, 29, 2, 28)
+metadata/deck_level = 4
+
+
+[node name="MaintenanceDeckTile41_29" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -10.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_31" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_33" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -6.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_35" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_37" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, -2.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_39" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 0.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_41" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 2.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_45" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 6.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_47" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 8.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_49" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 10.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_51" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_53" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 14.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="MaintenanceDeckTile41_55" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-6.000000, 4.000000, 16.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierMaintenanceDeck_31" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.000000, 0.000000, -8.500000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierMaintenanceDeck_37" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.000000, 0.000000, -2.500000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierMaintenanceDeck_43" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.000000, 0.000000, 3.500000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierMaintenanceDeck_49" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.000000, 0.000000, 9.500000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierMaintenanceDeck_55" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-6.000000, 0.000000, 15.500000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridge" type="Node3D" parent="."]
+metadata/deck_rect = Rect2i(43, 43, 28, 2)
+metadata/deck_level = 4
+
+
+[node name="LoadingBridgeTile43_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-4.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile45_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-2.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile47_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(0.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile49_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(2.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile51_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(4.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile53_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(6.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile55_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(8.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile57_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(10.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile59_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(12.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile61_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(14.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile63_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(16.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile65_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(18.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile67_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(20.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LoadingBridgeTile69_43" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(22.000000, 4.000000, 4.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierLoadingBridge_45" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-2.500000, 0.000000, 4.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierLoadingBridge_51" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(3.500000, 0.000000, 4.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierLoadingBridge_57" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(9.500000, 0.000000, 4.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierLoadingBridge_63" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(15.500000, 0.000000, 4.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierLoadingBridge_69" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(21.500000, 0.000000, 4.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="TankBridge" type="Node3D" parent="."]
+metadata/deck_rect = Rect2i(11, 52, 30, 2)
+metadata/deck_level = 4
+
+
+[node name="TankBridgeTile11_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-36.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile13_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-34.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile15_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-32.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile17_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-30.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile19_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-28.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile21_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-26.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile23_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-24.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile25_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-22.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile27_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-20.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile29_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-18.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile31_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-16.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile33_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-14.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile35_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-12.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile37_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-10.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TankBridgeTile39_52" parent="." instance=ExtResource("component_catwalk_deck_2x2")]
+position = Vector3(-8.000000, 4.000000, 13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="PierTankBridge_13" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-34.500000, 0.000000, 13.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierTankBridge_19" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-28.500000, 0.000000, 13.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierTankBridge_25" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-22.500000, 0.000000, 13.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierTankBridge_31" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-16.500000, 0.000000, 13.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="PierTankBridge_37" parent="." instance=ExtResource("component_catwalk_support_2m")]
+position = Vector3(-10.500000, 0.000000, 13.000000)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Handrail0_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -13.000000)
+mesh = SubResource("b35")
+
+[node name="Handrail0_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.900000, -13.000000)
+mesh = SubResource("b36")
+
+[node name="RailPost0_0_16" type="MeshInstance3D" parent="."]
+position = Vector3(-31.500000, 4.450000, -13.000000)
+mesh = SubResource("b37")
+
+[node name="RailPost0_0_19" type="MeshInstance3D" parent="."]
+position = Vector3(-28.500000, 4.450000, -13.000000)
+mesh = SubResource("b38")
+
+[node name="RailPost0_0_22" type="MeshInstance3D" parent="."]
+position = Vector3(-25.500000, 4.450000, -13.000000)
+mesh = SubResource("b39")
+
+[node name="RailPost0_0_25" type="MeshInstance3D" parent="."]
+position = Vector3(-22.500000, 4.450000, -13.000000)
+mesh = SubResource("b40")
+
+[node name="RailPost0_0_28" type="MeshInstance3D" parent="."]
+position = Vector3(-19.500000, 4.450000, -13.000000)
+mesh = SubResource("b41")
+
+[node name="RailPost0_0_31" type="MeshInstance3D" parent="."]
+position = Vector3(-16.500000, 4.450000, -13.000000)
+mesh = SubResource("b42")
+
+[node name="RailPost0_0_34" type="MeshInstance3D" parent="."]
+position = Vector3(-13.500000, 4.450000, -13.000000)
+mesh = SubResource("b43")
+
+[node name="RailPost0_0_37" type="MeshInstance3D" parent="."]
+position = Vector3(-10.500000, 4.450000, -13.000000)
+mesh = SubResource("b44")
+
+[node name="RailPost0_0_40" type="MeshInstance3D" parent="."]
+position = Vector3(-7.500000, 4.450000, -13.000000)
+mesh = SubResource("b45")
+
+[node name="RailPost0_0_43" type="MeshInstance3D" parent="."]
+position = Vector3(-4.500000, 4.450000, -13.000000)
+mesh = SubResource("b46")
+
+[node name="RailPost0_0_46" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 4.450000, -13.000000)
+mesh = SubResource("b47")
+
+[node name="RailPost0_0_49" type="MeshInstance3D" parent="."]
+position = Vector3(1.500000, 4.450000, -13.000000)
+mesh = SubResource("b48")
+
+[node name="RailPost0_0_52" type="MeshInstance3D" parent="."]
+position = Vector3(4.500000, 4.450000, -13.000000)
+mesh = SubResource("b49")
+
+[node name="RailPost0_0_55" type="MeshInstance3D" parent="."]
+position = Vector3(7.500000, 4.450000, -13.000000)
+mesh = SubResource("b50")
+
+[node name="RailPost0_0_58" type="MeshInstance3D" parent="."]
+position = Vector3(10.500000, 4.450000, -13.000000)
+mesh = SubResource("b51")
+
+[node name="RailPost0_0_61" type="MeshInstance3D" parent="."]
+position = Vector3(13.500000, 4.450000, -13.000000)
+mesh = SubResource("b52")
+
+[node name="RailPost0_0_64" type="MeshInstance3D" parent="."]
+position = Vector3(16.500000, 4.450000, -13.000000)
+mesh = SubResource("b53")
+
+[node name="RailPost0_0_67" type="MeshInstance3D" parent="."]
+position = Vector3(19.500000, 4.450000, -13.000000)
+mesh = SubResource("b54")
+
+[node name="Handrail0_1_0" type="MeshInstance3D" parent="."]
+position = Vector3(24.000000, 4.450000, -13.000000)
+mesh = SubResource("b55")
+
+[node name="Handrail0_1_1" type="MeshInstance3D" parent="."]
+position = Vector3(24.000000, 4.900000, -13.000000)
+mesh = SubResource("b56")
+
+[node name="RailPost0_1_71" type="MeshInstance3D" parent="."]
+position = Vector3(23.500000, 4.450000, -13.000000)
+mesh = SubResource("b57")
+
+[node name="Handrail1_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-20.000000, 4.450000, -11.000000)
+mesh = SubResource("b58")
+
+[node name="Handrail1_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-20.000000, 4.900000, -11.000000)
+mesh = SubResource("b59")
+
+[node name="RailPost1_0_15" type="MeshInstance3D" parent="."]
+position = Vector3(-32.500000, 4.450000, -11.000000)
+mesh = SubResource("b60")
+
+[node name="RailPost1_0_18" type="MeshInstance3D" parent="."]
+position = Vector3(-29.500000, 4.450000, -11.000000)
+mesh = SubResource("b61")
+
+[node name="RailPost1_0_21" type="MeshInstance3D" parent="."]
+position = Vector3(-26.500000, 4.450000, -11.000000)
+mesh = SubResource("b62")
+
+[node name="RailPost1_0_24" type="MeshInstance3D" parent="."]
+position = Vector3(-23.500000, 4.450000, -11.000000)
+mesh = SubResource("b63")
+
+[node name="RailPost1_0_27" type="MeshInstance3D" parent="."]
+position = Vector3(-20.500000, 4.450000, -11.000000)
+mesh = SubResource("b64")
+
+[node name="RailPost1_0_30" type="MeshInstance3D" parent="."]
+position = Vector3(-17.500000, 4.450000, -11.000000)
+mesh = SubResource("b65")
+
+[node name="RailPost1_0_33" type="MeshInstance3D" parent="."]
+position = Vector3(-14.500000, 4.450000, -11.000000)
+mesh = SubResource("b66")
+
+[node name="RailPost1_0_36" type="MeshInstance3D" parent="."]
+position = Vector3(-11.500000, 4.450000, -11.000000)
+mesh = SubResource("b67")
+
+[node name="RailPost1_0_39" type="MeshInstance3D" parent="."]
+position = Vector3(-8.500000, 4.450000, -11.000000)
+mesh = SubResource("b68")
+
+[node name="Handrail1_1_0" type="MeshInstance3D" parent="."]
+position = Vector3(10.000000, 4.450000, -11.000000)
+mesh = SubResource("b69")
+
+[node name="Handrail1_1_1" type="MeshInstance3D" parent="."]
+position = Vector3(10.000000, 4.900000, -11.000000)
+mesh = SubResource("b70")
+
+[node name="RailPost1_1_43" type="MeshInstance3D" parent="."]
+position = Vector3(-4.500000, 4.450000, -11.000000)
+mesh = SubResource("b71")
+
+[node name="RailPost1_1_46" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 4.450000, -11.000000)
+mesh = SubResource("b72")
+
+[node name="RailPost1_1_49" type="MeshInstance3D" parent="."]
+position = Vector3(1.500000, 4.450000, -11.000000)
+mesh = SubResource("b73")
+
+[node name="RailPost1_1_52" type="MeshInstance3D" parent="."]
+position = Vector3(4.500000, 4.450000, -11.000000)
+mesh = SubResource("b74")
+
+[node name="RailPost1_1_55" type="MeshInstance3D" parent="."]
+position = Vector3(7.500000, 4.450000, -11.000000)
+mesh = SubResource("b75")
+
+[node name="RailPost1_1_58" type="MeshInstance3D" parent="."]
+position = Vector3(10.500000, 4.450000, -11.000000)
+mesh = SubResource("b76")
+
+[node name="RailPost1_1_61" type="MeshInstance3D" parent="."]
+position = Vector3(13.500000, 4.450000, -11.000000)
+mesh = SubResource("b77")
+
+[node name="RailPost1_1_64" type="MeshInstance3D" parent="."]
+position = Vector3(16.500000, 4.450000, -11.000000)
+mesh = SubResource("b78")
+
+[node name="RailPost1_1_67" type="MeshInstance3D" parent="."]
+position = Vector3(19.500000, 4.450000, -11.000000)
+mesh = SubResource("b79")
+
+[node name="RailPost1_1_70" type="MeshInstance3D" parent="."]
+position = Vector3(22.500000, 4.450000, -11.000000)
+mesh = SubResource("b80")
+
+[node name="Handrail2_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(9.000000, 4.450000, 3.000000)
+mesh = SubResource("b81")
+
+[node name="Handrail2_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(9.000000, 4.900000, 3.000000)
+mesh = SubResource("b82")
+
+[node name="RailPost2_0_43" type="MeshInstance3D" parent="."]
+position = Vector3(-4.500000, 4.450000, 3.000000)
+mesh = SubResource("b83")
+
+[node name="RailPost2_0_46" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 4.450000, 3.000000)
+mesh = SubResource("b84")
+
+[node name="RailPost2_0_49" type="MeshInstance3D" parent="."]
+position = Vector3(1.500000, 4.450000, 3.000000)
+mesh = SubResource("b85")
+
+[node name="RailPost2_0_52" type="MeshInstance3D" parent="."]
+position = Vector3(4.500000, 4.450000, 3.000000)
+mesh = SubResource("b86")
+
+[node name="RailPost2_0_55" type="MeshInstance3D" parent="."]
+position = Vector3(7.500000, 4.450000, 3.000000)
+mesh = SubResource("b87")
+
+[node name="RailPost2_0_58" type="MeshInstance3D" parent="."]
+position = Vector3(10.500000, 4.450000, 3.000000)
+mesh = SubResource("b88")
+
+[node name="RailPost2_0_61" type="MeshInstance3D" parent="."]
+position = Vector3(13.500000, 4.450000, 3.000000)
+mesh = SubResource("b89")
+
+[node name="RailPost2_0_64" type="MeshInstance3D" parent="."]
+position = Vector3(16.500000, 4.450000, 3.000000)
+mesh = SubResource("b90")
+
+[node name="RailPost2_0_67" type="MeshInstance3D" parent="."]
+position = Vector3(19.500000, 4.450000, 3.000000)
+mesh = SubResource("b91")
+
+[node name="RailPost2_0_70" type="MeshInstance3D" parent="."]
+position = Vector3(22.500000, 4.450000, 3.000000)
+mesh = SubResource("b92")
+
+[node name="Handrail3_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(8.500000, 4.450000, 5.000000)
+mesh = SubResource("b93")
+
+[node name="Handrail3_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(8.500000, 4.900000, 5.000000)
+mesh = SubResource("b94")
+
+[node name="RailPost3_0_43" type="MeshInstance3D" parent="."]
+position = Vector3(-4.500000, 4.450000, 5.000000)
+mesh = SubResource("b95")
+
+[node name="RailPost3_0_46" type="MeshInstance3D" parent="."]
+position = Vector3(-1.500000, 4.450000, 5.000000)
+mesh = SubResource("b96")
+
+[node name="RailPost3_0_49" type="MeshInstance3D" parent="."]
+position = Vector3(1.500000, 4.450000, 5.000000)
+mesh = SubResource("b97")
+
+[node name="RailPost3_0_52" type="MeshInstance3D" parent="."]
+position = Vector3(4.500000, 4.450000, 5.000000)
+mesh = SubResource("b98")
+
+[node name="RailPost3_0_55" type="MeshInstance3D" parent="."]
+position = Vector3(7.500000, 4.450000, 5.000000)
+mesh = SubResource("b99")
+
+[node name="RailPost3_0_58" type="MeshInstance3D" parent="."]
+position = Vector3(10.500000, 4.450000, 5.000000)
+mesh = SubResource("b100")
+
+[node name="RailPost3_0_61" type="MeshInstance3D" parent="."]
+position = Vector3(13.500000, 4.450000, 5.000000)
+mesh = SubResource("b101")
+
+[node name="RailPost3_0_64" type="MeshInstance3D" parent="."]
+position = Vector3(16.500000, 4.450000, 5.000000)
+mesh = SubResource("b102")
+
+[node name="RailPost3_0_67" type="MeshInstance3D" parent="."]
+position = Vector3(19.500000, 4.450000, 5.000000)
+mesh = SubResource("b103")
+
+[node name="Handrail4_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-21.500000, 4.450000, 12.000000)
+mesh = SubResource("b104")
+
+[node name="Handrail4_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-21.500000, 4.900000, 12.000000)
+mesh = SubResource("b105")
+
+[node name="RailPost4_0_12" type="MeshInstance3D" parent="."]
+position = Vector3(-35.500000, 4.450000, 12.000000)
+mesh = SubResource("b106")
+
+[node name="RailPost4_0_15" type="MeshInstance3D" parent="."]
+position = Vector3(-32.500000, 4.450000, 12.000000)
+mesh = SubResource("b107")
+
+[node name="RailPost4_0_18" type="MeshInstance3D" parent="."]
+position = Vector3(-29.500000, 4.450000, 12.000000)
+mesh = SubResource("b108")
+
+[node name="RailPost4_0_21" type="MeshInstance3D" parent="."]
+position = Vector3(-26.500000, 4.450000, 12.000000)
+mesh = SubResource("b109")
+
+[node name="RailPost4_0_24" type="MeshInstance3D" parent="."]
+position = Vector3(-23.500000, 4.450000, 12.000000)
+mesh = SubResource("b110")
+
+[node name="RailPost4_0_27" type="MeshInstance3D" parent="."]
+position = Vector3(-20.500000, 4.450000, 12.000000)
+mesh = SubResource("b111")
+
+[node name="RailPost4_0_30" type="MeshInstance3D" parent="."]
+position = Vector3(-17.500000, 4.450000, 12.000000)
+mesh = SubResource("b112")
+
+[node name="RailPost4_0_33" type="MeshInstance3D" parent="."]
+position = Vector3(-14.500000, 4.450000, 12.000000)
+mesh = SubResource("b113")
+
+[node name="RailPost4_0_36" type="MeshInstance3D" parent="."]
+position = Vector3(-11.500000, 4.450000, 12.000000)
+mesh = SubResource("b114")
+
+[node name="RailPost4_0_39" type="MeshInstance3D" parent="."]
+position = Vector3(-8.500000, 4.450000, 12.000000)
+mesh = SubResource("b115")
+
+[node name="Handrail5_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-22.000000, 4.450000, 14.000000)
+mesh = SubResource("b116")
+
+[node name="Handrail5_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-22.000000, 4.900000, 14.000000)
+mesh = SubResource("b117")
+
+[node name="RailPost5_0_11" type="MeshInstance3D" parent="."]
+position = Vector3(-36.500000, 4.450000, 14.000000)
+mesh = SubResource("b118")
+
+[node name="RailPost5_0_14" type="MeshInstance3D" parent="."]
+position = Vector3(-33.500000, 4.450000, 14.000000)
+mesh = SubResource("b119")
+
+[node name="RailPost5_0_17" type="MeshInstance3D" parent="."]
+position = Vector3(-30.500000, 4.450000, 14.000000)
+mesh = SubResource("b120")
+
+[node name="RailPost5_0_20" type="MeshInstance3D" parent="."]
+position = Vector3(-27.500000, 4.450000, 14.000000)
+mesh = SubResource("b121")
+
+[node name="RailPost5_0_23" type="MeshInstance3D" parent="."]
+position = Vector3(-24.500000, 4.450000, 14.000000)
+mesh = SubResource("b122")
+
+[node name="RailPost5_0_26" type="MeshInstance3D" parent="."]
+position = Vector3(-21.500000, 4.450000, 14.000000)
+mesh = SubResource("b123")
+
+[node name="RailPost5_0_29" type="MeshInstance3D" parent="."]
+position = Vector3(-18.500000, 4.450000, 14.000000)
+mesh = SubResource("b124")
+
+[node name="RailPost5_0_32" type="MeshInstance3D" parent="."]
+position = Vector3(-15.500000, 4.450000, 14.000000)
+mesh = SubResource("b125")
+
+[node name="RailPost5_0_35" type="MeshInstance3D" parent="."]
+position = Vector3(-12.500000, 4.450000, 14.000000)
+mesh = SubResource("b126")
+
+[node name="RailPost5_0_38" type="MeshInstance3D" parent="."]
+position = Vector3(-9.500000, 4.450000, 14.000000)
+mesh = SubResource("b127")
+
+[node name="Handrail6_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-6.500000, 4.450000, 17.000000)
+mesh = SubResource("b128")
+
+[node name="Handrail6_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-6.500000, 4.900000, 17.000000)
+mesh = SubResource("b129")
+
+[node name="RailPost6_0_41" type="MeshInstance3D" parent="."]
+position = Vector3(-6.500000, 4.450000, 17.000000)
+mesh = SubResource("b130")
+
+[node name="Handrail7_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-37.000000, 4.450000, 13.000000)
+mesh = SubResource("b131")
+
+[node name="Handrail7_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-37.000000, 4.900000, 13.000000)
+mesh = SubResource("b132")
+
+[node name="RailPost7_0_52" type="MeshInstance3D" parent="."]
+position = Vector3(-37.000000, 4.450000, 12.500000)
+mesh = SubResource("b133")
+
+[node name="Handrail8_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-33.000000, 4.450000, -12.000000)
+mesh = SubResource("b134")
+
+[node name="Handrail8_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-33.000000, 4.900000, -12.000000)
+mesh = SubResource("b135")
+
+[node name="RailPost8_0_27" type="MeshInstance3D" parent="."]
+position = Vector3(-33.000000, 4.450000, -12.500000)
+mesh = SubResource("b136")
+
+[node name="Handrail9_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 0.500000)
+mesh = SubResource("b137")
+
+[node name="Handrail9_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.900000, 0.500000)
+mesh = SubResource("b138")
+
+[node name="RailPost9_0_29" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, -10.500000)
+mesh = SubResource("b139")
+
+[node name="RailPost9_0_32" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, -7.500000)
+mesh = SubResource("b140")
+
+[node name="RailPost9_0_35" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, -4.500000)
+mesh = SubResource("b141")
+
+[node name="RailPost9_0_38" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, -1.500000)
+mesh = SubResource("b142")
+
+[node name="RailPost9_0_41" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 1.500000)
+mesh = SubResource("b143")
+
+[node name="RailPost9_0_44" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 4.500000)
+mesh = SubResource("b144")
+
+[node name="RailPost9_0_47" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 7.500000)
+mesh = SubResource("b145")
+
+[node name="RailPost9_0_50" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 10.500000)
+mesh = SubResource("b146")
+
+[node name="Handrail9_1_0" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 15.500000)
+mesh = SubResource("b147")
+
+[node name="Handrail9_1_1" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.900000, 15.500000)
+mesh = SubResource("b148")
+
+[node name="RailPost9_1_54" type="MeshInstance3D" parent="."]
+position = Vector3(-7.000000, 4.450000, 14.500000)
+mesh = SubResource("b149")
+
+[node name="Handrail10_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -4.000000)
+mesh = SubResource("b150")
+
+[node name="Handrail10_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.900000, -4.000000)
+mesh = SubResource("b151")
+
+[node name="RailPost10_0_29" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -10.500000)
+mesh = SubResource("b152")
+
+[node name="RailPost10_0_32" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -7.500000)
+mesh = SubResource("b153")
+
+[node name="RailPost10_0_35" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -4.500000)
+mesh = SubResource("b154")
+
+[node name="RailPost10_0_38" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, -1.500000)
+mesh = SubResource("b155")
+
+[node name="RailPost10_0_41" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 1.500000)
+mesh = SubResource("b156")
+
+[node name="Handrail10_1_0" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 11.000000)
+mesh = SubResource("b157")
+
+[node name="Handrail10_1_1" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.900000, 11.000000)
+mesh = SubResource("b158")
+
+[node name="RailPost10_1_45" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 5.500000)
+mesh = SubResource("b159")
+
+[node name="RailPost10_1_48" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 8.500000)
+mesh = SubResource("b160")
+
+[node name="RailPost10_1_51" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 11.500000)
+mesh = SubResource("b161")
+
+[node name="RailPost10_1_54" type="MeshInstance3D" parent="."]
+position = Vector3(-5.000000, 4.450000, 14.500000)
+mesh = SubResource("b162")
+
+[node name="Handrail11_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(23.000000, 4.450000, 4.000000)
+mesh = SubResource("b163")
+
+[node name="Handrail11_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(23.000000, 4.900000, 4.000000)
+mesh = SubResource("b164")
+
+[node name="RailPost11_0_43" type="MeshInstance3D" parent="."]
+position = Vector3(23.000000, 4.450000, 3.500000)
+mesh = SubResource("b165")
+
+[node name="Handrail12_0_0" type="MeshInstance3D" parent="."]
+position = Vector3(25.000000, 4.450000, -12.000000)
+mesh = SubResource("b166")
+
+[node name="Handrail12_0_1" type="MeshInstance3D" parent="."]
+position = Vector3(25.000000, 4.900000, -12.000000)
+mesh = SubResource("b167")
+
+[node name="RailPost12_0_27" type="MeshInstance3D" parent="."]
+position = Vector3(25.000000, 4.450000, -12.500000)
+mesh = SubResource("b168")
+
+[node name="Ladder0" parent="." instance=ExtResource("component_maintenance_ladder_4m")]
+position = Vector3(-32.500000, 0.000000, -13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+metadata/ladder_bottom = Vector3i(15, 0, 26)
+metadata/ladder_top = Vector3i(15, 4, 27)
+
+[node name="Ladder1" parent="." instance=ExtResource("component_maintenance_ladder_4m")]
+position = Vector3(22.500000, 0.000000, -13.000000)
+rotation_degrees = Vector3(0, 0, 0)
+metadata/ladder_bottom = Vector3i(70, 0, 26)
+metadata/ladder_top = Vector3i(70, 4, 27)
+
+[node name="Ladder2" parent="." instance=ExtResource("component_maintenance_ladder_4m")]
+position = Vector3(-5.500000, 0.000000, 17.000000)
+rotation_degrees = Vector3(0, 0, 0)
+metadata/ladder_bottom = Vector3i(42, 0, 57)
+metadata/ladder_top = Vector3i(42, 4, 56)
+
+[node name="Ladder3" parent="." instance=ExtResource("component_maintenance_ladder_4m")]
+position = Vector3(22.500000, 0.000000, 5.000000)
+rotation_degrees = Vector3(0, 0, 0)
+metadata/ladder_bottom = Vector3i(70, 0, 45)
+metadata/ladder_top = Vector3i(70, 4, 44)
+
+[node name="Ladder4" parent="." instance=ExtResource("component_maintenance_ladder_4m")]
+position = Vector3(-36.500000, 0.000000, 12.000000)
+rotation_degrees = Vector3(0, 0, 0)
+metadata/ladder_bottom = Vector3i(11, 0, 51)
+metadata/ladder_top = Vector3i(11, 4, 52)
+
+[node name="Tree_0_-6" type="Node3D" parent="."]
+position = Vector3(-39.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_0_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_0_86" type="Node3D" parent="."]
+position = Vector3(-39.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_0_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_1_-6" type="Node3D" parent="."]
+position = Vector3(-31.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_1_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_1_86" type="Node3D" parent="."]
+position = Vector3(-31.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_1_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_2_-6" type="Node3D" parent="."]
+position = Vector3(-23.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_2_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_2_86" type="Node3D" parent="."]
+position = Vector3(-23.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_2_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_3_-6" type="Node3D" parent="."]
+position = Vector3(-15.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_3_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_3_86" type="Node3D" parent="."]
+position = Vector3(-15.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_3_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_4_-6" type="Node3D" parent="."]
+position = Vector3(-7.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_4_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_4_86" type="Node3D" parent="."]
+position = Vector3(-7.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_4_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_5_-6" type="Node3D" parent="."]
+position = Vector3(0.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_5_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_5_86" type="Node3D" parent="."]
+position = Vector3(0.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_5_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_6_-6" type="Node3D" parent="."]
+position = Vector3(8.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_6_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_6_86" type="Node3D" parent="."]
+position = Vector3(8.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_6_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_7_-6" type="Node3D" parent="."]
+position = Vector3(16.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_7_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_7_86" type="Node3D" parent="."]
+position = Vector3(16.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_7_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_8_-6" type="Node3D" parent="."]
+position = Vector3(24.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_8_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_8_86" type="Node3D" parent="."]
+position = Vector3(24.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_8_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_9_-6" type="Node3D" parent="."]
+position = Vector3(32.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_9_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_9_86" type="Node3D" parent="."]
+position = Vector3(32.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_9_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_10_-6" type="Node3D" parent="."]
+position = Vector3(40.500000, 0.000000, -45.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_10_-6" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="Tree_10_86" type="Node3D" parent="."]
+position = Vector3(40.500000, 0.000000, 46.500000)
+metadata/asset_id = "city_kit_suburban/tree-large"
+
+[node name="Visual" parent="Tree_10_86" instance=ExtResource("asset_city_kit_suburban_tree_large")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_0_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, -36.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_0_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_0_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, -36.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_0_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_1_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, -28.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_1_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_1_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, -28.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_1_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_2_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, -20.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_2_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_2_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, -20.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_2_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_3_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, -12.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_3_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_3_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, -12.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_3_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_4_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, -4.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_4_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_4_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, -4.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_4_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_5_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, 3.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_5_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_5_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, 3.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_5_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_6_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, 11.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_6_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_6_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, 11.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_6_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_7_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, 19.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_7_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_7_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, 19.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_7_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_8_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, 27.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_8_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_8_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, 27.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_8_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_9_-6" type="Node3D" parent="."]
+position = Vector3(-53.500000, 0.000000, 35.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_9_-6" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="EdgeTree_9_102" type="Node3D" parent="."]
+position = Vector3(54.500000, 0.000000, 35.500000)
+metadata/asset_id = "city_kit_suburban/tree-small"
+
+[node name="Visual" parent="EdgeTree_9_102" instance=ExtResource("asset_city_kit_suburban_tree_small")]
+transform = Transform3D(10.0000000, 0.0000000, 0.0000000, 0.0000000, 10.0000000, 0.0000000, -0.0000000, 0.0000000, 10.0000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="SolarUtility0" type="Node3D" parent="."]
+position = Vector3(-29.500000, 0.000000, 43.500000)
+metadata/asset_id = "city_kit_industrial/solar-panel-landscape-group"
+
+[node name="Visual" parent="SolarUtility0" instance=ExtResource("asset_city_kit_industrial_solar_panel_landscape_group")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000009, 0.0000007, 0.0000010)
+
+[node name="SolarUtility1" type="Node3D" parent="."]
+position = Vector3(-22.500000, 0.000000, 43.500000)
+metadata/asset_id = "city_kit_industrial/solar-panel-landscape-group"
+
+[node name="Visual" parent="SolarUtility1" instance=ExtResource("asset_city_kit_industrial_solar_panel_landscape_group")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000009, 0.0000007, 0.0000010)
+
+[node name="SolarUtility2" type="Node3D" parent="."]
+position = Vector3(-15.500000, 0.000000, 43.500000)
+metadata/asset_id = "city_kit_industrial/solar-panel-landscape-group"
+
+[node name="Visual" parent="SolarUtility2" instance=ExtResource("asset_city_kit_industrial_solar_panel_landscape_group")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000009, 0.0000007, 0.0000010)
+
+[node name="ServiceLight0" type="Node3D" parent="."]
+position = Vector3(-34.500000, 0.000000, -3.500000)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="ServiceLight0" instance=ExtResource("asset_city_kit_roads_light_curved")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, -0.0000000, 0.4375000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceLight0"]
+position = Vector3(0.000000, 1.687500, 0.000000)
+metadata/solid_size = Vector3(0.250000, 3.375000, 1.125000)
+metadata/round_volume = false
+
+[node name="ServiceLight1" type="Node3D" parent="."]
+position = Vector3(-18.500000, 0.000000, -3.500000)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="ServiceLight1" instance=ExtResource("asset_city_kit_roads_light_curved")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, -0.0000000, 0.4375000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceLight1"]
+position = Vector3(0.000000, 1.687500, 0.000000)
+metadata/solid_size = Vector3(0.250000, 3.375000, 1.125000)
+metadata/round_volume = false
+
+[node name="ServiceLight2" type="Node3D" parent="."]
+position = Vector3(5.500000, 0.000000, -3.500000)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="ServiceLight2" instance=ExtResource("asset_city_kit_roads_light_curved")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, -0.0000000, 0.4375000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceLight2"]
+position = Vector3(0.000000, 1.687500, 0.000000)
+metadata/solid_size = Vector3(0.250000, 3.375000, 1.125000)
+metadata/round_volume = false
+
+[node name="ServiceLight3" type="Node3D" parent="."]
+position = Vector3(21.500000, 0.000000, -3.500000)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="ServiceLight3" instance=ExtResource("asset_city_kit_roads_light_curved")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, -0.0000000, 0.4375000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceLight3"]
+position = Vector3(0.000000, 1.687500, 0.000000)
+metadata/solid_size = Vector3(0.250000, 3.375000, 1.125000)
+metadata/round_volume = false
+
+[node name="ServiceLight4" type="Node3D" parent="."]
+position = Vector3(37.500000, 0.000000, -3.500000)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="ServiceLight4" instance=ExtResource("asset_city_kit_roads_light_curved")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, -0.0000000, -0.0000000, 0.4375000)
+
+[node name="TacticalVolume" type="Node3D" parent="ServiceLight4"]
+position = Vector3(0.000000, 1.687500, 0.000000)
+metadata/solid_size = Vector3(0.250000, 3.375000, 1.125000)
+metadata/round_volume = false
+
+[node name="Deployment0" type="Node3D" parent="."]
+metadata/faction = 0
+metadata/grid_origin = Vector3i(8, 0, 35)
+
+[node name="Deployment1" type="Node3D" parent="."]
+metadata/faction = 1
+metadata/grid_origin = Vector3i(87, 0, 40)
+
+[node name="Deployment2" type="Node3D" parent="."]
+metadata/faction = 2
+metadata/grid_origin = Vector3i(7, 0, 42)

@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="m435458"]
+albedo_color = Color(0.2627450980392157, 0.32941176470588235, 0.34509803921568627, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b1"]
+size = Vector3(2.000000, 0.220000, 2.000000)
+material = SubResource("m435458")
+[sub_resource type="BoxShape3D" id="deck_shape"]
+size = Vector3(2, 0.22, 2)
+
+[node name="catwalk_deck_2x2" type="Node3D"]
+
+[node name="Deck" type="MeshInstance3D" parent="."]
+position = Vector3(0.000000, -0.110000, 0.000000)
+mesh = SubResource("b1")
+
+[node name="Body" type="StaticBody3D" parent="."]
+
+
+[node name="Collision" type="CollisionShape3D" parent="Body"]
+position = Vector3(0, -0.11, 0)
+shape = SubResource("deck_shape")

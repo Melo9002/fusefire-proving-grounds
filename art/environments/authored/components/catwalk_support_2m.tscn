@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="m435458"]
+albedo_color = Color(0.2627450980392157, 0.32941176470588235, 0.34509803921568627, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="b1"]
+size = Vector3(0.180000, 3.780000, 0.180000)
+material = SubResource("m435458")
+
+[sub_resource type="BoxMesh" id="b2"]
+size = Vector3(0.180000, 3.780000, 0.180000)
+material = SubResource("m435458")
+
+[node name="catwalk_support_2m" type="Node3D"]
+
+[node name="Pier0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.000000, 1.890000, 0.000000)
+mesh = SubResource("b1")
+metadata/solid_size = Vector3(0.180000, 3.780000, 0.180000)
+
+[node name="Pier1" type="MeshInstance3D" parent="."]
+position = Vector3(1.000000, 1.890000, 0.000000)
+mesh = SubResource("b2")
+metadata/solid_size = Vector3(0.180000, 3.780000, 0.180000)

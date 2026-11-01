@@ -53,7 +53,7 @@ $subsystemPatterns = @{
     movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault"
     ai         = "^ai_|commander|objective_ai|protect_rescue_ai|rescue_carrier|rescue_refinery|squad_context|survive_ai"
     replay     = "replay|determinism|seed_failure"
-    generation = "battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|map_generation|map_quality|map_validation|transport_placement"
+    generation = "battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_2_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
     assets     = "asset|environment_asset|locomotion|pose|unit_visual"
     ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
@@ -64,6 +64,7 @@ $subsystemPatterns = @{
 $visualTests = @(
     "asset_lab_capture.gd",
     "industrial_warehouse_capture.gd",
+    "refinery_2_capture.gd",
     "semantic_asset_contact_sheet.gd",
     "semantic_asset_review_capture.gd",
     "semantic_machine_connection_capture.gd"
