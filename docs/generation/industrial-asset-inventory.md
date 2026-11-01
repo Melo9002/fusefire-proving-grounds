@@ -104,3 +104,10 @@ Owner proposed deriving new-pack scale from equivalent reviewed objects. Tested 
 Recommendation: use multiple counterpart measurements where available, validate against MIRA and functional connections, and keep mechanically connected families at one scale. A standalone prop can require an exception. Do not resize a whole pack from one coincidentally matching envelope. No new calibration system or production changes are needed. Special-item overrides remain for owner review.
 
 Rendered experiment: `artifacts/additional-calibration/counterpart-scale-comparison.png` (local, ignored). Top row uses 0.7875x; bottom row uses the existing 1.25x. Each row includes the reviewed City Roads cone, Car Kit cone, sedan and MIRA. No gameplay code changed; no test rerun needed for this documentation-only experiment.
+
+
+### Owner visual approval - 2026-11-01
+
+The owner explicitly reported that everything had been visually inspected and requested marking the catalog reviewed. All 549 assets are now visually reviewed. Existing 33 saved individual records and all category presets were preserved exactly, including the owner's scale adjustments. Remaining inherited calibrations were frozen into per-asset records so later category edits cannot silently change the approved baseline. Individual overrides now take precedence for the entire reviewed catalog.
+
+This records approval of saved on-disk calibration; any unsaved viewport edits are outside that record. Semantic data, generation eligibility and tactical properties were not changed. Earlier pending-visual-review notes describe historical stages, not current visual approval. Semantic interpretation remains pending for the 234 newly imported assets.

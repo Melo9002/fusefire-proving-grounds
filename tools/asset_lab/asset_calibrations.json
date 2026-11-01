@@ -1,5 +1,1335 @@
 {
 	"asset_overrides": {
+		"car_kit/ambulance": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/box": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/cone": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/cone-flat": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-bolt": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-bumper": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-door": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-door-window": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-drivetrain": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-drivetrain-axle": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-nut": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-plate-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-plate-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-plate-small-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-plate-small-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-spoiler-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-spoiler-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/debris-tire": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/delivery": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/delivery-flat": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/firetruck": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/garbage-truck": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/hatchback-sports": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/kart-oobi": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/kart-oodi": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/kart-ooli": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/kart-oopi": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/kart-oozi": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/police": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/race": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/race-future": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/sedan": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/sedan-sports": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/suv": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/suv-luxury": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/taxi": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/tractor": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/tractor-police": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/tractor-shovel": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/truck": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/truck-flat": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/van": {
+			"anchor": 0.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-dark": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-default": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-racing": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-tractor-back": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-tractor-dark-back": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-tractor-dark-front": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-tractor-front": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"car_kit/wheel-truck": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
+			"classification": "unclassified",
+			"scale": 1.25,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-d": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-e": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-f": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-g": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-h": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-i": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-j": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-k": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-l": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-m": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-n": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-skyscraper-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-skyscraper-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-skyscraper-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-skyscraper-d": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/building-skyscraper-e": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-awning": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-awning-wide": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-overhang": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-overhang-wide": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-parasol-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				2.77128124237061,
+				3.60000014305115,
+				3.20000004768372
+			],
+			"measured_native_size": [
+				0.346410155296326,
+				0.450000017881393,
+				0.400000005960464
+			],
+			"scale": 8.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/detail-parasol-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				2.77128124237061,
+				3.60000014305115,
+				3.20000004768372
+			],
+			"measured_native_size": [
+				0.346410155296326,
+				0.450000017881393,
+				0.400000005960464
+			],
+			"scale": 8.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				100.0,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				2.0,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				111.250007629395,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				2.22500014305115,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0000057220459,
+				112.5,
+				25.0000057220459
+			],
+			"measured_native_size": [
+				0.50000011920929,
+				2.25,
+				0.50000011920929
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-d": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				87.5,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				1.75,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-e": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0000057220459,
+				90.0,
+				25.0000057220459
+			],
+			"measured_native_size": [
+				0.50000011920929,
+				1.79999995231628,
+				0.50000011920929
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-f": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				100.0,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				2.0,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-g": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				100.0,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				2.0,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-h": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				104.999992370605,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				2.09999990463257,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-i": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				88.75,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				1.77499997615814,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-j": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0000076293945,
+				87.5,
+				25.0000057220459
+			],
+			"measured_native_size": [
+				0.50000011920929,
+				1.75,
+				0.50000011920929
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-k": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				77.5,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				1.54999995231628,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-l": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-m": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				98.75,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				1.97500002384186,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-n": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				25.0,
+				35.0,
+				25.0
+			],
+			"measured_native_size": [
+				0.5,
+				0.699999988079071,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				50.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-wide-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				50.0,
+				55.0,
+				25.0
+			],
+			"measured_native_size": [
+				1.0,
+				1.10000002384186,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_commercial/low-detail-building-wide-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				50.0,
+				57.5,
+				25.0
+			],
+			"measured_native_size": [
+				1.0,
+				1.14999997615814,
+				0.5
+			],
+			"scale": 50.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
 		"city_kit_industrial/building-a": {
 			"anchor": 0.0,
 			"anchor_position": [
@@ -52,8 +1382,206 @@
 			],
 			"yaw_degrees": 0.0
 		},
-		"city_kit_industrial/chimney-basic": {
+		"city_kit_industrial/building-c": {
 			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-d": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-e": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-f": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-g": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-h": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-i": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-j": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-k": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-l": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-m": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-n": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-o": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-p": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-q": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-r": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-s": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/building-t": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/chimney-basic": {
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -73,13 +1601,13 @@
 			],
 			"scale": 10.0,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/chimney-large": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -99,13 +1627,13 @@
 			],
 			"scale": 10.0,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/chimney-medium": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -125,13 +1653,13 @@
 			],
 			"scale": 10.0,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/chimney-small": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -151,9 +1679,31 @@
 			],
 			"scale": 10.0,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/detail-tank": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/detail-tank-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
 			"yaw_degrees": 0.0
 		},
 		"city_kit_industrial/shipping-container-a": {
@@ -364,8 +1914,3394 @@
 			],
 			"yaw_degrees": 0.0
 		},
-		"modular_space_kit/stairs-wide": {
+		"city_kit_industrial/water-tower": {
 			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/windmill": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_industrial/windmill-low": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/bridge-pillar": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/bridge-pillar-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/construction-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/construction-cone": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/construction-fence": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/construction-light": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/dumpster": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-pole": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-pole-single": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-pole-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-side": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-side-single": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-side-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-wires": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/electricity-wires-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-curved": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-curved-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-curved-double": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-square-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/light-square-double": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bend": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bend-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bend-sidewalk": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bend-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bend-square-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-bridge": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-crossing": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-crossroad": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-crossroad-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-crossroad-line": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-crossroad-path": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-curve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-curve-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-curve-intersection": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-curve-intersection-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-curve-pavement": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-driveway-double": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-driveway-double-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-driveway-single": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-driveway-single-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-end-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-end-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-end-round-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-intersection": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-intersection-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-intersection-line": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-intersection-path": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-roundabout": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-roundabout-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				-0.12,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side-entry": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side-entry-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side-exit": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-side-exit-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-empty": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-empty-hanging": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-object-stop": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-object-street": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-object-warning": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-stop": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-street": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-sign-warning": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-curve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-curve-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-flat": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-flat-curve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-flat-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-slant-high-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-split": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-split-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-square-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-straight": {
+			"anchor": 2,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-straight-barrier": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-straight-barrier-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-straight-barrier-half": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/road-straight-half": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/sign-highway": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/sign-highway-detailed": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/sign-highway-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/tile-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/tile-low": {
+			"anchor": 2,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/tile-slant": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/tile-slantHigh": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/traffic-light": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/traffic-light-hanging": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/traffic-light-object-hanging": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/traffic-light-object-horizontal": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_roads/traffic-light-object-vertical": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-d": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-e": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-f": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-g": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-h": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-i": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-j": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-k": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-l": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-m": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-n": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-o": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-p": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-q": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-r": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-s": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-t": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/building-type-u": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/driveway-long": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/driveway-short": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-1x2": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-1x3": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-1x4": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-2x2": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-2x3": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-3x2": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-3x3": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/fence-low": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "unclassified",
+			"scale": 5.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/path-long": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/path-short": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/path-stones-long": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/path-stones-messy": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/path-stones-short": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/planter": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/tree-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"city_kit_suburban/tree-small": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
+			"classification": "unclassified",
+			"scale": 10.0,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/arrow": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/arrow-basic": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/arrow-basic-rounded": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/arrow-rounded": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/box-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/box-long": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/box-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/box-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/button-floor-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/button-floor-round-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/button-floor-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/button-floor-square-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-junction": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-stairs": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-stairs-loop": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/catwalk-straight": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cog-a": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cog-b": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cog-c": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cog-d": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cog-e": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/cone": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-fence": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-fence-slope": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-high-slope": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-sides": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe-fence": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe-fence-slope": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe-high-slope": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-bars-stripe-side": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-junction-t": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-part-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-part-middle": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-sides": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-sides-part-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-sides-part-middle": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-stripe": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-stripe-sides": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-stripe-sides-part-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-long-stripe-sides-part-middle": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-sides": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-sides-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-sides-junction-t": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-junction-t": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-part-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-part-middle": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-sides": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-sides-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/conveyor-stripe-sides-junction-t": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/crane": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/crane-lift": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/crane-magnet": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/door": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/door-wide-closed": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/door-wide-half": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/door-wide-open": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/floor": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/floor-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/hopper-high-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/hopper-high-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/hopper-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/hopper-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/indicator-special-area": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/indicator-special-arrow": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/indicator-special-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/indicator-special-lines": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/lever-double": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/lever-single": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-bed": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-connection-hole": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-connection-pipe": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-fortified": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-window": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/machine-window-bar": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/oopi": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-bend": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-bump": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-curve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-junction": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-long": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-side": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-glass-large-valve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-bend": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-bump": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-cross": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-curve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-junction": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-long": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-side": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/pipe-large-valve": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/piston-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/piston-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/piston-thin-round": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/piston-thin-square": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/robot-arm-a": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/robot-arm-b": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/scanner-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/scanner-low": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-flat": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-hanging-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-hanging-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-panel-flat": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-panel-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-panel-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/screen-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "tactical_obstacle",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-corner-inner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-corner-outer": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-doorway": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-doorway-wide": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-medium": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-short": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-tall": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-wall": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-window": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-window-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-yellow-high": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-yellow-medium": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-yellow-short": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/structure-yellow-tall": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/top": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/top-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/top-large-checkerboard": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/warning-orange": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"factory_kit/warning-traffic": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.5,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/cables": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "decorative",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-intersection": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-junction": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-transition": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-wide-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-wide-end": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-wide-intersection": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/corridor-wide-junction": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/gate": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/gate-door": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/gate-door-window": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/gate-lasers": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-large": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-large-variation": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-small": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-small-variation": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-wide": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/room-wide-variation": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/stairs": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/stairs-wide": {
+			"anchor": 0.0,
 			"anchor_position": [
 				0.0,
 				0.0,
@@ -385,9 +5321,1424 @@
 			],
 			"scale": 0.5,
 			"suggested_footprint": [
-				0,
-				0
+				0.0,
+				0.0
 			],
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-detail": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-big": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-detail": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-detail-a": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "ground",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-layer": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-layer-hole": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-floor-layer-raised": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall": {
+			"anchor": 1,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall-corner": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall-detail-a": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall-half": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall-stairs": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"modular_space_kit/template-wall-top": {
+			"anchor": 0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"classification": "structural",
+			"scale": 1.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-corner-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-corner-large-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-corner-small": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-corner-small-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-curve": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-corner-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-corner-large-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-corner-small": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-corner-small-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-curve": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-bend": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-bend-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-bump-down": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-bump-up": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-hill-beginning": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-hill-complete": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-hill-complete-half": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-hill-end": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-skew-left": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-skew-left-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-skew-right": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-damaged-straight-skew-right-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-corner-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-corner-large-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-corner-small": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-corner-small-ramp": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-curve": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-bend": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-bend-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-bump-down": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-bump-up": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-hill-beginning": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-hill-complete": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-hill-complete-half": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-hill-end": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-skew-left": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-skew-left-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-skew-right": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-rail-straight-skew-right-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-bend": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-bend-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-bump-down": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-bump-up": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-hill-beginning": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-hill-complete": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-hill-complete-half": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-hill-end": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-skew-left": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-skew-left-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-skew-right": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/railroad-straight-skew-right-side": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				2.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: native straight starts at y=-1 and extends z=0..4. Common +2 m offset and scale 2 preserve ramps/curves; straight pitch 8 m. No tactical traversal implied.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/spline-segment": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/spline-track": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/spline-track-damaged": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/track": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/track-detailed": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/track-single": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/track-single-detailed": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-box": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-coal": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-container-blue": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-container-green": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-container-red": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-dirt": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-flatbed": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-flatbed-wood": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-lumber": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-tank": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-tank-large": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-carriage-wood": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-connector": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-box-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-box-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-box-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-diesel-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-bullet-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-bullet-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-bullet-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-city-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-city-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-city-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-double-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-double-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-double-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-square-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-square-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-square-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-subway-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-subway-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-electric-subway-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-locomotive-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-locomotive-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-locomotive-c": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-locomotive-passenger-a": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-locomotive-passenger-b": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"measured_calibrated_size": [
+				2.49371528625488,
+				3.29823446273804,
+				5.20000076293945
+			],
+			"measured_native_size": [
+				1.24685764312744,
+				1.64911723136902,
+				2.60000038146973
+			],
+			"scale": 2.0,
+			"suggested_footprint": [
+				0.0,
+				0.0
+			],
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-tram-classic": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-tram-modern": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
+			"yaw_degrees": 0.0
+		},
+		"train_kit/train-tram-round": {
+			"anchor": 1.0,
+			"anchor_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
+			"classification": "unclassified",
+			"scale": 2.0,
 			"yaw_degrees": 0.0
 		}
 	},
@@ -399,12 +6750,12 @@
 			"scale": 5.0
 		},
 		"commercial_buildings": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"calibration_notes": "Proposed: match established City Kit industrial buildings at 10x; exterior shells only.",
 			"scale": 10.0
 		},
 		"commercial_details": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"calibration_notes": "Proposed: match 10x commercial facade scale; preserve source pivot.",
 			"scale": 10.0
 		},
@@ -427,7 +6778,7 @@
 			"scale": 5.0
 		},
 		"rail_tracks": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"anchor_position": [
 				0.0,
 				2.0,
@@ -437,7 +6788,7 @@
 			"scale": 2.0
 		},
 		"rail_vehicles": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"calibration_notes": "Proposed: share track scale 2x; retain source pivot to preserve wheel alignment. Place 0.2 m above grounded straight-track origin for rail contact; no tactical claim.",
 			"scale": 2.0
 		},
@@ -460,17 +6811,17 @@
 			"scale": 1.0
 		},
 		"suburban_family": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"calibration_notes": "Proposed: match established City Kit buildings at 10x; preserve house/path proportions and source pivots.",
 			"scale": 10.0
 		},
 		"vehicle_family": {
-			"anchor": 0,
+			"anchor": 0.0,
 			"calibration_notes": "Proposed: sedan 1.875 m wide, 1.625 m high. Stylized short bodies; preserve uniform family proportions.",
 			"scale": 1.25
 		},
 		"vehicle_parts": {
-			"anchor": 1,
+			"anchor": 1.0,
 			"calibration_notes": "Proposed: match vehicle scale; preserve component pivot for wheels/debris rather than implicitly assembling them.",
 			"scale": 1.25
 		},
@@ -482,6 +6833,97 @@
 		"scale": 1.0
 	},
 	"reviewed": [
+		"car_kit/ambulance",
+		"car_kit/box",
+		"car_kit/cone",
+		"car_kit/cone-flat",
+		"car_kit/debris-bolt",
+		"car_kit/debris-bumper",
+		"car_kit/debris-door",
+		"car_kit/debris-door-window",
+		"car_kit/debris-drivetrain",
+		"car_kit/debris-drivetrain-axle",
+		"car_kit/debris-nut",
+		"car_kit/debris-plate-a",
+		"car_kit/debris-plate-b",
+		"car_kit/debris-plate-small-a",
+		"car_kit/debris-plate-small-b",
+		"car_kit/debris-spoiler-a",
+		"car_kit/debris-spoiler-b",
+		"car_kit/debris-tire",
+		"car_kit/delivery",
+		"car_kit/delivery-flat",
+		"car_kit/firetruck",
+		"car_kit/garbage-truck",
+		"car_kit/hatchback-sports",
+		"car_kit/kart-oobi",
+		"car_kit/kart-oodi",
+		"car_kit/kart-ooli",
+		"car_kit/kart-oopi",
+		"car_kit/kart-oozi",
+		"car_kit/police",
+		"car_kit/race",
+		"car_kit/race-future",
+		"car_kit/sedan",
+		"car_kit/sedan-sports",
+		"car_kit/suv",
+		"car_kit/suv-luxury",
+		"car_kit/taxi",
+		"car_kit/tractor",
+		"car_kit/tractor-police",
+		"car_kit/tractor-shovel",
+		"car_kit/truck",
+		"car_kit/truck-flat",
+		"car_kit/van",
+		"car_kit/wheel-dark",
+		"car_kit/wheel-default",
+		"car_kit/wheel-racing",
+		"car_kit/wheel-tractor-back",
+		"car_kit/wheel-tractor-dark-back",
+		"car_kit/wheel-tractor-dark-front",
+		"car_kit/wheel-tractor-front",
+		"car_kit/wheel-truck",
+		"city_kit_commercial/building-a",
+		"city_kit_commercial/building-b",
+		"city_kit_commercial/building-c",
+		"city_kit_commercial/building-d",
+		"city_kit_commercial/building-e",
+		"city_kit_commercial/building-f",
+		"city_kit_commercial/building-g",
+		"city_kit_commercial/building-h",
+		"city_kit_commercial/building-i",
+		"city_kit_commercial/building-j",
+		"city_kit_commercial/building-k",
+		"city_kit_commercial/building-l",
+		"city_kit_commercial/building-m",
+		"city_kit_commercial/building-n",
+		"city_kit_commercial/building-skyscraper-a",
+		"city_kit_commercial/building-skyscraper-b",
+		"city_kit_commercial/building-skyscraper-c",
+		"city_kit_commercial/building-skyscraper-d",
+		"city_kit_commercial/building-skyscraper-e",
+		"city_kit_commercial/detail-awning",
+		"city_kit_commercial/detail-awning-wide",
+		"city_kit_commercial/detail-overhang",
+		"city_kit_commercial/detail-overhang-wide",
+		"city_kit_commercial/detail-parasol-a",
+		"city_kit_commercial/detail-parasol-b",
+		"city_kit_commercial/low-detail-building-a",
+		"city_kit_commercial/low-detail-building-b",
+		"city_kit_commercial/low-detail-building-c",
+		"city_kit_commercial/low-detail-building-d",
+		"city_kit_commercial/low-detail-building-e",
+		"city_kit_commercial/low-detail-building-f",
+		"city_kit_commercial/low-detail-building-g",
+		"city_kit_commercial/low-detail-building-h",
+		"city_kit_commercial/low-detail-building-i",
+		"city_kit_commercial/low-detail-building-j",
+		"city_kit_commercial/low-detail-building-k",
+		"city_kit_commercial/low-detail-building-l",
+		"city_kit_commercial/low-detail-building-m",
+		"city_kit_commercial/low-detail-building-n",
+		"city_kit_commercial/low-detail-building-wide-a",
+		"city_kit_commercial/low-detail-building-wide-b",
 		"city_kit_industrial/building-a",
 		"city_kit_industrial/building-b",
 		"city_kit_industrial/building-c",
@@ -614,6 +7056,46 @@
 		"city_kit_roads/traffic-light-object-hanging",
 		"city_kit_roads/traffic-light-object-horizontal",
 		"city_kit_roads/traffic-light-object-vertical",
+		"city_kit_suburban/building-type-a",
+		"city_kit_suburban/building-type-b",
+		"city_kit_suburban/building-type-c",
+		"city_kit_suburban/building-type-d",
+		"city_kit_suburban/building-type-e",
+		"city_kit_suburban/building-type-f",
+		"city_kit_suburban/building-type-g",
+		"city_kit_suburban/building-type-h",
+		"city_kit_suburban/building-type-i",
+		"city_kit_suburban/building-type-j",
+		"city_kit_suburban/building-type-k",
+		"city_kit_suburban/building-type-l",
+		"city_kit_suburban/building-type-m",
+		"city_kit_suburban/building-type-n",
+		"city_kit_suburban/building-type-o",
+		"city_kit_suburban/building-type-p",
+		"city_kit_suburban/building-type-q",
+		"city_kit_suburban/building-type-r",
+		"city_kit_suburban/building-type-s",
+		"city_kit_suburban/building-type-t",
+		"city_kit_suburban/building-type-u",
+		"city_kit_suburban/driveway-long",
+		"city_kit_suburban/driveway-short",
+		"city_kit_suburban/fence",
+		"city_kit_suburban/fence-1x2",
+		"city_kit_suburban/fence-1x3",
+		"city_kit_suburban/fence-1x4",
+		"city_kit_suburban/fence-2x2",
+		"city_kit_suburban/fence-2x3",
+		"city_kit_suburban/fence-3x2",
+		"city_kit_suburban/fence-3x3",
+		"city_kit_suburban/fence-low",
+		"city_kit_suburban/path-long",
+		"city_kit_suburban/path-short",
+		"city_kit_suburban/path-stones-long",
+		"city_kit_suburban/path-stones-messy",
+		"city_kit_suburban/path-stones-short",
+		"city_kit_suburban/planter",
+		"city_kit_suburban/tree-large",
+		"city_kit_suburban/tree-small",
 		"factory_kit/arrow",
 		"factory_kit/arrow-basic",
 		"factory_kit/arrow-basic-rounded",
@@ -796,7 +7278,110 @@
 		"modular_space_kit/template-wall-detail-a",
 		"modular_space_kit/template-wall-half",
 		"modular_space_kit/template-wall-stairs",
-		"modular_space_kit/template-wall-top"
+		"modular_space_kit/template-wall-top",
+		"train_kit/railroad-corner-large",
+		"train_kit/railroad-corner-large-ramp",
+		"train_kit/railroad-corner-small",
+		"train_kit/railroad-corner-small-ramp",
+		"train_kit/railroad-curve",
+		"train_kit/railroad-damaged-corner-large",
+		"train_kit/railroad-damaged-corner-large-ramp",
+		"train_kit/railroad-damaged-corner-small",
+		"train_kit/railroad-damaged-corner-small-ramp",
+		"train_kit/railroad-damaged-curve",
+		"train_kit/railroad-damaged-straight",
+		"train_kit/railroad-damaged-straight-bend",
+		"train_kit/railroad-damaged-straight-bend-large",
+		"train_kit/railroad-damaged-straight-bump-down",
+		"train_kit/railroad-damaged-straight-bump-up",
+		"train_kit/railroad-damaged-straight-hill-beginning",
+		"train_kit/railroad-damaged-straight-hill-complete",
+		"train_kit/railroad-damaged-straight-hill-complete-half",
+		"train_kit/railroad-damaged-straight-hill-end",
+		"train_kit/railroad-damaged-straight-skew-left",
+		"train_kit/railroad-damaged-straight-skew-left-side",
+		"train_kit/railroad-damaged-straight-skew-right",
+		"train_kit/railroad-damaged-straight-skew-right-side",
+		"train_kit/railroad-rail-corner-large",
+		"train_kit/railroad-rail-corner-large-ramp",
+		"train_kit/railroad-rail-corner-small",
+		"train_kit/railroad-rail-corner-small-ramp",
+		"train_kit/railroad-rail-curve",
+		"train_kit/railroad-rail-straight",
+		"train_kit/railroad-rail-straight-bend",
+		"train_kit/railroad-rail-straight-bend-large",
+		"train_kit/railroad-rail-straight-bump-down",
+		"train_kit/railroad-rail-straight-bump-up",
+		"train_kit/railroad-rail-straight-hill-beginning",
+		"train_kit/railroad-rail-straight-hill-complete",
+		"train_kit/railroad-rail-straight-hill-complete-half",
+		"train_kit/railroad-rail-straight-hill-end",
+		"train_kit/railroad-rail-straight-skew-left",
+		"train_kit/railroad-rail-straight-skew-left-side",
+		"train_kit/railroad-rail-straight-skew-right",
+		"train_kit/railroad-rail-straight-skew-right-side",
+		"train_kit/railroad-straight",
+		"train_kit/railroad-straight-bend",
+		"train_kit/railroad-straight-bend-large",
+		"train_kit/railroad-straight-bump-down",
+		"train_kit/railroad-straight-bump-up",
+		"train_kit/railroad-straight-hill-beginning",
+		"train_kit/railroad-straight-hill-complete",
+		"train_kit/railroad-straight-hill-complete-half",
+		"train_kit/railroad-straight-hill-end",
+		"train_kit/railroad-straight-skew-left",
+		"train_kit/railroad-straight-skew-left-side",
+		"train_kit/railroad-straight-skew-right",
+		"train_kit/railroad-straight-skew-right-side",
+		"train_kit/spline-segment",
+		"train_kit/spline-track",
+		"train_kit/spline-track-damaged",
+		"train_kit/track",
+		"train_kit/track-detailed",
+		"train_kit/track-single",
+		"train_kit/track-single-detailed",
+		"train_kit/train-carriage-box",
+		"train_kit/train-carriage-coal",
+		"train_kit/train-carriage-container-blue",
+		"train_kit/train-carriage-container-green",
+		"train_kit/train-carriage-container-red",
+		"train_kit/train-carriage-dirt",
+		"train_kit/train-carriage-flatbed",
+		"train_kit/train-carriage-flatbed-wood",
+		"train_kit/train-carriage-lumber",
+		"train_kit/train-carriage-tank",
+		"train_kit/train-carriage-tank-large",
+		"train_kit/train-carriage-wood",
+		"train_kit/train-connector",
+		"train_kit/train-diesel-a",
+		"train_kit/train-diesel-b",
+		"train_kit/train-diesel-box-a",
+		"train_kit/train-diesel-box-b",
+		"train_kit/train-diesel-box-c",
+		"train_kit/train-diesel-c",
+		"train_kit/train-electric-bullet-a",
+		"train_kit/train-electric-bullet-b",
+		"train_kit/train-electric-bullet-c",
+		"train_kit/train-electric-city-a",
+		"train_kit/train-electric-city-b",
+		"train_kit/train-electric-city-c",
+		"train_kit/train-electric-double-a",
+		"train_kit/train-electric-double-b",
+		"train_kit/train-electric-double-c",
+		"train_kit/train-electric-square-a",
+		"train_kit/train-electric-square-b",
+		"train_kit/train-electric-square-c",
+		"train_kit/train-electric-subway-a",
+		"train_kit/train-electric-subway-b",
+		"train_kit/train-electric-subway-c",
+		"train_kit/train-locomotive-a",
+		"train_kit/train-locomotive-b",
+		"train_kit/train-locomotive-c",
+		"train_kit/train-locomotive-passenger-a",
+		"train_kit/train-locomotive-passenger-b",
+		"train_kit/train-tram-classic",
+		"train_kit/train-tram-modern",
+		"train_kit/train-tram-round"
 	],
 	"version": 2
 }

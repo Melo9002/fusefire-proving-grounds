@@ -43,7 +43,7 @@ func run() -> void:
 	check(unknown_semantics.size() == 234, "New visual-only packs retain pending semantic interpretation")
 	for id in unknown_semantics:
 		check(id.split("/")[0] in ["car_kit", "city_kit_commercial", "city_kit_suburban", "train_kit"], "Established semantic classifications remain intact")
-		check(not Catalog.profile(id, catalog_data).reviewed, "Proposed calibration does not fabricate human approval")
+		check(Catalog.profile(id, catalog_data).reviewed, "Owner visual approval is recorded independently of pending semantics")
 	var resolved_sources := {"default": 0, "category": 0, "asset override": 0}
 	for id in Catalog.all_ids():
 		var expected := Catalog.scale_for(id, catalog_data)
@@ -61,7 +61,7 @@ func run() -> void:
 	check(is_equal_approx(Catalog.scale_for("city_kit_roads/road-straight", catalog_data), 5.0), "Road surfaces inherit the reviewed scale-five baseline")
 	check(is_equal_approx(Catalog.scale_for("city_kit_roads/light-curved", catalog_data), 5.0), "Road lights inherit the reviewed scale-five baseline")
 	check(is_equal_approx(Catalog.scale_for("modular_space_kit/stairs-wide", catalog_data), 0.5), "Double-size Space stairs retain their individual half-scale correction")
-	check(catalog_data.asset_overrides.size() == 15 and catalog_data.reviewed.size() == 315, "All reviewed calibration choices and individual exceptions load")
+	check(catalog_data.asset_overrides.size() == 549 and catalog_data.reviewed.size() == 549, "All reviewed calibration choices and individual exceptions load")
 	var priority_data := Catalog.default_data()
 	priority_data.fallback.scale = 2.0
 	priority_data.category_presets.buildings.scale = 3.0
