@@ -89,3 +89,18 @@ Focused verification: asset calibration and semantic catalog suites; original ca
 Each new pack retains its supplied CC0 license and the `models/Textures/colormap.png` referenced by its GLBs. Copied source hashes match. Godot instantiated all 234 scenes with nonempty mesh bounds; no visual/scale certification was performed. The sandbox import reported certificate-store/editor-settings access warnings; the model-load check passed.
 
 The complete original packages (including alternate formats and previews) were moved out of `additional assets` to `C:/Users/Blue/Documents/Codex/asset-sources/fusefire/2026-10-31/`. Every moved source file was hash-verified against that archive's manifest. The incoming folder is empty. This source archive is local and is not pushed to Git.
+
+
+### Counterpart-scale experiment — 2026-11-01
+
+Owner proposed deriving new-pack scale from equivalent reviewed objects. Tested without modifying saved calibrations or review flags.
+
+- City Roads construction cone: native 0.075 x 0.09375 x 0.075; reviewed 5x gives 0.375 x 0.46875 x 0.375 m.
+- Car Kit cone: native approximately 0.476194 x 0.595243 x 0.476194. A uniform 0.7875x matches the reviewed cone on all axes within float tolerance. Mesh geometry is not identical (40 versus 88 unique normalized position samples); matching envelopes alone do not establish identical source models.
+- Applying 0.7875x to the Car Kit sedan gives 1.18125 m width, 1.02375 m height and 2.008125 m length. Rendered alongside the 1.60 m MIRA reference, it reads as miniature. Current 1.25x yields 1.875 x 1.625 x 3.1875 m. This supports separate vehicle/standalone-prop calibration, not the cone as a pack-wide ruler.
+- Train container cargo mesh is 1 x 0.9 x 2.575 native units. Reviewed Industrial container A is approximately 2.9808 x 2.78464 x 6.5808 m. Matching width, height and length requires respectively 2.9808x, 3.0940x and 2.5557x: no single uniform conversion. The cargo mesh was measured separately from the wagon/wheels.
+- An exploratory scan of normalized mesh-position sets found no exact cross-pack counterpart between the four new packs and City Roads, City Industrial or Factory (excluding trivial meshes with 12 or fewer unique positions). This is not proof no shared components exist: rotations, topology differences and combined meshes can prevent a match. Shared building filenames do not denote shared geometry. No defensible new ratio was established for Commercial/Suburban.
+
+Recommendation: use multiple counterpart measurements where available, validate against MIRA and functional connections, and keep mechanically connected families at one scale. A standalone prop can require an exception. Do not resize a whole pack from one coincidentally matching envelope. No new calibration system or production changes are needed. Special-item overrides remain for owner review.
+
+Rendered experiment: `artifacts/additional-calibration/counterpart-scale-comparison.png` (local, ignored). Top row uses 0.7875x; bottom row uses the existing 1.25x. Each row includes the reviewed City Roads cone, Car Kit cone, sedan and MIRA. No gameplay code changed; no test rerun needed for this documentation-only experiment.
