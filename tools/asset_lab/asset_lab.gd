@@ -9,6 +9,8 @@ const MIRA_REFERENCE_HEIGHT := 1.60
 const MIRA_RUNTIME_HEIGHT := 1.60
 @export_file("*.json") var calibration_path := Catalog.DATA_PATH
 @export_file("*.json") var semantic_path := Semantics.DATA_PATH
+var selection_heading: Label
+var workspace_tabs: TabContainer
 var world: Node3D
 var content: Node3D
 var overlays: Node3D
@@ -180,7 +182,7 @@ func _ready() -> void:
 	copy_button.pressed.connect(func(): DisplayServer.clipboard_set(JSON.stringify(calibration_record(), "\t")))
 	panel.add_child(copy_button)
 	save_button = Button.new()
-	save_button.text = "Save calibration"
+	save_button.text = "Save asset (Ctrl+S)"
 	save_button.pressed.connect(_save_override)
 	panel.add_child(save_button)
 	write_controls.append(save_button)
@@ -190,7 +192,7 @@ func _ready() -> void:
 	panel.add_child(clear_button)
 	write_controls.append(clear_button)
 	reviewed_toggle = CheckBox.new()
-	reviewed_toggle.text = "Reviewed (saves current calibration)"
+	reviewed_toggle.text = "Visually reviewed (saves this asset)"
 	reviewed_toggle.toggled.connect(_set_reviewed)
 	panel.add_child(reviewed_toggle)
 	write_controls.append(reviewed_toggle)
@@ -206,6 +208,7 @@ func _ready() -> void:
 	write_controls.append(footprint_z)
 	calibration_notes = TextEdit.new()
 	calibration_notes.placeholder_text = "Verified orientation, intended combinations, clearance, or scale notes"
+	calibration_notes.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	calibration_notes.custom_minimum_size.y = 72
 	calibration_notes.text_changed.connect(_update_save_status)
 	panel.add_child(calibration_notes)
@@ -244,6 +247,7 @@ func _ready() -> void:
 	panel.add_child(semantic_generation_ready)
 	semantic_notes = TextEdit.new()
 	semantic_notes.placeholder_text = "Purpose, intended combinations, accessibility, or ambiguity"
+	semantic_notes.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	semantic_notes.custom_minimum_size.y = 72
 	panel.add_child(semantic_notes)
 	var semantic_buttons := HBoxContainer.new()
@@ -304,6 +308,45 @@ func _ready() -> void:
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.custom_minimum_size.x = 335
 	panel.add_child(info)
+	# Reorganize existing controls without changing calibration ownership or handlers.
+	var original := panel.get_children()
+	var adjust_controls := original.slice(factor.get_parent().get_index(), pitch.get_parent().get_index())
+	adjust_controls.append_array([reset_button, classification, footprint_x.get_parent(), footprint_z.get_parent(), calibration_notes, dimensions_label])
+	var meaning_controls := original.slice(semantic_heading.get_index(), semantic_status.get_index() + 1)
+	meaning_controls.append(identify_button)
+	var view_controls := original.slice(pitch.get_parent().get_index(), reset_button.get_index())
+	view_controls.push_front(mode)
+	var advanced_controls: Array = [interpretation_filter, semantic_filter, clear_button, copy_button, category_label, category_scale.get_parent(), category_button, fallback_scale.get_parent(), fallback_button, reload_button, info]
+	var sidebar := VBoxContainer.new()
+	sidebar.custom_minimum_size.x = 410
+	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_child(sidebar)
+	row.move_child(sidebar, 0)
+	title.text = "ASSET LAB | Browse / Adjust / Save"
+	title.reparent(sidebar)
+	selection_heading = Label.new()
+	selection_heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	selection_heading.custom_minimum_size.x = 390
+	sidebar.add_child(selection_heading)
+	for control in [family_filter, search, review_filter, asset_list]:
+		control.reparent(sidebar)
+	asset_list.custom_minimum_size.y = 140
+	asset_list.resized.connect(func(): asset_list.ensure_current_is_visible())
+	workspace_tabs = TabContainer.new()
+	workspace_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar.add_child(workspace_tabs)
+	_workspace_tab("Adjust", "Changes apply to the selected asset. Save when ready.", adjust_controls)
+	_workspace_tab("Meaning", "Optional description. Meaning has its own Save button.", meaning_controls)
+	_workspace_tab("View", "Camera and overlays are preview-only. Q/E changes asset rotation.", view_controls)
+	_workspace_tab("Advanced", "Shared presets affect other assets. Use Adjust for individual exceptions.", advanced_controls)
+	for control in [save_status, save_button, reviewed_toggle, next_button]:
+		control.reparent(sidebar)
+	save_button.tooltip_text = "Save this asset without marking it visually reviewed."
+	reviewed_toggle.tooltip_text = "Your explicit visual review. Checking this also saves the current calibration."
+	category_button.tooltip_text = "Changes the shared category scale; individual overrides still take precedence."
+	clear_button.tooltip_text = "Remove this asset's override and use its category preset."
+	reset_button.text = "Discard preview edits / reload asset"
+	scroll.queue_free()
 	var view := SubViewportContainer.new()
 	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	view.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -341,6 +384,21 @@ func _ready() -> void:
 	world.add_child(camera)
 	orbit = OrbitCamera.new(camera)
 	select_asset(selected)
+
+func _workspace_tab(title: String, hint: String, controls: Array) -> void:
+	var page := ScrollContainer.new()
+	page.name = title
+	page.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	workspace_tabs.add_child(page)
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.add_child(body)
+	var help := Label.new()
+	help.text = hint
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(help)
+	for control in controls:
+		control.reparent(body)
 
 func _number(panel: VBoxContainer, label: String, low: float, high: float, step: float, value: float) -> SpinBox:
 	var row := HBoxContainer.new()
@@ -401,6 +459,8 @@ func _filter(query: String) -> void:
 			asset_list.set_item_tooltip(index, "%s\n%s · %s · %s" % [id, interpretation.asset_kind, interpretation.structural_role, interpretation.interpretation_source])
 
 func select_asset(id: String) -> void:
+	if is_instance_valid(selection_heading):
+		selection_heading.text = id.get_file().replace("-", " ").capitalize() + "\n" + id.get_slice("/", 0).replace("_", " ").capitalize()
 	changing = true
 	selected = id
 	mode.select(0)
@@ -736,11 +796,11 @@ func _update_save_status() -> void:
 	if not is_instance_valid(save_status) or mode.selected != 0:
 		return
 	var p := Catalog.profile(selected, calibration_data)
-	var saved := {"scale": p.scale, "yaw_degrees": p.yaw_degrees, "anchor": p.anchor, "anchor_position": p.anchor_position,
-		"classification": p.get("classification", "unclassified"), "suggested_footprint": p.get("suggested_footprint", [0, 0]),
+	var saved := {"scale": p.scale, "yaw_degrees": p.yaw_degrees, "anchor": int(p.anchor), "anchor_position": p.anchor_position,
+		"classification": p.get("classification", "unclassified"), "suggested_footprint": [int(p.get("suggested_footprint", [0, 0])[0]), int(p.get("suggested_footprint", [0, 0])[1])],
 		"calibration_notes": p.get("calibration_notes", ""), "measured_native_size": p.get("measured_native_size", [native_bounds.size.x, native_bounds.size.y, native_bounds.size.z]),
 		"measured_calibrated_size": p.get("measured_calibrated_size", [current_bounds.size.x, current_bounds.size.y, current_bounds.size.z])}
-	var dirty := JSON.stringify(_override_record()) != JSON.stringify(saved)
+	var dirty := _override_record() != saved
 	save_status.text = "%s | %s | %s" % [p.calibration_source, "reviewed" if p.reviewed else "unreviewed", "UNSAVED CHANGES" if dirty else "saved/inherited"]
 
 func calibration_record() -> Dictionary:

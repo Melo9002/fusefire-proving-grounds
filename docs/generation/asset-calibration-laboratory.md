@@ -124,3 +124,15 @@ These dimensions come from Godot's imported mesh hierarchy, including descendant
 ## Current boundary
 
 Calibration and the Asset Lab remain available. The former Generator 2 module roadmap is archived; asset calibration does not confer tactical behavior or publication approval.
+
+
+## Asset Lab workspace (2026-11-01)
+
+The browser, selected asset name/family, save status, Save asset, visual-review checkbox and Next unreviewed action stay visible. The four tabs separate work by intent:
+
+- **Adjust**: individual scale, rotation, anchor, notes and measured dimensions. Save asset / Ctrl+S persists calibration without granting visual approval.
+- **Meaning**: optional semantic description and working faces, with its own Save confirmed meaning action.
+- **View**: inspection camera, overlays, MIRA and assembly previews. Camera/overlay adjustments are preview-only; Q/E still changes the asset rotation.
+- **Advanced**: semantic browser filters, inherited/category/global presets, reload and diagnostic details. Shared preset changes can affect multiple assets; use Adjust for a single-asset exception.
+
+The review checkbox is explicit owner visual approval and saves the current calibration. Save edits before selecting another asset; this layout change does not add autosave or undo. Rendered layout captures are local under `artifacts/additional-calibration/ux-tab-*.png`. Calibration/semantic regression suites cover existing behavior; new checks cover persistent actions across tabs and accurate clean/dirty scale status.
