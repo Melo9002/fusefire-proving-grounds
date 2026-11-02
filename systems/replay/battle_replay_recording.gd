@@ -117,6 +117,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"refinery": bool(source.get("refinery", false)),
 		"industrial_warehouse": bool(source.get("industrial_warehouse", false)),
 		"refinery_2": bool(source.get("refinery_2", false)),
+		"loading_yard": bool(source.get("loading_yard", false)),
 	}
 
 static func _configuration_from_data(data: Dictionary) -> Dictionary:
@@ -150,6 +151,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"refinery": bool(data.get("refinery", false)),
 		"industrial_warehouse": bool(data.get("industrial_warehouse", false)),
 		"refinery_2": bool(data.get("refinery_2", false)),
+		"loading_yard": bool(data.get("loading_yard", false)),
 	}
 
 static func _string_array(values: Variant) -> Array[String]:
