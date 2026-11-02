@@ -1,62 +1,26 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/roads/road_strip_85.tscn" id="road_strip"]
 
 [sub_resource type="StandardMaterial3D" id="ground_material"]
 albedo_color = Color(0.30, 0.31, 0.30, 1)
 roughness = 0.95
 
-[sub_resource type="StandardMaterial3D" id="route_material"]
-albedo_color = Color(0.48, 0.46, 0.40, 1)
-roughness = 0.9
-
-[sub_resource type="StandardMaterial3D" id="near_material"]
-albedo_color = Color(0.23, 0.25, 0.25, 1)
-roughness = 1.0
-
 [sub_resource type="BoxMesh" id="ground_mesh"]
 size = Vector3(64, 0.08, 64)
 material = SubResource("ground_material")
 
-[sub_resource type="BoxMesh" id="route_mesh"]
-size = Vector3(48, 0.06, 8)
-material = SubResource("route_material")
-
 [node name="RefinerySiteA" type="Node3D"]
 metadata/plot_id = &"refinery_site_a"
-metadata/revision = 1
+metadata/revision = 2
 metadata/map_size = Vector2i(64, 64)
+metadata/road_asset = "city_kit_roads/road-straight"
 
 [node name="VisibleGround" type="MeshInstance3D" parent="."]
 position = Vector3(0, -0.06, 0)
 mesh = SubResource("ground_mesh")
 
-[node name="ServiceRouteNorth" type="MeshInstance3D" parent="."]
-position = Vector3(0, -0.01, -7.5)
-mesh = SubResource("route_mesh")
-
-[node name="ServiceRouteSouth" type="MeshInstance3D" parent="."]
-position = Vector3(0, -0.01, 27.5)
-mesh = SubResource("route_mesh")
-
-[node name="NearPeriphery" type="Node3D" parent="."]
-
-[node name="WestContinuation" type="CSGBox3D" parent="NearPeriphery"]
-position = Vector3(-38, -0.08, -7.5)
-size = Vector3(12, 0.05, 8)
-material = SubResource("route_material")
-
-[node name="EastContinuation" type="CSGBox3D" parent="NearPeriphery"]
-position = Vector3(38, -0.08, -7.5)
-size = Vector3(12, 0.05, 8)
-material = SubResource("route_material")
+[node name="RoadAndNearPeriphery" parent="." instance=ExtResource("road_strip")]
+position = Vector3(-39.5, -0.1, -5.5)
 
 [node name="FarBackdrop" type="Node3D" parent="."]
-
-[node name="HorizonBlockA" type="CSGBox3D" parent="FarBackdrop"]
-position = Vector3(-46, 4, -46)
-size = Vector3(18, 8, 14)
-material = SubResource("near_material")
-
-[node name="HorizonBlockB" type="CSGBox3D" parent="FarBackdrop"]
-position = Vector3(42, 6, -50)
-size = Vector3(24, 12, 12)
-material = SubResource("near_material")

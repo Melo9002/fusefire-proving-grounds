@@ -26,6 +26,11 @@ func _run() -> void:
 		var parent := Node3D.new()
 		check(Layout.present(data, parent, 1.0), "seed %d presents from its exact manifest" % seed)
 		check(parent.get_child_count() == 4, "seed %d presents one plot and three parcels" % seed)
+		var plot_root := parent.get_child(0) as Node3D
+		check(int(plot_root.get_meta("revision", 0)) == int(data.content_manifest.plot_revision), "seed %d presents the exact plot revision" % seed)
+		var road := plot_root.get_node_or_null("RoadAndNearPeriphery")
+		check(road != null and String(road.get_meta("asset_id", "")) == "city_kit_roads/road-straight", "seed %d uses the calibrated imported road assembly" % seed)
+		check(plot_root.get_node("FarBackdrop").get_child_count() == 0, "seed %d has no placeholder floating backdrop blocks" % seed)
 		parent.free()
 	var exact := Resolver.resolve(3)
 	var replay := Layout.generate(999, 1.0, exact)

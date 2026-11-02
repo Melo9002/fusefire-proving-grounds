@@ -53,6 +53,8 @@ func _check_plot_geometry(plot: Dictionary) -> void:
 			for z in range(slot.origin.z, slot.origin.z + rotated.y):
 				var key := Vector2i(x, z)
 				check(not occupied.has(key), "%s has no overlapping slots at %s" % [plot.plot_id, key])
+				for road_rect: Rect2i in plot.road_rects:
+					check(not road_rect.has_point(key), "%s/%s does not overlap reserved road cell %s" % [plot.plot_id, slot.slot_id, key])
 				occupied[key] = slot.slot_id
 		var candidates := ParcelCatalog.candidates(slot.role, slot.size)
 		check(not candidates.is_empty(), "%s/%s has registered content" % [plot.plot_id, slot.slot_id])
