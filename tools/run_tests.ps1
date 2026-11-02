@@ -67,6 +67,7 @@ $visualTests = @(
 	"refinery_plot_resolver_test.gd",
 	"refinery_family_layout_test.gd",
 	"refinery_family_capture.gd",
+	"refinery_family_ai_smoke.gd",
 	"battle_loading_screen_capture.gd",
     "industrial_warehouse_capture.gd",
     "refinery_2_capture.gd",
