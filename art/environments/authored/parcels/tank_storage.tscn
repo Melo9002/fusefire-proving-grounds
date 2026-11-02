@@ -1,0 +1,65 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank.glb" id="tank"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank-large.glb" id="tank_large"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-c.glb" id="container_c"]
+
+[sub_resource type="StandardMaterial3D" id="pad_material"]
+albedo_color = Color(0.54, 0.53, 0.48, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="pad_mesh"]
+size = Vector3(16, 0.04, 16)
+material = SubResource("pad_material")
+
+[node name="TankStorage" type="Node3D"]
+metadata/parcel_id = &"tank_storage_a"
+metadata/parcel_role = &"storage"
+metadata/parcel_size = Vector2i(16, 16)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(6, 0, 15)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 4
+metadata/access_kind = &"service"
+
+[node name="Pad" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, -0.02, 7.5)
+mesh = SubResource("pad_mesh")
+
+[node name="MainTank" type="Node3D" parent="."]
+position = Vector3(8, 0, 7)
+metadata/asset_id = "city_kit_industrial/detail-tank-large"
+
+[node name="Visual" parent="MainTank" instance=ExtResource("tank_large")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0.35)
+
+[node name="TacticalVolume" type="Node3D" parent="MainTank"]
+position = Vector3(0, 2.404015, 0)
+metadata/solid_size = Vector3(7.54208, 4.80803, 8.24208)
+metadata/round_volume = true
+
+[node name="TankWest" type="Node3D" parent="."]
+position = Vector3(2.5, 0, 12)
+metadata/asset_id = "city_kit_industrial/detail-tank"
+
+[node name="Visual" parent="TankWest" instance=ExtResource("tank")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="TankWest"]
+position = Vector3(0, 1.038239, 0)
+metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
+metadata/round_volume = true
+
+[node name="ContainerEast" type="Node3D" parent="."]
+position = Vector3(13, 0, 12)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "city_kit_industrial/shipping-container-c"
+
+[node name="Visual" parent="ContainerEast" instance=ExtResource("container_c")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000006, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="ContainerEast"]
+position = Vector3(0, 0.8702, 0)
+metadata/solid_size = Vector3(1.863001, 1.7404, 4.113)
+metadata/round_volume = false

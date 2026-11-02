@@ -1,0 +1,105 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-j.glb" id="building_j"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container_a"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-c.glb" id="container_c"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/delivery.glb" id="delivery"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="box_large"]
+
+[sub_resource type="StandardMaterial3D" id="apron_material"]
+albedo_color = Color(0.61, 0.62, 0.58, 1)
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="apron_mesh"]
+size = Vector3(16, 0.04, 32)
+material = SubResource("apron_material")
+
+[node name="LoadingYardAlt" type="Node3D"]
+metadata/parcel_id = &"loading_yard_b"
+metadata/parcel_role = &"loading_service"
+metadata/parcel_size = Vector2i(16, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(6, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 4
+metadata/access_kind = &"service"
+
+[node name="Apron" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, -0.02, 15.5)
+mesh = SubResource("apron_mesh")
+
+[node name="Warehouse" type="Node3D" parent="."]
+position = Vector3(7.5, 0, 7)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_industrial/building-j"
+
+[node name="Visual" parent="Warehouse" instance=ExtResource("building_j")]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 4.347951, 0, -2.74)
+
+[node name="TacticalVolume" type="Node3D" parent="Warehouse"]
+position = Vector3(0, 4.305729, 0)
+metadata/solid_size = Vector3(10.266218, 8.611458, 13)
+metadata/round_volume = false
+
+[node name="ContainerA" type="Node3D" parent="."]
+position = Vector3(2.5, 0, 20)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="Visual" parent="ContainerA" instance=ExtResource("container_a")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000008, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="ContainerA"]
+position = Vector3(0, 0.8702, 0)
+metadata/solid_size = Vector3(1.863001, 1.7404, 4.113)
+metadata/round_volume = false
+
+[node name="ContainerC" type="Node3D" parent="."]
+position = Vector3(13, 0, 24)
+metadata/asset_id = "city_kit_industrial/shipping-container-c"
+
+[node name="Visual" parent="ContainerC" instance=ExtResource("container_c")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000006, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="ContainerC"]
+position = Vector3(0, 0.8702, 0)
+metadata/solid_size = Vector3(1.863001, 1.7404, 4.113)
+metadata/round_volume = false
+
+[node name="Truck" type="Node3D" parent="."]
+position = Vector3(12, 0, 17)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "car_kit/delivery"
+
+[node name="Visual" parent="Truck" instance=ExtResource("delivery")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03125)
+
+[node name="TacticalVolume" type="Node3D" parent="Truck"]
+position = Vector3(0, 1.03125, 0)
+metadata/solid_size = Vector3(1.875, 2.0625, 4.0625)
+metadata/round_volume = false
+
+[node name="CrateA" type="Node3D" parent="."]
+position = Vector3(2.5, 0, 28)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CrateA" instance=ExtResource("box_large")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="CrateA"]
+position = Vector3(0, 0.4125, 0)
+metadata/solid_size = Vector3(1.65, 0.825, 1.5)
+metadata/round_volume = false
+
+[node name="CrateB" type="Node3D" parent="."]
+position = Vector3(12.5, 0, 29)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CrateB" instance=ExtResource("box_large")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="CrateB"]
+position = Vector3(0, 0.4125, 0)
+metadata/solid_size = Vector3(1.65, 0.825, 1.5)
+metadata/round_volume = false

@@ -69,3 +69,24 @@ The owner authorized implementation and routine design decisions within this sco
 - Loading Yard demonstrates one 16x32 authored parcel through normal battle initialization. It is not evidence of a finished plot generator.
 - Runtime generation and battle initialization are measured in focused tests. Runtime catalog scans and unbounded search are prohibited.
 - Next gate: visually inspect and play Loading Yard, author a genuinely interchangeable second parcel variant, then decide whether two fixed refinery plot layouts justify a tiny bounded resolver. Do not implement composition before that evidence.
+
+## Implementation ledger
+
+This is the owner-facing progress record. A technical check and visual/playability approval are reported separately; “implemented” does not silently mean “artistically approved.” Update this table with each map-system checkpoint instead of creating a new roadmap.
+
+| Requirement | State | Current evidence | Next acceptance gate |
+| --- | --- | --- | --- |
+| One runtime battlefield boundary | Implemented | `BattlefieldCatalog`, shared loading transition and explicit initialization failures | Keep new maps behind stable IDs; no new per-map booleans |
+| Standard parcel geometry | Implemented | 16×16, 16×32, 32×32 policy; `ParcelTransform` exhaustively covers rectangular rotations | Add each new footprint to the same transform tests |
+| Measured parcel connections | Implemented for pilot | `ParcelConnection` validates boundary cell, outward direction and width | Extend to multiple named interfaces only when process/storage content requires it |
+| Loading/service parcel family | Technical and agent visual review complete; owner review pending | Two registered 16×32 variants share one measured 4-cell service interface, use different imported shells/layouts and compile under four rotations | Play both variants in composed plots and obtain owner review |
+| Fixed place with varied content | Foundation only | Seeded bounded catalog choice exists offline | Record resolved ID/revision before enabling runtime selection |
+| Process parcel | Technical and agent visual review complete; owner review pending | Open 16×16 process pad uses three calibrated machines, explicit tactical volumes and a measured 2-cell service interface | Validate within both plot circulation layouts |
+| Tank/storage parcel | Technical and agent visual review complete; owner review pending | 16×16 storage pad uses calibrated tanks/container, explicit tactical volumes and a measured 4-cell service interface | Validate within both plot circulation layouts |
+| Two refinery plots | Not started | Refinery 2 provides reference scale/content only | Author two fixed slot/circulation layouts after the three parcel roles exist |
+| Deterministic bounded resolver | Not started | Parcel candidates have stable ordering and deterministic pilot choice | Resolve required plot slots, emit explicit failures, store actual choices |
+| Exact replay reconstruction | Not started | Current battlefield ID/seed replay remains valid | Persist plot/parcel IDs, revisions, transforms and population choices |
+| Near/far surroundings | Not started | Policy approved | Author per-plot edge continuation and visual-only horizon scenes |
+| Parcel Editor | Planned selective recovery | Retired editor UX inventoried in quarantine | Rebuild only standard-footprint placement, inspection, history and save workflow |
+| Quality, mission and visual matrix | Partial | Loading Yard mission completes and replays 24/24; clean captures exist | Exercise both plots, fixed seeds, objectives, edge views and full missions |
+| Post-generator simplification (“enxugar”) | Explicit future milestone | Current architecture and this ledger define ownership | After the refinery proof: remove stale code/docs, reduce concepts, and write an owner-oriented system guide |

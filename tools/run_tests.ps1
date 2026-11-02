@@ -63,6 +63,7 @@ $subsystemPatterns = @{
 # batches are valuable but too expensive for the ordinary full tier.
 $visualTests = @(
     "asset_lab_capture.gd",
+	"authored_parcel_catalog_capture.gd",
 	"battle_loading_screen_capture.gd",
     "industrial_warehouse_capture.gd",
     "refinery_2_capture.gd",
