@@ -1,6 +1,8 @@
 # Generation status
 
-Generator 1 remains active: seeded cover maps, the original Refinery, Industrial Warehouse, gameplay, missions and replay. All downloaded assets, licenses, calibration and the Asset Lab remain available. No replacement generator has been implemented.
+Generator 1 remains active: seeded cover maps, the original Refinery, Industrial Warehouse, gameplay, missions and replay. Refinery 2 is the supported fixed authored environment; Loading Yard is a bounded authored-parcel proof. All downloaded assets, licenses, calibration and the Asset Lab remain available.
+
+Map selection now uses one stable `battlefield_id` resolved by `BattlefieldCatalog`. Authored tactical metadata compiles through one `AuthoredSceneMapCompiler`. Historical per-map booleans remain only to interpret existing replay data. See [Current map architecture](current-map-architecture.md).
 
 Generator 2 code, plots, chunks, Map Editor tools, dedicated tests, certificates and roadmaps were moved to a local archive on 2026-10-31 at the owner's request. They are not active fallbacks. Its old recordings are rejected explicitly rather than regenerated as a different battlefield.
 
@@ -10,9 +12,13 @@ Local archive: `C:/Users/Blue/Documents/Codex/quarantine/fusefire-before-simplif
 - `retired-code/`, `retired-content/`, `retired-docs-and-data/`, `retired-history/`: moved originals.
 - Inventory JSON files and `base-commit.txt` document provenance. This archive stays local and is not included in Git pushes.
 
-The chunk creator is a useful reference, especially placement, duplication, history and draft persistence. Recover specific capabilities when needed; do not restore the entire retired dependency chain by default. Preserve user drafts in the archive unchanged.
+The retired chunk creator is a useful reference, especially placement, duplication, history and draft persistence. Its supported successor is named **Parcel Editor** and targets only the standard 16×16, 16×32 and 32×32 parcel footprints. Recover specific capabilities into a small isolated authoring tool; do not restore the retired runtime generator, publication/certification stack or dependency chain. Preserve user drafts in the archive unchanged.
+
+The superseded `map-plan-1-5-to-2-0.md` draft was moved into `retired-docs-and-data/post-quarantine-2026-11-02/`. Its active test command and architecture claims have been removed from current documentation.
 
 Next design discussion: one authored environment, contextual tactical population, and existing authoritative gameplay data. First prove a believable, playable Refinery. Do not resume the archived task pack automatically.
+
+Battle startup now has an opaque loading transition driven by real initialization stages. It preserves Match Setup until the selected battlefield has compiled and passed tactical validation, and exposes initialization failures instead of activating a partial battle.
 
 ## Verification
 

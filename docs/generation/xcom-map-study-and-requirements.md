@@ -1,13 +1,13 @@
 # FuseFire maps: XCOM 2 study and proposed requirements
 
-Status: research and proposed requirements, 2026-11-01. Blue approved the five decisions recorded below, including XCOM-inspired parcel footprints. The first refinery proof is approved for implementation; later work remains proposed. This is the current starting point for discussing task 02.
+Status: supporting research and bounded requirements, updated 2026-11-02. The active implementation contract is [Current map architecture](current-map-architecture.md). This document explains why plots, authored parcels and measured connections remain useful; it is not an instruction to restore quarantined Generator 2 systems.
 
 ## Where we are
 
 - Generator 1, its original Refinery and the Industrial Warehouse remain playable. Generator 2 and its tools are in the local quarantine described in [generation status](status.md).
 - Refinery 2 is a fixed authored 96 x 80 map, with real tactical data and replay integration. Its buildings and equipment do not rearrange with the seed. See [Refinery 2 handoff](refinery-2.md).
 - We have reviewed Kenney assets, calibration, reusable catwalk components and the retained Asset Lab. We do not yet have an active replacement plot-and-parcel generator or a production-ready general map authoring workflow.
-- The earlier [map plan](map-plan-1-5-to-2-0.md) remains useful context, but its suggestion that layout composition may be optional needs revision: Blue wants meaningfully different generated layouts. This document is the newer proposal.
+- The superseded broad map-plan draft is preserved in the local quarantine. Meaningfully different layouts remain a product goal, but composition must earn its complexity through reviewed authored content.
 
 ## What the XCOM 2 SDK actually shows
 
@@ -54,16 +54,18 @@ A second urban proof should follow before generalizing the content model. Demons
 1. **Initial scope — decided:** industrial proof first, urban second; use the existing refinery as reference, not automatically a finished parcel.
 2. **Parcel sizing — decided:** start with 16 x 16, 16 x 32 and 32 x 32 tactical tiles, with quarter-turns where connections permit. Fit real pieces and measure movement pacing; revise the standard if evidence warrants it. A footprint includes its authored access and clearances, and assets must not be stretched to fill it.
 3. **Periphery — decided:** authored near/far scene pieces per plot at first; interchangeability follows demonstrated benefit. These pieces are visual-only unless explicitly brought into the playable area.
-4. **Editor — decided:** use Godot's existing scene editing and targeted validation initially; recover the quarantined chunk editor selectively if actual authoring proves too awkward. No second application.
+4. **Editor — decided:** use Godot's existing scene editing and targeted validation initially; selectively recover the quarantined chunk editor as a small in-project **Parcel Editor** for the standard footprints. No second application and no restored runtime-generator dependency.
 5. **Generator 1 — decided:** keep it and its replay compatibility until the replacement meets its obligations.
 
 These five choices and the first refinery proof above are approved by the owner.
 
 ## Implementation progress — 2026-11-02
 
-The owner authorized implementation and routine design decisions within this scope. Implementation is incomplete.
+The owner authorized implementation and routine design decisions within this scope. The foundation is now intentionally smaller than the original proposal.
 
-- Implemented: `ParcelTransform` maps parcel-local cells and connector directions into a plot under quarter-turn rotation; its scene transform uses the same mapping and battlefield centering. Focused tests cover all 512 cells of a rectangular 16x32 parcel under all four rotations, including elevation and non-unit cell scale. Passed.
-- Not yet integrated: no runtime caller uses this helper yet. Existing gameplay is unchanged.
-- Remaining, in dependency order: author local parcel scenes and two plot definitions; validate dimensions/connections and resolve seeded choices with explicit revisions; compile and present the resolved composition through the existing runtime; record/reconstruct exact choices in replay; add near/far periphery and population-off controls; run negative, mission, replay and visual checks across fixed seeds.
-- Keep the existing authored refinery as a reference and compatibility fixture. Do not replace it in place or restore the archived generator wholesale.
+- `BattlefieldCatalog` replaces accumulating per-map runtime branches with stable identities while retaining old replay flags only for compatibility.
+- `AuthoredSceneMapCompiler` is shared by Refinery 2 and the Loading Yard proof; no map-specific compiler duplication remains.
+- `ParcelTransform` covers all cells of rectangular parcels under four rotations. `ParcelConnection` validates actual boundary cells, outward directions and widths and is consumed by the Loading Yard contract.
+- Loading Yard demonstrates one 16x32 authored parcel through normal battle initialization. It is not evidence of a finished plot generator.
+- Runtime generation and battle initialization are measured in focused tests. Runtime catalog scans and unbounded search are prohibited.
+- Next gate: visually inspect and play Loading Yard, author a genuinely interchangeable second parcel variant, then decide whether two fixed refinery plot layouts justify a tiny bounded resolver. Do not implement composition before that evidence.

@@ -26,6 +26,7 @@ metadata/revision = 1
 metadata/access_cell = Vector3i(6, 0, 31)
 metadata/access_direction = Vector2i(0, 1)
 metadata/access_width = 4
+metadata/access_kind = &"service"
 
 
 [node name="Apron" type="MeshInstance3D" parent="."]

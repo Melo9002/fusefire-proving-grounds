@@ -2,6 +2,8 @@ class_name MatchSetup
 extends Control
 
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
+const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
 
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
@@ -30,6 +32,8 @@ var player_archetypes: Array[StringName] = []
 var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
 var _seed_rng := RandomNumberGenerator.new()
+var _loading_screen: Control
+var _launch_in_progress := false
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
 const COMPATIBILITY_SECTION := "rendering"
@@ -49,10 +53,11 @@ func _ready() -> void:
 	for index in FlatMapGenerator.MAP_SIZES.size():
 		var dimensions := FlatMapGenerator.MAP_SIZES[index]
 		map_size_option.add_item("%s — %d × %d tiles" % [size_names[index], dimensions.x, dimensions.y])
-	map_size_option.add_item("Special — Refinery (40 × 30)")
-	map_size_option.add_item("Special — Industrial Warehouse (40 × 30)")
-	map_size_option.add_item("Authored - Refinery 2.0 (96 x 80)")
-	map_size_option.add_item("Proof - Loading Yard (40 x 48)")
+		map_size_option.set_item_metadata(index, BattlefieldCatalogData.GENERATED_COVER)
+	_add_battlefield_option(BattlefieldCatalogData.REFINERY)
+	_add_battlefield_option(BattlefieldCatalogData.INDUSTRIAL_WAREHOUSE)
+	_add_battlefield_option(BattlefieldCatalogData.REFINERY_2)
+	_add_battlefield_option(BattlefieldCatalogData.LOADING_YARD)
 	map_size_option.select(1)
 	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)
@@ -69,6 +74,15 @@ func _ready() -> void:
 	_refresh_seed_controls()
 	_update_summary(0.0)
 	_apply_saved_renderer_preference()
+
+func _add_battlefield_option(id: StringName) -> void:
+	var definition := BattlefieldCatalogData.definition(id)
+	var size: Vector2i = definition.fixed_size
+	map_size_option.add_item("%s (%d × %d)" % [definition.label, size.x, size.y])
+	map_size_option.set_item_metadata(map_size_option.item_count - 1, id)
+
+func _selected_battlefield_id() -> StringName:
+	return StringName(map_size_option.get_item_metadata(map_size_option.selected))
 
 func _build_roster_editor() -> void:
 	player_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(player_count.value))
@@ -406,16 +420,11 @@ func _on_objective_selected(index: int) -> void:
 func _update_summary(_value: float) -> void:
 	var map_label := "HANDMADE"
 	if generated_map_toggle.button_pressed:
-		if map_size_option.selected == 3:
-			map_label = "REFINERY"
-		elif map_size_option.selected == 6:
-			map_label = "LOADING YARD PROOF"
-		elif map_size_option.selected == 5:
-			map_label = "REFINERY 2.0"
-		elif map_size_option.selected == 4:
-			map_label = "INDUSTRIAL WAREHOUSE"
-		else:
+		var battlefield := _selected_battlefield_id()
+		if battlefield == BattlefieldCatalogData.GENERATED_COVER:
 			map_label = "GENERATED — %s" % map_size_option.get_item_text(map_size_option.selected)
+		else:
+			map_label = BattlefieldCatalogData.label(battlefield).to_upper()
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
 	var player_vip := 1 if has_vip and vip_behavior.selected == MissionActor.VIPBehavior.PLAYER_CONTROLLED else 0
@@ -452,12 +461,40 @@ func _refresh_seed_controls() -> void:
 	seed_input.editable = not auto_seed_toggle.button_pressed
 
 func _start_battle() -> void:
-	var battle = battle_scene.instantiate() as BattleLevel
+	if _launch_in_progress:
+		return
+	_launch_in_progress = true
+	start_button.disabled = true
 	var config := _build_battle_configuration()
+	_loading_screen = BattleLoadingScreenData.new()
+	_loading_screen.name = "BattleLoadingScreen"
+	_loading_screen.dismissed.connect(_dismiss_loading_failure)
+	add_child(_loading_screen)
+	_loading_screen.set_stage("Preparing %s…" % BattlefieldCatalogData.label(config.resolved_battlefield_id()), 0.05)
+	# Allow the opaque transition to render before synchronous map construction.
+	await get_tree().process_frame
+	var battle = battle_scene.instantiate() as BattleLevel
+	battle.battle_initialization_progress.connect(_loading_screen.set_stage)
+	battle.battle_initialization_finished.connect(_on_battle_initialization_finished.bind(battle), CONNECT_ONE_SHOT)
 	battle.configure_battle(config)
 	get_tree().root.add_child(battle)
-	get_tree().current_scene = battle
-	queue_free()
+
+func _on_battle_initialization_finished(success: bool, errors: Array, battle: BattleLevel) -> void:
+	if success:
+		_loading_screen.set_stage("Battlefield ready", 1.0)
+		get_tree().current_scene = battle
+		queue_free()
+		return
+	if is_instance_valid(battle):
+		battle.queue_free()
+	_loading_screen.show_failure(errors)
+
+func _dismiss_loading_failure() -> void:
+	if is_instance_valid(_loading_screen):
+		_loading_screen.queue_free()
+	_loading_screen = null
+	_launch_in_progress = false
+	start_button.disabled = false
 
 func _build_battle_configuration() -> BattleConfigurationData:
 	var config := BattleConfigurationData.new()
@@ -469,15 +506,14 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.player_archetypes = player_archetypes.duplicate()
 	config.enemy_archetypes = enemy_archetypes.duplicate()
 	config.ally_archetypes = ally_archetypes.duplicate()
-	config.map_size = Vector2i(40, 48) if map_size_option.selected == 6 else Vector2i(96, 80) if map_size_option.selected == 5 else (Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected])
+	var battlefield := _selected_battlefield_id()
+	var requested_size := FlatMapGenerator.MAP_SIZES[mini(map_size_option.selected, FlatMapGenerator.MAP_SIZES.size() - 1)]
+	config.map_size = BattlefieldCatalogData.map_size(battlefield, requested_size)
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
-	config.refinery = map_size_option.selected == 3
-	config.industrial_warehouse = map_size_option.selected == 4
-	config.refinery_2 = map_size_option.selected == 5
-	config.loading_yard = map_size_option.selected == 6
+	config.select_battlefield(battlefield)
 	return config

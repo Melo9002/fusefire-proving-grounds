@@ -4,8 +4,9 @@
 
 - [Human editing guide](human-editing-guide.md): assets, units, animation and focused checks.
 - [Architecture](architecture.md) and [code organization](code-organization.md): current ownership and entry points.
-- [Generation status](generation/status.md): Generator 1, preserved Refinery and local quarantine recovery.
-- [Map direction and XCOM SDK study](generation/xcom-map-study-and-requirements.md): current state, proposed requirements and first proof.
+- [Current map architecture](generation/current-map-architecture.md): active identities, ownership and authoring boundary.
+- [Generation status](generation/status.md): supported maps and local quarantine recovery.
+- [Map direction and XCOM SDK study](generation/xcom-map-study-and-requirements.md): evidence behind the bounded parcel direction.
 - [Project Ironclad](quality/project-ironclad.md): test commands and failure investigation.
 
 ## Gameplay and engineering

@@ -1,6 +1,8 @@
 class_name BattleConfiguration
 extends RefCounted
 
+const BattlefieldCatalog = preload("res://systems/generation/battlefield_catalog.gd")
+
 ## Named inputs used to start a battle. Keep match setup, simulations, and
 ## replay restoration readable by assigning these fields before configuration.
 
@@ -31,6 +33,7 @@ var conditions_enabled := true
 var tactical_tempo_enabled := true
 var generated_map := false
 var battlefield_preset: BattlefieldPreset = BattlefieldPreset.LEGACY
+var battlefield_id: StringName = BattlefieldCatalog.GENERATED_COVER
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
 var include_vip := false
@@ -74,6 +77,7 @@ func apply_replay(data: Dictionary) -> void:
 	industrial_warehouse = data.get("industrial_warehouse", false)
 	refinery_2 = data.get("refinery_2", false)
 	loading_yard = data.get("loading_yard", false)
+	battlefield_id = StringName(data.get("battlefield_id", BattlefieldCatalog.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)))
 
 
 func to_replay() -> Dictionary:
@@ -83,6 +87,7 @@ func to_replay() -> Dictionary:
 		"enemy_count": enemy_count,
 		"generated_map": generated_map,
 		"battlefield_preset": battlefield_preset,
+		"battlefield_id": resolved_battlefield_id(),
 		"seed": battle_seed,
 		"ally_count": ally_count,
 		"player_archetypes": player_archetypes.duplicate(),
@@ -111,7 +116,22 @@ func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
 	if battlefield_preset != BattlefieldPreset.LEGACY:
 		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Generator 2 is quarantined; use the local archived project for its maps and recordings"))
+	if generated_map and not BattlefieldCatalog.has(resolved_battlefield_id()):
+		failures.append(_failure("UNKNOWN_BATTLEFIELD", "battlefield_id", "Unknown battlefield identity: %s" % battlefield_id))
 	return failures
+
+func resolved_battlefield_id() -> StringName:
+	var legacy := BattlefieldCatalog.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)
+	if legacy != BattlefieldCatalog.GENERATED_COVER:
+		return legacy
+	return battlefield_id if not battlefield_id.is_empty() else BattlefieldCatalog.GENERATED_COVER
+
+func select_battlefield(id: StringName) -> void:
+	battlefield_id = id
+	refinery = id == BattlefieldCatalog.REFINERY
+	industrial_warehouse = id == BattlefieldCatalog.INDUSTRIAL_WAREHOUSE
+	refinery_2 = id == BattlefieldCatalog.REFINERY_2
+	loading_yard = id == BattlefieldCatalog.LOADING_YARD
 
 static func _failure(code: String, field: String, message: String) -> Dictionary:
 	return {"code": code, "field": field, "reference": "", "message": message}
