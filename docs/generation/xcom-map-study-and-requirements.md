@@ -1,6 +1,6 @@
 # FuseFire maps: XCOM 2 study and proposed requirements
 
-Status: research and proposed requirements, 2026-11-01. Blue approved the five decisions recorded below, including XCOM-inspired parcel footprints. The refinery proof and implementation roadmap remain proposals. This is the current starting point for discussing task 02.
+Status: research and proposed requirements, 2026-11-01. Blue approved the five decisions recorded below, including XCOM-inspired parcel footprints. The first refinery proof is approved for implementation; later work remains proposed. This is the current starting point for discussing task 02.
 
 ## Where we are
 
@@ -39,7 +39,7 @@ The SDK maps exist as `.umap` files. This pass read the guide, definitions and s
 
 ## First proof: one refinery family
 
-This is a proposed proof, not a new full generator or a promise that the current Refinery 2 scene can immediately be used as a parcel.
+Approved by Blue for implementation on 2026-11-02. This is a bounded proof, not a promise that the current Refinery 2 scene can immediately be used as a parcel.
 
 - Author two distinct site plots with different circulation and slot arrangements. Use fixed layouts first; no procedural road graph.
 - Prepare at least two compatible variants for one genuinely interchangeable slot, plus the minimum other areas required to make both sites coherent: process, tank/storage and loading/service areas. Reuse the existing refinery and components where practical; adapt its metadata deliberately rather than duplicating its map-specific runtime adapter.
@@ -57,4 +57,13 @@ A second urban proof should follow before generalizing the content model. Demons
 4. **Editor — decided:** use Godot's existing scene editing and targeted validation initially; recover the quarantined chunk editor selectively if actual authoring proves too awkward. No second application.
 5. **Generator 1 — decided:** keep it and its replay compatibility until the replacement meets its obligations.
 
-These five choices are owner decisions. The first refinery proof above remains proposed; its implementation has not been authorized by these decisions.
+These five choices and the first refinery proof above are approved by the owner.
+
+## Implementation progress — 2026-11-02
+
+The owner authorized implementation and routine design decisions within this scope. Implementation is incomplete.
+
+- Implemented: `ParcelTransform` maps parcel-local cells and connector directions into a plot under quarter-turn rotation; its scene transform uses the same mapping and battlefield centering. Focused tests cover all 512 cells of a rectangular 16x32 parcel under all four rotations, including elevation and non-unit cell scale. Passed.
+- Not yet integrated: no runtime caller uses this helper yet. Existing gameplay is unchanged.
+- Remaining, in dependency order: author local parcel scenes and two plot definitions; validate dimensions/connections and resolve seeded choices with explicit revisions; compile and present the resolved composition through the existing runtime; record/reconstruct exact choices in replay; add near/far periphery and population-off controls; run negative, mission, replay and visual checks across fixed seeds.
+- Keep the existing authored refinery as a reference and compatibility fixture. Do not replace it in place or restore the archived generator wholesale.
