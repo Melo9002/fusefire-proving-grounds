@@ -1,6 +1,6 @@
 # FuseFire maps: XCOM 2 study and proposed requirements
 
-Status: research and proposed requirements, 2026-11-01. Blue approved using XCOM-inspired standards as the starting point, including parcel footprints of 16 x 16, 16 x 32 and 32 x 32 tactical tiles. The remaining design and implementation roadmap remain proposals. This is the current starting point for discussing task 02.
+Status: research and proposed requirements, 2026-11-01. Blue approved the five decisions recorded below, including XCOM-inspired parcel footprints. The refinery proof and implementation roadmap remain proposals. This is the current starting point for discussing task 02.
 
 ## Where we are
 
@@ -49,12 +49,12 @@ This is a proposed proof, not a new full generator or a promise that the current
 
 A second urban proof should follow before generalizing the content model. Demonstrate two plot layouts and a few compatible parcels; evaluate whether the extra authoring effort creates enough variety for a small game. Layout composition is a goal, but unlimited layouts, general polygon packing, semantic AI assembly and a full custom editor are not prerequisites for the first proof.
 
-## Decisions to discuss
+## Owner decisions
 
-1. **Initial scope:** recommended industrial proof first, urban second; use the existing refinery as reference, not automatically a finished parcel.
+1. **Initial scope — decided:** industrial proof first, urban second; use the existing refinery as reference, not automatically a finished parcel.
 2. **Parcel sizing — decided:** start with 16 x 16, 16 x 32 and 32 x 32 tactical tiles, with quarter-turns where connections permit. Fit real pieces and measure movement pacing; revise the standard if evidence warrants it. A footprint includes its authored access and clearances, and assets must not be stretched to fill it.
-3. **Periphery:** recommended authored near/far scene pieces per plot at first; interchangeability follows demonstrated benefit. These pieces are visual-only unless explicitly brought into the playable area.
-4. **Editor:** recommended use Godot's existing scene editing and targeted validation initially; recover the quarantined chunk editor selectively if actual authoring proves too awkward. No second application.
-5. **Generator 1:** keep it and its replay compatibility until the replacement meets its obligations and Blue agrees to retire it.
+3. **Periphery — decided:** authored near/far scene pieces per plot at first; interchangeability follows demonstrated benefit. These pieces are visual-only unless explicitly brought into the playable area.
+4. **Editor — decided:** use Godot's existing scene editing and targeted validation initially; recover the quarantined chunk editor selectively if actual authoring proves too awkward. No second application.
+5. **Generator 1 — decided:** keep it and its replay compatibility until the replacement meets its obligations.
 
-Parcel sizes and using XCOM-inspired standards as an initial reference are owner decisions. The other choices are recommendations for discussion, not owner approvals. Next: review representative SDK plots/parcels/periphery visually if the editor can open them, and turn the first refinery proof into a short implementation task pack after the owner chooses the scope.
+These five choices are owner decisions. The first refinery proof above remains proposed; its implementation has not been authorized by these decisions.
