@@ -1,0 +1,58 @@
+[gd_scene load_steps=6 format=3]
+
+[sub_resource type="StandardMaterial3D" id="ground_material"]
+albedo_color = Color(0.28, 0.30, 0.29, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="route_material"]
+albedo_color = Color(0.49, 0.47, 0.41, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="near_material"]
+albedo_color = Color(0.22, 0.24, 0.24, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(64, 0.08, 64)
+material = SubResource("ground_material")
+
+[sub_resource type="BoxMesh" id="spine_mesh"]
+size = Vector3(8, 0.06, 64)
+material = SubResource("route_material")
+
+[node name="RefinerySiteB" type="Node3D"]
+metadata/plot_id = &"refinery_site_b"
+metadata/revision = 1
+metadata/map_size = Vector2i(64, 64)
+
+[node name="VisibleGround" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("ground_mesh")
+
+[node name="ServiceSpine" type="MeshInstance3D" parent="."]
+position = Vector3(12, -0.01, 0)
+mesh = SubResource("spine_mesh")
+
+[node name="NearPeriphery" type="Node3D" parent="."]
+
+[node name="NorthContinuation" type="CSGBox3D" parent="NearPeriphery"]
+position = Vector3(12, -0.08, -38)
+size = Vector3(8, 0.05, 12)
+material = SubResource("route_material")
+
+[node name="SouthContinuation" type="CSGBox3D" parent="NearPeriphery"]
+position = Vector3(12, -0.08, 38)
+size = Vector3(8, 0.05, 12)
+material = SubResource("route_material")
+
+[node name="FarBackdrop" type="Node3D" parent="."]
+
+[node name="HorizonBlockA" type="CSGBox3D" parent="FarBackdrop"]
+position = Vector3(-48, 5, -42)
+size = Vector3(20, 10, 18)
+material = SubResource("near_material")
+
+[node name="HorizonBlockB" type="CSGBox3D" parent="FarBackdrop"]
+position = Vector3(-44, 3, 45)
+size = Vector3(28, 6, 14)
+material = SubResource("near_material")

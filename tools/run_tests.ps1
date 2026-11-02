@@ -64,6 +64,9 @@ $subsystemPatterns = @{
 $visualTests = @(
     "asset_lab_capture.gd",
 	"authored_parcel_catalog_capture.gd",
+	"refinery_plot_resolver_test.gd",
+	"refinery_family_layout_test.gd",
+	"refinery_family_capture.gd",
 	"battle_loading_screen_capture.gd",
     "industrial_warehouse_capture.gd",
     "refinery_2_capture.gd",

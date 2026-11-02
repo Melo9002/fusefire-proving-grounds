@@ -58,6 +58,7 @@ func _ready() -> void:
 	_add_battlefield_option(BattlefieldCatalogData.INDUSTRIAL_WAREHOUSE)
 	_add_battlefield_option(BattlefieldCatalogData.REFINERY_2)
 	_add_battlefield_option(BattlefieldCatalogData.LOADING_YARD)
+	_add_battlefield_option(BattlefieldCatalogData.REFINERY_FAMILY)
 	map_size_option.select(1)
 	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)

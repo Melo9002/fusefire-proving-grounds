@@ -120,6 +120,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"refinery_2": bool(source.get("refinery_2", false)),
 		"loading_yard": bool(source.get("loading_yard", false)),
 		"battlefield_id": String(source.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER)),
+		"content_manifest": _manifest_to_data(source.get("content_manifest", {})),
 	}
 
 static func _configuration_from_data(data: Dictionary) -> Dictionary:
@@ -155,7 +156,26 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"refinery_2": bool(data.get("refinery_2", false)),
 		"loading_yard": bool(data.get("loading_yard", false)),
 		"battlefield_id": String(data.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER)),
+		"content_manifest": _manifest_from_data(data.get("content_manifest", {})),
 	}
+
+static func _manifest_to_data(manifest: Dictionary) -> Dictionary:
+	if manifest.is_empty(): return {}
+	var size: Vector2i = manifest.get("map_size", Vector2i.ZERO)
+	var placements: Array[Dictionary] = []
+	for placement: Dictionary in manifest.get("placements", []):
+		var origin: Vector3i = placement.get("origin", Vector3i.ZERO)
+		placements.append({"slot_id": String(placement.get("slot_id", "")), "parcel_id": String(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": [origin.x, origin.y, origin.z], "rotation": int(placement.get("rotation", 0))})
+	return {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
+
+static func _manifest_from_data(manifest: Variant) -> Dictionary:
+	if not manifest is Dictionary or manifest.is_empty(): return {}
+	var raw_size: Array = manifest.get("map_size", [0, 0])
+	var placements: Array[Dictionary] = []
+	for placement: Dictionary in manifest.get("placements", []):
+		var raw_origin: Array = placement.get("origin", [0, 0, 0])
+		placements.append({"slot_id": StringName(placement.get("slot_id", "")), "parcel_id": StringName(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": Vector3i(int(raw_origin[0]), int(raw_origin[1]), int(raw_origin[2])), "rotation": int(placement.get("rotation", 0))})
+	return {"schema": int(manifest.get("schema", 1)), "plot_id": StringName(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": Vector2i(int(raw_size[0]), int(raw_size[1])), "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements, "errors": []}
 
 static func _string_array(values: Variant) -> Array[String]:
 	var result: Array[String] = []

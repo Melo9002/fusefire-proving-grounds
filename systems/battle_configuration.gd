@@ -46,6 +46,9 @@ var refinery := false
 var industrial_warehouse := false
 var refinery_2 := false
 var loading_yard := false
+## Exact accepted authored content for generated parcel maps. Empty means a new
+## resolution may be made; replay stores the resolved value after generation.
+var content_manifest: Dictionary = {}
 
 
 func apply_replay(data: Dictionary) -> void:
@@ -78,6 +81,7 @@ func apply_replay(data: Dictionary) -> void:
 	refinery_2 = data.get("refinery_2", false)
 	loading_yard = data.get("loading_yard", false)
 	battlefield_id = StringName(data.get("battlefield_id", BattlefieldCatalog.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)))
+	content_manifest = data.get("content_manifest", {}).duplicate(true)
 
 
 func to_replay() -> Dictionary:
@@ -110,6 +114,7 @@ func to_replay() -> Dictionary:
 		"industrial_warehouse": industrial_warehouse,
 		"refinery_2": refinery_2,
 		"loading_yard": loading_yard,
+		"content_manifest": content_manifest.duplicate(true),
 	}
 
 func validate_generation_selection() -> Array[Dictionary]:

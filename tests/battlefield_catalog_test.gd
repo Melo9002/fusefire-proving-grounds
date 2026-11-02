@@ -13,7 +13,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	var ids := [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE, Catalog.REFINERY_2, Catalog.LOADING_YARD]
+	var ids := [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE, Catalog.REFINERY_2, Catalog.LOADING_YARD, Catalog.REFINERY_FAMILY]
 	check(ids.all(func(id): return Catalog.has(id)), "Every selectable battlefield has one catalog identity")
 	check(Catalog.map_size(Catalog.REFINERY_2, Vector2i.ONE) == Vector2i(96, 80), "Fixed authored size comes from the catalog")
 	check(Catalog.map_size(Catalog.GENERATED_COVER, Vector2i(24, 20)) == Vector2i(24, 20), "Generated cover retains supported requested size")
@@ -45,7 +45,7 @@ func _run() -> void:
 		seen[id] = true
 	menu.map_size_option.select(menu.map_size_option.item_count - 1)
 	var selected: BattleConfiguration = menu._build_battle_configuration()
-	check(selected.resolved_battlefield_id() == Catalog.LOADING_YARD and selected.map_size == Vector2i(40, 48), "Match Setup selects Loading Yard without numeric branching")
+	check(selected.resolved_battlefield_id() == Catalog.REFINERY_FAMILY and selected.map_size == Vector2i(64, 64), "Match Setup exposes the authored-parcel refinery family")
 	menu.free()
 
 	var started := Time.get_ticks_msec()
@@ -58,11 +58,27 @@ func _run() -> void:
 	root.add_child(level)
 	await process_frame
 	await process_frame
-	check(level.battle_initialization_succeeded, "Loading Yard initializes through the shared battle path: %s" % [level.battle_initialization_errors])
-	check(level.active_generated_map != null and level.active_generated_map.source_kind == LoadingYard.SOURCE_KIND, "Tactical and presentation identity agree")
-	check(level.get_node_or_null("GeneratedTerrain/LoadingYard/Warehouse") != null, "Imported authored parcel renders through the catalog")
-	check(StringName(level._replay_configuration.get("battlefield_id", "")) == Catalog.LOADING_YARD, "Replay records the stable battlefield ID")
-	print("Battlefield catalog: %d failure(s), Loading Yard initialization %d ms" % [failures, Time.get_ticks_msec() - started])
+	check(level.battle_initialization_succeeded, "Refinery family initializes through the shared battle path: %s" % [level.battle_initialization_errors])
+	check(level.active_generated_map != null and level.active_generated_map.source_kind == "authored_refinery_family", "Tactical and presentation identity agree")
+	check(level.get_node_or_null("GeneratedTerrain/RefinerySiteA") != null or level.get_node_or_null("GeneratedTerrain/RefinerySiteB") != null, "Authored plot renders through the catalog")
+	check(StringName(level._replay_configuration.get("battlefield_id", "")) == Catalog.REFINERY_FAMILY, "Replay records the stable battlefield ID")
+	check(not level._replay_configuration.get("content_manifest", {}).is_empty(), "Replay records exact accepted plot and parcel choices")
+	var stale_manifest: Dictionary = level.active_generated_map.content_manifest.duplicate(true)
+	stale_manifest.plot_revision = 999
+	var stale_config := BattleConfiguration.new()
+	stale_config.generated_map = true
+	stale_config.select_battlefield(Catalog.REFINERY_FAMILY)
+	stale_config.battle_seed = selected.battle_seed
+	stale_config.content_manifest = stale_manifest
+	var rejected_level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
+	rejected_level.configure_battle(stale_config)
+	root.add_child(rejected_level)
+	await process_frame
+	await process_frame
+	check(not rejected_level.battle_initialization_succeeded, "Stale exact content fails before a partial battle activates")
+	check(rejected_level.get_node_or_null("GeneratedTerrain") == null, "Rejected content leaves no partial environment presentation")
+	rejected_level.queue_free()
+	print("Battlefield catalog: %d failure(s), Refinery family initialization %d ms" % [failures, Time.get_ticks_msec() - started])
 	level.queue_free()
 	await process_frame
 	quit(1 if failures else 0)

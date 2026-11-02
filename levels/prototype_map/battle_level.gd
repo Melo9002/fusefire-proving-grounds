@@ -51,6 +51,7 @@ var shield_enabled := true
 var overwatch_enabled := true
 var conditions_enabled := true
 var tactical_tempo_enabled := true
+var requested_content_manifest: Dictionary = {}
 var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
@@ -108,6 +109,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	overwatch_enabled = config.overwatch_enabled
 	conditions_enabled = config.conditions_enabled
 	tactical_tempo_enabled = config.tactical_tempo_enabled
+	requested_content_manifest = config.content_manifest.duplicate(true)
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed
@@ -141,6 +143,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.overwatch_enabled = overwatch_enabled
 	normalized.conditions_enabled = conditions_enabled
 	normalized.tactical_tempo_enabled = tactical_tempo_enabled
+	normalized.content_manifest = requested_content_manifest.duplicate(true)
 	normalized.select_battlefield(battlefield_id)
 	_replay_configuration = normalized.to_replay()
 
@@ -189,8 +192,16 @@ func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
 	battle_initialization_progress.emit("Constructing tactical battlefield…", 0.28)
-	var generated_map := BattlefieldCatalog.generate(battlefield_id, generated_size, generation_seed, grid.cell_size)
+	var generated_map := BattlefieldCatalog.generate(battlefield_id, generated_size, generation_seed, grid.cell_size, requested_content_manifest)
 	active_generated_map = generated_map
+	_replay_configuration["content_manifest"] = generated_map.content_manifest.duplicate(true)
+	if not generated_map.generation_errors.is_empty():
+		var errors: Array[Dictionary] = []
+		for failure: Dictionary in generated_map.generation_errors:
+			errors.append(_diagnostic(String(failure.get("code", "GENERATION_FAILED")), "content_manifest", String(failure.get("detail", "battlefield content could not be resolved"))))
+		_abort_generated_state()
+		_fail_battle_initialization(errors)
+		return
 	generated_size = generated_map.map_size
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size

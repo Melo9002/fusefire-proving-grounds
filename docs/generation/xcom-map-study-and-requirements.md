@@ -66,9 +66,9 @@ The owner authorized implementation and routine design decisions within this sco
 - `BattlefieldCatalog` replaces accumulating per-map runtime branches with stable identities while retaining old replay flags only for compatibility.
 - `AuthoredSceneMapCompiler` is shared by Refinery 2 and the Loading Yard proof; no map-specific compiler duplication remains.
 - `ParcelTransform` covers all cells of rectangular parcels under four rotations. `ParcelConnection` validates actual boundary cells, outward directions and widths and is consumed by the Loading Yard contract.
-- Loading Yard demonstrates one 16x32 authored parcel through normal battle initialization. It is not evidence of a finished plot generator.
+- Loading Yard remains the isolated 16x32 authoring proof. The selectable Refinery Family now composes the reviewed parcel family into two fixed plots; it is the active replacement proof, not a claim of a general generator.
 - Runtime generation and battle initialization are measured in focused tests. Runtime catalog scans and unbounded search are prohibited.
-- Next gate: visually inspect and play Loading Yard, author a genuinely interchangeable second parcel variant, then decide whether two fixed refinery plot layouts justify a tiny bounded resolver. Do not implement composition before that evidence.
+- Next gate: play and replay both composed refinery sites across fixed seeds, replace the deliberately simple horizon blocks with authored industrial surroundings, and decide whether the parcel workflow needs the quarantined editor UX.
 
 ## Implementation ledger
 
@@ -80,13 +80,15 @@ This is the owner-facing progress record. A technical check and visual/playabili
 | Standard parcel geometry | Implemented | 16×16, 16×32, 32×32 policy; `ParcelTransform` exhaustively covers rectangular rotations | Add each new footprint to the same transform tests |
 | Measured parcel connections | Implemented for pilot | `ParcelConnection` validates boundary cell, outward direction and width | Extend to multiple named interfaces only when process/storage content requires it |
 | Loading/service parcel family | Technical and agent visual review complete; owner review pending | Two registered 16×32 variants share one measured 4-cell service interface, use different imported shells/layouts and compile under four rotations | Play both variants in composed plots and obtain owner review |
-| Fixed place with varied content | Foundation only | Seeded bounded catalog choice exists offline | Record resolved ID/revision before enabling runtime selection |
+| Fixed place with varied content | Implemented for refinery proof | Runtime seeds select two reviewed loading variants; the accepted ID/revision/transform is stored in the map and replay configuration | Play/replay the fixed seed matrix |
 | Process parcel | Technical and agent visual review complete; owner review pending | Open 16×16 process pad uses three calibrated machines, explicit tactical volumes and a measured 2-cell service interface | Validate within both plot circulation layouts |
 | Tank/storage parcel | Technical and agent visual review complete; owner review pending | 16×16 storage pad uses calibrated tanks/container, explicit tactical volumes and a measured 4-cell service interface | Validate within both plot circulation layouts |
-| Two refinery plots | Not started | Refinery 2 provides reference scale/content only | Author two fixed slot/circulation layouts after the three parcel roles exist |
-| Deterministic bounded resolver | Not started | Parcel candidates have stable ordering and deterministic pilot choice | Resolve required plot slots, emit explicit failures, store actual choices |
-| Exact replay reconstruction | Not started | Current battlefield ID/seed replay remains valid | Persist plot/parcel IDs, revisions, transforms and population choices |
-| Near/far surroundings | Not started | Policy approved | Author per-plot edge continuation and visual-only horizon scenes |
+| Refinery plot resolver | Implemented and focused tests pass | Two fixed 64×64 site plans own exact process, storage and loading slots; seeded selection is bounded and records actual parcel IDs/revisions | Exercise negative runtime reconstruction and mission matrix |
+| Refinery family compilation | Implemented; technical and agent visual review pass | Exact choices compile and present through shared boundaries; Match Setup starts a normal battle in about 2.1 s; clean captures show distinct split-yard and service-spine layouts | Owner visual review and full mission/replay matrix |
+| Two refinery plots | Implemented | Site A uses split northern pads/southern loading; Site B uses a longitudinal service spine; both use the same parcel contracts | Refine sparse space only from play/visual evidence |
+| Deterministic bounded resolver | Implemented | Fixed three-slot work, stable ordering, two loading candidates, no scans/backtracking, explicit stale/missing dependency errors | Keep this bounded unless the urban proof demonstrates a concrete need |
+| Exact replay reconstruction | Implemented at configuration boundary | Replay JSON round-trips plot ID/revision, population mode, parcel IDs/revisions, origins and rotations; runtime records accepted choices, not seed alone | Execute full recorded battle playback on both sites |
+| Near/far surroundings | Provisional visual implementation | Each plot owns fixed road continuation and visual-only horizon nodes outside tactical compilation | Replace crude horizon blocks with authored industrial scenery after play-space approval |
 | Parcel Editor | Planned selective recovery | Retired editor UX inventoried in quarantine | Rebuild only standard-footprint placement, inspection, history and save workflow |
 | Quality, mission and visual matrix | Partial | Loading Yard mission completes and replays 24/24; clean captures exist | Exercise both plots, fixed seeds, objectives, edge views and full missions |
 | Post-generator simplification (“enxugar”) | Explicit future milestone | Current architecture and this ledger define ownership | After the refinery proof: remove stale code/docs, reduce concepts, and write an owner-oriented system guide |
