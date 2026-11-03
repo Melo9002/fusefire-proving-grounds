@@ -165,7 +165,10 @@ static func _manifest_to_data(manifest: Dictionary) -> Dictionary:
 	var placements: Array[Dictionary] = []
 	for placement: Dictionary in manifest.get("placements", []):
 		var origin: Vector3i = placement.get("origin", Vector3i.ZERO)
-		placements.append({"slot_id": String(placement.get("slot_id", "")), "parcel_id": String(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": [origin.x, origin.y, origin.z], "rotation": int(placement.get("rotation", 0))})
+		var population: Array[Dictionary] = []
+		for choice: Dictionary in placement.get("population", []):
+			population.append({"region_id": String(choice.get("region_id", "")), "socket_id": String(choice.get("socket_id", "")), "asset_id": String(choice.get("asset_id", ""))})
+		placements.append({"slot_id": String(placement.get("slot_id", "")), "parcel_id": String(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": [origin.x, origin.y, origin.z], "rotation": int(placement.get("rotation", 0)), "population": population})
 	return {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
 
 static func _manifest_from_data(manifest: Variant) -> Dictionary:
@@ -174,7 +177,10 @@ static func _manifest_from_data(manifest: Variant) -> Dictionary:
 	var placements: Array[Dictionary] = []
 	for placement: Dictionary in manifest.get("placements", []):
 		var raw_origin: Array = placement.get("origin", [0, 0, 0])
-		placements.append({"slot_id": StringName(placement.get("slot_id", "")), "parcel_id": StringName(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": Vector3i(int(raw_origin[0]), int(raw_origin[1]), int(raw_origin[2])), "rotation": int(placement.get("rotation", 0))})
+		var population: Array[Dictionary] = []
+		for choice: Dictionary in placement.get("population", []):
+			population.append({"region_id": StringName(choice.get("region_id", "")), "socket_id": StringName(choice.get("socket_id", "")), "asset_id": String(choice.get("asset_id", ""))})
+		placements.append({"slot_id": StringName(placement.get("slot_id", "")), "parcel_id": StringName(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": Vector3i(int(raw_origin[0]), int(raw_origin[1]), int(raw_origin[2])), "rotation": int(placement.get("rotation", 0)), "population": population})
 	return {"schema": int(manifest.get("schema", 1)), "plot_id": StringName(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": Vector2i(int(raw_size[0]), int(raw_size[1])), "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements, "errors": []}
 
 static func _string_array(values: Variant) -> Array[String]:

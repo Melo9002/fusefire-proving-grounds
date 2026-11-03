@@ -55,13 +55,26 @@ func validate() -> PackedStringArray:
 	if asset_ids(root).is_empty():
 		failures.append("MISSING_IMPORTED_CONTENT")
 	var region_ids := {}
-	for region in population_regions(root):
+	var regions := population_regions(root)
+	for region in regions:
 		var region_error: String = region.validate(size)
 		if not region_error.is_empty():
 			failures.append("INVALID_POPULATION_REGION: " + region_error)
 		if region_ids.has(region.region_id):
 			failures.append("DUPLICATE_POPULATION_REGION")
 		region_ids[region.region_id] = true
+	var socket_ids := {}
+	for socket: Dictionary in population_sockets(root):
+		var socket_id := StringName(socket.socket_id)
+		var region_id := StringName(socket.region_id)
+		if socket_id.is_empty() or not region_ids.has(region_id):
+			failures.append("INVALID_POPULATION_SOCKET")
+		if socket_ids.has(socket_id):
+			failures.append("DUPLICATE_POPULATION_SOCKET")
+		socket_ids[socket_id] = true
+		for region in regions:
+			if region.region_id == region_id and not region.allowed_asset_ids.has(String(socket.asset_id)):
+				failures.append("POPULATION_ASSET_NOT_ALLOWED")
 	root.free()
 	return failures
 
@@ -94,7 +107,7 @@ func population_regions(root: Node = null) -> Array:
 	return result
 
 func _collect_population_regions(node: Node, result: Array) -> void:
-	if node.has_meta("population_region_id"):
+	if node.has_meta("population_region_id") and node.has_meta("population_role"):
 		var region = PopulationRegion.new()
 		region.region_id = StringName(node.get_meta("population_region_id", &""))
 		region.role = StringName(node.get_meta("population_role", &""))
@@ -105,6 +118,37 @@ func _collect_population_regions(node: Node, result: Array) -> void:
 		result.append(region)
 	for child in node.get_children():
 		_collect_population_regions(child, result)
+
+func population_sockets(root: Node = null) -> Array[Dictionary]:
+	var owns_root := root == null
+	if owns_root:
+		root = instantiate()
+	var result: Array[Dictionary] = []
+	if root:
+		_collect_population_sockets(root, result)
+	if owns_root and root:
+		root.free()
+	result.sort_custom(func(a, b): return String(a.socket_id) < String(b.socket_id))
+	return result
+
+func apply_population(root: Node, accepted: Array) -> void:
+	var accepted_ids := {}
+	for choice: Dictionary in accepted:
+		accepted_ids[StringName(choice.get("socket_id", &""))] = true
+	_remove_unaccepted_population(root, accepted_ids)
+
+func _collect_population_sockets(node: Node, result: Array[Dictionary]) -> void:
+	if node.has_meta("population_socket_id"):
+		result.append({"socket_id": StringName(node.get_meta("population_socket_id")), "region_id": StringName(node.get_meta("population_region_id", &"")), "asset_id": String(node.get_meta("asset_id", ""))})
+	for child in node.get_children():
+		_collect_population_sockets(child, result)
+
+func _remove_unaccepted_population(node: Node, accepted_ids: Dictionary) -> void:
+	for child in node.get_children():
+		if child.has_meta("population_socket_id") and not accepted_ids.has(StringName(child.get_meta("population_socket_id"))):
+			child.free()
+		else:
+			_remove_unaccepted_population(child, accepted_ids)
 
 func asset_ids(root: Node = null) -> PackedStringArray:
 	var owns_root := root == null

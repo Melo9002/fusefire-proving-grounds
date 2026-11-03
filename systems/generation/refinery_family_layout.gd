@@ -24,6 +24,7 @@ static func generate(seed: int, cell_size: float = 1.0, requested: Dictionary = 
 			data.generation_errors.append({"code": "STALE_PARCEL_DEPENDENCY", "detail": String(placement.parcel_id)})
 			continue
 		var root: Node3D = parcel.instantiate()
+		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
 		Compiler.compile(root, data, cell_size)
 		root.free()
@@ -45,6 +46,7 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
 			return false
 		var root: Node3D = parcel.instantiate()
+		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
 		parent.add_child(root)
 	return true

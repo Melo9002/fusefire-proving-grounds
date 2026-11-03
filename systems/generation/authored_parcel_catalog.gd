@@ -19,8 +19,8 @@ const TankStorageA = preload("res://art/environments/authored/parcels/tank_stora
 
 static func all() -> Array:
 	return [
-		Definition.new(LOADING_YARD_A, "Warehouse loading apron", LOADING_SERVICE, 1, Vector2i(16, 32), LoadingYardA),
-		Definition.new(LOADING_YARD_B, "Container service apron", LOADING_SERVICE, 1, Vector2i(16, 32), LoadingYardB),
+		Definition.new(LOADING_YARD_A, "Warehouse loading apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardA),
+		Definition.new(LOADING_YARD_B, "Container service apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardB),
 		Definition.new(PROCESS_PAD_A, "Factory process pad", PROCESS, 1, Vector2i(16, 16), ProcessPadA),
 		Definition.new(TANK_STORAGE_A, "Tank storage pad", STORAGE, 1, Vector2i(16, 16), TankStorageA),
 	]

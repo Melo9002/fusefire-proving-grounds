@@ -16,16 +16,22 @@ func check(condition: bool, message: String) -> void:
 func _run() -> void:
 	var seen_plots := {}
 	var seen_loading := {}
+	var seen_container_counts := {}
 	for seed in range(8):
 		var resolved := Resolver.resolve(seed)
 		check(Resolver.is_valid(resolved), "seed %d resolves cleanly: %s" % [seed, resolved.get("errors", [])])
 		check(resolved.placements.size() == 3, "seed %d resolves all three required parcels" % seed)
 		seen_plots[resolved.plot_id] = true
 		for placement: Dictionary in resolved.placements:
-			if placement.slot_id == &"loading": seen_loading[placement.parcel_id] = true
+			if placement.slot_id == &"loading":
+				seen_loading[placement.parcel_id] = true
+				var container_count: int = placement.population.filter(func(choice): return choice.region_id == &"depot_containers").size()
+				seen_container_counts[container_count] = true
+				check(placement.population.any(func(choice): return choice.region_id == &"loading_vehicles"), "seed %d resolves an authored loading vehicle socket" % seed)
 		check(resolved == Resolver.resolve(seed), "seed %d resolution is deterministic" % seed)
 	check(seen_plots.size() == 2, "seed matrix exercises both authored plot layouts")
 	check(seen_loading.size() == 2, "seed matrix exercises both loading-yard variants")
+	check(seen_container_counts.has(1) and seen_container_counts.has(2), "seed matrix exercises bounded one- and two-container populations")
 	var empty := Resolver.resolve(17, false)
 	check(Resolver.is_valid(empty) and empty.placements.is_empty(), "population-off preserves the plot without movable parcels")
 	check(empty.plot_id == PlotCatalog.SITE_B, "population-off retains deterministic plot identity")
@@ -40,6 +46,10 @@ func _run() -> void:
 	var missing := exact.duplicate(true)
 	missing.placements[0].parcel_id = &"missing_parcel"
 	check(not Resolver.is_valid(Resolver.resolve(6, true, missing)), "missing exact parcel fails without substitution")
+	var invalid_population := exact.duplicate(true)
+	for placement: Dictionary in invalid_population.placements:
+		if placement.slot_id == &"loading": placement.population[0].socket_id = &"unknown_socket"
+	check(not Resolver.is_valid(Resolver.resolve(6, true, invalid_population)), "invalid recorded population socket fails without substitution")
 	for plot: Dictionary in PlotCatalog.all(): _check_plot_geometry(plot)
 	print("Refinery plot resolver: %d failure(s)" % failures)
 	quit(1 if failures else 0)

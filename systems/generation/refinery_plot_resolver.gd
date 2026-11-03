@@ -19,8 +19,10 @@ static func resolve(seed: int, population_enabled: bool = true, requested: Dicti
 	var requested_placements: Dictionary = {}
 	for placement in requested.get("placements", []):
 		requested_placements[StringName(placement.get("slot_id", &""))] = placement
-	for slot: Dictionary in plot.slots:
-		var parcel = _parcel_for_slot(slot, seed, requested_placements.get(slot.slot_id, {}))
+	for slot_index in plot.slots.size():
+		var slot: Dictionary = plot.slots[slot_index]
+		var requested_placement: Dictionary = requested_placements.get(slot.slot_id, {})
+		var parcel = _parcel_for_slot(slot, seed, requested_placement)
 		if parcel == null:
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
 			continue
@@ -28,8 +30,56 @@ static func resolve(seed: int, population_enabled: bool = true, requested: Dicti
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
-		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation})
+		var population := _resolve_population(parcel, seed, slot_index, requested_placement)
+		if population.has("error"):
+			result.errors.append(_error(String(population.error), "%s/%s" % [plot.plot_id, slot.slot_id]))
+			continue
+		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation, "population": population.choices})
 	return result
+
+static func _resolve_population(parcel, seed: int, slot_index: int, requested: Dictionary) -> Dictionary:
+	var sockets: Array[Dictionary] = parcel.population_sockets()
+	var regions: Array = parcel.population_regions()
+	if sockets.is_empty():
+		return {"choices": []}
+	if not requested.is_empty():
+		if not requested.has("population"):
+			return {"error": "MISSING_POPULATION_CHOICES"}
+		var choices: Array = requested.population
+		return {"choices": choices.duplicate(true)} if _population_valid(regions, sockets, choices) else {"error": "INVALID_POPULATION_CHOICES"}
+	var choices: Array[Dictionary] = []
+	for region_index in regions.size():
+		var region = regions[region_index]
+		var candidates := sockets.filter(func(socket): return socket.region_id == region.region_id)
+		if candidates.size() < region.min_count or candidates.is_empty():
+			return {"error": "INSUFFICIENT_POPULATION_SOCKETS"}
+		var count: int = region.min_count + posmod(floori(seed / 2.0) + slot_index * 7 + region_index * 3, region.max_count - region.min_count + 1)
+		var start := posmod(seed + slot_index + region_index, candidates.size())
+		for offset in count:
+			var socket: Dictionary = candidates[(start + offset) % candidates.size()]
+			choices.append({"region_id": socket.region_id, "socket_id": socket.socket_id, "asset_id": socket.asset_id})
+	return {"choices": choices}
+
+static func _population_valid(regions: Array, sockets: Array[Dictionary], choices: Array) -> bool:
+	var socket_by_id := {}
+	for socket: Dictionary in sockets:
+		socket_by_id[StringName(socket.socket_id)] = socket
+	var counts := {}
+	var used := {}
+	for choice: Dictionary in choices:
+		var socket_id := StringName(choice.get("socket_id", &""))
+		if used.has(socket_id) or not socket_by_id.has(socket_id):
+			return false
+		var socket: Dictionary = socket_by_id[socket_id]
+		if StringName(choice.get("region_id", &"")) != socket.region_id or String(choice.get("asset_id", "")) != socket.asset_id:
+			return false
+		used[socket_id] = true
+		counts[socket.region_id] = int(counts.get(socket.region_id, 0)) + 1
+	for region in regions:
+		var count := int(counts.get(region.region_id, 0))
+		if count < region.min_count or count > region.max_count:
+			return false
+	return true
 
 static func is_valid(resolved: Dictionary) -> bool:
 	return resolved.has("errors") and resolved.errors.is_empty()

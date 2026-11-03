@@ -18,7 +18,7 @@ material = SubResource("apron_material")
 metadata/parcel_id = &"loading_yard_b"
 metadata/parcel_role = &"loading_service"
 metadata/parcel_size = Vector2i(16, 32)
-metadata/revision = 1
+metadata/revision = 2
 metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
 metadata/access_cell = Vector3i(6, 0, 31)
 metadata/access_direction = Vector2i(0, 1)
@@ -32,7 +32,7 @@ metadata/population_region_id = &"depot_containers"
 metadata/population_role = &"shipping_container"
 metadata/local_rect = Rect2i(1, 19, 14, 12)
 metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b", "city_kit_industrial/shipping-container-c")
-metadata/min_count = 0
+metadata/min_count = 1
 metadata/max_count = 2
 
 [node name="LoadingVehicles" type="Node" parent="PopulationRegions"]
@@ -40,7 +40,7 @@ metadata/population_region_id = &"loading_vehicles"
 metadata/population_role = &"delivery_vehicle"
 metadata/local_rect = Rect2i(8, 15, 7, 5)
 metadata/allowed_asset_ids = PackedStringArray("car_kit/delivery")
-metadata/min_count = 0
+metadata/min_count = 1
 metadata/max_count = 1
 
 [node name="Apron" type="MeshInstance3D" parent="."]
@@ -64,6 +64,8 @@ metadata/round_volume = false
 position = Vector3(2.5, 0, 20)
 rotation = Vector3(0, 1.570796, 0)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"container_west"
+metadata/population_region_id = &"depot_containers"
 
 [node name="Visual" parent="ContainerA" instance=ExtResource("container_a")]
 transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000008, 0, 0)
@@ -76,6 +78,8 @@ metadata/round_volume = false
 [node name="ContainerC" type="Node3D" parent="."]
 position = Vector3(13, 0, 24)
 metadata/asset_id = "city_kit_industrial/shipping-container-c"
+metadata/population_socket_id = &"container_east"
+metadata/population_region_id = &"depot_containers"
 
 [node name="Visual" parent="ContainerC" instance=ExtResource("container_c")]
 transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000006, 0, 0)
@@ -89,6 +93,8 @@ metadata/round_volume = false
 position = Vector3(12, 0, 17)
 rotation = Vector3(0, 3.141593, 0)
 metadata/asset_id = "car_kit/delivery"
+metadata/population_socket_id = &"loading_vehicle"
+metadata/population_region_id = &"loading_vehicles"
 
 [node name="Visual" parent="Truck" instance=ExtResource("delivery")]
 transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03125)
