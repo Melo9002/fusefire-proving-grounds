@@ -1,13 +1,18 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://art/environments/authored/roads/road_strip_85.tscn" id="road_strip"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-a.glb" id="building_a"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="building_c"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/chimney-large.glb" id="chimney"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/water-tower.glb" id="water_tower"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/light-curved.glb" id="street_light"]
 
 [sub_resource type="StandardMaterial3D" id="ground_material"]
-albedo_color = Color(0.30, 0.31, 0.30, 1)
+albedo_color = Color(0.18, 0.205, 0.19, 1)
 roughness = 0.95
 
 [sub_resource type="BoxMesh" id="ground_mesh"]
-size = Vector3(64, 0.08, 64)
+size = Vector3(256, 0.08, 256)
 material = SubResource("ground_material")
 
 [node name="RefinerySiteA" type="Node3D"]
@@ -23,4 +28,52 @@ mesh = SubResource("ground_mesh")
 [node name="RoadAndNearPeriphery" parent="." instance=ExtResource("road_strip")]
 position = Vector3(-39.5, 0.005, -5.5)
 
+[node name="BackgroundServiceRoad" parent="." instance=ExtResource("road_strip")]
+position = Vector3(-39.5, 0.005, -48)
+
 [node name="FarBackdrop" type="Node3D" parent="."]
+
+[node name="WestFactory" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-48, 0, -36)
+metadata/asset_id = "city_kit_industrial/building-a"
+
+[node name="Visual" parent="FarBackdrop/WestFactory" instance=ExtResource("building_a")]
+scale = Vector3(10, 10, 10)
+
+[node name="EastFactory" type="Node3D" parent="FarBackdrop"]
+position = Vector3(48, 0, 44)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_industrial/building-c"
+
+[node name="Visual" parent="FarBackdrop/EastFactory" instance=ExtResource("building_c")]
+scale = Vector3(10, 10, 10)
+
+[node name="NorthStack" type="Node3D" parent="FarBackdrop"]
+position = Vector3(45, 0, -36)
+metadata/asset_id = "city_kit_industrial/chimney-large"
+
+[node name="Visual" parent="FarBackdrop/NorthStack" instance=ExtResource("chimney")]
+scale = Vector3(10, 10, 10)
+
+[node name="SouthWaterTower" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-45, 0, 45)
+metadata/asset_id = "city_kit_industrial/water-tower"
+
+[node name="Visual" parent="FarBackdrop/SouthWaterTower" instance=ExtResource("water_tower")]
+scale = Vector3(5, 5, 5)
+
+[node name="NorthLightWest" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-20, 0, -43)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="FarBackdrop/NorthLightWest" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)
+
+[node name="NorthLightEast" type="Node3D" parent="FarBackdrop"]
+position = Vector3(20, 0, -43)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="FarBackdrop/NorthLightEast" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)

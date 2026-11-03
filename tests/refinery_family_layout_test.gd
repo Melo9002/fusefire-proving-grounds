@@ -29,12 +29,33 @@ func _run() -> void:
 		check(parent.get_child_count() == 4, "seed %d presents one plot and three parcels" % seed)
 		var plot_root := parent.get_child(0) as Node3D
 		check(int(plot_root.get_meta("revision", 0)) == int(data.content_manifest.plot_revision), "seed %d presents the exact plot revision" % seed)
+		var visual_ground := plot_root.get_node("VisibleGround") as Node3D
+		var ground_bounds := Placement.mesh_bounds(visual_ground)
+		check(ground_bounds.size.x >= 256.0 and ground_bounds.size.z >= 256.0 and not visual_ground.has_meta("solid_size"), "seed %d visual-only ground carries the industrial setting toward the horizon" % seed)
+		var outer_material := (visual_ground as MeshInstance3D).mesh.material as StandardMaterial3D
+		check(outer_material.albedo_color.get_luminance() < 0.25, "seed %d non-playable surroundings are visually distinct from the tactical map" % seed)
 		var road := plot_root.get_node_or_null("RoadAndNearPeriphery")
 		check(road != null and String(road.get_meta("asset_id", "")) == "city_kit_roads/road-straight", "seed %d uses the calibrated imported road assembly" % seed)
 		var road_bounds := Placement.mesh_bounds(road)
 		check(road_bounds.position.y > 0.001, "seed %d imported asphalt base renders above the authoritative MapFloor top" % seed)
 		check(road_bounds.position.x < -32.0 or road_bounds.end.x > 32.0 or road_bounds.position.z < -32.0 or road_bounds.end.z > 32.0, "seed %d road continues visually beyond the 64x64 tactical boundary" % seed)
-		check(plot_root.get_node("FarBackdrop").get_child_count() == 0, "seed %d has no placeholder floating backdrop blocks" % seed)
+		var background_road := plot_root.get_node("BackgroundServiceRoad") as Node3D
+		var background_road_bounds := Placement.mesh_bounds(background_road)
+		check(String(background_road.get_meta("asset_id", "")) == "city_kit_roads/road-straight", "seed %d background service road uses the imported road kit" % seed)
+		check(background_road_bounds.end.x <= -32.0 or background_road_bounds.position.x >= 32.0 or background_road_bounds.end.z <= -32.0 or background_road_bounds.position.z >= 32.0, "seed %d background service road remains outside tactical space" % seed)
+		var backdrop := plot_root.get_node("FarBackdrop")
+		check(backdrop.get_child_count() == 6, "seed %d uses a bounded authored industrial backdrop" % seed)
+		for scenery: Node3D in backdrop.get_children():
+			var scenery_bounds := Placement.mesh_bounds(scenery)
+			var outside_tactical_map := scenery_bounds.end.x <= -32.0 or scenery_bounds.position.x >= 32.0 or scenery_bounds.end.z <= -32.0 or scenery_bounds.position.z >= 32.0
+			check(outside_tactical_map, "seed %d backdrop asset %s remains outside the tactical boundary: %s" % [seed, scenery.name, scenery_bounds])
+			check(scenery.has_meta("asset_id") and not scenery.has_meta("solid_size"), "seed %d backdrop asset %s is identified but never tactical geometry" % [seed, scenery.name])
+		for child_index in range(1, parent.get_child_count()):
+			var parcel_root := parent.get_child(child_index) as Node3D
+			var surface := parcel_root.get_node_or_null("Pad") as MeshInstance3D
+			if surface == null:
+				surface = parcel_root.get_node_or_null("Apron") as MeshInstance3D
+			check(surface != null and Placement.mesh_bounds(surface).end.y >= 0.009, "seed %d parcel %s visual surface sits cleanly above the MapFloor plane" % [seed, parcel_root.name])
 		parent.free()
 	var exact := Resolver.resolve(3)
 	var replay := Layout.generate(999, 1.0, exact)

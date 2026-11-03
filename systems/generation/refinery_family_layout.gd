@@ -39,6 +39,7 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 	var plot_root := plot_scene.instantiate() as Node3D
 	plot_root.scale = Vector3.ONE * cell_size
 	parent.add_child(plot_root)
+	_apply_industrial_atmosphere(parent)
 	for placement: Dictionary in resolved.placements:
 		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
@@ -47,3 +48,23 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
 		parent.add_child(root)
 	return true
+
+static func _apply_industrial_atmosphere(parent: Node3D) -> void:
+	if not parent.is_inside_tree():
+		return
+	var world_environment := parent.get_tree().root.find_child("WorldEnvironment", true, false) as WorldEnvironment
+	if world_environment == null or world_environment.environment == null:
+		return
+	var environment := world_environment.environment.duplicate(true) as Environment
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color("263139")
+	environment.ambient_light_color = Color("b8c2c5")
+	environment.ambient_light_energy = 0.58
+	environment.fog_enabled = true
+	environment.fog_light_color = Color("7b8585")
+	environment.fog_light_energy = 0.75
+	environment.fog_density = 0.006
+	environment.fog_sky_affect = 0.65
+	environment.fog_height = 3.0
+	environment.fog_height_density = 0.02
+	world_environment.environment = environment

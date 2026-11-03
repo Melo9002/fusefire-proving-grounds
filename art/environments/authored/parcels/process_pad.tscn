@@ -23,7 +23,7 @@ metadata/access_width = 2
 metadata/access_kind = &"service"
 
 [node name="Pad" type="MeshInstance3D" parent="."]
-position = Vector3(7.5, -0.02, 7.5)
+position = Vector3(7.5, -0.01, 7.5)
 mesh = SubResource("pad_mesh")
 
 [node name="MachineWest" type="Node3D" parent="."]

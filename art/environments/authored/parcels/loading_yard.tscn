@@ -33,7 +33,7 @@ metadata/access_kind = &"service"
 
 
 [node name="Apron" type="MeshInstance3D" parent="."]
-position = Vector3(7.500000, -0.020000, 15.500000)
+position = Vector3(7.500000, -0.010000, 15.500000)
 mesh = SubResource("b1")
 
 
