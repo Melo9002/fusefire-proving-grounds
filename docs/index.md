@@ -6,7 +6,7 @@
 - [Architecture](architecture.md) and [code organization](code-organization.md): current ownership and entry points.
 - [Current map architecture](generation/current-map-architecture.md): active identities, ownership and authoring boundary.
 - [Generation status](generation/status.md): supported maps and local quarantine recovery.
-- [Map direction and XCOM SDK study](generation/xcom-map-study-and-requirements.md): evidence behind the bounded parcel direction.
+- [Generation 2.0 map direction](generation/generation-2-0.md): active requirements and progress for authored places, tactical population and composed maps, with the XCOM SDK study retained as supporting evidence.
 - [Project Ironclad](quality/project-ironclad.md): test commands and failure investigation.
 
 ## Gameplay and engineering

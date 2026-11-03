@@ -1,12 +1,12 @@
-# FuseFire maps: XCOM 2 study and proposed requirements
+# FuseFire Generation 2.0: authored places, tactical population and composed maps
 
-Status: supporting research and bounded requirements, updated 2026-11-02. The active implementation contract is [Current map architecture](current-map-architecture.md). This document explains why plots, authored parcels and measured connections remain useful; it is not an instruction to restore quarantined Generator 2 systems.
+Status: active product direction and implementation ledger, updated 2026-11-02. The [Current map architecture](current-map-architecture.md) describes the smaller production architecture. The XCOM 2 study below supports one part of Generation 2.0—composing authored plots and parcels—but does not define the whole system or FuseFire's tactical identity.
 
 ## Where we are
 
-- Generator 1, its original Refinery and the Industrial Warehouse remain playable. Generator 2 and its tools are in the local quarantine described in [generation status](status.md).
+- Generator 1, its original Refinery and the Industrial Warehouse remain playable. The former broad Generator 2 implementation is quarantined as described in [generation status](status.md); the new bounded Generation 2.0 refinery proof is active and intentionally does not restore it wholesale.
 - Refinery 2 is a fixed authored 96 x 80 map, with real tactical data and replay integration. Its buildings and equipment do not rearrange with the seed. See [Refinery 2 handoff](refinery-2.md).
-- We have reviewed Kenney assets, calibration, reusable catwalk components and the retained Asset Lab. We do not yet have an active replacement plot-and-parcel generator or a production-ready general map authoring workflow.
+- We have reviewed Kenney assets, calibration, reusable catwalk components and the retained Asset Lab. The active refinery proof now resolves two authored plots and three standardized parcel roles through a bounded deterministic path. It is not yet a general map authoring workflow.
 - The superseded broad map-plan draft is preserved in the local quarantine. Meaningfully different layouts remain a product goal, but composition must earn its complexity through reviewed authored content.
 
 ## What the XCOM 2 SDK actually shows
@@ -25,6 +25,18 @@ The installed base-game SDK was inspected read-only at `C:/Program Files (x86)/S
 
 The SDK maps exist as `.umap` files. This pass read the guide, definitions and source; it did **not** open individual maps in UnrealEd or run the XCOM game. The guide is evidence of the intended workflow; config and script establish specific structures/behaviors, not every runtime detail. In particular, the appearance, cost and exact assembly of a given horizon still need visual/editor inspection.
 
+## Generation 2.0 product scope
+
+Generation 2.0 is the complete authored-map pipeline, not merely an XCOM-like parcel selector. Its responsibilities are deliberately layered:
+
+1. **Place composition:** authored plots establish the playable site, circulation, parcel slots and surroundings; compatible authored parcels provide recognizable functional areas.
+2. **Tactical population:** authored regions describe which movable tactical elements may occupy meaningful locations within those places.
+3. **Tactical compilation:** accepted authored choices compile into authoritative `MapData`; visuals never silently determine movement, cover or LOS.
+4. **Reconstruction:** the exact accepted plot, parcels, population choices and revisions survive battle, save and replay boundaries.
+5. **Authoring:** Godot scenes and focused in-project tools let a human build, inspect and approve content before it enters selection.
+
+The XCOM comparison is most useful for the first layer. FuseFire should differ by making tactical population an explicit authored vocabulary instead of scattering generic cover props wherever free cells happen to exist.
+
 ## What FuseFire needs
 
 1. **Three modes:** a completely authored map; a fixed place with varied movable tactical content; and a generated arrangement of authored areas. All use the existing tactical game and support missions, save/replay and clear errors.
@@ -36,6 +48,31 @@ The SDK maps exist as `.umap` files. This pass read the guide, definitions and s
 7. **Tactical and replay:** reuse MapData and existing movement, LOS, cover and mission systems. Keep scenery separate from authoritative walkability and cover. Store map/content revisions, chosen parcels, transforms, population and mission choices; seed alone is insufficient if content changes. Reject incompatible saved data explicitly.
 8. **Content and workflow:** build with calibrated downloaded assets and reusable custom components. Allow fully manual authoring, preview, editing and saving before registration for automatic use. Technical checks and the owner's visual/playability review are separate. Recover useful quarantined editor capabilities selectively; do not restore the old system wholesale.
 9. **Quality and cost:** check reachable objectives and extraction, enough safe deployment cells, connected traversal, orientations and overlaps; inspect clean and diagnostic renders; test multiple known seeds. Measure generation time, battle size, turn pacing and rendering with representative maps. Give the owner a simple way to reproduce failures.
+
+## FuseFire tactical population regions
+
+Parcels and plots may author named population regions. A region is a deliberate semantic location—not a generic rectangle that accepts arbitrary clutter. Examples include parking bays that permit cars, depot stacks that permit shipping containers, loading aprons that permit delivery vehicles, machinery pads that permit compatible equipment, and selected open areas that permit appropriate cover.
+
+The initial contract should remain small and inspectable:
+
+- Stable region identity owned by a plot or parcel.
+- Local cells or bounded placement sockets, transformed with the owning content.
+- An allow-list of population roles or curated candidate IDs; semantic tags alone do not prove geometric compatibility.
+- Supported orientations, count or density bounds, clearances and required access that must remain open.
+- Required, optional or population-off behavior.
+- Deterministic seeded selection with bounded attempts and explicit rejection reasons.
+- Exact accepted asset IDs, revisions and transforms recorded for replay; the seed alone is insufficient.
+- Explicit tactical effects compiled into `MapData`. A spawned visual mesh does not acquire cover, occupancy or LOS authority automatically.
+
+This restores the useful intent of Generator 1—designers decide *where* tactical variation is allowed and *what kind* belongs there—without restoring its unrestricted scatter logic. The first proof should use a few authored regions inside existing refinery parcels: depot container positions and parking/loading vehicle positions. General density painting or catalog-wide automatic placement is deferred until these prove useful.
+
+## Catwalk direction
+
+Catwalks should initially be authored structural assemblies owned by particular parcels, not freely generated across unrelated parcels. Their value comes from deliberate elevation, sightlines, support geometry and access, all of which are easy to break with unconstrained procedural placement.
+
+A catwalk-capable parcel should author the deck, supports, railings, stairs or ladders, and explicit elevated tactical cells and traversal links together. Where two parcels are intentionally designed to connect, they may expose measured catwalk interfaces containing boundary position, direction, elevation, width and clearance. The plot may only join interfaces known to be compatible. Cosmetic variants or small prop populations may vary inside the assembly, but the load-bearing route remains authored and certified.
+
+The first catwalk proof should therefore be a dedicated 16×32 or 32×32 refinery parcel variant inspected in isolation and in one plot slot. A general procedural catwalk router is not a prerequisite and should not be introduced without a concrete content need.
 
 ## First proof: one refinery family
 
@@ -57,7 +94,10 @@ A second urban proof should follow before generalizing the content model. Demons
 4. **Editor — decided:** use Godot's existing scene editing and targeted validation initially; selectively recover the quarantined chunk editor as a small in-project **Parcel Editor** for the standard footprints. No second application and no restored runtime-generator dependency.
 5. **Generator 1 — decided:** keep it and its replay compatibility until the replacement meets its obligations.
 
-These five choices and the first refinery proof above are approved by the owner.
+The first five choices and the refinery proof above were approved during the initial grounding pass. The owner subsequently approved the following FuseFire-specific directions:
+
+6. **Tactical population — decided:** plots and parcels author meaningful spawn regions and curated eligible roles. Parking lots may receive cars; depots may receive containers. Exact choices are deterministic and replayed, while `MapData` remains authoritative.
+7. **Catwalks — decided direction:** begin with parcel-owned authored catwalk assemblies and explicit elevated tactical contracts. Cross-parcel connections require measured compatible interfaces; unrestricted procedural routing is deferred.
 
 ## Implementation progress — 2026-11-02
 
@@ -81,6 +121,8 @@ This is the owner-facing progress record. A technical check and visual/playabili
 | Measured parcel connections | Implemented for pilot | `ParcelConnection` validates boundary cell, outward direction and width | Extend to multiple named interfaces only when process/storage content requires it |
 | Loading/service parcel family | Technical and agent visual review complete; owner review pending | Two registered 16×32 variants share one measured 4-cell service interface, use different imported shells/layouts and compile under four rotations | Play both variants in composed plots and obtain owner review |
 | Fixed place with varied content | Implemented for refinery proof | Runtime seeds select two reviewed loading variants; the accepted ID/revision/transform is stored in the map and replay configuration | Play/replay the fixed seed matrix |
+| Authored tactical population regions | Contract recorded; implementation pending | Generator 1 established the product need; Generation 2.0 now defines parcel/plot-owned regions, curated eligible roles and exact replayed choices | Add depot-container and parking/loading-vehicle regions to the refinery proof without generic scatter |
+| Parcel-owned catwalk assemblies | Direction approved; implementation pending | Reusable catwalk assets and tactical elevation systems exist, but no Generation 2.0 parcel contract is certified yet | Author and validate one elevated refinery parcel variant before considering cross-parcel or procedural routing |
 | Process parcel | Technical and agent visual review complete; owner review pending | Open 16×16 process pad uses three calibrated machines, explicit tactical volumes and a measured 2-cell service interface | Validate within both plot circulation layouts |
 | Tank/storage parcel | Technical and agent visual review complete; owner review pending | 16×16 storage pad uses calibrated tanks/container, explicit tactical volumes and a measured 4-cell service interface | Validate within both plot circulation layouts |
 | Refinery plot resolver | Implemented and focused tests pass | Two fixed 64×64 site plans own exact process, storage and loading slots; seeded selection is bounded and records actual parcel IDs/revisions | Exercise negative runtime reconstruction and mission matrix |
