@@ -21,7 +21,7 @@ position = Vector3(0, -0.06, 0)
 mesh = SubResource("ground_mesh")
 
 [node name="RoadAndNearPeriphery" parent="." instance=ExtResource("road_strip")]
-position = Vector3(10.5, -0.075, -39.5)
+position = Vector3(10.5, 0.005, -39.5)
 rotation = Vector3(0, -1.570796, 0)
 
 [node name="FarBackdrop" type="Node3D" parent="."]

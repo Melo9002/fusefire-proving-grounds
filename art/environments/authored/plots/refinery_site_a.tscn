@@ -21,6 +21,6 @@ position = Vector3(0, -0.06, 0)
 mesh = SubResource("ground_mesh")
 
 [node name="RoadAndNearPeriphery" parent="." instance=ExtResource("road_strip")]
-position = Vector3(-39.5, -0.075, -5.5)
+position = Vector3(-39.5, 0.005, -5.5)
 
 [node name="FarBackdrop" type="Node3D" parent="."]

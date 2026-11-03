@@ -32,7 +32,7 @@ func _run() -> void:
 		var road := plot_root.get_node_or_null("RoadAndNearPeriphery")
 		check(road != null and String(road.get_meta("asset_id", "")) == "city_kit_roads/road-straight", "seed %d uses the calibrated imported road assembly" % seed)
 		var road_bounds := Placement.mesh_bounds(road)
-		check(road_bounds.end.y > 0.01, "seed %d imported road surface renders above the authoritative MapFloor top" % seed)
+		check(road_bounds.position.y > 0.001, "seed %d imported asphalt base renders above the authoritative MapFloor top" % seed)
 		check(road_bounds.position.x < -32.0 or road_bounds.end.x > 32.0 or road_bounds.position.z < -32.0 or road_bounds.end.z > 32.0, "seed %d road continues visually beyond the 64x64 tactical boundary" % seed)
 		check(plot_root.get_node("FarBackdrop").get_child_count() == 0, "seed %d has no placeholder floating backdrop blocks" % seed)
 		parent.free()
