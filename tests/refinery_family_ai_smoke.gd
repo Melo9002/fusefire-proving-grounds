@@ -10,10 +10,19 @@ func _initialize() -> void:
 func _run() -> void:
 	var previous_time_scale := Engine.time_scale
 	Engine.time_scale = 16.0
+	var passed := true
+	for seed in [16, 17]:
+		passed = await _run_seed(seed) and passed
+	Engine.time_scale = previous_time_scale
+	print("Refinery family AI matrix: %s" % ("PASSED" if passed else "FAILED"))
+	if not passed: push_error("Refinery family tactical/replay matrix failed")
+	quit(0 if passed else 1)
+
+func _run_seed(seed: int) -> bool:
 	var simulator := AIMatchSimulator.new()
 	root.add_child(simulator)
 	var result := await simulator.run_match({
-		"seed": 17,
+		"seed": seed,
 		"mission_kind": MissionObjectiveDefinition.Kind.REACH,
 		"player_count": 3,
 		"enemy_count": 3,
@@ -49,7 +58,7 @@ func _run() -> void:
 			passed = false
 		replay.queue_free()
 		await process_frame
-	Engine.time_scale = previous_time_scale
-	print("Refinery family AI: %s — %s" % ["PASSED" if passed else "FAILED", result.summary()])
-	if not passed: push_error("Refinery family tactical/replay proof failed: %s" % result.summary())
-	quit(0 if passed else 1)
+	simulator.queue_free()
+	await process_frame
+	print("Refinery family seed %d: %s — %s" % [seed, "PASSED" if passed else "FAILED", result.summary()])
+	return passed
