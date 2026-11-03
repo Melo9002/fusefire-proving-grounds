@@ -36,6 +36,17 @@ func _capture_seed(seed: int, output: String) -> void:
 	sun.shadow_enabled = true
 	stage.add_child(sun)
 	var data := Layout.generate(seed)
+	# Match the normal battle scene's authoritative floor so captures expose
+	# road/floor layering defects instead of reviewing the plot in isolation.
+	var tactical_floor := CSGBox3D.new()
+	tactical_floor.name = "TacticalMapFloor"
+	tactical_floor.size = Vector3(64, 1, 64)
+	tactical_floor.position.y = -0.5
+	var floor_material := StandardMaterial3D.new()
+	floor_material.albedo_color = Color("4d514f")
+	floor_material.roughness = 0.95
+	tactical_floor.material = floor_material
+	stage.add_child(tactical_floor)
 	if not Layout.present(data, stage, 1.0):
 		push_error("Could not present seed %d: %s" % [seed, data.generation_errors])
 		quit(1)

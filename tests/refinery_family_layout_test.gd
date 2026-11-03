@@ -3,6 +3,7 @@ extends SceneTree
 const Layout = preload("res://systems/generation/refinery_family_layout.gd")
 const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
 const ReplayRecording = preload("res://systems/replay/battle_replay_recording.gd")
+const Placement = preload("res://presentation/environment_asset_placement.gd")
 var failures := 0
 
 func _initialize() -> void:
@@ -30,6 +31,9 @@ func _run() -> void:
 		check(int(plot_root.get_meta("revision", 0)) == int(data.content_manifest.plot_revision), "seed %d presents the exact plot revision" % seed)
 		var road := plot_root.get_node_or_null("RoadAndNearPeriphery")
 		check(road != null and String(road.get_meta("asset_id", "")) == "city_kit_roads/road-straight", "seed %d uses the calibrated imported road assembly" % seed)
+		var road_bounds := Placement.mesh_bounds(road)
+		check(road_bounds.end.y > 0.01, "seed %d imported road surface renders above the authoritative MapFloor top" % seed)
+		check(road_bounds.position.x < -32.0 or road_bounds.end.x > 32.0 or road_bounds.position.z < -32.0 or road_bounds.end.z > 32.0, "seed %d road continues visually beyond the 64x64 tactical boundary" % seed)
 		check(plot_root.get_node("FarBackdrop").get_child_count() == 0, "seed %d has no placeholder floating backdrop blocks" % seed)
 		parent.free()
 	var exact := Resolver.resolve(3)
