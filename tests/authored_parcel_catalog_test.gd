@@ -2,6 +2,7 @@ extends SceneTree
 
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const PopulationRegion = preload("res://systems/generation/parcel_population_region.gd")
 var failures := 0
 
 func _initialize() -> void:
@@ -21,6 +22,11 @@ func _run() -> void:
 	check(parcels.size() == 2, "Loading/service role has two interchangeable 16x32 variants")
 	for parcel in parcels:
 		check(parcel.allowed_rotations().size() == 4, "%s explicitly supports four quarter-turns" % parcel.parcel_id)
+		var regions = parcel.population_regions()
+		check(regions.size() == 2, "%s authors depot-container and loading-vehicle population regions" % parcel.parcel_id)
+		check(regions[0].region_id == &"depot_containers" and regions[1].region_id == &"loading_vehicles", "%s population identities are stable and deterministic" % parcel.parcel_id)
+		for region in regions:
+			check(region.validate(parcel.size).is_empty(), "%s region %s stays inside its parcel and has a curated allow-list" % [parcel.parcel_id, region.region_id])
 	var first = Catalog.choose(Catalog.LOADING_SERVICE, Vector2i(16, 32), 100)
 	var repeated = Catalog.choose(Catalog.LOADING_SERVICE, Vector2i(16, 32), 100)
 	var alternate = Catalog.choose(Catalog.LOADING_SERVICE, Vector2i(16, 32), 101)
@@ -32,6 +38,16 @@ func _run() -> void:
 	check(connection.kind == alternate_connection.kind and connection.cell == alternate_connection.cell and connection.outward == alternate_connection.outward and connection.width == alternate_connection.width, "Interchangeable variants expose the same measured service interface")
 	check(Catalog.candidates(Catalog.PROCESS, Vector2i(16, 16)).size() == 1, "Process role has one supported 16x16 parcel")
 	check(Catalog.candidates(Catalog.STORAGE, Vector2i(16, 16)).size() == 1, "Storage role has one supported 16x16 parcel")
+	var invalid_region = PopulationRegion.new()
+	invalid_region.region_id = &"bad"
+	invalid_region.role = &"shipping_container"
+	invalid_region.local_rect = Rect2i(15, 30, 2, 3)
+	invalid_region.allowed_asset_ids = PackedStringArray(["city_kit_industrial/shipping-container-a"])
+	invalid_region.max_count = 1
+	check(invalid_region.validate(Vector2i(16, 32)) == "POPULATION_REGION_OUT_OF_BOUNDS", "Population regions cannot escape their owning parcel")
+	invalid_region.local_rect = Rect2i(1, 1, 2, 3)
+	invalid_region.allowed_asset_ids = PackedStringArray()
+	check(invalid_region.validate(Vector2i(16, 32)) == "EMPTY_POPULATION_ALLOW_LIST", "Population regions require curated eligible content")
 	print("Authored parcel catalog: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 

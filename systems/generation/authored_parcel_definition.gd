@@ -2,6 +2,8 @@ class_name AuthoredParcelDefinition
 extends RefCounted
 ## Small runtime-safe contract for one reviewed authored parcel scene.
 
+const PopulationRegion = preload("res://systems/generation/parcel_population_region.gd")
+
 var parcel_id: StringName
 var display_name: String
 var role: StringName
@@ -52,6 +54,14 @@ func validate() -> PackedStringArray:
 		failures.append("INVALID_CONNECTION: " + connection_error)
 	if asset_ids(root).is_empty():
 		failures.append("MISSING_IMPORTED_CONTENT")
+	var region_ids := {}
+	for region in population_regions(root):
+		var region_error: String = region.validate(size)
+		if not region_error.is_empty():
+			failures.append("INVALID_POPULATION_REGION: " + region_error)
+		if region_ids.has(region.region_id):
+			failures.append("DUPLICATE_POPULATION_REGION")
+		region_ids[region.region_id] = true
 	root.free()
 	return failures
 
@@ -70,6 +80,31 @@ func connection() -> ParcelConnection:
 	var result := ParcelConnection.from_scene(root)
 	root.free()
 	return result
+
+func population_regions(root: Node = null) -> Array:
+	var owns_root := root == null
+	if owns_root:
+		root = instantiate()
+	var result: Array = []
+	if root:
+		_collect_population_regions(root, result)
+	if owns_root and root:
+		root.free()
+	result.sort_custom(func(a, b): return String(a.region_id) < String(b.region_id))
+	return result
+
+func _collect_population_regions(node: Node, result: Array) -> void:
+	if node.has_meta("population_region_id"):
+		var region = PopulationRegion.new()
+		region.region_id = StringName(node.get_meta("population_region_id", &""))
+		region.role = StringName(node.get_meta("population_role", &""))
+		region.local_rect = node.get_meta("local_rect", Rect2i())
+		region.allowed_asset_ids = node.get_meta("allowed_asset_ids", PackedStringArray())
+		region.min_count = int(node.get_meta("min_count", 0))
+		region.max_count = int(node.get_meta("max_count", 0))
+		result.append(region)
+	for child in node.get_children():
+		_collect_population_regions(child, result)
 
 func asset_ids(root: Node = null) -> PackedStringArray:
 	var owns_root := root == null

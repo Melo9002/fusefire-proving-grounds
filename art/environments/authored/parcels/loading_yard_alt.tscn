@@ -25,6 +25,24 @@ metadata/access_direction = Vector2i(0, 1)
 metadata/access_width = 4
 metadata/access_kind = &"service"
 
+[node name="PopulationRegions" type="Node" parent="."]
+
+[node name="DepotContainers" type="Node" parent="PopulationRegions"]
+metadata/population_region_id = &"depot_containers"
+metadata/population_role = &"shipping_container"
+metadata/local_rect = Rect2i(1, 19, 14, 12)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b", "city_kit_industrial/shipping-container-c")
+metadata/min_count = 0
+metadata/max_count = 2
+
+[node name="LoadingVehicles" type="Node" parent="PopulationRegions"]
+metadata/population_region_id = &"loading_vehicles"
+metadata/population_role = &"delivery_vehicle"
+metadata/local_rect = Rect2i(8, 15, 7, 5)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/delivery")
+metadata/min_count = 0
+metadata/max_count = 1
+
 [node name="Apron" type="MeshInstance3D" parent="."]
 position = Vector3(7.5, -0.01, 15.5)
 mesh = SubResource("apron_mesh")
