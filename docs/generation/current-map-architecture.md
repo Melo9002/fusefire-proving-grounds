@@ -40,7 +40,7 @@ Match Setup
 
 Do not duplicate the compiler in a new layout adapter. Do not derive cover from mesh collision. Do not stretch imported assets to fill a parcel.
 
-The registered parcel catalog also contains the isolated `industrial_office_parking_a` urban-content proof. Catalog membership makes it available to authoring and validation only; no supported battlefield currently selects it. An urban plot must own its road connection and placement before gameplay may use it.
+The registered parcel catalog also contains the isolated `industrial_office_parking_a` urban-content proof. `UrbanPlotCatalog` owns the first fixed street composition and uses the same small `ParcelSlotContract` compatibility boundary as the refinery resolver. Catalog membership makes both available to authoring and validation only; no supported battlefield currently selects the urban plot.
 
 ## Deliberate limits
 

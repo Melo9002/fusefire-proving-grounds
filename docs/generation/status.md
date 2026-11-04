@@ -16,7 +16,7 @@ The retired chunk creator is a useful reference, especially placement, duplicati
 
 The superseded `map-plan-1-5-to-2-0.md` draft was moved into `retired-docs-and-data/post-quarantine-2026-11-02/`. Its active test command and architecture claims have been removed from current documentation.
 
-Active direction: the owner has preliminarily accepted the Refinery Family's visual direction while deferring richer authored population. Begin the bounded urban proof with registered parcels and one fixed street plot; extend the small Parcel Editor only where that real authoring work proves a need. Do not resume the archived task pack automatically.
+Active direction: the owner has preliminarily accepted the Refinery Family's visual direction while deferring richer authored population. The bounded urban proof now has one registered complete-shell frontage parcel and one fixed validated street plot; author a genuinely distinct second plot and only the compatible parcel variety it needs before considering runtime registration. Extend the small Parcel Editor only where real authoring work proves a need. Do not resume the archived task pack automatically.
 
 Battle startup now has an opaque loading transition driven by real initialization stages. It preserves Match Setup until the selected battlefield has compiled and passed tactical validation, and exposes initialization failures instead of activating a partial battle.
 

@@ -1,0 +1,78 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/roads/road_strip_85.tscn" id="road_strip"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/light-curved.glb" id="street_light"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="building_c"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-d.glb" id="building_d"]
+
+[sub_resource type="StandardMaterial3D" id="ground_material"]
+albedo_color = Color(0.22, 0.235, 0.225, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(256, 0.08, 256)
+material = SubResource("ground_material")
+
+[node name="UrbanServiceStreetA" type="Node3D"]
+metadata/plot_id = &"urban_service_street_a"
+metadata/revision = 1
+metadata/map_size = Vector2i(64, 64)
+metadata/road_asset = "city_kit_roads/road-straight"
+
+[node name="VisibleGround" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("ground_mesh")
+
+[node name="MainStreetAndNearPeriphery" parent="." instance=ExtResource("road_strip")]
+position = Vector3(-39.5, 0.005, -2.5)
+
+[node name="BackgroundStreet" parent="." instance=ExtResource("road_strip")]
+position = Vector3(-39.5, 0.005, -48)
+
+[node name="StreetFurniture" type="Node3D" parent="."]
+
+[node name="NorthLightWest" type="Node3D" parent="StreetFurniture"]
+position = Vector3(-30, 0, -5.25)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="StreetFurniture/NorthLightWest" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)
+
+[node name="NorthLightEast" type="Node3D" parent="StreetFurniture"]
+position = Vector3(30, 0, -5.25)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="StreetFurniture/NorthLightEast" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)
+
+[node name="SouthLightWest" type="Node3D" parent="StreetFurniture"]
+position = Vector3(-28, 0, 0.5)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="StreetFurniture/SouthLightWest" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)
+
+[node name="SouthLightEast" type="Node3D" parent="StreetFurniture"]
+position = Vector3(28, 0, 0.5)
+metadata/asset_id = "city_kit_roads/light-curved"
+
+[node name="Visual" parent="StreetFurniture/SouthLightEast" instance=ExtResource("street_light")]
+scale = Vector3(5, 5, 5)
+
+[node name="FarBackdrop" type="Node3D" parent="."]
+
+[node name="WestBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-48, 0, -38)
+metadata/asset_id = "city_kit_industrial/building-c"
+
+[node name="Visual" parent="FarBackdrop/WestBlock" instance=ExtResource("building_c")]
+scale = Vector3(10, 10, 10)
+
+[node name="EastBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(48, 0, -38)
+metadata/asset_id = "city_kit_industrial/building-d"
+
+[node name="Visual" parent="FarBackdrop/EastBlock" instance=ExtResource("building_d")]
+scale = Vector3(10, 10, 10)

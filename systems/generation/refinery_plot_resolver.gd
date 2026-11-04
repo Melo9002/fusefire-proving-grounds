@@ -5,6 +5,7 @@ extends RefCounted
 
 const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const SlotContract = preload("res://systems/generation/parcel_slot_contract.gd")
 
 static func resolve(seed: int, population_enabled: bool = true, requested: Dictionary = {}) -> Dictionary:
 	var plot := _resolve_plot(seed, requested)
@@ -24,7 +25,7 @@ static func resolve(seed: int, population_enabled: bool = true, requested: Dicti
 		if parcel == null:
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
 			continue
-		var validation := _validate_slot(slot, parcel)
+		var validation := SlotContract.validate(slot, parcel)
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
@@ -100,21 +101,6 @@ static func _parcel_for_slot(slot: Dictionary, seed: int, requested: Dictionary)
 		return ParcelCatalog.choose(slot.role, slot.size, floori(seed / 2.0))
 	var candidates := ParcelCatalog.candidates(slot.role, slot.size)
 	return candidates[0] if not candidates.is_empty() else null
-
-static func _validate_slot(slot: Dictionary, parcel) -> String:
-	if parcel.role != slot.role or parcel.size != slot.size:
-		return "INCOMPATIBLE_PARCEL_ROLE_OR_SIZE"
-	if not parcel.allowed_rotations().has(int(slot.rotation)):
-		return "UNSUPPORTED_PARCEL_ROTATION"
-	var offered = parcel.connection()
-	var required: Dictionary = slot.required_interface
-	if offered == null or offered.kind != StringName(required.kind) or offered.width != int(required.width):
-		return "INCOMPATIBLE_SERVICE_INTERFACE"
-	if offered.world_cell(parcel.size, slot.origin, slot.rotation) != required.cell:
-		return "MISALIGNED_SERVICE_INTERFACE"
-	if offered.world_outward(slot.rotation) != required.outward:
-		return "MISORIENTED_SERVICE_INTERFACE"
-	return ""
 
 static func _failure(seed: int, population_enabled: bool, code: String, detail: String) -> Dictionary:
 	return {"schema": 1, "seed": seed, "population_enabled": population_enabled, "placements": [], "errors": [_error(code, detail)]}

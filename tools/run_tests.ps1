@@ -66,6 +66,7 @@ $visualTests = @(
 	"authored_parcel_catalog_capture.gd",
 	"parcel_editor_capture.gd",
 	"urban_frontage_capture.gd",
+	"urban_plot_capture.gd",
 	"refinery_family_capture.gd",
 	"battle_loading_screen_capture.gd",
     "industrial_warehouse_capture.gd",
