@@ -4,6 +4,7 @@ extends Control
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
+const ParcelEditorScene := preload("res://tools/parcel_editor/parcel_editor.tscn")
 
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
@@ -46,6 +47,7 @@ func _ready() -> void:
 	_build_objective_setup()
 	_build_vip_setup()
 	_build_compatibility_setup()
+	_build_authoring_tools()
 	_build_seed_actions()
 	_build_deployment_summary()
 	_build_roster_editor()
@@ -77,6 +79,20 @@ func _ready() -> void:
 	_refresh_seed_controls()
 	_update_summary(0.0)
 	_apply_saved_renderer_preference()
+
+func _build_authoring_tools() -> void:
+	var box := VBoxContainer.new()
+	box.name = "AuthoringTools"
+	var label := Label.new()
+	label.text = "AUTHORING TOOLS"
+	box.add_child(label)
+	var parcel_editor := Button.new()
+	parcel_editor.name = "ParcelEditorButton"
+	parcel_editor.text = "OPEN PARCEL EDITOR"
+	parcel_editor.tooltip_text = "Inspect registered 16×16, 16×32, and 32×32 authored parcels and their tactical contracts."
+	parcel_editor.pressed.connect(func(): get_tree().change_scene_to_packed(ParcelEditorScene))
+	box.add_child(parcel_editor)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(box)
 
 func _add_battlefield_option(id: StringName) -> void:
 	var definition := BattlefieldCatalogData.definition(id)
