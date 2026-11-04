@@ -38,6 +38,24 @@ func _run() -> void:
 	check(connection.kind == alternate_connection.kind and connection.cell == alternate_connection.cell and connection.outward == alternate_connection.outward and connection.width == alternate_connection.width, "Interchangeable variants expose the same measured service interface")
 	check(Catalog.candidates(Catalog.PROCESS, Vector2i(16, 16)).size() == 1, "Process role has one supported 16x16 parcel")
 	check(Catalog.candidates(Catalog.STORAGE, Vector2i(16, 16)).size() == 1, "Storage role has one supported 16x16 parcel")
+	var galleries := Catalog.candidates(Catalog.ELEVATED_PROCESS, Vector2i(16, 32))
+	check(galleries.size() == 1, "Catalog contains one dedicated 16x32 elevated maintenance parcel")
+	var gallery = galleries[0]
+	for turn in 4:
+		var map_size := Vector2i(64, 64)
+		var origin := Vector3i(16, 0, 16)
+		var data := FlatMapGenerator.generate(map_size.x, map_size.y, 1.0, 810 + turn)
+		var root: Node3D = gallery.instantiate()
+		root.transform = ParcelTransform.scene_transform(gallery.size, origin, turn, map_size)
+		Compiler.compile(root, data, 1.0)
+		var bottom := ParcelTransform.cell(Vector3i(7, 0, 7), gallery.size, origin, turn)
+		var top := ParcelTransform.cell(Vector3i(7, 4, 8), gallery.size, origin, turn)
+		check(data.traversal_links.any(func(link): return link.from_cell == bottom and link.to_cell == top), "maintenance gallery rotation %d preserves ladder access" % turn)
+		var graph := Pathfinder.new()
+		MapGraphBuilder.build(data, graph)
+		var far_deck := ParcelTransform.cell(Vector3i(8, 4, 23), gallery.size, origin, turn)
+		check(not graph.calculate_3d_path(bottom, far_deck).is_empty(), "maintenance gallery rotation %d connects ground access to the complete elevated route" % turn)
+		root.free()
 	var invalid_region = PopulationRegion.new()
 	invalid_region.region_id = &"bad"
 	invalid_region.role = &"shipping_container"

@@ -1,0 +1,126 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_deck_2x2.tscn" id="deck"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_support_2m.tscn" id="support"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_rail_2m.tscn" id="rail"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/machine.glb" id="machine"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/machine-fortified.glb" id="machine_fortified"]
+
+[sub_resource type="StandardMaterial3D" id="pad_material"]
+albedo_color = Color(0.43, 0.46, 0.43, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="pad_mesh"]
+size = Vector3(16, 0.04, 32)
+material = SubResource("pad_material")
+
+[node name="MaintenanceGallery" type="Node3D"]
+metadata/parcel_id = &"maintenance_gallery_a"
+metadata/parcel_role = &"elevated_process"
+metadata/parcel_size = Vector2i(16, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(7, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 2
+metadata/access_kind = &"service"
+metadata/deck_local_rect = Rect2i(7, 8, 2, 16)
+metadata/deck_level = 4
+
+[node name="Pad" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, -0.01, 15.5)
+mesh = SubResource("pad_mesh")
+
+[node name="LadderContract" type="Node" parent="."]
+metadata/ladder_local_bottom = Vector3i(7, 0, 7)
+metadata/ladder_local_top = Vector3i(7, 4, 8)
+
+[node name="Ladder" parent="." instance=ExtResource("ladder")]
+position = Vector3(7.5, 0, 7.45)
+
+[node name="MachineWest" type="Node3D" parent="."]
+position = Vector3(3, 0, 15)
+metadata/asset_id = "factory_kit/machine"
+
+[node name="Visual" parent="MachineWest" instance=ExtResource("machine")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TacticalVolume" type="Node3D" parent="MachineWest"]
+position = Vector3(0, 0.974814, 0)
+metadata/solid_size = Vector3(1.8, 1.949628, 2.25)
+metadata/round_volume = false
+
+[node name="MachineEast" type="Node3D" parent="."]
+position = Vector3(12, 0, 18)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "factory_kit/machine-fortified"
+
+[node name="Visual" parent="MachineEast" instance=ExtResource("machine_fortified")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TacticalVolume" type="Node3D" parent="MachineEast"]
+position = Vector3(0, 1.012874, 0)
+metadata/solid_size = Vector3(1.8, 2.025748, 2.25)
+metadata/round_volume = false
+
+[node name="Deck08" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 8.5)
+[node name="Deck10" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 10.5)
+[node name="Deck12" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 12.5)
+[node name="Deck14" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 14.5)
+[node name="Deck16" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 16.5)
+[node name="Deck18" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 18.5)
+[node name="Deck20" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 20.5)
+[node name="Deck22" parent="." instance=ExtResource("deck")]
+position = Vector3(7.5, 4, 22.5)
+
+[node name="Support10" parent="." instance=ExtResource("support")]
+position = Vector3(7.5, 0, 10.5)
+[node name="Support16" parent="." instance=ExtResource("support")]
+position = Vector3(7.5, 0, 16.5)
+[node name="Support22" parent="." instance=ExtResource("support")]
+position = Vector3(7.5, 0, 22.5)
+
+[node name="Rails" type="Node3D" parent="."]
+[node name="Left08" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 8.5)
+[node name="Left10" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 10.5)
+[node name="Left12" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 12.5)
+[node name="Left14" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 14.5)
+[node name="Left16" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 16.5)
+[node name="Left18" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 18.5)
+[node name="Left20" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 20.5)
+[node name="Left22" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(6.5, 4, 22.5)
+[node name="Right08" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 8.5)
+[node name="Right10" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 10.5)
+[node name="Right12" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 12.5)
+[node name="Right14" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 14.5)
+[node name="Right16" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 16.5)
+[node name="Right18" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 18.5)
+[node name="Right20" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 20.5)
+[node name="Right22" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(8.5, 4, 22.5)
+[node name="EndRail" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(7.5, 4, 23.5)
+rotation = Vector3(0, 1.570796, 0)

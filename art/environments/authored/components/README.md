@@ -7,8 +7,9 @@ All dimensions are in metres. Keep scene transforms uniform when fitting them to
 | Scene | Origin and orientation | Use |
 | --- | --- | --- |
 | catwalk_deck_2x2 | Walking surface at Y=0, centred X/Z | Tile a gallery; includes a 0.22m slab and collider |
+| catwalk_rail_2m | Rail base at Y=0, two metres along X | Safety edge for authored galleries; rotate or omit deliberately at access openings |
 | maintenance_ladder_4m | Ground at Y=0, width along X | Four-metre access; declare bottom/top grid endpoints |
 | catwalk_support_2m | Ground at Y=0, paired posts along X | Two-metre-wide gallery with surface Y=4 |
 | pipe_rack_support | Ground at Y=0, column spacing along Z | Support overhead pipes above a service route |
 
-The offline refinery recipe currently emits these files. Avoid regenerating over manual improvements without transferring them to the recipe. Boundary railings remain map-authored to keep junctions and ladder approaches open.
+The offline refinery recipe originally emitted the structural files. Avoid regenerating over manual improvements without transferring them to the recipe. Boundary railings remain parcel-authored so junctions and ladder approaches stay deliberate.

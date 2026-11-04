@@ -30,7 +30,7 @@ func _run() -> void:
 	light.shadow_enabled = true
 	stage.add_child(light)
 	var parcels := Catalog.all()
-	var centres := [Vector3(-10, 0, -9), Vector3(10, 0, -9), Vector3(-10, 0, 22), Vector3(10, 0, 22)]
+	var centres := [Vector3(-20, 0, -14), Vector3(0, 0, -14), Vector3(20, 0, -14), Vector3(-10, 0, 22), Vector3(10, 0, 22)]
 	for index in parcels.size():
 		var parcel: Node3D = parcels[index].instantiate()
 		parcel.position = centres[index] - Vector3(7.5, 0, (parcels[index].size.y - 1) * 0.5)
@@ -40,9 +40,9 @@ func _run() -> void:
 	camera.fov = 42
 	stage.add_child(camera)
 	for view in [
-		["family-overhead", Vector3(0.01, 62, 6), Vector3(0, 0, 6)],
-		["family-oblique", Vector3(42, 34, 48), Vector3(0, 1, 6)],
-		["supporting-parcels", Vector3(0, 14, 48), Vector3(0, 1, 20)],
+		["family-overhead", Vector3(0.01, 72, 4), Vector3(0, 0, 4)],
+		["family-oblique", Vector3(52, 38, 54), Vector3(0, 1, 4)],
+		["supporting-parcels", Vector3(0, 16, 54), Vector3(0, 2, 20)],
 	]:
 		camera.position = view[1]
 		camera.look_at(view[2])
