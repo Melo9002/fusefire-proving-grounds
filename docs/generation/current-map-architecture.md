@@ -40,6 +40,8 @@ Match Setup
 
 Do not duplicate the compiler in a new layout adapter. Do not derive cover from mesh collision. Do not stretch imported assets to fill a parcel.
 
+The registered parcel catalog also contains the isolated `industrial_office_parking_a` urban-content proof. Catalog membership makes it available to authoring and validation only; no supported battlefield currently selects it. An urban plot must own its road connection and placement before gameplay may use it.
+
 ## Deliberate limits
 
 - No active general plot solver, WFC, arbitrary packing or procedural building constructor.

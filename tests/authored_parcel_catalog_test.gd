@@ -56,6 +56,19 @@ func _run() -> void:
 		var far_deck := ParcelTransform.cell(Vector3i(8, 4, 23), gallery.size, origin, turn)
 		check(not graph.calculate_3d_path(bottom, far_deck).is_empty(), "maintenance gallery rotation %d connects ground access to the complete elevated route" % turn)
 		root.free()
+	var urban_frontages := Catalog.candidates(Catalog.URBAN_FRONTAGE, Vector2i(32, 32))
+	check(urban_frontages.size() == 1, "Catalog contains one bounded 32x32 urban-frontage proof")
+	var frontage = urban_frontages[0]
+	check(frontage.connection().kind == &"street_frontage" and frontage.connection().outward == Vector2i(0, -1) and frontage.connection().width == 8, "Urban parcel authors a measured street-facing frontage instead of inferring adjacency")
+	var parking_regions = frontage.population_regions()
+	check(parking_regions.size() == 1 and parking_regions[0].region_id == &"visitor_parking" and parking_regions[0].role == &"parked_vehicle", "Urban parcel owns a semantic visitor-parking population region")
+	check(parking_regions[0].allowed_asset_ids == PackedStringArray(["car_kit/sedan", "car_kit/suv", "car_kit/taxi"]), "Parking population uses a curated vehicle allow-list")
+	var urban_root: Node3D = frontage.instantiate()
+	var urban_assets: PackedStringArray = frontage.asset_ids(urban_root)
+	check(urban_assets.has("city_kit_industrial/building-a"), "Urban frontage uses a reviewed complete imported building shell")
+	frontage.apply_population(urban_root, [])
+	check(frontage.population_sockets(urban_root).is_empty() and frontage.asset_ids(urban_root).has("city_kit_industrial/building-a"), "Population-off removes parked cars without removing the complete fixed frontage")
+	urban_root.free()
 	var invalid_region = PopulationRegion.new()
 	invalid_region.region_id = &"bad"
 	invalid_region.role = &"shipping_container"
@@ -86,4 +99,4 @@ func _check_compilation(parcel, turn: int) -> void:
 	for offset in connection.width:
 		var local_cell: Vector3i = connection.cell + Vector3i(offset if connection.outward.y != 0 else 0, 0, offset if connection.outward.x != 0 else 0)
 		var world_cell := ParcelTransform.cell(local_cell, parcel.size, origin, turn)
-		check(data.get_cell(world_cell) != null and data.get_cell(world_cell).walkable, "%s rotation %d keeps service interface cell %s open" % [parcel.parcel_id, turn, world_cell])
+		check(data.get_cell(world_cell) != null and data.get_cell(world_cell).walkable, "%s rotation %d keeps access interface cell %s open" % [parcel.parcel_id, turn, world_cell])

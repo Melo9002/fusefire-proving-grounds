@@ -96,6 +96,7 @@ The full tier reports these as skipped by policy:
 - `refinery_family_mission_matrix.gd`
 - `asset_lab_capture.gd`
 - `parcel_editor_capture.gd`
+- `urban_frontage_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`
 - `semantic_asset_review_capture.gd`

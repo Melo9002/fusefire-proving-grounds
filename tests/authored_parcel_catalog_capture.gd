@@ -1,5 +1,5 @@
 extends SceneTree
-## Visual review of the bounded refinery parcel family.
+## Visual review of the bounded registered parcel catalog.
 
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 
@@ -30,19 +30,19 @@ func _run() -> void:
 	light.shadow_enabled = true
 	stage.add_child(light)
 	var parcels := Catalog.all()
-	var centres := [Vector3(-20, 0, -14), Vector3(0, 0, -14), Vector3(20, 0, -14), Vector3(-10, 0, 22), Vector3(10, 0, 22)]
+	var centres := [Vector3(-34, 0, -20), Vector3(-12, 0, -20), Vector3(10, 0, -20), Vector3(-25, 0, 20), Vector3(-3, 0, 20), Vector3(28, 0, 8)]
 	for index in parcels.size():
 		var parcel: Node3D = parcels[index].instantiate()
-		parcel.position = centres[index] - Vector3(7.5, 0, (parcels[index].size.y - 1) * 0.5)
+		parcel.position = centres[index] - Vector3((parcels[index].size.x - 1) * 0.5, 0, (parcels[index].size.y - 1) * 0.5)
 		stage.add_child(parcel)
 	var camera := Camera3D.new()
 	camera.current = true
 	camera.fov = 42
 	stage.add_child(camera)
 	for view in [
-		["family-overhead", Vector3(0.01, 72, 4), Vector3(0, 0, 4)],
-		["family-oblique", Vector3(52, 38, 54), Vector3(0, 1, 4)],
-		["supporting-parcels", Vector3(0, 16, 54), Vector3(0, 2, 20)],
+		["family-overhead", Vector3(-3, 135, 0.01), Vector3(-3, 0, 0)],
+		["family-oblique", Vector3(80, 68, 90), Vector3(0, 2, 0)],
+		["supporting-parcels", Vector3(10, 34, 78), Vector3(0, 2, 8)],
 	]:
 		camera.position = view[1]
 		camera.look_at(view[2])

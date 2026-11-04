@@ -1,0 +1,105 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-a.glb" id="building"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/suv.glb" id="suv"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
+
+[sub_resource type="StandardMaterial3D" id="lot_material"]
+albedo_color = Color(0.42, 0.43, 0.42, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="lot_mesh"]
+size = Vector3(32, 0.04, 32)
+material = SubResource("lot_material")
+
+[sub_resource type="StandardMaterial3D" id="sidewalk_material"]
+albedo_color = Color(0.67, 0.65, 0.58, 1)
+roughness = 0.86
+
+[sub_resource type="BoxMesh" id="sidewalk_mesh"]
+size = Vector3(32, 0.08, 4)
+material = SubResource("sidewalk_material")
+
+[node name="IndustrialOfficeParking" type="Node3D"]
+metadata/parcel_id = &"industrial_office_parking_a"
+metadata/parcel_role = &"urban_frontage"
+metadata/parcel_size = Vector2i(32, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(12, 0, 0)
+metadata/access_direction = Vector2i(0, -1)
+metadata/access_width = 8
+metadata/access_kind = &"street_frontage"
+
+[node name="PopulationRegions" type="Node" parent="."]
+
+[node name="ParkingBays" type="Node" parent="PopulationRegions"]
+metadata/population_region_id = &"visitor_parking"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(2, 4, 28, 8)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan", "car_kit/suv", "car_kit/taxi")
+metadata/min_count = 0
+metadata/max_count = 3
+
+[node name="Lot" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, -0.01, 15.5)
+mesh = SubResource("lot_mesh")
+
+[node name="StreetSidewalk" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, 0, 1.5)
+mesh = SubResource("sidewalk_mesh")
+
+[node name="OfficeShell" type="Node3D" parent="."]
+position = Vector3(15.5, 0, 22)
+metadata/asset_id = "city_kit_industrial/building-a"
+
+[node name="Visual" parent="OfficeShell" instance=ExtResource("building")]
+scale = Vector3(10, 10, 10)
+
+[node name="TacticalVolume" type="Node3D" parent="OfficeShell"]
+position = Vector3(0, 7.35, 0)
+metadata/solid_size = Vector3(20.83588, 14.7, 12.420001)
+metadata/round_volume = false
+
+[node name="SedanWest" type="Node3D" parent="."]
+position = Vector3(6, 0, 8)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"parking_west"
+metadata/population_region_id = &"visitor_parking"
+
+[node name="Visual" parent="SedanWest" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="SedanWest"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false
+
+[node name="SuvMid" type="Node3D" parent="."]
+position = Vector3(11, 0, 8)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"parking_mid"
+metadata/population_region_id = &"visitor_parking"
+
+[node name="Visual" parent="SuvMid" instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="SuvMid"]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)
+metadata/round_volume = false
+
+[node name="TaxiEast" type="Node3D" parent="."]
+position = Vector3(26, 0, 8)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"parking_east"
+metadata/population_region_id = &"visitor_parking"
+
+[node name="Visual" parent="TaxiEast" instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="TaxiEast"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false

@@ -9,16 +9,19 @@ const LOADING_YARD_B := &"loading_yard_b"
 const PROCESS_PAD_A := &"process_pad_a"
 const TANK_STORAGE_A := &"tank_storage_a"
 const MAINTENANCE_GALLERY_A := &"maintenance_gallery_a"
+const INDUSTRIAL_OFFICE_PARKING_A := &"industrial_office_parking_a"
 const LOADING_SERVICE := &"loading_service"
 const PROCESS := &"process"
 const STORAGE := &"storage"
 const ELEVATED_PROCESS := &"elevated_process"
+const URBAN_FRONTAGE := &"urban_frontage"
 
 const LoadingYardA = preload("res://art/environments/authored/parcels/loading_yard.tscn")
 const LoadingYardB = preload("res://art/environments/authored/parcels/loading_yard_alt.tscn")
 const ProcessPadA = preload("res://art/environments/authored/parcels/process_pad.tscn")
 const TankStorageA = preload("res://art/environments/authored/parcels/tank_storage.tscn")
 const MaintenanceGalleryA = preload("res://art/environments/authored/parcels/maintenance_gallery.tscn")
+const IndustrialOfficeParkingA = preload("res://art/environments/authored/parcels/industrial_office_parking.tscn")
 
 static func all() -> Array:
 	return [
@@ -27,6 +30,7 @@ static func all() -> Array:
 		Definition.new(PROCESS_PAD_A, "Factory process pad", PROCESS, 1, Vector2i(16, 16), ProcessPadA),
 		Definition.new(TANK_STORAGE_A, "Tank storage pad", STORAGE, 1, Vector2i(16, 16), TankStorageA),
 		Definition.new(MAINTENANCE_GALLERY_A, "Elevated maintenance gallery", ELEVATED_PROCESS, 1, Vector2i(16, 32), MaintenanceGalleryA),
+		Definition.new(INDUSTRIAL_OFFICE_PARKING_A, "Industrial office and visitor parking", URBAN_FRONTAGE, 1, Vector2i(32, 32), IndustrialOfficeParkingA),
 	]
 
 static func get_definition(id: StringName):
