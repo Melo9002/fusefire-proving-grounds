@@ -1,6 +1,6 @@
 class_name RefineryFamilyLayout
 extends RefCounted
-## Bounded refinery-family proof: two authored plots and four reviewed parcels.
+## Bounded refinery-family proof: two authored plots and five reviewed parcels.
 
 const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
 const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")

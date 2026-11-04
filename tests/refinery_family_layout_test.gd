@@ -26,7 +26,7 @@ func _run() -> void:
 		check(validation.is_valid(), "seed %d compiles valid tactical MapData: %s" % [seed, validation.describe()])
 		var parent := Node3D.new()
 		check(Layout.present(data, parent, 1.0), "seed %d presents from its exact manifest" % seed)
-		check(parent.get_child_count() == 4, "seed %d presents one plot and three parcels" % seed)
+		check(parent.get_child_count() == 1 + data.content_manifest.placements.size(), "seed %d presents one plot and every resolved parcel" % seed)
 		var plot_root := parent.get_child(0) as Node3D
 		check(int(plot_root.get_meta("revision", 0)) == int(data.content_manifest.plot_revision), "seed %d presents the exact plot revision" % seed)
 		var visual_ground := plot_root.get_node("VisibleGround") as Node3D

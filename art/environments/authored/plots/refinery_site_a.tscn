@@ -17,7 +17,7 @@ material = SubResource("ground_material")
 
 [node name="RefinerySiteA" type="Node3D"]
 metadata/plot_id = &"refinery_site_a"
-metadata/revision = 2
+metadata/revision = 3
 metadata/map_size = Vector2i(64, 64)
 metadata/road_asset = "city_kit_roads/road-straight"
 

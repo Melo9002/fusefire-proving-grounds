@@ -17,12 +17,17 @@ func _run() -> void:
 	var seen_plots := {}
 	var seen_loading := {}
 	var seen_container_counts := {}
+	var seen_maintenance := false
 	for seed in range(8):
 		var resolved := Resolver.resolve(seed)
 		check(Resolver.is_valid(resolved), "seed %d resolves cleanly: %s" % [seed, resolved.get("errors", [])])
-		check(resolved.placements.size() == 3, "seed %d resolves all three required parcels" % seed)
+		var plot := PlotCatalog.get_definition(resolved.plot_id)
+		check(resolved.placements.size() == plot.slots.size(), "seed %d resolves every required plot slot" % seed)
 		seen_plots[resolved.plot_id] = true
 		for placement: Dictionary in resolved.placements:
+			if placement.slot_id == &"maintenance":
+				seen_maintenance = true
+				check(placement.parcel_id == ParcelCatalog.MAINTENANCE_GALLERY_A, "seed %d resolves the certified maintenance gallery" % seed)
 			if placement.slot_id == &"loading":
 				seen_loading[placement.parcel_id] = true
 				var container_count: int = placement.population.filter(func(choice): return choice.region_id == &"depot_containers").size()
@@ -30,6 +35,7 @@ func _run() -> void:
 				check(placement.population.any(func(choice): return choice.region_id == &"loading_vehicles"), "seed %d resolves an authored loading vehicle socket" % seed)
 		check(resolved == Resolver.resolve(seed), "seed %d resolution is deterministic" % seed)
 	check(seen_plots.size() == 2, "seed matrix exercises both authored plot layouts")
+	check(seen_maintenance, "seed matrix exercises the Site A maintenance-gallery slot")
 	check(seen_loading.size() == 2, "seed matrix exercises both loading-yard variants")
 	check(seen_container_counts.has(1) and seen_container_counts.has(2), "seed matrix exercises bounded one- and two-container populations")
 	var empty := Resolver.resolve(17, false)

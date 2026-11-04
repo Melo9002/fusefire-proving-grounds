@@ -3,6 +3,7 @@ extends SceneTree
 
 const Catalog = preload("res://systems/generation/battlefield_catalog.gd")
 const Layout = preload("res://systems/generation/refinery_family_layout.gd")
+const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -40,7 +41,8 @@ func _run_seed(seed: int) -> bool:
 	var recording = BattleReplaySession.last_recording
 	var recorded_manifest: Dictionary = recording.configuration.get("content_manifest", {}) if recording else {}
 	passed = passed and recording != null and StringName(recording.configuration.get("battlefield_id", "")) == Catalog.REFINERY_FAMILY
-	passed = passed and not recorded_manifest.is_empty() and recorded_manifest.placements.size() == 3
+	var recorded_plot := PlotCatalog.get_definition(StringName(recorded_manifest.get("plot_id", &"")))
+	passed = passed and not recorded_plot.is_empty() and recorded_manifest.placements.size() == recorded_plot.slots.size()
 	if recording:
 		var replay := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 		replay.configure_replay(recording)

@@ -30,6 +30,7 @@ Match Setup
 | `industrial_warehouse` | Authored Generator 1 vertical slice | Supported compatibility map |
 | `refinery_2` | Fixed authored Godot scene | Supported authored map |
 | `loading_yard` | 16x32 authored parcel centred in a 40x48 battlefield | Foundation proof; technical validation exists, owner visual/playability review remains |
+| `refinery_family` | Two fixed 64x64 plots resolving registered authored parcels | Active Generation 2.0 proof; Reach/replay and agent visual validation pass, owner review remains |
 
 ## Authored content boundary
 
@@ -44,7 +45,7 @@ Do not duplicate the compiler in a new layout adapter. Do not derive cover from 
 - No active general plot solver, WFC, arbitrary packing or procedural building constructor.
 - A future recovered **Parcel Editor** is an isolated authoring/inspection tool for the standard footprints. It may reuse the old editor's camera, placement, history and draft UX, but not its runtime generator, publication framework or retired dependency graph.
 - No runtime semantic-catalog scan. Authored scenes resolve direct stable assets; later bounded plot choices must use a small registered list.
-- Layout composition waits until at least two authored parcel variants have passed visual and gameplay review.
+- New layout content must be an authored, registered parcel with measured interfaces and focused tactical/visual evidence; catalog membership alone does not make it eligible for a plot.
 - Generator 1 remains until a replacement demonstrates equivalent gameplay and replay behavior and the owner explicitly retires it.
 - The quarantined code is reference material, never a runtime dependency.
 
@@ -53,6 +54,7 @@ Do not duplicate the compiler in a new layout adapter. Do not derive cover from 
 - Loading Yard battle initialization, including imported presentation and tactical validation: 873 ms in the focused headless check on 2026-11-02.
 - Loading Yard Reach mission: completed in two rounds with 20 AI decisions; its 24 recorded actions replayed 24/24.
 - Rendered overhead, oblique and service views were inspected. The parcel is a sparse technical proof, not a finished battlefield or owner-approved visual target.
+- Refinery Family Site A seed 16, including its level-4 maintenance gallery, completes Reach in three rounds and replays 47/47 actions. Site B seed 17 completes in five rounds and replays 94/94 actions. Both preserve exact plot, parcel, population and revision choices.
 - The legacy generation tier contains deliberately broad multi-seed tests that take tens of seconds. Performance analysis is deferred; normal battle entry now has a visible loading transition.
 
 ## Adding a battlefield

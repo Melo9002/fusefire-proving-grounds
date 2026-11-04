@@ -5,7 +5,8 @@ extends RefCounted
 
 const SITE_A := &"refinery_site_a"
 const SITE_B := &"refinery_site_b"
-const REVISION := 2
+const SITE_A_REVISION := 3
+const SITE_B_REVISION := 2
 const MAP_SIZE := Vector2i(64, 64)
 
 static func all() -> Array[Dictionary]:
@@ -33,19 +34,20 @@ static func _slot(id: StringName, role: StringName, size: Vector2i, origin: Vect
 
 static func _site_a() -> Dictionary:
 	return {
-		"plot_id": SITE_A, "display_name": "Split-yard refinery", "revision": REVISION, "map_size": MAP_SIZE,
-		"circulation": "Two northern work pads feed a southern loading apron.",
+		"plot_id": SITE_A, "display_name": "Split-yard refinery", "revision": SITE_A_REVISION, "map_size": MAP_SIZE,
+		"circulation": "Two northern work pads face a southern loading apron and maintenance gallery.",
 		"road_rects": [Rect2i(0, 24, 64, 5)],
 		"slots": [
 			_slot(&"process", &"process", Vector2i(16, 16), Vector3i(8, 0, 8), 0, Vector3i(15, 0, 23), Vector2i.DOWN, 2),
 			_slot(&"storage", &"storage", Vector2i(16, 16), Vector3i(40, 0, 8), 0, Vector3i(46, 0, 23), Vector2i.DOWN, 4),
 			_slot(&"loading", &"loading_service", Vector2i(16, 32), Vector3i(24, 0, 29), 2, Vector3i(33, 0, 29), Vector2i.UP, 4),
+			_slot(&"maintenance", &"elevated_process", Vector2i(16, 32), Vector3i(0, 0, 29), 2, Vector3i(8, 0, 29), Vector2i.UP, 2),
 		],
 	}
 
 static func _site_b() -> Dictionary:
 	return {
-		"plot_id": SITE_B, "display_name": "Service-spine refinery", "revision": REVISION, "map_size": MAP_SIZE,
+		"plot_id": SITE_B, "display_name": "Service-spine refinery", "revision": SITE_B_REVISION, "map_size": MAP_SIZE,
 		"circulation": "A service spine joins a sideways loading yard to separated process and storage pads.",
 		"road_rects": [Rect2i(40, 0, 5, 64)],
 		"slots": [
