@@ -1,22 +1,21 @@
 class_name LoadingYardLayout
 extends RefCounted
 const AuthoredSceneMapCompiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
-const PARCEL := preload("res://art/environments/authored/parcels/loading_yard.tscn")
+const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const SIZE := Vector2i(40, 48)
 const PARCEL_SIZE := Vector2i(16, 32)
 const SOURCE_KIND := "authored_loading_yard"
-const REVISION := 1
+
+static func parcel_definition():
+	return ParcelCatalog.get_definition(ParcelCatalog.LOADING_YARD_A)
 
 static func validate() -> PackedStringArray:
-	var failures := PackedStringArray()
-	var parcel := PARCEL.instantiate() as Node3D
-	if parcel.get_meta("parcel_size", Vector2i.ZERO) != PARCEL_SIZE: failures.append("PARCEL_SIZE_MISMATCH")
-	if int(parcel.get_meta("revision", 0)) != REVISION: failures.append("PARCEL_REVISION_MISMATCH")
-	var connection := ParcelConnection.from_scene(parcel)
-	var connection_error := connection.validate(PARCEL_SIZE)
-	if not connection_error.is_empty(): failures.append("INVALID_CONNECTION: " + connection_error)
-	if not parcel.get_children().any(func(child): return child.has_meta("asset_id")): failures.append("MISSING_IMPORTED_CONTENT")
-	parcel.free()
+	var definition = parcel_definition()
+	if definition == null:
+		return PackedStringArray(["MISSING_PARCEL_DEFINITION"])
+	var failures: PackedStringArray = definition.validate()
+	if definition.size != PARCEL_SIZE:
+		failures.append("PARCEL_SIZE_MISMATCH")
 	return failures
 
 static func generate(map_seed: int, unit: float = 1.0, turn: int = 0) -> MapData:
@@ -24,7 +23,7 @@ static func generate(map_seed: int, unit: float = 1.0, turn: int = 0) -> MapData
 	data.source_kind = SOURCE_KIND
 	var failures := validate()
 	if not failures.is_empty(): push_error("Loading Yard contract invalid: " + "; ".join(failures))
-	var parcel := PARCEL.instantiate() as Node3D
+	var parcel: Node3D = parcel_definition().instantiate()
 	parcel.transform = pose(turn)
 	AuthoredSceneMapCompiler.compile(parcel, data, unit)
 	parcel.free()
@@ -36,7 +35,7 @@ static func pose(turn: int) -> Transform3D:
 	return ParcelTransform.scene_transform(PARCEL_SIZE, origin, turn, SIZE)
 
 static func present(parent: Node3D, unit: float) -> void:
-	var parcel := PARCEL.instantiate() as Node3D
+	var parcel: Node3D = parcel_definition().instantiate()
 	parcel.transform = pose(0)
 	parcel.position *= unit
 	parcel.scale *= unit

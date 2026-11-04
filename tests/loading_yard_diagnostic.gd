@@ -11,7 +11,7 @@ func _initialize():
 		if not report.is_valid():
 			print("Turn %d: %s" % [turn, report.describe()])
 			failures += 1
-		var parcel := LoadingYardLayout.PARCEL.instantiate()
+		var parcel: Node3D = LoadingYardLayout.parcel_definition().instantiate()
 		var connection := ParcelConnection.from_scene(parcel)
 		var rotated_size := ParcelTransform.rotated_size(LoadingYardLayout.PARCEL_SIZE, turn)
 		var origin := Vector3i((LoadingYardLayout.SIZE.x - rotated_size.x) / 2, 0, (LoadingYardLayout.SIZE.y - rotated_size.y) / 2)

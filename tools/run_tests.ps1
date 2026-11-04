@@ -53,7 +53,7 @@ $subsystemPatterns = @{
     movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault"
     ai         = "^ai_|commander|objective_ai|protect_rescue_ai|rescue_carrier|rescue_refinery|squad_context|survive_ai"
     replay     = "replay|determinism|seed_failure"
-    generation = "battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_2_|loading_yard|parcel_|map_generation|map_quality|map_validation|transport_placement"
+    generation = "battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_|loading_yard|parcel_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
     assets     = "asset|environment_asset|locomotion|pose|unit_visual"
     ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
@@ -64,10 +64,7 @@ $subsystemPatterns = @{
 $visualTests = @(
     "asset_lab_capture.gd",
 	"authored_parcel_catalog_capture.gd",
-	"refinery_plot_resolver_test.gd",
-	"refinery_family_layout_test.gd",
 	"refinery_family_capture.gd",
-	"refinery_family_ai_smoke.gd",
 	"battle_loading_screen_capture.gd",
     "industrial_warehouse_capture.gd",
     "refinery_2_capture.gd",
@@ -81,7 +78,9 @@ $extendedTests = @(
     "battlefield_stress_smoke.gd",
     "container_maps_smoke.gd",
     "map_quality_metrics_smoke.gd",
-    "prototype_1_milestone.gd"
+    "prototype_1_milestone.gd",
+	"refinery_family_ai_smoke.gd",
+	"refinery_family_mission_matrix.gd"
 )
 
 $allTests = @(Get-ChildItem -LiteralPath $testsRoot -Filter "*.gd" -File | Sort-Object Name)
