@@ -44,8 +44,14 @@ func _run() -> void:
 		if index >= FlatMapGenerator.MAP_SIZES.size(): check(not seen.has(id), "Special battlefield appears only once: %s" % id)
 		seen[id] = true
 	menu.map_size_option.select(menu.map_size_option.item_count - 1)
+	menu._refresh_generation_controls()
 	var selected: BattleConfiguration = menu._build_battle_configuration()
 	check(selected.resolved_battlefield_id() == Catalog.REFINERY_FAMILY and selected.map_size == Vector2i(64, 64), "Match Setup exposes the authored-parcel refinery family")
+	check(menu.population_toggle.visible and selected.content_manifest.population_enabled, "Refinery family exposes tactical population as an explicit enabled mode")
+	menu.population_toggle.button_pressed = false
+	var unpopulated: BattleConfiguration = menu._build_battle_configuration()
+	check(not unpopulated.content_manifest.population_enabled, "Match Setup can request the same complete site without movable tactical population")
+	menu.population_toggle.button_pressed = true
 	menu.free()
 
 	var started := Time.get_ticks_msec()

@@ -25,6 +25,7 @@ var compatibility_toggle: CheckButton
 var compatibility_status: Label
 var randomize_seed_button: Button
 var copy_seed_button: Button
+var population_toggle: CheckButton
 var roster_side_option: OptionButton
 var roster_entries: VBoxContainer
 var reset_roster_button: Button
@@ -41,6 +42,7 @@ const COMPATIBILITY_KEY := "compatibility_mode"
 const RESTART_MARKER := "--fusefire-renderer-restart"
 
 func _ready() -> void:
+	_build_population_setup()
 	_build_objective_setup()
 	_build_vip_setup()
 	_build_compatibility_setup()
@@ -66,7 +68,7 @@ func _ready() -> void:
 	enemy_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ENEMY))
 	ally_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ALLY))
 	generated_map_toggle.toggled.connect(_on_generation_toggled)
-	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	map_size_option.item_selected.connect(func(_index: int): _refresh_generation_controls(); _update_summary(0.0))
 	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	player_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	enemy_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
@@ -84,6 +86,17 @@ func _add_battlefield_option(id: StringName) -> void:
 
 func _selected_battlefield_id() -> StringName:
 	return StringName(map_size_option.get_item_metadata(map_size_option.selected))
+
+func _build_population_setup() -> void:
+	population_toggle = CheckButton.new()
+	population_toggle.name = "TacticalPopulationToggle"
+	population_toggle.text = "TACTICAL POPULATION"
+	population_toggle.tooltip_text = "Place deterministic parcel-authored vehicles, containers, and other approved tactical occupants. The structures and parcels remain when disabled."
+	population_toggle.button_pressed = true
+	population_toggle.toggled.connect(func(_enabled: bool): _update_summary(0.0))
+	var generation := $CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation
+	generation.add_child(population_toggle)
+	generation.move_child(population_toggle, 1)
 
 func _build_roster_editor() -> void:
 	player_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(player_count.value))
@@ -437,7 +450,8 @@ func _update_summary(_value: float) -> void:
 		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
 		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
-		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), difficulty_label, player_commander_label, enemy_commander_label]
+		var population_line := "\nPopulation: %s" % ("ON" if population_toggle.button_pressed else "OFF") if population_toggle.visible else ""
+		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
 func _on_generation_toggled(_enabled: bool) -> void:
@@ -447,6 +461,7 @@ func _on_generation_toggled(_enabled: bool) -> void:
 
 func _refresh_generation_controls() -> void:
 	map_size_option.disabled = not generated_map_toggle.button_pressed
+	population_toggle.visible = generated_map_toggle.button_pressed and _selected_battlefield_id() == BattlefieldCatalogData.REFINERY_FAMILY
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -517,4 +532,6 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
 	config.select_battlefield(battlefield)
+	if battlefield == BattlefieldCatalogData.REFINERY_FAMILY:
+		config.content_manifest = {"population_enabled": population_toggle.button_pressed}
 	return config

@@ -66,7 +66,12 @@ func _run() -> void:
 	var restored_recording := ReplayRecording.from_dictionary(recording.to_dictionary())
 	check(restored_recording.configuration.content_manifest == exact, "replay JSON contract round-trips exact resolved choices and transforms")
 	var empty := Layout.generate(17, 1.0, {}, false)
-	check(empty.generation_errors.is_empty() and empty.content_manifest.placements.is_empty(), "population-off compiles plot ground without parcels")
+	check(empty.generation_errors.is_empty() and empty.content_manifest.placements.size() == 3, "population-off compiles the complete authored site")
+	check(empty.content_manifest.placements.all(func(placement): return placement.population.is_empty()), "population-off omits only movable tactical occupants")
+	var empty_parent := Node3D.new()
+	check(Layout.present(empty, empty_parent, 1.0) and empty_parent.get_child_count() == 4, "population-off presents the plot and all three parcels")
+	check(empty_parent.find_children("*", "Node3D", true, false).all(func(node): return not node.has_meta("population_socket_id")), "population-off presentation contains no population socket occupants")
+	empty_parent.free()
 	var stale := exact.duplicate(true)
 	stale.plot_revision = 99
 	var rejected := Layout.generate(3, 1.0, stale)

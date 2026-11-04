@@ -14,8 +14,6 @@ static func resolve(seed: int, population_enabled: bool = true, requested: Dicti
 	if int(requested.get("plot_revision", plot.revision)) != int(plot.revision):
 		result.errors.append(_error("STALE_PLOT_REVISION", String(plot.plot_id)))
 		return result
-	if not population_enabled:
-		return result
 	var requested_placements: Dictionary = {}
 	for placement in requested.get("placements", []):
 		requested_placements[StringName(placement.get("slot_id", &""))] = placement
@@ -30,17 +28,21 @@ static func resolve(seed: int, population_enabled: bool = true, requested: Dicti
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
-		var population := _resolve_population(parcel, seed, slot_index, requested_placement)
+		var population := _resolve_population(parcel, seed, slot_index, requested_placement, population_enabled)
 		if population.has("error"):
 			result.errors.append(_error(String(population.error), "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
 		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation, "population": population.choices})
 	return result
 
-static func _resolve_population(parcel, seed: int, slot_index: int, requested: Dictionary) -> Dictionary:
+static func _resolve_population(parcel, seed: int, slot_index: int, requested: Dictionary, population_enabled: bool) -> Dictionary:
 	var sockets: Array[Dictionary] = parcel.population_sockets()
 	var regions: Array = parcel.population_regions()
 	if sockets.is_empty():
+		return {"choices": []}
+	if not population_enabled:
+		if not requested.is_empty() and not requested.get("population", []).is_empty():
+			return {"error": "POPULATION_DISABLED_WITH_RECORDED_CHOICES"}
 		return {"choices": []}
 	if not requested.is_empty():
 		if not requested.has("population"):
