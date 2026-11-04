@@ -4,16 +4,22 @@ extends Node3D
 ## the retired chunk generator, publication system, or runtime dependencies.
 
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
 
 var parcel_picker: OptionButton
 var metadata_label: Label
 var validation_label: Label
 var population_toggle: CheckButton
 var tactical_toggle: CheckButton
+var placement_picker: OptionButton
+var draft_status: Label
+var undo_button: Button
+var redo_button: Button
 var camera: Camera3D
 var displayed_parcel_id: StringName = &""
 var displayed_parcel: Node3D
 var tactical_overlay: Node3D
+var draft = DraftSession.new()
 
 var _definitions: Array = []
 var _grid: MeshInstance3D
@@ -59,7 +65,7 @@ func _build_ui() -> void:
 	add_child(layer)
 	var panel := PanelContainer.new()
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(360, 560)
+	panel.size = Vector2(390, 720)
 	layer.add_child(panel)
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)
@@ -92,6 +98,61 @@ func _build_ui() -> void:
 	validation_label.name = "Validation"
 	validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(validation_label)
+	var edit_label := Label.new()
+	edit_label.text = "VISUAL PLACEMENT DRAFT"
+	edit_label.modulate = Color(0.72, 0.82, 0.92)
+	column.add_child(edit_label)
+	placement_picker = OptionButton.new()
+	placement_picker.name = "PlacementPicker"
+	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
+	placement_picker.item_selected.connect(_select_placement_index)
+	column.add_child(placement_picker)
+	var planar := HBoxContainer.new()
+	for spec in [["X−", Vector3(-0.5, 0, 0)], ["X+", Vector3(0.5, 0, 0)], ["Z−", Vector3(0, 0, -0.5)], ["Z+", Vector3(0, 0, 0.5)]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(func(): _translate_selected(spec[1]))
+		planar.add_child(button)
+	column.add_child(planar)
+	var vertical := HBoxContainer.new()
+	for spec in [["Y−", Vector3(0, -0.25, 0)], ["Y+", Vector3(0, 0.25, 0)], ["YAW −90", -1], ["YAW +90", 1], ["RESET", 0]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if spec[1] is Vector3:
+			button.pressed.connect(func(): _translate_selected(spec[1]))
+		elif int(spec[1]) == 0:
+			button.pressed.connect(_reset_selected)
+		else:
+			button.pressed.connect(func(): _rotate_selected(int(spec[1])))
+		vertical.add_child(button)
+	column.add_child(vertical)
+	var history := HBoxContainer.new()
+	undo_button = Button.new()
+	undo_button.text = "UNDO"
+	undo_button.pressed.connect(_undo)
+	history.add_child(undo_button)
+	redo_button = Button.new()
+	redo_button.text = "REDO"
+	redo_button.pressed.connect(_redo)
+	history.add_child(redo_button)
+	var save := Button.new()
+	save.text = "SAVE DRAFT"
+	save.pressed.connect(_save_draft)
+	history.add_child(save)
+	var load_draft := Button.new()
+	load_draft.text = "LOAD DRAFT"
+	load_draft.pressed.connect(_load_draft)
+	history.add_child(load_draft)
+	for button in history.get_children():
+		(button as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_child(history)
+	draft_status = Label.new()
+	draft_status.name = "DraftStatus"
+	draft_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	draft_status.modulate = Color(0.68, 0.76, 0.84)
+	column.add_child(draft_status)
 	population_toggle = CheckButton.new()
 	population_toggle.name = "PopulationToggle"
 	population_toggle.text = "Show authored movable population"
@@ -166,7 +227,82 @@ func _show_index(index: int) -> void:
 	population_toggle.button_pressed = true
 	population_toggle.disabled = definition.population_sockets().is_empty()
 	set_population_visible(true)
+	draft.begin(definition, displayed_parcel)
+	_refresh_placement_picker()
+	_update_draft_status("Source parcel loaded; runtime content is unchanged.")
 	_frame()
+
+func _refresh_placement_picker() -> void:
+	placement_picker.clear()
+	for record: Dictionary in draft.placements:
+		placement_picker.add_item("%s · %s" % [record.path, record.asset_id.get_file()])
+		placement_picker.set_item_metadata(placement_picker.item_count - 1, String(record.path))
+		if String(record.path) == draft.selected_path:
+			placement_picker.select(placement_picker.item_count - 1)
+	_update_history_buttons()
+
+func _select_placement_index(index: int) -> void:
+	if index >= 0 and index < placement_picker.item_count:
+		draft.select(String(placement_picker.get_item_metadata(index)))
+		_update_draft_status()
+
+func _translate_selected(delta: Vector3) -> void:
+	if draft.translate_selected(delta):
+		_apply_draft("Moved visual placement %s." % delta)
+	else:
+		_update_draft_status(draft.last_error)
+
+func _rotate_selected(turns: int) -> void:
+	if draft.rotate_selected_quarter(turns):
+		_apply_draft("Rotated visual placement %s90°." % ("+" if turns > 0 else "−"))
+	else:
+		_update_draft_status(draft.last_error)
+
+func _reset_selected() -> void:
+	if draft.reset_selected(displayed_parcel):
+		_apply_draft("Reset visual placement to its authored transform.")
+	else:
+		_update_draft_status(draft.last_error)
+
+func _undo() -> void:
+	if draft.undo():
+		_apply_draft("Undid the last draft edit.")
+
+func _redo() -> void:
+	if draft.redo():
+		_apply_draft("Redid the draft edit.")
+
+func _apply_draft(message := "") -> void:
+	var failures := draft.apply(displayed_parcel)
+	_update_draft_status(message if failures.is_empty() else "; ".join(failures))
+	_update_history_buttons()
+
+func _save_draft() -> void:
+	_update_draft_status("Saved visual-only draft to %s." % draft.draft_path() if draft.save() else draft.last_error)
+	_update_history_buttons()
+
+func _load_draft() -> void:
+	var definition = Catalog.get_definition(displayed_parcel_id)
+	if draft.load_for(definition, displayed_parcel):
+		_apply_draft("Loaded visual-only draft from %s." % draft.draft_path())
+		_refresh_placement_picker()
+	else:
+		_update_draft_status(draft.last_error)
+
+func _update_draft_status(message := "") -> void:
+	var record: Dictionary = draft.placement()
+	var selection := "No visual placement selected."
+	if not record.is_empty():
+		selection = "%s\nposition %s · yaw %.1f°" % [record.path, record.position, float(record.rotation_degrees[1])]
+	var state := "unsaved" if draft.dirty else "saved/source"
+	draft_status.text = "%s · %s\n%s%s" % [String(draft.parcel_id), state, selection, "\n" + message if not message.is_empty() else ""]
+	_update_history_buttons()
+
+func _update_history_buttons() -> void:
+	if undo_button:
+		undo_button.disabled = draft.undo_stack.is_empty()
+	if redo_button:
+		redo_button.disabled = draft.redo_stack.is_empty()
 
 func set_population_visible(enabled: bool) -> void:
 	if not is_instance_valid(displayed_parcel):
@@ -274,9 +410,16 @@ func _update_camera() -> void:
 	camera.look_at(_camera_target)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
-		_frame()
-		get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed:
+		if event.ctrl_pressed and event.keycode == KEY_Z:
+			_undo()
+			get_viewport().set_input_as_handled()
+		elif event.ctrl_pressed and event.keycode == KEY_Y:
+			_redo()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F:
+			_frame()
+			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_orbiting = event.pressed

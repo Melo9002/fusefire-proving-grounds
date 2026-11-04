@@ -12,7 +12,7 @@ Local archive: `C:/Users/Blue/Documents/Codex/quarantine/fusefire-before-simplif
 - `retired-code/`, `retired-content/`, `retired-docs-and-data/`, `retired-history/`: moved originals.
 - Inventory JSON files and `base-commit.txt` document provenance. This archive stays local and is not included in Git pushes.
 
-The retired chunk creator is a useful reference, especially placement, duplication, history and draft persistence. Its supported successor is named **Parcel Editor** and targets only the standard 16×16, 16×32 and 32×32 parcel footprints. The first active slice now inspects registered parcels and their separate visual/tactical contracts; placement, history and draft persistence remain future isolated slices. Do not restore the retired runtime generator, publication/certification stack or dependency chain. Preserve user drafts in the archive unchanged.
+The retired chunk creator is a useful reference, especially placement, duplication, history and draft persistence. Its supported successor is named **Parcel Editor** and targets only the standard 16×16, 16×32 and 32×32 parcel footprints. The active tool inspects registered parcels and their separate visual/tactical contracts, and supports revision-bound visual transform drafts with undo/redo. It still does not publish or mutate runtime content. Do not restore the retired runtime generator, publication/certification stack or dependency chain. Preserve user drafts in the archive unchanged.
 
 The superseded `map-plan-1-5-to-2-0.md` draft was moved into `retired-docs-and-data/post-quarantine-2026-11-02/`. Its active test command and architecture claims have been removed from current documentation.
 

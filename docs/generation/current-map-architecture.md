@@ -43,7 +43,7 @@ Do not duplicate the compiler in a new layout adapter. Do not derive cover from 
 ## Deliberate limits
 
 - No active general plot solver, WFC, arbitrary packing or procedural building constructor.
-- The active **Parcel Editor** is an isolated inspection foundation for registered standard-footprint parcels. It owns camera, footprint-grid and tactical-overlay UX only; future placement/history/draft work must remain inside this boundary. It has no runtime generator, publication framework or retired dependency graph.
+- The active **Parcel Editor** is an isolated inspection and visual-draft tool for registered standard-footprint parcels. It owns camera, footprint-grid, tactical-overlay and revision-bound visual transform history; it cannot mutate runtime scenes or tactical contracts. Future authoring work must remain inside this boundary. It has no runtime generator, publication framework or retired dependency graph.
 - No runtime semantic-catalog scan. Authored scenes resolve direct stable assets; later bounded plot choices must use a small registered list.
 - New layout content must be an authored, registered parcel with measured interfaces and focused tactical/visual evidence; catalog membership alone does not make it eligible for a plot.
 - Generator 1 remains until a replacement demonstrates equivalent gameplay and replay behavior and the owner explicitly retires it.
