@@ -1,0 +1,167 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/screen-wide.glb" id="screen"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/structure-yellow-high.glb" id="truss"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container_a"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="container_b"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="box"]
+
+[sub_resource type="StandardMaterial3D" id="yard_material"]
+albedo_color = Color(0.29, 0.31, 0.305, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="yard_mesh"]
+size = Vector3(32, 0.04, 32)
+material = SubResource("yard_material")
+
+[sub_resource type="StandardMaterial3D" id="stage_material"]
+albedo_color = Color(0.16, 0.2, 0.22, 1)
+roughness = 0.78
+
+[sub_resource type="BoxMesh" id="stage_mesh"]
+size = Vector3(12, 0.5, 4)
+material = SubResource("stage_material")
+
+[sub_resource type="StandardMaterial3D" id="lane_material"]
+albedo_color = Color(0.88, 0.61, 0.16, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="lane_mesh"]
+size = Vector3(0.16, 0.025, 18)
+material = SubResource("lane_material")
+
+[node name="SignalCourtyard" type="Node3D"]
+metadata/parcel_id = &"signal_courtyard_a"
+metadata/parcel_role = &"urban_courtyard"
+metadata/parcel_size = Vector2i(32, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(12, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 8
+metadata/access_kind = &"courtyard_entry"
+
+[node name="PopulationRegions" type="Node" parent="."]
+
+[node name="CoverLanes" type="Node" parent="PopulationRegions"]
+metadata/population_region_id = &"courtyard_cover"
+metadata/population_role = &"industrial_cover"
+metadata/local_rect = Rect2i(2, 10, 28, 18)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b", "factory_kit/box-large")
+metadata/min_count = 0
+metadata/max_count = 5
+
+[node name="Yard" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, -0.01, 15.5)
+mesh = SubResource("yard_mesh")
+
+[node name="Stage" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, 0.25, 4)
+mesh = SubResource("stage_mesh")
+metadata/solid_size = Vector3(12, 0.5, 4)
+
+[node name="SignalScreen" type="Node3D" parent="."]
+position = Vector3(15.5, 2.7, 3.2)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "factory_kit/screen-wide"
+
+[node name="Visual" parent="SignalScreen" instance=ExtResource("screen")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SignalScreenWest" type="Node3D" parent="."]
+position = Vector3(12.2, 2.7, 3.2)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "factory_kit/screen-wide"
+
+[node name="Visual" parent="SignalScreenWest" instance=ExtResource("screen")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SignalScreenEast" type="Node3D" parent="."]
+position = Vector3(18.8, 2.7, 3.2)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "factory_kit/screen-wide"
+
+[node name="Visual" parent="SignalScreenEast" instance=ExtResource("screen")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TrussWest" type="Node3D" parent="."]
+position = Vector3(9.5, 0.5, 4)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "factory_kit/structure-yellow-high"
+
+[node name="Visual" parent="TrussWest" instance=ExtResource("truss")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TrussEast" type="Node3D" parent="."]
+position = Vector3(21.5, 0.5, 4)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "factory_kit/structure-yellow-high"
+
+[node name="Visual" parent="TrussEast" instance=ExtResource("truss")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="CenterLineWest" type="MeshInstance3D" parent="."]
+position = Vector3(13.5, 0.01, 20.5)
+mesh = SubResource("lane_mesh")
+
+[node name="CenterLineEast" type="MeshInstance3D" parent="."]
+position = Vector3(17.5, 0.01, 20.5)
+mesh = SubResource("lane_mesh")
+
+[node name="ContainerWest" type="Node3D" parent="."]
+position = Vector3(6, 0, 14)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"cover_west"
+metadata/population_region_id = &"courtyard_cover"
+
+[node name="Visual" parent="ContainerWest" instance=ExtResource("container_a")]
+scale = Vector3(5, 5, 5)
+
+[node name="TacticalVolume" type="Node3D" parent="ContainerWest"]
+position = Vector3(0, 1.25, 0)
+metadata/solid_size = Vector3(5, 2.5, 2.5)
+metadata/round_volume = false
+
+[node name="ContainerEast" type="Node3D" parent="."]
+position = Vector3(25, 0, 18)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+metadata/population_socket_id = &"cover_east"
+metadata/population_region_id = &"courtyard_cover"
+
+[node name="Visual" parent="ContainerEast" instance=ExtResource("container_b")]
+scale = Vector3(5, 5, 5)
+
+[node name="TacticalVolume" type="Node3D" parent="ContainerEast"]
+position = Vector3(0, 1.25, 0)
+metadata/solid_size = Vector3(5, 2.5, 2.5)
+metadata/round_volume = false
+
+[node name="CrateWest" type="Node3D" parent="."]
+position = Vector3(10, 0, 23)
+metadata/asset_id = "factory_kit/box-large"
+metadata/population_socket_id = &"cover_mid_west"
+metadata/population_region_id = &"courtyard_cover"
+
+[node name="Visual" parent="CrateWest" instance=ExtResource("box")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TacticalVolume" type="Node3D" parent="CrateWest"]
+position = Vector3(0, 0.75, 0)
+metadata/solid_size = Vector3(1.5, 1.5, 1.5)
+metadata/round_volume = false
+
+[node name="CrateEast" type="Node3D" parent="."]
+position = Vector3(21, 0, 25)
+metadata/asset_id = "factory_kit/box-large"
+metadata/population_socket_id = &"cover_mid_east"
+metadata/population_region_id = &"courtyard_cover"
+
+[node name="Visual" parent="CrateEast" instance=ExtResource("box")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="TacticalVolume" type="Node3D" parent="CrateEast"]
+position = Vector3(0, 0.75, 0)
+metadata/solid_size = Vector3(1.5, 1.5, 1.5)
+metadata/round_volume = false

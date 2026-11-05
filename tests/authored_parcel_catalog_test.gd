@@ -69,6 +69,12 @@ func _run() -> void:
 	frontage.apply_population(urban_root, [])
 	check(frontage.population_sockets(urban_root).is_empty() and frontage.asset_ids(urban_root).has("city_kit_industrial/building-a"), "Population-off removes parked cars without removing the complete fixed frontage")
 	urban_root.free()
+	var courtyards := Catalog.candidates(Catalog.URBAN_COURTYARD, Vector2i(32, 32))
+	check(courtyards.size() == 1 and courtyards[0].connection().kind == &"courtyard_entry", "Catalog contains one explicit 32x32 objective courtyard")
+	var courtyard_regions = courtyards[0].population_regions()
+	check(courtyard_regions.size() == 1 and courtyard_regions[0].role == &"industrial_cover", "Courtyard owns curated tactical-cover sockets rather than random clutter")
+	var urban_galleries := Catalog.candidates(Catalog.URBAN_GALLERY, Vector2i(16, 32))
+	check(urban_galleries.size() == 1 and urban_galleries[0].connection().kind == &"courtyard_edge", "Catalog contains one reusable inward-facing elevated gallery")
 	var invalid_region = PopulationRegion.new()
 	invalid_region.region_id = &"bad"
 	invalid_region.role = &"shipping_container"

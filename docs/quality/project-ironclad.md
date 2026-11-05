@@ -98,6 +98,7 @@ The full tier reports these as skipped by policy:
 - `parcel_editor_capture.gd`
 - `urban_frontage_capture.gd`
 - `urban_plot_capture.gd`
+- `urban_courtyard_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`
 - `semantic_asset_review_capture.gd`
