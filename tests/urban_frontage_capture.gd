@@ -31,6 +31,12 @@ func _run() -> void:
 	stage.add_child(sun)
 	var definition = Catalog.get_definition(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	var parcel: Node3D = definition.instantiate()
+	# Explicit inspection case: neighboring bays demonstrate opposing headings.
+	definition.apply_population(parcel, [
+		{"socket_id": &"parking_west", "yaw_turns": 0},
+		{"socket_id": &"parking_mid", "yaw_turns": 2},
+		{"socket_id": &"parking_east", "yaw_turns": 0},
+	])
 	parcel.position = Vector3(-15.5, 0, -15.5)
 	stage.add_child(parcel)
 	var camera := Camera3D.new()

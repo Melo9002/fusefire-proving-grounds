@@ -66,6 +66,7 @@ metadata/round_volume = false
 position = Vector3(6, 0, 8)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"parking_west"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
 
 [node name="Visual" parent="SedanWest" instance=ExtResource("sedan")]
@@ -80,6 +81,7 @@ metadata/round_volume = false
 position = Vector3(11, 0, 8)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"parking_mid"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
 
 [node name="Visual" parent="SuvMid" instance=ExtResource("suv")]
@@ -94,6 +96,7 @@ metadata/round_volume = false
 position = Vector3(26, 0, 8)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"parking_east"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
 
 [node name="Visual" parent="TaxiEast" instance=ExtResource("taxi")]

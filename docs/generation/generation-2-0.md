@@ -80,7 +80,7 @@ Use one fixed authored structure with a small number of floors and many populati
 
 Author slabs, columns, perimeter walls/rails, entry/exit routes and vertical connections together. Start with two playable floors and two distinct ground-to-upper-floor approaches using supported stairs/ramps or traversal links. Driving simulation is unnecessary. A visible route must agree with authored movement, elevation, cover and LOS. Audit available assets and reusable components first; any missing structural content must be acknowledged and authored deliberately.
 
-Car fields represent real parking bays: each bay owns a supported vehicle envelope, nominal heading, floor, clearance and allowed car list. Deterministically choose empty/occupied, vehicle and forward/reverse parking (0°/180° relative to that bay). Preserve aisle access and align wheels with the supporting surface. Avoid unconstrained yaw or position jitter; small variation requires measured space. Wider vehicles require appropriate bays. Fixed owner-placed cars remain possible. Persist each accepted heading; compile its rotated tactical contract at the correct level. Current population records reference preauthored socket occupants and do not yet support choosing a heading/asset transform independently. Current region rectangles also have no floor field; explicit surface/elevation ownership is required before multi-floor painting.
+Car fields represent real parking bays: each bay owns a supported vehicle envelope, nominal heading, floor, clearance and allowed car list. Deterministically choose empty/occupied, vehicle and forward/reverse parking (0°/180° relative to that bay). Preserve aisle access and align wheels with the supporting surface. Avoid unconstrained yaw or position jitter; small variation requires measured space. Wider vehicles require appropriate bays. Fixed owner-placed cars remain possible. Persist each accepted heading; compile its rotated tactical contract at the correct level. Population records now support an optional `yaw_turns` choice for sockets that explicitly permit it. Asset selection still references preauthored occupants. Current region rectangles have no floor field; explicit surface/elevation ownership is required before multi-floor painting.
 
 ### Visibility and floor dependencies
 
@@ -98,7 +98,15 @@ Visual hiding must preserve MapData occupancy, LOS, cover, supports and traversa
 4. Test one wall aperture and upper-floor cutaway, including background occluders and selected-character visibility. Preserve tactical concealment.
 5. Combine parking population, deployment/objective reachability, mission/replay checks and owner camera/play review. Measure density and travel pacing before expanding the map.
 
-These are recorded product directions and proposed implementation steps. No parking family, painting tool or local aperture has been implemented or certified by this documentation change.
+These are recorded product directions and proposed implementation steps. A multi-storey parking family, painting tool and local aperture remain unimplemented. The first parking variation checkpoint is recorded below.
+
+### Parking variation checkpoint — 2026-11-05
+
+Implemented: the office parking parcel's three car sockets explicitly allow relative quarter-turns 0 and 2. The resolver chooses heading with SHA-256 over a JSON tuple containing battle seed, plot/slot instance, parcel, region, socket and `parking_heading_v1`. The first eight hexadecimal digest digits select from the ordered allowed turns. This decision does not consume global RNG or depend on another socket's order. Existing occupancy selection remains unchanged. No extra owner-managed seed is needed.
+
+The accepted `yaw_turns` travels through replay JSON. Applying population rotates the complete occupant, including its authored tactical volume, once relative to its saved base orientation. Unsupported turns and malformed heading values reject; historical records without the field retain their original authored orientation. Fixed manually authored content and population-off retain their existing behavior. No asset/calibration changes are involved.
+
+Verification: `parking_population_test.gd` exercises 16 street seeds, both headings, actual replay JSON with a different supplied reconstruction seed, all four parcel rotations using a real imported car, repeated application, invalid values and historical records. Urban/refinery layouts, catalog, replay schema and Parcel Editor suites pass. Five frontage captures include an explicit forward/reverse neighboring-bay case; overhead and street-front views were inspected. This is technical and agent visual evidence, pending owner visual review. Next: explicit floor/surface ownership for regions and sockets, then the editor field tool.
 
 ## Catwalk direction
 

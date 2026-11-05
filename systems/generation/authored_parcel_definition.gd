@@ -134,12 +134,12 @@ func population_sockets(root: Node = null) -> Array[Dictionary]:
 func apply_population(root: Node, accepted: Array) -> void:
 	var accepted_ids := {}
 	for choice: Dictionary in accepted:
-		accepted_ids[StringName(choice.get("socket_id", &""))] = true
+		accepted_ids[StringName(choice.get("socket_id", &""))] = choice
 	_remove_unaccepted_population(root, accepted_ids)
 
 func _collect_population_sockets(node: Node, result: Array[Dictionary]) -> void:
 	if node.has_meta("population_socket_id"):
-		result.append({"socket_id": StringName(node.get_meta("population_socket_id")), "region_id": StringName(node.get_meta("population_region_id", &"")), "asset_id": String(node.get_meta("asset_id", ""))})
+		result.append({"socket_id": StringName(node.get_meta("population_socket_id")), "region_id": StringName(node.get_meta("population_region_id", &"")), "asset_id": String(node.get_meta("asset_id", "")), "allowed_yaw_turns": node.get_meta("population_yaw_turns", PackedInt32Array([0]))})
 	for child in node.get_children():
 		_collect_population_sockets(child, result)
 
@@ -148,6 +148,12 @@ func _remove_unaccepted_population(node: Node, accepted_ids: Dictionary) -> void
 		if child.has_meta("population_socket_id") and not accepted_ids.has(StringName(child.get_meta("population_socket_id"))):
 			child.free()
 		else:
+			if child is Node3D and child.has_meta("population_socket_id"):
+				var choice: Dictionary = accepted_ids[StringName(child.get_meta("population_socket_id"))]
+				if not child.has_meta("population_base_yaw"):
+					child.set_meta("population_base_yaw", child.rotation.y)
+				# Apply to the whole authored occupant, including tactical volumes.
+				child.rotation.y = float(child.get_meta("population_base_yaw")) - int(choice.get("yaw_turns", 0)) * PI * 0.5
 			_remove_unaccepted_population(child, accepted_ids)
 
 func asset_ids(root: Node = null) -> PackedStringArray:

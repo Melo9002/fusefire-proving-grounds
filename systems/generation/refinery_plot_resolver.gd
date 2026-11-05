@@ -40,14 +40,14 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
-		var population := _resolve_population(parcel, map_seed, slot_index, requested_placement, population_enabled)
+		var population := _resolve_population(parcel, map_seed, slot_index, requested_placement, population_enabled, "%s/%s" % [plot.plot_id, slot.slot_id])
 		if population.has("error"):
 			result.errors.append(_error(String(population.error), "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
 		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation, "population": population.choices})
 	return result
 
-static func _resolve_population(parcel, map_seed: int, slot_index: int, requested: Dictionary, population_enabled: bool) -> Dictionary:
+static func _resolve_population(parcel, map_seed: int, slot_index: int, requested: Dictionary, population_enabled: bool, instance_id: String = "") -> Dictionary:
 	var sockets: Array[Dictionary] = parcel.population_sockets()
 	var regions: Array = parcel.population_regions()
 	if sockets.is_empty():
@@ -74,7 +74,14 @@ static func _resolve_population(parcel, map_seed: int, slot_index: int, requeste
 		var start := posmod(map_seed + slot_index + region_index, candidates.size())
 		for offset in count:
 			var socket: Dictionary = candidates[(start + offset) % candidates.size()]
-			choices.append({"region_id": socket.region_id, "socket_id": socket.socket_id, "asset_id": socket.asset_id})
+			var choice := {"region_id": socket.region_id, "socket_id": socket.socket_id, "asset_id": socket.asset_id}
+			var turns: PackedInt32Array = socket.allowed_yaw_turns
+			if turns.size() > 1:
+				# SHA-256 is specified and independent of global RNG and collection order.
+				var key := JSON.stringify([map_seed, instance_id, String(parcel.parcel_id), String(socket.region_id), String(socket.socket_id), "parking_heading_v1"])
+				var index := posmod(key.sha256_text().substr(0, 8).hex_to_int(), turns.size())
+				choice.yaw_turns = turns[index]
+			choices.append(choice)
 	return {"choices": choices}
 
 static func _population_valid(regions: Array, sockets: Array[Dictionary], choices: Array) -> bool:
@@ -89,6 +96,9 @@ static func _population_valid(regions: Array, sockets: Array[Dictionary], choice
 			return false
 		var socket: Dictionary = socket_by_id[socket_id]
 		if StringName(choice.get("region_id", &"")) != socket.region_id or String(choice.get("asset_id", "")) != socket.asset_id:
+			return false
+		var yaw: Variant = choice.get("yaw_turns", 0)
+		if not (yaw is int or yaw is float) or float(yaw) != int(yaw) or not socket.allowed_yaw_turns.has(int(yaw)):
 			return false
 		used[socket_id] = true
 		counts[socket.region_id] = int(counts.get(socket.region_id, 0)) + 1
