@@ -60,12 +60,15 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 	var inverse := transform.affine_inverse()
 	for x in range(maxi(0, lower.x), mini(data.map_size.x, upper.x)):
 		for z in range(maxi(0, lower.y), mini(data.map_size.y, upper.y)):
-			var cell := data.get_cell(Vector3i(x, 0, z))
-			var point := inverse * (cell.world_position / unit + Vector3.UP * transform.origin.y)
-			if absf(point.x) >= dimensions.x * 0.5 + 0.5 or absf(point.z) >= dimensions.z * 0.5 + 0.5: continue
-			if round_volume and pow(maxf(absf(point.x) - 0.5, 0.0) / (dimensions.x * 0.5), 2) + pow(maxf(absf(point.z) - 0.5, 0.0) / (dimensions.z * 0.5), 2) > 1.0: continue
-			cell.can_stop = false
-			cell.cover_height = maxf(cell.cover_height, bounds.end.y * unit)
-			cell.cover_type = MapCellData.CoverType.FULL if cell.cover_height >= 1.2 * unit else MapCellData.CoverType.LOW
-			cell.walkable = cell.cover_type == MapCellData.CoverType.LOW
-			cell.blocks_line_of_sight = cell.cover_type == MapCellData.CoverType.FULL
+			for cell: MapCellData in data.columns.get(Vector2i(x, z), []):
+				var height := float(cell.grid_position.y)
+				if height < bounds.position.y - 0.001 or height >= bounds.end.y:
+					continue
+				var point := inverse * (cell.world_position / unit)
+				if absf(point.x) >= dimensions.x * 0.5 + 0.5 or absf(point.z) >= dimensions.z * 0.5 + 0.5: continue
+				if round_volume and pow(maxf(absf(point.x) - 0.5, 0.0) / (dimensions.x * 0.5), 2) + pow(maxf(absf(point.z) - 0.5, 0.0) / (dimensions.z * 0.5), 2) > 1.0: continue
+				cell.can_stop = false
+				cell.cover_height = maxf(cell.cover_height, (bounds.end.y - height) * unit)
+				cell.cover_type = MapCellData.CoverType.FULL if cell.cover_height >= 1.2 * unit else MapCellData.CoverType.LOW
+				cell.walkable = cell.cover_type == MapCellData.CoverType.LOW
+				cell.blocks_line_of_sight = cell.cover_type == MapCellData.CoverType.FULL

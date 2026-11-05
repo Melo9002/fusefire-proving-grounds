@@ -221,6 +221,10 @@ func _show_index(index: int) -> void:
 	if connection != null:
 		connection_text = "%s · cell %s · outward %s · width %d" % [connection.kind, connection.cell, connection.outward, connection.width]
 	metadata_label.text = "ID  %s\nRole  %s\nFootprint  %s\nRevision  %d\nService interface  %s" % [definition.parcel_id, definition.role, _size_label(definition.size), definition.revision, connection_text]
+	var surfaces: Dictionary = definition.population_surfaces(displayed_parcel)
+	for region in definition.population_regions(displayed_parcel):
+		var surface: Dictionary = surfaces.get(region.surface_id, {})
+		metadata_label.text += "\nPopulation  %s · %s · level %s · %s" % [region.region_id, region.surface_id, str(surface.get("level", "missing")), region.local_rect]
 	var failures: PackedStringArray = definition.validate()
 	validation_label.text = "VALID — registered scene and contracts agree" if failures.is_empty() else "INVALID — %s" % "; ".join(failures)
 	validation_label.modulate = Color("79d99b") if failures.is_empty() else Color("ff7a7a")

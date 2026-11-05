@@ -37,6 +37,10 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
 			continue
 		var validation := SlotContract.validate(slot, parcel)
+		var parcel_errors: PackedStringArray = parcel.validate()
+		if not parcel_errors.is_empty():
+			result.errors.append(_error("INVALID_PARCEL_CONTRACT", "%s: %s" % [slot.slot_id, "; ".join(parcel_errors)]))
+			continue
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
