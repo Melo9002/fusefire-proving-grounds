@@ -30,18 +30,18 @@ func _run() -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.relative = Vector2(10, 20)
 	rig._unhandled_input(motion)
-	check(is_equal_approx(rig.rotation_degrees.x, -39.0), "Dragging down gradually lowers pitch from 45 to 39 degrees")
+	check(is_equal_approx(rig.rotation_degrees.x, -51.0), "Dragging down gradually raises the view from 45 to 51 degrees")
 	check(is_equal_approx(rig.rotation_degrees.y, -3.0), "Horizontal middle drag retains yaw orbit")
 	check(camera.global_position.y > rig.global_position.y, "Low orbit remains above the focus plane")
 	var pitch := rig.rotation.x
 	rig._set_zoom(12.0)
 	check(is_equal_approx(rig.rotation.x, pitch), "Zoom preserves the manually chosen pitch")
-	motion.relative = Vector2(0, -10000)
+	motion.relative = Vector2(0, 10000)
 	rig._unhandled_input(motion)
-	check(is_equal_approx(rig.rotation_degrees.x, -88.0), "Upward drag stops short of the overhead singularity")
-	motion.relative.y = 10000
+	check(is_equal_approx(rig.rotation_degrees.x, -88.0), "Downward drag stops short of the overhead singularity")
+	motion.relative.y = -10000
 	rig._unhandled_input(motion)
-	check(is_equal_approx(rig.rotation_degrees.x, -2.0), "Downward drag cannot orbit below ground")
+	check(is_equal_approx(rig.rotation_degrees.x, -2.0), "Upward drag cannot orbit below ground")
 	press.pressed = false
 	rig._unhandled_input(press)
 	pitch = rig.rotation.x

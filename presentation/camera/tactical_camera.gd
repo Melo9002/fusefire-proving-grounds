@@ -248,7 +248,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(deg_to_rad(-event.relative.x * drag_sensitivity))
 		if not is_zero_approx(event.relative.y):
 			_manual_pitch = true
-			rotation.x = clampf(rotation.x + deg_to_rad(event.relative.y * drag_sensitivity), -deg_to_rad(maximum_pitch_degrees), -deg_to_rad(minimum_pitch_degrees))
+			rotation.x = clampf(rotation.x - deg_to_rad(event.relative.y * drag_sensitivity), -deg_to_rad(maximum_pitch_degrees), -deg_to_rad(minimum_pitch_degrees))
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
 		var point = _ground_point(event.position)
