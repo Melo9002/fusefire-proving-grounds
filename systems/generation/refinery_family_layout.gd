@@ -6,6 +6,7 @@ const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
 const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const DeploymentRepair = preload("res://systems/generation/authored_deployment_repair.gd")
 const SiteA = preload("res://art/environments/authored/plots/refinery_site_a.tscn")
 const SiteB = preload("res://art/environments/authored/plots/refinery_site_b.tscn")
 const SOURCE_KIND := "authored_refinery_family"
@@ -15,7 +16,7 @@ static func generate(seed: int, cell_size: float = 1.0, requested: Dictionary = 
 	return compile_resolved(resolved, seed, cell_size, SOURCE_KIND)
 
 static func compile_resolved(resolved: Dictionary, seed: int, cell_size: float, source_kind: String) -> MapData:
-	var data := FlatMapGenerator.generate(64, 64, cell_size, seed)
+	var data := FlatMapGenerator.generate(64, 64, cell_size, int(resolved.get("seed", seed)))
 	data.source_kind = source_kind
 	data.content_manifest = resolved.duplicate(true)
 	data.generation_errors.assign(resolved.get("errors", []))
@@ -31,6 +32,8 @@ static func compile_resolved(resolved: Dictionary, seed: int, cell_size: float, 
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
 		Compiler.compile(root, data, cell_size)
 		root.free()
+	if not DeploymentRepair.apply(data):
+		data.generation_errors.append({"code": "UNSATISFIABLE_DEPLOYMENT", "detail": "No connected stopping cells remain in a required deployment column"})
 	return data
 
 static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
