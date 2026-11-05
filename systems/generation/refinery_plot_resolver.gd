@@ -7,20 +7,31 @@ const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const SlotContract = preload("res://systems/generation/parcel_slot_contract.gd")
 
-static func resolve(seed: int, population_enabled: bool = true, requested: Dictionary = {}) -> Dictionary:
-	var plot := _resolve_plot(seed, requested)
+static func resolve(seed: int, population_enabled: bool = true, requested: Dictionary = {}, catalog = PlotCatalog) -> Dictionary:
+	var plot: Dictionary = catalog.get_definition(StringName(requested.plot_id)) if requested.has("plot_id") else catalog.choose(seed)
 	if plot.is_empty():
 		return _failure(seed, population_enabled, "UNKNOWN_PLOT", String(requested.get("plot_id", "")))
 	var result := {"schema": 1, "plot_id": plot.plot_id, "plot_revision": plot.revision, "map_size": plot.map_size, "seed": seed, "population_enabled": population_enabled, "placements": [], "errors": []}
+	if requested.has("plot_id"):
+		result.seed = int(requested.get("seed", seed))
+		if int(requested.get("schema", 0)) != 1 or requested.get("map_size") != plot.map_size:
+			result.errors.append(_error("UNSUPPORTED_MANIFEST", String(plot.plot_id)))
+			return result
 	if int(requested.get("plot_revision", plot.revision)) != int(plot.revision):
 		result.errors.append(_error("STALE_PLOT_REVISION", String(plot.plot_id)))
 		return result
 	var requested_placements: Dictionary = {}
 	for placement in requested.get("placements", []):
 		requested_placements[StringName(placement.get("slot_id", &""))] = placement
+	if requested.has("plot_id") and (not requested.has("placements") or requested_placements.size() != plot.slots.size() or requested.get("placements", []).size() != plot.slots.size()):
+		result.errors.append(_error("INVALID_RECORDED_SLOTS", String(plot.plot_id)))
+		return result
 	for slot_index in plot.slots.size():
 		var slot: Dictionary = plot.slots[slot_index]
 		var requested_placement: Dictionary = requested_placements.get(slot.slot_id, {})
+		if requested.has("plot_id") and (requested_placement.is_empty() or requested_placement.get("origin") != slot.origin or requested_placement.get("rotation") != slot.rotation):
+			result.errors.append(_error("INVALID_RECORDED_TRANSFORM", String(slot.slot_id)))
+			continue
 		var parcel = _parcel_for_slot(slot, seed, requested_placement)
 		if parcel == null:
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
@@ -40,6 +51,8 @@ static func _resolve_population(parcel, seed: int, slot_index: int, requested: D
 	var sockets: Array[Dictionary] = parcel.population_sockets()
 	var regions: Array = parcel.population_regions()
 	if sockets.is_empty():
+		if not requested.get("population", []).is_empty():
+			return {"error": "INVALID_POPULATION_CHOICES"}
 		return {"choices": []}
 	if not population_enabled:
 		if not requested.is_empty() and not requested.get("population", []).is_empty():
@@ -56,7 +69,8 @@ static func _resolve_population(parcel, seed: int, slot_index: int, requested: D
 		var candidates := sockets.filter(func(socket): return socket.region_id == region.region_id)
 		if candidates.size() < region.min_count or candidates.is_empty():
 			return {"error": "INSUFFICIENT_POPULATION_SOCKETS"}
-		var count: int = region.min_count + posmod(floori(seed / 2.0) + slot_index * 7 + region_index * 3, region.max_count - region.min_count + 1)
+		var maximum := mini(region.max_count, candidates.size())
+		var count: int = region.min_count + posmod(floori(seed / 2.0) + slot_index * 7 + region_index * 3, maximum - region.min_count + 1)
 		var start := posmod(seed + slot_index + region_index, candidates.size())
 		for offset in count:
 			var socket: Dictionary = candidates[(start + offset) % candidates.size()]

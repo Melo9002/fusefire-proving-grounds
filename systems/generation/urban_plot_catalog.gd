@@ -20,6 +20,13 @@ static func definition(id: StringName = STREET_A) -> Dictionary:
 static func all() -> Array[Dictionary]:
 	return [_street_definition(), _courtyard_definition()]
 
+static func get_definition(id: StringName) -> Dictionary:
+	return definition(id)
+
+static func choose(seed: int) -> Dictionary:
+	var plots := all()
+	return plots[posmod(seed, plots.size())].duplicate(true)
+
 static func _street_definition() -> Dictionary:
 	return {
 		"plot_id": STREET_A,

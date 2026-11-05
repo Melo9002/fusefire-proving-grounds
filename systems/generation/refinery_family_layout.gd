@@ -12,8 +12,11 @@ const SOURCE_KIND := "authored_refinery_family"
 
 static func generate(seed: int, cell_size: float = 1.0, requested: Dictionary = {}, population_enabled: bool = true) -> MapData:
 	var resolved := Resolver.resolve(seed, population_enabled, requested)
-	var data := FlatMapGenerator.generate(PlotCatalog.MAP_SIZE.x, PlotCatalog.MAP_SIZE.y, cell_size, seed)
-	data.source_kind = SOURCE_KIND
+	return compile_resolved(resolved, seed, cell_size, SOURCE_KIND)
+
+static func compile_resolved(resolved: Dictionary, seed: int, cell_size: float, source_kind: String) -> MapData:
+	var data := FlatMapGenerator.generate(64, 64, cell_size, seed)
+	data.source_kind = source_kind
 	data.content_manifest = resolved.duplicate(true)
 	data.generation_errors.assign(resolved.get("errors", []))
 	if not data.generation_errors.is_empty():
@@ -36,6 +39,12 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 		return false
 	var plot_scene: PackedScene = SiteA if StringName(resolved.plot_id) == PlotCatalog.SITE_A else SiteB if StringName(resolved.plot_id) == PlotCatalog.SITE_B else null
 	if plot_scene == null:
+		return false
+	return present_resolved(data, parent, cell_size, plot_scene)
+
+static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene) -> bool:
+	var resolved := data.content_manifest
+	if not Resolver.is_valid(resolved):
 		return false
 	var plot_root := plot_scene.instantiate() as Node3D
 	plot_root.scale = Vector3.ONE * cell_size

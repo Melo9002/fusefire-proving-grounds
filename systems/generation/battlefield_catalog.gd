@@ -9,11 +9,14 @@ const INDUSTRIAL_WAREHOUSE := &"industrial_warehouse"
 const REFINERY_2 := &"refinery_2"
 const LOADING_YARD := &"loading_yard"
 const REFINERY_FAMILY := &"refinery_family"
+const URBAN_FAMILY := &"urban_family"
+const UrbanFamilyLayoutData = preload("res://systems/generation/urban_family_layout.gd")
 const Refinery2LayoutData = preload("res://systems/generation/refinery_2_layout.gd")
 const LoadingYardLayoutData = preload("res://systems/generation/loading_yard_layout.gd")
 const RefineryFamilyLayoutData = preload("res://systems/generation/refinery_family_layout.gd")
 
 const DEFINITIONS := {
+	URBAN_FAMILY: {"label": "Generated authored parcels — Urban family (preview)", "source_kind": "authored_urban_family", "fixed_size": Vector2i(64, 64)},
 	GENERATED_COVER: {"label": "Generated cover", "source_kind": "generated_cover", "fixed_size": Vector2i.ZERO},
 	REFINERY: {"label": "Special — Refinery", "source_kind": "generated_refinery", "fixed_size": Vector2i(40, 30)},
 	INDUSTRIAL_WAREHOUSE: {"label": "Special — Industrial Warehouse", "source_kind": "generated_industrial_warehouse", "fixed_size": Vector2i(40, 30)},
@@ -47,6 +50,8 @@ static func resolve_legacy_id(refinery: bool, warehouse: bool, refinery_2: bool,
 static func generate(id: StringName, requested_size: Vector2i, seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
+		URBAN_FAMILY:
+			return UrbanFamilyLayoutData.generate(seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
 		REFINERY:
 			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, seed, 5, true, false)
 		INDUSTRIAL_WAREHOUSE:
@@ -63,6 +68,7 @@ static func generate(id: StringName, requested_size: Vector2i, seed: int, cell_s
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float) -> bool:
 	match data.source_kind:
+		"authored_urban_family": return UrbanFamilyLayoutData.present(data, parent, cell_size)
 		"authored_loading_yard": LoadingYardLayoutData.present(parent, cell_size)
 		"authored_refinery_2": Refinery2LayoutData.present(parent, cell_size)
 		"authored_refinery_family": return RefineryFamilyLayoutData.present(data, parent, cell_size)

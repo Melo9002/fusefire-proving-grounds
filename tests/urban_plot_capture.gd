@@ -3,6 +3,7 @@ extends SceneTree
 
 const PlotCatalog = preload("res://systems/generation/urban_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const UrbanFamilyLayout = preload("res://systems/generation/urban_family_layout.gd")
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -33,13 +34,11 @@ func _run() -> void:
 	sun.rotation_degrees = Vector3(-52, -34, 0)
 	sun.shadow_enabled = true
 	stage.add_child(sun)
-	var plot := PlotCatalog.definition()
-	stage.add_child(plot.scene.instantiate())
-	for slot: Dictionary in plot.slots:
-		var parcel = ParcelCatalog.candidates(slot.role, slot.size)[0]
-		var parcel_root: Node3D = parcel.instantiate()
-		parcel_root.transform = ParcelTransform.scene_transform(parcel.size, slot.origin, slot.rotation, plot.map_size)
-		stage.add_child(parcel_root)
+	var data := UrbanFamilyLayout.generate(16)
+	if not UrbanFamilyLayout.present(data, stage, 1.0):
+		push_error("Urban street runtime presentation failed")
+		quit(1)
+		return
 	var camera := Camera3D.new()
 	camera.current = true
 	camera.fov = 44
