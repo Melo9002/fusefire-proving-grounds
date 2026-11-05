@@ -1,6 +1,6 @@
 # FuseFire Generation 2.0: authored places, tactical population and composed maps
 
-Status: active product direction and implementation ledger, updated 2026-11-04. The [Current map architecture](current-map-architecture.md) describes the smaller production architecture. The XCOM 2 study below supports one part of Generation 2.0—composing authored plots and parcels—but does not define the whole system or FuseFire's tactical identity.
+Status: active product direction and implementation ledger, updated 2026-11-05. The [Current map architecture](current-map-architecture.md) describes the smaller production architecture. The XCOM 2 study below supports one part of Generation 2.0—composing authored plots and parcels—but does not define the whole system or FuseFire's tactical identity.
 
 ## Where we are
 
@@ -64,7 +64,41 @@ The initial contract should remain small and inspectable:
 - Exact accepted asset IDs, revisions and transforms recorded for replay; the seed alone is insufficient.
 - Explicit tactical effects compiled into `MapData`. A spawned visual mesh does not acquire cover, occupancy or LOS authority automatically.
 
-This restores the useful intent of Generator 1—designers decide *where* tactical variation is allowed and *what kind* belongs there—without restoring its unrestricted scatter logic. The first proof should use a few authored regions inside existing refinery parcels: depot container positions and parking/loading vehicle positions. General density painting or catalog-wide automatic placement is deferred until these prove useful.
+This restores the useful intent of Generator 1—designers decide *where* tactical variation is allowed and *what kind* belongs there—without restoring its unrestricted scatter logic. The first proof uses authored regions inside existing refinery parcels: depot container positions and parking/loading vehicle positions. The next authoring direction below extends this proven slice; painting and broader automatic placement are not implemented yet.
+
+### Population authoring direction — 2026-11-05
+
+Owner request: retain manual placement and allow the editor to mark or paint where particular tactical elements may spawn. Recommended initial workflow: select a floor, mark a bounded region, choose a curated population preset, set occupancy/count bounds, and preview a seed. A parking preset should place aligned bays/sockets with an aisle and protected approaches; a depot preset may use container sockets. Free painting suits permission and exclusion masks, while aligned objects still require authored placement geometry. Brush strokes must resolve against the selected tactical surface, not accidentally paint a roof above it. Show valid candidates, exclusions and rejected footprints; support erase and undo/redo.
+
+Use three placement modes in the same scene: fixed manual occupants, optional procedural sockets, and explicit empty/protected regions. Manual occupants and required access take priority. Accepted procedural objects need explicit tactical contracts and cannot overlap reserved approaches, structural supports or another floor's clearance. Population-off removes procedural occupants only. Preview choices and exact accepted placements should be inspectable before use in battle.
+
+One battle seed is enough. Derive independent random streams from a documented stable mixing function over the battle seed, plot/slot instance ID, region ID, socket ID and decision purpose (occupancy, asset, heading). These small streams are cheap; owners do not author individual parcel seeds. Stable identities, sorted candidates and bounded work keep a change in one region from unnecessarily rerolling every other region. Avoid runtime object IDs, collection order and unspecified string hashes. This is a proposed improvement: the current resolver still uses its simple seed/index arithmetic. Store accepted IDs, heading/transforms and content/algorithm revisions for reconstruction; the seed alone cannot preserve history after content changes.
+
+### Next proposed family: a multi-storey parking structure
+
+Use one fixed authored structure with a small number of floors and many population fields as the next focused content proof. A whole authored map is supported: it need not be partitioned just to exercise parcels. A reusable building may later become one parcel if its measured size and interfaces justify that choice. Measure real bays, aisle widths and travel distances before deciding the footprint; do not force a large garage into 32×32 or stretch assets to fill it.
+
+Author slabs, columns, perimeter walls/rails, entry/exit routes and vertical connections together. Start with two playable floors and two distinct ground-to-upper-floor approaches using supported stairs/ramps or traversal links. Driving simulation is unnecessary. A visible route must agree with authored movement, elevation, cover and LOS. Audit available assets and reusable components first; any missing structural content must be acknowledged and authored deliberately.
+
+Car fields represent real parking bays: each bay owns a supported vehicle envelope, nominal heading, floor, clearance and allowed car list. Deterministically choose empty/occupied, vehicle and forward/reverse parking (0°/180° relative to that bay). Preserve aisle access and align wheels with the supporting surface. Avoid unconstrained yaw or position jitter; small variation requires measured space. Wider vehicles require appropriate bays. Fixed owner-placed cars remain possible. Persist each accepted heading; compile its rotated tactical contract at the correct level. Current population records reference preauthored socket occupants and do not yet support choosing a heading/asset transform independently. Current region rectangles also have no floor field; explicit surface/elevation ownership is required before multi-floor painting.
+
+### Visibility and floor dependencies
+
+Owner direction: investigate a local camera cutaway around an occluded selected character, inspired by the supplied BG3 reference, together with Sims-like wall/floor hiding. This describes the desired result, not a verified account of either game's implementation. Existing FuseFire roof cutaways, terrain fading and inspected-floor selection are the starting points.
+
+Keep three presentation controls understandable: selected/inspected floor visibility, authored wall/roof cutaway groups, and a local aperture or dissolve through geometry between the camera and selected friendly character. Prototype the local aperture on one wall before choosing a shader or broader renderer change. Use soft transitions and restore materials when selection, camera or floor changes. Upper slabs may hide independently of their supporting columns; hiding a parent node must not erase every lower floor. Test low camera pitch, overhead, stairs between floors and action/replay cameras.
+
+Visual hiding must preserve MapData occupancy, LOS, cover, supports and traversal. A camera aperture must not reveal undiscovered enemies or create targeting permissions. Background scenery is separately owned and non-tactical, but may still obscure the selected character and need presentation-only fading. Floor membership must be authored explicitly rather than guessed from a node's height. Check visible floor edges, shadows, collision/raycast selection and HUD markers during cutaway review.
+
+### Small delivery steps
+
+1. Extend an existing parking region with forward/reverse bay choices and exact replay reconstruction; inspect a few seeds and population-off.
+2. Add floor/surface ownership to population data and a targeted editor region/bay tool with manual placement, erase and undo. Validate preservation through saving and reloading.
+3. Author a compact two-floor parking proof with two usable vertical approaches, before attempting a larger family or interchangeable structural floors.
+4. Test one wall aperture and upper-floor cutaway, including background occluders and selected-character visibility. Preserve tactical concealment.
+5. Combine parking population, deployment/objective reachability, mission/replay checks and owner camera/play review. Measure density and travel pacing before expanding the map.
+
+These are recorded product directions and proposed implementation steps. No parking family, painting tool or local aperture has been implemented or certified by this documentation change.
 
 ## Catwalk direction
 
