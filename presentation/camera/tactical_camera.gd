@@ -12,6 +12,8 @@ extends Node3D
 @export_range(0.0, 20.0, 0.1, "suffix:m") var map_margin: float = 2.0
 @export_range(10.0, 360.0, 1.0, "suffix:°/s") var rotation_speed: float = 90.0
 @export_range(0.01, 2.0, 0.01) var drag_sensitivity: float = 0.3
+@export_range(0.0, 30.0, 0.5) var minimum_pitch_degrees: float = 2.0
+@export_range(45.0, 89.0, 0.5) var maximum_pitch_degrees: float = 88.0
 @export_group("Zoom")
 @export_range(1.0, 80.0, 0.5, "suffix:m") var min_zoom: float = 4.0
 @export_range(1.0, 120.0, 0.5, "suffix:m") var max_zoom: float = 56.0
@@ -34,6 +36,7 @@ var _selection_focus_tween: Tween
 var _tactical_fov := 25.70093
 var _zoom: float = 42.0
 var _rotating: bool = false
+var _manual_pitch := false
 var _dragging := false
 var _drag_anchor := Vector3.ZERO
 var _cinematic_actor: TacticalUnit
@@ -217,7 +220,7 @@ func _restore_faded_occluders(still_faded: Dictionary) -> void:
 			_faded_occluders.erase(geometry)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _cinematic_active:
+	if _cinematic_active or _transitioning:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_F, KEY_HOME]:
 		focus_selected_unit()
@@ -243,6 +246,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _rotating:
 		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-event.relative.x * drag_sensitivity))
+		if not is_zero_approx(event.relative.y):
+			_manual_pitch = true
+			rotation.x = clampf(rotation.x + deg_to_rad(event.relative.y * drag_sensitivity), -deg_to_rad(maximum_pitch_degrees), -deg_to_rad(minimum_pitch_degrees))
+		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
 		var point = _ground_point(event.position)
 		if point != null:
@@ -512,7 +519,8 @@ func _set_zoom(value: float) -> void:
 		return
 	# Lower the viewing angle continuously inside the old closest zoom.
 	var close_blend := smoothstep(min_zoom, 20.0, _zoom)
-	rotation.x = deg_to_rad(lerpf(-12.0, -45.0, close_blend))
+	if not _manual_pitch:
+		rotation.x = deg_to_rad(lerpf(-12.0, -45.0, close_blend))
 	camera.position = Vector3(0.0, 0.0, _zoom)
 
 func _clamp_to_map() -> void:

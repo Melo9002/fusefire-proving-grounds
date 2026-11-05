@@ -88,6 +88,8 @@ A second urban proof should follow before generalizing the content model. Demons
 
 ### Urban proof progress
 
+Owner feedback (2026-11-04): the 64×64 previews feel too sparse for their size. Next composition work should fit more purposeful parcels within the current boundary and evaluate travel pacing before enlarging maps. Keep the courtyard catwalks for now; they suit the industrial/service setting better than ordinary urban streets. The new middle-mouse pitch control supports inspection from near ground level through overhead; comfort and sensitivity await owner play feedback.
+
 The first isolated 32×32 urban parcel is registered as `industrial_office_parking_a`. It uses the reviewed complete `city_kit_industrial/building-a` exterior shell, an explicit eight-cell street frontage and a curated `visitor_parking` region for sedan/SUV/taxi sockets. The building remains an inaccessible sealed shell; parking population can be removed without deleting the fixed frontage. Four-rotation tactical compilation passes, and overhead/front/rear/side captures confirm the actual facade and complete shell geometry.
 
 `urban_service_street_a` is the first fixed 64×64 plot foundation. It owns one five-cell east-west imported-asset road, exact adjacent interfaces for the office frontage plus existing process/storage parcels, four verified inward-facing streetlights and authored near/far continuation. Plot validation proves parcel/road non-overlap, interface adjacency, lamp-head orientation and valid tactical compilation; clean overhead/oblique/street captures were inspected.
