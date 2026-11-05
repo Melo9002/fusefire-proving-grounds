@@ -2,10 +2,10 @@ class_name GeneratedTerrainPresenter
 extends RefCounted
 
 const HILL_SKIRT_CLEARANCE := 0.015
-const BattlefieldCatalog = preload("res://systems/generation/battlefield_catalog.gd")
+const BattlefieldCatalogData = preload("res://systems/generation/battlefield_catalog.gd")
 
 static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
-	if BattlefieldCatalog.present_special(map_data, parent, cell_size):
+	if BattlefieldCatalogData.present_special(map_data, parent, cell_size):
 		return
 	if map_data.source_kind == "generated_refinery":
 		preload("res://systems/generation/refinery_presenter.gd").build(map_data, parent, cell_size)

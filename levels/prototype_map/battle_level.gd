@@ -9,7 +9,7 @@ const ReplayPlayerData := preload("res://systems/replay/battle_replay_player.gd"
 const ReplaySessionData := preload("res://systems/replay/battle_replay_session.gd")
 const ActionCameraDirectorData := preload("res://presentation/camera/action_camera_director.gd")
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
-const BattlefieldCatalog := preload("res://systems/generation/battlefield_catalog.gd")
+const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
@@ -35,7 +35,7 @@ var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
 var use_generated_map: bool = false
 var battlefield_preset: BattleConfigurationData.BattlefieldPreset = BattleConfigurationData.BattlefieldPreset.LEGACY
-var battlefield_id: StringName = BattlefieldCatalog.GENERATED_COVER
+var battlefield_id: StringName = BattlefieldCatalogData.GENERATED_COVER
 var battle_seed: int = 1
 var generation_seed: int = 1
 var generated_size := Vector2i(32, 24)
@@ -87,7 +87,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	_configuration_errors = config.validate_generation_selection()
 	battlefield_preset = config.battlefield_preset
 	battlefield_id = config.resolved_battlefield_id()
-	generated_size = BattlefieldCatalog.map_size(battlefield_id, config.map_size)
+	generated_size = BattlefieldCatalogData.map_size(battlefield_id, config.map_size)
 	player_unit_count = clampi(config.player_count, 1, 5)
 	enemy_unit_count = clampi(config.enemy_count, 1, 5)
 	allied_unit_count = clampi(config.ally_count, 0, 5)
@@ -192,7 +192,7 @@ func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
 	battle_initialization_progress.emit("Constructing tactical battlefield…", 0.28)
-	var generated_map := BattlefieldCatalog.generate(battlefield_id, generated_size, generation_seed, grid.cell_size, requested_content_manifest)
+	var generated_map := BattlefieldCatalogData.generate(battlefield_id, generated_size, generation_seed, grid.cell_size, requested_content_manifest)
 	active_generated_map = generated_map
 	_replay_configuration["content_manifest"] = generated_map.content_manifest.duplicate(true)
 	if not generated_map.generation_errors.is_empty():
@@ -206,7 +206,7 @@ func _initialize_generated_battle() -> void:
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size
 	grid.map_floor.size.z = generated_size.y * grid.cell_size
-	if battlefield_id == BattlefieldCatalog.REFINERY_2:
+	if battlefield_id == BattlefieldCatalogData.REFINERY_2:
 		var earth := StandardMaterial3D.new()
 		earth.albedo_color = Color("865b46")
 		earth.roughness = 0.9
@@ -227,7 +227,7 @@ func _initialize_generated_battle() -> void:
 	_spawn_generated_vip(generated_map)
 	_spawn_generated_team(enemy_unit_count, TacticalUnit.Faction.ENEMY, enemy_units_parent, generated_map)
 	var cover_counts := _count_cover(generated_map)
-	var generator_label := BattlefieldCatalog.label(battlefield_id).to_upper()
+	var generator_label := BattlefieldCatalogData.label(battlefield_id).to_upper()
 	print_rich("[color=cyan][MapGenerator][/color] %s — seed %d, %dx%d, %d low, %d full, %d building(s), %d platform(s), %d hill(s)" % [generator_label, generation_seed, generated_size.x, generated_size.y, cover_counts.x, cover_counts.y, generated_map.buildings.size(), generated_map.platforms.size(), generated_map.hills.size()])
 	battle_initialization_progress.emit("Validating tactical battlefield…", 0.82)
 	if await battle_controller.initialize_battle(generated_map, mission_definition):

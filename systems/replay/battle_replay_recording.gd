@@ -1,7 +1,7 @@
 class_name BattleReplayRecording
 extends RefCounted
 
-const BattlefieldCatalog := preload("res://systems/generation/battlefield_catalog.gd")
+const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
 const SIMULATION_VERSION := "prototype-1.5-action-pipeline"
@@ -119,7 +119,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"industrial_warehouse": bool(source.get("industrial_warehouse", false)),
 		"refinery_2": bool(source.get("refinery_2", false)),
 		"loading_yard": bool(source.get("loading_yard", false)),
-		"battlefield_id": String(source.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER)),
+		"battlefield_id": String(source.get("battlefield_id", BattlefieldCatalogData.GENERATED_COVER)),
 		"content_manifest": _manifest_to_data(source.get("content_manifest", {})),
 	}
 
@@ -155,7 +155,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"industrial_warehouse": bool(data.get("industrial_warehouse", false)),
 		"refinery_2": bool(data.get("refinery_2", false)),
 		"loading_yard": bool(data.get("loading_yard", false)),
-		"battlefield_id": String(data.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER)),
+		"battlefield_id": String(data.get("battlefield_id", BattlefieldCatalogData.GENERATED_COVER)),
 		"content_manifest": _manifest_from_data(data.get("content_manifest", {})),
 	}
 

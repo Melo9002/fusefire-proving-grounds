@@ -1,6 +1,6 @@
 class_name LoadingYardLayout
 extends RefCounted
-const AuthoredSceneMapCompiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const SceneMapCompiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const SIZE := Vector2i(40, 48)
 const PARCEL_SIZE := Vector2i(16, 32)
@@ -25,13 +25,13 @@ static func generate(map_seed: int, unit: float = 1.0, turn: int = 0) -> MapData
 	if not failures.is_empty(): push_error("Loading Yard contract invalid: " + "; ".join(failures))
 	var parcel: Node3D = parcel_definition().instantiate()
 	parcel.transform = pose(turn)
-	AuthoredSceneMapCompiler.compile(parcel, data, unit)
+	SceneMapCompiler.compile(parcel, data, unit)
 	parcel.free()
 	return data
 
 static func pose(turn: int) -> Transform3D:
 	var size := ParcelTransform.rotated_size(PARCEL_SIZE, turn)
-	var origin := Vector3i((SIZE.x - size.x) / 2, 0, (SIZE.y - size.y) / 2)
+	var origin := Vector3i(floori(float(SIZE.x - size.x) / 2.0), 0, floori(float(SIZE.y - size.y) / 2.0))
 	return ParcelTransform.scene_transform(PARCEL_SIZE, origin, turn, SIZE)
 
 static func present(parent: Node3D, unit: float) -> void:

@@ -48,8 +48,8 @@ func validate() -> PackedStringArray:
 			break
 	if not rotations_valid:
 		failures.append("INVALID_ALLOWED_ROTATIONS")
-	var connection := ParcelConnection.from_scene(root)
-	var connection_error := connection.validate(size)
+	var access_connection := ParcelConnection.from_scene(root)
+	var connection_error := access_connection.validate(size)
 	if not connection_error.is_empty():
 		failures.append("INVALID_CONNECTION: " + connection_error)
 	if asset_ids(root).is_empty():

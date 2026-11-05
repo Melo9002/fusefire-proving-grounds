@@ -437,8 +437,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_pitch = clampf(_pitch - event.relative.y * 0.008, deg_to_rad(8.0), deg_to_rad(89.0))
 			_update_camera()
 		elif _panning:
-			var scale := _distance * 0.0018
+			var pan_scale := _distance * 0.0018
 			var right := camera.global_basis.x
 			var forward := Vector3(camera.global_basis.z.x, 0, camera.global_basis.z.z).normalized()
-			_camera_target += right * -event.relative.x * scale + forward * -event.relative.y * scale
+			_camera_target += right * -event.relative.x * pan_scale + forward * -event.relative.y * pan_scale
 			_update_camera()

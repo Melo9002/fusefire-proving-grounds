@@ -97,8 +97,8 @@ func _build_authoring_tools() -> void:
 
 func _add_battlefield_option(id: StringName) -> void:
 	var definition := BattlefieldCatalogData.definition(id)
-	var size: Vector2i = definition.fixed_size
-	map_size_option.add_item("%s (%d × %d)" % [definition.label, size.x, size.y])
+	var battlefield_size: Vector2i = definition.fixed_size
+	map_size_option.add_item("%s (%d × %d)" % [definition.label, battlefield_size.x, battlefield_size.y])
 	map_size_option.set_item_metadata(map_size_option.item_count - 1, id)
 
 func _selected_battlefield_id() -> StringName:

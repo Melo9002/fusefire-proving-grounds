@@ -18,9 +18,9 @@ static func get_definition(plot_id: StringName) -> Dictionary:
 			return definition.duplicate(true)
 	return {}
 
-static func choose(seed: int) -> Dictionary:
+static func choose(map_seed: int) -> Dictionary:
 	var definitions := all()
-	return definitions[posmod(seed, definitions.size())].duplicate(true)
+	return definitions[posmod(map_seed, definitions.size())].duplicate(true)
 
 static func _slot(id: StringName, role: StringName, size: Vector2i, origin: Vector3i, rotation: int, cell: Vector3i, outward: Vector2i, width: int) -> Dictionary:
 	return {

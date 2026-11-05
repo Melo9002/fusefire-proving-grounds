@@ -54,6 +54,6 @@ static func candidates(role: StringName, size: Vector2i) -> Array:
 
 ## Stable bounded choice for the pilot. Resolved plot records will store the
 ## selected ID and revision; replay must not rely on this algorithm forever.
-static func choose(role: StringName, size: Vector2i, seed: int):
+static func choose(role: StringName, size: Vector2i, map_seed: int):
 	var supported := candidates(role, size)
-	return supported[posmod(seed, supported.size())] if not supported.is_empty() else null
+	return supported[posmod(map_seed, supported.size())] if not supported.is_empty() else null

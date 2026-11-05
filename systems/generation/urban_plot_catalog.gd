@@ -23,9 +23,9 @@ static func all() -> Array[Dictionary]:
 static func get_definition(id: StringName) -> Dictionary:
 	return definition(id)
 
-static func choose(seed: int) -> Dictionary:
+static func choose(map_seed: int) -> Dictionary:
 	var plots := all()
-	return plots[posmod(seed, plots.size())].duplicate(true)
+	return plots[posmod(map_seed, plots.size())].duplicate(true)
 
 static func _street_definition() -> Dictionary:
 	return {

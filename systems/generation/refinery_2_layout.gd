@@ -1,7 +1,7 @@
 class_name Refinery2Layout
 extends RefCounted
 
-const AuthoredSceneMapCompiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const SceneMapCompiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 
 ## One authored environment. Scene transforms and explicit tactical volumes are
 ## the source of truth; no asset calibration, recipe search or random scattering.
@@ -14,7 +14,7 @@ static func generate(map_seed: int, cell_size: float = 1.0) -> MapData:
 	var data := FlatMapGenerator.generate(dimensions.x, dimensions.y, cell_size, map_seed)
 	data.source_kind = SOURCE_KIND
 	data.zones.clear()
-	AuthoredSceneMapCompiler.compile(scene, data, cell_size)
+	SceneMapCompiler.compile(scene, data, cell_size)
 	scene.free()
 	return data
 

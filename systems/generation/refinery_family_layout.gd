@@ -11,12 +11,12 @@ const SiteA = preload("res://art/environments/authored/plots/refinery_site_a.tsc
 const SiteB = preload("res://art/environments/authored/plots/refinery_site_b.tscn")
 const SOURCE_KIND := "authored_refinery_family"
 
-static func generate(seed: int, cell_size: float = 1.0, requested: Dictionary = {}, population_enabled: bool = true) -> MapData:
-	var resolved := Resolver.resolve(seed, population_enabled, requested)
-	return compile_resolved(resolved, seed, cell_size, SOURCE_KIND)
+static func generate(map_seed: int, cell_size: float = 1.0, requested: Dictionary = {}, population_enabled: bool = true) -> MapData:
+	var resolved := Resolver.resolve(map_seed, population_enabled, requested)
+	return compile_resolved(resolved, map_seed, cell_size, SOURCE_KIND)
 
-static func compile_resolved(resolved: Dictionary, seed: int, cell_size: float, source_kind: String) -> MapData:
-	var data := FlatMapGenerator.generate(64, 64, cell_size, int(resolved.get("seed", seed)))
+static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String) -> MapData:
+	var data := FlatMapGenerator.generate(64, 64, cell_size, int(resolved.get("seed", map_seed)))
 	data.source_kind = source_kind
 	data.content_manifest = resolved.duplicate(true)
 	data.generation_errors.assign(resolved.get("errors", []))

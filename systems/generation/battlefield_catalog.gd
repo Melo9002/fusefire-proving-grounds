@@ -47,23 +47,23 @@ static func resolve_legacy_id(refinery: bool, warehouse: bool, refinery_2: bool,
 	if refinery: return REFINERY
 	return GENERATED_COVER
 
-static func generate(id: StringName, requested_size: Vector2i, seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
+static func generate(id: StringName, requested_size: Vector2i, map_seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
 		URBAN_FAMILY:
-			return UrbanFamilyLayoutData.generate(seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
+			return UrbanFamilyLayoutData.generate(map_seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
 		REFINERY:
-			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, seed, 5, true, false)
+			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, map_seed, 5, true, false)
 		INDUSTRIAL_WAREHOUSE:
-			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, seed, 5, false, true)
+			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, map_seed, 5, false, true)
 		REFINERY_2:
-			return Refinery2LayoutData.generate(seed, cell_size)
+			return Refinery2LayoutData.generate(map_seed, cell_size)
 		LOADING_YARD:
-			return LoadingYardLayoutData.generate(seed, cell_size)
+			return LoadingYardLayoutData.generate(map_seed, cell_size)
 		REFINERY_FAMILY:
-			return RefineryFamilyLayoutData.generate(seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
+			return RefineryFamilyLayoutData.generate(map_seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
 		_:
-			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, seed)
+			return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, map_seed)
 
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float) -> bool:
