@@ -159,9 +159,24 @@ func _collect_population_sockets(node: Node, result: Array[Dictionary], parent_t
 	if node is Node3D and not is_root:
 		local_transform *= node.transform
 	if node.has_meta("population_socket_id"):
-		result.append({"socket_id": StringName(node.get_meta("population_socket_id")), "region_id": StringName(node.get_meta("population_region_id", &"")), "asset_id": String(node.get_meta("asset_id", "")), "allowed_yaw_turns": node.get_meta("population_yaw_turns", PackedInt32Array([0])), "surface_id": StringName(node.get_meta("population_surface_id", &"ground")), "local_position": local_transform.origin})
+		result.append({"socket_id": StringName(node.get_meta("population_socket_id")), "region_id": StringName(node.get_meta("population_region_id", &"")), "asset_id": String(node.get_meta("asset_id", "")), "allowed_yaw_turns": node.get_meta("population_yaw_turns", PackedInt32Array([0])), "surface_id": StringName(node.get_meta("population_surface_id", &"ground")), "local_position": local_transform.origin, "local_bounds": _population_bounds(node, local_transform)})
 	for child in node.get_children():
 		_collect_population_sockets(child, result, local_transform)
+
+func _population_bounds(node: Node, socket_transform: Transform3D) -> AABB:
+	var volumes: Array[AABB] = []
+	_collect_population_bounds(node, socket_transform, volumes)
+	var bounds := AABB(socket_transform.origin, Vector3.ZERO)
+	for volume in volumes:
+		bounds = volume if bounds.size == Vector3.ZERO else bounds.merge(volume)
+	return bounds
+
+func _collect_population_bounds(node: Node, transform: Transform3D, volumes: Array[AABB]) -> void:
+	if node.has_meta("solid_size"):
+		var dimensions: Vector3 = node.get_meta("solid_size")
+		volumes.append(transform * AABB(-dimensions * 0.5, dimensions))
+	for child in node.get_children():
+		_collect_population_bounds(child, transform * child.transform if child is Node3D else transform, volumes)
 
 ## Ground is implicit for historical parcels. Elevated population surfaces must
 ## reference explicit deck cells compiled by AuthoredSceneMapCompiler.

@@ -25,6 +25,17 @@ func _run() -> void:
 	editor.population_toggle.button_pressed = false
 	editor.tactical_toggle.button_pressed = false
 	await _capture(output.path_join("parcel-editor-loading-fixed-assembly.png"))
+	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
+	editor._top_view()
+	editor.field_panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
+	editor.field_panel.session.add("ground", "protected", Rect2i(4, 5, 5, 6))
+	editor.field_panel.refresh()
+	editor.field_panel.density.value = 100
+	editor.field_panel.preview()
+	await process_frame
+	var scroll := editor.field_panel.get_parent().get_parent() as ScrollContainer
+	scroll.ensure_control_visible(editor.field_panel)
+	await _capture(output.path_join("parcel-editor-parking-fields.png"))
 	print("Parcel Editor captures saved to " + output)
 	quit()
 

@@ -5,6 +5,8 @@ extends Node3D
 
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
+const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
+var field_panel
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -73,9 +75,14 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_right", 16)
 	margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(margin)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(358, 600)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margin.add_child(scroll)
 	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 10)
-	margin.add_child(column)
+	scroll.add_child(column)
 	var title := Label.new()
 	title.text = "FUSEFIRE / PARCEL EDITOR"
 	title.add_theme_font_size_override("font_size", 22)
@@ -180,6 +187,9 @@ func _build_ui() -> void:
 	help.modulate = Color(0.62, 0.7, 0.78)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(help)
+	field_panel = FieldPanel.new()
+	field_panel.setup(self)
+	column.add_child(field_panel)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
@@ -232,6 +242,7 @@ func _show_index(index: int) -> void:
 	population_toggle.disabled = definition.population_sockets().is_empty()
 	set_population_visible(true)
 	draft.begin(definition, displayed_parcel)
+	field_panel.begin(definition, displayed_parcel)
 	_refresh_placement_picker()
 	_update_draft_status("Source parcel loaded; runtime content is unchanged.")
 	_frame()
@@ -414,6 +425,9 @@ func _update_camera() -> void:
 	camera.look_at(_camera_target)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if field_panel != null and field_panel.handle_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed:
 		if event.ctrl_pressed and event.keycode == KEY_Z:
 			_undo()
