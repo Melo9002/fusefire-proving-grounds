@@ -1,5 +1,5 @@
 extends SceneTree
-## Full tactical/replay proof for one resolved refinery-family battlefield.
+## Full tactical/replay proof for a representative authored battlefield.
 
 const Catalog = preload("res://systems/generation/battlefield_catalog.gd")
 const Layout = preload("res://systems/generation/refinery_family_layout.gd")
@@ -12,25 +12,30 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	if OS.get_cmdline_user_args().has("urban"):
+	var args := OS.get_cmdline_user_args()
+	if args.has("urban"):
 		family_id = Catalog.URBAN_FAMILY
 		family_layout = load("res://systems/generation/urban_family_layout.gd")
 		family_plots = load("res://systems/generation/urban_plot_catalog.gd")
-	if OS.get_cmdline_user_args().has("garage"):
+	elif args.has("garage"):
 		family_id = Catalog.PARKING_GARAGE
 		family_layout = load("res://systems/generation/parking_garage_layout.gd")
 		family_plots = family_layout
+	elif args.has("authored"):
+		family_id = Catalog.REFINERY_2
+		family_layout = load("res://systems/generation/refinery_2_layout.gd")
+		family_plots = null
 	var previous_time_scale := Engine.time_scale
 	Engine.time_scale = 16.0
 	var passed := true
-	for seed in [16, 17]:
-		passed = await _run_seed(seed) and passed
+	for seed in ([16, 17] if family_plots else [16]):
+		passed = await _run_seed(seed, args.has("disk"), not args.has("empty")) and passed
 	Engine.time_scale = previous_time_scale
 	print("%s AI matrix: %s" % [family_id, "PASSED" if passed else "FAILED"])
 	if not passed: push_error("%s tactical/replay matrix failed" % family_id)
 	quit(0 if passed else 1)
 
-func _run_seed(seed: int) -> bool:
+func _run_seed(seed: int, disk_round_trip: bool, population_enabled: bool) -> bool:
 	var simulator := AIMatchSimulator.new()
 	root.add_child(simulator)
 	var result := await simulator.run_match({
@@ -40,6 +45,7 @@ func _run_seed(seed: int) -> bool:
 		"enemy_count": 3,
 		"map_size": Vector2i(64, 64),
 		"battlefield_id": family_id,
+		"content_manifest": {"population_enabled": population_enabled} if family_plots else {},
 		"difficulty": AIDifficultyPolicy.Tier.NORMAL,
 		"maximum_rounds": 24,
 		"stall_seconds": 6.0,
@@ -52,8 +58,22 @@ func _run_seed(seed: int) -> bool:
 	var recording = BattleReplaySession.last_recording
 	var recorded_manifest: Dictionary = recording.configuration.get("content_manifest", {}) if recording else {}
 	passed = passed and recording != null and StringName(recording.configuration.get("battlefield_id", "")) == family_id
-	var recorded_plot: Dictionary = family_plots.get_definition(StringName(recorded_manifest.get("plot_id", &"")))
-	passed = passed and not recorded_plot.is_empty() and recorded_manifest.placements.size() == recorded_plot.slots.size()
+	if family_plots:
+		var recorded_plot: Dictionary = family_plots.get_definition(StringName(recorded_manifest.get("plot_id", &"")))
+		passed = passed and not recorded_plot.is_empty() and recorded_manifest.placements.size() == recorded_plot.slots.size()
+		passed = passed and recorded_manifest.get("population_enabled") == population_enabled
+	if recording and disk_round_trip:
+		var directory := "res://artifacts/generation-acceptance"
+		var path := "%s/%s-%d-%s.replay.json" % [directory, family_id, seed, "populated" if population_enabled else "empty"]
+		var folder_status := DirAccess.make_dir_recursive_absolute(directory)
+		var save_status := BattleReplaySession.save_last(path) if folder_status == OK else folder_status
+		if save_status == OK:
+			recording = BattleReplaySession.load_recording(path)
+			passed = passed and recording.is_playable() and recording.configuration.content_manifest == recorded_manifest
+			print("Saved and reopened replay at %s" % path)
+		else:
+			push_error("Replay save failed for %s: %s" % [path, error_string(save_status)])
+			passed = false
 	if recording:
 		var replay := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 		replay.configure_replay(recording)

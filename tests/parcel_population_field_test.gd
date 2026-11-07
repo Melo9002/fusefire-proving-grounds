@@ -186,7 +186,7 @@ func _check_export(editor) -> void:
 	var car := scene_root.get_node_or_null("Car_row_bay_ground_13_6") as Node3D
 	check(car != null and car.get_node_or_null("Visual") != null and car.get_node_or_null("TacticalVolume") != null, "Export preserves the calibrated imported scene and tactical volume")
 	scene_root.free()
-	var resolved := Resolver._resolve_population(exported, 18, 0, {}, true, "export-test")
+	var resolved := Resolver._resolve_population(exported, 18, {}, true, "export-test")
 	check(not resolved.has("error") and resolved.choices.any(func(choice): return String(choice.socket_id).begins_with("row_bay_")), "Existing runtime population resolver accepts exported bays")
 	var recording := Recording.new()
 	recording.configuration = {"content_manifest": {"plot_id": &"export_test", "plot_revision": 1, "map_size": Vector2i(32, 32), "placements": [{"slot_id": &"office", "parcel_id": exported.parcel_id, "parcel_revision": 1, "origin": Vector3i.ZERO, "rotation": 0, "population": resolved.choices}]}}

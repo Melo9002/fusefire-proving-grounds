@@ -171,7 +171,10 @@ static func _manifest_to_data(manifest: Dictionary) -> Dictionary:
 			if choice.has("yaw_turns"):
 				population[-1].yaw_turns = choice.yaw_turns
 		placements.append({"slot_id": String(placement.get("slot_id", "")), "parcel_id": String(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": [origin.x, origin.y, origin.z], "rotation": int(placement.get("rotation", 0)), "population": population})
-	return {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
+	var result := {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
+	if manifest.has("compiler_revision"):
+		result.compiler_revision = manifest.compiler_revision
+	return result
 
 static func _manifest_from_data(manifest: Variant) -> Dictionary:
 	if not manifest is Dictionary or manifest.is_empty(): return {}
@@ -186,7 +189,11 @@ static func _manifest_from_data(manifest: Variant) -> Dictionary:
 				var yaw: Variant = choice.yaw_turns
 				population[-1].yaw_turns = int(yaw) if (yaw is int or yaw is float) and float(yaw) == int(yaw) else yaw
 		placements.append({"slot_id": StringName(placement.get("slot_id", "")), "parcel_id": StringName(placement.get("parcel_id", "")), "parcel_revision": int(placement.get("parcel_revision", 0)), "origin": Vector3i(int(raw_origin[0]), int(raw_origin[1]), int(raw_origin[2])), "rotation": int(placement.get("rotation", 0)), "population": population})
-	return {"schema": int(manifest.get("schema", 1)), "plot_id": StringName(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": Vector2i(int(raw_size[0]), int(raw_size[1])), "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements, "errors": []}
+	var result := {"schema": int(manifest.get("schema", 1)), "plot_id": StringName(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": Vector2i(int(raw_size[0]), int(raw_size[1])), "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements, "errors": []}
+	if manifest.has("compiler_revision"):
+		var revision: Variant = manifest.compiler_revision
+		result.compiler_revision = int(revision) if revision is float and revision == int(revision) else revision
+	return result
 
 static func _string_array(values: Variant) -> Array[String]:
 	var result: Array[String] = []

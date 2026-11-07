@@ -15,10 +15,16 @@ func _initialize() -> void:
 func _run() -> void:
 	var previous_time_scale := Engine.time_scale
 	Engine.time_scale = 16.0
-	var garage := OS.get_cmdline_user_args().has("garage")
-	var battlefield_id := Catalog.PARKING_GARAGE if garage else Catalog.REFINERY_FAMILY
+	var args := OS.get_cmdline_user_args()
+	var battlefield_id := Catalog.REFINERY_FAMILY
+	var cases := CASES
+	if args.has("garage"):
+		battlefield_id = Catalog.PARKING_GARAGE
+		cases = [{"label": "Garage rescue", "seed": 17, "mission": MissionObjectiveDefinition.Kind.RESCUE, "allies": 1}]
+	elif args.has("urban"):
+		battlefield_id = Catalog.URBAN_FAMILY
+		cases = [{"label": "Courtyard rescue", "seed": 17, "mission": MissionObjectiveDefinition.Kind.RESCUE, "allies": 1}]
 	var expected_source: String = Catalog.definition(battlefield_id).source_kind
-	var cases := [{"label": "Garage rescue", "seed": 17, "mission": MissionObjectiveDefinition.Kind.RESCUE, "allies": 1}] if garage else CASES
 	var passed := true
 	for test_case: Dictionary in cases:
 		var simulator := AIMatchSimulator.new()
@@ -40,7 +46,7 @@ func _run() -> void:
 			and result.validation_errors.is_empty() \
 			and result.decision_count > 0 \
 			and result.status == AIMatchSimulationResult.Status.COMPLETED
-		if garage:
+		if battlefield_id != Catalog.REFINERY_FAMILY:
 			case_passed = case_passed and result.battle_result == TurnManager.BattleResult.VICTORY
 		passed = case_passed and passed
 		print("Mission %s: %s — %s" % [test_case.label, "PASSED" if case_passed else "FAILED", result.summary()])

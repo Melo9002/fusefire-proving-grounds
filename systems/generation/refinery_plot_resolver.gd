@@ -6,16 +6,24 @@ extends RefCounted
 const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const SlotContract = preload("res://systems/generation/parcel_slot_contract.gd")
+## Bump if the shared authored compilation or deployment repair changes
+## the tactical result for an unchanged exact manifest.
+const COMPILER_REVISION := 1
+const LEGACY_COMPILER_REVISION := 1
 
 static func resolve(map_seed: int, population_enabled: bool = true, requested: Dictionary = {}, catalog = PlotCatalog) -> Dictionary:
 	var plot: Dictionary = catalog.get_definition(StringName(requested.plot_id)) if requested.has("plot_id") else catalog.choose(map_seed)
 	if plot.is_empty():
 		return _failure(map_seed, population_enabled, "UNKNOWN_PLOT", String(requested.get("plot_id", "")))
-	var result := {"schema": 1, "plot_id": plot.plot_id, "plot_revision": plot.revision, "map_size": plot.map_size, "seed": map_seed, "population_enabled": population_enabled, "placements": [], "errors": []}
+	var result := {"schema": 1, "compiler_revision": COMPILER_REVISION, "plot_id": plot.plot_id, "plot_revision": plot.revision, "map_size": plot.map_size, "seed": map_seed, "population_enabled": population_enabled, "placements": [], "errors": []}
 	if requested.has("plot_id"):
 		result.seed = int(requested.get("seed", map_seed))
 		if int(requested.get("schema", 0)) != 1 or requested.get("map_size") != plot.map_size:
 			result.errors.append(_error("UNSUPPORTED_MANIFEST", String(plot.plot_id)))
+			return result
+		var revision: Variant = requested.get("compiler_revision", LEGACY_COMPILER_REVISION)
+		if not (revision is int or revision is float) or revision != COMPILER_REVISION:
+			result.errors.append(_error("UNSUPPORTED_COMPILER_REVISION", "%s requires %s; this build compiles revision %d" % [plot.plot_id, revision, COMPILER_REVISION]))
 			return result
 	if int(requested.get("plot_revision", plot.revision)) != int(plot.revision):
 		result.errors.append(_error("STALE_PLOT_REVISION", String(plot.plot_id)))
@@ -30,8 +38,20 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 	if requested.has("plot_id") and (not requested.has("placements") or requested_placements.size() != plot.slots.size() or requested.get("placements", []).size() != plot.slots.size()):
 		result.errors.append(_error("INVALID_RECORDED_SLOTS", String(plot.plot_id)))
 		return result
-	for slot_index in plot.slots.size():
-		var slot: Dictionary = plot.slots[slot_index]
+	var slots: Array = plot.slots
+	if requested.has("plot_id"):
+		# Preserve compile order as well as choices for an exact replay.
+		var slots_by_id := {}
+		for slot: Dictionary in slots:
+			slots_by_id[slot.slot_id] = slot
+		slots = []
+		for placement: Dictionary in requested.placements:
+			var slot_id := StringName(placement.get("slot_id", &""))
+			if not slots_by_id.has(slot_id):
+				result.errors.append(_error("INVALID_RECORDED_SLOTS", "%s/%s" % [plot.plot_id, slot_id]))
+				return result
+			slots.append(slots_by_id[slot_id])
+	for slot: Dictionary in slots:
 		var requested_placement: Dictionary = requested_placements.get(slot.slot_id, {})
 		if requested.has("plot_id") and (requested_placement.is_empty() or requested_placement.get("origin") != slot.origin or requested_placement.get("rotation") != slot.rotation):
 			result.errors.append(_error("INVALID_RECORDED_TRANSFORM", String(slot.slot_id)))
@@ -53,14 +73,14 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 		if not approach_error.is_empty():
 			result.errors.append(approach_error)
 			continue
-		var population := _resolve_population(parcel, map_seed, slot_index, requested_placement, population_enabled, "%s/%s" % [plot.plot_id, slot.slot_id])
+		var population := _resolve_population(parcel, map_seed, requested_placement, population_enabled, "%s/%s" % [plot.plot_id, slot.slot_id])
 		if population.has("error"):
 			result.errors.append(_error(String(population.error), "%s/%s" % [plot.plot_id, slot.slot_id]))
 			continue
 		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation, "population": population.choices})
 	return result
 
-static func _resolve_population(parcel, map_seed: int, slot_index: int, requested: Dictionary, population_enabled: bool, instance_id: String = "") -> Dictionary:
+static func _resolve_population(parcel, map_seed: int, requested: Dictionary, population_enabled: bool, instance_id: String) -> Dictionary:
 	var sockets: Array[Dictionary] = parcel.population_sockets()
 	var regions: Array = parcel.population_regions()
 	if sockets.is_empty():
@@ -77,25 +97,33 @@ static func _resolve_population(parcel, map_seed: int, slot_index: int, requeste
 		var recorded_choices: Array = requested.population
 		return {"choices": recorded_choices.duplicate(true)} if _population_valid(regions, sockets, recorded_choices) else {"error": "INVALID_POPULATION_CHOICES"}
 	var choices: Array[Dictionary] = []
-	for region_index in regions.size():
-		var region = regions[region_index]
+	regions.sort_custom(func(a, b): return String(a.region_id) < String(b.region_id))
+	for region in regions:
 		var candidates := sockets.filter(func(socket): return socket.region_id == region.region_id)
 		if candidates.size() < region.min_count or candidates.is_empty():
 			return {"error": "INSUFFICIENT_POPULATION_SOCKETS"}
 		var maximum := mini(region.max_count, candidates.size())
-		var count: int = region.min_count + posmod(floori(map_seed / 2.0) + slot_index * 7 + region_index * 3, maximum - region.min_count + 1)
-		var start := posmod(map_seed + slot_index + region_index, candidates.size())
-		for offset in count:
-			var socket: Dictionary = candidates[(start + offset) % candidates.size()]
+		var scope := [map_seed, instance_id, String(parcel.parcel_id), String(region.region_id)]
+		var count: int = region.min_count + _stable_roll(scope + ["population_count_v1"]) % (maximum - region.min_count + 1)
+		var ranks := {}
+		for candidate in candidates:
+			ranks[candidate.socket_id] = _stable_roll(scope + [String(candidate.socket_id), "population_socket_v1"])
+		candidates.sort_custom(func(a, b):
+			if ranks[a.socket_id] == ranks[b.socket_id]:
+				return String(a.socket_id) < String(b.socket_id)
+			return ranks[a.socket_id] < ranks[b.socket_id])
+		for index in count:
+			var socket: Dictionary = candidates[index]
 			var choice := {"region_id": socket.region_id, "socket_id": socket.socket_id, "asset_id": socket.asset_id}
 			var turns: PackedInt32Array = socket.allowed_yaw_turns
 			if turns.size() > 1:
-				# SHA-256 is specified and independent of global RNG and collection order.
-				var key := JSON.stringify([map_seed, instance_id, String(parcel.parcel_id), String(socket.region_id), String(socket.socket_id), "parking_heading_v1"])
-				var index := posmod(key.sha256_text().substr(0, 8).hex_to_int(), turns.size())
-				choice.yaw_turns = turns[index]
+				var heading := _stable_roll(scope + [String(socket.socket_id), "parking_heading_v1"]) % turns.size()
+				choice.yaw_turns = turns[heading]
 			choices.append(choice)
 	return {"choices": choices}
+
+static func _stable_roll(key: Array) -> int:
+	return JSON.stringify(key).sha256_text().substr(0, 8).hex_to_int()
 
 static func _population_valid(regions: Array, sockets: Array[Dictionary], choices: Array) -> bool:
 	var socket_by_id := {}

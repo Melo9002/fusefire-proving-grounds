@@ -62,6 +62,9 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.refinery_2 = config.get("refinery_2", false)
 	battle_config.loading_yard = config.get("loading_yard", false)
 	battle_config.battlefield_id = StringName(config.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER))
+	if config.has("content_manifest"):
+		battle_config.content_manifest = config.content_manifest.duplicate(true)
+		result.configuration.content_manifest = _serializable_value(battle_config.content_manifest)
 	level.configure_battle(battle_config)
 	add_child(level)
 	var setup_deadline := Time.get_ticks_msec() + 10000

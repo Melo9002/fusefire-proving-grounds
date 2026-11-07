@@ -17,6 +17,7 @@ position = Vector3(0.000000, -0.110000, 0.000000)
 mesh = SubResource("b1")
 
 [node name="Body" type="StaticBody3D" parent="."]
+collision_layer = 3
 
 
 [node name="Collision" type="CollisionShape3D" parent="Body"]
