@@ -1,6 +1,9 @@
 extends SceneTree
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
+const Recording = preload("res://systems/replay/battle_replay_recording.gd")
+const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 var failures := 0
 
 func _initialize() -> void:
@@ -126,6 +129,7 @@ func _run() -> void:
 	panel.density.value = 0
 	panel.preview()
 	check(not is_instance_valid(panel._row_preview), "0% occupancy keeps empty outlines without vehicles")
+	_check_export(editor)
 	editor.free()
 	print("Population fields: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -153,3 +157,58 @@ func _check_parking_rows(definition, scene_root: Node3D, sockets: Array[Dictiona
 	var reloaded := Session.new()
 	reloaded.begin(definition, scene_root)
 	check(reloaded.load_from(destination) and reloaded.parking_bays(sockets, obstacles) == bays, "JSON reload preserves row direction and exact bay plan")
+
+func _check_export(editor) -> void:
+	var panel = editor.field_panel
+	var path := "res://.godot/parking_row_export_test.tscn"
+	editor._translate_selected(Vector3(0.5, 0, 0))
+	check(not panel.export_scene(path) and panel.status.text.contains("source transforms"), "Export rejects an edited visual draft")
+	editor._undo()
+	panel.session.revision += 1
+	check(not panel.export_scene(path) and panel.status.text.contains("revision"), "Export rejects a stale source revision")
+	panel.session.revision -= 1
+	panel.session.add("ground", "protected", Rect2i(14, 8, 1, 1))
+	check(not panel.export_scene(path), "Scene export rejects an unresolved protected bay")
+	panel.session.undo()
+	panel.session.add("ground", "protected", Rect2i(5, 6, 1, 1))
+	check(not panel.export_scene(path) and panel.status.text.contains("original socket"), "Export rejects protected paint crossing an original socket it preserves")
+	panel.session.undo()
+	var saved: bool = panel.export_scene(path)
+	check(saved, "Editor exports its fully validated parking scene: %s" % panel.status.text)
+	if not saved: return
+	var scene := ResourceLoader.load(path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+	check(scene != null, "Export can be reopened as an ordinary Godot scene")
+	if scene == null: return
+	var scene_root := scene.instantiate() as Node3D
+	var exported := AuthoredParcelDefinition.new(scene_root.get_meta("parcel_id"), "Export", Catalog.URBAN_FRONTAGE, 1, Vector2i(32, 32), scene)
+	check(exported.validate().is_empty(), "Reopened scene satisfies existing authored parcel contracts")
+	check(exported.parcel_id != editor.displayed_parcel_id and exported.population_sockets().size() == 7, "Export has a separate stable ID and all seven authored sockets even at 0% editor preview")
+	var car := scene_root.get_node_or_null("Car_row_bay_ground_13_6") as Node3D
+	check(car != null and car.get_node_or_null("Visual") != null and car.get_node_or_null("TacticalVolume") != null, "Export preserves the calibrated imported scene and tactical volume")
+	scene_root.free()
+	var resolved := Resolver._resolve_population(exported, 18, 0, {}, true, "export-test")
+	check(not resolved.has("error") and resolved.choices.any(func(choice): return String(choice.socket_id).begins_with("row_bay_")), "Existing runtime population resolver accepts exported bays")
+	var recording := Recording.new()
+	recording.configuration = {"content_manifest": {"plot_id": &"export_test", "plot_revision": 1, "map_size": Vector2i(32, 32), "placements": [{"slot_id": &"office", "parcel_id": exported.parcel_id, "parcel_revision": 1, "origin": Vector3i.ZERO, "rotation": 0, "population": resolved.choices}]}}
+	var round_trip := Recording.from_dictionary(JSON.parse_string(JSON.stringify(recording.to_dictionary())))
+	var exact: Array = round_trip.configuration.content_manifest.placements[0].population
+	check(exact == resolved.choices, "Replay JSON preserves exported socket identity and heading")
+	var occupied := exported.instantiate()
+	var empty := exported.instantiate()
+	exported.apply_population(occupied, exact)
+	exported.apply_population(empty, [])
+	var pose := ParcelTransform.scene_transform(Vector2i(32, 32), Vector3i.ZERO, 0, Vector2i(32, 32))
+	occupied.transform = pose
+	empty.transform = pose
+	var full_map := FlatMapGenerator.generate(32, 32, 1.0, 18)
+	var empty_map := FlatMapGenerator.generate(32, 32, 1.0, 18)
+	Compiler.compile(occupied, full_map, 1.0)
+	Compiler.compile(empty, empty_map, 1.0)
+	check(exported.population_sockets(empty).is_empty(), "Population-off removes every exported vehicle")
+	var affected := 0
+	for position in full_map.cells:
+		if not full_map.get_cell(position).can_stop and empty_map.get_cell(position).can_stop: affected += 1
+	check(affected > 0 and not empty_map.get_cell(Vector3i(16, 0, 22)).can_stop, "Occupied vehicles affect MapData while population-off retains the fixed building")
+	occupied.free()
+	empty.free()
+	DirAccess.remove_absolute(path)

@@ -48,6 +48,18 @@ func _run() -> void:
 	editor._pitch = deg_to_rad(44.0)
 	editor._frame()
 	await _capture(output.path_join("parcel-editor-populated-row.png"))
+	var scene_path := output.path_join("review-office-parking-rows.tscn")
+	if not editor.field_panel.export_scene(scene_path):
+		push_error(editor.field_panel.status.text)
+		quit(1)
+		return
+	var baked := load(scene_path).instantiate() as Node3D
+	baked.position = editor.displayed_parcel.position
+	editor.field_panel.clear_preview()
+	editor.displayed_parcel.hide()
+	editor.field_panel.overlay.hide()
+	editor.add_child(baked)
+	await _capture(output.path_join("parcel-editor-exported-row.png"))
 	print("Parcel Editor captures saved to " + output)
 	quit()
 

@@ -4,14 +4,14 @@ extends RefCounted
 ## MapData. Imported visual geometry never becomes tactical authority.
 
 static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY) -> void:
-	_compile_node(root, root_transform, data, cell_size)
+	# Establish every walkable surface before any object can stamp onto it.
+	_compile_surfaces(root, root_transform, data, cell_size)
+	_compile_contents(root, root_transform, data, cell_size)
 	data.rebuild_los_index()
 
-static func _compile_node(node: Node, parent_transform: Transform3D, data: MapData, unit: float) -> void:
+static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: MapData, unit: float) -> void:
 	var transform := parent_transform
 	if node is Node3D: transform *= node.transform
-	if node.has_meta("solid_size"):
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit)
 	if node.has_meta("deck_rect"):
 		var rect: Rect2i = node.get_meta("deck_rect")
 		var level: int = node.get_meta("deck_level")
@@ -26,6 +26,14 @@ static func _compile_node(node: Node, parent_transform: Transform3D, data: MapDa
 				data.add_cell(slab)
 	if node.has_meta("deck_local_rect"):
 		_stamp_local_deck(data, transform, node.get_meta("deck_local_rect"), int(node.get_meta("deck_level")), unit)
+	for child in node.get_children():
+		_compile_surfaces(child, transform, data, unit)
+
+static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float) -> void:
+	var transform := parent_transform
+	if node is Node3D: transform *= node.transform
+	if node.has_meta("solid_size"):
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit)
 	if node.has_meta("ladder_bottom"):
 		data.add_traversal_link(TraversalLinkData.new(node.get_meta("ladder_bottom"), node.get_meta("ladder_top"), true))
 	if node.has_meta("ladder_local_bottom"):
@@ -35,7 +43,8 @@ static func _compile_node(node: Node, parent_transform: Transform3D, data: MapDa
 	if node.has_meta("faction"):
 		var origin: Vector3i = node.get_meta("grid_origin")
 		for offset in 5: data.add_spawn_cell(int(node.get_meta("faction")) as TacticalUnit.Faction, origin + Vector3i(0, 0, offset))
-	for child in node.get_children(): _compile_node(child, transform, data, unit)
+	for child in node.get_children():
+		_compile_contents(child, transform, data, unit)
 
 static func _stamp_local_deck(data: MapData, transform: Transform3D, rect: Rect2i, level: int, unit: float) -> void:
 	data.elevation_labels[level] = "Maintenance walkway"

@@ -51,10 +51,16 @@ The office lot demonstrates four extra bays. Paint X 2–29 and Z 4–11, then d
 
 Editor camera: RMB drag down raises the view toward overhead, up lowers it, matching the battle camera's vertical orbit preference. Horizontal orbit and MMB pan retain their controls.
 
-**Save fields / Load fields** use `user://parcel_fields/<parcel-id>.fields.json`, recording parcel revision, surface geometry, fields and preview settings. Invalid/stale loads preserve the current draft. Switching parcels resets unsaved fields, so save first. Field drafts are editor previews: they do not publish source scenes, change battles, or certify mission/access/count requirements. Runtime publication and new-socket authoring remain future work.
+**Save fields / Load fields** use `user://parcel_fields/<parcel-id>.fields.json`, recording parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft. Switching parcels resets unsaved fields, so save first.
+
+### Export a parking scene
+
+Use **Export parking scene** after drawing a row. The tool checks every bay and compiles the fully occupied parcel. The whole entrance span and each aisle must remain walkable, with a tactical route from the entrance to the aisle on its declared floor. These checks run for all supported parcel rotations. The export preserves original authored sockets and rejects protected paint that would conflict with them. Visual transform drafts must be restored to source transforms first.
+
+The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel and explicit, optional row sockets with the calibrated vehicle and authored tactical volume at each bay. The seed chooses the models baked into the new sockets. The preview occupancy slider affects the preview only. Authored sockets retain their normal runtime occupancy and forward/reverse options. The filename identifies the resulting content, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog.
 
 ## Current boundary
 
-The active editor inspects registered parcels and supports visual transform and population-field drafts with bounded history. It does not yet add or remove source assets, edit tactical contracts, write source scenes, publish content, certify visuals, or change runtime parcels. Those capabilities should be added only when a real authoring task demonstrates the need and can preserve this boundary.
+The active editor inspects registered parcels, supports visual transform and population-field drafts with bounded history, and exports validated parking scenes for manual review. Runtime registration and mission certification are separate steps.
 
 The quarantined chunk drafts and tools remain untouched. No retired runtime generator, revision library, publication stack or certification database is a dependency of this editor.

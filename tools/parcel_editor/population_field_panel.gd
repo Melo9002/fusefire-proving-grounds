@@ -1,8 +1,8 @@
 extends VBoxContainer
 ## Small editor-only UI; field data and persistence live in PopulationFieldDraft.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
-const ParkingReference = preload("res://art/environments/authored/parcels/industrial_office_parking.tscn")
-const AssetPlacement = preload("res://presentation/environment_asset_placement.gd")
+const Vehicles = preload("res://tools/parcel_editor/parking_vehicle_templates.gd")
+const SceneExport = preload("res://tools/parcel_editor/parking_scene_export.gd")
 var session = Session.new()
 var surface_picker: OptionButton
 var preset_picker: OptionButton
@@ -17,8 +17,7 @@ var start_cell: Variant = null
 var drag_cell: Variant = null
 var _source_sockets: Array[Dictionary] = []
 var _fixed_obstacles: Array[AABB] = []
-var _parking_reference: Node3D
-var _vehicle_templates: Array[Dictionary] = []
+var _vehicles = Vehicles.new()
 var _row_preview: Node3D
 var _previewing := false
 var _preview_ids := {}
@@ -82,6 +81,11 @@ func setup(editor: Node3D) -> void:
 		button.pressed.connect(spec[1])
 		files.add_child(button)
 	add_child(files)
+	var export_button := Button.new()
+	export_button.text = "Export parking scene"
+	export_button.tooltip_text = "Validate the full row layout and save a separate authored scene for review."
+	export_button.pressed.connect(export_scene)
+	add_child(export_button)
 	status = Label.new()
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(status)
@@ -90,13 +94,7 @@ func setup(editor: Node3D) -> void:
 func begin(definition, scene_root: Node3D) -> void:
 	session.begin(definition, scene_root)
 	_source_sockets = definition.population_sockets(scene_root)
-	_fixed_obstacles = definition.fixed_population_obstacles(scene_root)
-	# Use the authored deck's known slab thickness for clearance under a floor.
-	for id in session.surfaces:
-		var surface: Dictionary = session.surfaces[id]
-		if surface.level > 0:
-			var rect := Session.rectangle(surface)
-			_fixed_obstacles.append(AABB(Vector3(rect.position.x - 0.5, surface.level - 0.22, rect.position.y - 0.5), Vector3(rect.size.x, 0.22, rect.size.y)))
+	_fixed_obstacles = session.parking_obstacles(definition, scene_root)
 	start_cell = null
 	surface_picker.clear()
 	seed_input.value = 17
@@ -217,7 +215,7 @@ func preview() -> void:
 	var row_candidates := {}
 	for bay: Dictionary in session.parking_bays(_source_sockets, _fixed_obstacles):
 		if not bay.reason.is_empty(): continue
-		var candidate := _vehicle_candidate(bay, map_seed)
+		var candidate := _vehicles.candidate(bay, map_seed, session.parcel_id)
 		if not candidate.is_empty():
 			row_candidates[candidate.socket_id] = candidate
 			candidates.append(candidate)
@@ -280,29 +278,6 @@ func _draw_outline(mesh: ImmediateMesh, rect: Rect2i, level: int, color: Color) 
 		mesh.surface_set_color(color)
 		mesh.surface_add_vertex(point)
 
-func _vehicle_candidate(bay: Dictionary, map_seed: int) -> Dictionary:
-	if not is_instance_valid(_parking_reference):
-		_parking_reference = ParkingReference.instantiate()
-		for node_name in ["SedanWest", "SuvMid", "TaxiEast"]:
-			var vehicle := _parking_reference.get_node(node_name) as Node3D
-			var bounds := AssetPlacement.mesh_bounds(vehicle, vehicle.transform.affine_inverse())
-			var solid := vehicle.get_node("TacticalVolume") as Node3D
-			var dimensions: Vector3 = solid.get_meta("solid_size")
-			bounds = bounds.merge(solid.transform * AABB(-dimensions * 0.5, dimensions))
-			if maxf(absf(bounds.position.x), absf(bounds.end.x)) > Session.BAY_WIDTH * 0.5 or maxf(absf(bounds.position.z), absf(bounds.end.z)) > Session.BAY_DEPTH * 0.5:
-				continue
-			if bounds.position.y < -0.05 or bounds.end.y > Session.PARKING_HEADROOM:
-				continue
-			_vehicle_templates.append({"template": vehicle, "asset_id": String(vehicle.get_meta("asset_id")), "bounds": bounds})
-	if _vehicle_templates.is_empty(): return {}
-	var key := JSON.stringify([map_seed, session.parcel_id, bay.id, "parking_vehicle_v1"])
-	var index := posmod(key.sha256_text().substr(0, 8).hex_to_int(), _vehicle_templates.size())
-	var option: Dictionary = _vehicle_templates[index]
-	var rect: Rect2i = bay.rect
-	var pivot := Vector3(rect.position.x + (rect.size.x - 1) * 0.5, bay.level, rect.position.y + (rect.size.y - 1) * 0.5)
-	var transform := Transform3D(Basis(Vector3.UP, -int(bay.heading) * PI * 0.5), pivot)
-	return {"socket_id": StringName(bay.id), "surface_id": bay.surface, "asset_id": option.asset_id, "allowed_yaw_turns": PackedInt32Array([0, 2]), "local_position": pivot, "local_bounds": transform * option.bounds, "heading": bay.heading, "template": option.template}
-
 func _apply_preview_visibility(enabled: bool) -> void:
 	if not _previewing: return
 	for node in host.displayed_parcel.find_children("*", "Node3D", true, false):
@@ -321,9 +296,6 @@ func clear_preview() -> void:
 		if node.has_meta("field_preview_base_yaw"):
 			node.rotation.y = node.get_meta("field_preview_base_yaw")
 			node.remove_meta("field_preview_base_yaw")
-
-func _exit_tree() -> void:
-	if is_instance_valid(_parking_reference): _parking_reference.free()
 
 func reset_preview() -> void:
 	refresh("Source population restored.")
@@ -347,3 +319,26 @@ func load_fields() -> void:
 		density.value = session.occupancy
 		reset_preview()
 	else: status.text = session.last_error
+
+func export_scene(destination: String = "") -> bool:
+	if host.draft.placements != host.draft.base_placements:
+		status.text = "Export requires source transforms. Reload the parcel after saving your visual draft."
+		return false
+	var source = host.Catalog.get_definition(host.displayed_parcel_id)
+	var result := SceneExport.build(source, session, _vehicles, int(seed_input.value))
+	if result.has("error"):
+		status.text = result.error
+		return false
+	if destination.is_empty():
+		destination = "user://parcel_exports/%s.tscn" % result.definition.parcel_id
+		if FileAccess.file_exists(destination):
+			status.text = "This scene export already exists at %s" % ProjectSettings.globalize_path(destination)
+			return false
+	var error := DirAccess.make_dir_recursive_absolute(destination.get_base_dir())
+	if error == OK:
+		error = ResourceSaver.save(result.definition.scene, destination)
+	if error != OK:
+		status.text = "Could not save parking scene: %s" % error_string(error)
+		return false
+	status.text = "Exported %d parking bays to %s" % [result.bay_count, ProjectSettings.globalize_path(destination)]
+	return true

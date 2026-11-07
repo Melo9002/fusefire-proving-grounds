@@ -1,6 +1,6 @@
 # FuseFire Generation 2.0: authored places, tactical population and composed maps
 
-Status: active product direction and implementation ledger, updated 2026-11-05. The [Current map architecture](current-map-architecture.md) describes the smaller production architecture. The XCOM 2 study below supports one part of Generation 2.0—composing authored plots and parcels—but does not define the whole system or FuseFire's tactical identity.
+Status: active product direction and implementation ledger, updated 2026-11-07. The [Current map architecture](current-map-architecture.md) describes the smaller production architecture. The XCOM 2 study below supports one part of Generation 2.0—composing authored plots and parcels—but does not define the whole system or FuseFire's tactical identity.
 
 ## Where we are
 
@@ -64,7 +64,7 @@ The initial contract should remain small and inspectable:
 - Exact accepted asset IDs, revisions and transforms recorded for replay; the seed alone is insufficient.
 - Explicit tactical effects compiled into `MapData`. A spawned visual mesh does not acquire cover, occupancy or LOS authority automatically.
 
-This restores the useful intent of Generator 1—designers decide *where* tactical variation is allowed and *what kind* belongs there—without restoring its unrestricted scatter logic. The first proof uses authored regions inside existing refinery parcels: depot container positions and parking/loading vehicle positions. The next authoring direction below extends this proven slice; painting and broader automatic placement are not implemented yet.
+This restores the useful intent of Generator 1—designers decide *where* tactical variation is allowed and *what kind* belongs there—without restoring its unrestricted scatter logic. The first proof uses authored regions inside existing refinery parcels: depot container positions and parking/loading vehicle positions. The editor can paint bounded fields and export aligned parking sockets. Broader automatic placement remains deferred.
 
 ### Population authoring direction — 2026-11-05
 
@@ -80,7 +80,7 @@ Use one fixed authored structure with a small number of floors and many populati
 
 Author slabs, columns, perimeter walls/rails, entry/exit routes and vertical connections together. Start with two playable floors and two distinct ground-to-upper-floor approaches using supported stairs/ramps or traversal links. Driving simulation is unnecessary. A visible route must agree with authored movement, elevation, cover and LOS. Audit available assets and reusable components first; any missing structural content must be acknowledged and authored deliberately.
 
-Car fields represent real parking bays: each bay owns a supported vehicle envelope, nominal heading, floor, clearance and allowed car list. Deterministically choose empty/occupied, vehicle and forward/reverse parking (0°/180° relative to that bay). Preserve aisle access and align wheels with the supporting surface. Avoid unconstrained yaw or position jitter; small variation requires measured space. Wider vehicles require appropriate bays. Fixed owner-placed cars remain possible. Persist each accepted heading; compile its rotated tactical contract at the correct level. Population records now support an optional `yaw_turns` choice for sockets that explicitly permit it. Asset selection still references preauthored occupants. Regions now reference named authored surfaces, with the deck foundation described below; multi-floor painting remains pending.
+Car fields represent real parking bays: each bay owns a supported vehicle envelope, nominal heading, floor, clearance and allowed car list. Deterministically choose empty/occupied, vehicle and forward/reverse parking (0°/180° relative to that bay). Preserve aisle access and align wheels with the supporting surface. Avoid unconstrained yaw or position jitter; small variation requires measured space. Wider vehicles require appropriate bays. Fixed owner-placed cars remain possible. Persist each accepted heading; compile its rotated tactical contract at the correct level. Population records now support an optional `yaw_turns` choice for sockets that explicitly permit it. Asset selection still references preauthored occupants. The editor can target named authored surfaces. The two-floor garage will test that workflow in a playable space.
 
 ### Visibility and floor dependencies
 
@@ -98,7 +98,7 @@ Visual hiding must preserve MapData occupancy, LOS, cover, supports and traversa
 4. Test one wall aperture and upper-floor cutaway, including background occluders and selected-character visibility. Preserve tactical concealment.
 5. Combine parking population, deployment/objective reachability, mission/replay checks and owner camera/play review. Measure density and travel pacing before expanding the map.
 
-These are recorded product directions and proposed implementation steps. A multi-storey parking family, painting tool and local aperture remain unimplemented. The first parking variation checkpoint is recorded below.
+The first two steps now have working editor and compilation proofs. The multi-storey garage and local aperture are the next content and presentation milestones.
 
 ### Parking variation checkpoint — 2026-11-05
 
@@ -116,13 +116,21 @@ The Parcel Editor lists each region's surface, level and rectangle. Runtime reso
 
 The new `parcel_population_surface_test.gd` uses a real imported car in an authored two-level tactical fixture. It checks overlapping X/Z regions, four rotations, free ground below an upper car, blocked deck occupancy, relative cover height and wrong/missing surface rejection. This is a data/compiler foundation, not a rendered garage or painting tool. Containment currently checks socket anchors; full occupant envelope/headroom checks remain necessary before garage certification. Existing parking scene content is unchanged.
 
-## Catwalk direction
+### Parking export checkpoint — 2026-11-07
+
+Astra's review identified scene-tree order as a prerequisite for reliable upper-floor population. `AuthoredSceneMapCompiler` now creates deck cells before stamping solids, then rebuilds LOS once. The sibling-order fixture uses an imported upper-floor car, a supporting column and a traversal link in all four rotations. It checks that the car blocks its deck, the ground beneath it remains usable, and moving the deck before its occupants yields identical tactical cells.
+
+The Parcel Editor can now export a parking row draft as a separate authored `.tscn` in `user://parcel_exports/`. The same calibrated candidates drive preview and export. The export bakes selected vehicle models into explicit optional sockets with stable IDs, preserves source content, and validates clearance, the authored entrance span, and a tactical path to each complete aisle at full occupancy in every supported rotation. Reopened scene tests exercise the existing population resolver, heading round-trip through replay JSON, and population-off compilation. Catalog registration remains a review step. This is a bounded parking workflow with no additional runtime generator.
+
+The remaining sequence is to author the compact two-floor garage with two distinct routes upstairs, then test floor hiding and a selected-character aperture in that map. The garage acceptance pass should cover full vehicle envelopes, pedestrian access, Reach and extraction, exact replay reconstruction, and owner review of camera visibility and turn pacing. [Parcel Editor instructions](parcel-editor.md)
 
 Parking row checkpoint (2026-11-07). In the Parcel Editor, paint parking permission and draw along a row's aisle-facing edge. Cardinal heading determines where the tool fits 3 × 5 bays and checks a four-cell-deep aisle with 2.5 cells of headroom. Empty bay outlines and rejection reasons appear during the drag. The existing office lot fits four new bays alongside three authored cars. The draft saves row geometry and heading, and seed controls occupancy, calibrated vehicle choice, and forward/reverse parking. Floor-specific permissions, protected regions, existing sockets, fixed volumes, named slabs and other rows' aisle reservations are checked. Tests cover actual mouse input, geometry, aisle rejection, undo, reload and deterministic preview. The scope is editor drafts. Scene publication, garage construction and full route/access verification remain pending.
 
 Field playtest corrections (2026-11-06): vertical editor orbit now follows the owner's inverted preference; horizontal orbit and pan are unchanged. Painting shows a live drag rectangle and renders a union mask without stacking opacity. Adjacent compatible fields jointly cover occupant footprints. Preview rejects overlap with fixed authored solid volumes and previously accepted occupants, accounting for the selected heading; ordering stays deterministic. Occupancy is labelled as a percentage of authored bays: the existing office parcel still offers three bays. Automatic bay creation and full visual/headroom/access certification remain pending. Focused tests cover live mouse motion before release, union rendering/permissions, protected overlap, a candidate inside the actual building volume and occupant conflicts.
 
 Population field editor checkpoint (2026-11-06): the Parcel Editor now draws/erases rectangular permission and protected fields on a selected authored surface. Parking/container/equipment presets filter existing compatible sockets; seeded occupancy/heading preview, field undo/redo and revision/surface-bound JSON save/load are implemented. Full authored tactical footprints must fit permission fields and avoid protected fields. Corrupt/stale loads preserve editor state. This is an editor draft workflow: source-scene publication, creating new sockets/assets and runtime use of field drafts remain pending. Mouse projection, persistence, deterministic preview, protected-footprint priority and floor separation pass focused tests; rendered parking-field UI captures were inspected. Owner testing is the next gate.
+
+## Catwalk direction
 
 Owner reference clarification (2026-11-05): elevated walkways should connect meaningful destinations—tank inspection platforms, control rooms, maintenance equipment and building entrances—and create deliberate choices above active ground routes. Existing isolated gallery demonstrations are technical proofs, not the intended final composition. Author endpoints, supports, clearances and usable ascent/descent with each route. Prefer two approaches where combat benefits from a flank. The references guide atmosphere, machinery, vegetation/periphery, lighting and density. Guard retains its name; a minimap remains undecided.
 

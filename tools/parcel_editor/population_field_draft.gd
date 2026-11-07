@@ -65,8 +65,8 @@ static func parking_row_rect(first: Vector2i, last: Vector2i, heading: int) -> R
 func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisional: Dictionary = {}) -> Array[Dictionary]:
 	var fixed := obstacles.duplicate()
 	for socket in sockets:
-		if socket.has("local_bounds"):
-			fixed.append(socket.local_bounds)
+		for turn: int in socket.allowed_yaw_turns:
+			fixed.append(socket_bounds_at_turn(socket, turn))
 	var results: Array[Dictionary] = []
 	var accepted_bays: Array[AABB] = []
 	var accepted_aisles: Array[AABB] = []
@@ -113,6 +113,16 @@ func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisiona
 			accepted_aisles.append(aisle_volume)
 	return results
 
+func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
+	var obstacles: Array[AABB] = definition.fixed_population_obstacles(scene_root)
+	for surface: Dictionary in surfaces.values():
+		if surface.level <= 0:
+			continue
+		var rect := rectangle(surface)
+		# Match the slab beneath an authored deck in AuthoredSceneMapCompiler.
+		obstacles.append(AABB(Vector3(rect.position.x - 0.5, surface.level - 0.22, rect.position.y - 0.5), Vector3(rect.size.x, 0.22, rect.size.y)))
+	return obstacles
+
 func _parking_painted(surface: String, bay: Rect2i) -> bool:
 	for x in range(bay.position.x, bay.end.x):
 		for z in range(bay.position.y, bay.end.y):
@@ -134,6 +144,22 @@ static func _parking_volume(rect: Rect2i, level: int) -> AABB:
 static func _overlaps(volume: AABB, others: Array[AABB]) -> bool:
 	for other in others:
 		if volume.grow(-0.001).intersects(other):
+			return true
+	return false
+
+static func socket_bounds_at_turn(socket: Dictionary, turn: int) -> AABB:
+	var pivot: Vector3 = socket.local_position
+	var bounds: AABB = socket.get("local_bounds", AABB(pivot, Vector3.ZERO))
+	return Transform3D(Basis(Vector3.UP, -turn * PI * 0.5), pivot) * AABB(bounds.position - pivot, bounds.size)
+
+func has_protected_overlap(surface: String, bounds: AABB) -> bool:
+	var footprint := Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z))
+	for field in fields:
+		if field.surface != surface or field.preset != "protected":
+			continue
+		var rect := rectangle(field)
+		var area := Rect2(Vector2(rect.position) - Vector2.ONE * 0.5, Vector2(rect.size))
+		if area.intersects(footprint):
 			return true
 	return false
 
@@ -174,32 +200,24 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 		var key := JSON.stringify([map_seed, parcel_id, String(socket.surface_id), String(socket.socket_id)])
 		var turns: PackedInt32Array = socket.allowed_yaw_turns
 		var turn_index := posmod((key + "/heading_v1").sha256_text().substr(0, 8).hex_to_int(), turns.size())
-		var bounds: AABB = socket.get("local_bounds", AABB(socket.local_position, Vector3.ZERO))
+		var bounds := socket_bounds_at_turn(socket, turns[turn_index])
 		if bounds.size.x <= 0 or bounds.size.z <= 0:
 			conflict_count += 1
 			continue
-		var pivot: Vector3 = socket.local_position
-		bounds = Transform3D(Basis(Vector3.UP, -turns[turn_index] * PI * 0.5), pivot) * AABB(bounds.position - pivot, bounds.size)
-		var point := Vector2i(roundi(socket.local_position.x), roundi(socket.local_position.z))
-		var permitted := false
-		var blocked := false
+		if has_protected_overlap(String(socket.surface_id), bounds): continue
 		var permission_cells := {}
 		for field in fields:
 			if field.surface != String(socket.surface_id) or field.preset == PARKING_ROW: continue
 			var rect := rectangle(field)
-			var area := Rect2(Vector2(rect.position) - Vector2.ONE * 0.5, Vector2(rect.size))
-			var footprint := Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z))
-			if field.preset == "protected":
-				if area.intersects(footprint) or rect.has_point(point): blocked = true
-			elif PRESETS[field.preset].has(String(socket.asset_id)):
+			if PRESETS[field.preset].has(String(socket.asset_id)):
 				for x in range(rect.position.x, rect.end.x):
 					for z in range(rect.position.y, rect.end.y):
 						permission_cells[Vector2i(x, z)] = true
-		permitted = true
+		var permitted := true
 		for x in range(floori(bounds.position.x + 0.5), ceili(bounds.end.x + 0.5 - 0.00001)):
 			for z in range(floori(bounds.position.z + 0.5), ceili(bounds.end.z + 0.5 - 0.00001)):
 				if not permission_cells.has(Vector2i(x, z)): permitted = false
-		if blocked or not permitted: continue
+		if not permitted: continue
 		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= clampi(density, 0, 100): continue
 		var intersects := false
 		for obstacle in obstacles + occupied:
