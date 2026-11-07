@@ -11,6 +11,7 @@ var status: Label
 var host: Node3D
 var overlay: Node3D
 var start_cell: Variant = null
+var drag_cell: Variant = null
 
 func setup(editor: Node3D) -> void:
 	host = editor
@@ -18,6 +19,9 @@ func setup(editor: Node3D) -> void:
 	title.text = "POPULATION FIELDS / DRAFT"
 	add_child(title)
 	surface_picker = OptionButton.new()
+	surface_picker.item_selected.connect(func(_index):
+		start_cell = null
+		refresh())
 	add_child(surface_picker)
 	preset_picker = OptionButton.new()
 	for preset in Session.PRESETS:
@@ -27,7 +31,9 @@ func setup(editor: Node3D) -> void:
 	tool_picker = OptionButton.new()
 	for text in ["Inspect / camera", "Draw field (LMB drag)", "Erase field (LMB click)"]:
 		tool_picker.add_item(text)
-	tool_picker.item_selected.connect(func(_index): start_cell = null)
+	tool_picker.item_selected.connect(func(_index):
+		start_cell = null
+		refresh())
 	add_child(tool_picker)
 	var options := VBoxContainer.new()
 	seed_input = SpinBox.new()
@@ -39,7 +45,7 @@ func setup(editor: Node3D) -> void:
 	density = SpinBox.new()
 	density.max_value = 100
 	density.value = 65
-	density.suffix = "% occupied"
+	density.suffix = "% of authored bays"
 	density.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options.add_child(density)
 	add_child(options)
@@ -89,6 +95,10 @@ func cell_at(screen: Vector2) -> Variant:
 
 func handle_input(event: InputEvent) -> bool:
 	if tool_picker.selected == 0: return false
+	if event is InputEventMouseMotion and start_cell != null:
+		drag_cell = cell_at(event.position)
+		refresh("Release to commit the previewed rectangle.")
+		return true
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var cell: Variant = cell_at(event.position)
 		if event.pressed:
@@ -97,12 +107,14 @@ func handle_input(event: InputEvent) -> bool:
 				refresh()
 			else:
 				start_cell = cell
+				drag_cell = cell
+				refresh("Drag to size the field.")
 		elif start_cell != null and cell != null:
 			var lower: Vector2i = Vector2i(mini(start_cell.x, cell.x), mini(start_cell.y, cell.y))
 			var extent: Vector2i = Vector2i(absi(cell.x - start_cell.x) + 1, absi(cell.y - start_cell.y) + 1)
 			var ok: bool = session.add(surface_id(), String(preset_picker.get_selected_metadata()), Rect2i(lower, extent))
-			refresh("Field added." if ok else session.last_error)
 			start_cell = null
+			refresh("Field added." if ok else session.last_error)
 		return true
 	return false
 
@@ -110,18 +122,37 @@ func refresh(message := "") -> void:
 	if is_instance_valid(overlay): overlay.free()
 	overlay = Node3D.new()
 	host.add_child(overlay)
-	for field: Dictionary in session.fields:
+	var fields: Array = session.fields.duplicate()
+	if start_cell != null and drag_cell != null:
+		var lower := Vector2i(mini(start_cell.x, drag_cell.x), mini(start_cell.y, drag_cell.y))
+		fields.append({"surface": surface_id(), "preset": String(preset_picker.get_selected_metadata()), "rect": [lower.x, lower.y, absi(start_cell.x - drag_cell.x) + 1, absi(start_cell.y - drag_cell.y) + 1]})
+	var cells := {}
+	for field: Dictionary in fields:
 		var rect := Session.rectangle(field)
-		var box := BoxMesh.new()
-		box.size = Vector3(rect.size.x, 0.025, rect.size.y)
+		var level := int(session.surfaces[field.surface].level)
+		var bounds: Array = session.surfaces[field.surface].rect
+		rect = rect.intersection(Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])))
+		for x in range(rect.position.x, rect.end.x):
+			for z in range(rect.position.y, rect.end.y):
+				var key := Vector3i(x, level, z)
+				cells[key] = bool(cells.get(key, false)) or field.preset == "protected"
+	for protected in [false, true]:
+		var mesh := ImmediateMesh.new()
 		var material := StandardMaterial3D.new()
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(1, 0.3, 0.2, 0.32) if field.preset == "protected" else Color(0.15, 0.8, 1, 0.28)
+		material.albedo_color = Color(1, 0.3, 0.2, 0.32) if protected else Color(0.15, 0.8, 1, 0.28)
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		box.material = material
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		if not cells.values().has(protected): continue
+		mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+		for cell: Vector3i in cells:
+			if cells[cell] != protected: continue
+			for offset in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5)]:
+				mesh.surface_add_vertex(Vector3(cell) + offset + Vector3.UP * 0.07)
+		mesh.surface_end()
 		var visual := MeshInstance3D.new()
-		visual.mesh = box
-		visual.position = host.displayed_parcel.position + Vector3(rect.position.x + (rect.size.x - 1) * 0.5, session.surfaces[field.surface].level + 0.07, rect.position.y + (rect.size.y - 1) * 0.5)
+		visual.mesh = mesh
+		visual.position = host.displayed_parcel.position
 		overlay.add_child(visual)
 	status.text = "%d fields · cyan permitted / red protected\n%s" % [session.fields.size(), message]
 
@@ -130,7 +161,7 @@ func preview() -> void:
 		status.text = "Preview requires source transforms. Reload the parcel after saving your visual draft."
 		return
 	var definition = host.Catalog.get_definition(host.displayed_parcel_id)
-	var choices: Array[Dictionary] = session.preview(definition.population_sockets(), int(seed_input.value), int(density.value))
+	var choices: Array[Dictionary] = session.preview(definition.population_sockets(), int(seed_input.value), int(density.value), definition.fixed_population_obstacles(host.displayed_parcel))
 	var by_id := {}
 	for choice in choices: by_id[choice.socket_id] = choice
 	for node in host.displayed_parcel.find_children("*", "Node3D", true, false):
@@ -139,7 +170,7 @@ func preview() -> void:
 		node.visible = by_id.has(id)
 		if not node.has_meta("field_preview_base_yaw"): node.set_meta("field_preview_base_yaw", node.rotation.y)
 		node.rotation.y = float(node.get_meta("field_preview_base_yaw")) - int(by_id.get(id, {}).get("yaw_turns", 0)) * PI * 0.5
-	status.text = "%d authored sockets accepted. Empty fields need compatible authored sockets. Draft preview only; mission/count certification is pending." % choices.size()
+	status.text = "%d authored sockets accepted (%d authored bays total). 100%% fills eligible bays, not arbitrary painted ground. %d conflicts rejected. Draft preview only." % [choices.size(), definition.population_sockets().size(), session.conflict_count]
 
 func reset_preview() -> void:
 	host.set_population_visible(true)

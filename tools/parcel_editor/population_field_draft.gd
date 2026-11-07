@@ -18,6 +18,7 @@ var next_id := 1
 var last_error := ""
 var preview_seed := 17
 var occupancy := 65
+var conflict_count := 0
 
 func begin(definition, scene_root: Node3D) -> void:
 	parcel_id = String(definition.parcel_id)
@@ -68,28 +69,54 @@ func redo() -> bool:
 	fields.assign(future.pop_back())
 	return true
 
-func preview(sockets: Array[Dictionary], map_seed: int, density: int) -> Array[Dictionary]:
+func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles: Array[AABB] = []) -> Array[Dictionary]:
 	preview_seed = map_seed
 	occupancy = clampi(density, 0, 100)
+	conflict_count = 0
 	var accepted: Array[Dictionary] = []
-	for socket in sockets:
+	var occupied: Array[AABB] = []
+	var ordered := sockets.duplicate()
+	ordered.sort_custom(func(a, b): return String(a.socket_id) < String(b.socket_id))
+	for socket in ordered:
+		var key := JSON.stringify([map_seed, parcel_id, String(socket.surface_id), String(socket.socket_id)])
+		var turns: PackedInt32Array = socket.allowed_yaw_turns
+		var turn_index := posmod((key + "/heading_v1").sha256_text().substr(0, 8).hex_to_int(), turns.size())
+		var bounds: AABB = socket.get("local_bounds", AABB(socket.local_position, Vector3.ZERO))
+		if bounds.size.x <= 0 or bounds.size.z <= 0:
+			conflict_count += 1
+			continue
+		var pivot: Vector3 = socket.local_position
+		bounds = Transform3D(Basis(Vector3.UP, -turns[turn_index] * PI * 0.5), pivot) * AABB(bounds.position - pivot, bounds.size)
 		var point := Vector2i(roundi(socket.local_position.x), roundi(socket.local_position.z))
 		var permitted := false
 		var blocked := false
+		var permission_cells := {}
 		for field in fields:
 			if field.surface != String(socket.surface_id): continue
 			var rect := rectangle(field)
 			var area := Rect2(Vector2(rect.position) - Vector2.ONE * 0.5, Vector2(rect.size))
-			var bounds: AABB = socket.get("local_bounds", AABB(socket.local_position, Vector3.ZERO))
 			var footprint := Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z))
 			if field.preset == "protected":
 				if area.intersects(footprint) or rect.has_point(point): blocked = true
-			elif area.encloses(footprint) and PRESETS[field.preset].has(String(socket.asset_id)): permitted = true
+			elif PRESETS[field.preset].has(String(socket.asset_id)):
+				for x in range(rect.position.x, rect.end.x):
+					for z in range(rect.position.y, rect.end.y):
+						permission_cells[Vector2i(x, z)] = true
+		permitted = true
+		for x in range(floori(bounds.position.x + 0.5), ceili(bounds.end.x + 0.5 - 0.00001)):
+			for z in range(floori(bounds.position.z + 0.5), ceili(bounds.end.z + 0.5 - 0.00001)):
+				if not permission_cells.has(Vector2i(x, z)): permitted = false
 		if blocked or not permitted: continue
-		var key := JSON.stringify([map_seed, parcel_id, String(socket.surface_id), String(socket.socket_id)])
 		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= clampi(density, 0, 100): continue
-		var turns: PackedInt32Array = socket.allowed_yaw_turns
-		var turn_index := posmod((key + "/heading_v1").sha256_text().substr(0, 8).hex_to_int(), turns.size())
+		var intersects := false
+		for obstacle in obstacles + occupied:
+			if bounds.grow(-0.001).intersects(obstacle):
+				intersects = true
+				break
+		if intersects:
+			conflict_count += 1
+			continue
+		occupied.append(bounds)
 		accepted.append({"socket_id": socket.socket_id, "asset_id": socket.asset_id, "yaw_turns": turns[turn_index]})
 	return accepted
 
@@ -133,7 +160,11 @@ func load_from(source: String) -> bool:
 	if file == null:
 		last_error = "No saved field draft found."
 		return false
-	var record: Variant = JSON.parse_string(file.get_as_text())
+	var parser := JSON.new()
+	if parser.parse(file.get_as_text()) != OK:
+		last_error = "Invalid field draft JSON."
+		return false
+	var record: Variant = parser.data
 	if not record is Dictionary or record.get("schema") != 1 or record.get("parcel_id") != parcel_id or record.get("revision") != revision or not _same_surfaces(record.get("surfaces")) or not record.get("fields") is Array:
 		last_error = "Incompatible field draft, parcel revision or surfaces."
 		return false

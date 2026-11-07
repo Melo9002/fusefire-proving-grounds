@@ -171,6 +171,21 @@ func _population_bounds(node: Node, socket_transform: Transform3D) -> AABB:
 		bounds = volume if bounds.size == Vector3.ZERO else bounds.merge(volume)
 	return bounds
 
+func fixed_population_obstacles(scene_root: Node3D) -> Array[AABB]:
+	var result: Array[AABB] = []
+	_collect_fixed_obstacles(scene_root, Transform3D.IDENTITY, result, true)
+	return result
+
+func _collect_fixed_obstacles(node: Node, parent_transform: Transform3D, result: Array[AABB], is_root: bool = false) -> void:
+	if node.has_meta("population_socket_id"): return
+	var transform := parent_transform
+	if node is Node3D and not is_root: transform *= node.transform
+	if node.has_meta("solid_size"):
+		var dimensions: Vector3 = node.get_meta("solid_size")
+		result.append(transform * AABB(-dimensions * 0.5, dimensions))
+	for child in node.get_children():
+		_collect_fixed_obstacles(child, transform, result)
+
 func _collect_population_bounds(node: Node, transform: Transform3D, volumes: Array[AABB]) -> void:
 	if node.has_meta("solid_size"):
 		var dimensions: Vector3 = node.get_meta("solid_size")

@@ -452,7 +452,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if _orbiting:
 			_yaw -= event.relative.x * 0.008
-			_pitch = clampf(_pitch - event.relative.y * 0.008, deg_to_rad(8.0), deg_to_rad(89.0))
+			_pitch = clampf(_pitch + event.relative.y * 0.008, deg_to_rad(8.0), deg_to_rad(89.0))
 			_update_camera()
 		elif _panning:
 			var pan_scale := _distance * 0.0018
