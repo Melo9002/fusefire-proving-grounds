@@ -32,6 +32,10 @@ func validation_message() -> String:
 	if configuration.is_empty(): return "Replay has no battle_configuration"
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Generator 2 is quarantined; open this recording with the local archived project"
+	var battlefield_id := StringName(configuration.get("battlefield_id", &""))
+	if battlefield_id in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY, BattlefieldCatalogData.PARKING_GARAGE] \
+	and not configuration.get("content_manifest", {}).has("plot_id"):
+		return "Replay is missing the recorded plot and parcel choices"
 	if actions.is_empty(): return "Replay has no ordered_records"
 	for index in actions.size():
 		var issue := ReplayRecordTools.validate_action_record(actions[index], schema_version)
@@ -70,10 +74,10 @@ static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
 func save_json(path: String) -> Error:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		validation_error = "Could not open replay for writing: %s" % error_string(FileAccess.get_open_error())
 		return FileAccess.get_open_error()
 	file.store_string(JSON.stringify(to_dictionary(), "\t", false))
-	return OK
+	file.flush()
+	return file.get_error()
 
 static func load_json(path: String) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
@@ -82,12 +86,89 @@ static func load_json(path: String) -> BattleReplayRecording:
 		replay.schema_version = -1
 		replay.validation_error = "Could not open replay: %s" % error_string(FileAccess.get_open_error())
 		return replay
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parser := JSON.new()
+	if parser.parse(file.get_as_text()) != OK:
+		replay.validation_error = "Invalid replay JSON on line %d. %s" % [parser.get_error_line(), parser.get_error_message()]
+		return replay
+	var parsed: Variant = parser.data
 	if not parsed is Dictionary:
 		replay.schema_version = -1
 		replay.validation_error = "Replay JSON root must be an object"
 		return replay
+	replay.validation_error = _disk_shape_error(parsed)
+	if not replay.validation_error.is_empty():
+		return replay
 	return from_dictionary(parsed)
+
+## Files selected by a player can contain arbitrary JSON. Guard the nested
+## shapes before the existing replay decoder and battle validation run.
+static func _disk_shape_error(data: Dictionary) -> String:
+	var config: Variant = data.get("battle_configuration", data.get("configuration"))
+	if not config is Dictionary or config.is_empty():
+		return "Replay has no valid battle_configuration object"
+	if not _scalar_fields(data, ["schema_version", "expected_result"], TYPE_INT):
+		return "Replay schema_version and expected_result must be integers"
+	if not _scalar_fields(config, ["player_count", "enemy_count", "ally_count", "seed", "battlefield_preset", "vip_behavior", "difficulty", "player_commander", "enemy_commander"], TYPE_INT) \
+	or not _scalar_fields(config, ["battlefield_id"], TYPE_STRING):
+		return "Replay battle_configuration has invalid counts, identifiers or settings"
+	if not _coordinate(config.get("map_size", [32, 24]), 2):
+		return "Replay battle_configuration.map_size must contain two integers"
+	var manifest: Variant = config.get("content_manifest", {})
+	if not manifest is Dictionary or not _object_array(manifest.get("placements", [])):
+		return "Replay content_manifest must contain a list of placement objects"
+	if not _coordinate(manifest.get("map_size", [0, 0]), 2):
+		return "Replay content_manifest.map_size must contain two integers"
+	for placement: Dictionary in manifest.get("placements", []):
+		if not _coordinate(placement.get("origin", [0, 0, 0]), 3) or not _object_array(placement.get("population", [])):
+			return "Replay placement has a malformed origin or population list"
+		if not _scalar_fields(placement, ["slot_id", "parcel_id"], TYPE_STRING) or not _scalar_fields(placement, ["parcel_revision", "rotation"], TYPE_INT):
+			return "Replay placement has an invalid identity, revision or rotation"
+	var mission: Variant = config.get("mission")
+	if mission != null:
+		if not mission is Dictionary or not _object_array(mission.get("objectives", [])) or not _object_array(mission.get("terminals", [])):
+			return "Replay mission must contain objective and terminal objects"
+		for objective: Dictionary in mission.get("objectives", []):
+			if not objective.get("target_ids", []) is Array:
+				return "Replay mission objective target_ids must be a list"
+		for terminal: Dictionary in mission.get("terminals", []):
+			if not _coordinate(terminal.get("grid_position", [-1, -1, -1]), 3):
+				return "Replay mission terminal grid_position must contain three integers"
+	var records: Variant = data.get("ordered_records", data.get("actions", []))
+	if not _object_array(records):
+		return "Replay ordered_records must contain action objects"
+	for index in records.size():
+		var record: Dictionary = records[index]
+		for field in ["kind", "actor", "expected_state"]:
+			if not record.get(field) is String:
+				return "Replay action %d field %s must be text" % [index, field]
+		var request: Variant = record.get("request", {})
+		if not request is Dictionary or not record.get("resolved", {}) is Dictionary:
+			return "Replay action %d request and resolved result must be objects" % index
+		if not _scalar_fields(record, ["record_index", "schema_version", "base_revision", "committed_revision"], TYPE_INT) \
+		or not _scalar_fields(request, ["schema_version", "expected_revision", "source"], TYPE_INT) \
+		or not _scalar_fields(request, ["kind", "actor_id", "target_id"], TYPE_STRING):
+			return "Replay action %d has invalid revisions or identifiers" % index
+		if not request.get("details", {}) is Dictionary or (request.has("destination") and not _coordinate(request.destination, 3)):
+			return "Replay action %d has a malformed request" % index
+	return ""
+
+static func _object_array(value: Variant) -> bool:
+	return value is Array and value.all(func(item): return item is Dictionary)
+
+static func _coordinate(value: Variant, length: int) -> bool:
+	return value is Array and value.size() == length and value.all(_is_integer)
+
+static func _is_integer(value: Variant) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and value == floorf(float(value))
+
+static func _scalar_fields(data: Dictionary, fields: Array, type: int) -> bool:
+	for field in fields:
+		if not data.has(field):
+			continue
+		var value: Variant = data[field]
+		if not (_is_integer(value) if type == TYPE_INT else typeof(value) == type):
+			return false
+	return true
 
 static func _configuration_to_data(source: Dictionary) -> Dictionary:
 	var size: Vector2i = source.get("map_size", Vector2i(32, 24))

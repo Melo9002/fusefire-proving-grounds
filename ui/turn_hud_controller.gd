@@ -8,6 +8,9 @@ class_name TurnHUDController
 @export var end_turn_button: Button
 var replay_button: Button
 var setup_button: Button
+var save_replay_button: Button
+var _save_dialog: FileDialog
+var _save_status: Label
 
 func _ready() -> void:
 	if not turn_manager or not battle_controller or not turn_label or not end_turn_button:
@@ -30,6 +33,16 @@ func _build_battle_end_buttons() -> void:
 	replay_button.visible = false
 	replay_button.pressed.connect(_on_replay_pressed)
 	container.add_child(replay_button)
+	save_replay_button = Button.new()
+	save_replay_button.name = "SaveReplayButton"
+	save_replay_button.text = "SAVE REPLAY…"
+	save_replay_button.visible = false
+	save_replay_button.pressed.connect(_choose_replay_destination)
+	container.add_child(save_replay_button)
+	_save_status = Label.new()
+	_save_status.name = "ReplaySaveStatus"
+	_save_status.hide()
+	container.add_child(_save_status)
 	setup_button = Button.new()
 	setup_button.name = "MatchSetupButton"
 	setup_button.text = "RETURN TO MATCH SETUP"
@@ -104,12 +117,43 @@ func _show_battle_result(result: TurnManager.BattleResult) -> void:
 	if objective_manager and objective_manager.mission:
 		turn_label.text += "\n" + objective_manager.get_result_report()
 	if replay_button: replay_button.visible = true
+	if save_replay_button: save_replay_button.visible = not battle_controller.replay_mode
 	if setup_button: setup_button.visible = true
 
 func _on_replay_pressed() -> void:
 	var level := _find_battle_level()
 	if level:
 		level.replay_last_battle()
+
+func _choose_replay_destination() -> void:
+	if turn_manager.battle_result == TurnManager.BattleResult.ONGOING or battle_controller.replay_mode:
+		return
+	if not BattleReplaySession.has_recording():
+		_show_save_status("No completed replay is available.", false)
+		return
+	if not _save_dialog:
+		_save_dialog = FileDialog.new()
+		_save_dialog.name = "SaveReplayDialog"
+		_save_dialog.title = "Save FuseFire Replay"
+		_save_dialog.access = FileDialog.ACCESS_FILESYSTEM
+		_save_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+		_save_dialog.filters = PackedStringArray(["*.json ; FuseFire replay files"])
+		_save_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
+		_save_dialog.file_selected.connect(_save_replay_file)
+		add_child(_save_dialog)
+	var recording: BattleReplayRecording = BattleReplaySession.last_recording
+	var battlefield := String(recording.configuration.get("battlefield_id", "battle")).validate_filename()
+	_save_dialog.current_file = "%s-%d.replay.json" % [battlefield, int(recording.configuration.get("seed", 0))]
+	_save_dialog.popup_centered_ratio(0.75)
+
+func _save_replay_file(path: String) -> void:
+	var result := BattleReplaySession.save_last(path)
+	_show_save_status("Replay saved." if result == OK else "Save failed. %s" % error_string(result), result == OK)
+
+func _show_save_status(message: String, success: bool) -> void:
+	_save_status.text = message
+	_save_status.modulate = Color("b9e8cf") if success else Color("ff9385")
+	_save_status.show()
 
 func _on_setup_pressed() -> void:
 	var level := _find_battle_level()

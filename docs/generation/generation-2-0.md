@@ -136,7 +136,13 @@ The shared catwalk deck now participates in floor picking. This applies to the f
 
 The acceptance script saved and reopened nine Reach battles through the existing replay file service. All nine ended in victory and verified all 445 replay actions. The fixed Refinery 2 used seed 16. The garage used seeds 16 and 17 with population on and off, and both composed families used seeds 16 and 17. Use `godot_console --headless --path . --script res://tests/refinery_family_ai_smoke.gd -- disk` with optional `authored`, `urban`, `garage`, or `garage empty` arguments. The recordings are written to `artifacts/generation-acceptance/`.
 
-Garage Rescue seed 17 secured the VIP upstairs and extracted in six rounds. The optional urban Rescue check on courtyard seed 17 secured the VIP, then ended in defeat in round nine without extraction. Reproduce with `godot_console --headless --path . --script res://tests/refinery_family_mission_matrix.gd -- urban`. Keep the urban case open for play review.
+Garage Rescue seed 17 secured the VIP upstairs and extracted in six rounds. The optional urban Rescue check on courtyard seed 17 secured the VIP, then ended in defeat in round nine without extraction. The owner moved AI escort and extraction behavior to the [AI tuning backlog](../ai/tuning-and-maintainability.md). Keep the human route and pacing check in generation acceptance.
+
+### Replay files in the game
+
+After a battle ends, use **Save Replay…** and choose where to put the `.replay.json` file. In **Match Setup**, choose **Open Replay…** beneath **Start Battle** and select the file. Playback restores the saved mission, battlefield and exact population through the normal loading screen. Invalid files report a reason, and incompatible content returns to Match Setup. Saved replays play from the beginning of the recorded battle.
+
+The player-facing workflow test runs a real garage battle, saves through the battle HUD, opens through Match Setup with an empty in-memory session, and verifies all 23 actions. It also checks retry after a failed write, malformed files and stale plot revisions.
 
 ### Parking variation checkpoint — 2026-11-05
 
@@ -272,13 +278,13 @@ The foundation is ready for acceptance testing across the current refinery, urba
 
 | Requirement | Evidence on the current scope | Remaining acceptance check |
 | --- | --- | --- |
-| 1. Three modes | Refinery 2 is fixed, the garage is fixed with optional tactical population, and the refinery/urban families compose authored parcels. Nine battles passed disk replay via the shared file service. | Expose the existing replay file service to players through a small save/open entry point. Draft saves and replay reconstruction are the current persistence scope. Mid-battle resume is a separate capability. |
-| 2. Plots | Four composed plots and one garage site own playable bounds, circulation and slots. Existing mission planning validates deployments and objectives. | Finish an urban mission beyond Reach and review deployment/extraction pacing on that site. |
+| 1. Three modes | Refinery 2 is fixed, the garage is fixed with optional tactical population, and the refinery/urban families compose authored parcels. Nine battles passed disk replay. The game now exposes save and open. | Try saving and reopening a battle during the hands-on pass. Mid-battle resume is a separate capability. |
+| 2. Plots | Four composed plots and one garage site own playable bounds, circulation and slots. Existing mission planning validates deployments and objectives. | Review the urban Rescue route and extraction pacing in human play. AI escort behavior is tracked separately. |
 | 3. Parcels | Standard sizes, rotations, named floors, calibrated imported content and authored tactical volumes are exercised by registered scenes. | Confirm an author can inspect a parcel in the editor and identify its entrance, elevation and tactical objects. |
 | 4. Connectors | Every rotated entrance tile and its in-bounds approach are validated after population. A live movement regression reaches a picked upper deck tile via its authored ladder. | Inspect the existing road seams and check ladder feel in a hands-on run. |
 | 5. Surroundings | Authored near/far scenery continues the industrial sites outside MapData. Clean rendered inspections exist. | Check one normal and one action-camera view toward each representative map edge. |
 | 6. Selection and failure | Bounded selection, independent population streams, and explicit missing, stale and blocked-content errors have focused regressions. The reference Reach matrix passed. | Recheck any map changes made during acceptance. |
-| 7. Tactical and replay | Existing MapData rules, exact manifests and compiler revision checks are in use. Disk replay preserves exact occupants and verifies tactical actions in all three modes. | Check one saved replay through the player-facing entry point once available. |
+| 7. Tactical and replay | Existing MapData rules, exact manifests and compiler revision checks are in use. Disk replay preserves exact occupants and verifies tactical actions in all three modes. The garage UI round trip also passes. | Check replay file picker comfort during the hands-on pass. |
 | 8. Content and workflow | Godot scenes, Parcel Editor drafts and validated parking-scene export provide a reviewable authoring path. | Do one author walkthrough from painting to reopening an exported scene and check the instructions. Keep registration manual for this scope. |
 | 9. Quality and cost | There is fixed-seed evidence for reachability, cover, deployment, replay and turn counts. | Record generation/loading time and render frame time on the reference machine, then playtest travel, cover and camera readability. |
 

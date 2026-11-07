@@ -302,11 +302,12 @@ func _configure_replay_presentation() -> void:
 			control.hide()
 
 func replay_last_battle() -> void:
-	if not ReplaySessionData.has_recording():
+	var recording = pending_replay if pending_replay else ReplaySessionData.last_recording
+	if not recording or not recording.is_playable():
 		return
 	get_tree().paused = false
 	var replay_level := load(BATTLE_SCENE_PATH).instantiate() as BattleLevel
-	replay_level.configure_replay(ReplaySessionData.last_recording)
+	replay_level.configure_replay(recording)
 	get_tree().root.add_child(replay_level)
 	get_tree().current_scene = replay_level
 	queue_free()

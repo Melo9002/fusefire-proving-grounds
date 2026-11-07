@@ -36,6 +36,8 @@ var ally_archetypes: Array[StringName] = []
 var _seed_rng := RandomNumberGenerator.new()
 var _loading_screen: Control
 var _launch_in_progress := false
+var _replay_dialog: FileDialog
+var _replay_error: AcceptDialog
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
 const COMPATIBILITY_SECTION := "rendering"
@@ -68,6 +70,7 @@ func _ready() -> void:
 	map_size_option.select(1)
 	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)
+	%OpenReplayButton.pressed.connect(_choose_replay_file)
 	player_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.PLAYER))
 	enemy_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ENEMY))
 	ally_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ALLY))
@@ -495,22 +498,61 @@ func _refresh_seed_controls() -> void:
 	seed_input.editable = not auto_seed_toggle.button_pressed
 
 func _start_battle() -> void:
+	if not _launch_in_progress:
+		_launch_battle(_build_battle_configuration())
+
+func _choose_replay_file() -> void:
+	if _launch_in_progress:
+		return
+	if not _replay_dialog:
+		_replay_dialog = FileDialog.new()
+		_replay_dialog.name = "OpenReplayDialog"
+		_replay_dialog.title = "Open FuseFire Replay"
+		_replay_dialog.access = FileDialog.ACCESS_FILESYSTEM
+		_replay_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+		_replay_dialog.filters = PackedStringArray(["*.json ; FuseFire replay files"])
+		_replay_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
+		_replay_dialog.file_selected.connect(_open_replay_file)
+		add_child(_replay_dialog)
+	_replay_dialog.popup_centered_ratio(0.75)
+
+func _open_replay_file(path: String) -> void:
+	if _launch_in_progress:
+		return
+	var recording := BattleReplayRecording.load_json(path)
+	var issue := recording.validation_message()
+	if not issue.is_empty():
+		if not _replay_error:
+			_replay_error = AcceptDialog.new()
+			_replay_error.name = "ReplayOpenError"
+			_replay_error.title = "Could Not Open Replay"
+			add_child(_replay_error)
+		_replay_error.dialog_text = issue
+		_replay_error.popup_centered()
+		return
+	_launch_battle(null, recording)
+
+func _launch_battle(config: BattleConfigurationData, recording: BattleReplayRecording = null) -> void:
 	if _launch_in_progress:
 		return
 	_launch_in_progress = true
 	start_button.disabled = true
-	var config := _build_battle_configuration()
+	%OpenReplayButton.disabled = true
 	_loading_screen = BattleLoadingScreenData.new()
 	_loading_screen.name = "BattleLoadingScreen"
 	_loading_screen.dismissed.connect(_dismiss_loading_failure)
 	add_child(_loading_screen)
-	_loading_screen.set_stage("Preparing %s…" % BattlefieldCatalogData.label(config.resolved_battlefield_id()), 0.05)
+	var stage := "Reconstructing saved battle…" if recording else "Preparing %s…" % BattlefieldCatalogData.label(config.resolved_battlefield_id())
+	_loading_screen.set_stage(stage, 0.05)
 	# Allow the opaque transition to render before synchronous map construction.
 	await get_tree().process_frame
 	var battle = battle_scene.instantiate() as BattleLevel
 	battle.battle_initialization_progress.connect(_loading_screen.set_stage)
 	battle.battle_initialization_finished.connect(_on_battle_initialization_finished.bind(battle), CONNECT_ONE_SHOT)
-	battle.configure_battle(config)
+	if recording:
+		battle.configure_replay(recording)
+	else:
+		battle.configure_battle(config)
 	get_tree().root.add_child(battle)
 
 func _on_battle_initialization_finished(success: bool, errors: Array, battle: BattleLevel) -> void:
@@ -529,6 +571,7 @@ func _dismiss_loading_failure() -> void:
 	_loading_screen = null
 	_launch_in_progress = false
 	start_button.disabled = false
+	%OpenReplayButton.disabled = false
 
 func _build_battle_configuration() -> BattleConfigurationData:
 	var config := BattleConfigurationData.new()

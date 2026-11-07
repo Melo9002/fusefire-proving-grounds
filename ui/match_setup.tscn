@@ -226,3 +226,9 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "START BATTLE"
+
+[node name="OpenReplayButton" type="Button" parent="CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "OPEN REPLAY…"
+tooltip_text = "Watch a completed battle from a saved replay file."
