@@ -16,7 +16,8 @@ static func generate(map_seed: int, cell_size: float = 1.0, requested: Dictionar
 	return compile_resolved(resolved, map_seed, cell_size, SOURCE_KIND)
 
 static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String) -> MapData:
-	var data := FlatMapGenerator.generate(64, 64, cell_size, int(resolved.get("seed", map_seed)))
+	var size: Vector2i = resolved.get("map_size", PlotCatalog.MAP_SIZE)
+	var data := FlatMapGenerator.generate(size.x, size.y, cell_size, int(resolved.get("seed", map_seed)))
 	data.source_kind = source_kind
 	data.content_manifest = resolved.duplicate(true)
 	data.generation_errors.assign(resolved.get("errors", []))
@@ -29,7 +30,7 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 			continue
 		var root: Node3D = parcel.instantiate()
 		parcel.apply_population(root, placement.get("population", []))
-		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
+		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
 		Compiler.compile(root, data, cell_size)
 		root.free()
 	if not DeploymentRepair.apply(data):
@@ -59,7 +60,7 @@ static func present_resolved(data: MapData, parent: Node3D, cell_size: float, pl
 			return false
 		var root: Node3D = parcel.instantiate()
 		parcel.apply_population(root, placement.get("population", []))
-		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, PlotCatalog.MAP_SIZE, cell_size)
+		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, data.map_size, cell_size)
 		parent.add_child(root)
 	return true
 

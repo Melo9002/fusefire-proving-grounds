@@ -4,9 +4,9 @@ extends Node3D
 ## Presentation only: the layout owns roof walkability and ceiling LOS.
 ## Bounds are in this node's local space. The camera supplies its existing
 ## selected-unit/cinematic-target focuses; no second selection authority.
-var interior_bounds := AABB()
-var roof_bounds := AABB()
-var surface_height := INF
+@export var interior_bounds := AABB()
+@export var roof_bounds := AABB()
+@export var surface_height := INF
 
 func _ready() -> void:
 	add_to_group("tactical_roof_cutaways")

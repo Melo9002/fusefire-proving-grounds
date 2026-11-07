@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="warehouse"]
+
+[sub_resource type="StandardMaterial3D" id="ground"]
+albedo_color = Color(0.35, 0.36, 0.31, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="drive"]
+albedo_color = Color(0.32, 0.34, 0.36, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.56, 0.56, 0.53, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="wall"]
+albedo_color = Color(0.38, 0.42, 0.42, 1)
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="site_ground"]
+size = Vector3(180, 0.2, 180)
+material = SubResource("ground")
+
+[sub_resource type="BoxMesh" id="entrance_drive"]
+size = Vector3(8, 0.12, 38)
+material = SubResource("drive")
+
+[sub_resource type="BoxMesh" id="rear_apron"]
+size = Vector3(16, 0.12, 20)
+material = SubResource("drive")
+
+[sub_resource type="BoxMesh" id="ramp"]
+size = Vector3(6, 0.22, 16.49242)
+material = SubResource("concrete")
+
+[sub_resource type="BoxMesh" id="boundary_wall"]
+size = Vector3(24, 4, 0.35)
+material = SubResource("wall")
+
+[sub_resource type="BoxMesh" id="ramp_support"]
+size = Vector3(5.8, 2.7, 0.5)
+material = SubResource("concrete")
+
+[node name="GarageSurroundings" type="Node3D"]
+
+[node name="SiteGround" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.19, 0)
+mesh = SubResource("site_ground")
+
+[node name="EntranceDrive" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.054, -35)
+mesh = SubResource("entrance_drive")
+
+[node name="RearServiceApron" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.054, 42)
+mesh = SubResource("rear_apron")
+
+[node name="ServiceRamp" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.89328, 23.97332)
+rotation = Vector3(0.2449787, 0, 0)
+mesh = SubResource("ramp")
+
+[node name="RampPier" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.27, 20)
+mesh = SubResource("ramp_support")
+
+[node name="ServiceBoundary" type="MeshInstance3D" parent="."]
+position = Vector3(-20, 1.95, 26)
+mesh = SubResource("boundary_wall")
+
+[node name="EastBoundary" type="MeshInstance3D" parent="."]
+position = Vector3(20, 1.95, 26)
+mesh = SubResource("boundary_wall")
+
+[node name="DistantServiceWarehouse" parent="." instance=ExtResource("warehouse")]
+position = Vector3(16, -0.09, 46)
+scale = Vector3(10, 10, 10)

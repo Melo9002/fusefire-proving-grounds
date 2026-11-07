@@ -13,7 +13,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	var ids := [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE, Catalog.REFINERY_2, Catalog.LOADING_YARD, Catalog.REFINERY_FAMILY, Catalog.URBAN_FAMILY]
+	var ids := [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE, Catalog.REFINERY_2, Catalog.LOADING_YARD, Catalog.REFINERY_FAMILY, Catalog.URBAN_FAMILY, Catalog.PARKING_GARAGE]
 	check(ids.all(func(id): return Catalog.has(id)), "Every selectable battlefield has one catalog identity")
 	check(Catalog.map_size(Catalog.REFINERY_2, Vector2i.ONE) == Vector2i(96, 80), "Fixed authored size comes from the catalog")
 	check(Catalog.map_size(Catalog.GENERATED_COVER, Vector2i(24, 20)) == Vector2i(24, 20), "Generated cover retains supported requested size")
@@ -44,6 +44,7 @@ func _run() -> void:
 		if index >= FlatMapGenerator.MAP_SIZES.size(): check(not seen.has(id), "Special battlefield appears only once: %s" % id)
 		seen[id] = true
 	check(seen.has(Catalog.URBAN_FAMILY), "Match Setup exposes the urban family preview")
+	check(seen.has(Catalog.PARKING_GARAGE), "Match Setup exposes the two-level garage proof")
 	menu.map_size_option.select(menu.map_size_option.item_count - 1)
 	menu._refresh_generation_controls()
 	var selected: BattleConfiguration = menu._build_battle_configuration()

@@ -10,12 +10,15 @@ const REFINERY_2 := &"refinery_2"
 const LOADING_YARD := &"loading_yard"
 const REFINERY_FAMILY := &"refinery_family"
 const URBAN_FAMILY := &"urban_family"
+const PARKING_GARAGE := &"parking_garage"
+const ParkingGarageLayoutData = preload("res://systems/generation/parking_garage_layout.gd")
 const UrbanFamilyLayoutData = preload("res://systems/generation/urban_family_layout.gd")
 const Refinery2LayoutData = preload("res://systems/generation/refinery_2_layout.gd")
 const LoadingYardLayoutData = preload("res://systems/generation/loading_yard_layout.gd")
 const RefineryFamilyLayoutData = preload("res://systems/generation/refinery_family_layout.gd")
 
 const DEFINITIONS := {
+	PARKING_GARAGE: {"label": "Authored proof — Two-level Parking Garage", "source_kind": ParkingGarageLayoutData.SOURCE_KIND, "fixed_size": ParkingGarageLayoutData.MAP_SIZE},
 	URBAN_FAMILY: {"label": "Generated authored parcels — Urban family (preview)", "source_kind": "authored_urban_family", "fixed_size": Vector2i(64, 64)},
 	GENERATED_COVER: {"label": "Generated cover", "source_kind": "generated_cover", "fixed_size": Vector2i.ZERO},
 	REFINERY: {"label": "Special — Refinery", "source_kind": "generated_refinery", "fixed_size": Vector2i(40, 30)},
@@ -50,6 +53,8 @@ static func resolve_legacy_id(refinery: bool, warehouse: bool, refinery_2: bool,
 static func generate(id: StringName, requested_size: Vector2i, map_seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
+		PARKING_GARAGE:
+			return ParkingGarageLayoutData.generate(map_seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
 		URBAN_FAMILY:
 			return UrbanFamilyLayoutData.generate(map_seed, cell_size, requested_manifest, bool(requested_manifest.get("population_enabled", true)))
 		REFINERY:
@@ -68,6 +73,7 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float) -> bool:
 	match data.source_kind:
+		ParkingGarageLayoutData.SOURCE_KIND: return ParkingGarageLayoutData.present(data, parent, cell_size)
 		"authored_urban_family": return UrbanFamilyLayoutData.present(data, parent, cell_size)
 		"authored_loading_yard": LoadingYardLayoutData.present(parent, cell_size)
 		"authored_refinery_2": Refinery2LayoutData.present(parent, cell_size)

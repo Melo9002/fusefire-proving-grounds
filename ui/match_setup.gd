@@ -63,6 +63,7 @@ func _ready() -> void:
 	_add_battlefield_option(BattlefieldCatalogData.REFINERY_2)
 	_add_battlefield_option(BattlefieldCatalogData.LOADING_YARD)
 	_add_battlefield_option(BattlefieldCatalogData.URBAN_FAMILY)
+	_add_battlefield_option(BattlefieldCatalogData.PARKING_GARAGE)
 	_add_battlefield_option(BattlefieldCatalogData.REFINERY_FAMILY)
 	map_size_option.select(1)
 	_refresh_generation_controls()
@@ -478,7 +479,7 @@ func _on_generation_toggled(_enabled: bool) -> void:
 
 func _refresh_generation_controls() -> void:
 	map_size_option.disabled = not generated_map_toggle.button_pressed
-	population_toggle.visible = generated_map_toggle.button_pressed and _selected_battlefield_id() in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY]
+	population_toggle.visible = generated_map_toggle.button_pressed and _selected_battlefield_id() in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY, BattlefieldCatalogData.PARKING_GARAGE]
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -549,6 +550,6 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
 	config.select_battlefield(battlefield)
-	if battlefield in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY]:
+	if battlefield in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY, BattlefieldCatalogData.PARKING_GARAGE]:
 		config.content_manifest = {"population_enabled": population_toggle.button_pressed}
 	return config

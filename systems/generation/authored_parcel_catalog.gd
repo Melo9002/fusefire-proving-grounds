@@ -12,6 +12,7 @@ const MAINTENANCE_GALLERY_A := &"maintenance_gallery_a"
 const INDUSTRIAL_OFFICE_PARKING_A := &"industrial_office_parking_a"
 const SIGNAL_COURTYARD_A := &"signal_courtyard_a"
 const COURTYARD_GALLERY_A := &"courtyard_gallery_a"
+const PARKING_GARAGE_A := &"parking_garage_a"
 const LOADING_SERVICE := &"loading_service"
 const PROCESS := &"process"
 const STORAGE := &"storage"
@@ -19,6 +20,7 @@ const ELEVATED_PROCESS := &"elevated_process"
 const URBAN_FRONTAGE := &"urban_frontage"
 const URBAN_COURTYARD := &"urban_courtyard"
 const URBAN_GALLERY := &"urban_gallery"
+const PARKING_GARAGE := &"parking_garage"
 
 const LoadingYardA = preload("res://art/environments/authored/parcels/loading_yard.tscn")
 const LoadingYardB = preload("res://art/environments/authored/parcels/loading_yard_alt.tscn")
@@ -28,6 +30,7 @@ const MaintenanceGalleryA = preload("res://art/environments/authored/parcels/mai
 const IndustrialOfficeParkingA = preload("res://art/environments/authored/parcels/industrial_office_parking.tscn")
 const SignalCourtyardA = preload("res://art/environments/authored/parcels/signal_courtyard.tscn")
 const CourtyardGalleryA = preload("res://art/environments/authored/parcels/courtyard_gallery.tscn")
+const ParkingGarageA = preload("res://art/environments/authored/parcels/parking_garage.tscn")
 
 static func all() -> Array:
 	return [
@@ -39,6 +42,7 @@ static func all() -> Array:
 		Definition.new(INDUSTRIAL_OFFICE_PARKING_A, "Industrial office and visitor parking", URBAN_FRONTAGE, 1, Vector2i(32, 32), IndustrialOfficeParkingA),
 		Definition.new(SIGNAL_COURTYARD_A, "Industrial signal courtyard", URBAN_COURTYARD, 1, Vector2i(32, 32), SignalCourtyardA),
 		Definition.new(COURTYARD_GALLERY_A, "Inward-facing courtyard gallery", URBAN_GALLERY, 1, Vector2i(16, 32), CourtyardGalleryA),
+		Definition.new(PARKING_GARAGE_A, "Two-level service garage", PARKING_GARAGE, 1, Vector2i(32, 32), ParkingGarageA),
 	]
 
 static func get_definition(id: StringName):

@@ -25,7 +25,9 @@ static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: M
 				slab.walkable = false; slab.can_stop = false; slab.cover_height = 0.22 * unit; slab.blocks_line_of_sight = true
 				data.add_cell(slab)
 	if node.has_meta("deck_local_rect"):
-		_stamp_local_deck(data, transform, node.get_meta("deck_local_rect"), int(node.get_meta("deck_level")), unit)
+		var level := int(node.get_meta("deck_level"))
+		data.elevation_labels[level] = String(node.get_meta("deck_label", "Maintenance walkway"))
+		_stamp_local_deck(data, transform, node.get_meta("deck_local_rect"), level, unit)
 	for child in node.get_children():
 		_compile_surfaces(child, transform, data, unit)
 
@@ -47,7 +49,6 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 		_compile_contents(child, transform, data, unit)
 
 static func _stamp_local_deck(data: MapData, transform: Transform3D, rect: Rect2i, level: int, unit: float) -> void:
-	data.elevation_labels[level] = "Maintenance walkway"
 	for x in range(rect.position.x, rect.end.x):
 		for z in range(rect.position.y, rect.end.y):
 			var position := _local_cell_to_grid(transform, Vector3i(x, level, z), data, unit)

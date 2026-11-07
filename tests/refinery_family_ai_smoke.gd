@@ -16,6 +16,10 @@ func _run() -> void:
 		family_id = Catalog.URBAN_FAMILY
 		family_layout = load("res://systems/generation/urban_family_layout.gd")
 		family_plots = load("res://systems/generation/urban_plot_catalog.gd")
+	if OS.get_cmdline_user_args().has("garage"):
+		family_id = Catalog.PARKING_GARAGE
+		family_layout = load("res://systems/generation/parking_garage_layout.gd")
+		family_plots = family_layout
 	var previous_time_scale := Engine.time_scale
 	Engine.time_scale = 16.0
 	var passed := true
