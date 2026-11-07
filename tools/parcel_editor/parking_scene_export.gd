@@ -101,9 +101,7 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 		var graph := Pathfinder.new()
 		MapGraphBuilder.build(map, graph)
 		var start := ParcelTransform.cell(entrance.cell, definition.size, Vector3i.ZERO, turn)
-		var along := Vector3i.RIGHT if entrance.outward.y != 0 else Vector3i.BACK
-		for offset in entrance.width:
-			var position := ParcelTransform.cell(entrance.cell + along * offset, definition.size, Vector3i.ZERO, turn)
+		for position in entrance.world_span(definition.size, Vector3i.ZERO, turn):
 			var cell := map.get_cell(position)
 			if cell == null or not cell.walkable or not cell.can_stop:
 				return "Occupied export blocks entrance cell %s at rotation %d." % [position, turn]

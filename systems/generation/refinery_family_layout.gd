@@ -7,6 +7,7 @@ const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
 const ParcelCatalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 const DeploymentRepair = preload("res://systems/generation/authored_deployment_repair.gd")
+const SlotContract = preload("res://systems/generation/parcel_slot_contract.gd")
 const SiteA = preload("res://art/environments/authored/plots/refinery_site_a.tscn")
 const SiteB = preload("res://art/environments/authored/plots/refinery_site_b.tscn")
 const SOURCE_KIND := "authored_refinery_family"
@@ -23,16 +24,29 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 	data.generation_errors.assign(resolved.get("errors", []))
 	if not data.generation_errors.is_empty():
 		return data
+	var interfaces: Array[Dictionary] = []
 	for placement: Dictionary in resolved.placements:
 		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
 			data.generation_errors.append({"code": "STALE_PARCEL_DEPENDENCY", "detail": String(placement.parcel_id)})
 			continue
 		var root: Node3D = parcel.instantiate()
+		var connection := ParcelConnection.from_scene(root)
+		interfaces.append({
+			"slot_path": "%s/%s" % [resolved.plot_id, placement.slot_id],
+			"span": connection.world_span(parcel.size, placement.origin, placement.rotation),
+			"outward": connection.world_outward(placement.rotation),
+		})
 		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
 		Compiler.compile(root, data, cell_size)
 		root.free()
+	for interface in interfaces:
+		var failure := SlotContract.validate_compiled_span(data, interface.slot_path, interface.span, interface.outward)
+		if not failure.is_empty():
+			data.generation_errors.append(failure)
+	if not data.generation_errors.is_empty():
+		return data
 	if not DeploymentRepair.apply(data):
 		data.generation_errors.append({"code": "UNSATISFIABLE_DEPLOYMENT", "detail": "No connected stopping cells remain in a required deployment column"})
 	return data
@@ -48,7 +62,7 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 
 static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene) -> bool:
 	var resolved := data.content_manifest
-	if not Resolver.is_valid(resolved):
+	if not data.generation_errors.is_empty() or not Resolver.is_valid(resolved):
 		return false
 	var plot_root := plot_scene.instantiate() as Node3D
 	plot_root.scale = Vector3.ONE * cell_size

@@ -31,21 +31,23 @@ Match Setup
 | `refinery_2` | Fixed authored Godot scene | Supported authored map |
 | `loading_yard` | 16x32 authored parcel centred in a 40x48 battlefield | Foundation proof; technical validation exists, owner visual/playability review remains |
 | `refinery_family` | Two fixed 64x64 plots resolving registered authored parcels | Active Generation 2.0 proof; Reach/replay and agent visual validation pass, owner review remains |
+| `urban_family` | Fixed 64x64 service street or signal courtyard selected by seed | Match Setup preview with Reach and replay evidence |
+| `parking_garage` | One fixed 32x32 two-level parcel with optional parked vehicles | Match Setup proof with Reach/replay, Rescue and rendered camera evidence |
 
 ## Authored content boundary
 
 `AuthoredSceneMapCompiler` is the only shared scene-to-`MapData` compiler. It reads explicit tactical metadata such as `solid_size`, decks, ladders and deployments. The same scene is instantiated for presentation.
 
-`ParcelTransform` maps parcel-local cells and scene transforms through supported quarter turns. `ParcelConnection` declares a real boundary cell, outward direction, type and usable width. A parcel scene owns its dimensions, revision and connections as metadata. Connections must validate before later plot composition may use the parcel. Standard parcel footprints are 16×16, 16×32 and 32×32 tactical cells; a supported quarter-turn provides 32×16.
+`ParcelTransform` maps parcel-local cells and scene transforms through supported quarter turns. `ParcelConnection` declares a boundary cell, outward direction, type and usable width. A parcel scene owns its dimensions, revision and connections as metadata. The resolver checks slot bounds, overlap with other slots or roads, and the full rotated entrance against the declared plot approach. After compiling the chosen population, the shared layout checks both sides of each in-bounds seam for walkable stopping cells at the declared height. An explicitly external driveway ends at the playable boundary. Standard parcel footprints are 16×16, 16×32 and 32×32 tactical cells. A supported quarter-turn provides 32×16.
 
 Do not duplicate the compiler in a new layout adapter. Do not derive cover from mesh collision. Do not stretch imported assets to fill a parcel.
 
-The registered parcel catalog also contains the isolated `industrial_office_parking_a` urban-content proof. `UrbanPlotCatalog` owns the first fixed street composition and uses the same small `ParcelSlotContract` compatibility boundary as the refinery resolver. Catalog membership makes both available to authoring and validation only; no supported battlefield currently selects the urban plot.
+The urban service street uses the registered `industrial_office_parking_a` parcel. Both urban plots and the garage use the same resolver, slot contract and tactical compiler as the refinery family.
 
 ## Deliberate limits
 
 - No active general plot solver, WFC, arbitrary packing or procedural building constructor.
-- The active **Parcel Editor** is an isolated inspection and visual-draft tool for registered standard-footprint parcels. It owns camera, footprint-grid, tactical-overlay and revision-bound visual transform history; it cannot mutate runtime scenes or tactical contracts. Future authoring work must remain inside this boundary. It has no runtime generator, publication framework or retired dependency graph.
+- The **Parcel Editor** supports inspection, revision-bound visual drafts, population fields and validated parking-scene exports for registered standard footprints. Exports go to a separate scene for manual review and registration.
 - No runtime semantic-catalog scan. Authored scenes resolve direct stable assets; later bounded plot choices must use a small registered list.
 - New layout content must be an authored, registered parcel with measured interfaces and focused tactical/visual evidence; catalog membership alone does not make it eligible for a plot.
 - Generator 1 remains until a replacement demonstrates equivalent gameplay and replay behavior and the owner explicitly retires it.

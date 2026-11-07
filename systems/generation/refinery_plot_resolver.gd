@@ -20,6 +20,10 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 	if int(requested.get("plot_revision", plot.revision)) != int(plot.revision):
 		result.errors.append(_error("STALE_PLOT_REVISION", String(plot.plot_id)))
 		return result
+	var footprint_error := SlotContract.validate_plot_footprints(plot)
+	if not footprint_error.is_empty():
+		result.errors.append(footprint_error)
+		return result
 	var requested_placements: Dictionary = {}
 	for placement in requested.get("placements", []):
 		requested_placements[StringName(placement.get("slot_id", &""))] = placement
@@ -36,13 +40,18 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 		if parcel == null:
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
 			continue
-		var validation := SlotContract.validate(slot, parcel)
 		var parcel_errors: PackedStringArray = parcel.validate()
 		if not parcel_errors.is_empty():
 			result.errors.append(_error("INVALID_PARCEL_CONTRACT", "%s: %s" % [slot.slot_id, "; ".join(parcel_errors)]))
 			continue
+		var offered: ParcelConnection = parcel.connection()
+		var validation := SlotContract.validate(slot, parcel, offered)
 		if not validation.is_empty():
 			result.errors.append(_error(validation, "%s/%s" % [plot.plot_id, slot.slot_id]))
+			continue
+		var approach_error := SlotContract.validate_approach(plot, slot, offered)
+		if not approach_error.is_empty():
+			result.errors.append(approach_error)
 			continue
 		var population := _resolve_population(parcel, map_seed, slot_index, requested_placement, population_enabled, "%s/%s" % [plot.plot_id, slot.slot_id])
 		if population.has("error"):

@@ -25,7 +25,7 @@ static func get_definition(id: StringName) -> Dictionary:
 			"size": MAP_SIZE,
 			"origin": Vector3i.ZERO,
 			"rotation": 0,
-			"required_interface": {"kind": &"garage_driveway", "width": 8, "cell": Vector3i(12, 0, 0), "outward": Vector2i(0, -1)},
+			"required_interface": {"kind": &"garage_driveway", "width": 8, "cell": Vector3i(12, 0, 0), "outward": Vector2i(0, -1), "external": true},
 		}],
 	}
 

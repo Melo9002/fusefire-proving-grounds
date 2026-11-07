@@ -34,5 +34,13 @@ static func from_scene(root: Node) -> ParcelConnection:
 func world_cell(size: Vector2i, origin: Vector3i, quarter_turns: int) -> Vector3i:
 	return ParcelTransform.cell(cell, size, origin, quarter_turns)
 
+## Walk the span in local order so a rotated tangent can run backward in world space.
+func world_span(size: Vector2i, origin: Vector3i, quarter_turns: int) -> Array[Vector3i]:
+	var along := Vector3i.RIGHT if outward.y != 0 else Vector3i.BACK
+	var result: Array[Vector3i] = []
+	for offset in width:
+		result.append(ParcelTransform.cell(cell + along * offset, size, origin, quarter_turns))
+	return result
+
 func world_outward(quarter_turns: int) -> Vector2i:
 	return ParcelTransform.direction(outward, quarter_turns)
