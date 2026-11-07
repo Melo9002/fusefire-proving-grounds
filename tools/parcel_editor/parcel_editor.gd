@@ -288,6 +288,7 @@ func _redo() -> void:
 		_apply_draft("Redid the draft edit.")
 
 func _apply_draft(message := "") -> void:
+	field_panel.clear_preview()
 	var failures := draft.apply(displayed_parcel)
 	_update_draft_status(message if failures.is_empty() else "; ".join(failures))
 	_update_history_buttons()

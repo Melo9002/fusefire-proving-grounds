@@ -8,6 +8,11 @@ const PRESETS := {
 	"equipment": ["factory_kit/machine", "factory_kit/machine-fortified"],
 	"protected": [],
 }
+const PARKING_ROW := "parking_row"
+const BAY_WIDTH := 3
+const BAY_DEPTH := 5
+const AISLE_DEPTH := 4
+const PARKING_HEADROOM := 2.5
 var parcel_id := ""
 var revision := 0
 var surfaces: Dictionary = {}
@@ -33,16 +38,104 @@ func begin(definition, scene_root: Node3D) -> void:
 	future.clear()
 	next_id = 1
 
-func add(surface: String, preset: String, rect: Rect2i) -> bool:
+func add(surface: String, preset: String, rect: Rect2i, heading := 0) -> bool:
 	if fields.size() >= 256:
 		last_error = "Draft field limit reached (256)."
 		return false
 	var record := {"id": "field_%d" % next_id, "surface": surface, "preset": preset, "rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]}
+	if preset == PARKING_ROW:
+		record.heading = heading
 	if not _valid(record): return false
 	_checkpoint()
 	fields.append(record)
 	next_id += 1
 	return true
+
+## Drag along the aisle-facing edge. The selected heading points into the aisle.
+static func parking_row_rect(first: Vector2i, last: Vector2i, heading: int) -> Rect2i:
+	var direction := ParcelTransform.direction(Vector2i.DOWN, heading)
+	if direction.y != 0:
+		var span := absi(last.x - first.x) + 1
+		var width := span - posmod(span, BAY_WIDTH)
+		return Rect2i(mini(first.x, last.x), first.y - maxi(direction.y, 0) * (BAY_DEPTH - 1), width, BAY_DEPTH)
+	var span := absi(last.y - first.y) + 1
+	var width := span - posmod(span, BAY_WIDTH)
+	return Rect2i(first.x - maxi(direction.x, 0) * (BAY_DEPTH - 1), mini(first.y, last.y), BAY_DEPTH, width)
+
+func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisional: Dictionary = {}) -> Array[Dictionary]:
+	var fixed := obstacles.duplicate()
+	for socket in sockets:
+		if socket.has("local_bounds"):
+			fixed.append(socket.local_bounds)
+	var results: Array[Dictionary] = []
+	var accepted_bays: Array[AABB] = []
+	var accepted_aisles: Array[AABB] = []
+	var rows := fields.duplicate()
+	if not provisional.is_empty():
+		rows.append(provisional)
+	for row: Dictionary in rows:
+		if row.preset != PARKING_ROW:
+			continue
+		var heading := int(row.heading)
+		var direction := ParcelTransform.direction(Vector2i.DOWN, heading)
+		var bounds := rectangle(surfaces[row.surface])
+		var level := int(surfaces[row.surface].level)
+		var rect := rectangle(row)
+		if not rect.has_area() or not bounds.encloses(rect):
+			continue
+		var aisle := rect
+		if direction.y != 0:
+			aisle.position.y = rect.end.y if direction.y > 0 else rect.position.y - AISLE_DEPTH
+			aisle.size.y = AISLE_DEPTH
+		else:
+			aisle.position.x = rect.end.x if direction.x > 0 else rect.position.x - AISLE_DEPTH
+			aisle.size.x = AISLE_DEPTH
+		var aisle_volume := _parking_volume(aisle, level)
+		var aisle_clear := bounds.encloses(aisle) and not _overlaps(aisle_volume, fixed) and not _overlaps(aisle_volume, accepted_bays)
+		var length := rect.size.x if direction.y != 0 else rect.size.y
+		var row_accepted := false
+		for offset in range(0, length, BAY_WIDTH):
+			var bay := Rect2i(rect.position + Vector2i(offset, 0), Vector2i(BAY_WIDTH, BAY_DEPTH)) if direction.y != 0 else Rect2i(rect.position + Vector2i(0, offset), Vector2i(BAY_DEPTH, BAY_WIDTH))
+			var volume := _parking_volume(bay, level)
+			var reason := ""
+			if not aisle_clear:
+				reason = "aisle blocked or outside surface"
+			elif _overlaps(volume, fixed) or _overlaps(volume, accepted_bays) or _overlaps(volume, accepted_aisles):
+				reason = "bay clearance conflict"
+			elif not _parking_painted(row.surface, bay):
+				reason = "outside parking paint or protected"
+			if reason.is_empty():
+				accepted_bays.append(volume)
+				row_accepted = true
+			var id := "row_bay_%s_%d_%d" % [row.surface, bay.position.x, bay.position.y]
+			results.append({"id": id, "surface": row.surface, "level": level, "heading": heading, "rect": bay, "aisle": aisle, "reason": reason})
+		if row_accepted:
+			accepted_aisles.append(aisle_volume)
+	return results
+
+func _parking_painted(surface: String, bay: Rect2i) -> bool:
+	for x in range(bay.position.x, bay.end.x):
+		for z in range(bay.position.y, bay.end.y):
+			var covered := false
+			for field in fields:
+				if field.surface != surface or not rectangle(field).has_point(Vector2i(x, z)):
+					continue
+				if field.preset == "protected":
+					return false
+				if field.preset == "parking":
+					covered = true
+			if not covered:
+				return false
+	return true
+
+static func _parking_volume(rect: Rect2i, level: int) -> AABB:
+	return AABB(Vector3(rect.position.x - 0.5, level, rect.position.y - 0.5), Vector3(rect.size.x, PARKING_HEADROOM, rect.size.y))
+
+static func _overlaps(volume: AABB, others: Array[AABB]) -> bool:
+	for other in others:
+		if volume.grow(-0.001).intersects(other):
+			return true
+	return false
 
 func erase_at(surface: String, cell: Vector2i) -> bool:
 	for index in range(fields.size() - 1, -1, -1):
@@ -92,7 +185,7 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 		var blocked := false
 		var permission_cells := {}
 		for field in fields:
-			if field.surface != String(socket.surface_id): continue
+			if field.surface != String(socket.surface_id) or field.preset == PARKING_ROW: continue
 			var rect := rectangle(field)
 			var area := Rect2(Vector2(rect.position) - Vector2.ONE * 0.5, Vector2(rect.size))
 			var footprint := Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z))
@@ -125,7 +218,7 @@ static func rectangle(record: Dictionary) -> Rect2i:
 	return Rect2i(int(r[0]), int(r[1]), int(r[2]), int(r[3]))
 
 func _valid(record: Dictionary) -> bool:
-	if not record.get("surface") is String or not surfaces.has(record.surface) or not PRESETS.has(record.get("preset")) or not record.get("id") is String:
+	if not record.get("surface") is String or not surfaces.has(record.surface) or (not PRESETS.has(record.get("preset")) and record.get("preset") != PARKING_ROW) or not record.get("id") is String:
 		last_error = "Unknown surface, preset or field identity."
 		return false
 	var raw: Variant = record.get("rect")
@@ -137,6 +230,15 @@ func _valid(record: Dictionary) -> bool:
 			last_error = "Field coordinates must be integer cells."
 			return false
 	var rect := rectangle(record)
+	if record.preset == PARKING_ROW:
+		var heading: Variant = record.get("heading")
+		if not (heading is int or heading is float) or not is_finite(float(heading)) or float(heading) != int(heading) or int(heading) < 0 or int(heading) > 3:
+			last_error = "Parking row needs a cardinal aisle heading."
+			return false
+		var along_x := posmod(int(heading), 2) == 0
+		if (rect.size.y if along_x else rect.size.x) != BAY_DEPTH or posmod(rect.size.x if along_x else rect.size.y, BAY_WIDTH) != 0:
+			last_error = "Parking row must contain whole 3 × 5 bays."
+			return false
 	var bounds: Array = surfaces[record.surface].rect
 	if rect.size.x <= 0 or rect.size.y <= 0 or not Rect2i(int(bounds[0]), int(bounds[1]), int(bounds[2]), int(bounds[3])).encloses(rect):
 		last_error = "Field must remain inside the selected surface."

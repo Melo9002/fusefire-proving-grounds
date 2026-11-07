@@ -36,6 +36,18 @@ func _run() -> void:
 	var scroll := editor.field_panel.get_parent().get_parent() as ScrollContainer
 	scroll.ensure_control_visible(editor.field_panel)
 	await _capture(output.path_join("parcel-editor-parking-fields.png"))
+	editor.field_panel.session.erase_at("ground", Vector2i(5, 6))
+	editor.field_panel.session.add("ground", "parking_row", Rect2i(13, 6, 12, 5), 0)
+	editor.field_panel.tool_picker.select(3)
+	editor.field_panel.tool_picker.item_selected.emit(3)
+	await process_frame
+	scroll.ensure_control_visible(editor.field_panel)
+	await _capture(output.path_join("parcel-editor-empty-row.png"))
+	editor.field_panel.preview()
+	editor._yaw = deg_to_rad(145.0)
+	editor._pitch = deg_to_rad(44.0)
+	editor._frame()
+	await _capture(output.path_join("parcel-editor-populated-row.png"))
 	print("Parcel Editor captures saved to " + output)
 	quit()
 

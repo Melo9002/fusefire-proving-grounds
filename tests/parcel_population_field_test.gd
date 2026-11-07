@@ -58,6 +58,7 @@ func _run() -> void:
 	upstairs.socket_id = &"upper_car"
 	upstairs.surface_id = &"upper"
 	check(draft.preview([upstairs], 17, 100).is_empty(), "Ground field cannot populate a different floor at identical X/Z")
+	_check_parking_rows(definition, scene_root, sockets, obstacles, destination)
 	var snapshot := draft.fields.duplicate(true)
 	var file := FileAccess.open(destination, FileAccess.WRITE)
 	file.store_string("{bad json")
@@ -101,6 +102,54 @@ func _run() -> void:
 	motion.relative = Vector2(0, 10)
 	editor._unhandled_input(motion)
 	check(editor._pitch > deg_to_rad(34), "Editor vertical orbit matches the requested inverted battle-camera control")
+	editor._orbiting = false
+	editor._top_view()
+	panel.tool_picker.select(3)
+	panel.tool_picker.item_selected.emit(3)
+	event.pressed = true
+	event.position = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(13, 0, 10)))
+	panel.handle_input(event)
+	motion.position = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(24, 0, 10)))
+	panel.handle_input(motion)
+	check(panel.status.text.contains("4 bays fit") and panel.session.fields.size() == 2, "Live row fit is visible before release")
+	event.pressed = false
+	event.position = motion.position
+	panel.handle_input(event)
+	check(panel.session.fields.size() == 3 and panel.session.fields[-1].preset == Session.PARKING_ROW, "Mouse release commits the row draft")
+	panel.preview()
+	check(panel.status.text.contains("3 authored sockets + 4 row bays occupied"), "100% preview fills four new bays alongside the original three")
+	if is_instance_valid(panel._row_preview):
+		check(panel._row_preview.get_child_count() == 4, "New bays display four calibrated vehicle scene instances")
+		var poses: Array = panel._row_preview.get_children().map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")])
+		panel.preview()
+		check(panel._row_preview.get_children().map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")]) == poses, "Same preview seed reproduces model and pose")
+	panel.density.value = 0
+	panel.preview()
+	check(not is_instance_valid(panel._row_preview), "0% occupancy keeps empty outlines without vehicles")
 	editor.free()
 	print("Population fields: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _check_parking_rows(definition, scene_root: Node3D, sockets: Array[Dictionary], obstacles: Array[AABB], destination: String) -> void:
+	var rows := Session.new()
+	rows.begin(definition, scene_root)
+	rows.add("ground", "parking", Rect2i(2, 4, 28, 8))
+	var rect := Session.parking_row_rect(Vector2i(13, 10), Vector2i(24, 10), 0)
+	check(rect == Rect2i(13, 6, 12, 5), "Aisle-facing drag lays out whole bays behind its edge")
+	check(Session.parking_row_rect(Vector2i(24, 10), Vector2i(13, 10), 0) == rect, "Dragging the row backwards preserves bay positions")
+	check(Session.parking_row_rect(Vector2i(8, 4), Vector2i(8, 15), 1) == Rect2i(8, 4, 5, 12), "Quarter turn swaps bay dimensions and faces the opposite axis")
+	check(rows.add("ground", Session.PARKING_ROW, rect, 0), "Parking row saves a cardinal heading")
+	var bays := rows.parking_bays(sockets, obstacles)
+	check(bays.size() == 4 and bays.all(func(bay): return bay.reason.is_empty()), "Office gap fits four bays and their aisle")
+	check(bays[0].aisle == Rect2i(13, 11, 12, 4), "Aisle stays on the selected side of the row")
+	var blocked_aisle := obstacles.duplicate()
+	blocked_aisle.append(AABB(Vector3(17, 0, 12), Vector3.ONE))
+	check(rows.parking_bays(sockets, blocked_aisle).all(func(bay): return bay.reason.contains("aisle blocked")), "Fixed object inside aisle rejects the row")
+	rows.add("ground", "protected", Rect2i(13, 8, 1, 1))
+	check(not rows.parking_bays(sockets, obstacles)[0].reason.is_empty(), "Protected cells reject overlapping bay")
+	rows.undo()
+	check(rows.parking_bays(sockets, obstacles) == bays, "Undo restores the validated bay plan")
+	check(rows.save_to(destination), "Parking row draft saves")
+	var reloaded := Session.new()
+	reloaded.begin(definition, scene_root)
+	check(reloaded.load_from(destination) and reloaded.parking_bays(sockets, obstacles) == bays, "JSON reload preserves row direction and exact bay plan")

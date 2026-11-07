@@ -38,7 +38,16 @@ The footprint grid is visual guidance. `MapData` compiled from explicit authored
 
 Scroll to **Population Fields / Draft**. Select a surface/floor and a Parking, Containers, Equipment or Protected preset. Select **Draw field**, then drag LMB across cells; select **Erase field** and click to remove the topmost matching field. Cyan marks permitted regions; red marks protected regions. RMB/MMB/wheel still control the camera. The selected floor's plane receives the stroke even if another floor is visible above it.
 
-Set Seed and percentage of authored bays, then **Preview**. This version filters compatible population sockets already authored in the parcel; it cannot add assets to an empty field. At 100%, the office parking parcel can show its three existing bays, subject to exclusions and conflicts. Compatible painted rectangles combine into a permission mask; overlapping cells render once, and the rectangle is visible during a drag. The combined mask must contain the occupant's authored tactical footprint, while any protected overlap excludes it. Preview rejects intersections with fixed authored solid volumes and other accepted occupants in deterministic socket order. These checks use explicit authored bounds, not arbitrary mesh-derived collision or a full mission-access certificate. Manual fixed content remains visible. **Reset** restores source population. Field Undo/Redo is separate from visual placement Undo/Redo. Preview requires unchanged source visual transforms.
+Set Seed and percentage of eligible bays, then **Preview**. Parking can use existing authored sockets and the parking rows described below. Containers and equipment still use authored sockets. Compatible painted rectangles combine into a permission mask with one layer per cell. The combined mask must contain the occupant's footprint. Protected areas, fixed solid volumes and other accepted occupants reject overlaps. **Reset** restores source population. Field Undo/Redo is separate from visual placement Undo/Redo. Preview requires source visual transforms.
+
+### Draw a parking row
+
+1. Paint Parking permission over the intended bays and Protected over access space you want to keep empty.
+2. Choose **Draw parking row** and select the direction toward the aisle. **Top** view makes the grid easier to read.
+3. Drag along the edge of the row that faces the aisle. The tool fits whole 3 × 5 cell bays behind that edge and checks a four-cell-deep aisle on the chosen side. Gold outlines mark fitting bays, red marks rejected bays, and green marks the aisle.
+4. Press **Preview** to see seeded vehicle models, occupancy, and forward/reverse headings. **Save fields** stores the row and heading with the painted fields. Erase a row by clicking within its bay outline in **Erase field or row** mode.
+
+The office lot demonstrates four extra bays. Paint X 2–29 and Z 4–11, then drag along Z 10 from X 13 to 24 with **Aisle toward +Z**. The result fits seven cars at 100% occupancy, including the original three. The 3 × 5 bay and 2.5-cell headroom are initial editor dimensions checked against the calibrated sedan, SUV and taxi. Existing sockets reserve their space, and new bays avoid fixed solids, named deck slabs and other rows' aisle space. Aisle checks establish geometric clearance. Access to the wider road network and vehicle turning remain outside this proof.
 
 Editor camera: RMB drag down raises the view toward overhead, up lowers it, matching the battle camera's vertical orbit preference. Horizontal orbit and MMB pan retain their controls.
 
