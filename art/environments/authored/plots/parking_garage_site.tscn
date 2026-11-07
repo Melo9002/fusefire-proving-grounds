@@ -1,6 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="warehouse"]
+[ext_resource type="Script" path="res://presentation/overlays/tactical_camera_aperture.gd" id="aperture"]
+[ext_resource type="Shader" path="res://presentation/overlays/tactical_camera_aperture.gdshader" id="aperture_shader"]
 
 [sub_resource type="StandardMaterial3D" id="ground"]
 albedo_color = Color(0.35, 0.36, 0.31, 1)
@@ -14,9 +16,9 @@ roughness = 0.88
 albedo_color = Color(0.56, 0.56, 0.53, 1)
 roughness = 0.88
 
-[sub_resource type="StandardMaterial3D" id="wall"]
-albedo_color = Color(0.38, 0.42, 0.42, 1)
-roughness = 0.88
+[sub_resource type="ShaderMaterial" id="wall"]
+shader = ExtResource("aperture_shader")
+shader_parameter/surface_color = Color(0.38, 0.42, 0.42, 1)
 
 [sub_resource type="BoxMesh" id="site_ground"]
 size = Vector3(180, 0.2, 180)
@@ -68,10 +70,12 @@ mesh = SubResource("ramp_support")
 [node name="ServiceBoundary" type="MeshInstance3D" parent="."]
 position = Vector3(-20, 1.95, 26)
 mesh = SubResource("boundary_wall")
+script = ExtResource("aperture")
 
 [node name="EastBoundary" type="MeshInstance3D" parent="."]
 position = Vector3(20, 1.95, 26)
 mesh = SubResource("boundary_wall")
+script = ExtResource("aperture")
 
 [node name="DistantServiceWarehouse" parent="." instance=ExtResource("warehouse")]
 position = Vector3(16, -0.09, 46)

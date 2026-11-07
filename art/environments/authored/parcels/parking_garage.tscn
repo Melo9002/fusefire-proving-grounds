@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
 [ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
 [ext_resource type="Script" path="res://presentation/overlays/warehouse_roof_cutaway.gd" id="cutaway"]
+[ext_resource type="Script" path="res://presentation/overlays/tactical_camera_aperture.gd" id="aperture"]
+[ext_resource type="Shader" path="res://presentation/overlays/tactical_camera_aperture.gdshader" id="aperture_shader"]
 
 [sub_resource type="StandardMaterial3D" id="concrete"]
 albedo_color = Color(0.56, 0.56, 0.53, 1)
@@ -34,13 +36,24 @@ material = SubResource("pavement")
 size = Vector3(22, 0.22, 24)
 material = SubResource("concrete")
 
+[sub_resource type="BoxShape3D" id="deck_pick_surface"]
+size = Vector3(22, 0.04, 24)
+
+[sub_resource type="ShaderMaterial" id="column_aperture"]
+shader = ExtResource("aperture_shader")
+shader_parameter/surface_color = Color(0.56, 0.56, 0.53, 1)
+
+[sub_resource type="ShaderMaterial" id="band_aperture"]
+shader = ExtResource("aperture_shader")
+shader_parameter/surface_color = Color(0.85, 0.53, 0.17, 1)
+
 [sub_resource type="BoxMesh" id="pillar"]
 size = Vector3(0.85, 3.78, 0.85)
-material = SubResource("concrete")
+material = SubResource("column_aperture")
 
 [sub_resource type="BoxMesh" id="belt"]
 size = Vector3(0.9, 0.36, 0.9)
-material = SubResource("safety")
+material = SubResource("band_aperture")
 
 [sub_resource type="BoxMesh" id="line"]
 size = Vector3(0.09, 0.012, 5.6)
@@ -109,56 +122,68 @@ mesh = SubResource("base")
 [node name="WestColumn1" type="MeshInstance3D" parent="."]
 position = Vector3(5, 1.89, 9)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="WestColumn1"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="WestColumn2" type="MeshInstance3D" parent="."]
 position = Vector3(5, 1.89, 19)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="WestColumn2"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="WestColumn3" type="MeshInstance3D" parent="."]
 position = Vector3(5, 1.89, 30)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="WestColumn3"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="EastColumn1" type="MeshInstance3D" parent="."]
 position = Vector3(26, 1.89, 9)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="EastColumn1"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="EastColumn2" type="MeshInstance3D" parent="."]
 position = Vector3(26, 1.89, 19)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="EastColumn2"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="EastColumn3" type="MeshInstance3D" parent="."]
 position = Vector3(26, 1.89, 30)
 mesh = SubResource("pillar")
+script = ExtResource("aperture")
 metadata/solid_size = Vector3(0.85, 3.78, 0.85)
 
 [node name="SafetyBand" type="MeshInstance3D" parent="EastColumn3"]
 position = Vector3(0, -0.7, 0)
 mesh = SubResource("belt")
+script = ExtResource("aperture")
 
 [node name="UpperDeck" type="Node3D" parent="."]
 script = ExtResource("cutaway")
@@ -173,6 +198,14 @@ metadata/population_surface_id = &"upper"
 [node name="ConcreteSlab" type="MeshInstance3D" parent="UpperDeck"]
 position = Vector3(15.5, 3.89, 19.5)
 mesh = SubResource("deck")
+
+[node name="UpperFloorPickSurface" type="StaticBody3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.98, 19.5)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Surface" type="CollisionShape3D" parent="UpperDeck/UpperFloorPickSurface"]
+shape = SubResource("deck_pick_surface")
 
 [node name="FrontCrossbeam" type="MeshInstance3D" parent="UpperDeck"]
 position = Vector3(15.5, 3.61, 9)

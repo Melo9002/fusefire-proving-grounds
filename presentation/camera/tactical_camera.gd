@@ -77,16 +77,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _transitioning:
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if _cinematic_active:
 		_update_cinematic_camera(delta)
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if not get_window().has_focus():
 		_dragging = false
 		_rotating = false
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		_dragging = false
@@ -129,15 +129,15 @@ func _process(delta: float) -> void:
 	if turn_direction != 0.0:
 		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-turn_direction * rotation_speed * delta))
-	_update_camera_occlusion()
+	_update_camera_occlusion(delta)
 
 func _exit_tree() -> void:
 	_restore_faded_occluders({})
-	for group in ["tactical_roof_cutaways", "tactical_visual_occluders"]:
+	for group in ["tactical_roof_cutaways", "tactical_visual_occluders", TacticalCameraAperture.GROUP]:
 		for visual in get_tree().get_nodes_in_group(group):
 			visual.restore_view()
 
-func _update_camera_occlusion() -> void:
+func _update_camera_occlusion(delta: float = 0.016) -> void:
 	if not is_instance_valid(camera) or not is_inside_tree():
 		_restore_faded_occluders({})
 		return
@@ -148,6 +148,7 @@ func _update_camera_occlusion() -> void:
 		roof.update_view(camera.global_position, focuses)
 	for visual in get_tree().get_nodes_in_group("tactical_visual_occluders"):
 		visual.update_view(camera.global_position, focuses)
+	_update_local_apertures(delta)
 	if focuses.is_empty():
 		_restore_faded_occluders({})
 		return
@@ -170,6 +171,23 @@ func _update_camera_occlusion() -> void:
 					_faded_occluders[geometry] = geometry.transparency
 				geometry.transparency = occluder_transparency
 	_restore_faded_occluders(faded_now)
+
+func _update_local_apertures(delta: float) -> void:
+	var surfaces := get_tree().get_nodes_in_group(TacticalCameraAperture.GROUP)
+	if surfaces.is_empty():
+		return
+	# An inspected floor is a browsing context, not a selected protagonist.
+	var actor := _selected_unit() if not _cinematic_active and not _transitioning and _inspected_floor == Vector3.INF else null
+	if not actor or not actor.is_visible_in_tree() or not actor.stats or actor.stats.is_defeated \
+	or actor.faction not in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY]:
+		for surface in surfaces:
+			surface.restore_view()
+		return
+	var subject := actor.global_position
+	if camera.is_position_behind(subject) or not get_viewport().get_visible_rect().has_point(camera.unproject_position(subject)):
+		subject = Vector3.INF
+	for surface in surfaces:
+		surface.update_view(camera.global_position, subject, delta)
 
 func _camera_occlusion_focuses() -> Array[Vector3]:
 	if _cinematic_active:

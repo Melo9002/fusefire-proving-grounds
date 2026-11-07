@@ -59,8 +59,9 @@ func _inspect_level(height: float) -> void:
 		return
 	var point := rig.global_position
 	var roofs := get_tree().get_nodes_in_group("tactical_roof_cutaways")
-	if not roofs.is_empty():
-		point = (roofs[0] as Node3D).global_position
+	if not roofs.is_empty() and roofs[0] is WarehouseRoofCutaway:
+		var roof := roofs[0] as WarehouseRoofCutaway
+		point = roof.to_global(roof.interior_bounds.get_center())
 	point.y = height
 	rig.inspect_floor(point)
 	_update_level_panel()
