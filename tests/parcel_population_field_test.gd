@@ -73,9 +73,12 @@ func _run() -> void:
 	root.add_child(editor)
 	await process_frame
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
 	var panel = editor.field_panel
-	panel.tool_picker.select(1)
+	check(panel.tool_buttons[3].disabled and not panel.heading_picker.visible, "A parking row starts locked until its surface has parking permission")
+	panel.select_tool(1)
+	check(panel.tool_buttons[1].button_pressed and not panel.tool_buttons[0].button_pressed and panel.preset_picker.visible, "Only Paint stays selected and exposes its preset")
 	var start: Vector2 = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(2, 0, 4)))
 	var finish: Vector2 = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(29, 0, 11)))
 	var event := InputEventMouseButton.new()
@@ -89,8 +92,10 @@ func _run() -> void:
 	motion.position = finish
 	panel.handle_input(motion)
 	check(panel.overlay.get_child_count() > 0 and panel.session.fields.is_empty(), "Live drag is visible before release without committing history")
+	check(panel.measurement.text.contains("28 × 8") and not panel.has_unsaved_changes(), "Live drag shows dimensions before it becomes an unsaved change")
 	panel.handle_input(event)
 	check(panel.session.fields.size() == 1 and Session.rectangle(panel.session.fields[0]) == Rect2i(2, 4, 28, 8), "Camera ray projects mouse drag into exact selected-floor cells")
+	check(not panel.tool_buttons[3].disabled and panel.has_unsaved_changes() and "population fields" in editor.draft_badge.text, "Committed permission unlocks the row tool and marks the field draft unsaved")
 	panel.density.value = 100
 	panel.preview()
 	check(panel.status.text.begins_with("3 authored sockets"), "Editor preview uses authored parking sockets")
@@ -99,7 +104,7 @@ func _run() -> void:
 	panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
 	panel.refresh()
 	check(panel.overlay.get_child(0).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == vertices, "Overlapping rectangles render each cell once instead of stacking opacity")
-	panel.tool_picker.select(0)
+	panel.select_tool(0)
 	editor._orbiting = true
 	editor._pitch = deg_to_rad(34)
 	motion.relative = Vector2(0, 10)
@@ -107,8 +112,8 @@ func _run() -> void:
 	check(editor._pitch > deg_to_rad(34), "Editor vertical orbit matches the requested inverted battle-camera control")
 	editor._orbiting = false
 	editor._top_view()
-	panel.tool_picker.select(3)
-	panel.tool_picker.item_selected.emit(3)
+	panel.select_tool(3)
+	check(panel.tool_buttons[3].button_pressed and panel.heading_picker.visible and not panel.preset_picker.visible, "Parking row exposes its aisle direction and hides the paint preset")
 	event.pressed = true
 	event.position = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(13, 0, 10)))
 	panel.handle_input(event)

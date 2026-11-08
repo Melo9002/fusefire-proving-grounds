@@ -19,6 +19,7 @@ func _run() -> void:
 	root.add_child(editor)
 	await process_frame
 	check(editor.parcel_picker.item_count == Catalog.all().size(), "Parcel Editor lists every registered parcel")
+	check(editor.task_tabs.current_tab == ParcelEditor.Task.INSPECT and not editor.metadata_label.visible, "Editor opens on compact inspection with technical details collapsed")
 	check(editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A), "Parcel Editor opens the maintenance gallery by stable ID")
 	check(editor.displayed_parcel != null and editor.displayed_parcel_id == Catalog.MAINTENANCE_GALLERY_A, "Selected registered scene is instantiated")
 	check(editor.validation_label.text.begins_with("VALID"), "Registered parcel validation is visible")
@@ -49,6 +50,26 @@ func _run() -> void:
 	check(not loaded.load_from(test_draft_path, stale_definition, editor.displayed_parcel) and loaded.last_error.contains("STALE_PARCEL_REVISION"), "A changed source parcel revision invalidates its visual draft")
 	if FileAccess.file_exists(test_draft_path):
 		DirAccess.remove_absolute(test_draft_path)
+	editor.set_population_visible(true)
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	check(is_instance_valid(editor._selection_marker), "Move task shows the selected object's bounds and axes")
+	editor._translate_selected(Vector3.RIGHT * 0.5)
+	check(editor.draft.dirty and "visual moves" in editor.draft_badge.text, "Visual edits update the scoped unsaved indicator")
+	editor._undo()
+	check(not editor.draft.dirty, "Undoing to the source transforms clears the visual dirty state")
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
+	check(not is_instance_valid(editor._selection_marker), "The visual selection marker stays out of population editing")
+	check(editor.field_panel.session.add("ground", "protected", Rect2i(1, 1, 2, 2)), "Field fixture adds an unsaved protection area")
+	editor.field_panel.refresh()
+	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)
+	check(editor.discard_dialog.visible and editor.displayed_parcel_id == Catalog.LOADING_YARD_A and "population fields" in editor.discard_dialog.dialog_text, "A parcel switch warns about unsaved population fields")
+	editor.discard_dialog.get_cancel_button().pressed.emit()
+	await process_frame
+	check(editor.displayed_parcel_id == Catalog.LOADING_YARD_A and editor.field_panel.session.fields.size() == 1, "Cancel keeps the current parcel and unsaved fields")
+	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)
+	editor.discard_dialog.get_ok_button().pressed.emit()
+	await process_frame
+	check(editor.displayed_parcel_id == Catalog.MAINTENANCE_GALLERY_A and editor.field_panel.session.fields.is_empty() and not editor.field_panel.has_unsaved_changes(), "Confirmed switch starts a clean draft for the new parcel")
 	editor.free()
 	var menu: Control = load("res://ui/match_setup.tscn").instantiate()
 	root.add_child(menu)

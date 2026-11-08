@@ -15,7 +15,9 @@ var selected_path := ""
 var undo_stack: Array[Dictionary] = []
 var redo_stack: Array[Dictionary] = []
 var last_error := ""
-var dirty := false
+var dirty: bool:
+	get: return placements != _saved_placements
+var _saved_placements: Array[Dictionary] = []
 
 func begin(definition, root: Node3D) -> void:
 	parcel_id = definition.parcel_id
@@ -29,7 +31,7 @@ func begin(definition, root: Node3D) -> void:
 	undo_stack.clear()
 	redo_stack.clear()
 	last_error = ""
-	dirty = false
+	_saved_placements = base_placements.duplicate(true)
 
 func _collect(root: Node3D, node: Node) -> void:
 	if node is Node3D and node.has_meta("asset_id"):
@@ -90,7 +92,6 @@ func _edit_selected(editor: Callable) -> bool:
 	var record: Dictionary = placements[index].duplicate(true)
 	editor.call(record)
 	placements[index] = record
-	dirty = true
 	last_error = ""
 	return true
 
@@ -99,7 +100,6 @@ func undo() -> bool:
 		return false
 	redo_stack.append(_snapshot())
 	_restore_snapshot(undo_stack.pop_back())
-	dirty = true
 	return true
 
 func redo() -> bool:
@@ -107,7 +107,6 @@ func redo() -> bool:
 		return false
 	undo_stack.append(_snapshot())
 	_restore_snapshot(redo_stack.pop_back())
-	dirty = true
 	return true
 
 func apply(root: Node3D) -> PackedStringArray:
@@ -141,7 +140,7 @@ func save_to(path: String) -> bool:
 		return false
 	file.store_string(JSON.stringify(to_record(), "\t"))
 	file.close()
-	dirty = false
+	_saved_placements = placements.duplicate(true)
 	last_error = ""
 	return true
 
@@ -170,7 +169,7 @@ func load_from(path: String, definition, root: Node3D) -> bool:
 	selected_path = String(placements[0].path) if not placements.is_empty() else ""
 	undo_stack.clear()
 	redo_stack.clear()
-	dirty = false
+	_saved_placements = placements.duplicate(true)
 	last_error = ""
 	return true
 

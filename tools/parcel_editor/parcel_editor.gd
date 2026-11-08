@@ -8,6 +8,14 @@ const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd"
 const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
 var field_panel
 
+enum Task { INSPECT, MOVE_OBJECTS, POPULATION_FIELDS }
+var task_tabs: TabContainer
+var draft_badge: Label
+var discard_dialog: ConfirmationDialog
+var _selection_marker: Node3D
+var _panel: PanelContainer
+var _discard_action: Callable
+
 var parcel_picker: OptionButton
 var metadata_label: Label
 var validation_label: Label
@@ -41,6 +49,7 @@ func _ready() -> void:
 		parcel_picker.set_item_metadata(parcel_picker.item_count - 1, definition.parcel_id)
 	if not _definitions.is_empty():
 		_show_index(0)
+	get_viewport().size_changed.connect(_update_camera)
 	_update_camera()
 
 func _build_stage() -> void:
@@ -65,114 +74,31 @@ func _build_stage() -> void:
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
-	var panel := PanelContainer.new()
-	panel.position = Vector2(16, 16)
-	panel.size = Vector2(390, 720)
-	layer.add_child(panel)
+	_panel = PanelContainer.new()
+	layer.add_child(_panel)
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	_panel.offset_left = 16
+	_panel.offset_right = 436
+	_panel.offset_top = 16
+	_panel.offset_bottom = -16
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	panel.add_child(margin)
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(358, 600)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	margin.add_child(scroll)
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 12)
+	_panel.add_child(margin)
 	var column := VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 10)
-	scroll.add_child(column)
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
 	var title := Label.new()
-	title.text = "FUSEFIRE / PARCEL EDITOR"
+	title.text = "PARCEL EDITOR"
 	title.add_theme_font_size_override("font_size", 22)
 	column.add_child(title)
-	var scope := Label.new()
-	scope.text = "Registered authored parcels — inspection foundation"
-	scope.modulate = Color(0.66, 0.76, 0.86)
-	scope.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(scope)
 	parcel_picker = OptionButton.new()
 	parcel_picker.name = "ParcelPicker"
-	parcel_picker.item_selected.connect(_show_index)
+	parcel_picker.fit_to_longest_item = false
+	parcel_picker.item_selected.connect(_request_parcel)
 	column.add_child(parcel_picker)
-	metadata_label = Label.new()
-	metadata_label.name = "Metadata"
-	metadata_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	metadata_label.custom_minimum_size.y = 112
-	column.add_child(metadata_label)
-	validation_label = Label.new()
-	validation_label.name = "Validation"
-	validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(validation_label)
-	var edit_label := Label.new()
-	edit_label.text = "VISUAL PLACEMENT DRAFT"
-	edit_label.modulate = Color(0.72, 0.82, 0.92)
-	column.add_child(edit_label)
-	placement_picker = OptionButton.new()
-	placement_picker.name = "PlacementPicker"
-	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
-	placement_picker.item_selected.connect(_select_placement_index)
-	column.add_child(placement_picker)
-	var planar := HBoxContainer.new()
-	for spec in [["X−", Vector3(-0.5, 0, 0)], ["X+", Vector3(0.5, 0, 0)], ["Z−", Vector3(0, 0, -0.5)], ["Z+", Vector3(0, 0, 0.5)]]:
-		var button := Button.new()
-		button.text = spec[0]
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(func(): _translate_selected(spec[1]))
-		planar.add_child(button)
-	column.add_child(planar)
-	var vertical := HBoxContainer.new()
-	for spec in [["Y−", Vector3(0, -0.25, 0)], ["Y+", Vector3(0, 0.25, 0)], ["YAW −90", -1], ["YAW +90", 1], ["RESET", 0]]:
-		var button := Button.new()
-		button.text = spec[0]
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if spec[1] is Vector3:
-			button.pressed.connect(func(): _translate_selected(spec[1]))
-		elif int(spec[1]) == 0:
-			button.pressed.connect(_reset_selected)
-		else:
-			button.pressed.connect(func(): _rotate_selected(int(spec[1])))
-		vertical.add_child(button)
-	column.add_child(vertical)
-	var history := HBoxContainer.new()
-	undo_button = Button.new()
-	undo_button.text = "UNDO"
-	undo_button.pressed.connect(_undo)
-	history.add_child(undo_button)
-	redo_button = Button.new()
-	redo_button.text = "REDO"
-	redo_button.pressed.connect(_redo)
-	history.add_child(redo_button)
-	var save := Button.new()
-	save.text = "SAVE DRAFT"
-	save.pressed.connect(_save_draft)
-	history.add_child(save)
-	var load_draft := Button.new()
-	load_draft.text = "LOAD DRAFT"
-	load_draft.pressed.connect(_load_draft)
-	history.add_child(load_draft)
-	for button in history.get_children():
-		(button as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_child(history)
-	draft_status = Label.new()
-	draft_status.name = "DraftStatus"
-	draft_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	draft_status.modulate = Color(0.68, 0.76, 0.84)
-	column.add_child(draft_status)
-	population_toggle = CheckButton.new()
-	population_toggle.name = "PopulationToggle"
-	population_toggle.text = "Show authored movable population"
-	population_toggle.button_pressed = true
-	population_toggle.toggled.connect(set_population_visible)
-	column.add_child(population_toggle)
-	tactical_toggle = CheckButton.new()
-	tactical_toggle.name = "TacticalToggle"
-	tactical_toggle.text = "Show tactical contracts"
-	tactical_toggle.tooltip_text = "Cyan: elevated route/access. Orange: explicit tactical solid volumes. These overlays, not imported meshes, explain gameplay authority."
-	tactical_toggle.button_pressed = false
-	tactical_toggle.toggled.connect(func(enabled: bool): if tactical_overlay: tactical_overlay.visible = enabled)
-	column.add_child(tactical_toggle)
+	draft_badge = Label.new()
+	column.add_child(draft_badge)
 	var views := HBoxContainer.new()
 	views.add_theme_constant_override("separation", 6)
 	for spec in [["FRAME", _frame], ["TOP", _top_view], ["OBLIQUE", _oblique_view]]:
@@ -187,29 +113,185 @@ func _build_ui() -> void:
 	help.modulate = Color(0.62, 0.7, 0.78)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(help)
+	task_tabs = TabContainer.new()
+	task_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(task_tabs)
+	var inspect_page := _add_task_page("Inspect")
+	validation_label = Label.new()
+	validation_label.name = "Validation"
+	validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inspect_page.add_child(validation_label)
+	population_toggle = CheckButton.new()
+	population_toggle.name = "PopulationToggle"
+	population_toggle.text = "Show authored movable population"
+	population_toggle.button_pressed = true
+	population_toggle.toggled.connect(set_population_visible)
+	inspect_page.add_child(population_toggle)
+	tactical_toggle = CheckButton.new()
+	tactical_toggle.name = "TacticalToggle"
+	tactical_toggle.text = "Show tactical contracts"
+	tactical_toggle.tooltip_text = "Cyan: elevated route/access. Orange: explicit tactical solid volumes. These overlays, not imported meshes, explain gameplay authority."
+	tactical_toggle.button_pressed = false
+	tactical_toggle.toggled.connect(func(enabled: bool): if tactical_overlay: tactical_overlay.visible = enabled)
+	inspect_page.add_child(tactical_toggle)
+	var details := CheckButton.new()
+	details.text = "Technical details"
+	inspect_page.add_child(details)
+	metadata_label = Label.new()
+	metadata_label.name = "Metadata"
+	metadata_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	metadata_label.hide()
+	inspect_page.add_child(metadata_label)
+	details.toggled.connect(func(expanded: bool): metadata_label.visible = expanded)
+
+	var move_page := _add_task_page("Move objects")
+	var move_help := Label.new()
+	move_help.text = "Choose an object to see its bounds and movement axes. Moves are visual draft edits."
+	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	move_page.add_child(move_help)
+	placement_picker = OptionButton.new()
+	placement_picker.name = "PlacementPicker"
+	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
+	placement_picker.item_selected.connect(_select_placement_index)
+	move_page.add_child(placement_picker)
+	var planar := HBoxContainer.new()
+	for spec in [["X−", Vector3(-0.5, 0, 0)], ["X+", Vector3(0.5, 0, 0)], ["Z−", Vector3(0, 0, -0.5)], ["Z+", Vector3(0, 0, 0.5)]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(func(): _translate_selected(spec[1]))
+		planar.add_child(button)
+	move_page.add_child(planar)
+	var vertical := HBoxContainer.new()
+	for spec in [["Y−", Vector3(0, -0.25, 0)], ["Y+", Vector3(0, 0.25, 0)], ["YAW −90", -1], ["YAW +90", 1], ["RESET", 0]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if spec[1] is Vector3:
+			button.pressed.connect(func(): _translate_selected(spec[1]))
+		elif int(spec[1]) == 0:
+			button.pressed.connect(_reset_selected)
+		else:
+			button.pressed.connect(func(): _rotate_selected(int(spec[1])))
+		vertical.add_child(button)
+	move_page.add_child(vertical)
+	var history := HBoxContainer.new()
+	undo_button = Button.new()
+	undo_button.text = "Undo move"
+	undo_button.pressed.connect(_undo)
+	history.add_child(undo_button)
+	redo_button = Button.new()
+	redo_button.text = "Redo move"
+	redo_button.pressed.connect(_redo)
+	history.add_child(redo_button)
+	var save := Button.new()
+	save.text = "Save visuals"
+	save.pressed.connect(_save_draft)
+	history.add_child(save)
+	var load_draft := Button.new()
+	load_draft.text = "Load visuals"
+	load_draft.pressed.connect(_load_draft)
+	history.add_child(load_draft)
+	for button in history.get_children():
+		(button as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	move_page.add_child(history)
+	draft_status = Label.new()
+	draft_status.name = "DraftStatus"
+	draft_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	draft_status.modulate = Color(0.68, 0.76, 0.84)
+	move_page.add_child(draft_status)
 	field_panel = FieldPanel.new()
+	field_panel.name = "Population fields"
 	field_panel.setup(self)
-	column.add_child(field_panel)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(spacer)
+	task_tabs.add_child(field_panel)
+	task_tabs.tab_changed.connect(_on_task_changed)
 	var back := Button.new()
-	back.text = "BACK TO MATCH SETUP"
-	back.pressed.connect(func(): get_tree().change_scene_to_file("res://ui/match_setup.tscn"))
+	back.text = "Back to Match Setup"
+	back.pressed.connect(func(): _confirm_discard(func(): get_tree().change_scene_to_file("res://ui/match_setup.tscn")))
 	column.add_child(back)
 
-func select_parcel(parcel_id: StringName) -> bool:
+	discard_dialog = ConfirmationDialog.new()
+	discard_dialog.title = "Discard unsaved draft?"
+	discard_dialog.ok_button_text = "Discard and continue"
+	discard_dialog.transient = true
+	discard_dialog.exclusive = true
+	discard_dialog.confirmed.connect(func():
+		var action := _discard_action
+		_discard_action = Callable()
+		if action.is_valid(): action.call())
+	discard_dialog.canceled.connect(func(): _discard_action = Callable())
+	add_child(discard_dialog)
+
+func _add_task_page(title: String) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = title
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	task_tabs.add_child(scroll)
+	var page := VBoxContainer.new()
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.add_theme_constant_override("separation", 8)
+	scroll.add_child(page)
+	return page
+
+func _on_task_changed(task: int) -> void:
+	if task != Task.POPULATION_FIELDS:
+		field_panel.cancel_drag()
+		field_panel.clear_preview()
+	if is_instance_valid(field_panel.overlay):
+		field_panel.overlay.visible = task == Task.POPULATION_FIELDS
+	if task == Task.MOVE_OBJECTS:
+		_update_draft_status()
+	else:
+		_update_selection_marker()
+
+func _request_parcel(index: int) -> void:
+	if index < 0 or index >= _definitions.size() or _definitions[index].parcel_id == displayed_parcel_id:
+		return
+	# A clicked OptionButton changes selection before emitting its signal.
+	parcel_picker.select(_definition_index(displayed_parcel_id))
+	_confirm_discard(func(): _show_index(index))
+
+func _confirm_discard(action: Callable) -> void:
+	var scopes := _unsaved_scopes()
+	if scopes.is_empty():
+		action.call()
+		return
+	if discard_dialog.visible:
+		return
+	_discard_action = action
+	discard_dialog.dialog_text = "Unsaved changes in %s will be lost." % ", ".join(scopes)
+	discard_dialog.popup_centered()
+
+func _definition_index(id: StringName) -> int:
 	for index in _definitions.size():
-		if _definitions[index].parcel_id == parcel_id:
-			parcel_picker.select(index)
-			_show_index(index)
-			return true
-	return false
+		if _definitions[index].parcel_id == id:
+			return index
+	return -1
+
+func _unsaved_scopes() -> PackedStringArray:
+	var scopes := PackedStringArray()
+	if draft.dirty: scopes.append("visual moves")
+	if field_panel.has_unsaved_changes(): scopes.append("population fields")
+	return scopes
+
+func update_draft_badge() -> void:
+	var scopes := _unsaved_scopes()
+	draft_badge.text = "No unsaved changes" if scopes.is_empty() else "Unsaved · %s" % ", ".join(scopes)
+	draft_badge.modulate = Color("93a8ba") if scopes.is_empty() else Color("ffd077")
+
+func select_parcel(parcel_id: StringName) -> bool:
+	var index := _definition_index(parcel_id)
+	if index < 0:
+		return false
+	_request_parcel(index)
+	return true
 
 func _show_index(index: int) -> void:
 	if index < 0 or index >= _definitions.size():
 		return
+	parcel_picker.select(index)
 	if is_instance_valid(displayed_parcel):
+		field_panel.clear_preview()
 		displayed_parcel.free()
 	if is_instance_valid(_grid):
 		_grid.free()
@@ -282,10 +364,12 @@ func _reset_selected() -> void:
 func _undo() -> void:
 	if draft.undo():
 		_apply_draft("Undid the last draft edit.")
+		_refresh_placement_picker()
 
 func _redo() -> void:
 	if draft.redo():
 		_apply_draft("Redid the draft edit.")
+		_refresh_placement_picker()
 
 func _apply_draft(message := "") -> void:
 	field_panel.clear_preview()
@@ -310,9 +394,14 @@ func _update_draft_status(message := "") -> void:
 	var selection := "No visual placement selected."
 	if not record.is_empty():
 		selection = "%s\nposition %s · yaw %.1f°" % [record.path, record.position, float(record.rotation_degrees[1])]
+		var selected := displayed_parcel.get_node_or_null(NodePath(String(record.path))) as Node3D
+		if selected and not selected.is_visible_in_tree():
+			selection += "\nHidden in this view. Show authored population in Inspect to see it."
 	var state := "unsaved" if draft.dirty else "saved/source"
 	draft_status.text = "%s · %s\n%s%s" % [String(draft.parcel_id), state, selection, "\n" + message if not message.is_empty() else ""]
 	_update_history_buttons()
+	_update_selection_marker()
+	update_draft_badge()
 
 func _update_history_buttons() -> void:
 	if undo_button:
@@ -326,6 +415,67 @@ func set_population_visible(enabled: bool) -> void:
 	for node in displayed_parcel.find_children("*", "Node3D", true, false):
 		if node.has_meta("population_socket_id"):
 			(node as Node3D).visible = enabled
+	_update_selection_marker()
+
+func _update_selection_marker() -> void:
+	if is_instance_valid(_selection_marker):
+		_selection_marker.free()
+	if task_tabs.current_tab != Task.MOVE_OBJECTS or not is_instance_valid(displayed_parcel) or draft.selected_path.is_empty():
+		return
+	var selected := displayed_parcel.get_node_or_null(NodePath(draft.selected_path)) as Node3D
+	if not selected or not selected.is_visible_in_tree():
+		return
+	var bounds := AABB()
+	for mesh_node: MeshInstance3D in selected.find_children("*", "MeshInstance3D", true, false):
+		if not mesh_node.mesh or not mesh_node.is_visible_in_tree():
+			continue
+		var world_bounds := mesh_node.global_transform * mesh_node.get_aabb()
+		bounds = bounds.merge(world_bounds) if bounds.has_volume() else world_bounds
+	if not bounds.has_volume():
+		bounds = AABB(selected.global_position - Vector3.ONE * 0.25, Vector3.ONE * 0.5)
+	bounds = bounds.grow(0.08)
+	_selection_marker = Node3D.new()
+	_selection_marker.name = "ObjectSelection"
+	add_child(_selection_marker)
+	var lines := ImmediateMesh.new()
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.vertex_color_use_as_albedo = true
+	material.no_depth_test = true
+	lines.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	lines.surface_set_color(Color("ffdc83"))
+	for corner in 8:
+		for edge in [1, 2, 4]:
+			if (corner & edge) == 0:
+				lines.surface_add_vertex(bounds.get_endpoint(corner))
+				lines.surface_add_vertex(bounds.get_endpoint(corner | edge))
+	var pivot := selected.global_position
+	var basis := (selected.get_parent() as Node3D).global_basis.orthonormalized()
+	for spec in [[basis.x, "X+", Color("ff827d")], [basis.y, "Y+", Color("8deeb4")], [basis.z, "Z+", Color("83c8ff")]]:
+		var axis: Vector3 = spec[0]
+		var length := clampf(bounds.size.length() * 0.36, 1.5, 6.0)
+		var tip := pivot + axis * length
+		lines.surface_set_color(spec[2])
+		lines.surface_add_vertex(pivot)
+		lines.surface_add_vertex(tip)
+		var side := (basis.x if spec[1] == "Y+" else basis.y) * length * 0.08
+		for sign_value in [-1.0, 1.0]:
+			lines.surface_add_vertex(tip)
+			lines.surface_add_vertex(tip - axis * length * 0.15 + side * sign_value)
+		var label := Label3D.new()
+		label.text = spec[1]
+		label.modulate = spec[2]
+		label.no_depth_test = true
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.font_size = 40
+		label.pixel_size = 0.022
+		label.position = tip
+		_selection_marker.add_child(label)
+	lines.surface_end()
+	var geometry := MeshInstance3D.new()
+	geometry.mesh = lines
+	geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_selection_marker.add_child(geometry)
 
 func _create_grid(size: Vector2i) -> MeshInstance3D:
 	var immediate := ImmediateMesh.new()
@@ -424,17 +574,30 @@ func _update_camera() -> void:
 	var offset := Vector3(sin(_yaw) * horizontal, sin(_pitch) * _distance, cos(_yaw) * horizontal)
 	camera.position = _camera_target + offset
 	camera.look_at(_camera_target)
+	# Keep the framing target in the middle of the unobstructed viewport.
+	var view := get_viewport().get_visible_rect().size
+	if view.y > 0.0:
+		var sidebar := minf(_panel.get_global_rect().end.x, view.x * 0.65)
+		camera.h_offset = -sidebar / view.y * _distance * tan(deg_to_rad(camera.fov * 0.5))
+
+func _input(event: InputEvent) -> void:
+	# GUI controls can consume a release after a stroke began in the scene.
+	if (field_panel != null and field_panel.start_cell != null and event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and _panel.get_global_rect().has_point(event.position)):
+		field_panel.cancel_drag()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if field_panel != null and field_panel.handle_input(event):
+	if task_tabs.current_tab == Task.POPULATION_FIELDS and field_panel.handle_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed:
 		if event.ctrl_pressed and event.keycode == KEY_Z:
-			_undo()
+			if task_tabs.current_tab == Task.POPULATION_FIELDS: field_panel.undo()
+			elif task_tabs.current_tab == Task.MOVE_OBJECTS: _undo()
 			get_viewport().set_input_as_handled()
 		elif event.ctrl_pressed and event.keycode == KEY_Y:
-			_redo()
+			if task_tabs.current_tab == Task.POPULATION_FIELDS: field_panel.redo()
+			elif task_tabs.current_tab == Task.MOVE_OBJECTS: _redo()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_F:
 			_frame()

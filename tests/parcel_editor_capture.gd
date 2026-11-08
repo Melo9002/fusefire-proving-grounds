@@ -25,7 +25,13 @@ func _run() -> void:
 	editor.population_toggle.button_pressed = false
 	editor.tactical_toggle.button_pressed = false
 	await _capture(output.path_join("parcel-editor-loading-fixed-assembly.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	editor.draft.select("Warehouse")
+	editor._refresh_placement_picker()
+	editor._update_draft_status()
+	await _capture(output.path_join("parcel-editor-move-objects.png"))
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
 	editor.field_panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
 	editor.field_panel.session.add("ground", "protected", Rect2i(4, 5, 5, 6))
@@ -33,15 +39,11 @@ func _run() -> void:
 	editor.field_panel.density.value = 100
 	editor.field_panel.preview()
 	await process_frame
-	var scroll := editor.field_panel.get_parent().get_parent() as ScrollContainer
-	scroll.ensure_control_visible(editor.field_panel)
 	await _capture(output.path_join("parcel-editor-parking-fields.png"))
 	editor.field_panel.session.erase_at("ground", Vector2i(5, 6))
 	editor.field_panel.session.add("ground", "parking_row", Rect2i(13, 6, 12, 5), 0)
-	editor.field_panel.tool_picker.select(3)
-	editor.field_panel.tool_picker.item_selected.emit(3)
+	editor.field_panel.select_tool(3)
 	await process_frame
-	scroll.ensure_control_visible(editor.field_panel)
 	await _capture(output.path_join("parcel-editor-empty-row.png"))
 	editor.field_panel.preview()
 	editor._yaw = deg_to_rad(145.0)

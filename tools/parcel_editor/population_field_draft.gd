@@ -24,6 +24,15 @@ var last_error := ""
 var preview_seed := 17
 var occupancy := 65
 var conflict_count := 0
+var _saved_fields: Array[Dictionary] = []
+var _saved_preview_settings := Vector2i(17, 65)
+
+func is_dirty() -> bool:
+	return fields != _saved_fields or Vector2i(preview_seed, occupancy) != _saved_preview_settings
+
+func _mark_saved() -> void:
+	_saved_fields = fields.duplicate(true)
+	_saved_preview_settings = Vector2i(preview_seed, occupancy)
 
 func begin(definition, scene_root: Node3D) -> void:
 	parcel_id = String(definition.parcel_id)
@@ -37,6 +46,10 @@ func begin(definition, scene_root: Node3D) -> void:
 	history.clear()
 	future.clear()
 	next_id = 1
+	preview_seed = 17
+	occupancy = 65
+	last_error = ""
+	_mark_saved()
 
 func add(surface: String, preset: String, rect: Rect2i, heading := 0) -> bool:
 	if fields.size() >= 256:
@@ -273,6 +286,8 @@ func save_to(destination: String) -> bool:
 		last_error = "Cannot open field draft for writing."
 		return false
 	file.store_string(JSON.stringify({"schema": 1, "parcel_id": parcel_id, "revision": revision, "surfaces": surfaces, "fields": fields, "preview_seed": preview_seed, "occupancy": occupancy}, "\t"))
+	file.close()
+	_mark_saved()
 	return true
 
 func load_from(source: String) -> bool:
@@ -309,6 +324,7 @@ func load_from(source: String) -> bool:
 	occupancy = clampi(int(record.get("occupancy", 65)), 0, 100)
 	next_id = 1
 	while ids.has("field_%d" % next_id): next_id += 1
+	_mark_saved()
 	return true
 
 func _same_surfaces(value: Variant) -> bool:

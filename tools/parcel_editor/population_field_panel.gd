@@ -6,7 +6,17 @@ const SceneExport = preload("res://tools/parcel_editor/parking_scene_export.gd")
 var session = Session.new()
 var surface_picker: OptionButton
 var preset_picker: OptionButton
-var tool_picker: OptionButton
+enum Tool { INSPECT, DRAW, ERASE, PARKING_ROW }
+const PERMITTED_COLOR := Color("949bff")
+const PROTECTED_COLOR := Color("ff806b")
+var active_tool := Tool.INSPECT
+var tool_buttons: Array[Button] = []
+var guidance: Label
+var measurement: Label
+var preview_button: Button
+var export_button: Button
+var undo_button: Button
+var redo_button: Button
 var heading_picker: OptionButton
 var seed_input: SpinBox
 var density: SpinBox
@@ -24,72 +34,152 @@ var _preview_ids := {}
 
 func setup(editor: Node3D) -> void:
 	host = editor
-	var title := Label.new()
-	title.text = "POPULATION FIELDS / DRAFT"
-	add_child(title)
+	var tools := HBoxContainer.new()
+	var group := ButtonGroup.new()
+	for title in ["Inspect", "Paint", "Erase", "Parking row"]:
+		var index := tool_buttons.size()
+		var button := _add_button(tools, title, func(): select_tool(index))
+		button.toggle_mode = true
+		button.button_group = group
+		button.add_theme_color_override("font_pressed_color", Color("a5dcff"))
+		tool_buttons.append(button)
+	add_child(tools)
+	tool_buttons[Tool.INSPECT].set_pressed_no_signal(true)
+	guidance = _add_label(self, "")
+	measurement = _add_label(self, "")
+	var legend := HBoxContainer.new()
+	_add_label(legend, "■ Allowed").modulate = PERMITTED_COLOR
+	_add_label(legend, "■ Protected").modulate = PROTECTED_COLOR
+	_add_label(legend, "□ Bay").modulate = Color("ffd077")
+	_add_label(legend, "□ Aisle").modulate = Color("88e49e")
+	add_child(legend)
+
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(scroll)
+	var options := VBoxContainer.new()
+	options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(options)
 	surface_picker = OptionButton.new()
 	surface_picker.item_selected.connect(func(_index):
 		start_cell = null
 		refresh())
-	add_child(surface_picker)
+	options.add_child(surface_picker)
 	preset_picker = OptionButton.new()
 	for preset in Session.PRESETS:
 		preset_picker.add_item(preset.capitalize())
 		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
-	add_child(preset_picker)
-	tool_picker = OptionButton.new()
-	for text in ["Inspect / camera", "Draw field (LMB drag)", "Erase field or row (LMB click)", "Draw parking row (LMB drag)"]:
-		tool_picker.add_item(text)
-	tool_picker.item_selected.connect(func(_index):
-		start_cell = null
-		heading_picker.visible = tool_picker.selected == 3
-		refresh())
-	add_child(tool_picker)
+	preset_picker.item_selected.connect(func(_index): _update_tools())
+	options.add_child(preset_picker)
 	heading_picker = OptionButton.new()
 	for label in ["Aisle toward +Z", "Aisle toward −X", "Aisle toward −Z", "Aisle toward +X"]:
 		heading_picker.add_item(label)
 	heading_picker.item_selected.connect(func(_index):
 		start_cell = null
 		refresh())
-	heading_picker.hide()
-	add_child(heading_picker)
-	var options := VBoxContainer.new()
+	options.add_child(heading_picker)
+	status = _add_label(options, "")
 	seed_input = SpinBox.new()
 	seed_input.max_value = 2147483647
 	seed_input.value = 17
 	seed_input.prefix = "Seed "
-	seed_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	seed_input.value_changed.connect(_on_preview_settings_changed)
 	options.add_child(seed_input)
 	density = SpinBox.new()
 	density.max_value = 100
 	density.value = 65
 	density.suffix = "% of eligible bays"
-	density.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	density.value_changed.connect(_on_preview_settings_changed)
 	options.add_child(density)
-	add_child(options)
-	var actions := HBoxContainer.new()
-	for spec in [["Preview", preview], ["Reset", reset_preview], ["Undo", undo], ["Redo", redo]]:
-		var button := Button.new()
-		button.text = spec[0]
-		button.pressed.connect(spec[1])
-		actions.add_child(button)
-	add_child(actions)
+	var preview_controls := HBoxContainer.new()
+	preview_button = _add_button(preview_controls, "Preview", preview)
+	_add_button(preview_controls, "Show source", reset_preview)
+	options.add_child(preview_controls)
+	var history := HBoxContainer.new()
+	undo_button = _add_button(history, "Undo field", undo)
+	redo_button = _add_button(history, "Redo field", redo)
+	options.add_child(history)
 	var files := HBoxContainer.new()
-	for spec in [["Save fields", save_fields], ["Load fields", load_fields]]:
-		var button := Button.new()
-		button.text = spec[0]
-		button.pressed.connect(spec[1])
-		files.add_child(button)
-	add_child(files)
-	var export_button := Button.new()
-	export_button.text = "Export parking scene"
-	export_button.tooltip_text = "Validate the full row layout and save a separate authored scene for review."
-	export_button.pressed.connect(export_scene)
-	add_child(export_button)
-	status = Label.new()
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(status)
+	_add_button(files, "Save fields", save_fields)
+	_add_button(files, "Load fields", load_fields)
+	options.add_child(files)
+	export_button = _add_button(options, "Export parking scene", export_scene)
+	_add_label(options, "Draft files and exported scenes are for review. Runtime content changes after catalog registration.").modulate = Color("93a8ba")
 	host.population_toggle.toggled.connect(_apply_preview_visibility)
+
+func _add_button(parent: Container, title: String, callback: Callable) -> Button:
+	var button := Button.new()
+	button.text = title
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(callback)
+	parent.add_child(button)
+	return button
+
+func _add_label(parent: Container, contents: String) -> Label:
+	var label := Label.new()
+	label.text = contents
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if parent is VBoxContainer else TextServer.AUTOWRAP_OFF
+	parent.add_child(label)
+	return label
+
+func select_tool(index: int) -> void:
+	if index < 0 or index >= tool_buttons.size() or tool_buttons[index].disabled:
+		return
+	active_tool = index as Tool
+	start_cell = null
+	refresh()
+
+func cancel_drag() -> void:
+	if start_cell != null:
+		start_cell = null
+		refresh("Stroke canceled.")
+
+func has_unsaved_changes() -> bool:
+	return session.is_dirty()
+
+func _on_preview_settings_changed(_value: float) -> void:
+	session.preview_seed = int(seed_input.value)
+	session.occupancy = int(density.value)
+	clear_preview()
+	status.text = "Preview settings changed. Press Preview to update."
+	_update_tools()
+
+func _update_tools(provisional: Dictionary = {}) -> void:
+	var parking_allowed := false
+	var has_row := false
+	var latest := provisional
+	for field in session.fields:
+		has_row = has_row or field.preset == Session.PARKING_ROW
+		if field.surface == surface_id():
+			parking_allowed = parking_allowed or field.preset == "parking"
+			if provisional.is_empty(): latest = field
+	tool_buttons[Tool.PARKING_ROW].disabled = not parking_allowed
+	if active_tool == Tool.PARKING_ROW and not parking_allowed:
+		active_tool = Tool.DRAW
+	for index in tool_buttons.size():
+		tool_buttons[index].set_pressed_no_signal(index == active_tool)
+	preset_picker.visible = active_tool == Tool.DRAW
+	heading_picker.visible = active_tool == Tool.PARKING_ROW
+	preview_button.disabled = session.fields.is_empty()
+	export_button.disabled = not has_row
+	undo_button.disabled = session.history.is_empty()
+	redo_button.disabled = session.future.is_empty()
+	match active_tool:
+		Tool.DRAW:
+			guidance.text = "Drag on the selected floor to paint. For parking, paint the bays first, then choose Parking row."
+		Tool.ERASE:
+			guidance.text = "Click a field or bay outline to erase it."
+		Tool.PARKING_ROW:
+			guidance.text = "2. Choose the aisle direction and drag along the aisle-facing edge. 3. Preview."
+		_:
+			guidance.text = "1. Paint Parking permission → 2. Draw a row → 3. Preview." if not parking_allowed else "Parking permission is ready on this floor. Draw a row along its aisle, or preview existing bays."
+	if latest.is_empty():
+		measurement.text = "%d draft areas" % session.fields.size()
+	else:
+		var rect := Session.rectangle(latest)
+		measurement.text = "%s · %d × %d cells" % [String(latest.preset).replace("_", " ").capitalize(), rect.size.x, rect.size.y]
+	host.update_draft_badge()
 
 func begin(definition, scene_root: Node3D) -> void:
 	session.begin(definition, scene_root)
@@ -97,16 +187,15 @@ func begin(definition, scene_root: Node3D) -> void:
 	_fixed_obstacles = session.parking_obstacles(definition, scene_root)
 	start_cell = null
 	surface_picker.clear()
-	seed_input.value = 17
-	density.value = 65
+	seed_input.set_value_no_signal(session.preview_seed)
+	density.set_value_no_signal(session.occupancy)
 	var ids: Array = session.surfaces.keys()
 	ids.sort()
 	for id in ids:
 		surface_picker.add_item("%s · level %d" % [id, session.surfaces[id].level])
 		surface_picker.set_item_metadata(surface_picker.item_count - 1, id)
-	tool_picker.select(0)
-	heading_picker.hide()
-	refresh("Paint parking permission, then draw a row along the edge facing its aisle.")
+	active_tool = Tool.INSPECT
+	refresh()
 
 func surface_id() -> String:
 	return String(surface_picker.get_selected_metadata())
@@ -121,17 +210,19 @@ func cell_at(screen: Vector2) -> Variant:
 	return Vector2i(roundi(local.x), roundi(local.z))
 
 func handle_input(event: InputEvent) -> bool:
-	if tool_picker.selected == 0: return false
+	if active_tool == Tool.INSPECT: return false
 	if event is InputEventMouseMotion and start_cell != null:
-		drag_cell = cell_at(event.position)
-		refresh("Release to commit the previewed rectangle.")
+		var next_cell: Variant = cell_at(event.position)
+		if next_cell != drag_cell:
+			drag_cell = next_cell
+			refresh("Release to commit the previewed rectangle.")
 		return true
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var cell: Variant = cell_at(event.position)
 		if event.pressed:
-			if tool_picker.selected == 2 and cell != null:
-				session.erase_at(surface_id(), cell)
-				refresh()
+			if active_tool == Tool.ERASE:
+				if cell != null and session.erase_at(surface_id(), cell):
+					refresh("Erased field.")
 			else:
 				start_cell = cell
 				drag_cell = cell
@@ -148,7 +239,7 @@ func _drag_record(cell: Vector2i) -> Dictionary:
 	var heading := heading_picker.selected
 	var preset := String(preset_picker.get_selected_metadata())
 	var rect: Rect2i
-	if tool_picker.selected == 3:
+	if active_tool == Tool.PARKING_ROW:
 		preset = Session.PARKING_ROW
 		rect = Session.parking_row_rect(start_cell, cell, heading)
 	else:
@@ -162,6 +253,7 @@ func refresh(message := "") -> void:
 	if is_instance_valid(overlay): overlay.free()
 	overlay = Node3D.new()
 	host.add_child(overlay)
+	overlay.visible = is_visible_in_tree()
 	var fields: Array = session.fields.duplicate()
 	var provisional := {}
 	if start_cell != null and drag_cell != null:
@@ -183,7 +275,8 @@ func refresh(message := "") -> void:
 		var mesh := ImmediateMesh.new()
 		var field_material := StandardMaterial3D.new()
 		field_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		field_material.albedo_color = Color(1, 0.3, 0.2, 0.32) if protected else Color(0.15, 0.8, 1, 0.28)
+		var tint := PROTECTED_COLOR if protected else PERMITTED_COLOR
+		field_material.albedo_color = Color(tint, 0.44 if protected else 0.38)
 		field_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		field_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 		if not cells.values().has(protected): continue
@@ -193,15 +286,30 @@ func refresh(message := "") -> void:
 			for offset in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5)]:
 				mesh.surface_add_vertex(Vector3(cell) + offset + Vector3.UP * 0.07)
 		mesh.surface_end()
+		var outline := StandardMaterial3D.new()
+		outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		outline.albedo_color = tint
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES, outline)
+		for cell: Vector3i in cells:
+			if cells[cell] != protected: continue
+			for side in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
+				if cells.get(cell + side) == protected: continue
+				var midpoint := Vector3(cell) + Vector3(side) * 0.5 + Vector3.UP * 0.085
+				var edge := Vector3(side).cross(Vector3.UP) * 0.5
+				mesh.surface_add_vertex(midpoint - edge)
+				mesh.surface_add_vertex(midpoint + edge)
+		mesh.surface_end()
 		var visual := MeshInstance3D.new()
 		visual.mesh = mesh
 		visual.position = host.displayed_parcel.position
 		overlay.add_child(visual)
 	var bays: Array[Dictionary] = session.parking_bays(_source_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {})
 	var fitting := _draw_bays(bays)
-	status.text = "%d draft areas · cyan permitted / red protected\n%s" % [session.fields.size(), message]
+	_update_tools(provisional)
+	status.text = message
 	if not bays.is_empty():
-		status.text += "\n%d bays fit · %d rejected. Gold: bay · green: aisle." % [fitting, bays.size() - fitting]
+		if not status.text.is_empty(): status.text += "\n"
+		status.text += "%d bays fit · %d rejected." % [fitting, bays.size() - fitting]
 		var rejected: Array = bays.filter(func(bay): return not bay.reason.is_empty())
 		if not rejected.is_empty(): status.text += " First rejection: %s." % rejected[0].reason
 
@@ -242,6 +350,7 @@ func preview() -> void:
 		row_count += 1
 	if is_instance_valid(_row_preview): host.population_toggle.disabled = false
 	_apply_preview_visibility(host.population_toggle.button_pressed)
+	_update_tools()
 	status.text = "%d authored sockets + %d row bays occupied. %d overlap conflicts rejected. Draft preview only." % [choices.size() - row_count, row_count, session.conflict_count]
 
 func _draw_bays(bays: Array[Dictionary]) -> int:
@@ -311,12 +420,13 @@ func redo() -> void:
 func save_fields() -> void:
 	session.preview_seed = int(seed_input.value)
 	session.occupancy = int(density.value)
-	refresh("Saved " + session.path() if session.save_to(session.path()) else session.last_error)
+	status.text = "Saved " + session.path() if session.save_to(session.path()) else session.last_error
+	_update_tools()
 
 func load_fields() -> void:
 	if session.load_from(session.path()):
-		seed_input.value = session.preview_seed
-		density.value = session.occupancy
+		seed_input.set_value_no_signal(session.preview_seed)
+		density.set_value_no_signal(session.occupancy)
 		reset_preview()
 	else: status.text = session.last_error
 
