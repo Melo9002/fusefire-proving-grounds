@@ -3,6 +3,9 @@ extends RefCounted
 
 const HILL_SKIRT_CLEARANCE := 0.015
 const BattlefieldCatalogData = preload("res://systems/generation/battlefield_catalog.gd")
+const COVER_CRATE := "res://art/environments/kenney/factory_kit/models/box-large.glb"
+const COVER_CONTAINER := "res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb"
+const COVER_VAN := "res://art/environments/kenney/car_kit/models/delivery.glb"
 
 static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
 	if BattlefieldCatalogData.present_special(map_data, parent, cell_size):
@@ -35,6 +38,8 @@ static func build(map_data: MapData, parent: Node3D, cell_size: float) -> void:
 		if cell.grid_position.y > 0:
 			continue
 		if cell.cover_type == MapCellData.CoverType.NONE:
+			continue
+		if map_data.source_kind == "generated_cover" and _build_cover_crates(parent, cell, cell_size):
 			continue
 		var block := MeshInstance3D.new()
 		block.name = "Cover_%d_%d_%d" % [cell.grid_position.x, cell.grid_position.y, cell.grid_position.z]
@@ -235,6 +240,34 @@ static func _material_for(cover_type: MapCellData.CoverType) -> StandardMaterial
 	material.roughness = 0.82
 	return material
 
+static func _build_cover_crates(parent: Node3D, cell: MapCellData, cell_size: float) -> bool:
+	var stack := Node3D.new()
+	stack.name = "Cover_%d_%d_%d" % [cell.grid_position.x, cell.grid_position.y, cell.grid_position.z]
+	stack.position = cell.world_position
+	stack.set_meta("grid_position", cell.grid_position)
+	stack.set_meta("cover_type", cell.cover_type)
+	var count := 2 if cell.cover_type == MapCellData.CoverType.LOW else 4
+	var limits := Vector3(cell_size * 0.95, cell.cover_height, cell_size * 0.95)
+	if not _stack_cover_asset(stack, COVER_CRATE, limits, count):
+		stack.free()
+		return false
+	parent.add_child(stack)
+	return true
+
+static func _stack_cover_asset(parent: Node3D, asset: String, limits: Vector3, count: int, yaw := 0.0) -> bool:
+	limits.y /= count
+	var crate := EnvironmentAssetPlacement.instantiate_fitted(parent, asset, Vector3.ZERO, limits, yaw)
+	if crate == null:
+		return false
+	var layer := crate.get_child(0) as Node3D
+	var layer_height := crate.occlusion_bounds.size.y
+	for index in range(1, count):
+		var copy := layer.duplicate() as Node3D
+		copy.position.y += layer_height * index
+		crate.add_child(copy)
+	crate.occlusion_bounds.size.y *= count
+	return true
+
 static func _build_container(map_data: MapData, parent: Node3D, cell_size: float, footprint: Rect2i) -> void:
 	var first := map_data.get_cell(Vector3i(footprint.position.x, 0, footprint.position.y))
 	var container := Node3D.new()
@@ -242,6 +275,13 @@ static func _build_container(map_data: MapData, parent: Node3D, cell_size: float
 	container.position = first.world_position + Vector3((footprint.size.x - 1) * cell_size * 0.5, 0, (footprint.size.y - 1) * cell_size * 0.5)
 	parent.add_child(container)
 	var dimensions := Vector3(footprint.size.x * cell_size, first.cover_height, footprint.size.y * cell_size)
+	if map_data.source_kind == "generated_cover":
+		var variant := posmod(map_data.generation_seed + footprint.position.x + footprint.position.y, 4)
+		var yaw := (PI * 0.5 if footprint.size.x > footprint.size.y else 0.0) + PI * (variant % 2)
+		if variant == 0 and EnvironmentAssetPlacement.instantiate_fitted(container, COVER_VAN, Vector3.ZERO, dimensions * 0.98, yaw):
+			return
+		if _stack_cover_asset(container, COVER_CONTAINER, dimensions * 0.98, 2, yaw):
+			return
 	var steel := StandardMaterial3D.new()
 	steel.albedo_color = Color(0.16, 0.35, 0.42)
 	steel.roughness = 0.7

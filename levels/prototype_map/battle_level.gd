@@ -440,6 +440,7 @@ func _faction_name(faction: TacticalUnit.Faction) -> String:
 			return "Player"
 
 func _set_authored_geometry_enabled(enabled: bool) -> void:
+	$Environment/RangeMarkings.visible = enabled
 	for group_name in ["terrain_features", "elevated_surfaces", "elevation_paths", "traversal_links"]:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if node is Node3D:

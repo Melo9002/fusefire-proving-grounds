@@ -54,6 +54,9 @@ func _run() -> void:
 	var unpopulated: BattleConfiguration = menu._build_battle_configuration()
 	check(not unpopulated.content_manifest.population_enabled, "Match Setup can request the same complete site without movable tactical population")
 	menu.population_toggle.button_pressed = true
+	menu.generated_map_toggle.button_pressed = false
+	check(menu.map_size_option.disabled and menu.deployment_summary.text.contains("TACTICAL TEST RANGE"), "Turning off the battlefield list exposes the authored test range")
+	check(not menu._build_battle_configuration().generated_map, "The test range launches through the fixed authored battle path")
 	menu.free()
 
 	var started := Time.get_ticks_msec()

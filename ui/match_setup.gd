@@ -453,7 +453,7 @@ func _on_objective_selected(index: int) -> void:
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:
-	var map_label := "HANDMADE"
+	var map_label := "TACTICAL TEST RANGE"
 	if generated_map_toggle.button_pressed:
 		var battlefield := _selected_battlefield_id()
 		if battlefield == BattlefieldCatalogData.GENERATED_COVER:

@@ -34,9 +34,19 @@ Match Setup
 | `urban_family` | Fixed 64x64 service street or signal courtyard selected by seed | Match Setup preview with Reach and replay evidence |
 | `parking_garage` | One fixed 32x32 two-level parcel with optional parked vehicles | Match Setup proof with Reach/replay, Rescue and rendered camera evidence |
 
+### Tactical Test Range
+
+In Match Setup, open **Battlefield** and turn off **Use Battlefield List**. This launches the fixed 32×24 range. Open [tactical_test_range.tscn](../../levels/prototype_map/tactical_test_range.tscn) directly in Godot to edit the environment. The battle scene instances it and supplies the units, missions and UI. It replaces the original handmade environment in place. Recordings from that earlier layout may fail validation against the new range.
+
+- **Traversal lane** has a ramp, stairs and ladder to the tall platform. The west decks overlap in plan so **Alt + wheel** can exercise floor picking at different elevations.
+- **Vault lane** and the central crate stack exercise low cover, directional protection and vaulting. The central divider provides blocked and open shooting lines.
+- **Vehicle bay** and the opposite cargo stack exercise full cover and the local camera cutout. Select a unit behind the sedan and orbit down to see the cutout. The car still blocks movement and shots. The visible imported scenes sit inside explicit authored `TerrainFeature` volumes.
+
+For seeded comparison, enable **Use Battlefield List**, select Large and enter seed `17`. This seed shows all three prop types. Small, Medium and Large dress the existing cover placements with crate stacks and use stacked containers or delivery vans at suitable multi-cell footprints. This is a presentation change. The retained tactical volumes are conservative around the wheels and above the delivery van. Special maps keep their own presentation.
+
 ## Authored content boundary
 
-`AuthoredSceneMapCompiler` is the only shared scene-to-`MapData` compiler. It reads explicit tactical metadata such as `solid_size`, decks, ladders and deployments. The same scene is instantiated for presentation.
+`AuthoredSceneMapCompiler` reads explicit tactical metadata such as `solid_size`, decks, ladders and deployments for authored catalog maps and composed parcels. The same scene is instantiated for presentation. The test range uses the existing `MapBuilder` path for live `TerrainFeature`, `ElevatedSurface`, `ElevationPath` and `TraversalLink` nodes.
 
 `ParcelTransform` maps parcel-local cells and scene transforms through supported quarter turns. `ParcelConnection` declares a boundary cell, outward direction, type and usable width. A parcel scene owns its dimensions, revision and connections as metadata. The resolver checks slot bounds, overlap with other slots or roads, and the full rotated entrance against the declared plot approach. After compiling the chosen population, the shared layout checks both sides of each in-bounds seam for walkable stopping cells at the declared height. An explicitly external driveway ends at the playable boundary. Standard parcel footprints are 16×16, 16×32 and 32×32 tactical cells. A supported quarter-turn provides 32×16.
 

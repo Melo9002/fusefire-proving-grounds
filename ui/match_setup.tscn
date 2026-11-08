@@ -168,8 +168,9 @@ theme_override_constants/separation = 6
 
 [node name="GeneratedMapToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=1903544636]
 layout_mode = 2
+tooltip_text = "Turn this off to play the authored Tactical Test Range."
 button_pressed = true
-text = "USE GENERATED MAP"
+text = "USE BATTLEFIELD LIST"
 
 [node name="AutoSeedToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=551290734]
 layout_mode = 2

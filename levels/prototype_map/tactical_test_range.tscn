@@ -1,0 +1,451 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bcta4njlbg1yh" path="res://systems/grid/terrain_feature.gd" id="21_terrain"]
+[ext_resource type="Script" uid="uid://cm77kvxtdsqu7" path="res://systems/grid/elevated_surface.gd" id="23_surface"]
+[ext_resource type="Script" uid="uid://bwym8k6sycpcj" path="res://systems/grid/traversal_link.gd" id="24_link"]
+[ext_resource type="Script" uid="uid://bls22btyx61ek" path="res://systems/grid/elevation_path.gd" id="25_elevation_path"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="crate"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container_a"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="container_b"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+
+[sub_resource type="Environment" id="Environment_8x357"]
+background_mode = 1
+background_color = Color(0.18, 0.2, 0.24, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.8, 0.92, 1)
+ambient_light_energy = 0.55
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ebqvm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ebqvm"]
+albedo_color = Color(0.66, 0.48, 0.18, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_full"]
+albedo_color = Color(0.33, 0.38, 0.41, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_platform"]
+albedo_color = Color(0.23, 0.3, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="ProxyMaterial"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StandardMaterial3D" id="RangeAsphalt"]
+albedo_color = Color(0.24, 0.29, 0.31, 1)
+roughness = 0.92
+
+[sub_resource type="PlaneMesh" id="RangeSurface"]
+material = SubResource("RangeAsphalt")
+size = Vector2(32, 24)
+
+[sub_resource type="StandardMaterial3D" id="BayPaint"]
+albedo_color = Color(0.83, 0.79, 0.62, 1)
+roughness = 0.95
+
+[sub_resource type="PlaneMesh" id="BayStripe"]
+material = SubResource("BayPaint")
+size = Vector2(0.09, 3.5)
+
+[node name="TacticalTestRange" type="Node3D" unique_id=1970157743]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=18979429]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=371801750]
+environment = SubResource("Environment_8x357")
+camera_attributes = SubResource("CameraAttributesPractical_ebqvm")
+
+[node name="MapFloor" type="CSGBox3D" parent="." unique_id=584320246]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(32, 1, 24)
+
+[node name="Obstacles" type="Node3D" parent="." unique_id=278799896]
+
+[node name="CentralLowBlock" type="CSGBox3D" parent="Obstacles" unique_id=2016319224]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, 2.5)
+use_collision = true
+material = SubResource("ProxyMaterial")
+cast_shadow = 0
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="CrateBase" parent="Obstacles/CentralLowBlock" instance=ExtResource("crate")]
+position = Vector3(0, -0.5, 0)
+scale = Vector3(0.86, 0.86, 0.86)
+
+[node name="CrateTop" parent="Obstacles/CentralLowBlock" instance=ExtResource("crate")]
+position = Vector3(0, -0.027, 0)
+scale = Vector3(0.86, 0.86, 0.86)
+
+[node name="WestLowNorth" type="CSGBox3D" parent="Obstacles" unique_id=928162335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.5, -3.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="WestLowSouth" type="CSGBox3D" parent="Obstacles" unique_id=1605087906]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.5, 4.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="EastLowNorth" type="CSGBox3D" parent="Obstacles" unique_id=667962285]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, -4.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="EastLowSouth" type="CSGBox3D" parent="Obstacles" unique_id=54003166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, 3.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="CentralLowWest" type="CSGBox3D" parent="Obstacles" unique_id=1760156994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 0.5)
+use_collision = true
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthGateWall" type="CSGBox3D" parent="Obstacles" unique_id=68396458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, -5.5)
+use_collision = true
+size = Vector3(1, 2, 7)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="SouthGateWall" type="CSGBox3D" parent="Obstacles" unique_id=528284866]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, 5.5)
+use_collision = true
+size = Vector3(1, 2, 7)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="WestGatePillar" type="CSGBox3D" parent="Obstacles" unique_id=1139129306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1, -1)
+use_collision = true
+size = Vector3(1, 2, 2)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="EastGatePillar" type="CSGBox3D" parent="Obstacles" unique_id=1316293455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1, 1)
+use_collision = true
+size = Vector3(1, 2, 2)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="WestFlankPillar" type="CSGBox3D" parent="Obstacles" unique_id=1030082670]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1, 1)
+use_collision = true
+size = Vector3(1, 2, 4)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="EastFlankPillar" type="CSGBox3D" parent="Obstacles" unique_id=527514438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1, -1)
+use_collision = true
+size = Vector3(1, 2, 4)
+material = SubResource("StandardMaterial3D_full")
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="SouthVaultWest" type="CSGBox3D" parent="Obstacles" unique_id=1721965577]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 8.5)
+use_collision = true
+size = Vector3(6, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="SouthVaultCenter" type="CSGBox3D" parent="Obstacles" unique_id=2072850733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 9.5)
+use_collision = true
+size = Vector3(5, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="SouthVaultEast" type="CSGBox3D" parent="Obstacles" unique_id=669263914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.5, 8.5)
+use_collision = true
+size = Vector3(6, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthLowWest" type="CSGBox3D" parent="Obstacles" unique_id=1555020642]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.5, -10.5)
+use_collision = true
+size = Vector3(4, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="NorthLowEast" type="CSGBox3D" parent="Obstacles" unique_id=542255850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.5, -10.5)
+use_collision = true
+size = Vector3(4, 1, 1)
+material = SubResource("StandardMaterial3D_ebqvm")
+script = ExtResource("21_terrain")
+cover_type = 1
+cover_height = 1.0
+movement_cost = 2
+
+[node name="ParkedSedan" type="CSGBox3D" parent="Obstacles"]
+position = Vector3(10, 0.7, 5.5)
+size = Vector3(2, 1.4, 3)
+use_collision = true
+material = SubResource("ProxyMaterial")
+cast_shadow = 0
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 1.4
+blocks_line_of_sight = true
+
+[node name="Sedan" parent="Obstacles/ParkedSedan" instance=ExtResource("sedan")]
+position = Vector3(0, -0.7, 0)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1.06, 1.06, 1.06)
+
+[node name="StackedCargo" type="CSGBox3D" parent="Obstacles"]
+position = Vector3(-10, 1, 5.5)
+size = Vector3(2, 2, 3)
+use_collision = true
+material = SubResource("ProxyMaterial")
+cast_shadow = 0
+script = ExtResource("21_terrain")
+cover_type = 2
+cover_height = 2.0
+blocks_line_of_sight = true
+
+[node name="LowerCargo" parent="Obstacles/StackedCargo" instance=ExtResource("container_a")]
+position = Vector3(0, -1, 0)
+scale = Vector3(2.87, 2.87, 2.87)
+
+[node name="UpperCargo" parent="Obstacles/StackedCargo" instance=ExtResource("container_b")]
+position = Vector3(0, -0.001, 0)
+scale = Vector3(2.87, 2.87, 2.87)
+
+[node name="NorthwestPlatform" type="CSGBox3D" parent="." unique_id=97886093]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -8.5)
+use_collision = true
+collision_layer = 3
+collision_mask = 3
+size = Vector3(6, 2, 5)
+material = SubResource("StandardMaterial3D_platform")
+script = ExtResource("23_surface")
+elevation_level = 2
+
+[node name="NorthwestLadder" type="Node3D" parent="." unique_id=1980801434]
+script = ExtResource("24_link")
+from_cell = Vector3i(7, 0, 6)
+to_cell = Vector3i(7, 2, 5)
+
+[node name="LadderVisual" parent="NorthwestLadder" instance=ExtResource("ladder")]
+position = Vector3(-8.5, 0, -5.92)
+scale = Vector3(1, 0.5, 1)
+
+[node name="NortheastPlatform" type="CSGBox3D" parent="." unique_id=86520186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, -8.5)
+use_collision = true
+collision_layer = 3
+collision_mask = 3
+size = Vector3(6, 2, 5)
+material = SubResource("StandardMaterial3D_platform")
+script = ExtResource("23_surface")
+elevation_level = 2
+
+[node name="NortheastLadder" type="Node3D" parent="." unique_id=1634897913]
+script = ExtResource("24_link")
+from_cell = Vector3i(24, 0, 6)
+to_cell = Vector3i(24, 2, 5)
+
+[node name="LadderVisual" parent="NortheastLadder" instance=ExtResource("ladder")]
+position = Vector3(8.5, 0, -5.92)
+scale = Vector3(1, 0.5, 1)
+
+[node name="HighPlatform" type="CSGBox3D" parent="." unique_id=714100362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -8.5)
+use_collision = true
+collision_layer = 3
+collision_mask = 3
+size = Vector3(6, 4, 5)
+material = SubResource("StandardMaterial3D_platform")
+script = ExtResource("23_surface")
+elevation_level = 4
+
+[node name="HighPlatformLadder" type="Node3D" parent="." unique_id=1848003151]
+script = ExtResource("24_link")
+from_cell = Vector3i(16, 0, 0)
+to_cell = Vector3i(16, 4, 1)
+
+[node name="LadderVisual" parent="HighPlatformLadder" instance=ExtResource("ladder")]
+position = Vector3(0.5, 0, -11.08)
+scale = Vector3(1, 1, 1)
+
+[node name="HighPlatformRamp" type="Node3D" parent="." unique_id=1863001145]
+script = ExtResource("25_elevation_path")
+start_cell = Vector3i(14, 0, 8)
+
+[node name="RampMesh" type="CSGBox3D" parent="HighPlatformRamp" unique_id=1320687392]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, -1.5, 2.5, -5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(1, 0.18, 5.65)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="HighPlatformStairs" type="Node3D" parent="." unique_id=839402653]
+script = ExtResource("25_elevation_path")
+start_cell = Vector3i(18, 0, 8)
+
+[node name="Step1" type="CSGBox3D" parent="HighPlatformStairs" unique_id=1156316725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, -3.5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="Step2" type="CSGBox3D" parent="HighPlatformStairs" unique_id=886290764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1, -4.5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(1, 2, 1)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="Step3" type="CSGBox3D" parent="HighPlatformStairs" unique_id=969931842]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.5, -5.5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(1, 3, 1)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="Step4" type="CSGBox3D" parent="HighPlatformStairs" unique_id=2081209011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 2, -6.5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(1, 4, 1)
+material = SubResource("StandardMaterial3D_platform")
+
+[node name="NorthwestUpperDeck" type="CSGBox3D" parent="." unique_id=585558150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 4.85, -8.5)
+use_collision = true
+collision_layer = 2
+collision_mask = 2
+size = Vector3(4, 0.3, 3)
+material = SubResource("StandardMaterial3D_platform")
+script = ExtResource("23_surface")
+elevation_level = 5
+blocks_ground = false
+
+[node name="UpperDeckLadder" type="Node3D" parent="." unique_id=595838170]
+script = ExtResource("24_link")
+from_cell = Vector3i(7, 2, 5)
+to_cell = Vector3i(7, 5, 4)
+
+[node name="LadderVisual" parent="UpperDeckLadder" instance=ExtResource("ladder")]
+position = Vector3(-8.5, 2, -6.92)
+scale = Vector3(1, 0.75, 1)
+
+[node name="RangeMarkings" type="Node3D" parent="."]
+
+[node name="Asphalt" type="MeshInstance3D" parent="RangeMarkings"]
+position = Vector3(0, 0.004, 0)
+cast_shadow = 0
+mesh = SubResource("RangeSurface")
+
+[node name="BayStripeWest" type="MeshInstance3D" parent="RangeMarkings"]
+position = Vector3(8.92, 0.006, 5.65)
+cast_shadow = 0
+mesh = SubResource("BayStripe")
+
+[node name="BayStripeEast" type="MeshInstance3D" parent="RangeMarkings"]
+position = Vector3(11.08, 0.006, 5.65)
+cast_shadow = 0
+mesh = SubResource("BayStripe")
+
+[node name="TraversalLane" type="Label3D" parent="RangeMarkings"]
+position = Vector3(0.5, 0.015, -0.45)
+rotation = Vector3(-1.570796, 0, 0)
+pixel_size = 0.013
+text = "01   RAMP   /   STAIRS"
+font_size = 36
+outline_size = 0
+modulate = Color(0.86, 0.9, 0.87, 1)
+
+[node name="VaultLane" type="Label3D" parent="RangeMarkings"]
+position = Vector3(-7.5, 0.015, 10.7)
+rotation = Vector3(-1.570796, 0, 0)
+pixel_size = 0.013
+text = "02   VAULT LANE"
+font_size = 36
+outline_size = 0
+modulate = Color(0.86, 0.9, 0.87, 1)
+
+[node name="VehicleBay" type="Label3D" parent="RangeMarkings"]
+position = Vector3(10, 0.015, 7.75)
+rotation = Vector3(-1.570796, 0, 0)
+pixel_size = 0.013
+text = "03   VEHICLE BAY"
+font_size = 36
+outline_size = 0
+modulate = Color(0.86, 0.9, 0.87, 1)
