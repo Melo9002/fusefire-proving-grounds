@@ -33,7 +33,7 @@ func validation_message() -> String:
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Generator 2 is quarantined; open this recording with the local archived project"
 	var battlefield_id := StringName(configuration.get("battlefield_id", &""))
-	if battlefield_id in [BattlefieldCatalogData.REFINERY_FAMILY, BattlefieldCatalogData.URBAN_FAMILY, BattlefieldCatalogData.PARKING_GARAGE] \
+	if BattlefieldCatalogData.uses_population(battlefield_id) \
 	and not configuration.get("content_manifest", {}).has("plot_id"):
 		return "Replay is missing the recorded plot and parcel choices"
 	if actions.is_empty(): return "Replay has no ordered_records"

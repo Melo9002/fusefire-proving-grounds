@@ -15,7 +15,7 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[node name="MatchSetup" type="Control" unique_id=256885953 node_paths=PackedStringArray("player_count", "enemy_count", "ally_count", "start_button", "generated_map_toggle", "auto_seed_toggle", "seed_input", "map_size_option")]
+[node name="MatchSetup" type="Control" unique_id=256885953 node_paths=PackedStringArray("player_count", "enemy_count", "ally_count", "start_button", "auto_seed_toggle", "seed_input", "map_size_option")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,7 +27,6 @@ player_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces
 enemy_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/EnemySide/EnemyCount")
 ally_count = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Forces/Teams/AllySide/AllyCount")
 start_button = NodePath("CenterContainer/Panel/Margin/VBox/Body/Briefing/Margin/VBox/StartButton")
-generated_map_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/GeneratedMapToggle")
 auto_seed_toggle = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/AutoSeedToggle")
 seed_input = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/SeedInput")
 map_size_option = NodePath("CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation/MapSize")
@@ -166,12 +165,6 @@ metadata/_tab_index = 2
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="GeneratedMapToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=1903544636]
-layout_mode = 2
-tooltip_text = "Turn this off to play the authored Tactical Test Range."
-button_pressed = true
-text = "USE BATTLEFIELD LIST"
-
 [node name="AutoSeedToggle" type="CheckButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=551290734]
 layout_mode = 2
 tooltip_text = "Prepare a fresh battle seed whenever this setup screen opens. Disable to reproduce AI and combat randomness; generated maps also reproduce their layout."
@@ -184,7 +177,7 @@ text = "NEXT BATTLE SEED"
 
 [node name="MapSize" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=515929907]
 layout_mode = 2
-tooltip_text = "Generated battlefield size"
+tooltip_text = "Choose the battlefield or map family."
 
 [node name="SeedInput" type="SpinBox" parent="CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation" unique_id=1816408605]
 custom_minimum_size = Vector2(0, 42)

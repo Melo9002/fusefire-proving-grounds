@@ -4,7 +4,7 @@ Status: active product direction and implementation ledger, updated 2026-11-07. 
 
 ## Where we are
 
-- Generator 1, its original Refinery and the Industrial Warehouse remain playable. The former broad Generator 2 implementation is quarantined as described in [generation status](status.md); the new bounded Generation 2.0 refinery proof is active and intentionally does not restore it wholesale.
+- Match Setup uses the authored catalog and one shared plot/parcel generator. The compact Service Depot replaces the Small, Medium and Large Generator 1 choices. The Tactical Test Range is fixed by default with optional seeded population. Original Generator 1 maps remain internal regression fixtures. The former broad Generator 2 implementation is quarantined as described in [generation status](status.md).
 - Refinery 2 is a fixed authored 96 x 80 map, with real tactical data and replay integration. Its buildings and equipment do not rearrange with the seed. See [Refinery 2 handoff](refinery-2.md).
 - We have reviewed Kenney assets, calibration, reusable catwalk components and the retained Asset Lab. The active refinery proof now resolves two authored plots and four standardized parcel roles through a bounded deterministic path. It is not yet a general map authoring workflow.
 - The superseded broad map-plan draft is preserved in the local quarantine. Meaningfully different layouts remain a product goal, but composition must earn its complexity through reviewed authored content.

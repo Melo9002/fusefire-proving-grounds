@@ -28,6 +28,17 @@ static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: M
 		var level := int(node.get_meta("deck_level"))
 		data.elevation_labels[level] = String(node.get_meta("deck_label", "Maintenance walkway"))
 		_stamp_local_deck(data, transform, node.get_meta("deck_local_rect"), level, unit)
+	if node is ElevationPath:
+		for step: Vector3i in node.get_cells():
+			_stamp_local_deck(data, transform, Rect2i(step.x, step.z, 1, 1), step.y, unit, false)
+			if node.blocks_ground:
+				var ground := data.get_cell(_local_cell_to_grid(transform, Vector3i(step.x, 0, step.z), data, unit))
+				if ground:
+					ground.walkable = false
+					ground.can_stop = false
+					ground.cover_type = MapCellData.CoverType.FULL
+					ground.cover_height = step.y * unit
+					ground.blocks_line_of_sight = true
 	for child in node.get_children():
 		_compile_surfaces(child, transform, data, unit)
 
@@ -35,7 +46,17 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 	var transform := parent_transform
 	if node is Node3D: transform *= node.transform
 	if node.has_meta("solid_size"):
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit)
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)))
+	if node.has_meta("objective_zone_id"):
+		var cells: Array[Vector3i] = []
+		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
+			cells.append(_local_cell_to_grid(transform, local_cell, data, unit))
+		data.set_objective_zone(node.get_meta("objective_zone_id"), cells)
+	if node.has_meta("deployment_faction"):
+		var faction := int(node.get_meta("deployment_faction")) as TacticalUnit.Faction
+		data.zones.erase(StringName("deployment_%d" % faction))
+		for local_cell: Vector3i in node.get_meta("deployment_local_cells", []):
+			data.add_spawn_cell(faction, _local_cell_to_grid(transform, local_cell, data, unit))
 	if node.has_meta("ladder_bottom"):
 		data.add_traversal_link(TraversalLinkData.new(node.get_meta("ladder_bottom"), node.get_meta("ladder_top"), true))
 	if node.has_meta("ladder_local_bottom"):
@@ -48,13 +69,14 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 	for child in node.get_children():
 		_compile_contents(child, transform, data, unit)
 
-static func _stamp_local_deck(data: MapData, transform: Transform3D, rect: Rect2i, level: int, unit: float) -> void:
+static func _stamp_local_deck(data: MapData, transform: Transform3D, rect: Rect2i, level: int, unit: float, include_slab := true) -> void:
 	for x in range(rect.position.x, rect.end.x):
 		for z in range(rect.position.y, rect.end.y):
 			var position := _local_cell_to_grid(transform, Vector3i(x, level, z), data, unit)
 			var ground := data.get_cell(Vector3i(position.x, 0, position.z))
 			if ground == null: continue
 			data.add_cell(MapCellData.new(position, ground.world_position + Vector3.UP * level * unit))
+			if not include_slab: continue
 			var slab := MapCellData.new(position - Vector3i.UP, ground.world_position + Vector3.UP * (level - 0.22) * unit)
 			slab.walkable = false; slab.can_stop = false; slab.cover_height = 0.22 * unit; slab.blocks_line_of_sight = true
 			data.add_cell(slab)
@@ -63,7 +85,7 @@ static func _local_cell_to_grid(transform: Transform3D, local: Vector3i, data: M
 	var world := transform * Vector3(local)
 	return Vector3i(roundi(world.x / unit + data.map_size.x * 0.5 - 0.5), roundi(world.y / unit), roundi(world.z / unit + data.map_size.y * 0.5 - 0.5))
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var lower := Vector2i(floori(bounds.position.x + data.map_size.x * 0.5), floori(bounds.position.z + data.map_size.y * 0.5))
 	var upper := Vector2i(ceili(bounds.end.x + data.map_size.x * 0.5), ceili(bounds.end.z + data.map_size.y * 0.5))
@@ -82,3 +104,5 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				cell.cover_type = MapCellData.CoverType.FULL if cell.cover_height >= 1.2 * unit else MapCellData.CoverType.LOW
 				cell.walkable = cell.cover_type == MapCellData.CoverType.LOW
 				cell.blocks_line_of_sight = cell.cover_type == MapCellData.CoverType.FULL
+				if cell.walkable:
+					cell.movement_cost = maxi(cell.movement_cost, movement_cost)

@@ -1,6 +1,6 @@
 # Generation status
 
-Generator 1 remains active: seeded cover maps, the original Refinery, Industrial Warehouse, gameplay, missions and replay. Refinery 2 is the supported fixed authored environment; Loading Yard is a bounded authored-parcel proof. The opt-in Refinery Family is the active Generation 2.0 proof, resolving registered parcels into two fixed plots with exact replay reconstruction. All downloaded assets, licenses, calibration and the Asset Lab remain available.
+Match Setup uses the authored battlefield catalog. The Service Depot, Refinery Family and Urban Family share the same plot and parcel resolver. The Tactical Test Range and Parking Garage use it for optional authored population on fixed sites. Refinery 2 and Loading Yard remain fixed authored choices. Generator 1 and the old handmade scene are internal regression fixtures. All downloaded assets, licenses, calibration and the Asset Lab remain available.
 
 Map selection now uses one stable `battlefield_id` resolved by `BattlefieldCatalog`. Authored tactical metadata compiles through one `AuthoredSceneMapCompiler`. Historical per-map booleans remain only to interpret existing replay data. See [Current map architecture](current-map-architecture.md).
 

@@ -16,9 +16,9 @@ static func generate(map_seed: int, cell_size: float = 1.0, requested: Dictionar
 	var resolved := Resolver.resolve(map_seed, population_enabled, requested)
 	return compile_resolved(resolved, map_seed, cell_size, SOURCE_KIND)
 
-static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String) -> MapData:
+static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String, extra_ally_slots: int = 0) -> MapData:
 	var size: Vector2i = resolved.get("map_size", PlotCatalog.MAP_SIZE)
-	var data := FlatMapGenerator.generate(size.x, size.y, cell_size, int(resolved.get("seed", map_seed)))
+	var data := FlatMapGenerator.generate(size.x, size.y, cell_size, int(resolved.get("seed", map_seed)), 5, extra_ally_slots)
 	data.source_kind = source_kind
 	data.content_manifest = resolved.duplicate(true)
 	data.generation_errors.assign(resolved.get("errors", []))

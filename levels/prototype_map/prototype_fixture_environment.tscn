@@ -4,12 +4,6 @@
 [ext_resource type="Script" uid="uid://cm77kvxtdsqu7" path="res://systems/grid/elevated_surface.gd" id="23_surface"]
 [ext_resource type="Script" uid="uid://bwym8k6sycpcj" path="res://systems/grid/traversal_link.gd" id="24_link"]
 [ext_resource type="Script" uid="uid://bls22btyx61ek" path="res://systems/grid/elevation_path.gd" id="25_elevation_path"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="crate"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container_a"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="container_b"]
-
-[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
 
 [sub_resource type="Environment" id="Environment_8x357"]
 background_mode = 1
@@ -21,35 +15,18 @@ ambient_light_energy = 0.55
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_ebqvm"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ebqvm"]
-albedo_color = Color(0.66, 0.48, 0.18, 1)
+albedo_color = Color(1, 0, 0.023529412, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_full"]
-albedo_color = Color(0.33, 0.38, 0.41, 1)
+albedo_color = Color(0.35, 0.015, 0.02, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_platform"]
-albedo_color = Color(0.23, 0.3, 0.35, 1)
+albedo_color = Color(0.12, 0.24, 0.38, 1)
 
-[sub_resource type="StandardMaterial3D" id="ProxyMaterial"]
-transparency = 1
-albedo_color = Color(1, 1, 1, 0)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ladder"]
+albedo_color = Color(0.95, 0.7, 0.12, 1)
 
-[sub_resource type="StandardMaterial3D" id="RangeAsphalt"]
-albedo_color = Color(0.24, 0.29, 0.31, 1)
-roughness = 0.92
-
-[sub_resource type="PlaneMesh" id="RangeSurface"]
-material = SubResource("RangeAsphalt")
-size = Vector2(32, 24)
-
-[sub_resource type="StandardMaterial3D" id="BayPaint"]
-albedo_color = Color(0.83, 0.79, 0.62, 1)
-roughness = 0.95
-
-[sub_resource type="PlaneMesh" id="BayStripe"]
-material = SubResource("BayPaint")
-size = Vector2(0.09, 3.5)
-
-[node name="TacticalTestRange" type="Node3D" unique_id=1970157743]
+[node name="PrototypeFixtureEnvironment" type="Node3D" unique_id=1970157743]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=18979429]
 transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
@@ -73,20 +50,11 @@ size = Vector3(32, 1, 24)
 [node name="CentralLowBlock" type="CSGBox3D" parent="Obstacles" unique_id=2016319224]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, 2.5)
 use_collision = true
-material = SubResource("ProxyMaterial")
-cast_shadow = 0
+material = SubResource("StandardMaterial3D_ebqvm")
 script = ExtResource("21_terrain")
 cover_type = 1
 cover_height = 1.0
 movement_cost = 2
-
-[node name="CrateBase" parent="Obstacles/CentralLowBlock" instance=ExtResource("crate")]
-position = Vector3(0, -0.5, 0)
-scale = Vector3(0.86, 0.86, 0.86)
-
-[node name="CrateTop" parent="Obstacles/CentralLowBlock" instance=ExtResource("crate")]
-position = Vector3(0, -0.027, 0)
-scale = Vector3(0.86, 0.86, 0.86)
 
 [node name="WestLowNorth" type="CSGBox3D" parent="Obstacles" unique_id=928162335]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.5, -3.5)
@@ -247,41 +215,6 @@ cover_type = 1
 cover_height = 1.0
 movement_cost = 2
 
-[node name="ParkedSedan" type="CSGBox3D" parent="Obstacles"]
-position = Vector3(10, 0.7, 5.5)
-size = Vector3(2, 1.4, 3)
-use_collision = true
-material = SubResource("ProxyMaterial")
-cast_shadow = 0
-script = ExtResource("21_terrain")
-cover_type = 2
-cover_height = 1.4
-blocks_line_of_sight = true
-
-[node name="Sedan" parent="Obstacles/ParkedSedan" instance=ExtResource("sedan")]
-position = Vector3(0, -0.7, 0)
-rotation = Vector3(0, 3.141593, 0)
-scale = Vector3(1.06, 1.06, 1.06)
-
-[node name="StackedCargo" type="CSGBox3D" parent="Obstacles"]
-position = Vector3(-10, 1, 5.5)
-size = Vector3(2, 2, 3)
-use_collision = true
-material = SubResource("ProxyMaterial")
-cast_shadow = 0
-script = ExtResource("21_terrain")
-cover_type = 2
-cover_height = 2.0
-blocks_line_of_sight = true
-
-[node name="LowerCargo" parent="Obstacles/StackedCargo" instance=ExtResource("container_a")]
-position = Vector3(0, -1, 0)
-scale = Vector3(2.87, 2.87, 2.87)
-
-[node name="UpperCargo" parent="Obstacles/StackedCargo" instance=ExtResource("container_b")]
-position = Vector3(0, -0.001, 0)
-scale = Vector3(2.87, 2.87, 2.87)
-
 [node name="NorthwestPlatform" type="CSGBox3D" parent="." unique_id=97886093]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -8.5)
 use_collision = true
@@ -297,9 +230,35 @@ script = ExtResource("24_link")
 from_cell = Vector3i(7, 0, 6)
 to_cell = Vector3i(7, 2, 5)
 
-[node name="LadderVisual" parent="NorthwestLadder" instance=ExtResource("ladder")]
-position = Vector3(-8.5, 0, -5.92)
-scale = Vector3(1, 0.5, 1)
+[node name="LeftRail" type="CSGBox3D" parent="NorthwestLadder" unique_id=1041394031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.8, 1, -5.92)
+size = Vector3(0.08, 2, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="RightRail" type="CSGBox3D" parent="NorthwestLadder" unique_id=1831913203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 1, -5.92)
+size = Vector3(0.08, 2, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung1" type="CSGBox3D" parent="NorthwestLadder" unique_id=788559276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.35, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung2" type="CSGBox3D" parent="NorthwestLadder" unique_id=1040731306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.85, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung3" type="CSGBox3D" parent="NorthwestLadder" unique_id=87453466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.35, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung4" type="CSGBox3D" parent="NorthwestLadder" unique_id=194829671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.85, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
 [node name="NortheastPlatform" type="CSGBox3D" parent="." unique_id=86520186]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, -8.5)
@@ -316,9 +275,35 @@ script = ExtResource("24_link")
 from_cell = Vector3i(24, 0, 6)
 to_cell = Vector3i(24, 2, 5)
 
-[node name="LadderVisual" parent="NortheastLadder" instance=ExtResource("ladder")]
-position = Vector3(8.5, 0, -5.92)
-scale = Vector3(1, 0.5, 1)
+[node name="LeftRail" type="CSGBox3D" parent="NortheastLadder" unique_id=466604920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.2, 1, -5.92)
+size = Vector3(0.08, 2, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="RightRail" type="CSGBox3D" parent="NortheastLadder" unique_id=889449585]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.8, 1, -5.92)
+size = Vector3(0.08, 2, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung1" type="CSGBox3D" parent="NortheastLadder" unique_id=1654499800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.35, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung2" type="CSGBox3D" parent="NortheastLadder" unique_id=1741696147]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.85, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung3" type="CSGBox3D" parent="NortheastLadder" unique_id=1044223588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.35, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung4" type="CSGBox3D" parent="NortheastLadder" unique_id=901049170]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.85, -5.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
 [node name="HighPlatform" type="CSGBox3D" parent="." unique_id=714100362]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -8.5)
@@ -335,9 +320,55 @@ script = ExtResource("24_link")
 from_cell = Vector3i(16, 0, 0)
 to_cell = Vector3i(16, 4, 1)
 
-[node name="LadderVisual" parent="HighPlatformLadder" instance=ExtResource("ladder")]
-position = Vector3(0.5, 0, -11.08)
-scale = Vector3(1, 1, 1)
+[node name="LeftRail" type="CSGBox3D" parent="HighPlatformLadder" unique_id=1270947139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 2, -11.08)
+size = Vector3(0.08, 4, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="RightRail" type="CSGBox3D" parent="HighPlatformLadder" unique_id=1227309191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2, -11.08)
+size = Vector3(0.08, 4, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung1" type="CSGBox3D" parent="HighPlatformLadder" unique_id=908479836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.35, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung2" type="CSGBox3D" parent="HighPlatformLadder" unique_id=848252859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.85, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung3" type="CSGBox3D" parent="HighPlatformLadder" unique_id=1102389742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.35, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung4" type="CSGBox3D" parent="HighPlatformLadder" unique_id=1153945006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.85, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung5" type="CSGBox3D" parent="HighPlatformLadder" unique_id=2028161924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 2.35, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung6" type="CSGBox3D" parent="HighPlatformLadder" unique_id=1139925095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 2.85, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung7" type="CSGBox3D" parent="HighPlatformLadder" unique_id=2110185289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 3.35, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
+
+[node name="Rung8" type="CSGBox3D" parent="HighPlatformLadder" unique_id=743422992]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 3.85, -11.08)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
 [node name="HighPlatformRamp" type="Node3D" parent="." unique_id=1863001145]
 script = ExtResource("25_elevation_path")
@@ -402,50 +433,42 @@ script = ExtResource("24_link")
 from_cell = Vector3i(7, 2, 5)
 to_cell = Vector3i(7, 5, 4)
 
-[node name="LadderVisual" parent="UpperDeckLadder" instance=ExtResource("ladder")]
-position = Vector3(-8.5, 2, -6.92)
-scale = Vector3(1, 0.75, 1)
+[node name="LeftRail" type="CSGBox3D" parent="UpperDeckLadder" unique_id=1593439955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.8, 3.5, -6.92)
+size = Vector3(0.08, 3, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="RangeMarkings" type="Node3D" parent="."]
+[node name="RightRail" type="CSGBox3D" parent="UpperDeckLadder" unique_id=965322018]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 3.5, -6.92)
+size = Vector3(0.08, 3, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="Asphalt" type="MeshInstance3D" parent="RangeMarkings"]
-position = Vector3(0, 0.004, 0)
-cast_shadow = 0
-mesh = SubResource("RangeSurface")
+[node name="Rung1" type="CSGBox3D" parent="UpperDeckLadder" unique_id=483468376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 2.35, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="BayStripeWest" type="MeshInstance3D" parent="RangeMarkings"]
-position = Vector3(8.92, 0.006, 5.65)
-cast_shadow = 0
-mesh = SubResource("BayStripe")
+[node name="Rung2" type="CSGBox3D" parent="UpperDeckLadder" unique_id=1845896940]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 2.85, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="BayStripeEast" type="MeshInstance3D" parent="RangeMarkings"]
-position = Vector3(11.08, 0.006, 5.65)
-cast_shadow = 0
-mesh = SubResource("BayStripe")
+[node name="Rung3" type="CSGBox3D" parent="UpperDeckLadder" unique_id=74662308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 3.35, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="TraversalLane" type="Label3D" parent="RangeMarkings"]
-position = Vector3(0.5, 0.015, -0.45)
-rotation = Vector3(-1.570796, 0, 0)
-pixel_size = 0.013
-text = "01   RAMP   /   STAIRS"
-font_size = 36
-outline_size = 0
-modulate = Color(0.86, 0.9, 0.87, 1)
+[node name="Rung4" type="CSGBox3D" parent="UpperDeckLadder" unique_id=2089628291]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 3.85, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="VaultLane" type="Label3D" parent="RangeMarkings"]
-position = Vector3(-7.5, 0.015, 10.7)
-rotation = Vector3(-1.570796, 0, 0)
-pixel_size = 0.013
-text = "02   VAULT LANE"
-font_size = 36
-outline_size = 0
-modulate = Color(0.86, 0.9, 0.87, 1)
+[node name="Rung5" type="CSGBox3D" parent="UpperDeckLadder" unique_id=53500734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.35, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")
 
-[node name="VehicleBay" type="Label3D" parent="RangeMarkings"]
-position = Vector3(10, 0.015, 7.75)
-rotation = Vector3(-1.570796, 0, 0)
-pixel_size = 0.013
-text = "03   VEHICLE BAY"
-font_size = 36
-outline_size = 0
-modulate = Color(0.86, 0.9, 0.87, 1)
+[node name="Rung6" type="CSGBox3D" parent="UpperDeckLadder" unique_id=343310590]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.85, -6.92)
+size = Vector3(0.68, 0.08, 0.08)
+material = SubResource("StandardMaterial3D_ladder")

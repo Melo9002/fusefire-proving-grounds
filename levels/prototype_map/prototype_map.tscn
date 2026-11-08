@@ -27,7 +27,7 @@
 [ext_resource type="Script" uid="uid://dtndlvy51i1x4" path="res://ui/battle_pause_menu.gd" id="31_pause_menu"]
 [ext_resource type="Script" uid="uid://dw8rxo54ggelm" path="res://presentation/overlays/shot_result_feedback.gd" id="32_shot_result"]
 [ext_resource type="Script" path="res://presentation/objectives/mission_terminal_presenter.gd" id="34_terminal_presenter"]
-[ext_resource type="PackedScene" path="res://levels/prototype_map/tactical_test_range.tscn" id="35_range"]
+[ext_resource type="PackedScene" path="res://levels/prototype_map/prototype_fixture_environment.tscn" id="35_range"]
 
 [sub_resource type="PlaceholderMesh" id="PlaceholderMesh_8x357"]
 

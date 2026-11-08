@@ -32,7 +32,6 @@ func _check_real_transition() -> void:
 	var menu := load("res://ui/match_setup.tscn").instantiate() as MatchSetup
 	root.add_child(menu)
 	current_scene = menu
-	menu.generated_map_toggle.button_pressed = true
 	for index in menu.map_size_option.item_count:
 		if StringName(menu.map_size_option.get_item_metadata(index)) == Catalog.LOADING_YARD:
 			menu.map_size_option.select(index)

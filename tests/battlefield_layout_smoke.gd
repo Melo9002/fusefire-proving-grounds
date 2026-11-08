@@ -16,8 +16,8 @@ func _run() -> void:
 	root.add_child(level)
 	await create_timer(0.15).timeout
 
-	var battle: BattleController = level.battle_controller
-	var grid: GridManager = battle.grid_manager
+	var battle = level.battle_controller
+	var grid = battle.grid_manager
 	check(grid.map_floor.size == Vector3(32, 1, 24), "Battlefield is 32 by 24 tiles")
 	check(grid.map_data.cells.size() == 876, "Map data contains ground, platforms, ramp, and stair cells")
 	for obstacle in level.get_node("Environment/Obstacles").get_children():
@@ -83,50 +83,7 @@ func _run() -> void:
 	for route in [Vector3(-4.5, 0, -11.5), Vector3(0.5, 0, 0.5), Vector3(0.5, 0, 11.5)]:
 		check(grid.get_cell_data(grid.world_to_grid(route)).can_stop, "North, center, and south crossings remain open")
 
-	var sedan := level.get_node("Environment/Obstacles/ParkedSedan") as CSGBox3D
-	var cargo := level.get_node("Environment/Obstacles/StackedCargo") as CSGBox3D
-	for prop in [sedan, cargo]:
-		var proxy := AABB(-prop.size * 0.5, prop.size)
-		for neighbor: CSGBox3D in prop.get_parent().get_children():
-			if neighbor == prop:
-				continue
-			var neighbor_bounds := AABB(neighbor.position - neighbor.size * 0.5, neighbor.size)
-			check(not (prop.transform * proxy).intersects(neighbor_bounds), "%s leaves %s clear" % [prop.name, neighbor.name])
-		for visual in prop.get_children():
-			var bounds := EnvironmentAssetPlacement.mesh_bounds(visual)
-			check(proxy.grow(0.005).encloses(bounds), "%s imported visual fits its authored volume" % visual.name)
-		var center := grid.world_to_grid(Vector3(prop.position.x, 0, prop.position.z))
-		check(not grid.get_cell_data(center).can_stop and grid.get_cell_data(center).blocks_line_of_sight, "%s remains solid in MapData" % prop.name)
-	var rig := level.get_node("CameraRig") as TacticalCamera
-	rig.set_process(false)
-	rig._cancel_selection_focus()
-	rig.camera.global_position = Vector3(18, 39, 34)
-	rig.camera.look_at(Vector3.ZERO)
-	rig.camera.fov = 43.0
-	await _capture("test-range-overview")
-	var actor: TacticalUnit = level.turn_manager.active_unit
-	var behind_car := Vector3i(26, 0, 15)
-	grid.update_unit_position(actor, actor.grid_position, behind_car)
-	actor.global_position = grid.grid_to_world(behind_car) + Vector3.UP * actor.standing_height
-	rig.camera.global_position = actor.global_position + Vector3(0, 0.2, 4.7)
-	rig.camera.look_at(actor.global_position)
-	await _capture("test-range-vehicle-solid")
-	var car_mesh := sedan.find_children("*", "MeshInstance3D", true, false)[0]
-	rig._update_camera_occlusion(0.2)
-	check(rig._environment_apertures.active.has(car_mesh), "The authored vehicle bay tests the shared local camera cutout")
-	var blocker := CombatRules.get_blocking_cell(rig.camera.global_position, actor.global_position, grid)
-	check(blocker != null and blocker.grid_position.x == behind_car.x and blocker.grid_position.z in range(16, 19), "The car still blocks tactical LOS through the cutout")
-	await _capture("test-range-vehicle-cutout")
 	level.queue_free()
 	await process_frame
 	print("Battlefield layout smoke: %d failure(s)" % failures)
 	quit(1 if failures else 0)
-
-func _capture(view: String) -> void:
-	var args := OS.get_cmdline_user_args()
-	if args.size() != 2 or args[0] != "capture" or DisplayServer.get_name() == "headless":
-		return
-	DirAccess.make_dir_recursive_absolute(args[1])
-	await process_frame
-	await RenderingServer.frame_post_draw
-	check(root.get_texture().get_image().save_png(args[1].path_join(view + ".png")) == OK, "Captured %s" % view)

@@ -19,6 +19,7 @@ func _run() -> void:
 	var saved_path := "res://artifacts/replay-file-%s.replay.json" % test_id
 	var malformed_path := "res://artifacts/replay-file-%s-malformed.json" % test_id
 	var stale_path := "res://artifacts/replay-file-%s-stale.json" % test_id
+	var retired_path := "res://artifacts/replay-file-%s-retired.json" % test_id
 	DirAccess.make_dir_recursive_absolute("res://artifacts")
 	var config := BattleConfiguration.new()
 	config.generated_map = true
@@ -71,6 +72,13 @@ func _run() -> void:
 	_check(current_scene == menu and menu._replay_error.visible and "placement" in menu._replay_error.dialog_text, "Malformed content opens an actionable error and preserves Match Setup")
 	_check(BattleReplaySession.last_recording == recording, "Opening a malformed file preserves the last completed recording")
 	menu._replay_error.hide()
+	var retired := BattleReplayRecording.from_dictionary(recording.to_dictionary())
+	retired.configuration.battlefield_id = Catalog.GENERATED_COVER
+	retired.configuration.content_manifest = {}
+	_check(retired.save_json(retired_path) == OK, "Retired battlefield replay fixture saves")
+	menu._replay_dialog.file_selected.emit(retired_path)
+	_check(current_scene == menu and menu._replay_error.visible and "retired battlefield" in menu._replay_error.dialog_text, "The file picker cannot launch the old cover generator")
+	menu._replay_error.hide()
 
 	var stale := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	stale.configuration.content_manifest.plot_revision += 1
@@ -115,7 +123,7 @@ func _run() -> void:
 			await process_frame
 			await process_frame
 			_check(current_scene is MatchSetup and not paused, "Returning to setup while replay is paused cancels playback and unpauses the game")
-	for path in [saved_path, stale_path, malformed_path]:
+	for path in [saved_path, stale_path, malformed_path, retired_path]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("Replay file workflow: %d failure(s)" % failures)
 	quit(1 if failures else 0)

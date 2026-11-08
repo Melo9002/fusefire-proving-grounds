@@ -13,7 +13,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	var ids := [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE, Catalog.REFINERY_2, Catalog.LOADING_YARD, Catalog.REFINERY_FAMILY, Catalog.URBAN_FAMILY, Catalog.PARKING_GARAGE]
+	var ids := Catalog.PLAYABLE + [Catalog.GENERATED_COVER, Catalog.REFINERY, Catalog.INDUSTRIAL_WAREHOUSE]
 	check(ids.all(func(id): return Catalog.has(id)), "Every selectable battlefield has one catalog identity")
 	check(Catalog.map_size(Catalog.REFINERY_2, Vector2i.ONE) == Vector2i(96, 80), "Fixed authored size comes from the catalog")
 	check(Catalog.map_size(Catalog.GENERATED_COVER, Vector2i(24, 20)) == Vector2i(24, 20), "Generated cover retains supported requested size")
@@ -38,14 +38,19 @@ func _run() -> void:
 	root.add_child(menu)
 	await process_frame
 	var seen := {}
+	var refinery_index := -1
+	var range_index := -1
 	for index in menu.map_size_option.item_count:
 		var id := StringName(menu.map_size_option.get_item_metadata(index))
 		check(Catalog.has(id), "Match Setup option resolves to a catalog entry: %s" % id)
-		if index >= FlatMapGenerator.MAP_SIZES.size(): check(not seen.has(id), "Special battlefield appears only once: %s" % id)
+		check(not seen.has(id), "A battlefield appears only once: %s" % id)
 		seen[id] = true
+		if id == Catalog.REFINERY_FAMILY: refinery_index = index
+		if id == Catalog.TACTICAL_TEST_RANGE: range_index = index
 	check(seen.has(Catalog.URBAN_FAMILY), "Match Setup exposes the urban family preview")
 	check(seen.has(Catalog.PARKING_GARAGE), "Match Setup exposes the two-level garage proof")
-	menu.map_size_option.select(menu.map_size_option.item_count - 1)
+	check(menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT and not seen.has(Catalog.GENERATED_COVER) and not seen.has(Catalog.REFINERY) and not seen.has(Catalog.INDUSTRIAL_WAREHOUSE), "The depot replaces the old generator choices in Match Setup")
+	menu.map_size_option.select(refinery_index)
 	menu._refresh_generation_controls()
 	var selected: BattleConfiguration = menu._build_battle_configuration()
 	check(selected.resolved_battlefield_id() == Catalog.REFINERY_FAMILY and selected.map_size == Vector2i(64, 64), "Match Setup exposes the authored-parcel refinery family")
@@ -54,9 +59,10 @@ func _run() -> void:
 	var unpopulated: BattleConfiguration = menu._build_battle_configuration()
 	check(not unpopulated.content_manifest.population_enabled, "Match Setup can request the same complete site without movable tactical population")
 	menu.population_toggle.button_pressed = true
-	menu.generated_map_toggle.button_pressed = false
-	check(menu.map_size_option.disabled and menu.deployment_summary.text.contains("TACTICAL TEST RANGE"), "Turning off the battlefield list exposes the authored test range")
-	check(not menu._build_battle_configuration().generated_map, "The test range launches through the fixed authored battle path")
+	menu.map_size_option.select(range_index)
+	menu._on_battlefield_selected(range_index)
+	check(menu.deployment_summary.text.contains("TACTICAL TEST RANGE") and menu.population_toggle.visible and not menu.population_toggle.button_pressed, "The authored range defaults to fixed content and exposes optional population")
+	check(menu._build_battle_configuration().resolved_battlefield_id() == Catalog.TACTICAL_TEST_RANGE, "The authored range launches through the shared battlefield catalog")
 	menu.free()
 
 	var started := Time.get_ticks_msec()
