@@ -24,6 +24,7 @@ var last_error := ""
 var preview_seed := 17
 var occupancy := 65
 var conflict_count := 0
+var field_excluded_sockets := {}
 var _saved_fields: Array[Dictionary] = []
 var _saved_preview_settings := Vector2i(17, 65)
 
@@ -205,6 +206,7 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 	preview_seed = map_seed
 	occupancy = clampi(density, 0, 100)
 	conflict_count = 0
+	field_excluded_sockets.clear()
 	var accepted: Array[Dictionary] = []
 	var occupied: Array[AABB] = []
 	var ordered := sockets.duplicate()
@@ -217,7 +219,9 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 		if bounds.size.x <= 0 or bounds.size.z <= 0:
 			conflict_count += 1
 			continue
-		if has_protected_overlap(String(socket.surface_id), bounds): continue
+		if has_protected_overlap(String(socket.surface_id), bounds):
+			field_excluded_sockets[socket.socket_id] = true
+			continue
 		var permission_cells := {}
 		for field in fields:
 			if field.surface != String(socket.surface_id) or field.preset == PARKING_ROW: continue
@@ -230,7 +234,9 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 		for x in range(floori(bounds.position.x + 0.5), ceili(bounds.end.x + 0.5 - 0.00001)):
 			for z in range(floori(bounds.position.z + 0.5), ceili(bounds.end.z + 0.5 - 0.00001)):
 				if not permission_cells.has(Vector2i(x, z)): permitted = false
-		if not permitted: continue
+		if not permitted:
+			field_excluded_sockets[socket.socket_id] = true
+			continue
 		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= clampi(density, 0, 100): continue
 		var intersects := false
 		for obstacle in obstacles + occupied:

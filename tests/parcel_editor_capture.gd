@@ -30,6 +30,14 @@ func _run() -> void:
 	editor._refresh_placement_picker()
 	editor._update_draft_status()
 	await _capture(output.path_join("parcel-editor-move-objects.png"))
+	editor.population_toggle.button_pressed = true
+	editor._top_view()
+	var container := editor.displayed_parcel.get_node("ContainerA") as Node3D
+	var anchor := container.global_position + Vector3.UP * 0.9
+	if editor._start_object_drag(editor.camera.unproject_position(anchor)):
+		editor._preview_object_drag(editor.camera.unproject_position(anchor + Vector3(4, 0, -3)))
+		await _capture(output.path_join("parcel-editor-drag-preview.png"))
+		editor._finish_object_drag(false)
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
@@ -41,8 +49,10 @@ func _run() -> void:
 	await process_frame
 	await _capture(output.path_join("parcel-editor-parking-fields.png"))
 	editor.field_panel.session.erase_at("ground", Vector2i(5, 6))
-	editor.field_panel.session.add("ground", "parking_row", Rect2i(13, 6, 12, 5), 0)
 	editor.field_panel.select_tool(3)
+	await _capture(output.path_join("parcel-editor-aisle-direction.png"))
+	editor.field_panel.session.add("ground", "parking_row", Rect2i(13, 6, 12, 5), 0)
+	editor.field_panel.refresh()
 	await process_frame
 	await _capture(output.path_join("parcel-editor-empty-row.png"))
 	editor.field_panel.preview()

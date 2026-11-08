@@ -31,6 +31,8 @@ var _vehicles = Vehicles.new()
 var _row_preview: Node3D
 var _previewing := false
 var _preview_ids := {}
+var _aisle_arrow: MeshInstance3D
+var _field_destination: Label
 
 func setup(editor: Node3D) -> void:
 	host = editor
@@ -96,6 +98,7 @@ func setup(editor: Node3D) -> void:
 	preview_button = _add_button(preview_controls, "Preview", preview)
 	_add_button(preview_controls, "Show source", reset_preview)
 	options.add_child(preview_controls)
+	_add_label(options, "Preview includes compatible sockets inside painted permission, outside protected areas. Show source restores the authored objects.")
 	var history := HBoxContainer.new()
 	undo_button = _add_button(history, "Undo field", undo)
 	redo_button = _add_button(history, "Redo field", redo)
@@ -104,8 +107,13 @@ func setup(editor: Node3D) -> void:
 	_add_button(files, "Save fields", save_fields)
 	_add_button(files, "Load fields", load_fields)
 	options.add_child(files)
+	var named_files := HBoxContainer.new()
+	_add_button(named_files, "Save fields as…", _save_fields_as)
+	_add_button(named_files, "Open field draft…", _open_fields)
+	options.add_child(named_files)
+	_field_destination = _add_label(options, "")
 	export_button = _add_button(options, "Export parking scene", export_scene)
-	_add_label(options, "Draft files and exported scenes are for review. Runtime content changes after catalog registration.").modulate = Color("93a8ba")
+	_add_label(options, "Exports go to user://parcel_exports/ with a generated name. Existing exports are kept. Catalog registration is separate.").modulate = Color("93a8ba")
 	host.population_toggle.toggled.connect(_apply_preview_visibility)
 
 func _add_button(parent: Container, title: String, callback: Callable) -> Button:
@@ -167,11 +175,11 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 	redo_button.disabled = session.future.is_empty()
 	match active_tool:
 		Tool.DRAW:
-			guidance.text = "Drag on the selected floor to paint. For parking, paint the bays first, then choose Parking row."
+			guidance.text = "Drag to paint. Parking bays need %d × %d cells each, with %d clear cells on the aisle side." % [Session.BAY_WIDTH, Session.BAY_DEPTH, Session.AISLE_DEPTH] if preset_picker.selected == 0 else "Drag on the selected floor to paint."
 		Tool.ERASE:
 			guidance.text = "Click a field or bay outline to erase it."
 		Tool.PARKING_ROW:
-			guidance.text = "2. Choose the aisle direction and drag along the aisle-facing edge. 3. Preview."
+			guidance.text = "2. Drag the edge facing the green arrow. Bays are %d × %d cells with a %d-cell aisle. 3. Preview." % [Session.BAY_WIDTH, Session.BAY_DEPTH, Session.AISLE_DEPTH]
 		_:
 			guidance.text = "1. Paint Parking permission → 2. Draw a row → 3. Preview." if not parking_allowed else "Parking permission is ready on this floor. Draw a row along its aisle, or preview existing bays."
 	if latest.is_empty():
@@ -183,6 +191,8 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 
 func begin(definition, scene_root: Node3D) -> void:
 	session.begin(definition, scene_root)
+	_field_destination.text = "Quick save / load · " + session.path()
+	_field_destination.tooltip_text = ProjectSettings.globalize_path(session.path())
 	_source_sockets = definition.population_sockets(scene_root)
 	_fixed_obstacles = session.parking_obstacles(definition, scene_root)
 	start_cell = null
@@ -211,6 +221,10 @@ func cell_at(screen: Vector2) -> Variant:
 
 func handle_input(event: InputEvent) -> bool:
 	if active_tool == Tool.INSPECT: return false
+	if active_tool == Tool.PARKING_ROW and event is InputEventMouseMotion and start_cell == null:
+		var hover: Variant = cell_at(event.position)
+		if hover != null:
+			_position_aisle_arrow(hover)
 	if event is InputEventMouseMotion and start_cell != null:
 		var next_cell: Variant = cell_at(event.position)
 		if next_cell != drag_cell:
@@ -306,6 +320,7 @@ func refresh(message := "") -> void:
 	var bays: Array[Dictionary] = session.parking_bays(_source_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {})
 	var fitting := _draw_bays(bays)
 	_update_tools(provisional)
+	_draw_aisle_arrow()
 	status.text = message
 	if not bays.is_empty():
 		if not status.text.is_empty(): status.text += "\n"
@@ -351,7 +366,40 @@ func preview() -> void:
 	if is_instance_valid(_row_preview): host.population_toggle.disabled = false
 	_apply_preview_visibility(host.population_toggle.button_pressed)
 	_update_tools()
-	status.text = "%d authored sockets + %d row bays occupied. %d overlap conflicts rejected. Draft preview only." % [choices.size() - row_count, row_count, session.conflict_count]
+	var excluded := _source_sockets.filter(func(socket): return session.field_excluded_sockets.has(socket.socket_id)).size()
+	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d overlap conflicts rejected." % [choices.size() - row_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.conflict_count]
+
+func _draw_aisle_arrow() -> void:
+	if active_tool != Tool.PARKING_ROW:
+		return
+	var mesh := ImmediateMesh.new()
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.albedo_color = Color("a0ffb4")
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	for point in [Vector2(-0.14, 0), Vector2(0.14, 0), Vector2(0.14, 1.4), Vector2(-0.14, 0), Vector2(0.14, 1.4), Vector2(-0.14, 1.4), Vector2(-0.52, 1.4), Vector2(0.52, 1.4), Vector2(0, 2.2)]:
+		mesh.surface_add_vertex(Vector3(point.x, 0, point.y))
+	mesh.surface_end()
+	_aisle_arrow = MeshInstance3D.new()
+	_aisle_arrow.mesh = mesh
+	_aisle_arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_aisle_arrow.rotation.y = -heading_picker.selected * PI * 0.5
+	overlay.add_child(_aisle_arrow)
+	for field in session.fields:
+		if field.surface == surface_id() and field.preset == "parking":
+			var rect := Session.rectangle(field)
+			_position_aisle_arrow(rect.get_center() if start_cell == null else start_cell)
+			break
+
+func _position_aisle_arrow(cell: Vector2i) -> void:
+	if not is_instance_valid(_aisle_arrow):
+		return
+	var surface: Dictionary = session.surfaces[surface_id()]
+	var bounds: Array = surface.rect
+	if not Rect2i(bounds[0], bounds[1], bounds[2], bounds[3]).has_point(cell):
+		return
+	_aisle_arrow.position = host.displayed_parcel.position + Vector3(cell.x, surface.level + 0.16, cell.y)
 
 func _draw_bays(bays: Array[Dictionary]) -> int:
 	if bays.is_empty(): return 0
@@ -418,13 +466,29 @@ func redo() -> void:
 	reset_preview()
 
 func save_fields() -> void:
+	var path: String = session.path()
+	host.confirm_replace_draft(path, func(): _save_fields_to(path))
+
+func _save_fields_as() -> void:
+	host.choose_draft_file(session.path(), true, _save_fields_to)
+
+func _save_fields_to(path: String) -> void:
 	session.preview_seed = int(seed_input.value)
 	session.occupancy = int(density.value)
-	status.text = "Saved " + session.path() if session.save_to(session.path()) else session.last_error
+	status.text = "Saved " + path if session.save_to(path) else session.last_error
 	_update_tools()
 
 func load_fields() -> void:
-	if session.load_from(session.path()):
+	_load_fields_from(session.path())
+
+func _open_fields() -> void:
+	host.choose_draft_file(session.path(), false, _load_fields_from)
+
+func _load_fields_from(path: String) -> void:
+	host.confirm_open_draft(path, has_unsaved_changes(), func(): _apply_loaded_fields(path))
+
+func _apply_loaded_fields(path: String) -> void:
+	if session.load_from(path):
 		seed_input.set_value_no_signal(session.preview_seed)
 		density.set_value_no_signal(session.occupancy)
 		reset_preview()

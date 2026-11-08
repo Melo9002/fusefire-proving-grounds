@@ -57,6 +57,45 @@ func _run() -> void:
 	check(editor.draft.dirty and "visual moves" in editor.draft_badge.text, "Visual edits update the scoped unsaved indicator")
 	editor._undo()
 	check(not editor.draft.dirty, "Undoing to the source transforms clears the visual dirty state")
+	editor._top_view()
+	var container := editor.displayed_parcel.get_node("ContainerA") as Node3D
+	var container_start := container.position
+	var source_yaw := container.rotation_degrees.y
+	var pick_position: Vector2 = editor.camera.unproject_position(container.global_position + Vector3.UP * 0.9)
+	var drop_position: Vector2 = editor.camera.unproject_position(container.global_position + Vector3.UP * 0.9 + Vector3(2.2, 0, -1.3))
+	check(editor._start_object_drag(pick_position) and editor.draft.selected_path == "ContainerA", "Viewport picking selects the real imported container")
+	editor._preview_object_drag(drop_position)
+	check(container.position.is_equal_approx(container_start + Vector3(2.0, 0, -1.5)) and not editor.draft.dirty, "The live drag follows the ground grid without committing a draft")
+	var rotate := InputEventKey.new()
+	rotate.keycode = KEY_R
+	rotate.pressed = true
+	editor._input(rotate)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.position = drop_position
+	editor._input(release)
+	check(editor.draft.undo_stack.size() == 1 and is_equal_approx(container.rotation_degrees.y, source_yaw + 90.0), "Dropping and rotating commit together as one undo step")
+	editor._undo()
+	check(container.position.is_equal_approx(container_start) and is_equal_approx(container.rotation_degrees.y, source_yaw), "Undo restores both pose components")
+	editor._start_object_drag(pick_position)
+	editor._preview_object_drag(drop_position)
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	editor._input(escape)
+	check(container.position.is_equal_approx(container_start) and not editor.draft.dirty and editor.draft.undo_stack.is_empty(), "Escape restores a live pose without adding history")
+	editor._save_draft_as()
+	check(editor._draft_file_dialog.visible and editor._draft_file_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save As opens a named destination picker")
+	editor._draft_file_dialog.hide()
+	editor._draft_file_dialog.file_selected.emit(test_draft_path)
+	check(FileAccess.file_exists(test_draft_path), "The Save As callback writes the chosen file")
+	var replacement := {"confirmed": false}
+	editor.confirm_replace_draft(test_draft_path, func(): replacement.confirmed = true)
+	check(editor.discard_dialog.visible and not replacement.confirmed, "Quick save pauses before replacing an existing draft")
+	editor.discard_dialog.get_cancel_button().pressed.emit()
+	await process_frame
+	check(not replacement.confirmed and FileAccess.file_exists(test_draft_path), "Canceling replacement keeps the existing draft")
+	DirAccess.remove_absolute(test_draft_path)
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	check(not is_instance_valid(editor._selection_marker), "The visual selection marker stays out of population editing")
 	check(editor.field_panel.session.add("ground", "protected", Rect2i(1, 1, 2, 2)), "Field fixture adds an unsaved protection area")

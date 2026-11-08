@@ -61,6 +61,11 @@ func select(path: String) -> bool:
 func translate_selected(delta: Vector3) -> bool:
 	return _edit_selected(func(record: Dictionary): record.position = _vector3_record(_record_vector3(record.position) + delta))
 
+func place_selected(position: Vector3, yaw: float) -> bool:
+	return _edit_selected(func(record: Dictionary):
+		record.position = _vector3_record(position)
+		record.rotation_degrees[1] = yaw)
+
 func rotate_selected_quarter(turns: int) -> bool:
 	return _edit_selected(func(record: Dictionary):
 		var rotation := _record_vector3(record.rotation_degrees)
@@ -87,10 +92,12 @@ func _edit_selected(editor: Callable) -> bool:
 	if index < 0:
 		last_error = "MISSING_PLACEMENT"
 		return false
-	undo_stack.append(_snapshot())
-	redo_stack.clear()
 	var record: Dictionary = placements[index].duplicate(true)
 	editor.call(record)
+	if record == placements[index]:
+		return false
+	undo_stack.append(_snapshot())
+	redo_stack.clear()
 	placements[index] = record
 	last_error = ""
 	return true

@@ -15,6 +15,15 @@ var discard_dialog: ConfirmationDialog
 var _selection_marker: Node3D
 var _panel: PanelContainer
 var _discard_action: Callable
+var _draft_file_dialog: FileDialog
+var _draft_file_action: Callable
+var _visual_destination: Label
+var _dragged: Node3D
+var _drag_origin := Transform3D.IDENTITY
+var _drag_start := Vector3.ZERO
+var _drag_screen_start := Vector2.ZERO
+var _drag_moved := false
+var _drag_yaw := 0.0
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -50,6 +59,7 @@ func _ready() -> void:
 	if not _definitions.is_empty():
 		_show_index(0)
 	get_viewport().size_changed.connect(_update_camera)
+	get_window().focus_exited.connect(func(): _finish_object_drag(false))
 	_update_camera()
 
 func _build_stage() -> void:
@@ -146,7 +156,7 @@ func _build_ui() -> void:
 
 	var move_page := _add_task_page("Move objects")
 	var move_help := Label.new()
-	move_help.text = "Choose an object to see its bounds and movement axes. Moves are visual draft edits."
+	move_help.text = "Click an object or drag it on its floor. R rotates, Shift+R reverses, Esc cancels. Moves edit visuals only. Tactical properties stay at their authored positions."
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(move_help)
 	placement_picker = OptionButton.new()
@@ -187,14 +197,26 @@ func _build_ui() -> void:
 	var save := Button.new()
 	save.text = "Save visuals"
 	save.pressed.connect(_save_draft)
-	history.add_child(save)
+	var files := HBoxContainer.new()
+	files.add_child(save)
 	var load_draft := Button.new()
 	load_draft.text = "Load visuals"
 	load_draft.pressed.connect(_load_draft)
-	history.add_child(load_draft)
+	files.add_child(load_draft)
 	for button in history.get_children():
 		(button as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	move_page.add_child(history)
+	move_page.add_child(files)
+	var named_files := HBoxContainer.new()
+	for spec in [["Save visuals as…", _save_draft_as], ["Open visual draft…", _open_draft]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.pressed.connect(spec[1])
+		named_files.add_child(button)
+	move_page.add_child(named_files)
+	_visual_destination = Label.new()
+	_visual_destination.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	move_page.add_child(_visual_destination)
 	draft_status = Label.new()
 	draft_status.name = "DraftStatus"
 	draft_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -234,6 +256,7 @@ func _add_task_page(title: String) -> VBoxContainer:
 	return page
 
 func _on_task_changed(task: int) -> void:
+	_finish_object_drag(false)
 	if task != Task.POPULATION_FIELDS:
 		field_panel.cancel_drag()
 		field_panel.clear_preview()
@@ -256,11 +279,48 @@ func _confirm_discard(action: Callable) -> void:
 	if scopes.is_empty():
 		action.call()
 		return
+	_confirm_draft_action("Discard unsaved draft?", "Unsaved changes in %s will be lost." % ", ".join(scopes), "Discard and continue", action)
+
+func confirm_replace_draft(path: String, action: Callable) -> void:
+	if not FileAccess.file_exists(path):
+		action.call()
+		return
+	_confirm_draft_action("Replace saved draft?", ProjectSettings.globalize_path(path), "Replace draft", action)
+
+func confirm_open_draft(path: String, unsaved: bool, action: Callable) -> void:
+	if unsaved and FileAccess.file_exists(path):
+		_confirm_draft_action("Replace unsaved draft?", "Open %s and replace the current draft?" % path, "Open draft", action)
+	else:
+		action.call()
+
+func _confirm_draft_action(title: String, message: String, button: String, action: Callable) -> void:
 	if discard_dialog.visible:
 		return
 	_discard_action = action
-	discard_dialog.dialog_text = "Unsaved changes in %s will be lost." % ", ".join(scopes)
+	discard_dialog.title = title
+	discard_dialog.dialog_text = message
+	discard_dialog.ok_button_text = button
 	discard_dialog.popup_centered()
+
+func choose_draft_file(path: String, saving: bool, action: Callable) -> void:
+	var error := DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	if error != OK:
+		_confirm_draft_action("Cannot open draft folder", error_string(error), "Close", func(): pass)
+		return
+	if not _draft_file_dialog:
+		_draft_file_dialog = FileDialog.new()
+		_draft_file_dialog.access = FileDialog.ACCESS_USERDATA
+		_draft_file_dialog.filters = PackedStringArray(["*.json ; FuseFire draft"])
+		_draft_file_dialog.transient = true
+		_draft_file_dialog.exclusive = true
+		_draft_file_dialog.file_selected.connect(func(destination: String): _draft_file_action.call(destination))
+		add_child(_draft_file_dialog)
+	_draft_file_action = action
+	_draft_file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE if saving else FileDialog.FILE_MODE_OPEN_FILE
+	_draft_file_dialog.title = "Save draft as" if saving else "Open draft"
+	_draft_file_dialog.current_dir = path.get_base_dir()
+	_draft_file_dialog.current_file = path.get_file() if saving else ""
+	_draft_file_dialog.popup_centered_ratio(0.72)
 
 func _definition_index(id: StringName) -> int:
 	for index in _definitions.size():
@@ -290,6 +350,7 @@ func _show_index(index: int) -> void:
 	if index < 0 or index >= _definitions.size():
 		return
 	parcel_picker.select(index)
+	_finish_object_drag(false)
 	if is_instance_valid(displayed_parcel):
 		field_panel.clear_preview()
 		displayed_parcel.free()
@@ -324,6 +385,8 @@ func _show_index(index: int) -> void:
 	population_toggle.disabled = definition.population_sockets().is_empty()
 	set_population_visible(true)
 	draft.begin(definition, displayed_parcel)
+	_visual_destination.text = "Quick save / load · " + draft.draft_path()
+	_visual_destination.tooltip_text = ProjectSettings.globalize_path(draft.draft_path())
 	field_panel.begin(definition, displayed_parcel)
 	_refresh_placement_picker()
 	_update_draft_status("Source parcel loaded; runtime content is unchanged.")
@@ -378,13 +441,28 @@ func _apply_draft(message := "") -> void:
 	_update_history_buttons()
 
 func _save_draft() -> void:
-	_update_draft_status("Saved visual-only draft to %s." % draft.draft_path() if draft.save() else draft.last_error)
-	_update_history_buttons()
+	var path: String = draft.draft_path()
+	confirm_replace_draft(path, func(): _save_draft_to(path))
+
+func _save_draft_as() -> void:
+	choose_draft_file(draft.draft_path(), true, _save_draft_to)
+
+func _save_draft_to(path: String) -> void:
+	_update_draft_status("Saved visual-only draft to %s." % path if draft.save_to(path) else draft.last_error)
 
 func _load_draft() -> void:
+	_load_draft_from(draft.draft_path())
+
+func _open_draft() -> void:
+	choose_draft_file(draft.draft_path(), false, _load_draft_from)
+
+func _load_draft_from(path: String) -> void:
+	confirm_open_draft(path, draft.dirty, func(): _apply_loaded_draft(path))
+
+func _apply_loaded_draft(path: String) -> void:
 	var definition = Catalog.get_definition(displayed_parcel_id)
-	if draft.load_for(definition, displayed_parcel):
-		_apply_draft("Loaded visual-only draft from %s." % draft.draft_path())
+	if draft.load_from(path, definition, displayed_parcel):
+		_apply_draft("Loaded visual-only draft from %s." % path)
 		_refresh_placement_picker()
 	else:
 		_update_draft_status(draft.last_error)
@@ -580,7 +658,104 @@ func _update_camera() -> void:
 		var sidebar := minf(_panel.get_global_rect().end.x, view.x * 0.65)
 		camera.h_offset = -sidebar / view.y * _distance * tan(deg_to_rad(camera.fov * 0.5))
 
+func _pick_placement(screen: Vector2) -> String:
+	var origin := camera.project_ray_origin(screen)
+	var ray := camera.project_ray_normal(screen)
+	var closest := camera.far
+	var picked := ""
+	for mesh_node: MeshInstance3D in displayed_parcel.find_children("*", "MeshInstance3D", true, false):
+		if not mesh_node.mesh or not mesh_node.is_visible_in_tree():
+			continue
+		var from := mesh_node.to_local(origin)
+		var to := mesh_node.to_local(origin + ray * closest)
+		if mesh_node.get_aabb().intersects_segment(from, to) == null:
+			continue
+		var placement: Node = mesh_node
+		while placement != displayed_parcel and not placement.has_meta("asset_id"):
+			placement = placement.get_parent()
+		if placement == displayed_parcel:
+			continue
+		var faces := mesh_node.mesh.get_faces()
+		for index in range(0, faces.size(), 3):
+			var hit: Variant = Geometry3D.segment_intersects_triangle(from, to, faces[index], faces[index + 1], faces[index + 2])
+			if hit == null:
+				continue
+			var distance := origin.distance_to(mesh_node.to_global(hit))
+			if distance < closest:
+				closest = distance
+				picked = String(displayed_parcel.get_path_to(placement))
+	return picked
+
+func _start_object_drag(screen: Vector2) -> bool:
+	var path := _pick_placement(screen)
+	if path.is_empty() or not draft.select(path):
+		return false
+	_refresh_placement_picker()
+	_update_draft_status()
+	var selected := displayed_parcel.get_node(NodePath(path)) as Node3D
+	var hit: Variant = _drag_plane_hit(screen, selected.global_position.y)
+	if hit != null:
+		_dragged = selected
+		_drag_origin = selected.transform
+		_drag_start = hit
+		_drag_screen_start = screen
+		_drag_moved = false
+		_drag_yaw = float(draft.placement().rotation_degrees[1])
+	return true
+
+func _drag_plane_hit(screen: Vector2, height: float) -> Variant:
+	return Plane(Vector3.UP, height).intersects_ray(camera.project_ray_origin(screen), camera.project_ray_normal(screen))
+
+func _preview_object_drag(screen: Vector2) -> void:
+	if not _drag_moved and screen.distance_squared_to(_drag_screen_start) < 16.0:
+		return
+	var parent := _dragged.get_parent() as Node3D
+	var hit: Variant = _drag_plane_hit(screen, _drag_start.y)
+	if hit == null:
+		return
+	_drag_moved = true
+	var offset := parent.to_local(hit) - parent.to_local(_drag_start)
+	var target := _drag_origin.origin + Vector3(snappedf(offset.x, 0.5), 0.0, snappedf(offset.z, 0.5))
+	if target != _dragged.position:
+		_dragged.position = target
+		_show_drag_preview()
+
+func _show_drag_preview() -> void:
+	draft_status.text = "Preview · %s\nPosition %s · yaw %.1f°\nRelease to place · Esc to cancel" % [draft.selected_path, _dragged.position, _drag_yaw]
+	_update_selection_marker()
+
+func _finish_object_drag(commit: bool) -> void:
+	if not is_instance_valid(_dragged):
+		return
+	var position := _dragged.position
+	_dragged.transform = _drag_origin
+	_dragged = null
+	if commit and draft.place_selected(position, _drag_yaw):
+		_apply_draft("Placed visual draft object.")
+	else:
+		_update_draft_status()
+
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(_dragged):
+		if event is InputEventMouseMotion:
+			_preview_object_drag(event.position)
+			get_viewport().set_input_as_handled()
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			var on_canvas := not _panel.get_global_rect().has_point(event.position) and get_viewport().get_visible_rect().has_point(event.position)
+			if on_canvas: _preview_object_drag(event.position)
+			_finish_object_drag(on_canvas)
+			get_viewport().set_input_as_handled()
+		elif event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_ESCAPE:
+				_finish_object_drag(false)
+			elif event.keycode == KEY_R:
+				_drag_yaw = snappedf(_drag_yaw + (-90.0 if event.shift_pressed else 90.0), 90.0)
+				_dragged.rotation_degrees.y = _drag_yaw
+				_show_drag_preview()
+			get_viewport().set_input_as_handled()
+		elif event is InputEventMouseButton:
+			get_viewport().set_input_as_handled()
+		return
 	# GUI controls can consume a release after a stroke began in the scene.
 	if (field_panel != null and field_panel.start_cell != null and event is InputEventMouseButton
 		and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and _panel.get_global_rect().has_point(event.position)):
@@ -591,7 +766,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed:
-		if event.ctrl_pressed and event.keycode == KEY_Z:
+		if task_tabs.current_tab == Task.MOVE_OBJECTS and event.keycode == KEY_R and not event.echo and not event.ctrl_pressed:
+			_rotate_selected(-1 if event.shift_pressed else 1)
+			get_viewport().set_input_as_handled()
+		elif event.ctrl_pressed and event.keycode == KEY_Z:
 			if task_tabs.current_tab == Task.POPULATION_FIELDS: field_panel.undo()
 			elif task_tabs.current_tab == Task.MOVE_OBJECTS: _undo()
 			get_viewport().set_input_as_handled()
@@ -603,7 +781,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_frame()
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT:
+		if task_tabs.current_tab == Task.MOVE_OBJECTS and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			if _start_object_drag(event.position): get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_orbiting = event.pressed
 		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			_panning = event.pressed

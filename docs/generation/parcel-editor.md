@@ -26,9 +26,9 @@ Choose a registered parcel from the list. The editor opens on **Inspect** with t
 
 ## Make a visual draft
 
-Open **Move objects** and choose an imported visual node. Its outline and labeled axes show the selected object and the directions used by the X/Y/Z controls. Use half-cell horizontal steps, quarter-height vertical steps and quarter-turn yaw to adjust its preview transform. **Undo move** and **Redo move** operate on this visual draft.
+Open **Move objects** and click a visible imported object in the viewport, or choose it from the list. Drag with LMB to preview its position on its current floor in half-cell steps. Release in the viewport to commit a single undo step. Press `R` for a quarter-turn, `Shift+R` for the reverse, and `Esc` to cancel an active drag. The outline and labeled axes also match the X/Y/Z nudge buttons, which provide half-cell horizontal and quarter-cell vertical steps.
 
-**Save visuals** writes `user://parcel_drafts/<parcel-id>.draft.json`. **Load visuals** validates and restores it. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
+**Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
 
 Saving does not edit the `.tscn`, publish content, change tactical metadata or affect a battle. The preview deliberately leaves cyan/orange tactical contracts in their authored locations so a visual/tactical disagreement is visible instead of silently changing gameplay.
 
@@ -38,12 +38,12 @@ The footprint grid is visual guidance. `MapData` compiled from explicit authored
 
 Open **Population fields** and choose a surface or floor. **Inspect** leaves the scene in camera mode. **Paint** exposes the Parking, Containers, Equipment and Protected presets. Drag with LMB and watch the outline and cell dimensions update before releasing. **Erase** removes the topmost matching field on click. The legend distinguishes periwinkle permission fields, coral protected fields, gold bays and green aisles. The selected floor receives the stroke even when another floor is visible above it.
 
-Set Seed and percentage of eligible bays, then **Preview**. Parking can use existing authored sockets and the parking rows described below. Containers and equipment still use authored sockets. Compatible painted rectangles combine into a permission mask with one layer per cell. The combined mask must contain the occupant's footprint. Protected areas, fixed solid volumes and other accepted occupants reject overlaps. **Show source** restores the authored population. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
+Set Seed and percentage of eligible bays, then **Preview**. This shows compatible occupants whose footprints fit within the painted permission areas and avoid protected areas. The result counts authored sockets filtered out by the paint separately from overlap conflicts. Parking can use authored sockets and new parking rows. Containers and equipment use authored sockets. **Show source** restores the authored population. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
 
 ### Draw a parking row
 
 1. Paint Parking permission over the intended bays and Protected over access space you want to keep empty.
-2. Choose **Parking row** once the selected floor has Parking permission, then select the direction toward the aisle. **Top** view makes the grid easier to read.
+2. Choose **Parking row** once the selected floor has Parking permission, then use the green ground arrow to check the aisle direction before drawing. **Top** view makes the grid easier to read.
 3. Drag along the edge of the row that faces the aisle. The tool fits whole 3 × 5 cell bays behind that edge and checks a four-cell-deep aisle on the chosen side. Gold outlines mark fitting bays, red marks rejected bays, and green marks the aisle.
 4. Press **Preview** to see seeded vehicle models, occupancy, and forward/reverse headings. **Save fields** stores the row and heading with the painted fields. Erase a row by clicking within its bay outline in **Erase** mode.
 
@@ -51,7 +51,7 @@ The office lot demonstrates four extra bays. Paint X 2–29 and Z 4–11, then d
 
 Editor camera: RMB drag down raises the view toward overhead, up lowers it, matching the battle camera's vertical orbit preference. Horizontal orbit and MMB pan retain their controls.
 
-**Save fields / Load fields** use `user://parcel_fields/<parcel-id>.fields.json`, recording parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft. The header names the draft with unsaved changes. Switching parcels or returning to Match Setup asks before discarding those changes.
+**Save fields** and **Load fields** use the displayed parcel-specific file under `user://parcel_fields/`. Replacing an existing quick-save file asks for confirmation. Use **Save fields as…** and **Open field draft…** for separate drafts. Files record parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft. The header names the draft with unsaved changes. Switching parcels or returning to Match Setup asks before discarding those changes.
 
 ### Export a parking scene
 
