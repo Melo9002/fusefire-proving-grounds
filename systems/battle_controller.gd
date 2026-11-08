@@ -371,8 +371,11 @@ func _process(_delta: float) -> void:
 		return
 
 	var floor_hit = mouse_raycaster.get_floor_raycast_result() if mouse_raycaster else {}
-	if not floor_hit.is_empty() and grid_cursor:
-		grid_cursor.update_hover_position(floor_hit.position)
+	if grid_cursor:
+		if floor_hit.is_empty():
+			grid_cursor.clear_hover()
+		else:
+			grid_cursor.update_hover_position(floor_hit.position)
 	if not is_move_mode_active or not is_instance_valid(tactical_unit) or tactical_unit.is_moving:
 		path_visualizer.clear_path()
 	else:

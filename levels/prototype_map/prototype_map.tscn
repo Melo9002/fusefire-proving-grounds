@@ -29,6 +29,8 @@
 [ext_resource type="Script" path="res://presentation/objectives/mission_terminal_presenter.gd" id="34_terminal_presenter"]
 [ext_resource type="PackedScene" path="res://levels/prototype_map/prototype_fixture_environment.tscn" id="35_range"]
 
+[ext_resource type="Script" path="res://presentation/overlays/ground_tile_layers.gd" id="36_tile_layers"]
+
 [sub_resource type="PlaceholderMesh" id="PlaceholderMesh_8x357"]
 
 [node name="BattleLevel" type="Node3D" unique_id=1534168603 node_paths=PackedStringArray("player_spawn_zone", "enemy_spawn_zone", "ally_spawn_zone", "player_units_parent", "allied_units_parent", "enemy_units_parent", "objective_units_parent", "turn_manager", "battle_controller", "objective_manager", "objective_zone_visualizer")]
@@ -162,33 +164,39 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 1, 3.5)
 
 [node name="Visualizers" type="Node3D" parent="." unique_id=1615445199]
 
+[node name="GroundTileLayers" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+script = ExtResource("36_tile_layers")
+grid_manager = NodePath("../../Systems/GridManager")
+
 [node name="GridVisualizer" type="MeshInstance3D" parent="Visualizers" unique_id=1699779869 node_paths=PackedStringArray("target_floor")]
 layers = 2
 mesh = SubResource("PlaceholderMesh_8x357")
 script = ExtResource("4_q85eh")
 target_floor = NodePath("../../Environment/MapFloor")
 
-[node name="GridCursor" type="MeshInstance3D" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager")]
-layers = 2
+[node name="GridCursor" type="Node3D" parent="Visualizers" unique_id=535165235 node_paths=PackedStringArray("grid_manager", "tile_layers")]
 script = ExtResource("5_q85eh")
 grid_manager = NodePath("../../Systems/GridManager")
+tile_layers = NodePath("../GroundTileLayers")
 highlight_color = Color(0.9999594, 0.122358926, 0.10734794, 0.8)
 
-[node name="PathVisualizer" type="Node3D" parent="Visualizers" unique_id=916084487 node_paths=PackedStringArray("grid_manager")]
+[node name="PathVisualizer" type="Node3D" parent="Visualizers" unique_id=916084487 node_paths=PackedStringArray("grid_manager", "tile_layers")]
 script = ExtResource("6_8rqs0")
 grid_manager = NodePath("../../Systems/GridManager")
+tile_layers = NodePath("../GroundTileLayers")
 
-[node name="OverwatchRangeVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("grid_manager")]
+[node name="OverwatchRangeVisualizer" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("tile_layers")]
 script = ExtResource("33_overwatch_range")
-grid_manager = NodePath("../../Systems/GridManager")
+tile_layers = NodePath("../GroundTileLayers")
 
 [node name="CoverVisualizer" type="Node3D" parent="Visualizers" unique_id=1588388241 node_paths=PackedStringArray("grid_manager")]
 script = ExtResource("22_cover")
 grid_manager = NodePath("../../Systems/GridManager")
 
-[node name="ObjectiveZoneVisualizer" type="Node3D" parent="Visualizers" unique_id=1703581440 node_paths=PackedStringArray("grid_manager")]
+[node name="ObjectiveZoneVisualizer" type="Node3D" parent="Visualizers" unique_id=1703581440 node_paths=PackedStringArray("grid_manager", "tile_layers")]
 script = ExtResource("29_objective_zones")
 grid_manager = NodePath("../../Systems/GridManager")
+tile_layers = NodePath("../GroundTileLayers")
 
 [node name="MissionTerminalPresenter" type="Node3D" parent="Visualizers" node_paths=PackedStringArray("objective_manager", "grid_manager")]
 script = ExtResource("34_terminal_presenter")
