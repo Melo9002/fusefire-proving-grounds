@@ -109,6 +109,7 @@ position = Vector3(17.5, 0.01, 20.5)
 mesh = SubResource("lane_mesh")
 
 [node name="ContainerWest" type="Node3D" parent="."]
+visible = false
 position = Vector3(6, 0, 14)
 rotation = Vector3(0, 1.570796, 0)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
@@ -124,6 +125,7 @@ metadata/solid_size = Vector3(5, 2.5, 2.5)
 metadata/round_volume = false
 
 [node name="ContainerEast" type="Node3D" parent="."]
+visible = false
 position = Vector3(25, 0, 18)
 rotation = Vector3(0, 1.570796, 0)
 metadata/asset_id = "city_kit_industrial/shipping-container-b"
@@ -139,6 +141,7 @@ metadata/solid_size = Vector3(5, 2.5, 2.5)
 metadata/round_volume = false
 
 [node name="CrateWest" type="Node3D" parent="."]
+visible = false
 position = Vector3(10, 0, 23)
 metadata/asset_id = "factory_kit/box-large"
 metadata/population_socket_id = &"cover_mid_west"
@@ -153,6 +156,7 @@ metadata/solid_size = Vector3(1.5, 1.5, 1.5)
 metadata/round_volume = false
 
 [node name="CrateEast" type="Node3D" parent="."]
+visible = false
 position = Vector3(21, 0, 25)
 metadata/asset_id = "factory_kit/box-large"
 metadata/population_socket_id = &"cover_mid_east"

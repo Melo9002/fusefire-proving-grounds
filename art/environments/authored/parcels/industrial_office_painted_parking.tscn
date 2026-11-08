@@ -19,6 +19,7 @@ metadata/min_count = 0
 metadata/max_count = 1
 
 [node name="Car_row_bay_ground_13_4" type="Node3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 6)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"row_bay_ground_13_4"
@@ -44,6 +45,7 @@ metadata/min_count = 0
 metadata/max_count = 1
 
 [node name="Car_row_bay_ground_16_4" type="Node3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, 6)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"row_bay_ground_16_4"
@@ -69,6 +71,7 @@ metadata/min_count = 0
 metadata/max_count = 1
 
 [node name="Car_row_bay_ground_19_4" type="Node3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 6)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"row_bay_ground_19_4"
@@ -94,6 +97,7 @@ metadata/min_count = 0
 metadata/max_count = 1
 
 [node name="Car_row_bay_ground_22_4" type="Node3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, 6)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"row_bay_ground_22_4"

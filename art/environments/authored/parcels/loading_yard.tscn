@@ -73,6 +73,7 @@ metadata/precise_shot_bounds = true
 
 
 [node name="ContainerA" type="Node3D" parent="."]
+visible = false
 position = Vector3(3.000000, 0.000000, 23.000000)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
 metadata/population_socket_id = &"container_west"
@@ -90,6 +91,7 @@ metadata/round_volume = false
 
 
 [node name="ContainerB" type="Node3D" parent="."]
+visible = false
 position = Vector3(12.000000, 0.000000, 25.000000)
 metadata/asset_id = "city_kit_industrial/shipping-container-b"
 metadata/population_socket_id = &"container_east"
@@ -107,6 +109,7 @@ metadata/round_volume = false
 
 
 [node name="Truck" type="Node3D" parent="."]
+visible = false
 position = Vector3(11.000000, 0.000000, 18.000000)
 metadata/asset_id = "car_kit/delivery"
 metadata/population_socket_id = &"loading_vehicle"

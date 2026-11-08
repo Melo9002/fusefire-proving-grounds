@@ -144,9 +144,8 @@ func _build_ui() -> void:
 	inspect_page.add_child(validation_label)
 	population_toggle = CheckButton.new()
 	population_toggle.name = "PopulationToggle"
-	population_toggle.text = "Show authored movable population"
+	population_toggle.text = "Show painted population guides"
 	population_toggle.button_pressed = true
-	population_toggle.toggled.connect(set_population_visible)
 	inspect_page.add_child(population_toggle)
 	tactical_toggle = CheckButton.new()
 	tactical_toggle.name = "TacticalToggle"
@@ -399,7 +398,7 @@ func _show_index(index: int) -> void:
 	validation_label.modulate = Color("79d99b") if failures.is_empty() else Color("ff7a7a")
 	population_toggle.button_pressed = true
 	population_toggle.disabled = definition.population_sockets().is_empty()
-	set_population_visible(true)
+	set_population_visible(false)
 	draft.begin(definition, displayed_parcel)
 	_visual_destination.text = "Quick save / load · " + draft.draft_path()
 	_visual_destination.tooltip_text = ProjectSettings.globalize_path(draft.draft_path())
@@ -536,7 +535,7 @@ func _update_draft_status(message := "") -> void:
 		selection = "%s\nposition %s · yaw %.1f°" % [record.path, record.position, float(record.rotation_degrees[1])]
 		var selected := displayed_parcel.get_node_or_null(NodePath(String(record.path))) as Node3D
 		if selected and not selected.is_visible_in_tree():
-			selection += "\nHidden in this view. Show authored population in Inspect to see it."
+			selection += "\nPopulation template. Use Population fields → Preview to see placed objects."
 	var state := "unsaved" if draft.dirty else "saved/source"
 	draft_status.text = "%s · %s\n%s%s" % [String(draft.parcel_id), state, selection, "\n" + message if not message.is_empty() else ""]
 	_update_history_buttons()

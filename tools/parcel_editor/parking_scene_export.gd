@@ -1,10 +1,10 @@
 extends RefCounted
-## Bake reviewed rows into ordinary authored sockets. This editor tool owns the
+## Save reviewed parking geometry for seeded battle population. This editor tool owns the
 ## export, while the registered parcel contract owns compilation and replay.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 
-static func build(source, draft, vehicles, map_seed: int) -> Dictionary:
+static func build(source, draft, vehicles) -> Dictionary:
 	if source == null or draft.parcel_id != String(source.parcel_id) or draft.revision != source.revision:
 		return {"error": "Draft source parcel revision no longer matches."}
 	var source_errors: PackedStringArray = source.validate()
@@ -26,18 +26,24 @@ static func build(source, draft, vehicles, map_seed: int) -> Dictionary:
 	if bays.is_empty():
 		scene_root.free()
 		return {"error": "No parking bays fit. Expand the parking paint or adjust the aisle."}
-	var signature: Array = [String(source.parcel_id), source.revision]
+	if vehicles.asset_ids().is_empty():
+		scene_root.free()
+		return {"error": "No calibrated vehicle fits the authored bay dimensions."}
+	var rules: Array[Dictionary] = []
+	rules.assign(scene_root.get_meta("painted_parking_bays", []))
+	var paint: Array = scene_root.get_meta("parking_population_paint", []).duplicate(true)
+	for field in draft.fields:
+		if field.preset in ["parking", "protected"]:
+			paint.append({"surface": field.surface, "preset": field.preset, "rect": Session.rectangle(field)})
 	for bay in bays:
 		if not bay.reason.is_empty():
 			scene_root.free()
 			return {"error": "%s: %s. Adjust the draft before exporting." % [bay.id, bay.reason]}
-		var candidate: Dictionary = vehicles.candidate(bay, map_seed, draft.parcel_id)
-		if candidate.is_empty():
-			scene_root.free()
-			return {"error": "No calibrated vehicle fits %s." % bay.id}
-		signature.append([bay.id, bay.heading, candidate.asset_id])
-		_add_bay(scene_root, bay, candidate)
-	var parcel_id := StringName("%s_rows_%s" % [source.parcel_id, JSON.stringify(signature).sha256_text().substr(0, 16)])
+		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle})
+	scene_root.set_meta("painted_parking_bays", rules)
+	scene_root.set_meta("parking_population_paint", paint)
+	var signature := [String(source.parcel_id), source.revision, rules, paint]
+	var parcel_id := StringName("%s_rules_%s" % [source.parcel_id, JSON.stringify(signature).sha256_text().substr(0, 16)])
 	scene_root.set_meta("parcel_id", parcel_id)
 	scene_root.set_meta("revision", 1)
 	var packed := PackedScene.new()
@@ -49,52 +55,30 @@ static func build(source, draft, vehicles, map_seed: int) -> Dictionary:
 	var failures := definition.validate()
 	if not failures.is_empty():
 		return {"error": "Exported parcel contract failed: %s" % "; ".join(failures)}
-	var route_error := _check_aisles(definition, bays)
+	var route_error := _check_aisles(definition, rules)
 	if not route_error.is_empty():
 		return {"error": route_error}
 	return {"definition": definition, "bay_count": bays.size()}
-
-static func _add_bay(scene_root: Node3D, bay: Dictionary, candidate: Dictionary) -> void:
-	var id := StringName(bay.id)
-	var region := Node.new()
-	region.name = "Region_" + String(id)
-	region.set_meta("population_region_id", id)
-	region.set_meta("population_role", &"parked_vehicle")
-	region.set_meta("population_surface_id", StringName(bay.surface))
-	region.set_meta("local_rect", bay.rect)
-	region.set_meta("allowed_asset_ids", PackedStringArray([candidate.asset_id]))
-	region.set_meta("min_count", 0)
-	region.set_meta("max_count", 1)
-	scene_root.add_child(region)
-	region.owner = scene_root
-	var car: Node3D = candidate.template.duplicate()
-	car.name = "Car_" + String(id)
-	car.position = candidate.local_position
-	car.rotation.y = -int(bay.heading) * PI * 0.5
-	car.set_meta("population_socket_id", id)
-	car.set_meta("population_region_id", id)
-	car.set_meta("population_surface_id", StringName(bay.surface))
-	car.set_meta("population_yaw_turns", PackedInt32Array([0, 2]))
-	scene_root.add_child(car)
-	_set_owner(car, scene_root)
-
-static func _set_owner(node: Node, scene_root: Node3D) -> void:
-	node.owner = scene_root
-	if not node.scene_file_path.is_empty(): return
-	for child in node.get_children():
-		_set_owner(child, scene_root)
 
 static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dictionary]) -> String:
 	# Compile the fully occupied version. Check the entire aisle and a path
 	# from the authored entrance in every supported parcel rotation.
 	var aisles := {}
 	for bay in bays:
-		aisles["%s/%s" % [bay.level, bay.aisle]] = {"rect": bay.aisle, "level": bay.level}
+		if bay.has("aisle"):
+			aisles["%s/%s" % [bay.level, bay.aisle]] = {"rect": bay.aisle, "level": bay.level}
 	var entrance := definition.connection()
+	var full_population := []
+	for socket in definition.population_sockets():
+		# The SUV has the same tactical footprint as the sedan and taxi, and
+		# the tallest tactical volume. Reserve it for the worst-case check.
+		var asset := "car_kit/suv" if "car_kit/suv" in socket.get("asset_options", []) else String(socket.asset_id)
+		full_population.append({"socket_id": socket.socket_id, "asset_id": asset})
 	for turn in definition.allowed_rotations():
 		var extent := ParcelTransform.rotated_size(definition.size, turn)
 		var map := FlatMapGenerator.generate(extent.x, extent.y, 1.0, 0)
 		var instance := definition.instantiate()
+		definition.apply_population(instance, full_population)
 		instance.transform = ParcelTransform.scene_transform(definition.size, Vector3i.ZERO, turn, extent)
 		Compiler.compile(instance, map, 1.0)
 		instance.free()

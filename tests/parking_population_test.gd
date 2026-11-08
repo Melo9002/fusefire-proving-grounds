@@ -17,12 +17,16 @@ func check(ok: bool, message: String) -> void:
 func _run() -> void:
 	var headings := {}
 	var arrangements := {}
+	var models_by_bay := {}
 	var example := {}
 	for map_seed in range(0, 32, 2):
 		var resolved := Layout.resolve(map_seed)
 		var office: Dictionary = resolved.placements[-1]
-		check(office.parcel_id == Parcels.INDUSTRIAL_OFFICE_PAINTED_PARKING, "Fresh service streets choose the validated painted parking variant")
+		check(office.parcel_id == Parcels.INDUSTRIAL_OFFICE_PARKING_RULES, "Fresh service streets choose the painted parking rules")
 		var added: Array = office.population.filter(func(choice): return String(choice.socket_id).begins_with("row_bay_"))
+		for choice: Dictionary in added:
+			if not models_by_bay.has(choice.socket_id): models_by_bay[choice.socket_id] = {}
+			models_by_bay[choice.socket_id][choice.asset_id] = true
 		var signature := str(added.map(func(choice): return choice.socket_id))
 		if not added.is_empty() and not arrangements.has(signature):
 			arrangements[signature] = map_seed
@@ -33,6 +37,11 @@ func _run() -> void:
 		check(resolved == Layout.resolve(map_seed), "Heading choices repeat for identical inputs")
 	check(headings.has(0) and headings.has(2), "Fixed seed matrix exercises forward and reverse parking")
 	check(arrangements.size() > 1, "Different map seeds choose different occupied bays within the same painted parking area")
+	check(models_by_bay.values().any(func(models): return models.size() > 1), "Battle seed can choose a different calibrated model for the same painted bay")
+	var rules = Parcels.get_definition(Parcels.INDUSTRIAL_OFFICE_PARKING_RULES)
+	var source: Node3D = rules.instantiate()
+	check(source.get_node_or_null("Car_row_bay_ground_13_4") == null and not source.get_node("SedanWest").visible, "Authored source contains guides and no visible movable vehicles")
+	source.free()
 	for map_seed: int in arrangements.values().slice(0, 2):
 		await _check_playable_parking(map_seed)
 	var recording := Recording.new()

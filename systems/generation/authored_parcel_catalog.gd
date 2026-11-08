@@ -11,6 +11,7 @@ const TANK_STORAGE_A := &"tank_storage_a"
 const MAINTENANCE_GALLERY_A := &"maintenance_gallery_a"
 const INDUSTRIAL_OFFICE_PARKING_A := &"industrial_office_parking_a"
 const INDUSTRIAL_OFFICE_PAINTED_PARKING := &"industrial_office_painted_parking"
+const INDUSTRIAL_OFFICE_PARKING_RULES := &"industrial_office_parking_rules"
 const SIGNAL_COURTYARD_A := &"signal_courtyard_a"
 const COURTYARD_GALLERY_A := &"courtyard_gallery_a"
 const PARKING_GARAGE_A := &"parking_garage_a"
@@ -32,6 +33,7 @@ const TankStorageA = preload("res://art/environments/authored/parcels/tank_stora
 const MaintenanceGalleryA = preload("res://art/environments/authored/parcels/maintenance_gallery.tscn")
 const IndustrialOfficeParkingA = preload("res://art/environments/authored/parcels/industrial_office_parking.tscn")
 const IndustrialOfficePaintedParking = preload("res://art/environments/authored/parcels/industrial_office_painted_parking.tscn")
+const IndustrialOfficeParkingRules = preload("res://art/environments/authored/parcels/industrial_office_parking_rules.tscn")
 const SignalCourtyardA = preload("res://art/environments/authored/parcels/signal_courtyard.tscn")
 const CourtyardGalleryA = preload("res://art/environments/authored/parcels/courtyard_gallery.tscn")
 const ParkingGarageA = preload("res://art/environments/authored/parcels/parking_garage.tscn")
@@ -46,6 +48,7 @@ static func all() -> Array:
 		Definition.new(MAINTENANCE_GALLERY_A, "Elevated maintenance gallery", ELEVATED_PROCESS, 1, Vector2i(16, 32), MaintenanceGalleryA),
 		Definition.new(INDUSTRIAL_OFFICE_PARKING_A, "Industrial office and visitor parking", URBAN_FRONTAGE, 1, Vector2i(32, 32), IndustrialOfficeParkingA),
 		Definition.new(INDUSTRIAL_OFFICE_PAINTED_PARKING, "Industrial office — painted parking proof", URBAN_FRONTAGE, 1, Vector2i(32, 32), IndustrialOfficePaintedParking),
+		Definition.new(INDUSTRIAL_OFFICE_PARKING_RULES, "Industrial office — seeded parking rules", URBAN_FRONTAGE, 1, Vector2i(32, 32), IndustrialOfficeParkingRules),
 		Definition.new(SIGNAL_COURTYARD_A, "Industrial signal courtyard", URBAN_COURTYARD, 1, Vector2i(32, 32), SignalCourtyardA),
 		Definition.new(COURTYARD_GALLERY_A, "Inward-facing courtyard gallery", URBAN_GALLERY, 1, Vector2i(16, 32), CourtyardGalleryA),
 		Definition.new(PARKING_GARAGE_A, "Two-level service garage", PARKING_GARAGE, 1, Vector2i(32, 32), ParkingGarageA),

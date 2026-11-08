@@ -21,7 +21,7 @@ Choose a registered parcel from the list. The editor opens on **Inspect** with t
 - Mouse wheel: zoom.
 - `F` or **Frame**: frame the complete parcel.
 - **Top** and **Oblique**: repeatable review views.
-- **Show authored movable population**: isolate the fixed assembly from deterministic container/vehicle sockets when the parcel supports them.
+- **Show painted population guides** shows permission areas and empty placement outlines. Cars and containers that vary with the seed are hidden until Preview. Fixed structures stay visible.
 - **Show tactical contracts**: inspect gameplay authority separately from imported meshes. Cyan marks elevated/access contracts; orange marks explicit tactical solid volumes.
 
 ## Make a visual draft
@@ -40,15 +40,17 @@ The footprint grid is visual guidance. `MapData` compiled from explicit authored
 
 Open **Population fields** and choose a surface or floor. **Inspect** leaves the scene in camera mode. **Paint** exposes the Parking, Containers, Equipment and Protected presets. Drag with LMB and watch the outline and cell dimensions update before releasing. **Erase** removes the topmost matching field on click. The legend distinguishes periwinkle permission fields, coral protected fields, gold bays and green aisles. The selected floor receives the stroke even when another floor is visible above it.
 
-Set Seed and percentage of eligible bays, then **Preview**. This shows compatible occupants whose footprints fit within the painted permission areas and avoid protected areas. The result counts authored sockets filtered out by the paint separately from overlap conflicts. Parking can use authored sockets and new parking rows. Containers and equipment use authored sockets. **Show source** restores the authored population. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
+Permission strokes turn red over fixed tactical solids, protected cells, entrances, reserved aisles or beyond the selected floor. Releasing an invalid stroke leaves the draft unchanged. Paint Protected over areas that must stay clear. Empty placement guides can be painted over.
+
+Set **Seed** and press **Preview** to see the registered parcel's seeded population. If you have a field draft, Preview tests the draft's painted areas and density instead, reporting filtered sockets and conflicts. Parking can use authored sockets and new parking rows. Containers and equipment use existing authored sockets. **Show guides** clears the preview. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
 
 ### Paint parking and preview
 
 Parking paint now defines where vehicles are allowed. The editor derives one contiguous row per painted floor from 3 × 5 bays and a four-cell aisle. It checks existing sockets, authored solids, protected paint and headroom. **Next seed** previews another outcome using the same paint. Density controls occupancy of eligible bays.
 
-On the original office parcel, paint X 2–29 and Z 4–11 and preview at 100%. The editor finds four bays alongside the three authored sockets. **Export parking scene** validates the full layout and writes a separate scene containing the possible bays. It retains the original authored sockets and fixes a calibrated vehicle type for each new bay at export. A battle seed chooses which bays are occupied and which direction cars face. Replay records the resolved choices in its existing manifest.
+On the original office parcel, paint X 2–29 and Z 4–11 and preview at 100%. The editor finds four bays alongside the three authored sockets. **Export parking scene** validates the full layout and writes the possible bay positions. The battle seed chooses occupancy, forward or reverse facing, and the calibrated model for each occupied new bay. Replay records those resolved choices.
 
-To play the registered proof, select **Urban family** in Match Setup, enable **Tactical Population**, and use an even seed to choose the service-street plot. Seeds **0** and **2** were checked in the battle scene and occupy different new bays. Fresh street battles use the painted parking variant. Exact older manifests can still resolve the original office parcel. The battle seed is chosen through Match Setup and stays fixed for that encounter.
+To inspect the registered proof, open **Industrial office — seeded parking rules**. Preview here uses the same placement scope as the service-street office. To play it, select **Urban family** in Match Setup, enable **Tactical Population**, and use seed **0** or **2**. Both choose the service-street plot and occupy different new bays. Registered container parcels choose occupancy from their authored placement guides. Exact older manifests can still resolve the original office variants.
 
 ### Override a parking row
 
@@ -67,7 +69,7 @@ Editor camera: RMB drag down raises the view toward overhead, up lowers it, matc
 
 Use **Export parking scene** after checking the inferred or manually drawn row. The tool checks every bay and compiles the fully occupied parcel. The whole entrance span and each aisle must remain walkable, with a tactical route from the entrance to the aisle on its declared floor. These checks run for all supported parcel rotations. The export preserves original authored sockets and rejects protected paint that would conflict with them. Visual transform drafts must be restored to source transforms first.
 
-The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel and explicit, optional row sockets with the calibrated vehicle and authored tactical volume at each bay. The seed chooses the models baked into the new sockets. The preview occupancy slider affects the preview only. Authored sockets retain their normal runtime occupancy and forward/reverse options. The filename identifies the resulting content, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog.
+The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel, paint and empty parking bays. At battle startup an accepted new bay gets the chosen model and its authored tactical volume. The preview density slider is for draft inspection. The filename identifies the exported rules, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog.
 
 ## Current boundary
 

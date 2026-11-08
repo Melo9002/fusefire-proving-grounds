@@ -18,6 +18,15 @@ func _run() -> void:
 	var editor: Node3D = EditorScene.instantiate()
 	root.add_child(editor)
 	await process_frame
+	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_RULES)
+	editor._top_view()
+	await _capture(output.path_join("office-seeded-guides.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
+	editor.field_panel.seed_input.value = 2
+	editor.field_panel.preview()
+	await _capture(output.path_join("office-seed-2-preview.png"))
+	editor.select_parcel(Catalog.LOADING_YARD_A)
+	await _capture(output.path_join("loading-yard-guides.png"))
 	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)
 	editor.tactical_toggle.button_pressed = true
 	await _capture(output.path_join("parcel-editor-maintenance-contracts.png"))
@@ -30,7 +39,7 @@ func _run() -> void:
 	editor._refresh_placement_picker()
 	editor._update_draft_status()
 	await _capture(output.path_join("parcel-editor-move-objects.png"))
-	editor.population_toggle.button_pressed = true
+	editor.set_population_visible(true)
 	editor._top_view()
 	var container := editor.displayed_parcel.get_node("ContainerA") as Node3D
 	var anchor := container.global_position + Vector3.UP * 0.9
@@ -43,6 +52,15 @@ func _run() -> void:
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
+	editor.field_panel.select_tool(1)
+	var stroke := InputEventMouseButton.new()
+	stroke.button_index = MOUSE_BUTTON_LEFT
+	stroke.pressed = true
+	stroke.position = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(15, 0, 22)))
+	editor.field_panel.handle_input(stroke)
+	await _capture(output.path_join("office-illegal-paint.png"))
+	stroke.pressed = false
+	editor.field_panel.handle_input(stroke)
 	editor.field_panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
 	editor.field_panel.refresh()
 	editor.field_panel.density.value = 100

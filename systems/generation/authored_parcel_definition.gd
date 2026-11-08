@@ -3,6 +3,7 @@ extends RefCounted
 ## Small runtime-safe contract for one reviewed authored parcel scene.
 
 const PopulationRegion = preload("res://systems/generation/parcel_population_region.gd")
+const PaintedParking = preload("res://systems/generation/painted_parking_population.gd")
 
 var parcel_id: StringName
 var display_name: String
@@ -117,6 +118,7 @@ func population_regions(root: Node = null) -> Array:
 	var result: Array = []
 	if root:
 		_collect_population_regions(root, result)
+		result.append_array(PaintedParking.regions(root))
 	if owns_root and root:
 		root.free()
 	result.sort_custom(func(a, b): return String(a.region_id) < String(b.region_id))
@@ -143,6 +145,7 @@ func population_sockets(root: Node = null) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if root:
 		_collect_population_sockets(root, result, Transform3D.IDENTITY, true)
+		result.append_array(PaintedParking.sockets(root))
 	if owns_root and root:
 		root.free()
 	result.sort_custom(func(a, b): return String(a.socket_id) < String(b.socket_id))
@@ -153,6 +156,7 @@ func apply_population(root: Node, accepted: Array) -> void:
 	for choice: Dictionary in accepted:
 		accepted_ids[StringName(choice.get("socket_id", &""))] = choice
 	_remove_unaccepted_population(root, accepted_ids)
+	PaintedParking.apply(root, accepted_ids)
 
 func _collect_population_sockets(node: Node, result: Array[Dictionary], parent_transform: Transform3D, is_root: bool = false) -> void:
 	var local_transform := parent_transform
@@ -225,6 +229,7 @@ func _remove_unaccepted_population(node: Node, accepted_ids: Dictionary) -> void
 			child.free()
 		else:
 			if child is Node3D and child.has_meta("population_socket_id"):
+				child.show()
 				var choice: Dictionary = accepted_ids[StringName(child.get_meta("population_socket_id"))]
 				if not child.has_meta("population_base_yaw"):
 					child.set_meta("population_base_yaw", child.rotation.y)

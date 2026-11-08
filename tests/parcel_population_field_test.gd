@@ -76,6 +76,13 @@ func _run() -> void:
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
 	var panel = editor.field_panel
+	check(not editor.displayed_parcel.get_node("SedanWest").visible and panel._authored_guides.get_child_count() > 0, "Authoring starts with guides and no visible parked cars")
+	panel.seed_input.value = 2
+	check(not panel.has_unsaved_changes(), "Changing the source preview seed does not edit the parcel")
+	panel.preview()
+	check(is_instance_valid(panel._runtime_preview) and not editor.displayed_parcel.visible, "Preview instantiates the seeded population over the authored parcel")
+	panel.reset_preview()
+	check(editor.displayed_parcel.visible and not editor.displayed_parcel.get_node("SedanWest").visible and not is_instance_valid(panel._runtime_preview), "Show guides removes the seeded occupants")
 	check(panel.tool_buttons[3].disabled and not panel.heading_picker.visible, "A parking row starts locked until its surface has parking permission")
 	panel.select_tool(1)
 	check(panel.tool_buttons[1].button_pressed and not panel.tool_buttons[0].button_pressed and panel.preset_picker.visible, "Only Paint stays selected and exposes its preset")
@@ -96,6 +103,13 @@ func _run() -> void:
 	panel.handle_input(event)
 	check(panel.session.fields.size() == 1 and Session.rectangle(panel.session.fields[0]) == Rect2i(2, 4, 28, 8), "Camera ray projects mouse drag into exact selected-floor cells")
 	check(not panel.tool_buttons[3].disabled and panel.has_unsaved_changes() and "population fields" in editor.draft_badge.text, "Committed permission unlocks the row tool and marks the field draft unsaved")
+	event.position = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(15, 0, 22)))
+	event.pressed = true
+	panel.handle_input(event)
+	check(panel.status.text.contains("overlaps a solid"), "A stroke over the office signals the conflict before release")
+	event.pressed = false
+	panel.handle_input(event)
+	check(panel.session.fields.size() == 1 and panel.status.text.contains("overlaps a solid"), "Illegal paint leaves the field draft unchanged")
 	panel.density.value = 100
 	panel.preview()
 	check(panel.status.text.begins_with("3 authored sockets"), "Editor preview uses authored parking sockets")
@@ -198,8 +212,11 @@ func _check_export(editor) -> void:
 	var exported := AuthoredParcelDefinition.new(scene_root.get_meta("parcel_id"), "Export", Catalog.URBAN_FRONTAGE, 1, Vector2i(32, 32), scene)
 	check(exported.validate().is_empty(), "Reopened scene satisfies existing authored parcel contracts")
 	check(exported.parcel_id != editor.displayed_parcel_id and exported.population_sockets().size() == 7, "Export has a separate stable ID and all seven authored sockets even at 0% editor preview")
+	check(scene_root.get_node_or_null("Car_row_bay_ground_13_6") == null and scene_root.has_meta("parking_population_paint"), "Export saves the paint and empty placement rules without a preplaced car")
+	var candidate: Dictionary = exported.population_sockets(scene_root).filter(func(socket): return String(socket.socket_id) == "row_bay_ground_13_6")[0]
+	exported.apply_population(scene_root, [{"socket_id": candidate.socket_id, "asset_id": "car_kit/suv", "yaw_turns": 2}])
 	var car := scene_root.get_node_or_null("Car_row_bay_ground_13_6") as Node3D
-	check(car != null and car.get_node_or_null("Visual") != null and car.get_node_or_null("TacticalVolume") != null, "Export preserves the calibrated imported scene and tactical volume")
+	check(car != null and car.visible and car.get_node_or_null("Visual") != null and car.get_node_or_null("TacticalVolume") != null, "Applying the resolved seed choice creates the calibrated imported scene and tactical volume")
 	scene_root.free()
 	var resolved := Resolver._resolve_population(exported, 18, {}, true, "export-test")
 	check(not resolved.has("error") and resolved.choices.any(func(choice): return String(choice.socket_id).begins_with("row_bay_")), "Existing runtime population resolver accepts exported bays")

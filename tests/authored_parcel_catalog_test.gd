@@ -57,7 +57,7 @@ func _run() -> void:
 		check(not graph.calculate_3d_path(bottom, far_deck).is_empty(), "maintenance gallery rotation %d connects ground access to the complete elevated route" % turn)
 		root.free()
 	var urban_frontages := Catalog.candidates(Catalog.URBAN_FRONTAGE, Vector2i(32, 32))
-	check(urban_frontages.map(func(parcel): return parcel.parcel_id) == [Catalog.INDUSTRIAL_OFFICE_PAINTED_PARKING, Catalog.INDUSTRIAL_OFFICE_PARKING_A], "Catalog retains the original 32x32 frontage alongside the painted parking proof")
+	check(urban_frontages.map(func(parcel): return parcel.parcel_id) == [Catalog.INDUSTRIAL_OFFICE_PAINTED_PARKING, Catalog.INDUSTRIAL_OFFICE_PARKING_A, Catalog.INDUSTRIAL_OFFICE_PARKING_RULES], "Catalog retains exact replay parcel IDs alongside seeded parking rules")
 	var frontage = Catalog.get_definition(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	check(frontage.connection().kind == &"street_frontage" and frontage.connection().outward == Vector2i(0, -1) and frontage.connection().width == 8, "Urban parcel authors a measured street-facing frontage instead of inferring adjacency")
 	var parking_regions = frontage.population_regions()

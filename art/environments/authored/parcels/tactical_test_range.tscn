@@ -349,6 +349,7 @@ metadata/min_count = 0
 metadata/max_count = 2
 
 [node name="suv" type="Node3D" parent="VehicleBay"]
+visible = false
 position = Vector3(5, 0, 27)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"suv"
@@ -363,6 +364,7 @@ position = Vector3(0, 0.825, 0)
 metadata/solid_size = Vector3(1.78, 1.65, 3.6)
 
 [node name="taxi" type="Node3D" parent="VehicleBay"]
+visible = false
 position = Vector3(10, 0, 27)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"taxi"
@@ -430,6 +432,7 @@ metadata/min_count = 0
 metadata/max_count = 2
 
 [node name="cargo_1" type="Node3D" parent="CargoBay"]
+visible = false
 position = Vector3(23, 0, 25)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
 metadata/population_socket_id = &"cargo_1"
@@ -444,6 +447,7 @@ position = Vector3(0, 0.7, 0)
 metadata/solid_size = Vector3(1.52, 1.4, 3.26)
 
 [node name="cargo_2" type="Node3D" parent="CargoBay"]
+visible = false
 position = Vector3(27, 0, 27)
 metadata/asset_id = "city_kit_industrial/shipping-container-b"
 metadata/population_socket_id = &"cargo_2"

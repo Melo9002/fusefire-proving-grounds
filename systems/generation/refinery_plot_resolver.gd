@@ -116,6 +116,9 @@ static func _resolve_population(parcel, map_seed: int, requested: Dictionary, po
 		for index in count:
 			var socket: Dictionary = candidates[index]
 			var choice := {"region_id": socket.region_id, "socket_id": socket.socket_id, "asset_id": socket.asset_id}
+			if socket.has("asset_options"):
+				var options: PackedStringArray = socket.asset_options
+				choice.asset_id = options[_stable_roll(scope + [String(socket.socket_id), "painted_parking_asset_v1"]) % options.size()]
 			var turns: PackedInt32Array = socket.allowed_yaw_turns
 			if turns.size() > 1:
 				var heading := _stable_roll(scope + [String(socket.socket_id), "parking_heading_v1"]) % turns.size()
@@ -137,7 +140,7 @@ static func _population_valid(regions: Array, sockets: Array[Dictionary], choice
 		if used.has(socket_id) or not socket_by_id.has(socket_id):
 			return false
 		var socket: Dictionary = socket_by_id[socket_id]
-		if StringName(choice.get("region_id", &"")) != socket.region_id or String(choice.get("asset_id", "")) != socket.asset_id:
+		if StringName(choice.get("region_id", &"")) != socket.region_id or String(choice.get("asset_id", "")) not in socket.get("asset_options", [socket.asset_id]):
 			return false
 		var yaw: Variant = choice.get("yaw_turns", 0)
 		if not (yaw is int or yaw is float) or float(yaw) != int(yaw) or not socket.allowed_yaw_turns.has(int(yaw)):

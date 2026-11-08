@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/parcels/industrial_office_parking.tscn" id="office"]
+
+[node name="OfficeParkingRules" instance=ExtResource("office")]
+metadata/parcel_id = &"industrial_office_parking_rules"
+metadata/population_preview_instance = "urban_service_street_a/office_frontage"
+metadata/parking_population_paint = [{"surface": "ground", "rect": Rect2i(2, 4, 28, 8)}]
+metadata/painted_parking_bays = [{"id": "row_bay_ground_13_4", "surface": "ground", "level": 0, "heading": 0, "rect": Rect2i(13, 4, 3, 5), "aisle": Rect2i(13, 9, 12, 4)}, {"id": "row_bay_ground_16_4", "surface": "ground", "level": 0, "heading": 0, "rect": Rect2i(16, 4, 3, 5), "aisle": Rect2i(13, 9, 12, 4)}, {"id": "row_bay_ground_19_4", "surface": "ground", "level": 0, "heading": 0, "rect": Rect2i(19, 4, 3, 5), "aisle": Rect2i(13, 9, 12, 4)}, {"id": "row_bay_ground_22_4", "surface": "ground", "level": 0, "heading": 0, "rect": Rect2i(22, 4, 3, 5), "aisle": Rect2i(13, 9, 12, 4)}]

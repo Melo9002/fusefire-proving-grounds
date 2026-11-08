@@ -191,6 +191,13 @@ func _infer_parking_rows(rows: Array, fixed: Array[AABB]) -> Array[Dictionary]:
 
 func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
 	var obstacles: Array[AABB] = definition.fixed_population_obstacles(scene_root)
+	var authored_aisles := {}
+	for bay in scene_root.get_meta("painted_parking_bays", []):
+		if not bay.has("aisle"): continue
+		var key := [bay.level, bay.aisle]
+		if not authored_aisles.has(key):
+			authored_aisles[key] = true
+			obstacles.append(_parking_volume(bay.aisle, bay.level))
 	for surface: Dictionary in surfaces.values():
 		if surface.level <= 0:
 			continue

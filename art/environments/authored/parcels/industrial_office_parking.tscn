@@ -63,6 +63,7 @@ metadata/solid_size = Vector3(20.83588, 14.7, 12.420001)
 metadata/round_volume = false
 
 [node name="SedanWest" type="Node3D" parent="."]
+visible = false
 position = Vector3(6, 0, 8)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"parking_west"
@@ -78,6 +79,7 @@ metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
 metadata/round_volume = false
 
 [node name="SuvMid" type="Node3D" parent="."]
+visible = false
 position = Vector3(11, 0, 8)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"parking_mid"
@@ -93,6 +95,7 @@ metadata/solid_size = Vector3(1.875, 2, 4.0625)
 metadata/round_volume = false
 
 [node name="TaxiEast" type="Node3D" parent="."]
+visible = false
 position = Vector3(26, 0, 8)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"parking_east"

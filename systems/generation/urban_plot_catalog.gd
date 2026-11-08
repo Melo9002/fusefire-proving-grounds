@@ -29,7 +29,7 @@ static func choose(map_seed: int) -> Dictionary:
 
 static func _street_definition() -> Dictionary:
 	var office := _slot(&"office_frontage", ParcelCatalog.URBAN_FRONTAGE, Vector2i(32, 32), Vector3i(16, 0, 32), 0, Vector3i(28, 0, 32), Vector2i.UP, 8, &"street_frontage")
-	office.preferred_parcel_id = ParcelCatalog.INDUSTRIAL_OFFICE_PAINTED_PARKING
+	office.preferred_parcel_id = ParcelCatalog.INDUSTRIAL_OFFICE_PARKING_RULES
 	return {
 		"plot_id": STREET_A,
 		"display_name": "Industrial office service street",

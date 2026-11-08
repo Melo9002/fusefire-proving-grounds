@@ -315,6 +315,7 @@ position = Vector3(8, 0.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="GroundFrontBay1" type="Node3D" parent="."]
+visible = false
 position = Vector3(8, 0, 12)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"ground_front_bays_1"
@@ -341,6 +342,7 @@ position = Vector3(12, 0.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="GroundFrontBay2" type="Node3D" parent="."]
+visible = false
 position = Vector3(12, 0, 12)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"ground_front_bays_2"
@@ -367,6 +369,7 @@ position = Vector3(19, 0.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="GroundFrontBay3" type="Node3D" parent="."]
+visible = false
 position = Vector3(19, 0, 12)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"ground_front_bays_3"
@@ -393,6 +396,7 @@ position = Vector3(23, 0.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="GroundFrontBay4" type="Node3D" parent="."]
+visible = false
 position = Vector3(23, 0, 12)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"ground_front_bays_4"
@@ -427,6 +431,7 @@ position = Vector3(8, 0.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="GroundRearBay1" type="Node3D" parent="."]
+visible = false
 position = Vector3(8, 0, 26)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"ground_rear_bays_1"
@@ -453,6 +458,7 @@ position = Vector3(12, 0.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="GroundRearBay2" type="Node3D" parent="."]
+visible = false
 position = Vector3(12, 0, 26)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"ground_rear_bays_2"
@@ -479,6 +485,7 @@ position = Vector3(19, 0.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="GroundRearBay3" type="Node3D" parent="."]
+visible = false
 position = Vector3(19, 0, 26)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"ground_rear_bays_3"
@@ -505,6 +512,7 @@ position = Vector3(23, 0.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="GroundRearBay4" type="Node3D" parent="."]
+visible = false
 position = Vector3(23, 0, 26)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"ground_rear_bays_4"
@@ -540,6 +548,7 @@ position = Vector3(8, 4.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="UpperFrontBay1" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(8, 4, 12)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"upper_front_bays_1"
@@ -567,6 +576,7 @@ position = Vector3(12, 4.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="UpperFrontBay2" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(12, 4, 12)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"upper_front_bays_2"
@@ -594,6 +604,7 @@ position = Vector3(19, 4.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="UpperFrontBay3" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(19, 4, 12)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"upper_front_bays_3"
@@ -621,6 +632,7 @@ position = Vector3(23, 4.016, 9.2)
 mesh = SubResource("stop_line")
 
 [node name="UpperFrontBay4" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(23, 4, 12)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"upper_front_bays_4"
@@ -657,6 +669,7 @@ position = Vector3(8, 4.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="UpperRearBay1" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(8, 4, 26)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"upper_rear_bays_1"
@@ -684,6 +697,7 @@ position = Vector3(12, 4.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="UpperRearBay2" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(12, 4, 26)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"upper_rear_bays_2"
@@ -711,6 +725,7 @@ position = Vector3(19, 4.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="UpperRearBay3" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(19, 4, 26)
 metadata/asset_id = "car_kit/sedan"
 metadata/population_socket_id = &"upper_rear_bays_3"
@@ -738,6 +753,7 @@ position = Vector3(23, 4.016, 28.8)
 mesh = SubResource("stop_line")
 
 [node name="UpperRearBay4" type="Node3D" parent="UpperDeck"]
+visible = false
 position = Vector3(23, 4, 26)
 metadata/asset_id = "car_kit/suv"
 metadata/population_socket_id = &"upper_rear_bays_4"
