@@ -4,18 +4,21 @@ extends MeshInstance3D
 
 const GROUP := &"tactical_camera_apertures"
 const TRANSITION_SECONDS := 0.18
+const APERTURE_RADIUS := 1.05
 
 var strength := 0.0
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	set_instance_shader_parameter(&"aperture_radius", APERTURE_RADIUS)
 
 func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
 	var obstructs := false
 	if is_visible_in_tree() and subject.is_finite():
-		var bounds := get_aabb().grow(0.12)
+		# Include neighboring tiles within the opening. The shader tests the
+		# narrower perspective cone before discarding any pixels.
+		var bounds := get_aabb().grow(APERTURE_RADIUS)
 		var local_eye := to_local(eye)
-		# Pad the center ray slightly so the edge of a post opens smoothly.
 		obstructs = bounds.intersects_segment(local_eye, to_local(subject)) != null
 	var next := move_toward(strength, 1.0 if obstructs else 0.0, delta / TRANSITION_SECONDS)
 	if next != strength:

@@ -70,12 +70,52 @@ func _run() -> void:
 	check(not hit.is_empty() and hit.grid_position.y == layout.ROOF_LEVEL, "Explicit upper-floor cycling still exposes roof destinations")
 	picker._update_level_panel()
 	check(picker._level_label.text.contains("Roof"), "UI updates after explicit floor cycling")
+	var objectives := picker.objective_hud as ObjectiveHUD
+	objectives.objective_label.text = "RESCUE VIP — COMPLETE\nEXTRACT VIP — ACTIVE\nELIMINATE — OPTIONAL"
+	objectives.end_mission_button.show()
+	await process_frame
+	await process_frame
+	check(picker._level_panel.get_global_rect().position.y >= objectives.get_global_rect().end.y + 7.0, "Multiline objectives and departure button leave space above floor controls")
+	objectives.hide()
+	await process_frame
+	check(picker._level_panel.get_global_rect().position.y < objectives.get_global_rect().end.y, "When objectives are hidden, the floor controls reclaim the space")
+	objectives.show()
 	move = await service.submit_move(service.make_move_request(actor, layout.ROOF_LADDER_BOTTOM, TacticalActionRequest.Source.PLAYER), true)
 	check(move != null and actor.grid_position == layout.ROOF_LADDER_BOTTOM, "Authoritative Move can descend the roof ladder")
+	var interior := Vector3i(14, 0, 7)
+	grid.update_unit_position(actor, actor.grid_position, interior)
+	actor.global_position = grid.grid_to_world(interior) + Vector3.UP * actor.standing_height
+	rig.camera.fov = 38.0
+	rig.camera.global_position = actor.global_position + Vector3(0, 0.5, -6)
+	rig.camera.look_at(actor.global_position)
+	var wall := battle.find_child("Wall_14_5", true, false)
+	var wall_face := wall.get_child(0) as MeshInstance3D
+	rig._update_camera_occlusion(0.0)
+	await _capture("warehouse-solid")
+	rig._update_camera_occlusion(0.2)
+	check(rig._environment_apertures.active.get(wall_face, {}).get("strength") == 1.0 and is_zero_approx(wall_face.transparency), "Warehouse wall uses a local aperture without fading the whole wall")
+	var neighbor := battle.find_child("Wall_15_5", true, false).get_child(0) as MeshInstance3D
+	check(rig._environment_apertures.active.get(neighbor, {}).get("strength") == 1.0, "An opening that crosses a wall tile edge includes the neighboring tile")
+	var blocker := CombatRules.get_blocking_cell(rig.camera.global_position, actor.global_position, grid)
+	check(blocker != null and blocker.grid_position == Vector3i(14, 0, 5), "Visible aperture preserves the warehouse wall's tactical LOS blocker")
+	await _capture("warehouse-aperture")
+	rig._cinematic_active = true
+	rig._cinematic_look_target = actor.global_position
+	rig._update_camera_occlusion(0.2)
+	check(not rig._environment_apertures.active.has(wall_face) and wall_face.transparency > 0.8, "Warehouse action camera retains its existing whole-wall fade")
 	battle.queue_free()
 	await process_frame
 	print("Industrial roof movement: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _capture(view: String) -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.size() != 2 or args[0] != "capture" or DisplayServer.get_name() == "headless":
+		return
+	DirAccess.make_dir_recursive_absolute(args[1])
+	await process_frame
+	await RenderingServer.frame_post_draw
+	check(root.get_texture().get_image().save_png(args[1].path_join(view + ".png")) == OK, "Captured %s" % view)
 
 func check(ok: bool, message: String) -> void:
 	if not ok:

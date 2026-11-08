@@ -84,11 +84,12 @@ fov = 25.70093
 [node name="Systems" type="Node3D" parent="." unique_id=635339450]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72652817, 1.000001, 0.05766487)
 
-[node name="MouseRaycaster" type="Node3D" parent="Systems" unique_id=168739336 node_paths=PackedStringArray("camera", "grid_manager")]
+[node name="MouseRaycaster" type="Node3D" parent="Systems" unique_id=168739336 node_paths=PackedStringArray("camera", "grid_manager", "objective_hud")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72652817, -1.000001, -0.05766487)
 script = ExtResource("1_822c8")
 camera = NodePath("../../CameraRig/Camera3D")
 grid_manager = NodePath("../GridManager")
+objective_hud = NodePath("../../Visualizers/BattleUI/ObjectiveHUD")
 
 [node name="BattleController" type="Node3D" parent="Systems" unique_id=1810984402 node_paths=PackedStringArray("mouse_raycaster", "grid_cursor", "path_visualizer", "cover_visualizer", "shot_trajectory_visualizer", "overwatch_range_visualizer", "grid_manager", "turn_manager")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72652817, -1.000001, -0.05766487)

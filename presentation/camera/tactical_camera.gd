@@ -1,6 +1,8 @@
 class_name TacticalCamera
 extends Node3D
 
+const EnvironmentApertures = preload("res://presentation/overlays/environment_camera_apertures.gd")
+
 @export_group("References")
 @export var map_floor: CSGBox3D
 @export var camera: Camera3D
@@ -46,6 +48,7 @@ var _cinematic_active := false
 var _cinematic_camera_position := Vector3.ZERO
 var _cinematic_look_target := Vector3.ZERO
 var _faded_occluders: Dictionary = {}
+var _environment_apertures := EnvironmentApertures.new()
 var _inspected_floor := Vector3.INF
 var _inspection_actor: TacticalUnit
 var _inspection_actor_cell := Vector3i.ZERO
@@ -133,6 +136,7 @@ func _process(delta: float) -> void:
 
 func _exit_tree() -> void:
 	_restore_faded_occluders({})
+	_environment_apertures.restore_view()
 	for group in ["tactical_roof_cutaways", "tactical_visual_occluders", TacticalCameraAperture.GROUP]:
 		for visual in get_tree().get_nodes_in_group(group):
 			visual.restore_view()
@@ -146,9 +150,9 @@ func _update_camera_occlusion(delta: float = 0.016) -> void:
 	# as ordinary occlusion, including nested-reaction targets.
 	for roof in get_tree().get_nodes_in_group("tactical_roof_cutaways"):
 		roof.update_view(camera.global_position, focuses)
+	var using_apertures := _update_local_apertures(delta)
 	for visual in get_tree().get_nodes_in_group("tactical_visual_occluders"):
-		visual.update_view(camera.global_position, focuses)
-	_update_local_apertures(delta)
+		visual.update_view(camera.global_position, focuses, not using_apertures, _environment_apertures.active)
 	if focuses.is_empty():
 		_restore_faded_occluders({})
 		return
@@ -165,29 +169,34 @@ func _update_camera_occlusion(delta: float = 0.016) -> void:
 			if collider and collider.has_method("get_rid"):
 				excluded.append(collider.get_rid())
 			var geometry := _occluder_geometry(collider, int(hit.get("shape", -1)))
-			if geometry and geometry != map_floor:
+			if geometry and geometry != map_floor and not _environment_apertures.active.has(geometry) \
+			and (not using_apertures or not geometry is TacticalCameraAperture):
 				faded_now[geometry] = true
 				if not _faded_occluders.has(geometry):
 					_faded_occluders[geometry] = geometry.transparency
 				geometry.transparency = occluder_transparency
 	_restore_faded_occluders(faded_now)
 
-func _update_local_apertures(delta: float) -> void:
+func register_environment_apertures(environment: Node3D) -> void:
+	_environment_apertures.register_environment(environment, map_floor)
+
+func _update_local_apertures(delta: float) -> bool:
 	var surfaces := get_tree().get_nodes_in_group(TacticalCameraAperture.GROUP)
-	if surfaces.is_empty():
-		return
 	# An inspected floor is a browsing context, not a selected protagonist.
 	var actor := _selected_unit() if not _cinematic_active and not _transitioning and _inspected_floor == Vector3.INF else null
 	if not actor or not actor.is_visible_in_tree() or not actor.stats or actor.stats.is_defeated \
 	or actor.faction not in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY]:
 		for surface in surfaces:
 			surface.restore_view()
-		return
+		_environment_apertures.restore_view()
+		return false
 	var subject := actor.global_position
 	if camera.is_position_behind(subject) or not get_viewport().get_visible_rect().has_point(camera.unproject_position(subject)):
 		subject = Vector3.INF
 	for surface in surfaces:
 		surface.update_view(camera.global_position, subject, delta)
+	_environment_apertures.update_view(camera.global_position, subject, delta)
+	return subject.is_finite()
 
 func _camera_occlusion_focuses() -> Array[Vector3]:
 	if _cinematic_active:

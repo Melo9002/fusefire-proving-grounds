@@ -11,7 +11,7 @@ func _ready() -> void:
 	for geometry in find_children("*", "GeometryInstance3D", true, false):
 		_original_transparency[geometry] = geometry.transparency
 
-func update_view(camera_position: Vector3, focuses: Array[Vector3]) -> void:
+func update_view(camera_position: Vector3, focuses: Array[Vector3], fade_aperture_meshes := true, active_apertures: Dictionary = {}) -> void:
 	# Generated walls may attach their meshes after entering the scene tree.
 	if _original_transparency.is_empty():
 		for geometry in find_children("*", "GeometryInstance3D", true, false):
@@ -23,7 +23,8 @@ func update_view(camera_position: Vector3, focuses: Array[Vector3]) -> void:
 			break
 	for geometry in _original_transparency:
 		if is_instance_valid(geometry):
-			geometry.transparency = maxf(_original_transparency[geometry], 0.82) if obscures else _original_transparency[geometry]
+			var fade := obscures and not active_apertures.has(geometry) and (fade_aperture_meshes or not geometry is TacticalCameraAperture)
+			geometry.transparency = maxf(_original_transparency[geometry], 0.82) if fade else _original_transparency[geometry]
 
 func restore_view() -> void:
 	update_view(Vector3.ZERO, [])

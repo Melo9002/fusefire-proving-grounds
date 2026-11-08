@@ -181,13 +181,13 @@ func refresh(message := "") -> void:
 				cells[key] = bool(cells.get(key, false)) or field.preset == "protected"
 	for protected in [false, true]:
 		var mesh := ImmediateMesh.new()
-		var material := StandardMaterial3D.new()
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(1, 0.3, 0.2, 0.32) if protected else Color(0.15, 0.8, 1, 0.28)
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var field_material := StandardMaterial3D.new()
+		field_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		field_material.albedo_color = Color(1, 0.3, 0.2, 0.32) if protected else Color(0.15, 0.8, 1, 0.28)
+		field_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		field_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 		if not cells.values().has(protected): continue
-		mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+		mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, field_material)
 		for cell: Vector3i in cells:
 			if cells[cell] != protected: continue
 			for offset in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5)]:
@@ -247,10 +247,10 @@ func preview() -> void:
 func _draw_bays(bays: Array[Dictionary]) -> int:
 	if bays.is_empty(): return 0
 	var mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var outline_material := StandardMaterial3D.new()
+	outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	outline_material.vertex_color_use_as_albedo = true
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, outline_material)
 	var aisles := {}
 	var fitting := 0
 	for bay in bays:

@@ -329,11 +329,11 @@ func set_population_visible(enabled: bool) -> void:
 
 func _create_grid(size: Vector2i) -> MeshInstance3D:
 	var immediate := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.12, 0.78, 0.9, 0.45)
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	immediate.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var grid_material := StandardMaterial3D.new()
+	grid_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	grid_material.albedo_color = Color(0.12, 0.78, 0.9, 0.45)
+	grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	immediate.surface_begin(Mesh.PRIMITIVE_LINES, grid_material)
 	for x in range(size.x + 1):
 		var px := float(x) - size.x * 0.5
 		immediate.surface_add_vertex(Vector3(px, 0.025, -size.y * 0.5))
@@ -386,12 +386,12 @@ func _create_tactical_overlay(definition) -> Node3D:
 	return overlay
 
 func _overlay_material(color: Color) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.no_depth_test = true
-	return material
+	var overlay_material := StandardMaterial3D.new()
+	overlay_material.albedo_color = color
+	overlay_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	overlay_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	overlay_material.no_depth_test = true
+	return overlay_material
 
 func _size_label(size: Vector2i) -> String:
 	return "%d × %d" % [size.x, size.y]

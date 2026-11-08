@@ -106,6 +106,15 @@ func _run() -> void:
 			var replay_hud := replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
 			replay_hud.replay_button.pressed.emit()
 			_check(current_scene != replay and current_scene is BattleLevel and current_scene.pending_replay == player.recording, "Rewatch uses the opened file rather than a previous in-memory battle")
+			var reopened := current_scene as BattleLevel
+			var reopened_player := reopened.get_node("BattleReplayPlayer") as BattleReplayPlayer
+			reopened_player.set_playback_paused(true)
+			await process_frame
+			var return_button := reopened.find_child("ReplaySetupButton", true, false) as Button
+			return_button.pressed.emit()
+			await process_frame
+			await process_frame
+			_check(current_scene is MatchSetup and not paused, "Returning to setup while replay is paused cancels playback and unpauses the game")
 	for path in [saved_path, stale_path, malformed_path]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("Replay file workflow: %d failure(s)" % failures)

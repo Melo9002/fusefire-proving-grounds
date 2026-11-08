@@ -49,6 +49,8 @@ func begin(p_level: BattleLevel, p_recording) -> void:
 	_play.call_deferred()
 
 func _play() -> void:
+	if not is_inside_tree():
+		return
 	print("[Replay] PLAYBACK — %d actions" % recording.actions.size())
 	var tracks_supply := bool(recording.configuration.get("supply_points_enabled", false))
 	var tracks_aim := bool(recording.configuration.get("aim_enabled", false))
@@ -62,7 +64,8 @@ func _play() -> void:
 		return
 	for index in recording.actions.size():
 		last_divergence = ""
-		await _wait_until_playing()
+		if not await _wait_until_playing():
+			return
 		if level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 			break
 		var record: Dictionary = recording.actions[index]
@@ -89,8 +92,12 @@ func _play() -> void:
 			await _action_interval(continues_actor)
 			continue
 		await _focus_action(record, continues_from_previous)
-		await _wait_until_playing()
-		if not await _execute(record):
+		if not await _wait_until_playing():
+			return
+		var executed := await _execute(record)
+		if not is_inside_tree():
+			return
+		if not executed:
 			_fail("resolution", index, record, last_divergence if not last_divergence.is_empty() else "authoritative execution rejected the record")
 			return
 		if recording.schema_version >= 3:
@@ -105,6 +112,8 @@ func _play() -> void:
 		verified_actions += 1
 		playback_progressed.emit(verified_actions, recording.actions.size())
 		await _action_interval(continues_actor)
+	if not is_inside_tree():
+		return
 	var matches: bool = level.turn_manager.battle_result == recording.expected_result
 	print("[Replay] %s — verified %d/%d actions | expected %s, got %s" % [
 		"COMPLETED" if matches else "DIVERGED",
@@ -122,7 +131,8 @@ func set_playback_paused(paused: bool) -> void:
 		var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera
 		if replay_camera:
 			replay_camera.clear_cinematic_view()
-	get_tree().paused = paused
+	if is_inside_tree():
+		get_tree().paused = paused
 	print("[Replay] %s at action %d/%d" % ["PAUSED" if paused else "PLAYING", verified_actions, recording.actions.size()])
 
 func set_playback_speed(speed: float) -> void:
@@ -135,12 +145,14 @@ func set_camera_mode(mode: CameraMode) -> void:
 	if replay_camera and camera_mode != CameraMode.CINEMATIC:
 		replay_camera.clear_cinematic_view()
 
-func _wait_until_playing() -> void:
-	while playback_paused:
+func _wait_until_playing() -> bool:
+	while is_inside_tree() and playback_paused:
 		await get_tree().process_frame
+	return is_inside_tree()
 
 func _action_interval(continues_actor := false) -> void:
-	await _wait_until_playing()
+	if not await _wait_until_playing():
+		return
 	var base_delay := continuous_actor_delay if continues_actor else action_delay
 	var delay := base_delay / maxf(playback_speed, 0.1)
 	if delay > 0.0:
@@ -178,7 +190,7 @@ func _focus_action(record: Dictionary, continues_from_previous := false) -> void
 		# Replay action ordering waits for the same short, interruptible transition
 		# used by live selection. Manual camera input cancels the tween and releases
 		# this wait immediately.
-		while is_instance_valid(camera) and camera.is_selection_focus_active():
+		while is_inside_tree() and is_instance_valid(camera) and camera.is_selection_focus_active():
 			await get_tree().process_frame
 	elif camera_mode == CameraMode.CINEMATIC:
 		if continues_from_previous and String(record.get("kind", "")) in ["aim", "reload", "shield", "overwatch", "emergency_seal", "wait"]:

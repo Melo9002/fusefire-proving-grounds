@@ -175,6 +175,8 @@ func _ready() -> void:
 	if use_generated_map:
 		await _initialize_generated_battle()
 	else:
+		var rig := get_node("CameraRig") as TacticalCamera
+		rig.register_environment_apertures($Environment)
 		battle_initialization_progress.emit("Deploying combatants…", 0.62)
 		_spawn_team(player_unit_count, player_spawn_zone, player_units_parent, false)
 		_spawn_team(allied_unit_count, ally_spawn_zone, allied_units_parent, true)
@@ -221,6 +223,7 @@ func _initialize_generated_battle() -> void:
 	add_child(generated_geometry)
 	battle_initialization_progress.emit("Building environment presentation…", 0.48)
 	GeneratedTerrainPresenter.build(generated_map, generated_geometry, grid.cell_size)
+	rig.register_environment_apertures(generated_geometry)
 	battle_initialization_progress.emit("Deploying combatants…", 0.65)
 	_spawn_generated_team(player_unit_count, TacticalUnit.Faction.PLAYER, player_units_parent, generated_map)
 	_spawn_generated_team(allied_unit_count, TacticalUnit.Faction.ALLY, allied_units_parent, generated_map)

@@ -55,9 +55,9 @@ func add(surface: String, preset: String, rect: Rect2i, heading := 0) -> bool:
 static func parking_row_rect(first: Vector2i, last: Vector2i, heading: int) -> Rect2i:
 	var direction := ParcelTransform.direction(Vector2i.DOWN, heading)
 	if direction.y != 0:
-		var span := absi(last.x - first.x) + 1
-		var width := span - posmod(span, BAY_WIDTH)
-		return Rect2i(mini(first.x, last.x), first.y - maxi(direction.y, 0) * (BAY_DEPTH - 1), width, BAY_DEPTH)
+		var horizontal_span := absi(last.x - first.x) + 1
+		var horizontal_width := horizontal_span - posmod(horizontal_span, BAY_WIDTH)
+		return Rect2i(mini(first.x, last.x), first.y - maxi(direction.y, 0) * (BAY_DEPTH - 1), horizontal_width, BAY_DEPTH)
 	var span := absi(last.y - first.y) + 1
 	var width := span - posmod(span, BAY_WIDTH)
 	return Rect2i(first.x - maxi(direction.x, 0) * (BAY_DEPTH - 1), mini(first.y, last.y), BAY_DEPTH, width)

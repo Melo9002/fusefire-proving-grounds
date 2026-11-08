@@ -25,17 +25,17 @@ The screenshot helper stages one MIRA visual at the loading entrance for scale c
 
 - Hide the roof when a focus or the camera is inside its interior volume, or the roof bounds intersect the camera-to-focus segment.
 - A rooftop focus keeps the roof visible, taking precedence over an interior cutaway. Restore it when cutaway conditions clear. Elevated maintenance-platform occupants remain inside the interior volume.
-- Fade opted-in warehouse walls and imported props to 82% transparency if they intervene between camera and focus. Restore each mesh's original transparency afterward.
+- Open a local cutout through compatible walls and props that intervene between the tactical camera and its selected friendly unit. The shader spans adjoining wall tiles. Cinematics retain the whole-surface fade for existing occluders.
 - Keep the existing physics-based occlusion for ordinary terrain. The new opt-in `TacticalVisualOccluder` fills the gap for scenery without physics colliders.
 - Restore presentation on camera removal. No camera ownership, turn state, RNG, cover, AP or replay fingerprints are changed by visibility.
 
-This is focus-based visibility, not a rule that globally hides a building whenever **any** unit enters. Cinematics can use both actor and target. Bounds are conservative, so a sparse crane may fade even when its open gaps would permit a view. Fades currently switch immediately; temporal smoothing and broader scenery coverage remain future work. This does not claim to solve every camera obstruction on other maps.
+Cinematics can use both actor and target. Bounds are conservative, so a sparse crane may fade even when its open gaps would permit a view. The tactical aperture uses the same presentation path as other maps. Cover, movement, and line of sight still use MapData.
 
 ### Floor inspection — implemented narrow integration
 
 A persistent **VIEW** panel shows the inspected level and provides **Ground / Walkway / Roof** buttons. The existing **Alt + wheel** picker also cycles roof, maintenance deck and ground where their collider surfaces overlap under the cursor. On this map, the camera follows that inspection choice and destinations prefer the inspected floor, so hidden roof collision cannot silently steal an interior click. Inspection is a height ceiling: if no eligible lower tile exists, return no destination instead of falling back upward. Higher-level unit clicks are filtered too. Explicit Roof inspection permits rooftop picking, but AP, path reachability and action legality remain owned by the action service. Selecting a different actor or moving the actor clears the manual override; a selected rooftop actor selects rooftop height automatically. Other map presets retain their previous picker behavior.
 
-The panel derives its buttons from authoritative walkable elevations and uses optional `MapData` labels (`Ground`, `Walkway`, `Roof` here). General multi-building membership and visual layer filtering for all units remain future work. No full floor-management framework was added.
+The panel derives its buttons from authoritative walkable elevations and uses optional `MapData` labels (`Ground`, `Walkway`, `Roof` here). It sits below the objective HUD and any visible mission action button. General multi-building membership and visual layer filtering for all units remain future work.
 
 ### Local XCOM 2 SDK evidence
 
