@@ -249,7 +249,7 @@ static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridM
 static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = []) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
-	var candidates: Array = grid.map_data.los_blocking_cells if los_blockers_only else grid.map_data.cells.values()
+	var candidates := _shot_candidates(grid, origin_cell, target_cell, los_blockers_only)
 	var grazed: Array[MapCellData] = []
 	for data: MapCellData in candidates:
 		if data.cover_height <= 0.0:
@@ -268,6 +268,21 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			grazed.append(data)
 	return null
 
+static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, los_blockers_only: bool) -> Array:
+	var column_count := (absi(to.x - from.x) + 3) * (absi(to.z - from.z) + 3)
+	var cell_count := grid.map_data.los_blocking_cells.size() if los_blockers_only else grid.map_data.cells.size()
+	if not grid.map_floor or column_count >= cell_count:
+		return grid.map_data.los_blocking_cells if los_blockers_only else grid.map_data.cells.values()
+	# The extra column on each edge preserves diagonal seam checks and the
+	# narrow-phase tolerance at cell boundaries.
+	var candidates: Array[MapCellData] = []
+	for x in range(mini(from.x, to.x) - 1, maxi(from.x, to.x) + 2):
+		for z in range(mini(from.z, to.z) - 1, maxi(from.z, to.z) + 2):
+			for cell: MapCellData in grid.map_data.columns.get(Vector2i(x, z), []):
+				if cell.cover_height > 0.0 and (not los_blockers_only or cell.blocks_line_of_sight):
+					candidates.append(cell)
+	return candidates
+
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
 	var inset := 0.001
 	# Full-height obstacles meet at their edges. Shrinking their horizontal
@@ -275,6 +290,11 @@ static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell
 	var half_cell = cell_size * 0.5 + inset if closed_edges else cell_size * 0.5 - inset
 	var minimum = Vector3(cell.world_position.x - half_cell, cell.world_position.y + inset, cell.world_position.z - half_cell)
 	var maximum = Vector3(cell.world_position.x + half_cell, cell.world_position.y + cell.cover_height - inset, cell.world_position.z + half_cell)
+	if cell.authored_shot_bounds.has_volume():
+		minimum = minimum.max(cell.authored_shot_bounds.position)
+		maximum = maximum.min(cell.authored_shot_bounds.end)
+		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
+			return false
 	var direction = destination - origin
 	var enter := 0.0
 	var exit := 1.0

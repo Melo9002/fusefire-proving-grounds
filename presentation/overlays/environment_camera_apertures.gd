@@ -7,6 +7,7 @@ const CutoutShader = preload("res://presentation/overlays/tactical_camera_apertu
 
 var _geometry: Array[GeometryInstance3D] = []
 var _bounds: Array[AABB] = []
+var _local_bounds: Array[AABB] = []
 var _variants: Dictionary = {}
 var _double_sided_shader: Shader
 var active: Dictionary = {}
@@ -25,6 +26,21 @@ func register_environment(root: Node3D, floor_mesh: GeometryInstance3D) -> void:
 			continue
 		_geometry.append(node)
 		_bounds.append(bounds.grow(Aperture.APERTURE_RADIUS))
+		_local_bounds.append(local_bounds)
+
+func cinematic_blockers(eye: Vector3, subject: Vector3, already_hidden: Dictionary, first_only := false) -> Array[GeometryInstance3D]:
+	var blockers: Array[GeometryInstance3D] = []
+	for index in _geometry.size():
+		if _bounds[index].intersects_segment(eye, subject) == null:
+			continue
+		var geometry := _geometry[index]
+		if not is_instance_valid(geometry) or (not geometry.is_visible_in_tree() and not already_hidden.has(geometry)):
+			continue
+		if _local_bounds[index].intersects_segment(geometry.to_local(eye), geometry.to_local(subject)) != null:
+			blockers.append(geometry)
+			if first_only:
+				break
+	return blockers
 
 func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
 	if not subject.is_finite():

@@ -11,6 +11,7 @@ const ROUTE_CORRIDOR_BASE := 2.0
 const ROUTE_CORRIDOR_MAX_BONUS := 2.0
 const ACTIVATION_PRESENTATION_DELAY_SECONDS := 0.6
 const ACTION_PRESENTATION_DELAY_SECONDS := 0.25
+const MOVEMENT_SCORING_SLICE_USEC := 5000
 const RECENT_MOVE_HISTORY_LIMIT := 4
 const ESCORT_REJOIN_DISTANCE := 5
 const ESCORT_APPROACH_RANGE := 4
@@ -640,9 +641,10 @@ func _try_safe_second_advance(movement_target: TacticalUnit) -> bool:
 			return movement_target != null and await _move_toward(movement_target, true)
 	return false
 
-func _is_safe_advance_cell(candidate: Vector3i) -> bool:
-	var current := battle_controller.grid_manager.get_unit_grid(unit)
-	return _policy.permits_advance(_advance_exposure(current), _advance_exposure(candidate))
+func _is_safe_advance_cell(candidate: Vector3i, current_exposure := NAN) -> bool:
+	if is_nan(current_exposure):
+		current_exposure = _advance_exposure(battle_controller.grid_manager.get_unit_grid(unit))
+	return _policy.permits_advance(current_exposure, _advance_exposure(candidate))
 
 func _advance_exposure(candidate: Vector3i) -> float:
 	var grid := battle_controller.grid_manager
@@ -707,7 +709,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
 	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
-	var route_end := battle_controller.world_to_grid(path[path.size() - 1])
+	var route_cells: Array[Vector3i] = []
+	for point in path:
+		route_cells.append(battle_controller.world_to_grid(point))
+	var route_end := route_cells.back() as Vector3i
 	var initial_cost := _route_cost(path)
 	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, objective_route, hostiles, battle_controller.grid_manager, _policy, null)
 	_last_urgency_bonus = _get_movement_urgency_bonus()
@@ -720,16 +725,26 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
 	best_score = -INF if unit.is_carrying_unit() else _last_move_threshold
 	_last_position_candidates.clear()
+	var current_exposure := _advance_exposure(start_cell) if safe_only else NAN
+	var slice_start := Time.get_ticks_usec()
 	for candidate in reachable:
+		# Yield between candidates. Wall-clock time controls scheduling only.
+		if Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
+			await get_tree().process_frame
+			while is_inside_tree() and get_tree().paused:
+				await get_tree().process_frame
+			if not is_inside_tree() or not _should_control_unit():
+				return false
+			slice_start = Time.get_ticks_usec()
 		if candidate == start_cell: continue
 		if escort_route.has(candidate): continue
-		if safe_only and not _is_safe_advance_cell(candidate):
+		if safe_only and not _is_safe_advance_cell(candidate, current_exposure):
 			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Unsafe second advance"})
 			continue
 		var route_index := -1
 		var route_distance := INF
-		for index in range(1, path.size()):
-			var route_cell := battle_controller.world_to_grid(path[index])
+		for index in range(1, route_cells.size()):
+			var route_cell := route_cells[index]
 			var distance := candidate.distance_to(route_cell)
 			if distance <= _last_route_corridor and (distance < route_distance or (is_equal_approx(distance, route_distance) and index > route_index)):
 				route_distance = distance

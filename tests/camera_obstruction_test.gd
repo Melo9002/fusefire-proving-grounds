@@ -78,6 +78,16 @@ func run() -> void:
 	rig._cinematic_look_target = Vector3(0, 1.5, -4)
 	rig._update_camera_occlusion()
 	check(is_equal_approx(visual_mesh.transparency, 0.15) and roof.visible, "Camera restores roof and original material transparency")
+	rig.register_environment_apertures(visual)
+	check(not rig._cinematic_view_clear(Vector3(0, 1.5, 4), origin), "Cinematic framing rejects a view blocked by registered visual geometry without collision")
+	check(rig._cinematic_view_clear(Vector3(0, 1.5, 4), Vector3(0, 1.5, 5)), "Cinematic framing still accepts a clear alternate view")
+	rig._cinematic_actor = actor
+	rig._update_camera_occlusion()
+	check(not visual_mesh.visible, "A cinematic view that cannot avoid the occluder hides its visual mesh")
+	rig.clear_cinematic_view()
+	check(visual_mesh.visible and not rig._cinematic_active, "Leaving cinematic view restores the mesh")
+	lens.global_position = origin
+	rig._cinematic_active = true
 	rig._cinematic_look_target = destination
 	rig._update_camera_occlusion()
 	rig.queue_free()

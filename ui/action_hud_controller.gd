@@ -168,7 +168,7 @@ func _update_button_states() -> void:
 	var unit = battle_controller.tactical_unit if battle_controller else null
 	var stats = unit.stats if (is_instance_valid(unit) and unit.stats) else null
 
-	if not stats:
+	if not stats or not battle_controller.is_current_phase_manually_controlled():
 		_disable_all_buttons()
 		return
 
@@ -191,7 +191,12 @@ func _update_button_states() -> void:
 		if not attack_query.is_legal():
 			attack_button.tooltip_text = attack_query.reason
 		elif not attack_query.has_legal_targets():
-			attack_button.tooltip_text = "No legal targets"
+			var reasons := PackedStringArray()
+			for target_id in attack_query.candidate_results:
+				var target := battle_controller.action_service.actor_registry.resolve(target_id)
+				if is_instance_valid(target) and FactionRules.are_hostile(unit.faction, target.faction):
+					reasons.append("%s — %s" % [target_id, attack_query.get_candidate(target_id).reason])
+			attack_button.tooltip_text = "\n".join(reasons) if not reasons.is_empty() else "No legal targets"
 		else:
 			attack_button.tooltip_text = ""
 	if reload_button:

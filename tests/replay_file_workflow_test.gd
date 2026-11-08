@@ -47,7 +47,10 @@ func _run() -> void:
 	await _capture("battle-result")
 	hud.save_replay_button.pressed.emit()
 	_check(hud._save_dialog.visible and hud._save_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save button opens a Save As picker")
+	var live_camera := original.get_node("CameraRig") as TacticalCamera
+	_check(hud._save_dialog.exclusive and paused and not live_camera.can_process() and hud._save_dialog.can_process(), "Save As owns input and keeps the battle camera from polling keys")
 	hud._save_dialog.hide()
+	_check(not paused and live_camera.can_process(), "Closing Save As restores battle input")
 	hud._save_dialog.file_selected.emit("res://artifacts/missing-%s/test.replay.json" % test_id)
 	_check("Save failed" in hud._save_status.text and recording.is_playable(), "A failed write shows the error and preserves the recording for retry")
 	hud._save_dialog.file_selected.emit(saved_path)

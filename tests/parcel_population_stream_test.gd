@@ -58,7 +58,7 @@ func _run() -> void:
 	manifest.erase("compiler_revision")
 	manifest.placements.reverse()
 	var legacy := Resolver.resolve(999, true, _json_round_trip(manifest))
-	_check(Resolver.is_valid(legacy) and legacy.compiler_revision == Resolver.COMPILER_REVISION and legacy.placements == manifest.placements, "Unversioned exact recordings use the baseline compiler and retain recorded choices")
+	_check(Resolver.is_valid(legacy) and legacy.compiler_revision == Resolver.LEGACY_COMPILER_REVISION and legacy.placements == manifest.placements, "Unversioned exact recordings use the baseline compiler and retain recorded choices")
 	for revision in [99, 1.5, "1"]:
 		manifest.compiler_revision = revision
 		var rejected := Resolver.resolve(16, true, _json_round_trip(manifest))

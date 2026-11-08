@@ -115,6 +115,9 @@ func _play() -> void:
 	if not is_inside_tree():
 		return
 	var matches: bool = level.turn_manager.battle_result == recording.expected_result
+	var replay_camera := level.get_node_or_null("CameraRig") as TacticalCamera
+	if replay_camera and camera_mode == CameraMode.CINEMATIC:
+		replay_camera.return_to_tactical_view()
 	print("[Replay] %s — verified %d/%d actions | expected %s, got %s" % [
 		"COMPLETED" if matches else "DIVERGED",
 		verified_actions, recording.actions.size(),

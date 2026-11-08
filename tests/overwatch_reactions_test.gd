@@ -230,8 +230,13 @@ func _check_player_overwatch_hands_off_turn_and_draws_range() -> void:
 	check(range_visualizer != null and not range_visualizer.displayed_cells.is_empty(), "Active friendly Overwatch draws a visible guarded range")
 	check(range_visualizer != null and range_visualizer.preview_cells.is_empty() and not range_visualizer.committed_cells.is_empty(), "Confirmed Guard coverage switches to the darker committed layer")
 	watcher.tactical_state.clear_overwatch()
+	var enemy: TacticalUnit = level.turn_manager.enemy_units[0]
+	check(await controller.try_overwatch(enemy), "The enemy can reserve Guard through the ordinary controller entry point")
 	controller.call("_refresh_overwatch_range")
-	check(range_visualizer.displayed_cells.is_empty(), "Guard range clears when the reservation is removed")
+	check(range_visualizer.committed_cells.is_empty() and not range_visualizer.enemy_cells.is_empty(), "Enemy Guard uses its own warning layer after the friendly reservation is removed")
+	enemy.tactical_state.clear_overwatch()
+	controller.call("_refresh_overwatch_range")
+	check(range_visualizer.displayed_cells.is_empty(), "Guard range clears when all reservations are removed")
 	level.queue_free()
 	await process_frame
 

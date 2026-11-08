@@ -59,6 +59,7 @@ transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 4.347951, 0, -2.74)
 position = Vector3(0, 4.305729, 0)
 metadata/solid_size = Vector3(10.266218, 8.611458, 13)
 metadata/round_volume = false
+metadata/precise_shot_bounds = true
 
 [node name="ContainerA" type="Node3D" parent="."]
 position = Vector3(2.5, 0, 20)
@@ -103,6 +104,7 @@ transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03125)
 position = Vector3(0, 1.03125, 0)
 metadata/solid_size = Vector3(1.875, 2.0625, 4.0625)
 metadata/round_volume = false
+metadata/precise_shot_bounds = true
 
 [node name="CrateA" type="Node3D" parent="."]
 position = Vector3(2.5, 0, 28)

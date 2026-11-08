@@ -10,6 +10,8 @@ var replay_button: Button
 var setup_button: Button
 var save_replay_button: Button
 var _save_dialog: FileDialog
+var _save_dialog_holds_pause := false
+var _paused_before_save_dialog := false
 var _save_status: Label
 
 func _ready() -> void:
@@ -135,16 +137,36 @@ func _choose_replay_destination() -> void:
 		_save_dialog = FileDialog.new()
 		_save_dialog.name = "SaveReplayDialog"
 		_save_dialog.title = "Save FuseFire Replay"
+		_save_dialog.transient = true
+		_save_dialog.exclusive = true
+		_save_dialog.process_mode = Node.PROCESS_MODE_ALWAYS
 		_save_dialog.access = FileDialog.ACCESS_FILESYSTEM
 		_save_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 		_save_dialog.filters = PackedStringArray(["*.json ; FuseFire replay files"])
 		_save_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
 		_save_dialog.file_selected.connect(_save_replay_file)
+		_save_dialog.visibility_changed.connect(_on_save_dialog_visibility_changed)
 		add_child(_save_dialog)
 	var recording: BattleReplayRecording = BattleReplaySession.last_recording
 	var battlefield := String(recording.configuration.get("battlefield_id", "battle")).validate_filename()
 	_save_dialog.current_file = "%s-%d.replay.json" % [battlefield, int(recording.configuration.get("seed", 0))]
 	_save_dialog.popup_centered_ratio(0.75)
+
+func _on_save_dialog_visibility_changed() -> void:
+	if _save_dialog.visible:
+		_paused_before_save_dialog = get_tree().paused
+		_save_dialog_holds_pause = true
+		get_tree().paused = true
+	else:
+		_release_save_dialog_pause()
+
+func _exit_tree() -> void:
+	_release_save_dialog_pause()
+
+func _release_save_dialog_pause() -> void:
+	if _save_dialog_holds_pause:
+		_save_dialog_holds_pause = false
+		get_tree().paused = _paused_before_save_dialog
 
 func _save_replay_file(path: String) -> void:
 	var result := BattleReplaySession.save_last(path)

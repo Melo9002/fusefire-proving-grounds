@@ -25,6 +25,7 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 	if not data.generation_errors.is_empty():
 		return data
 	var interfaces: Array[Dictionary] = []
+	var precise_shot_bounds := int(resolved.compiler_revision) != Resolver.LEGACY_COMPILER_REVISION
 	for placement: Dictionary in resolved.placements:
 		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
@@ -39,7 +40,7 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		})
 		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
-		Compiler.compile(root, data, cell_size)
+		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds)
 		root.free()
 	for interface in interfaces:
 		var failure := SlotContract.validate_compiled_span(data, interface.slot_path, interface.span, interface.outward)

@@ -22,6 +22,7 @@ func _run() -> void:
 		var reconstructed := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, map_seed + 100, 1.0, manifest)
 		check(reconstructed.content_manifest == manifest and _signature(reconstructed) == _signature(data), "Exact depot reconstruction owns the seed and placement choices")
 	check(plots.size() == 2 and loading_parcels.size() == 2, "Four seeds exercise both authored plots and loading variants")
+	_check_depot_shot_bounds()
 
 	var fixed := Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 16, 1.0)
 	_validate(fixed, "Fixed range")
@@ -60,6 +61,33 @@ func _run() -> void:
 	await _play_range()
 	print("Compact battlefields: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _check_depot_shot_bounds() -> void:
+	var data := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 66566043, 1.0)
+	var legacy_manifest := data.content_manifest.duplicate(true)
+	legacy_manifest.compiler_revision = 1
+	var legacy := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 66566043, 1.0, legacy_manifest)
+	var grid := GridManager.new()
+	var floor_mesh := CSGBox3D.new()
+	floor_mesh.size = Vector3(40.0, 0.2, 40.0)
+	floor_mesh.position.y = -0.1
+	root.add_child(floor_mesh)
+	grid.map_floor = floor_mesh
+	grid.map_data = data
+	for lane in [[Vector3i(18, 0, 13), Vector3i(22, 0, 14)], [Vector3i(22, 0, 14), Vector3i(24, 0, 22)]]:
+		var origin := grid.grid_to_world(lane[0]) + Vector3.UP
+		var target := grid.grid_to_world(lane[1]) + Vector3.UP
+		grid.map_data = legacy
+		var old_blocker := CombatRules.get_blocking_cell(origin, target, grid)
+		check(old_blocker != null, "Recorded depot lane %s reproduces the legacy false obstruction" % [lane])
+		grid.map_data = data
+		check(CombatRules.get_blocking_cell(origin, target, grid) == null, "Authored LOS volume clears the visible depot lane %s" % [lane])
+		if old_blocker:
+			check(not data.get_cell(old_blocker.grid_position).can_stop, "Sub-cell LOS keeps the existing movement reservation")
+	var across_truck := CombatRules.get_blocking_cell(Vector3(0, 1, -6.5), Vector3(0, 1, -2.5), grid)
+	check(across_truck != null and across_truck.authored_shot_bounds.has_volume(), "An actual shot through the truck body remains blocked")
+	grid.free()
+	floor_mesh.free()
 
 func _capture_depot(map_seed: int) -> void:
 	var config := BattleConfiguration.new()
