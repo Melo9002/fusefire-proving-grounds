@@ -17,7 +17,7 @@ Match Setup
 
 `MapData` is authoritative for movement, stopping, cover, line of sight, elevation, traversal, deployment and mission zones. Imported meshes never create tactical rules implicitly.
 
-`GroundTileLayers` handles the path, movement range, Guard, objective and cursor fills. It projects each fill onto the visible depth-writing surface within half an elevation step of its tactical cell, so minor road, curb and terrain height changes need no per-map overlay offset. One fill wins per cell and elevation. From highest to lowest priority the order is path, cursor, Guard preview, enemy Guard, range, friendly Guard and objective. Tab still toggles the separate debug grid lines.
+`GroundTileLayers` handles the path, Move and Attack ranges, Guard, objective and cursor fills. It projects each fill onto the visible depth-writing surface within half an elevation step of its tactical cell, so minor road, curb and terrain height changes need no per-map overlay offset. One fill wins per cell and elevation. From highest to lowest priority the order is path, cursor, Guard preview, Move or Attack range, shared Guard, enemy Guard, friendly Guard and objective. Shared Guard uses a single tint blended from the friendly and enemy colors. Tab still toggles the separate debug grid lines.
 
 `BattlefieldCatalog` owns stable selectable identities, labels, fixed sizes, map construction and special presentation. Historical replay booleans remain compatibility inputs only; new code must not add another per-map boolean or numeric UI branch.
 

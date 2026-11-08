@@ -3,7 +3,7 @@ extends Node3D
 ## Composites ground fills by full tactical cell, including elevation.
 ## The shader projects each surviving tile onto the visible surface.
 
-enum Layer { OBJECTIVE, GUARD_ACTIVE, RANGE, ENEMY_GUARD, GUARD_PREVIEW, CURSOR, PATH }
+enum Layer { OBJECTIVE, GUARD_ACTIVE, ENEMY_GUARD, SHARED_GUARD, RANGE, GUARD_PREVIEW, CURSOR, PATH }
 
 const TileShader := preload("res://presentation/overlays/ground_tile_overlay.gdshader")
 

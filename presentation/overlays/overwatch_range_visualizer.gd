@@ -7,7 +7,7 @@ class_name OverwatchRangeVisualizer
 @export var tile_layers: GroundTileLayers
 @export var preview_color := Color(0.58, 0.24, 0.88, 0.28)
 @export var committed_guard_color := Color(0.24, 0.08, 0.38, 0.42)
-@export var enemy_guard_color := Color(0.86, 0.23, 0.13, 0.38)
+@export var enemy_guard_color := Color(0.46, 0.05, 0.10, 0.49)
 @export_range(0.0, 0.3, 0.01) var tile_padding := 0.12
 
 var displayed_cells: Array[Vector3i] = []
@@ -23,9 +23,16 @@ func show_ranges(pending_cells: Array[Vector3i], active_cells: Array[Vector3i], 
 	committed_cells.assign(active_cells)
 	enemy_cells.assign(hostile_cells)
 	var combined := {}
-	for cells in [preview_cells, committed_cells, enemy_cells]:
-		for cell in cells:
-			combined[cell] = true
+	var shared_cells: Array[Vector3i] = []
+	for cell in committed_cells:
+		combined[cell] = true
+	for cell in enemy_cells:
+		if combined.has(cell):
+			shared_cells.append(cell)
+	for cell in enemy_cells:
+		combined[cell] = true
+	for cell in preview_cells:
+		combined[cell] = true
 	displayed_cells.assign(combined.keys())
 	_sort_cells(preview_cells)
 	_sort_cells(committed_cells)
@@ -34,6 +41,7 @@ func show_ranges(pending_cells: Array[Vector3i], active_cells: Array[Vector3i], 
 	tile_layers.show_cells(GroundTileLayers.Layer.GUARD_PREVIEW, preview_cells, tile_padding, preview_color)
 	tile_layers.show_cells(GroundTileLayers.Layer.GUARD_ACTIVE, committed_cells, tile_padding, committed_guard_color)
 	tile_layers.show_cells(GroundTileLayers.Layer.ENEMY_GUARD, enemy_cells, tile_padding, enemy_guard_color)
+	tile_layers.show_cells(GroundTileLayers.Layer.SHARED_GUARD, shared_cells, tile_padding, committed_guard_color.lerp(enemy_guard_color, 0.5))
 
 func _sort_cells(cells: Array[Vector3i]) -> void:
 	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
@@ -47,3 +55,4 @@ func clear() -> void:
 	tile_layers.clear_layer(GroundTileLayers.Layer.GUARD_PREVIEW)
 	tile_layers.clear_layer(GroundTileLayers.Layer.GUARD_ACTIVE)
 	tile_layers.clear_layer(GroundTileLayers.Layer.ENEMY_GUARD)
+	tile_layers.clear_layer(GroundTileLayers.Layer.SHARED_GUARD)
