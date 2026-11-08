@@ -25,6 +25,7 @@ var preview_seed := 17
 var occupancy := 65
 var conflict_count := 0
 var field_excluded_sockets := {}
+var occupancy_skips := 0
 var _saved_fields: Array[Dictionary] = []
 var _saved_preview_settings := Vector2i(17, 65)
 
@@ -76,7 +77,7 @@ static func parking_row_rect(first: Vector2i, last: Vector2i, heading: int) -> R
 	var width := span - posmod(span, BAY_WIDTH)
 	return Rect2i(first.x - maxi(direction.x, 0) * (BAY_DEPTH - 1), mini(first.y, last.y), BAY_DEPTH, width)
 
-func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisional: Dictionary = {}) -> Array[Dictionary]:
+func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisional: Dictionary = {}, infer_rows := false) -> Array[Dictionary]:
 	var fixed := obstacles.duplicate()
 	for socket in sockets:
 		for turn: int in socket.allowed_yaw_turns:
@@ -87,6 +88,8 @@ func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisiona
 	var rows := fields.duplicate()
 	if not provisional.is_empty():
 		rows.append(provisional)
+	if infer_rows:
+		rows.append_array(_infer_parking_rows(rows, fixed))
 	for row: Dictionary in rows:
 		if row.preset != PARKING_ROW:
 			continue
@@ -97,23 +100,29 @@ func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisiona
 		var rect := rectangle(row)
 		if not rect.has_area() or not bounds.encloses(rect):
 			continue
-		var aisle := rect
-		if direction.y != 0:
-			aisle.position.y = rect.end.y if direction.y > 0 else rect.position.y - AISLE_DEPTH
-			aisle.size.y = AISLE_DEPTH
-		else:
-			aisle.position.x = rect.end.x if direction.x > 0 else rect.position.x - AISLE_DEPTH
-			aisle.size.x = AISLE_DEPTH
+		var aisle := _aisle_rect(rect, direction)
 		var aisle_volume := _parking_volume(aisle, level)
-		var aisle_clear := bounds.encloses(aisle) and not _overlaps(aisle_volume, fixed) and not _overlaps(aisle_volume, accepted_bays)
+		var aisle_issue := ""
+		if not bounds.encloses(aisle):
+			aisle_issue = "aisle outside selected surface"
+		elif _overlaps(aisle_volume, fixed) or _overlaps(aisle_volume, accepted_bays):
+			aisle_issue = "aisle blocked by a solid or occupied bay"
+		var aisle_conflicts: Array[Rect2i] = []
+		if not aisle_issue.is_empty():
+			for z in range(aisle.position.y, aisle.end.y):
+				for x in range(aisle.position.x, aisle.end.x):
+					var cell := Rect2i(x, z, 1, 1)
+					var clearance := _parking_volume(cell, level)
+					if not bounds.encloses(cell) or _overlaps(clearance, fixed) or _overlaps(clearance, accepted_bays):
+						aisle_conflicts.append(cell)
 		var length := rect.size.x if direction.y != 0 else rect.size.y
 		var row_accepted := false
 		for offset in range(0, length, BAY_WIDTH):
 			var bay := Rect2i(rect.position + Vector2i(offset, 0), Vector2i(BAY_WIDTH, BAY_DEPTH)) if direction.y != 0 else Rect2i(rect.position + Vector2i(0, offset), Vector2i(BAY_DEPTH, BAY_WIDTH))
 			var volume := _parking_volume(bay, level)
 			var reason := ""
-			if not aisle_clear:
-				reason = "aisle blocked or outside surface"
+			if not aisle_issue.is_empty():
+				reason = aisle_issue
 			elif _overlaps(volume, fixed) or _overlaps(volume, accepted_bays) or _overlaps(volume, accepted_aisles):
 				reason = "bay clearance conflict"
 			elif not _parking_painted(row.surface, bay):
@@ -122,10 +131,63 @@ func parking_bays(sockets: Array[Dictionary], obstacles: Array[AABB], provisiona
 				accepted_bays.append(volume)
 				row_accepted = true
 			var id := "row_bay_%s_%d_%d" % [row.surface, bay.position.x, bay.position.y]
-			results.append({"id": id, "surface": row.surface, "level": level, "heading": heading, "rect": bay, "aisle": aisle, "reason": reason})
+			results.append({"id": id, "surface": row.surface, "level": level, "heading": heading, "rect": bay, "aisle": aisle, "reason": reason, "aisle_issue": aisle_issue, "aisle_conflicts": aisle_conflicts, "inferred": row.get("inferred", false)})
 		if row_accepted:
 			accepted_aisles.append(aisle_volume)
 	return results
+
+static func _aisle_rect(rect: Rect2i, direction: Vector2i) -> Rect2i:
+	var aisle := rect
+	if direction.y != 0:
+		aisle.position.y = rect.end.y if direction.y > 0 else rect.position.y - AISLE_DEPTH
+		aisle.size.y = AISLE_DEPTH
+	else:
+		aisle.position.x = rect.end.x if direction.x > 0 else rect.position.x - AISLE_DEPTH
+		aisle.size.x = AISLE_DEPTH
+	return aisle
+
+## One contiguous row per painted surface. Explicit rows override inference
+## on that surface. The candidate scan is bounded by the authored footprint.
+func _infer_parking_rows(rows: Array, fixed: Array[AABB]) -> Array[Dictionary]:
+	var explicit := {}
+	for row in rows:
+		if row.preset == PARKING_ROW:
+			explicit[row.surface] = true
+	var result: Array[Dictionary] = []
+	var reserved := fixed.duplicate()
+	for surface_id in surfaces:
+		if explicit.has(surface_id) or not fields.any(func(field): return field.surface == surface_id and field.preset == "parking"):
+			continue
+		var bounds := rectangle(surfaces[surface_id])
+		var level := int(surfaces[surface_id].level)
+		var best := Rect2i()
+		var best_heading := 0
+		for heading in 4:
+			var direction := ParcelTransform.direction(Vector2i.DOWN, heading)
+			var horizontal := direction.y != 0
+			var stride := Vector2i(BAY_WIDTH, 0) if horizontal else Vector2i(0, BAY_WIDTH)
+			var bay_size := Vector2i(BAY_WIDTH, BAY_DEPTH) if horizontal else Vector2i(BAY_DEPTH, BAY_WIDTH)
+			var valid := {}
+			for z in range(bounds.position.y, bounds.end.y - bay_size.y + 1):
+				for x in range(bounds.position.x, bounds.end.x - bay_size.x + 1):
+					var bay := Rect2i(Vector2i(x, z), bay_size)
+					var aisle := _aisle_rect(bay, direction)
+					if bounds.encloses(aisle) and _parking_painted(surface_id, bay) and not _overlaps(_parking_volume(bay, level), reserved) and not _overlaps(_parking_volume(aisle, level), reserved):
+						valid[bay.position] = true
+			for start: Vector2i in valid:
+				if valid.has(start - stride):
+					continue
+				var count := 1
+				while valid.has(start + stride * count):
+					count += 1
+				var row := Rect2i(start, bay_size + stride * (count - 1))
+				if row.get_area() > best.get_area():
+					best = row
+					best_heading = heading
+		if best.has_area():
+			result.append({"surface": surface_id, "preset": PARKING_ROW, "heading": best_heading, "rect": [best.position.x, best.position.y, best.size.x, best.size.y], "inferred": true})
+			reserved.append(_parking_volume(best, level))
+	return result
 
 func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
 	var obstacles: Array[AABB] = definition.fixed_population_obstacles(scene_root)
@@ -207,6 +269,7 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 	occupancy = clampi(density, 0, 100)
 	conflict_count = 0
 	field_excluded_sockets.clear()
+	occupancy_skips = 0
 	var accepted: Array[Dictionary] = []
 	var occupied: Array[AABB] = []
 	var ordered := sockets.duplicate()
@@ -237,7 +300,9 @@ func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles:
 		if not permitted:
 			field_excluded_sockets[socket.socket_id] = true
 			continue
-		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= clampi(density, 0, 100): continue
+		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= occupancy:
+			occupancy_skips += 1
+			continue
 		var intersects := false
 		for obstacle in obstacles + occupied:
 			if bounds.grow(-0.001).intersects(obstacle):

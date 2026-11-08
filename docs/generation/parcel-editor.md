@@ -28,6 +28,8 @@ Choose a registered parcel from the list. The editor opens on **Inspect** with t
 
 Open **Move objects** and click a visible imported object in the viewport, or choose it from the list. Drag with LMB to preview its position on its current floor in half-cell steps. Release in the viewport to commit a single undo step. Press `R` for a quarter-turn, `Shift+R` for the reverse, and `Esc` to cancel an active drag. The outline and labeled axes also match the X/Y/Z nudge buttons, which provide half-cell horizontal and quarter-cell vertical steps.
 
+Blue means the visual candidate fits the parcel and clears other authored solid boxes. Red identifies an out-of-bounds footprint or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Compare authored tactical bounds** shows the original gameplay volumes beside the visual draft. This check covers visual bounds and authored solid overlaps in 3D. Floor support, deliberate stacking, doors and tactical routes need their own authoring contracts.
+
 **Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
 
 Saving does not edit the `.tscn`, publish content, change tactical metadata or affect a battle. The preview deliberately leaves cyan/orange tactical contracts in their authored locations so a visual/tactical disagreement is visible instead of silently changing gameplay.
@@ -40,7 +42,15 @@ Open **Population fields** and choose a surface or floor. **Inspect** leaves the
 
 Set Seed and percentage of eligible bays, then **Preview**. This shows compatible occupants whose footprints fit within the painted permission areas and avoid protected areas. The result counts authored sockets filtered out by the paint separately from overlap conflicts. Parking can use authored sockets and new parking rows. Containers and equipment use authored sockets. **Show source** restores the authored population. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
 
-### Draw a parking row
+### Paint parking and preview
+
+Parking paint now defines where vehicles are allowed. The editor derives one contiguous row per painted floor from 3 × 5 bays and a four-cell aisle. It checks existing sockets, authored solids, protected paint and headroom. **Next seed** previews another outcome using the same paint. Density controls occupancy of eligible bays.
+
+On the original office parcel, paint X 2–29 and Z 4–11 and preview at 100%. The editor finds four bays alongside the three authored sockets. **Export parking scene** validates the full layout and writes a separate scene containing the possible bays. It retains the original authored sockets and fixes a calibrated vehicle type for each new bay at export. A battle seed chooses which bays are occupied and which direction cars face. Replay records the resolved choices in its existing manifest.
+
+To play the registered proof, select **Urban family** in Match Setup, enable **Tactical Population**, and use an even seed to choose the service-street plot. Seeds **0** and **2** were checked in the battle scene and occupy different new bays. Fresh street battles use the painted parking variant. Exact older manifests can still resolve the original office parcel. The battle seed is chosen through Match Setup and stays fixed for that encounter.
+
+### Override a parking row
 
 1. Paint Parking permission over the intended bays and Protected over access space you want to keep empty.
 2. Choose **Parking row** once the selected floor has Parking permission, then use the green ground arrow to check the aisle direction before drawing. **Top** view makes the grid easier to read.
@@ -55,7 +65,7 @@ Editor camera: RMB drag down raises the view toward overhead, up lowers it, matc
 
 ### Export a parking scene
 
-Use **Export parking scene** after drawing a row. The tool checks every bay and compiles the fully occupied parcel. The whole entrance span and each aisle must remain walkable, with a tactical route from the entrance to the aisle on its declared floor. These checks run for all supported parcel rotations. The export preserves original authored sockets and rejects protected paint that would conflict with them. Visual transform drafts must be restored to source transforms first.
+Use **Export parking scene** after checking the inferred or manually drawn row. The tool checks every bay and compiles the fully occupied parcel. The whole entrance span and each aisle must remain walkable, with a tactical route from the entrance to the aisle on its declared floor. These checks run for all supported parcel rotations. The export preserves original authored sockets and rejects protected paint that would conflict with them. Visual transform drafts must be restored to source transforms first.
 
 The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel and explicit, optional row sockets with the calibrated vehicle and authored tactical volume at each bay. The seed chooses the models baked into the new sockets. The preview occupancy slider affects the preview only. Authored sockets retain their normal runtime occupancy and forward/reverse options. The filename identifies the resulting content, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog.
 

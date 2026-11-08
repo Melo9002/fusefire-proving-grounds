@@ -28,6 +28,8 @@ static func choose(map_seed: int) -> Dictionary:
 	return plots[posmod(map_seed, plots.size())].duplicate(true)
 
 static func _street_definition() -> Dictionary:
+	var office := _slot(&"office_frontage", ParcelCatalog.URBAN_FRONTAGE, Vector2i(32, 32), Vector3i(16, 0, 32), 0, Vector3i(28, 0, 32), Vector2i.UP, 8, &"street_frontage")
+	office.preferred_parcel_id = ParcelCatalog.INDUSTRIAL_OFFICE_PAINTED_PARKING
 	return {
 		"plot_id": STREET_A,
 		"display_name": "Industrial office service street",
@@ -38,7 +40,7 @@ static func _street_definition() -> Dictionary:
 		"slots": [
 			_slot(&"process", ParcelCatalog.PROCESS, Vector2i(16, 16), Vector3i(8, 0, 11), 0, Vector3i(15, 0, 26), Vector2i.DOWN, 2, &"service"),
 			_slot(&"storage", ParcelCatalog.STORAGE, Vector2i(16, 16), Vector3i(40, 0, 11), 0, Vector3i(46, 0, 26), Vector2i.DOWN, 4, &"service"),
-			_slot(&"office_frontage", ParcelCatalog.URBAN_FRONTAGE, Vector2i(32, 32), Vector3i(16, 0, 32), 0, Vector3i(28, 0, 32), Vector2i.UP, 8, &"street_frontage"),
+			office,
 		],
 	}
 

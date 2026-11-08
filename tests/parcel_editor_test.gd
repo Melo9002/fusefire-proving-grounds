@@ -84,6 +84,23 @@ func _run() -> void:
 	escape.pressed = true
 	editor._input(escape)
 	check(container.position.is_equal_approx(container_start) and not editor.draft.dirty and editor.draft.undo_stack.is_empty(), "Escape restores a live pose without adding history")
+	var target_container := editor.displayed_parcel.get_node("ContainerB") as Node3D
+	editor._translate_selected(target_container.position - container.position)
+	check(container.position.is_equal_approx(container_start) and "Overlaps ContainerB" in editor.draft_status.text, "A nudge cannot place the container inside another solid")
+	var warehouse := editor.displayed_parcel.get_node("Warehouse") as Node3D
+	editor._translate_selected(warehouse.position - container.position)
+	check(container.position.is_equal_approx(container_start) and "Overlaps Warehouse" in editor.draft_status.text, "A container cannot be placed inside the warehouse")
+	editor._start_object_drag(pick_position)
+	var outside: Vector2 = editor.camera.unproject_position(container.global_position + Vector3(-3, 0.9, 0))
+	editor._preview_object_drag(outside)
+	check(editor._placement_issue == "Outside parcel" and editor._ghost_material.albedo_color.r > 0.9, "A pivot inside the parcel still shows a red ghost for an overhanging footprint")
+	editor._finish_object_drag(true)
+	check(container.position.is_equal_approx(container_start) and editor.draft.undo_stack.is_empty(), "Releasing an invalid ghost restores its starting pose")
+	editor._translate_selected(Vector3(-2.5, 0, 0))
+	check(is_equal_approx(container.position.x, 0.5), "The narrow orientation fits next to the parcel edge")
+	editor._rotate_selected(1)
+	check(is_equal_approx(container.rotation_degrees.y, source_yaw) and "Outside parcel" in editor.draft_status.text, "A quarter-turn is rejected if the rotated footprint would overhang")
+	editor._undo()
 	editor._save_draft_as()
 	check(editor._draft_file_dialog.visible and editor._draft_file_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save As opens a named destination picker")
 	editor._draft_file_dialog.hide()

@@ -99,6 +99,7 @@ func _run() -> void:
 	panel.density.value = 100
 	panel.preview()
 	check(panel.status.text.begins_with("3 authored sockets"), "Editor preview uses authored parking sockets")
+	check(panel.status.text.contains("4 row bays occupied") and panel.session.fields.size() == 1, "Paint alone derives four new eligible bays without adding a manual row to the draft")
 	panel.reset_preview()
 	var vertices: int = panel.overlay.get_child(0).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
 	panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))

@@ -22,10 +22,10 @@ static func build(source, draft, vehicles, map_seed: int) -> Dictionary:
 			if draft.has_protected_overlap(String(socket.surface_id), Session.socket_bounds_at_turn(socket, turn)):
 				scene_root.free()
 				return {"error": "Protected paint intersects original socket %s. The export preserves original sockets." % socket.socket_id}
-	var bays: Array[Dictionary] = draft.parking_bays(sockets, draft.parking_obstacles(source, scene_root))
+	var bays: Array[Dictionary] = draft.parking_bays(sockets, draft.parking_obstacles(source, scene_root), {}, true)
 	if bays.is_empty():
 		scene_root.free()
-		return {"error": "Draw a parking row before exporting."}
+		return {"error": "No parking bays fit. Expand the parking paint or adjust the aisle."}
 	var signature: Array = [String(source.parcel_id), source.revision]
 	for bay in bays:
 		if not bay.reason.is_empty():

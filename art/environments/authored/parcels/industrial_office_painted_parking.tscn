@@ -1,0 +1,110 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/parcels/industrial_office_parking.tscn" id="office"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
+
+[node name="OfficePaintedParking" instance=ExtResource("office")]
+metadata/parcel_id = &"industrial_office_painted_parking"
+metadata/parking_proof_paint = Rect2i(2, 4, 28, 8)
+metadata/parking_proof_bake_seed = 17
+
+[node name="Region_row_bay_ground_13_4" type="Node" parent="."]
+metadata/population_region_id = &"row_bay_ground_13_4"
+metadata/population_role = &"parked_vehicle"
+metadata/population_surface_id = &"ground"
+metadata/local_rect = Rect2i(13, 4, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/taxi")
+metadata/min_count = 0
+metadata/max_count = 1
+
+[node name="Car_row_bay_ground_13_4" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 6)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"row_bay_ground_13_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"row_bay_ground_13_4"
+metadata/population_surface_id = &"ground"
+
+[node name="Visual" type="Node3D" parent="Car_row_bay_ground_13_4" instance=ExtResource("taxi")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Car_row_bay_ground_13_4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false
+
+[node name="Region_row_bay_ground_16_4" type="Node" parent="."]
+metadata/population_region_id = &"row_bay_ground_16_4"
+metadata/population_role = &"parked_vehicle"
+metadata/population_surface_id = &"ground"
+metadata/local_rect = Rect2i(16, 4, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/taxi")
+metadata/min_count = 0
+metadata/max_count = 1
+
+[node name="Car_row_bay_ground_16_4" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, 6)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"row_bay_ground_16_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"row_bay_ground_16_4"
+metadata/population_surface_id = &"ground"
+
+[node name="Visual" type="Node3D" parent="Car_row_bay_ground_16_4" instance=ExtResource("taxi")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Car_row_bay_ground_16_4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false
+
+[node name="Region_row_bay_ground_19_4" type="Node" parent="."]
+metadata/population_region_id = &"row_bay_ground_19_4"
+metadata/population_role = &"parked_vehicle"
+metadata/population_surface_id = &"ground"
+metadata/local_rect = Rect2i(19, 4, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan")
+metadata/min_count = 0
+metadata/max_count = 1
+
+[node name="Car_row_bay_ground_19_4" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 6)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"row_bay_ground_19_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"row_bay_ground_19_4"
+metadata/population_surface_id = &"ground"
+
+[node name="Visual" type="Node3D" parent="Car_row_bay_ground_19_4" instance=ExtResource("sedan")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Car_row_bay_ground_19_4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false
+
+[node name="Region_row_bay_ground_22_4" type="Node" parent="."]
+metadata/population_region_id = &"row_bay_ground_22_4"
+metadata/population_role = &"parked_vehicle"
+metadata/population_surface_id = &"ground"
+metadata/local_rect = Rect2i(22, 4, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan")
+metadata/min_count = 0
+metadata/max_count = 1
+
+[node name="Car_row_bay_ground_22_4" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, 6)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"row_bay_ground_22_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"row_bay_ground_22_4"
+metadata/population_surface_id = &"ground"
+
+[node name="Visual" type="Node3D" parent="Car_row_bay_ground_22_4" instance=ExtResource("sedan")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Car_row_bay_ground_22_4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false

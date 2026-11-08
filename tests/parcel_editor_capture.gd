@@ -37,11 +37,17 @@ func _run() -> void:
 	if editor._start_object_drag(editor.camera.unproject_position(anchor)):
 		editor._preview_object_drag(editor.camera.unproject_position(anchor + Vector3(4, 0, -3)))
 		await _capture(output.path_join("parcel-editor-drag-preview.png"))
+		editor._preview_object_drag(editor.camera.unproject_position(anchor + Vector3(-3, 0, 0)))
+		await _capture(output.path_join("parcel-editor-invalid-placement.png"))
 		editor._finish_object_drag(false)
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
 	editor.field_panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
+	editor.field_panel.refresh()
+	editor.field_panel.density.value = 100
+	editor.field_panel.preview()
+	await _capture(output.path_join("parcel-editor-paint-only-parking.png"))
 	editor.field_panel.session.add("ground", "protected", Rect2i(4, 5, 5, 6))
 	editor.field_panel.refresh()
 	editor.field_panel.density.value = 100

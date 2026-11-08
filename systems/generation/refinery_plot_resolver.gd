@@ -162,6 +162,8 @@ static func _parcel_for_slot(slot: Dictionary, map_seed: int, requested: Diction
 		if parcel == null or parcel.revision != int(requested.get("parcel_revision", 0)):
 			return null
 		return parcel
+	if slot.has("preferred_parcel_id"):
+		return ParcelCatalog.get_definition(slot.preferred_parcel_id)
 	if slot.role == ParcelCatalog.LOADING_SERVICE:
 		# Plot identity and content variation use different seed bits.
 		return ParcelCatalog.choose(slot.role, slot.size, floori(map_seed / 2.0))

@@ -57,8 +57,8 @@ func _run() -> void:
 		check(not graph.calculate_3d_path(bottom, far_deck).is_empty(), "maintenance gallery rotation %d connects ground access to the complete elevated route" % turn)
 		root.free()
 	var urban_frontages := Catalog.candidates(Catalog.URBAN_FRONTAGE, Vector2i(32, 32))
-	check(urban_frontages.size() == 1, "Catalog contains one bounded 32x32 urban-frontage proof")
-	var frontage = urban_frontages[0]
+	check(urban_frontages.map(func(parcel): return parcel.parcel_id) == [Catalog.INDUSTRIAL_OFFICE_PAINTED_PARKING, Catalog.INDUSTRIAL_OFFICE_PARKING_A], "Catalog retains the original 32x32 frontage alongside the painted parking proof")
+	var frontage = Catalog.get_definition(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
 	check(frontage.connection().kind == &"street_frontage" and frontage.connection().outward == Vector2i(0, -1) and frontage.connection().width == 8, "Urban parcel authors a measured street-facing frontage instead of inferring adjacency")
 	var parking_regions = frontage.population_regions()
 	check(parking_regions.size() == 1 and parking_regions[0].region_id == &"visitor_parking" and parking_regions[0].role == &"parked_vehicle", "Urban parcel owns a semantic visitor-parking population region")

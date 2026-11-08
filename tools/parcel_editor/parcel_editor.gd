@@ -24,6 +24,10 @@ var _drag_start := Vector3.ZERO
 var _drag_screen_start := Vector2.ZERO
 var _drag_moved := false
 var _drag_yaw := 0.0
+var _placement_issue := ""
+var _drag_materials := {}
+var _ghost_material: StandardMaterial3D
+var _placement_hint: Label
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -84,6 +88,13 @@ func _build_stage() -> void:
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	_placement_hint = Label.new()
+	_placement_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_placement_hint.add_theme_color_override("font_shadow_color", Color("121820"))
+	_placement_hint.add_theme_constant_override("shadow_offset_x", 2)
+	_placement_hint.add_theme_constant_override("shadow_offset_y", 2)
+	_placement_hint.hide()
+	layer.add_child(_placement_hint)
 	_panel = PanelContainer.new()
 	layer.add_child(_panel)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
@@ -159,6 +170,11 @@ func _build_ui() -> void:
 	move_help.text = "Click an object or drag it on its floor. R rotates, Shift+R reverses, Esc cancels. Moves edit visuals only. Tactical properties stay at their authored positions."
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(move_help)
+	var compare := CheckButton.new()
+	compare.text = "Compare authored tactical bounds"
+	compare.toggled.connect(func(enabled: bool): tactical_toggle.button_pressed = enabled)
+	tactical_toggle.toggled.connect(func(enabled: bool): compare.set_pressed_no_signal(enabled))
+	move_page.add_child(compare)
 	placement_picker = OptionButton.new()
 	placement_picker.name = "PlacementPicker"
 	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
@@ -407,16 +423,62 @@ func _select_placement_index(index: int) -> void:
 		_update_draft_status()
 
 func _translate_selected(delta: Vector3) -> void:
-	if draft.translate_selected(delta):
-		_apply_draft("Moved visual placement %s." % delta)
-	else:
-		_update_draft_status(draft.last_error)
+	var selected := _selected_object()
+	if selected:
+		_try_visual_pose(selected, selected.position + delta, float(draft.placement().rotation_degrees[1]))
 
 func _rotate_selected(turns: int) -> void:
-	if draft.rotate_selected_quarter(turns):
-		_apply_draft("Rotated visual placement %s90°." % ("+" if turns > 0 else "−"))
-	else:
-		_update_draft_status(draft.last_error)
+	var selected := _selected_object()
+	if selected:
+		_try_visual_pose(selected, selected.position, snappedf(float(draft.placement().rotation_degrees[1]) + turns * 90.0, 90.0))
+
+func _selected_object() -> Node3D:
+	return displayed_parcel.get_node_or_null(NodePath(draft.selected_path)) as Node3D if not draft.selected_path.is_empty() else null
+
+func _try_visual_pose(selected: Node3D, position: Vector3, yaw: float) -> void:
+	var original := selected.transform
+	selected.position = position
+	selected.rotation_degrees.y = yaw
+	var issue := _validate_visual_pose(selected)
+	selected.transform = original
+	if not issue.is_empty():
+		_update_draft_status("Placement rejected · " + issue)
+	elif draft.place_selected(position, yaw):
+		_apply_draft("Placed visual draft object.")
+
+func _validate_visual_pose(selected: Node3D) -> String:
+	var local_bounds := EnvironmentAssetPlacement.mesh_bounds(selected, displayed_parcel.global_transform.affine_inverse() * (selected.get_parent() as Node3D).global_transform)
+	var footprint := Rect2(Vector2(local_bounds.position.x, local_bounds.position.z), Vector2(local_bounds.size.x, local_bounds.size.z))
+	var parcel_bounds := Rect2(Vector2(-0.5, -0.5), Vector2(draft.parcel_size))
+	if footprint.has_area() and not parcel_bounds.grow(0.01).encloses(footprint):
+		return "Outside parcel"
+	var moving_solids := _visual_solid_bounds(selected)
+	if moving_solids.is_empty():
+		return ""
+	for obstacle: Node3D in displayed_parcel.find_children("*", "Node3D", true, false):
+		if not obstacle.has_meta("solid_size") or obstacle == selected or selected.is_ancestor_of(obstacle) or obstacle.is_ancestor_of(selected):
+			continue
+		var bounds := _solid_world_bounds(obstacle)
+		for solid in moving_solids:
+			if solid.grow(-0.01).intersects(bounds):
+				var owner_node: Node = obstacle
+				while owner_node != displayed_parcel and not owner_node.has_meta("asset_id"):
+					owner_node = owner_node.get_parent()
+				return "Overlaps %s" % (obstacle.name if owner_node == displayed_parcel else owner_node.name)
+	return ""
+
+func _visual_solid_bounds(object: Node3D) -> Array[AABB]:
+	var bounds: Array[AABB] = []
+	if object.has_meta("solid_size"):
+		bounds.append(_solid_world_bounds(object))
+	for node: Node3D in object.find_children("*", "Node3D", true, false):
+		if node.has_meta("solid_size"):
+			bounds.append(_solid_world_bounds(node))
+	return bounds
+
+func _solid_world_bounds(node: Node3D) -> AABB:
+	var dimensions: Vector3 = node.get_meta("solid_size")
+	return node.global_transform * AABB(-dimensions * 0.5, dimensions)
 
 func _reset_selected() -> void:
 	if draft.reset_selected(displayed_parcel):
@@ -521,7 +583,7 @@ func _update_selection_marker() -> void:
 	material.vertex_color_use_as_albedo = true
 	material.no_depth_test = true
 	lines.surface_begin(Mesh.PRIMITIVE_LINES, material)
-	lines.surface_set_color(Color("ffdc83"))
+	lines.surface_set_color(Color("ffdc83") if not is_instance_valid(_dragged) else _ghost_color())
 	for corner in 8:
 		for edge in [1, 2, 4]:
 			if (corner & edge) == 0:
@@ -719,21 +781,51 @@ func _preview_object_drag(screen: Vector2) -> void:
 	if target != _dragged.position:
 		_dragged.position = target
 		_show_drag_preview()
+	if _placement_hint.visible:
+		_position_placement_hint(screen)
 
 func _show_drag_preview() -> void:
-	draft_status.text = "Preview · %s\nPosition %s · yaw %.1f°\nRelease to place · Esc to cancel" % [draft.selected_path, _dragged.position, _drag_yaw]
+	_placement_issue = _validate_visual_pose(_dragged)
+	if _ghost_material == null:
+		_ghost_material = StandardMaterial3D.new()
+		_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		for mesh_node: MeshInstance3D in _dragged.find_children("*", "MeshInstance3D", true, false):
+			_drag_materials[mesh_node] = mesh_node.material_override
+			mesh_node.material_override = _ghost_material
+	_ghost_material.albedo_color = Color(_ghost_color(), 0.55)
+	_placement_hint.text = "Visual placement clear" if _placement_issue.is_empty() else _placement_issue
+	_placement_hint.modulate = _ghost_color()
+	_placement_hint.show()
+	_position_placement_hint(get_viewport().get_mouse_position())
+	draft_status.text = "Visual draft · %s\n%s · yaw %.1f°\n%s · Esc to cancel" % [draft.selected_path, _dragged.position, _drag_yaw, "Clear · release to place" if _placement_issue.is_empty() else _placement_issue]
 	_update_selection_marker()
+
+func _position_placement_hint(screen: Vector2) -> void:
+	var view := get_viewport().get_visible_rect()
+	_placement_hint.position = (screen + Vector2(16, 18)).min(view.end - _placement_hint.get_minimum_size() - Vector2.ONE * 8.0)
+
+func _ghost_color() -> Color:
+	return Color("61caff") if _placement_issue.is_empty() else Color("ff626b")
 
 func _finish_object_drag(commit: bool) -> void:
 	if not is_instance_valid(_dragged):
 		return
 	var position := _dragged.position
+	var issue := _placement_issue
+	for mesh_node in _drag_materials:
+		if is_instance_valid(mesh_node):
+			mesh_node.material_override = _drag_materials[mesh_node]
+	_drag_materials.clear()
+	_ghost_material = null
+	_placement_issue = ""
+	_placement_hint.hide()
 	_dragged.transform = _drag_origin
 	_dragged = null
-	if commit and draft.place_selected(position, _drag_yaw):
+	if commit and issue.is_empty() and draft.place_selected(position, _drag_yaw):
 		_apply_draft("Placed visual draft object.")
 	else:
-		_update_draft_status()
+		_update_draft_status("Placement rejected · " + issue if commit and not issue.is_empty() else "")
 
 func _input(event: InputEvent) -> void:
 	if is_instance_valid(_dragged):

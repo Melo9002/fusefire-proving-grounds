@@ -96,6 +96,7 @@ func setup(editor: Node3D) -> void:
 	options.add_child(density)
 	var preview_controls := HBoxContainer.new()
 	preview_button = _add_button(preview_controls, "Preview", preview)
+	_add_button(preview_controls, "Next seed", _next_seed)
 	_add_button(preview_controls, "Show source", reset_preview)
 	options.add_child(preview_controls)
 	_add_label(options, "Preview includes compatible sockets inside painted permission, outside protected areas. Show source restores the authored objects.")
@@ -170,7 +171,7 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 	preset_picker.visible = active_tool == Tool.DRAW
 	heading_picker.visible = active_tool == Tool.PARKING_ROW
 	preview_button.disabled = session.fields.is_empty()
-	export_button.disabled = not has_row
+	export_button.disabled = not has_row and not session.fields.any(func(field): return field.preset == "parking")
 	undo_button.disabled = session.history.is_empty()
 	redo_button.disabled = session.future.is_empty()
 	match active_tool:
@@ -181,7 +182,7 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 		Tool.PARKING_ROW:
 			guidance.text = "2. Drag the edge facing the green arrow. Bays are %d × %d cells with a %d-cell aisle. 3. Preview." % [Session.BAY_WIDTH, Session.BAY_DEPTH, Session.AISLE_DEPTH]
 		_:
-			guidance.text = "1. Paint Parking permission → 2. Draw a row → 3. Preview." if not parking_allowed else "Parking permission is ready on this floor. Draw a row along its aisle, or preview existing bays."
+			guidance.text = "Paint Parking, then Preview a seed. Use Parking row to override the inferred row."
 	if latest.is_empty():
 		measurement.text = "%d draft areas" % session.fields.size()
 	else:
@@ -317,14 +318,16 @@ func refresh(message := "") -> void:
 		visual.mesh = mesh
 		visual.position = host.displayed_parcel.position
 		overlay.add_child(visual)
-	var bays: Array[Dictionary] = session.parking_bays(_source_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {})
+	var bays: Array[Dictionary] = session.parking_bays(_source_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {}, start_cell == null)
 	var fitting := _draw_bays(bays)
 	_update_tools(provisional)
 	_draw_aisle_arrow()
 	status.text = message
 	if not bays.is_empty():
 		if not status.text.is_empty(): status.text += "\n"
-		status.text += "%d bays fit · %d rejected." % [fitting, bays.size() - fitting]
+		status.text += "%d bays fit · %d rejected. %d authored sockets on this parcel." % [fitting, bays.size() - fitting, _source_sockets.size()]
+		if bays.any(func(bay): return bay.inferred):
+			status.text += " Row inferred from paint."
 		var rejected: Array = bays.filter(func(bay): return not bay.reason.is_empty())
 		if not rejected.is_empty(): status.text += " First rejection: %s." % rejected[0].reason
 
@@ -336,7 +339,7 @@ func preview() -> void:
 	var map_seed := int(seed_input.value)
 	var candidates := _source_sockets.duplicate()
 	var row_candidates := {}
-	for bay: Dictionary in session.parking_bays(_source_sockets, _fixed_obstacles):
+	for bay: Dictionary in session.parking_bays(_source_sockets, _fixed_obstacles, {}, true):
 		if not bay.reason.is_empty(): continue
 		var candidate := _vehicles.candidate(bay, map_seed, session.parcel_id)
 		if not candidate.is_empty():
@@ -367,7 +370,11 @@ func preview() -> void:
 	_apply_preview_visibility(host.population_toggle.button_pressed)
 	_update_tools()
 	var excluded := _source_sockets.filter(func(socket): return session.field_excluded_sockets.has(socket.socket_id)).size()
-	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d overlap conflicts rejected." % [choices.size() - row_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.conflict_count]
+	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d left empty by occupancy, %d conflicts. Seed %d." % [choices.size() - row_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.occupancy_skips, session.conflict_count, map_seed]
+
+func _next_seed() -> void:
+	seed_input.value = posmod(int(seed_input.value) + 1, 2147483648)
+	preview()
 
 func _draw_aisle_arrow() -> void:
 	if active_tool != Tool.PARKING_ROW:
@@ -413,11 +420,12 @@ func _draw_bays(bays: Array[Dictionary]) -> int:
 	for bay in bays:
 		var fits: bool = bay.reason.is_empty()
 		_draw_outline(mesh, bay.rect, bay.level, Color("ffd077") if fits else Color("fb6a62"))
-		if not fits: continue
-		fitting += 1
+		if fits: fitting += 1
 		var aisle_key := "%s/%s" % [bay.surface, bay.aisle]
 		if not aisles.has(aisle_key):
-			_draw_outline(mesh, bay.aisle, bay.level, Color("88e49e"))
+			_draw_outline(mesh, bay.aisle, bay.level, Color("88e49e") if String(bay.aisle_issue).is_empty() else Color("fb6a62"))
+			for cell in bay.aisle_conflicts:
+				_draw_outline(mesh, cell, bay.level, Color("ff626b"))
 			aisles[aisle_key] = true
 	mesh.surface_end()
 	var visual := MeshInstance3D.new()
