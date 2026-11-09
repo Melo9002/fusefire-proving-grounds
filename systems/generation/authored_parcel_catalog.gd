@@ -5,6 +5,7 @@ extends RefCounted
 
 const Definition = preload("res://systems/generation/authored_parcel_definition.gd")
 const LOADING_YARD_A := &"loading_yard_a"
+const LOADING_YARD_PAINTED := &"loading_yard_a_painted_containers"
 const LOADING_YARD_B := &"loading_yard_b"
 const PROCESS_PAD_A := &"process_pad_a"
 const TANK_STORAGE_A := &"tank_storage_a"
@@ -27,6 +28,7 @@ const PARKING_GARAGE := &"parking_garage"
 const TACTICAL_RANGE := &"tactical_range"
 
 const LoadingYardA = preload("res://art/environments/authored/parcels/loading_yard.tscn")
+const LoadingYardPainted = preload("res://art/environments/authored/parcels/loading_yard_painted_containers.tscn")
 const LoadingYardB = preload("res://art/environments/authored/parcels/loading_yard_alt.tscn")
 const ProcessPadA = preload("res://art/environments/authored/parcels/process_pad.tscn")
 const TankStorageA = preload("res://art/environments/authored/parcels/tank_storage.tscn")
@@ -42,6 +44,7 @@ const TacticalRangeA = preload("res://art/environments/authored/parcels/tactical
 static func all() -> Array:
 	return [
 		Definition.new(LOADING_YARD_A, "Warehouse loading apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardA),
+		Definition.new(LOADING_YARD_PAINTED, "Warehouse loading apron — painted containers", LOADING_SERVICE, 1, Vector2i(16, 32), LoadingYardPainted),
 		Definition.new(LOADING_YARD_B, "Container service apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardB),
 		Definition.new(PROCESS_PAD_A, "Factory process pad", PROCESS, 1, Vector2i(16, 16), ProcessPadA),
 		Definition.new(TANK_STORAGE_A, "Tank storage pad", STORAGE, 1, Vector2i(16, 16), TankStorageA),
@@ -62,7 +65,9 @@ static func get_definition(id: StringName):
 	return null
 
 static func candidates(role: StringName, size: Vector2i) -> Array:
-	var result := all().filter(func(definition): return definition.role == role and definition.size == size)
+	# Keep the original loading apron available for authoring and exact manifests.
+	var result := all().filter(func(definition):
+		return definition.role == role and definition.size == size and definition.parcel_id != LOADING_YARD_A)
 	result.sort_custom(func(a, b): return String(a.parcel_id) < String(b.parcel_id))
 	return result
 

@@ -6,6 +6,7 @@ extends Node3D
 const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
 const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
+const PlacementLibrary = preload("res://tools/parcel_editor/parcel_placement_library.gd")
 var field_panel
 
 enum Task { INSPECT, MOVE_OBJECTS, POPULATION_FIELDS }
@@ -28,6 +29,12 @@ var _placement_issue := ""
 var _drag_materials := {}
 var _ghost_material: StandardMaterial3D
 var _placement_hint: Label
+var _pending_asset: Node3D
+var _asset_entries: Dictionary
+var _asset_picker: OptionButton
+var _asset_filter: LineEdit
+var _asset_category: OptionButton
+var _add_asset_button: Button
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -165,6 +172,37 @@ func _build_ui() -> void:
 	details.toggled.connect(func(expanded: bool): metadata_label.visible = expanded)
 
 	var move_page := _add_task_page("Move objects")
+	var limits := Label.new()
+	limits.text = "Draft only · Checks bounds and solid overlap. New objects use ground level. Battle routes and runtime registration are separate."
+	limits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	move_page.add_child(limits)
+	var browser := VBoxContainer.new()
+	move_page.add_child(browser)
+	_asset_filter = LineEdit.new()
+	_asset_filter.placeholder_text = "Search fixed assets"
+	browser.add_child(_asset_filter)
+	_asset_category = OptionButton.new()
+	for category in ["All fixed assets", "Decoration", "Tactical"]:
+		_asset_category.add_item(category)
+	browser.add_child(_asset_category)
+	_asset_picker = OptionButton.new()
+	_asset_picker.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_asset_picker.fit_to_longest_item = false
+	browser.add_child(_asset_picker)
+	var asset_actions := HBoxContainer.new()
+	browser.add_child(asset_actions)
+	for action in [["Place", _start_library_placement], ["Duplicate", _start_duplicate], ["Remove", _remove_selected]]:
+		var button := Button.new()
+		button.text = action[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(action[1])
+		asset_actions.add_child(button)
+		if action[0] == "Place":
+			_add_asset_button = button
+	_asset_entries = PlacementLibrary.entries()
+	_asset_filter.text_changed.connect(func(_value): _refresh_asset_browser())
+	_asset_category.item_selected.connect(func(_value): _refresh_asset_browser())
+	_refresh_asset_browser()
 	var move_help := Label.new()
 	move_help.text = "Click an object or drag it on its floor. R rotates, Shift+R reverses, Esc cancels. Moves edit visuals only. Tactical properties stay at their authored positions."
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -176,6 +214,8 @@ func _build_ui() -> void:
 	move_page.add_child(compare)
 	placement_picker = OptionButton.new()
 	placement_picker.name = "PlacementPicker"
+	placement_picker.fit_to_longest_item = false
+	placement_picker.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
 	placement_picker.item_selected.connect(_select_placement_index)
 	move_page.add_child(placement_picker)
@@ -272,6 +312,7 @@ func _add_task_page(title: String) -> VBoxContainer:
 
 func _on_task_changed(task: int) -> void:
 	_finish_object_drag(false)
+	_finish_library_placement(false)
 	if task != Task.POPULATION_FIELDS:
 		field_panel.cancel_drag()
 		field_panel.clear_preview()
@@ -281,6 +322,8 @@ func _on_task_changed(task: int) -> void:
 		_update_draft_status()
 	else:
 		_update_selection_marker()
+	if task == Task.POPULATION_FIELDS:
+		field_panel.update_preview_controls()
 
 func _request_parcel(index: int) -> void:
 	if index < 0 or index >= _definitions.size() or _definitions[index].parcel_id == displayed_parcel_id:
@@ -366,6 +409,7 @@ func _show_index(index: int) -> void:
 		return
 	parcel_picker.select(index)
 	_finish_object_drag(false)
+	_finish_library_placement(false)
 	if is_instance_valid(displayed_parcel):
 		field_panel.clear_preview()
 		displayed_parcel.free()
@@ -410,11 +454,93 @@ func _show_index(index: int) -> void:
 func _refresh_placement_picker() -> void:
 	placement_picker.clear()
 	for record: Dictionary in draft.placements:
-		placement_picker.add_item("%s · %s" % [record.path, record.asset_id.get_file()])
+		if record.get("removed", false):
+			continue
+		var node := displayed_parcel.get_node_or_null(NodePath(record.path))
+		var role := "Population rule" if node and node.has_meta("population_socket_id") else "Fixed"
+		placement_picker.add_item("%s · %s" % [record.path, role])
 		placement_picker.set_item_metadata(placement_picker.item_count - 1, String(record.path))
+		placement_picker.set_item_tooltip(placement_picker.item_count - 1, String(record.asset_id))
 		if String(record.path) == draft.selected_path:
 			placement_picker.select(placement_picker.item_count - 1)
 	_update_history_buttons()
+
+func _refresh_asset_browser() -> void:
+	_asset_picker.clear()
+	var category := _asset_category.get_item_text(_asset_category.selected)
+	var query := _asset_filter.text.strip_edges()
+	for id: String in _asset_entries:
+		var role: String = _asset_entries[id]
+		if (_asset_category.selected != 0 and role != category) or (not query.is_empty() and not id.containsn(query)):
+			continue
+		_asset_picker.add_item("%s · %s" % [id, role])
+		var index := _asset_picker.item_count - 1
+		_asset_picker.set_item_metadata(index, id)
+		_asset_picker.set_item_tooltip(index, "%s · fixed %s" % [id, role.to_lower()])
+	_add_asset_button.disabled = _asset_picker.item_count == 0
+
+func _start_library_placement() -> void:
+	if _asset_picker.selected >= 0:
+		_start_fixed_placement(String(_asset_picker.get_selected_metadata()))
+
+func _start_duplicate() -> void:
+	var selected := _selected_object()
+	if selected == null or selected.has_meta("population_socket_id"):
+		_update_draft_status("Select a fixed object to duplicate.")
+		return
+	_start_fixed_placement(String(selected.get_meta("asset_id")), selected.rotation_degrees.y)
+
+func _start_fixed_placement(id: String, yaw := 0.0) -> void:
+	_finish_library_placement(false)
+	if not _asset_entries.has(id):
+		_update_draft_status("This object has no reusable fixed placement in the library.")
+		return
+	_pending_asset = PlacementLibrary.create(id)
+	if _pending_asset == null:
+		_update_draft_status("Asset could not be loaded.")
+		return
+	displayed_parcel.add_child(_pending_asset)
+	_pending_asset.rotation_degrees.y = yaw
+	_pending_asset.hide()
+	_update_draft_status("Move onto the parcel, then click to place. R rotates. Esc cancels.")
+
+func _update_library_placement(screen: Vector2) -> void:
+	var on_canvas := not _panel.get_global_rect().has_point(screen) and get_viewport().get_visible_rect().has_point(screen)
+	var hit: Variant = _drag_plane_hit(screen, displayed_parcel.global_position.y) if on_canvas else null
+	if hit == null:
+		_pending_asset.hide()
+		_placement_hint.hide()
+		return
+	var point := displayed_parcel.to_local(hit)
+	_pending_asset.position = Vector3(snappedf(point.x, 0.5), 0.0, snappedf(point.z, 0.5))
+	_pending_asset.show()
+	_placement_issue = _validate_visual_pose(_pending_asset)
+	_tint_placement_ghost(_pending_asset)
+	_placement_hint.text = "Click to place fixed object" if _placement_issue.is_empty() else _placement_issue
+	_placement_hint.modulate = _ghost_color()
+	_placement_hint.show()
+	_position_placement_hint(screen)
+
+func _finish_library_placement(commit: bool) -> void:
+	if not is_instance_valid(_pending_asset):
+		return
+	_clear_placement_ghost()
+	if commit:
+		draft.add_fixed(_pending_asset)
+	_pending_asset.free()
+	_pending_asset = null
+	if commit:
+		_apply_draft("Added a fixed object to the draft.")
+		_refresh_placement_picker()
+	else:
+		_update_selection_marker()
+
+func _remove_selected() -> void:
+	if draft.remove_fixed(displayed_parcel):
+		_apply_draft("Removed the fixed object from the draft.")
+		_refresh_placement_picker()
+	else:
+		_update_draft_status("Select a top-level fixed object to remove. Population guides belong to their rules.")
 
 func _select_placement_index(index: int) -> void:
 	if index >= 0 and index < placement_picker.item_count:
@@ -452,17 +578,27 @@ func _validate_visual_pose(selected: Node3D) -> String:
 	if footprint.has_area() and not parcel_bounds.grow(0.01).encloses(footprint):
 		return "Outside parcel"
 	var moving_solids := _visual_solid_bounds(selected)
-	if moving_solids.is_empty():
-		return ""
+	var library_placement := selected == _pending_asset or selected.has_meta("draft_added")
+	if library_placement:
+		if not is_zero_approx(selected.position.y):
+			return "New fixed objects require ground support"
+		var connection := ParcelConnection.from_scene(displayed_parcel)
+		for cell in connection.world_span(draft.parcel_size, Vector3i.ZERO, 0):
+			if footprint.intersects(Rect2(Vector2(cell.x - 0.49, cell.z - 0.49), Vector2.ONE * 0.98)):
+				return "Blocks the parcel entrance"
+		if moving_solids.is_empty() and local_bounds.has_volume():
+			moving_solids.append(displayed_parcel.global_transform * local_bounds)
 	for obstacle: Node3D in displayed_parcel.find_children("*", "Node3D", true, false):
 		if not obstacle.has_meta("solid_size") or obstacle == selected or selected.is_ancestor_of(obstacle) or obstacle.is_ancestor_of(selected):
+			continue
+		var owner_node: Node = obstacle
+		while owner_node != displayed_parcel and not owner_node.has_meta("asset_id"):
+			owner_node = owner_node.get_parent()
+		if owner_node.has_meta("draft_removed"):
 			continue
 		var bounds := _solid_world_bounds(obstacle)
 		for solid in moving_solids:
 			if solid.grow(-0.01).intersects(bounds):
-				var owner_node: Node = obstacle
-				while owner_node != displayed_parcel and not owner_node.has_meta("asset_id"):
-					owner_node = owner_node.get_parent()
 				return "Overlaps %s" % (obstacle.name if owner_node == displayed_parcel else owner_node.name)
 	return ""
 
@@ -559,7 +695,7 @@ func set_population_visible(enabled: bool) -> void:
 func _update_selection_marker() -> void:
 	if is_instance_valid(_selection_marker):
 		_selection_marker.free()
-	if task_tabs.current_tab != Task.MOVE_OBJECTS or not is_instance_valid(displayed_parcel) or draft.selected_path.is_empty():
+	if task_tabs.current_tab != Task.MOVE_OBJECTS or is_instance_valid(_pending_asset) or not is_instance_valid(displayed_parcel) or draft.selected_path.is_empty():
 		return
 	var selected := displayed_parcel.get_node_or_null(NodePath(draft.selected_path)) as Node3D
 	if not selected or not selected.is_visible_in_tree():
@@ -785,20 +921,23 @@ func _preview_object_drag(screen: Vector2) -> void:
 
 func _show_drag_preview() -> void:
 	_placement_issue = _validate_visual_pose(_dragged)
-	if _ghost_material == null:
-		_ghost_material = StandardMaterial3D.new()
-		_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		for mesh_node: MeshInstance3D in _dragged.find_children("*", "MeshInstance3D", true, false):
-			_drag_materials[mesh_node] = mesh_node.material_override
-			mesh_node.material_override = _ghost_material
-	_ghost_material.albedo_color = Color(_ghost_color(), 0.55)
+	_tint_placement_ghost(_dragged)
 	_placement_hint.text = "Visual placement clear" if _placement_issue.is_empty() else _placement_issue
 	_placement_hint.modulate = _ghost_color()
 	_placement_hint.show()
 	_position_placement_hint(get_viewport().get_mouse_position())
 	draft_status.text = "Visual draft · %s\n%s · yaw %.1f°\n%s · Esc to cancel" % [draft.selected_path, _dragged.position, _drag_yaw, "Clear · release to place" if _placement_issue.is_empty() else _placement_issue]
 	_update_selection_marker()
+
+func _tint_placement_ghost(object: Node3D) -> void:
+	if _ghost_material == null:
+		_ghost_material = StandardMaterial3D.new()
+		_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		for mesh_node: MeshInstance3D in object.find_children("*", "MeshInstance3D", true, false):
+			_drag_materials[mesh_node] = mesh_node.material_override
+			mesh_node.material_override = _ghost_material
+	_ghost_material.albedo_color = Color(_ghost_color(), 0.55)
 
 func _position_placement_hint(screen: Vector2) -> void:
 	var view := get_viewport().get_visible_rect()
@@ -812,6 +951,15 @@ func _finish_object_drag(commit: bool) -> void:
 		return
 	var position := _dragged.position
 	var issue := _placement_issue
+	_clear_placement_ghost()
+	_dragged.transform = _drag_origin
+	_dragged = null
+	if commit and issue.is_empty() and draft.place_selected(position, _drag_yaw):
+		_apply_draft("Placed visual draft object.")
+	else:
+		_update_draft_status("Placement rejected · " + issue if commit and not issue.is_empty() else "")
+
+func _clear_placement_ghost() -> void:
 	for mesh_node in _drag_materials:
 		if is_instance_valid(mesh_node):
 			mesh_node.material_override = _drag_materials[mesh_node]
@@ -819,12 +967,6 @@ func _finish_object_drag(commit: bool) -> void:
 	_ghost_material = null
 	_placement_issue = ""
 	_placement_hint.hide()
-	_dragged.transform = _drag_origin
-	_dragged = null
-	if commit and issue.is_empty() and draft.place_selected(position, _drag_yaw):
-		_apply_draft("Placed visual draft object.")
-	else:
-		_update_draft_status("Placement rejected · " + issue if commit and not issue.is_empty() else "")
 
 func _input(event: InputEvent) -> void:
 	if is_instance_valid(_dragged):
@@ -853,6 +995,24 @@ func _input(event: InputEvent) -> void:
 		field_panel.cancel_drag()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(_pending_asset):
+		if event is InputEventMouseMotion and not _orbiting and not _panning:
+			_update_library_placement(event.position)
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_update_library_placement(event.position)
+			if _pending_asset.visible and _placement_issue.is_empty():
+				_finish_library_placement(true)
+			get_viewport().set_input_as_handled()
+			return
+		elif event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_ESCAPE:
+				_finish_library_placement(false)
+				_update_draft_status("Canceled fixed placement.")
+			elif event.keycode == KEY_R:
+				_pending_asset.rotation_degrees.y += -90.0 if event.shift_pressed else 90.0
+				_update_library_placement(get_viewport().get_mouse_position())
+			get_viewport().set_input_as_handled()
+			return
 	if task_tabs.current_tab == Task.POPULATION_FIELDS and field_panel.handle_input(event):
 		get_viewport().set_input_as_handled()
 		return

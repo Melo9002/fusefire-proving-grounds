@@ -23,7 +23,8 @@ func _run() -> void:
 	for parcel in parcels:
 		check(parcel.allowed_rotations().size() == 4, "%s explicitly supports four quarter-turns" % parcel.parcel_id)
 		var regions = parcel.population_regions()
-		check(regions.size() == 2, "%s authors depot-container and loading-vehicle population regions" % parcel.parcel_id)
+		var expected_count := 4 if parcel.parcel_id == Catalog.LOADING_YARD_PAINTED else 2
+		check(regions.size() == expected_count, "%s authors the depot, vehicle, and any painted population regions" % parcel.parcel_id)
 		check(regions[0].region_id == &"depot_containers" and regions[1].region_id == &"loading_vehicles", "%s population identities are stable and deterministic" % parcel.parcel_id)
 		for region in regions:
 			check(region.validate(parcel.size).is_empty(), "%s region %s stays inside its parcel and has a curated allow-list" % [parcel.parcel_id, region.region_id])

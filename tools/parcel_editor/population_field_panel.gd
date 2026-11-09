@@ -2,8 +2,9 @@ extends VBoxContainer
 ## Small editor-only UI; field data and persistence live in PopulationFieldDraft.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Vehicles = preload("res://systems/generation/parking_vehicle_templates.gd")
-const SceneExport = preload("res://tools/parcel_editor/parking_scene_export.gd")
+const SceneExport = preload("res://tools/parcel_editor/population_scene_export.gd")
 const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
+const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 var session = Session.new()
 var surface_picker: OptionButton
 var preset_picker: OptionButton
@@ -15,6 +16,10 @@ var tool_buttons: Array[Button] = []
 var guidance: Label
 var measurement: Label
 var preview_button: Button
+var next_seed_button: Button
+var registered_preview_button: Button
+var preview_context: Label
+var density_context: Label
 var export_button: Button
 var undo_button: Button
 var redo_button: Button
@@ -37,6 +42,9 @@ var _field_destination: Label
 var _authored_guides: Node3D
 var _runtime_preview: Node3D
 var _definition
+var _registered_area_count := 0
+var _aisle_obstacles: Array[AABB] = []
+var _registered_protection: Array[AABB] = []
 
 func setup(editor: Node3D) -> void:
 	host = editor
@@ -59,6 +67,14 @@ func setup(editor: Node3D) -> void:
 	_add_label(legend, "□ Bay").modulate = Color("ffd077")
 	_add_label(legend, "□ Aisle").modulate = Color("88e49e")
 	add_child(legend)
+
+	var preview_controls := HBoxContainer.new()
+	preview_button = _add_button(preview_controls, "Preview", preview)
+	next_seed_button = _add_button(preview_controls, "Next seed", _next_seed)
+	_add_button(preview_controls, "Show guides", reset_preview)
+	add_child(preview_controls)
+	registered_preview_button = _add_button(self, "Preview registered parcel", preview_registered)
+	preview_context = _add_label(self, "")
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -98,12 +114,7 @@ func setup(editor: Node3D) -> void:
 	density.suffix = "% of eligible bays"
 	density.value_changed.connect(_on_preview_settings_changed)
 	options.add_child(density)
-	var preview_controls := HBoxContainer.new()
-	preview_button = _add_button(preview_controls, "Preview", preview)
-	_add_button(preview_controls, "Next seed", _next_seed)
-	_add_button(preview_controls, "Show guides", reset_preview)
-	options.add_child(preview_controls)
-	_add_label(options, "Preview shows a seeded arrangement. Show guides returns to the painted areas and empty placements.")
+	density_context = _add_label(options, "")
 	var history := HBoxContainer.new()
 	undo_button = _add_button(history, "Undo field", undo)
 	redo_button = _add_button(history, "Redo field", redo)
@@ -117,7 +128,7 @@ func setup(editor: Node3D) -> void:
 	_add_button(named_files, "Open field draft…", _open_fields)
 	options.add_child(named_files)
 	_field_destination = _add_label(options, "")
-	export_button = _add_button(options, "Export parking scene", export_scene)
+	export_button = _add_button(options, "Export population scene", export_scene)
 	_add_label(options, "Exports go to user://parcel_exports/ with a generated name. Existing exports are kept. Catalog registration is separate.").modulate = Color("93a8ba")
 	host.population_toggle.toggled.connect(func(enabled: bool):
 		if is_instance_valid(_authored_guides): _authored_guides.visible = enabled)
@@ -176,14 +187,23 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 		tool_buttons[index].set_pressed_no_signal(index == active_tool)
 	preset_picker.visible = active_tool == Tool.DRAW
 	heading_picker.visible = active_tool == Tool.PARKING_ROW
-	preview_button.disabled = session.fields.is_empty() and _source_sockets.is_empty()
 	density.editable = not session.fields.is_empty()
-	export_button.disabled = not has_row and not session.fields.any(func(field): return field.preset == "parking")
+	density.visible = density.editable
+	density_context.text = "Density affects this field draft preview only." if density.editable else "Registered population rules set occupancy. Paint a draft to try a different density."
+	export_button.disabled = not has_row and not session.fields.any(func(field): return field.preset in ["parking", "containers"])
 	undo_button.disabled = session.history.is_empty()
 	redo_button.disabled = session.future.is_empty()
 	match active_tool:
 		Tool.DRAW:
-			guidance.text = "Drag to paint. Parking bays need %d × %d cells each, with %d clear cells on the aisle side." % [Session.BAY_WIDTH, Session.BAY_DEPTH, Session.AISLE_DEPTH] if preset_picker.selected == 0 else "Drag on the selected floor to paint."
+			match String(preset_picker.get_selected_metadata()):
+				"parking":
+					guidance.text = "Drag to paint. Parking bays need %d × %d cells each, with %d clear cells on the aisle side." % [Session.BAY_WIDTH, Session.BAY_DEPTH, Session.AISLE_DEPTH]
+				"containers":
+					guidance.text = "Paint ground cells. New container positions need a clear 3 × 5 area."
+				"equipment":
+					guidance.text = "Paint permission to preview existing equipment sockets. New equipment paint is preview-only."
+				_:
+					guidance.text = "Drag to protect cells on the selected floor."
 		Tool.ERASE:
 			guidance.text = "Click a field or bay outline to erase it."
 		Tool.PARKING_ROW:
@@ -191,11 +211,29 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 		_:
 			guidance.text = "Paint Parking, then Preview a seed. Use Parking row to override the inferred row."
 	if latest.is_empty():
-		measurement.text = "%d draft areas" % session.fields.size()
+		measurement.text = "%d registered areas · %d draft areas" % [_registered_area_count, session.fields.size()]
 	else:
 		var rect := Session.rectangle(latest)
 		measurement.text = "%s · %d × %d cells" % [String(latest.preset).replace("_", " ").capitalize(), rect.size.x, rect.size.y]
 	host.update_draft_badge()
+	update_preview_controls()
+
+func update_preview_controls() -> void:
+	var has_visual_changes: bool = host.draft.placements != host.draft.base_placements
+	preview_button.disabled = has_visual_changes or (session.fields.is_empty() and _source_sockets.is_empty())
+	next_seed_button.disabled = preview_button.disabled and not is_instance_valid(_runtime_preview)
+	registered_preview_button.visible = has_visual_changes
+	registered_preview_button.disabled = _source_sockets.is_empty()
+	if is_instance_valid(_runtime_preview) or _previewing:
+		return
+	if has_visual_changes:
+		preview_context.text = "Visual moves block draft preview. Registered preview uses the original layout and preserves both drafts."
+	elif preview_button.disabled:
+		preview_context.text = "Paint a population area to preview this parcel."
+	elif session.fields.is_empty():
+		preview_context.text = "Preview uses the registered rules for this seed."
+	else:
+		preview_context.text = "Preview uses draft paint. Only registered rules appear in battle."
 
 func begin(definition, scene_root: Node3D) -> void:
 	_definition = definition
@@ -204,6 +242,8 @@ func begin(definition, scene_root: Node3D) -> void:
 	_field_destination.tooltip_text = ProjectSettings.globalize_path(session.path())
 	_source_sockets = definition.population_sockets(scene_root)
 	_fixed_obstacles = session.parking_obstacles(definition, scene_root)
+	_aisle_obstacles = session.registered_aisles(scene_root)
+	_registered_protection = session.registered_protection(scene_root)
 	_draw_authored_guides(scene_root)
 	start_cell = null
 	surface_picker.clear()
@@ -228,14 +268,20 @@ func _draw_authored_guides(scene_root: Node3D) -> void:
 	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	line_material.vertex_color_use_as_albedo = true
 	var painted: Array = scene_root.get_meta("parking_population_paint", [])
+	var container_paint: Array = scene_root.get_meta("container_population_paint", [])
 	var guides: Array[Dictionary] = []
 	for rule in painted:
 		guides.append({"rect": rule.rect, "surface": rule.surface, "color": PROTECTED_COLOR if rule.get("preset") == "protected" else PERMITTED_COLOR})
+	for rule in container_paint:
+		guides.append({"rect": rule.rect, "surface": rule.surface, "color": PROTECTED_COLOR if rule.get("preset") == "protected" else Color("67dbc5")})
 	for region in _definition.population_regions(scene_root):
 		if not painted.is_empty() and String(region.region_id).begins_with("row_bay_"):
 			continue
+		if not container_paint.is_empty() and String(region.region_id).begins_with("painted_container_"):
+			continue
 		var tint := Color("67dbc5") if region.role == &"shipping_container" else PERMITTED_COLOR
 		guides.append({"rect": region.local_rect, "surface": region.surface_id, "color": tint})
+	_registered_area_count = guides.size()
 	for guide in guides:
 		if not session.surfaces.has(String(guide.surface)): continue
 		var rect: Rect2i = guide.rect
@@ -336,17 +382,30 @@ func _paint_conflicts(record: Dictionary) -> Dictionary:
 	var inside := rect.intersection(surface_rect)
 	var level := int(surface.level)
 	var blocked: Array[Vector2i] = []
-	var reason := "" if surface_rect.encloses(rect) else "Paint extends outside the selected floor."
+	var reasons := PackedStringArray()
+	if not surface_rect.encloses(rect):
+		reasons.append("Paint extends outside the selected floor.")
+	if record.preset == "containers" and record.surface != "ground":
+		reasons.append("Container paint requires the ground surface.")
 	var connection := ParcelConnection.from_scene(host.displayed_parcel)
 	var entrance := connection.world_span(_definition.size, Vector3i.ZERO, 0)
 	for z in range(inside.position.y, inside.end.y):
 		for x in range(inside.position.x, inside.end.x):
 			var volume := AABB(Vector3(x - 0.49, level + 0.02, z - 0.49), Vector3(0.98, 0.95, 0.98))
-			if Vector3i(x, level, z) in entrance or session.has_protected_overlap(record.surface, volume) or _fixed_obstacles.any(func(obstacle): return volume.intersects(obstacle)):
+			var reason := ""
+			if Vector3i(x, level, z) in entrance:
+				reason = "Paint covers the parcel entrance."
+			elif session.has_protected_overlap(record.surface, volume) or _registered_protection.any(func(obstacle): return volume.intersects(obstacle)):
+				reason = "Paint covers a protected cell."
+			elif _aisle_obstacles.any(func(obstacle): return volume.intersects(obstacle)):
+				reason = "Paint covers a registered parking aisle."
+			elif _fixed_obstacles.any(func(obstacle): return volume.intersects(obstacle)):
+				reason = "Paint overlaps a solid on this floor."
+			if not reason.is_empty():
 				blocked.append(Vector2i(x, z))
-	if reason.is_empty() and not blocked.is_empty():
-		reason = "Paint overlaps a solid, protected cell, entrance, or reserved aisle."
-	return {} if reason.is_empty() else {"reason": reason, "cells": blocked, "level": level, "rect": inside}
+				if not reasons.has(reason):
+					reasons.append(reason)
+	return {} if reasons.is_empty() else {"reason": " ".join(reasons), "cells": blocked, "level": level, "rect": inside}
 
 func refresh(message := "") -> void:
 	clear_preview()
@@ -443,24 +502,14 @@ func _draw_paint_conflicts(conflict: Dictionary) -> void:
 
 func preview() -> void:
 	if host.draft.placements != host.draft.base_placements:
-		status.text = "Preview requires source transforms. Reload the parcel after saving your visual draft."
+		update_preview_controls()
+		status.text = preview_context.text
+		return
+	if session.fields.is_empty():
+		preview_registered()
 		return
 	clear_preview()
 	var map_seed := int(seed_input.value)
-	if session.fields.is_empty():
-		var scope := String(host.displayed_parcel.get_meta("population_preview_instance", "parcel_editor"))
-		var resolved := Resolver._resolve_population(_definition, map_seed, {}, true, scope)
-		if resolved.has("error"):
-			status.text = String(resolved.error)
-			return
-		_runtime_preview = _definition.instantiate()
-		_definition.apply_population(_runtime_preview, resolved.choices)
-		_runtime_preview.position = host.displayed_parcel.position
-		host.add_child(_runtime_preview)
-		host.displayed_parcel.hide()
-		_authored_guides.hide()
-		status.text = "Seed %d · %d of %d placements occupied." % [map_seed, resolved.choices.size(), _source_sockets.size()]
-		return
 	var candidates := _source_sockets.duplicate()
 	var row_candidates := {}
 	for bay: Dictionary in host.displayed_parcel.get_meta("painted_parking_bays", []):
@@ -475,6 +524,13 @@ func preview() -> void:
 			row_candidates[candidate.socket_id] = candidate
 			draft_bays[candidate.socket_id] = true
 			candidates.append(candidate)
+	var container_template: Node3D
+	var container_ids := {}
+	if session.fields.any(func(field): return field.preset == "containers"):
+		container_template = Containers.Library.create(Containers.ASSET)
+		for candidate in Containers.candidates(session, _definition, host.displayed_parcel, _source_sockets, _fixed_obstacles, container_template):
+			candidates.append(candidate)
+			container_ids[candidate.socket_id] = candidate
 	var choices: Array[Dictionary] = session.preview(candidates, map_seed, int(density.value), _fixed_obstacles)
 	_previewing = true
 	for choice in choices: _preview_ids[choice.socket_id] = choice
@@ -484,27 +540,60 @@ func preview() -> void:
 		node.set_meta("field_preview_base_yaw", node.rotation.y)
 		node.rotation.y -= int(_preview_ids.get(id, {}).get("yaw_turns", 0)) * PI * 0.5
 	var row_count := 0
+	var container_count := 0
 	for choice in choices:
-		if not row_candidates.has(choice.socket_id): continue
-		var candidate: Dictionary = row_candidates[choice.socket_id]
+		var candidate: Dictionary = row_candidates.get(choice.socket_id, container_ids.get(choice.socket_id, {}))
+		if candidate.is_empty(): continue
 		if not is_instance_valid(_row_preview):
 			_row_preview = Node3D.new()
 			_row_preview.position = host.displayed_parcel.position
 			host.add_child(_row_preview)
-		var car: Node3D = candidate.template.duplicate()
-		car.position = candidate.local_position
-		car.rotation.y = -(candidate.heading + int(choice.yaw_turns)) * PI * 0.5
-		_row_preview.add_child(car)
+		var template: Node3D = candidate.get("template", container_template)
+		var occupant := template.duplicate() as Node3D
+		occupant.position = candidate.local_position
+		occupant.rotation.y = -(int(candidate.get("heading", 0)) + int(choice.yaw_turns)) * PI * 0.5
+		_row_preview.add_child(occupant)
 		if draft_bays.has(choice.socket_id):
 			row_count += 1
+		if container_ids.has(choice.socket_id):
+			container_count += 1
+	if container_template:
+		container_template.free()
 	_apply_preview_visibility(true)
 	_update_tools()
 	var excluded := _source_sockets.filter(func(socket): return session.field_excluded_sockets.has(socket.socket_id)).size()
-	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d left empty by occupancy, %d conflicts. Seed %d." % [choices.size() - row_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.occupancy_skips, session.conflict_count, map_seed]
+	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d left empty by occupancy, %d conflicts. Seed %d." % [choices.size() - row_count - container_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.occupancy_skips, session.conflict_count, map_seed]
+	if not container_ids.is_empty() or session.fields.any(func(field): return field.preset == "containers"):
+		status.text += "\nNew containers · %d of %d fitted positions occupied." % [container_count, container_ids.size()]
+	preview_context.text = "Draft preview · seed %d · %d occupied. Draft rules need registration to reach battle." % [map_seed, choices.size()]
+
+func preview_registered() -> void:
+	clear_preview()
+	var map_seed := int(seed_input.value)
+	var scope := String(host.displayed_parcel.get_meta("population_preview_instance", "parcel_editor"))
+	var resolved := Resolver._resolve_population(_definition, map_seed, {}, true, scope)
+	if resolved.has("error"):
+		preview_context.text = String(resolved.error)
+		return
+	_runtime_preview = _definition.instantiate()
+	_definition.apply_population(_runtime_preview, resolved.choices)
+	_runtime_preview.position = host.displayed_parcel.position
+	host.add_child(_runtime_preview)
+	host.displayed_parcel.hide()
+	_authored_guides.hide()
+	overlay.hide()
+	status.text = "Seed %d · %d of %d placements occupied." % [map_seed, resolved.choices.size(), _source_sockets.size()]
+	status.hide()
+	preview_context.text = "Registered preview · " + status.text + " Show guides restores your editor view."
+	update_preview_controls()
 
 func _next_seed() -> void:
+	var registered := is_instance_valid(_runtime_preview)
 	seed_input.value = posmod(int(seed_input.value) + 1, 2147483648)
-	preview()
+	if registered:
+		preview_registered()
+	else:
+		preview()
 
 func _draw_aisle_arrow() -> void:
 	if active_tool != Tool.PARKING_ROW:
@@ -583,8 +672,11 @@ func _apply_preview_visibility(enabled: bool) -> void:
 func clear_preview() -> void:
 	if is_instance_valid(_runtime_preview):
 		_runtime_preview.free()
+		status.show()
 		host.displayed_parcel.show()
 		_authored_guides.visible = host.population_toggle.button_pressed
+		if is_instance_valid(overlay):
+			overlay.visible = is_visible_in_tree()
 	if is_instance_valid(_row_preview): _row_preview.free()
 	if not _previewing: return
 	_previewing = false
@@ -637,7 +729,7 @@ func _apply_loaded_fields(path: String) -> void:
 
 func export_scene(destination: String = "") -> bool:
 	if host.draft.placements != host.draft.base_placements:
-		status.text = "Export requires source transforms. Reload the parcel after saving your visual draft."
+		status.text = "Export requires source transforms. Save the visual draft separately before returning its objects to source."
 		return false
 	var source = host.Catalog.get_definition(host.displayed_parcel_id)
 	var result := SceneExport.build(source, session, _vehicles)
@@ -653,7 +745,7 @@ func export_scene(destination: String = "") -> bool:
 	if error == OK:
 		error = ResourceSaver.save(result.definition.scene, destination)
 	if error != OK:
-		status.text = "Could not save parking scene: %s" % error_string(error)
+		status.text = "Could not save population scene: %s" % error_string(error)
 		return false
-	status.text = "Exported %d parking bays to %s" % [result.bay_count, ProjectSettings.globalize_path(destination)]
+	status.text = "Exported %d parking bays and %d container positions to %s" % [result.bay_count, result.container_count, ProjectSettings.globalize_path(destination)]
 	return true

@@ -117,6 +117,56 @@ func _run() -> void:
 	check(not is_instance_valid(editor._selection_marker), "The visual selection marker stays out of population editing")
 	check(editor.field_panel.session.add("ground", "protected", Rect2i(1, 1, 2, 2)), "Field fixture adds an unsaved protection area")
 	editor.field_panel.refresh()
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	editor.draft.select("CrateA")
+	var crate := editor.displayed_parcel.get_node("CrateA") as Node3D
+	var original_crate_position := crate.position
+	editor._translate_selected(Vector3.RIGHT)
+	var moved_crate_position := crate.position
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
+	var panel = editor.field_panel
+	check(moved_crate_position != original_crate_position and panel.preview_button.disabled and panel.registered_preview_button.visible, "Moved visuals block normal Preview with a visible safe alternative")
+	panel.registered_preview_button.pressed.emit()
+	var registered: Node3D = panel._runtime_preview
+	check(is_instance_valid(registered) and (registered.get_node("CrateA") as Node3D).position == original_crate_position and not panel.overlay.visible, "Registered Preview uses a separate source scene and hides draft paint")
+	panel.next_seed_button.pressed.emit()
+	check(is_instance_valid(panel._runtime_preview) and "Registered preview" in panel.preview_context.text, "Next seed stays in the registered preview while drafts are parked")
+	panel.reset_preview()
+	check(crate.position == moved_crate_position and panel.session.fields.size() == 1 and editor.draft.dirty and panel.has_unsaved_changes(), "Exiting registered preview preserves both unsaved drafts")
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	editor._undo()
+	check(editor._asset_picker.item_count > 4 and not editor._add_asset_button.disabled, "The fixed asset browser opens with tactical and decorative entries")
+	editor._asset_filter.text = "box-large"
+	editor._asset_filter.text_changed.emit(editor._asset_filter.text)
+	check(editor._asset_picker.item_count == 1, "The fixed asset browser filters the calibrated library")
+	editor._start_library_placement()
+	var blocked_cursor: Vector2 = editor.camera.unproject_position(warehouse.global_position)
+	editor._update_library_placement(blocked_cursor)
+	check(editor._placement_issue.contains("Warehouse") and editor._ghost_material.albedo_color.r > 0.9, "A new tactical asset shows a red ghost over the warehouse")
+	var valid_cursor: Vector2 = editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(7, 0, 17)))
+	editor._update_library_placement(valid_cursor)
+	check(editor._placement_issue.is_empty() and editor._ghost_material.albedo_color.b > 0.9, "A supported ground placement shows a blue ghost")
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = valid_cursor
+	editor._unhandled_input(press)
+	var new_path: String = editor.draft.selected_path
+	var added := editor.displayed_parcel.get_node_or_null(NodePath(new_path)) as Node3D
+	check(added != null and added.has_node("TacticalVolume") and not added.has_meta("population_socket_id"), "Fixed placement carries an authored volume without a population rule")
+	editor._undo()
+	check(editor.displayed_parcel.get_node_or_null(NodePath(new_path)) == null, "Undo removes a new fixed object")
+	editor._redo()
+	check(editor.displayed_parcel.has_node(NodePath(new_path)), "Redo reconstructs a new fixed object")
+	editor._remove_selected()
+	check(not editor.displayed_parcel.has_node(NodePath(new_path)), "Remove deletes the new object from the draft")
+	editor._undo()
+	check(editor.draft.save_to(test_draft_path), "Added assets save with the visual draft")
+	editor._remove_selected()
+	editor._apply_loaded_draft(test_draft_path)
+	check(editor.displayed_parcel.has_node(NodePath(new_path)) and not editor.draft.dirty, "Opening a saved draft reconstructs its manually placed object")
+	DirAccess.remove_absolute(test_draft_path)
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)
 	check(editor.discard_dialog.visible and editor.displayed_parcel_id == Catalog.LOADING_YARD_A and "population fields" in editor.discard_dialog.dialog_text, "A parcel switch warns about unsaved population fields")
 	editor.discard_dialog.get_cancel_button().pressed.emit()

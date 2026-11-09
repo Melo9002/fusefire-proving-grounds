@@ -27,6 +27,13 @@ func _run() -> void:
 	await _capture(output.path_join("office-seed-2-preview.png"))
 	editor.select_parcel(Catalog.LOADING_YARD_A)
 	await _capture(output.path_join("loading-yard-guides.png"))
+	editor.select_parcel(Catalog.LOADING_YARD_PAINTED)
+	editor._top_view()
+	await _capture(output.path_join("painted-container-guides.png"))
+	editor.field_panel.seed_input.value = 0
+	editor.field_panel.preview()
+	await _capture(output.path_join("painted-container-preview.png"))
+	editor.field_panel.reset_preview()
 	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)
 	editor.tactical_toggle.button_pressed = true
 	await _capture(output.path_join("parcel-editor-maintenance-contracts.png"))
@@ -39,6 +46,21 @@ func _run() -> void:
 	editor._refresh_placement_picker()
 	editor._update_draft_status()
 	await _capture(output.path_join("parcel-editor-move-objects.png"))
+	editor._top_view()
+	editor._asset_filter.text = "box-large"
+	editor._asset_filter.text_changed.emit(editor._asset_filter.text)
+	editor._start_library_placement()
+	editor._update_library_placement(editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(7, 0, 17))))
+	await _capture(output.path_join("fixed-crate-placement.png"))
+	editor._finish_library_placement(false)
+	editor.draft.select("CrateA")
+	editor._translate_selected(Vector3.RIGHT)
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
+	await _capture(output.path_join("registered-preview-draft-safety.png"))
+	editor.field_panel.preview_registered()
+	await _capture(output.path_join("registered-preview-active.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	editor._undo()
 	editor.set_population_visible(true)
 	editor._top_view()
 	var container := editor.displayed_parcel.get_node("ContainerA") as Node3D

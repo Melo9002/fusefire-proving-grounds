@@ -28,11 +28,13 @@ Choose a registered parcel from the list. The editor opens on **Inspect** with t
 
 Open **Move objects** and click a visible imported object in the viewport, or choose it from the list. Drag with LMB to preview its position on its current floor in half-cell steps. Release in the viewport to commit a single undo step. Press `R` for a quarter-turn, `Shift+R` for the reverse, and `Esc` to cancel an active drag. The outline and labeled axes also match the X/Y/Z nudge buttons, which provide half-cell horizontal and quarter-cell vertical steps.
 
+Use the fixed asset browser to search ground decoration or select a tactical template. **Place** shows a blue or red ghost as you move over the parcel. Click to place, use `R` to rotate, or press `Esc` to cancel. **Duplicate** starts another placement of a supported library asset. **Remove** works on standalone fixed objects. Add, duplicate, and remove share the visual undo and redo history. New tactical objects use existing authored volumes attached to their models. New placements are ground-level and check parcel bounds, solid overlap and the entrance.
+
 Blue means the visual candidate fits the parcel and clears other authored solid boxes. Red identifies an out-of-bounds footprint or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Compare authored tactical bounds** shows the original gameplay volumes beside the visual draft. This check covers visual bounds and authored solid overlaps in 3D. Floor support, deliberate stacking, doors and tactical routes need their own authoring contracts.
 
 **Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
 
-Saving does not edit the `.tscn`, publish content, change tactical metadata or affect a battle. The preview deliberately leaves cyan/orange tactical contracts in their authored locations so a visual/tactical disagreement is visible instead of silently changing gameplay.
+The visual draft file stores additions, removals and transforms. The runtime still loads the registered scene. **Compare authored tactical bounds** shows the registered geometry so you can inspect where draft visuals differ. Use Godot to apply approved visual changes to the source scene and verify its tactical routes before registration.
 
 The footprint grid is visual guidance. `MapData` compiled from explicit authored metadata remains authoritative for traversal, cover, line of sight and occupancy.
 
@@ -42,15 +44,21 @@ Open **Population fields** and choose a surface or floor. **Inspect** leaves the
 
 Permission strokes turn red over fixed tactical solids, protected cells, entrances, reserved aisles or beyond the selected floor. Releasing an invalid stroke leaves the draft unchanged. Paint Protected over areas that must stay clear. Empty placement guides can be painted over.
 
-Set **Seed** and press **Preview** to see the registered parcel's seeded population. If you have a field draft, Preview tests the draft's painted areas and density instead, reporting filtered sockets and conflicts. Parking can use authored sockets and new parking rows. Containers and equipment use existing authored sockets. **Show guides** clears the preview. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab. Preview requires source visual transforms.
+Set **Seed** and press **Preview** to see the registered parcel's seeded population. If you have a field draft, Preview tests its paint and density instead. Registered rules own their occupancy independently of draft density. With visual changes, **Preview registered parcel** opens a temporary source view and preserves both drafts. **Show guides** returns to your edits. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab.
 
 ### Paint parking and preview
 
 Parking paint now defines where vehicles are allowed. The editor derives one contiguous row per painted floor from 3 × 5 bays and a four-cell aisle. It checks existing sockets, authored solids, protected paint and headroom. **Next seed** previews another outcome using the same paint. Density controls occupancy of eligible bays.
 
-On the original office parcel, paint X 2–29 and Z 4–11 and preview at 100%. The editor finds four bays alongside the three authored sockets. **Export parking scene** validates the full layout and writes the possible bay positions. The battle seed chooses occupancy, forward or reverse facing, and the calibrated model for each occupied new bay. Replay records those resolved choices.
+On the original office parcel, paint X 2–29 and Z 4–11 and preview at 100%. The editor finds four bays alongside the three authored sockets. **Export population scene** validates the full layout and writes the possible bay positions. The battle seed chooses occupancy, forward or reverse facing, and the calibrated model for each occupied new bay. Replay records those resolved choices.
 
-To inspect the registered proof, open **Industrial office — seeded parking rules**. Preview here uses the same placement scope as the service-street office. To play it, select **Urban family** in Match Setup, enable **Tactical Population**, and use seed **0** or **2**. Both choose the service-street plot and occupy different new bays. Registered container parcels choose occupancy from their authored placement guides. Exact older manifests can still resolve the original office variants.
+To inspect the registered proof, open **Industrial office — seeded parking rules**. Preview here uses the same placement scope as the service-street office. To play it, select **Urban family** in Match Setup, enable **Tactical Population**, and use seed **0** or **2**. Both choose the service-street plot and occupy different new bays. Exact older manifests can still resolve the original office variants.
+
+### Paint container storage
+
+On **Warehouse loading apron**, paint ground cells X 7–9 and Z 20–29 with **Containers**. Preview at 100% fits two new positions. The tool fits up to four clear 3 × 5 positions in contiguous paint, using one calibrated container model and its authored tactical volume. It checks fixed obstacles, existing placements, protected areas and the entrance. Export checks ground connectivity at full occupancy in every supported rotation.
+
+**Warehouse loading apron — painted containers** is the registered proof. Its preview uses the Split-yard refinery loading slot's seed scope. In Match Setup, select **Refinery Family** and enable **Tactical Population**. The upper painted container position is occupied at seed **0** and empty at seed **12**. Other sites may resolve their loading slot differently.
 
 ### Override a parking row
 
@@ -65,14 +73,14 @@ Editor camera: RMB drag down raises the view toward overhead, up lowers it, matc
 
 **Save fields** and **Load fields** use the displayed parcel-specific file under `user://parcel_fields/`. Replacing an existing quick-save file asks for confirmation. Use **Save fields as…** and **Open field draft…** for separate drafts. Files record parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft. The header names the draft with unsaved changes. Switching parcels or returning to Match Setup asks before discarding those changes.
 
-### Export a parking scene
+### Export a population scene
 
-Use **Export parking scene** after checking the inferred or manually drawn row. The tool checks every bay and compiles the fully occupied parcel. The whole entrance span and each aisle must remain walkable, with a tactical route from the entrance to the aisle on its declared floor. These checks run for all supported parcel rotations. The export preserves original authored sockets and rejects protected paint that would conflict with them. Visual transform drafts must be restored to source transforms first.
+Use **Export population scene** after checking parking or container paint. Export one population type at a time. The tool checks the fully occupied parcel across supported rotations and keeps the entrance walkable. Parking adds aisle and approach checks. Container export checks that ground stopping cells remain reachable from the entrance. Existing authored sockets are preserved. Save visual edits separately before exporting from source transforms.
 
-The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel, paint and empty parking bays. At battle startup an accepted new bay gets the chosen model and its authored tactical volume. The preview density slider is for draft inspection. The filename identifies the exported rules, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog.
+The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel, paint and the authored placement rules. At battle startup each accepted position gets its model and authored tactical volume. The filename identifies the exported rules, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog. New equipment paint remains a preview tool for existing equipment positions.
 
 ## Current boundary
 
-The active editor inspects registered parcels, supports visual transform and population-field drafts with bounded history, and exports validated parking scenes for manual review. Runtime registration and mission certification are separate steps.
+The active editor inspects registered parcels, supports fixed-object and population-field drafts, and exports validated parking and container scenes for review. Runtime registration and mission certification are separate steps.
 
 The quarantined chunk drafts and tools remain untouched. No retired runtime generator, revision library, publication stack or certification database is a dependency of this editor.

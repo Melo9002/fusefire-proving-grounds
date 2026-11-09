@@ -191,19 +191,31 @@ func _infer_parking_rows(rows: Array, fixed: Array[AABB]) -> Array[Dictionary]:
 
 func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
 	var obstacles: Array[AABB] = definition.fixed_population_obstacles(scene_root)
-	var authored_aisles := {}
-	for bay in scene_root.get_meta("painted_parking_bays", []):
-		if not bay.has("aisle"): continue
-		var key := [bay.level, bay.aisle]
-		if not authored_aisles.has(key):
-			authored_aisles[key] = true
-			obstacles.append(_parking_volume(bay.aisle, bay.level))
+	obstacles.append_array(registered_aisles(scene_root))
+	obstacles.append_array(registered_protection(scene_root))
 	for surface: Dictionary in surfaces.values():
 		if surface.level <= 0:
 			continue
 		var rect := rectangle(surface)
 		# Match the slab beneath an authored deck in AuthoredSceneMapCompiler.
 		obstacles.append(AABB(Vector3(rect.position.x - 0.5, surface.level - 0.22, rect.position.y - 0.5), Vector3(rect.size.x, 0.22, rect.size.y)))
+	return obstacles
+
+func registered_protection(scene_root: Node3D) -> Array[AABB]:
+	var obstacles: Array[AABB] = []
+	for property in ["parking_population_paint", "container_population_paint"]:
+		for field in scene_root.get_meta(property, []):
+			if field.get("preset") == "protected" and surfaces.has(String(field.surface)):
+				obstacles.append(_parking_volume(field.rect, surfaces[String(field.surface)].level))
+	return obstacles
+
+func registered_aisles(scene_root: Node3D) -> Array[AABB]:
+	var obstacles: Array[AABB] = []
+	for bay in scene_root.get_meta("painted_parking_bays", []):
+		if bay.has("aisle"):
+			var bounds := _parking_volume(bay.aisle, bay.level)
+			if not obstacles.has(bounds):
+				obstacles.append(bounds)
 	return obstacles
 
 func _parking_painted(surface: String, bay: Rect2i) -> bool:

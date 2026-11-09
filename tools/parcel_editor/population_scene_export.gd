@@ -1,8 +1,9 @@
 extends RefCounted
-## Save reviewed parking geometry for seeded battle population. This editor tool owns the
+## Save reviewed painted placements for seeded battle population. The editor owns the
 ## export, while the registered parcel contract owns compilation and replay.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 
 static func build(source, draft, vehicles) -> Dictionary:
 	if source == null or draft.parcel_id != String(source.parcel_id) or draft.revision != source.revision:
@@ -22,11 +23,17 @@ static func build(source, draft, vehicles) -> Dictionary:
 			if draft.has_protected_overlap(String(socket.surface_id), Session.socket_bounds_at_turn(socket, turn)):
 				scene_root.free()
 				return {"error": "Protected paint intersects original socket %s. The export preserves original sockets." % socket.socket_id}
-	var bays: Array[Dictionary] = draft.parking_bays(sockets, draft.parking_obstacles(source, scene_root), {}, true)
-	if bays.is_empty():
+	var has_parking: bool = draft.fields.any(func(field): return field.preset == "parking")
+	var has_containers: bool = draft.fields.any(func(field): return field.preset == "containers")
+	if has_parking and has_containers:
+		scene_root.free()
+		return {"error": "Export one population type at a time. Save the field draft before separating the paint."}
+	var obstacles: Array[AABB] = draft.parking_obstacles(source, scene_root)
+	var bays: Array[Dictionary] = draft.parking_bays(sockets, obstacles, {}, true)
+	if has_parking and bays.is_empty():
 		scene_root.free()
 		return {"error": "No parking bays fit. Expand the parking paint or adjust the aisle."}
-	if vehicles.asset_ids().is_empty():
+	if has_parking and vehicles.asset_ids().is_empty():
 		scene_root.free()
 		return {"error": "No calibrated vehicle fits the authored bay dimensions."}
 	var rules: Array[Dictionary] = []
@@ -40,9 +47,26 @@ static func build(source, draft, vehicles) -> Dictionary:
 			scene_root.free()
 			return {"error": "%s: %s. Adjust the draft before exporting." % [bay.id, bay.reason]}
 		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle})
-	scene_root.set_meta("painted_parking_bays", rules)
-	scene_root.set_meta("parking_population_paint", paint)
-	var signature := [String(source.parcel_id), source.revision, rules, paint]
+	if not bays.is_empty():
+		scene_root.set_meta("painted_parking_bays", rules)
+		scene_root.set_meta("parking_population_paint", paint)
+	var container_slots: Array[Dictionary] = []
+	if has_containers:
+		var template := Containers.Library.create(Containers.ASSET)
+		container_slots = Containers.candidates(draft, source, scene_root, sockets, obstacles, template)
+		for candidate in container_slots:
+			Containers.add_to_scene(scene_root, template, candidate)
+		template.free()
+	if bays.is_empty() and container_slots.is_empty():
+		scene_root.free()
+		return {"error": "No new positions fit. Ground containers need a clear 3 × 5 area away from existing occupants and the entrance."}
+	if not container_slots.is_empty():
+		var container_paint: Array = scene_root.get_meta("container_population_paint", []).duplicate(true)
+		for field in draft.fields:
+			if field.surface == "ground" and field.preset in ["containers", "protected"]:
+				container_paint.append({"surface": field.surface, "preset": field.preset, "rect": Session.rectangle(field)})
+		scene_root.set_meta("container_population_paint", container_paint)
+	var signature := [String(source.parcel_id), source.revision, rules, paint, container_slots, scene_root.get_meta("container_population_paint", [])]
 	var parcel_id := StringName("%s_rules_%s" % [source.parcel_id, JSON.stringify(signature).sha256_text().substr(0, 16)])
 	scene_root.set_meta("parcel_id", parcel_id)
 	scene_root.set_meta("revision", 1)
@@ -51,16 +75,16 @@ static func build(source, draft, vehicles) -> Dictionary:
 	scene_root.free()
 	if pack_error != OK:
 		return {"error": "Could not pack the authored scene: %s" % error_string(pack_error)}
-	var definition := AuthoredParcelDefinition.new(parcel_id, source.display_name + " — parking rows", source.role, 1, source.size, packed)
+	var definition := AuthoredParcelDefinition.new(parcel_id, source.display_name + " — population rules", source.role, 1, source.size, packed)
 	var failures := definition.validate()
 	if not failures.is_empty():
 		return {"error": "Exported parcel contract failed: %s" % "; ".join(failures)}
-	var route_error := _check_aisles(definition, rules)
+	var route_error := _check_aisles(definition, rules, not container_slots.is_empty())
 	if not route_error.is_empty():
 		return {"error": route_error}
-	return {"definition": definition, "bay_count": bays.size()}
+	return {"definition": definition, "bay_count": bays.size(), "container_count": container_slots.size()}
 
-static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dictionary]) -> String:
+static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dictionary], check_ground := false) -> String:
 	# Compile the fully occupied version. Check the entire aisle and a path
 	# from the authored entrance in every supported parcel rotation.
 	var aisles := {}
@@ -89,6 +113,16 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 			var cell := map.get_cell(position)
 			if cell == null or not cell.walkable or not cell.can_stop:
 				return "Occupied export blocks entrance cell %s at rotation %d." % [position, turn]
+		if check_ground:
+			var reachable := {}
+			for position in graph.get_reachable_cells(start, extent.x * extent.y * 10):
+				reachable[position] = true
+			for z in extent.y:
+				for x in extent.x:
+					var position := Vector3i(x, 0, z)
+					var cell := map.get_cell(position)
+					if cell and cell.walkable and cell.can_stop and position != start and not reachable.has(position):
+						return "Occupied export disconnects ground cell %s at rotation %d." % [position, turn]
 		for aisle: Dictionary in aisles.values():
 			var rect: Rect2i = aisle.rect
 			for x in range(rect.position.x, rect.end.x):

@@ -3,7 +3,8 @@ extends RefCounted
 ## Small, editor-only transform draft for visual nodes already authored in a
 ## registered parcel. Drafts never modify the source scene or tactical metadata.
 
-const SCHEMA_VERSION := 1
+const Library = preload("res://tools/parcel_editor/parcel_placement_library.gd")
+const SCHEMA_VERSION := 2
 const DRAFT_DIRECTORY := "user://parcel_drafts"
 
 var parcel_id: StringName = &""
@@ -53,9 +54,37 @@ func placement(path: String = selected_path) -> Dictionary:
 	return {}
 
 func select(path: String) -> bool:
-	if placement(path).is_empty():
+	var record := placement(path)
+	if record.is_empty() or record.get("removed", false):
 		return false
 	selected_path = path
+	return true
+
+func add_fixed(node: Node3D) -> void:
+	undo_stack.append(_snapshot())
+	redo_stack.clear()
+	var index := 1
+	while not placement("DraftAsset%d" % index).is_empty():
+		index += 1
+	selected_path = "DraftAsset%d" % index
+	placements.append({"path": selected_path, "asset_id": String(node.get_meta("asset_id")),
+		"position": _vector3_record(node.position), "rotation_degrees": _vector3_record(node.rotation_degrees),
+		"scale": _vector3_record(node.scale), "added": true})
+
+func remove_fixed(root: Node3D) -> bool:
+	var index := _placement_index(selected_path)
+	var node := root.get_node_or_null(NodePath(selected_path)) if index >= 0 else null
+	if node == null or node.has_meta("population_socket_id") or node.get_parent() != root:
+		return false
+	if not node.find_children("*", "Node3D", true, false).filter(func(child): return child.has_meta("asset_id")).is_empty():
+		return false
+	undo_stack.append(_snapshot())
+	redo_stack.clear()
+	if placements[index].get("added", false):
+		placements.remove_at(index)
+	else:
+		placements[index]["removed"] = true
+	selected_path = ""
 	return true
 
 func translate_selected(delta: Vector3) -> bool:
@@ -118,8 +147,22 @@ func redo() -> bool:
 
 func apply(root: Node3D) -> PackedStringArray:
 	var failures := PackedStringArray()
+	for child in root.get_children():
+		if child.has_meta("draft_added") and (placement(String(child.name)).get("asset_id") != child.get_meta("asset_id")):
+			child.free()
+	for original in base_placements:
+		var original_node := root.get_node_or_null(NodePath(String(original.path))) as Node3D
+		if original_node and original_node.has_meta("draft_removed"):
+			original_node.show()
+			original_node.remove_meta("draft_removed")
 	for record: Dictionary in placements:
 		var node := root.get_node_or_null(NodePath(String(record.path))) as Node3D
+		if node == null and record.get("added", false):
+			node = Library.create(record.asset_id)
+			if node:
+				node.name = record.path
+				node.set_meta("draft_added", true)
+				root.add_child(node)
 		if node == null:
 			failures.append("MISSING_SOURCE_NODE: %s" % record.path)
 			continue
@@ -129,6 +172,9 @@ func apply(root: Node3D) -> PackedStringArray:
 		node.position = _record_vector3(record.position)
 		node.rotation_degrees = _record_vector3(record.rotation_degrees)
 		node.scale = _record_vector3(record.scale)
+		if record.get("removed", false):
+			node.hide()
+			node.set_meta("draft_removed", true)
 	return failures
 
 func save() -> bool:
@@ -173,7 +219,8 @@ func load_from(path: String, definition, root: Node3D) -> bool:
 	if base_placements.is_empty():
 		_collect_into(root, root, base_placements)
 		base_placements.sort_custom(func(a: Dictionary, b: Dictionary): return String(a.path) < String(b.path))
-	selected_path = String(placements[0].path) if not placements.is_empty() else ""
+	var visible_records := placements.filter(func(item): return not item.get("removed", false))
+	selected_path = String(visible_records[0].path) if not visible_records.is_empty() else ""
 	undo_stack.clear()
 	redo_stack.clear()
 	_saved_placements = placements.duplicate(true)
@@ -191,7 +238,8 @@ func to_record() -> Dictionary:
 
 func validate_record(record: Dictionary, definition, root: Node3D) -> PackedStringArray:
 	var failures := PackedStringArray()
-	if int(record.get("schema_version", 0)) != SCHEMA_VERSION:
+	var schema := int(record.get("schema_version", 0))
+	if schema not in [1, SCHEMA_VERSION]:
 		failures.append("UNSUPPORTED_DRAFT_VERSION")
 	if StringName(record.get("base_parcel_id", &"")) != definition.parcel_id:
 		failures.append("PARCEL_ID_MISMATCH")
@@ -205,6 +253,7 @@ func validate_record(record: Dictionary, definition, root: Node3D) -> PackedStri
 		failures.append("MALFORMED_PLACEMENTS")
 		return failures
 	var seen := {}
+	var library := Library.entries() if schema == SCHEMA_VERSION else {}
 	for value in records:
 		if not value is Dictionary:
 			failures.append("MALFORMED_PLACEMENT")
@@ -215,13 +264,18 @@ func validate_record(record: Dictionary, definition, root: Node3D) -> PackedStri
 			continue
 		seen[path] = true
 		var node := root.get_node_or_null(NodePath(path))
-		if node == null:
+		if value.get("added", false):
+			if schema != SCHEMA_VERSION or not path.begins_with("DraftAsset") or not path.trim_prefix("DraftAsset").is_valid_int() or not library.has(value.get("asset_id")) or value.get("removed", false) or (node != null and not node.has_meta("draft_added")):
+				failures.append("INVALID_DRAFT_ASSET: %s" % path)
+		elif node == null or node.has_meta("draft_added"):
 			failures.append("MISSING_SOURCE_NODE: %s" % path)
 		elif String(node.get_meta("asset_id", "")) != String(value.get("asset_id", "")):
 			failures.append("ASSET_ID_MISMATCH: %s" % path)
+		elif value.get("removed", false) and (schema != SCHEMA_VERSION or node.get_parent() != root or node.has_meta("population_socket_id")):
+			failures.append("INVALID_DRAFT_REMOVAL: %s" % path)
 		for field in ["position", "rotation_degrees", "scale"]:
 			var vector = value.get(field, null)
-			if not vector is Array or vector.size() != 3:
+			if not vector is Array or vector.size() != 3 or not vector.all(func(component): return (component is float or component is int) and is_finite(float(component))):
 				failures.append("MALFORMED_TRANSFORM: %s.%s" % [path, field])
 	return failures
 
