@@ -20,6 +20,14 @@ var dirty: bool:
 	get: return placements != _saved_placements
 var _saved_placements: Array[Dictionary] = []
 
+func preview_root(root: Node3D) -> Node3D:
+	var copy := root.duplicate() as Node3D
+	for node in copy.find_children("*", "Node3D", true, false):
+		if is_instance_valid(node) and node.has_meta("draft_removed"):
+			node.free()
+	copy.show()
+	return copy
+
 func begin(definition, root: Node3D) -> void:
 	parcel_id = definition.parcel_id
 	parcel_revision = definition.revision

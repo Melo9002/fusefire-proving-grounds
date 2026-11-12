@@ -81,9 +81,9 @@ static func resolve(map_seed: int, population_enabled: bool = true, requested: D
 		result.placements.append({"slot_id": slot.slot_id, "parcel_id": parcel.parcel_id, "parcel_revision": parcel.revision, "origin": slot.origin, "rotation": slot.rotation, "population": population.choices})
 	return result
 
-static func _resolve_population(parcel, map_seed: int, requested: Dictionary, population_enabled: bool, instance_id: String) -> Dictionary:
-	var sockets: Array[Dictionary] = parcel.population_sockets()
-	var regions: Array = parcel.population_regions()
+static func _resolve_population(parcel, map_seed: int, requested: Dictionary, population_enabled: bool, instance_id: String, scene_root: Node3D = null) -> Dictionary:
+	var sockets: Array[Dictionary] = parcel.population_sockets(scene_root)
+	var regions: Array = parcel.population_regions(scene_root)
 	if sockets.is_empty():
 		if not requested.get("population", []).is_empty():
 			return {"error": "INVALID_POPULATION_CHOICES"}

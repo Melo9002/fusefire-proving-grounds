@@ -61,6 +61,34 @@ func _run() -> void:
 	await _capture(output.path_join("registered-preview-active.png"))
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	editor._undo()
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
+	editor.field_panel.session.add("ground", "containers", Rect2i(2, 21, 3, 5))
+	editor.field_panel.refresh()
+	await _capture(output.path_join("container-guide-conflict.png"))
+	editor.field_panel.session.undo()
+	editor.field_panel.session.add("ground", "containers", Rect2i(7, 20, 3, 10))
+	editor.field_panel.density.value = 100
+	var truck: Node3D = editor.PlacementLibrary.create("car_kit/delivery")
+	truck.position = Vector3(8, 0, 22)
+	truck.rotation_degrees.y = 90
+	editor.draft.add_fixed(truck)
+	truck.free()
+	editor._apply_draft()
+	editor.field_panel.refresh()
+	editor.field_panel.preview()
+	await _capture(output.path_join("combined-truck-containers.png"))
+	editor.tactical_toggle.button_pressed = true
+	await _capture(output.path_join("combined-tactical-bounds.png"))
+	editor.tactical_toggle.button_pressed = false
+	if not editor.field_panel.export_scene(output.path_join("combined-parcel.tscn")):
+		push_error(editor.field_panel.status.text)
+		quit(1)
+		return
+	await _capture(output.path_join("combined-export-status.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	editor._undo()
+	editor.field_panel.session.undo()
+	editor.field_panel.refresh()
 	editor.set_population_visible(true)
 	editor._top_view()
 	var container := editor.displayed_parcel.get_node("ContainerA") as Node3D
@@ -72,6 +100,9 @@ func _run() -> void:
 		await _capture(output.path_join("parcel-editor-invalid-placement.png"))
 		editor._finish_object_drag(false)
 	editor.select_parcel(Catalog.INDUSTRIAL_OFFICE_PARKING_A)
+	if editor.discard_dialog.visible:
+		editor.discard_dialog.get_ok_button().pressed.emit()
+		await process_frame
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor._top_view()
 	editor.field_panel.select_tool(1)

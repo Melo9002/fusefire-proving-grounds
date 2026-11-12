@@ -191,6 +191,12 @@ func _infer_parking_rows(rows: Array, fixed: Array[AABB]) -> Array[Dictionary]:
 
 func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
 	var obstacles: Array[AABB] = definition.fixed_population_obstacles(scene_root)
+	# Decoration consumes visual space without acquiring tactical occupancy.
+	for node in scene_root.get_children():
+		if node is Node3D and node.has_meta("asset_id") and not node.has_meta("population_socket_id") and not node.has_meta("solid_size"):
+			var solids := node.find_children("*", "Node3D", true, false).filter(func(child): return child.has_meta("solid_size"))
+			if solids.is_empty():
+				obstacles.append(EnvironmentAssetPlacement.mesh_bounds(node))
 	obstacles.append_array(registered_aisles(scene_root))
 	obstacles.append_array(registered_protection(scene_root))
 	for surface: Dictionary in surfaces.values():

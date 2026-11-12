@@ -5,13 +5,29 @@ const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
 const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 
-static func build(source, draft, vehicles) -> Dictionary:
+static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	if source == null or draft.parcel_id != String(source.parcel_id) or draft.revision != source.revision:
 		return {"error": "Draft source parcel revision no longer matches."}
 	var source_errors: PackedStringArray = source.validate()
 	if not source_errors.is_empty():
 		return {"error": "Source parcel contract failed: %s" % "; ".join(source_errors)}
 	var scene_root: Node3D = source.instantiate()
+	var fixed_changed: bool = fixed_draft != null and fixed_draft.placements != fixed_draft.base_placements
+	if fixed_changed:
+		if fixed_draft.parcel_id != source.parcel_id or fixed_draft.parcel_revision != source.revision:
+			scene_root.free()
+			return {"error": "Fixed-object draft source revision no longer matches."}
+		var failures: PackedStringArray = fixed_draft.apply(scene_root)
+		if not failures.is_empty():
+			scene_root.free()
+			return {"error": " ".join(failures)}
+		var copy: Node3D = fixed_draft.preview_root(scene_root)
+		scene_root.free()
+		scene_root = copy
+		for child in scene_root.get_children():
+			if child.has_meta("draft_added"):
+				_own_added_nodes(child, scene_root)
+				child.remove_meta("draft_added")
 	var current := Session.new()
 	current.begin(source, scene_root)
 	if draft.surfaces != current.surfaces:
@@ -57,7 +73,7 @@ static func build(source, draft, vehicles) -> Dictionary:
 		for candidate in container_slots:
 			Containers.add_to_scene(scene_root, template, candidate)
 		template.free()
-	if bays.is_empty() and container_slots.is_empty():
+	if bays.is_empty() and container_slots.is_empty() and not fixed_changed:
 		scene_root.free()
 		return {"error": "No new positions fit. Ground containers need a clear 3 × 5 area away from existing occupants and the entrance."}
 	if not container_slots.is_empty():
@@ -67,6 +83,8 @@ static func build(source, draft, vehicles) -> Dictionary:
 				container_paint.append({"surface": field.surface, "preset": field.preset, "rect": Session.rectangle(field)})
 		scene_root.set_meta("container_population_paint", container_paint)
 	var signature := [String(source.parcel_id), source.revision, rules, paint, container_slots, scene_root.get_meta("container_population_paint", [])]
+	if fixed_changed:
+		signature.append(fixed_draft.placements)
 	var parcel_id := StringName("%s_rules_%s" % [source.parcel_id, JSON.stringify(signature).sha256_text().substr(0, 16)])
 	scene_root.set_meta("parcel_id", parcel_id)
 	scene_root.set_meta("revision", 1)
@@ -79,10 +97,17 @@ static func build(source, draft, vehicles) -> Dictionary:
 	var failures := definition.validate()
 	if not failures.is_empty():
 		return {"error": "Exported parcel contract failed: %s" % "; ".join(failures)}
-	var route_error := _check_aisles(definition, rules, not container_slots.is_empty())
+	var route_error := _check_aisles(definition, rules, not container_slots.is_empty() or fixed_changed)
 	if not route_error.is_empty():
 		return {"error": route_error}
 	return {"definition": definition, "bay_count": bays.size(), "container_count": container_slots.size()}
+
+static func _own_added_nodes(node: Node, root: Node) -> void:
+	node.owner = root
+	if not node.scene_file_path.is_empty():
+		return
+	for child in node.get_children():
+		_own_added_nodes(child, root)
 
 static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dictionary], check_ground := false) -> String:
 	# Compile the fully occupied version. Check the entire aisle and a path

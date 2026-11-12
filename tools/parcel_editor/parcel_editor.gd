@@ -171,7 +171,7 @@ func _build_ui() -> void:
 	inspect_page.add_child(metadata_label)
 	details.toggled.connect(func(expanded: bool): metadata_label.visible = expanded)
 
-	var move_page := _add_task_page("Move objects")
+	var move_page := _add_task_page("Objects")
 	var limits := Label.new()
 	limits.text = "Draft only · Checks bounds and solid overlap. New objects use ground level. Battle routes and runtime registration are separate."
 	limits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -204,11 +204,11 @@ func _build_ui() -> void:
 	_asset_category.item_selected.connect(func(_value): _refresh_asset_browser())
 	_refresh_asset_browser()
 	var move_help := Label.new()
-	move_help.text = "Click an object or drag it on its floor. R rotates, Shift+R reverses, Esc cancels. Moves edit visuals only. Tactical properties stay at their authored positions."
+	move_help.text = "Place adds a fixed object. Drag to move. R rotates, Shift+R reverses, Esc cancels. Attached tactical volumes move with the object in draft preview. Save and register the scene to use changes in battle."
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(move_help)
 	var compare := CheckButton.new()
-	compare.text = "Compare authored tactical bounds"
+	compare.text = "Show current tactical bounds"
 	compare.toggled.connect(func(enabled: bool): tactical_toggle.button_pressed = enabled)
 	tactical_toggle.toggled.connect(func(enabled: bool): compare.set_pressed_no_signal(enabled))
 	move_page.add_child(compare)
@@ -242,11 +242,11 @@ func _build_ui() -> void:
 	move_page.add_child(vertical)
 	var history := HBoxContainer.new()
 	undo_button = Button.new()
-	undo_button.text = "Undo move"
+	undo_button.text = "Undo"
 	undo_button.pressed.connect(_undo)
 	history.add_child(undo_button)
 	redo_button = Button.new()
-	redo_button.text = "Redo move"
+	redo_button.text = "Redo"
 	redo_button.pressed.connect(_redo)
 	history.add_child(redo_button)
 	var save := Button.new()
@@ -323,6 +323,8 @@ func _on_task_changed(task: int) -> void:
 	else:
 		_update_selection_marker()
 	if task == Task.POPULATION_FIELDS:
+		field_panel.sync_draft_context()
+		field_panel.refresh()
 		field_panel.update_preview_controls()
 
 func _request_parcel(index: int) -> void:
@@ -473,7 +475,8 @@ func _refresh_asset_browser() -> void:
 		var role: String = _asset_entries[id]
 		if (_asset_category.selected != 0 and role != category) or (not query.is_empty() and not id.containsn(query)):
 			continue
-		_asset_picker.add_item("%s · %s" % [id, role])
+		var label := id.get_file().replace("-", " ").capitalize()
+		_asset_picker.add_item("%s · %s" % [label, role])
 		var index := _asset_picker.item_count - 1
 		_asset_picker.set_item_metadata(index, id)
 		_asset_picker.set_item_tooltip(index, "%s · fixed %s" % [id, role.to_lower()])
@@ -634,6 +637,8 @@ func _redo() -> void:
 func _apply_draft(message := "") -> void:
 	field_panel.clear_preview()
 	var failures := draft.apply(displayed_parcel)
+	field_panel.sync_draft_context()
+	refresh_tactical_overlay(displayed_parcel)
 	_update_draft_status(message if failures.is_empty() else "; ".join(failures))
 	_update_history_buttons()
 
@@ -773,12 +778,19 @@ func _create_grid(size: Vector2i) -> MeshInstance3D:
 	result.mesh = immediate
 	return result
 
-func _create_tactical_overlay(definition) -> Node3D:
+func refresh_tactical_overlay(scene_root: Node3D) -> void:
+	if is_instance_valid(tactical_overlay):
+		tactical_overlay.free()
+	tactical_overlay = _create_tactical_overlay(Catalog.get_definition(displayed_parcel_id), scene_root)
+	tactical_overlay.visible = tactical_toggle.button_pressed
+	add_child(tactical_overlay)
+
+func _create_tactical_overlay(definition, scene_root: Node3D = displayed_parcel) -> Node3D:
 	var overlay := Node3D.new()
 	overlay.name = "TacticalContracts"
 	var solid_material := _overlay_material(Color(1.0, 0.42, 0.12, 0.34))
-	for node in displayed_parcel.find_children("*", "Node3D", true, false):
-		if not node.has_meta("solid_size"):
+	for node in scene_root.find_children("*", "Node3D", true, false):
+		if not node.has_meta("solid_size") or _removed_from_draft(node, scene_root):
 			continue
 		var box := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
@@ -809,6 +821,13 @@ func _create_tactical_overlay(definition) -> Node3D:
 		marker.position = Vector3(access.x - (definition.size.x - 1) * 0.5, access.y + 0.1, access.z - (definition.size.y - 1) * 0.5)
 		overlay.add_child(marker)
 	return overlay
+
+func _removed_from_draft(node: Node, scene_root: Node) -> bool:
+	while node != scene_root:
+		if node.has_meta("draft_removed"):
+			return true
+		node = node.get_parent()
+	return false
 
 func _overlay_material(color: Color) -> StandardMaterial3D:
 	var overlay_material := StandardMaterial3D.new()

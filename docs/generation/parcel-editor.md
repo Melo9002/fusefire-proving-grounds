@@ -26,15 +26,15 @@ Choose a registered parcel from the list. The editor opens on **Inspect** with t
 
 ## Make a visual draft
 
-Open **Move objects** and click a visible imported object in the viewport, or choose it from the list. Drag with LMB to preview its position on its current floor in half-cell steps. Release in the viewport to commit a single undo step. Press `R` for a quarter-turn, `Shift+R` for the reverse, and `Esc` to cancel an active drag. The outline and labeled axes also match the X/Y/Z nudge buttons, which provide half-cell horizontal and quarter-cell vertical steps.
+Open **Objects** to place new assets or select a visible object in the viewport or object list. Drag with LMB to preview its position on its current floor in half-cell steps. Release in the viewport to commit one undo step. Press `R` for a quarter-turn, `Shift+R` for the reverse, and `Esc` to cancel. The outline and labeled axes match the nudge buttons.
 
 Use the fixed asset browser to search ground decoration or select a tactical template. **Place** shows a blue or red ghost as you move over the parcel. Click to place, use `R` to rotate, or press `Esc` to cancel. **Duplicate** starts another placement of a supported library asset. **Remove** works on standalone fixed objects. Add, duplicate, and remove share the visual undo and redo history. New tactical objects use existing authored volumes attached to their models. New placements are ground-level and check parcel bounds, solid overlap and the entrance.
 
-Blue means the visual candidate fits the parcel and clears other authored solid boxes. Red identifies an out-of-bounds footprint or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Compare authored tactical bounds** shows the original gameplay volumes beside the visual draft. This check covers visual bounds and authored solid overlaps in 3D. Floor support, deliberate stacking, doors and tactical routes need their own authoring contracts.
+Blue means the candidate fits the parcel and clears authored solids. Red identifies a footprint outside the parcel or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Show current tactical bounds** displays attached gameplay volumes at the current transforms, including additions and removals. Floor support, deliberate stacking and physical door access still require authored contracts.
 
 **Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
 
-The visual draft file stores additions, removals and transforms. The runtime still loads the registered scene. **Compare authored tactical bounds** shows the registered geometry so you can inspect where draft visuals differ. Use Godot to apply approved visual changes to the source scene and verify its tactical routes before registration.
+The fixed-object draft stores additions, removals and transforms. **Preview** includes these edits and compiles their attached tactical metadata into a temporary MapData. **Preview registered parcel** compares against the original layout. Both preserve your object and field drafts. **Export population scene** writes the current fixed objects and population rules to a separate scene for review and registration.
 
 The footprint grid is visual guidance. `MapData` compiled from explicit authored metadata remains authoritative for traversal, cover, line of sight and occupancy.
 
@@ -44,7 +44,7 @@ Open **Population fields** and choose a surface or floor. **Inspect** leaves the
 
 Permission strokes turn red over fixed tactical solids, protected cells, entrances, reserved aisles or beyond the selected floor. Releasing an invalid stroke leaves the draft unchanged. Paint Protected over areas that must stay clear. Empty placement guides can be painted over.
 
-Set **Seed** and press **Preview** to see the registered parcel's seeded population. If you have a field draft, Preview tests its paint and density instead. Registered rules own their occupancy independently of draft density. With visual changes, **Preview registered parcel** opens a temporary source view and preserves both drafts. **Show guides** returns to your edits. **Undo field** and **Redo field** affect only the field draft. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab.
+Set **Seed** and press **Preview** to see population together with your current fixed objects. A field draft controls permission and density. With no field draft, the registered population rules supply candidates, and conflicts with moved fixed objects produce an explicit error. Registered rules own their occupancy independently of draft density. **Preview registered parcel** compares the original scene. **Show guides** returns to editing. `Ctrl+Z` and `Ctrl+Y` follow the active editing tab.
 
 ### Paint parking and preview
 
@@ -57,6 +57,8 @@ To inspect the registered proof, open **Industrial office — seeded parking rul
 ### Paint container storage
 
 On **Warehouse loading apron**, paint ground cells X 7–9 and Z 20–29 with **Containers**. Preview at 100% fits two new positions. The tool fits up to four clear 3 × 5 positions in contiguous paint, using one calibrated container model and its authored tactical volume. It checks fixed obstacles, existing placements, protected areas and the entrance. Export checks ground connectivity at full occupancy in every supported rotation.
+
+Gold outlines show fitting positions before Preview. Red outlines show rejected candidates, with a reason beside the preview controls. For example, paint X 2–4 and Z 21–25 and the existing `container_west` guide reserves that space. Empty guides retain their reservation so newly inferred positions cannot overlap a possible authored occupant. Smaller or disconnected paint reports that a contiguous 3 × 5 area is required.
 
 **Warehouse loading apron — painted containers** is the registered proof. Its preview uses the Split-yard refinery loading slot's seed scope. In Match Setup, select **Refinery Family** and enable **Tactical Population**. The upper painted container position is occupied at seed **0** and empty at seed **12**. Other sites may resolve their loading slot differently.
 
@@ -75,9 +77,11 @@ Editor camera: RMB drag down raises the view toward overhead, up lowers it, matc
 
 ### Export a population scene
 
-Use **Export population scene** after checking parking or container paint. Export one population type at a time. The tool checks the fully occupied parcel across supported rotations and keeps the entrance walkable. Parking adds aisle and approach checks. Container export checks that ground stopping cells remain reachable from the entrance. Existing authored sockets are preserved. Save visual edits separately before exporting from source transforms.
+Use **Export population scene** after inspecting the combined preview. It includes fixed edits and one population type per export. The tool checks the fully occupied parcel across supported rotations and keeps the entrance walkable. Parking adds aisle and approach checks. Container exports and fixed edits require ground stopping cells to remain reachable from the entrance. Existing authored sockets are preserved.
 
 The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel, paint and the authored placement rules. At battle startup each accepted position gets its model and authored tactical volume. The filename identifies the exported rules, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog. New equipment paint remains a preview tool for existing equipment positions.
+
+The finishing sequence is visible beside Export. Save both drafts for later editing, export, and use **Open exported scene folder** to locate the scene. Open it in Godot for visual review, then copy the approved scene into the project's authored parcels and add its ID, role, size and revision to `AuthoredParcelCatalog`. Add it to a compatible plot slot or role candidate set and verify a battle before treating it as published content. Exported scenes have a new identity. Registration remains an explicit source-project step.
 
 ## Current boundary
 

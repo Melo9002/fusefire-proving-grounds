@@ -191,7 +191,9 @@ func _check_export(editor) -> void:
 	var panel = editor.field_panel
 	var path := "res://.godot/parking_row_export_test.tscn"
 	editor._translate_selected(Vector3(0.5, 0, 0))
-	check(not panel.export_scene(path) and panel.status.text.contains("source transforms"), "Export rejects an edited visual draft")
+	var moved: Array = editor.draft.placements.duplicate(true)
+	var exported_visual_draft: bool = panel.export_scene(path)
+	check(exported_visual_draft and editor.draft.placements == moved, "Export accepts the combined fixed-object draft without discarding its changes")
 	editor._undo()
 	panel.session.revision += 1
 	check(not panel.export_scene(path) and panel.status.text.contains("revision"), "Export rejects a stale source revision")

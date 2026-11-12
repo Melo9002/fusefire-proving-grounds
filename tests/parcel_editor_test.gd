@@ -125,7 +125,7 @@ func _run() -> void:
 	var moved_crate_position := crate.position
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	var panel = editor.field_panel
-	check(moved_crate_position != original_crate_position and panel.preview_button.disabled and panel.registered_preview_button.visible, "Moved visuals block normal Preview with a visible safe alternative")
+	check(moved_crate_position != original_crate_position and not panel.preview_button.disabled and panel.registered_preview_button.visible, "Moved objects support combined Preview and retain the registered comparison")
 	panel.registered_preview_button.pressed.emit()
 	var registered: Node3D = panel._runtime_preview
 	check(is_instance_valid(registered) and (registered.get_node("CrateA") as Node3D).position == original_crate_position and not panel.overlay.visible, "Registered Preview uses a separate source scene and hides draft paint")
