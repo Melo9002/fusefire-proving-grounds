@@ -16,6 +16,7 @@ var selected_path := ""
 var undo_stack: Array[Dictionary] = []
 var redo_stack: Array[Dictionary] = []
 var last_error := ""
+var active_path := ""
 var dirty: bool:
 	get: return placements != _saved_placements
 var _saved_placements: Array[Dictionary] = []
@@ -32,6 +33,7 @@ func begin(definition, root: Node3D) -> void:
 	parcel_id = definition.parcel_id
 	parcel_revision = definition.revision
 	parcel_size = definition.size
+	active_path = ""
 	placements.clear()
 	_collect(root, root)
 	placements.sort_custom(func(a: Dictionary, b: Dictionary): return String(a.path) < String(b.path))
@@ -186,7 +188,7 @@ func apply(root: Node3D) -> PackedStringArray:
 	return failures
 
 func save() -> bool:
-	return save_to(draft_path())
+	return save_to(active_path if not active_path.is_empty() else draft_path())
 
 func save_to(path: String) -> bool:
 	var directory := path.get_base_dir()
@@ -202,6 +204,7 @@ func save_to(path: String) -> bool:
 	file.store_string(JSON.stringify(to_record(), "\t"))
 	file.close()
 	_saved_placements = placements.duplicate(true)
+	active_path = path
 	last_error = ""
 	return true
 
@@ -232,6 +235,7 @@ func load_from(path: String, definition, root: Node3D) -> bool:
 	undo_stack.clear()
 	redo_stack.clear()
 	_saved_placements = placements.duplicate(true)
+	active_path = path
 	last_error = ""
 	return true
 

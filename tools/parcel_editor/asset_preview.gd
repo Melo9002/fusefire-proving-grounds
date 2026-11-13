@@ -7,7 +7,7 @@ var camera: Camera3D
 var asset_id := ""
 
 func setup() -> void:
-	custom_minimum_size = Vector2(0, 112)
+	custom_minimum_size = Vector2(0, 80)
 	stretch = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	viewport = SubViewport.new()

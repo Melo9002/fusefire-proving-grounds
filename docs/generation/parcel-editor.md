@@ -30,11 +30,11 @@ Open **Objects** to place new assets or select a visible object in the viewport 
 
 Use the fixed asset browser to search ground decoration or select a tactical template. **Place** shows a blue or red ghost as you move over the parcel. Click to place, use `R` to rotate, or press `Esc` to cancel. **Duplicate** starts another placement of a supported library asset. **Remove** works on standalone fixed objects. Add, duplicate, and remove share the visual undo and redo history. New tactical objects use existing authored volumes attached to their models. New placements are ground-level and check parcel bounds, solid overlap and the entrance.
 
-The browser renders the selected calibrated asset above Place. **Bounds · selected object only** limits the tactical overlay to the selected fixed object and follows that object into combined Preview. Orange marks solids, and cyan marks floor and access contracts. Select **Bounds · all objects** for the full parcel.
+The browser renders the selected calibrated asset above Place. Collapse **Asset preview** to expose more editing controls. **Bounds · selected object only** limits the tactical overlay to the selected fixed object and follows that object into combined Preview. Orange marks solids, and cyan marks floor and access contracts. Select **Bounds · all objects** for the full parcel.
 
 Blue means the candidate fits the parcel and clears authored solids. Red identifies a footprint outside the parcel or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Show current tactical bounds** displays attached gameplay volumes at the current transforms, including additions and removals. Floor support, deliberate stacking and physical door access still require authored contracts.
 
-**Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
+**Save visuals** and **Load visuals** target the active named file after saving or opening one. The initial default lives under `user://parcel_drafts/`. The panel identifies the active file separately from that default, and its tooltip shows the full save destination. Replacing an existing file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. The picker defaults to a list. A draft records the source parcel ID and revision, scene-node paths, asset IDs and transforms.
 
 The fixed-object draft stores additions, removals and transforms. **Preview** includes these edits and compiles their attached tactical metadata into a temporary MapData. **Preview registered parcel** compares against the original layout. Both preserve your object and field drafts. **Export population scene** writes the current fixed objects and population rules to a separate scene for review and registration.
 
@@ -77,7 +77,7 @@ The office lot demonstrates four extra bays. Paint X 2–29 and Z 4–11, then d
 
 Editor camera: RMB drag down raises the view toward overhead, up lowers it, matching the battle camera's vertical orbit preference. Horizontal orbit and MMB pan retain their controls.
 
-**Save fields** and **Load fields** use the displayed parcel-specific file under `user://parcel_fields/`. Replacing an existing quick-save file asks for confirmation. Use **Save fields as…** and **Open field draft…** for separate drafts. Files record parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft. The header names the draft with unsaved changes. Switching parcels or returning to Match Setup asks before discarding those changes.
+**Save fields** and **Load fields** also follow the active named file, with a default under `user://parcel_fields/`. Replacing an existing file asks for confirmation. Use **Save fields as…** and **Open field draft…** for separate drafts. Files record parcel revision, surface geometry, fields and preview settings. Invalid or stale loads preserve the current draft and active destination. Switching parcels or returning to Match Setup asks before discarding changes.
 
 ### Export a population scene
 
@@ -88,6 +88,8 @@ The result is a separate `.tscn` in `user://parcel_exports/`. The status shows i
 The finishing sequence is visible beside Export. Save both drafts for later editing, export, and use **Open exported scene folder** to locate the scene. Open it in Godot for visual review, then copy the approved scene into the project's authored parcels and add its ID, role, size and revision to `AuthoredParcelCatalog`. Add it to a compatible plot slot or role candidate set and verify a battle before treating it as published content. Exported scenes have a new identity. Registration remains an explicit source-project step.
 
 The checklist tracks saved drafts and whether the current composition matches its last export. Its next-step button opens the applicable save action, exports the current scene, or opens the exported scene folder. Edits mark an earlier export as stale. Godot review and registration stay marked as manual steps.
+
+A shared footer shows save and export status across all tabs. A saved draft that contains edits is labeled as differing from the registered parcel. After export, the footer exposes the complete scene path with **Copy path** and **Folder** controls. Export status describes this editor session.
 
 ## Current boundary
 

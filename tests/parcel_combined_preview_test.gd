@@ -80,6 +80,10 @@ func _run() -> void:
 	var export_path := "res://.godot/combined_preview_export.tscn"
 	check(panel.export_scene(export_path), "Combined fixed truck and container rules export together: " + panel.status.text)
 	check(panel.handoff_steps.text.contains("✓ 2. Export") and panel.handoff_next.text == "Save object draft", "The handoff records a current export while keeping unsaved drafts visible")
+	check(editor.workflow_footer.text.contains("Export · current") and editor.export_path_display.text == ProjectSettings.globalize_path(export_path) and editor.export_actions.visible, "The shared footer exposes current export status and its exact path")
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	check(editor.export_actions.visible and editor.workflow_footer.text.contains("Export · current"), "Export state remains visible while editing objects")
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	if FileAccess.file_exists(export_path):
 		var scene := ResourceLoader.load(export_path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
 		var reopened := scene.instantiate() as Node3D
@@ -95,6 +99,7 @@ func _run() -> void:
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	editor._remove_selected()
 	check(panel.handoff_steps.text.contains("Scene changed since export"), "Editing an exported scene invalidates the current-export checklist state")
+	check(editor.workflow_footer.text.contains("Export · outdated"), "The shared footer immediately flags an outdated export")
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	check(panel.fit_feedback.text.contains("2 positions fit"), "Removing the fixed truck restores both fitting positions")
 	panel.preview()

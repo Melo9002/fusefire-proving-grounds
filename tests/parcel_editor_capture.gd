@@ -52,6 +52,9 @@ func _run() -> void:
 	editor._start_library_placement()
 	editor._update_library_placement(editor.camera.unproject_position(editor.displayed_parcel.to_global(Vector3(7, 0, 17))))
 	await _capture(output.path_join("fixed-crate-placement.png"))
+	editor.thumbnail_toggle.button_pressed = false
+	await _capture(output.path_join("objects-thumbnail-collapsed.png"))
+	editor.thumbnail_toggle.button_pressed = true
 	editor._finish_library_placement(false)
 	editor.draft.select("CrateA")
 	editor._translate_selected(Vector3.RIGHT)
@@ -93,6 +96,9 @@ func _run() -> void:
 		quit(1)
 		return
 	await _capture(output.path_join("combined-export-status.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
+	await _capture(output.path_join("objects-export-footer.png"))
+	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	var field_scroll := editor.field_panel.handoff_steps.get_parent().get_parent() as ScrollContainer
 	field_scroll.ensure_control_visible(editor.field_panel.handoff_next)
 	await _capture(output.path_join("export-handoff-checklist.png"))

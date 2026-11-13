@@ -50,10 +50,12 @@ func _run() -> void:
 	var loaded := Session.new()
 	loaded.begin(definition, scene_root)
 	check(loaded.load_from(destination), "Actual JSON field draft reloads: %s" % loaded.last_error)
+	check(loaded.active_path == destination, "A field draft remembers the named file that was opened")
 	check(loaded.preview(sockets, 17, 100) == draft.preview(sockets, 17, 100), "Saved fields preserve preview")
 	loaded.revision += 1
 	var before := loaded.fields.duplicate(true)
 	check(not loaded.load_from(destination) and loaded.fields == before, "Stale load preserves in-memory fields")
+	check(loaded.active_path == destination, "A failed field load preserves the active save destination")
 	check(not draft.add("missing", "parking", Rect2i(1, 1, 2, 2)), "Unknown surface rejects")
 	check(not draft.add("ground", "parking", Rect2i(-1, 1, 2, 2)), "Out-of-surface field rejects")
 	check(draft.erase_at("ground", Vector2i(5, 6)) and draft.fields.size() == 1, "Erase removes topmost matching field")

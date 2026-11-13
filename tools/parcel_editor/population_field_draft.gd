@@ -21,6 +21,7 @@ var history: Array = []
 var future: Array = []
 var next_id := 1
 var last_error := ""
+var active_path := ""
 var preview_seed := 17
 var occupancy := 65
 var conflict_count := 0
@@ -38,6 +39,7 @@ func _mark_saved() -> void:
 
 func begin(definition, scene_root: Node3D) -> void:
 	parcel_id = String(definition.parcel_id)
+	active_path = ""
 	revision = definition.revision
 	surfaces.clear()
 	var authored: Dictionary = definition.population_surfaces(scene_root)
@@ -384,6 +386,7 @@ func save_to(destination: String) -> bool:
 	file.store_string(JSON.stringify({"schema": 1, "parcel_id": parcel_id, "revision": revision, "surfaces": surfaces, "fields": fields, "preview_seed": preview_seed, "occupancy": occupancy}, "\t"))
 	file.close()
 	_mark_saved()
+	active_path = destination
 	return true
 
 func load_from(source: String) -> bool:
@@ -421,6 +424,7 @@ func load_from(source: String) -> bool:
 	next_id = 1
 	while ids.has("field_%d" % next_id): next_id += 1
 	_mark_saved()
+	active_path = source
 	return true
 
 func _same_surfaces(value: Variant) -> bool:

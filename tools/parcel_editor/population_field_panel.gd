@@ -54,6 +54,7 @@ var _preview_details := false
 var handoff_steps: Label
 var handoff_next: Button
 var _export_fingerprint := ""
+var last_export_path := ""
 
 func setup(editor: Node3D) -> void:
 	host = editor
@@ -199,6 +200,8 @@ func _on_preview_settings_changed(_value: float) -> void:
 	_update_tools()
 
 func _update_tools(provisional: Dictionary = {}) -> void:
+	_field_destination.text = "Active fields · %s\nDefault copy · %s" % [session.active_path.get_file() if not session.active_path.is_empty() else "registered source", session.path().get_file()]
+	_field_destination.tooltip_text = "Save target · " + ProjectSettings.globalize_path(session.active_path if not session.active_path.is_empty() else session.path())
 	var parking_allowed := false
 	var has_row := false
 	var latest := provisional
@@ -249,6 +252,11 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 func _current_fingerprint() -> String:
 	return JSON.stringify([host.draft.placements, session.fields]).sha256_text()
 
+func export_state() -> String:
+	if _export_fingerprint.is_empty():
+		return "Export · none this session"
+	return "Export · current" if _export_fingerprint == _current_fingerprint() else "Export · outdated"
+
 func update_handoff() -> void:
 	var objects_dirty: bool = host.draft.dirty
 	var fields_dirty := has_unsaved_changes()
@@ -265,6 +273,7 @@ func update_handoff() -> void:
 	else:
 		handoff_next.text = "Export current scene"
 	handoff_next.disabled = not export_current and not objects_dirty and not fields_dirty and export_button.disabled
+	host.update_workflow_footer()
 
 func _next_handoff_step() -> void:
 	if host.draft.dirty:
@@ -314,6 +323,7 @@ func begin(definition, scene_root: Node3D) -> void:
 		surface_picker.set_item_metadata(surface_picker.item_count - 1, id)
 	active_tool = Tool.INSPECT
 	_export_fingerprint = ""
+	last_export_path = ""
 	export_folder_button.disabled = true
 	refresh()
 
@@ -875,11 +885,11 @@ func redo() -> void:
 	reset_preview()
 
 func save_fields() -> void:
-	var path: String = session.path()
+	var path: String = session.active_path if not session.active_path.is_empty() else session.path()
 	host.confirm_replace_draft(path, func(): _save_fields_to(path))
 
 func _save_fields_as() -> void:
-	host.choose_draft_file(session.path(), true, _save_fields_to)
+	host.choose_draft_file(session.active_path if not session.active_path.is_empty() else session.path(), true, _save_fields_to)
 
 func _save_fields_to(path: String) -> void:
 	session.preview_seed = int(seed_input.value)
@@ -888,7 +898,7 @@ func _save_fields_to(path: String) -> void:
 	_update_tools()
 
 func load_fields() -> void:
-	_load_fields_from(session.path())
+	_load_fields_from(session.active_path if not session.active_path.is_empty() else session.path())
 
 func _open_fields() -> void:
 	host.choose_draft_file(session.path(), false, _load_fields_from)
@@ -931,6 +941,8 @@ func export_scene(destination: String = "") -> bool:
 	status.text = "Exported %d parking bays and %d container positions to %s" % [result.bay_count, result.container_count, ProjectSettings.globalize_path(destination)]
 	export_folder_button.set_meta("folder", ProjectSettings.globalize_path(destination.get_base_dir()))
 	export_folder_button.disabled = false
+	last_export_path = ProjectSettings.globalize_path(destination if destination.is_absolute_path() or destination.begins_with("user://") or destination.begins_with("res://") else "res://" + destination)
+	export_folder_button.set_meta("folder", last_export_path.get_base_dir())
 	_export_fingerprint = _current_fingerprint()
 	update_handoff()
 	preview_context.text = "Scene exported. Review it in Godot, then register its new ID and revision in AuthoredParcelCatalog. Saved drafts remain available."

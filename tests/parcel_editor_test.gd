@@ -103,6 +103,7 @@ func _run() -> void:
 	editor._undo()
 	editor._save_draft_as()
 	check(editor._draft_file_dialog.visible and editor._draft_file_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save As opens a named destination picker")
+	check(editor._draft_file_dialog.display_mode == FileDialog.DISPLAY_LIST, "Draft files open in a list so their names remain distinguishable")
 	editor._draft_file_dialog.hide()
 	editor._draft_file_dialog.file_selected.emit(test_draft_path)
 	check(FileAccess.file_exists(test_draft_path), "The Save As callback writes the chosen file")
@@ -166,6 +167,21 @@ func _run() -> void:
 	editor._remove_selected()
 	editor._apply_loaded_draft(test_draft_path)
 	check(editor.displayed_parcel.has_node(NodePath(new_path)) and not editor.draft.dirty, "Opening a saved draft reconstructs its manually placed object")
+	check(editor.draft.active_path == test_draft_path and editor._visual_destination.text.contains(test_draft_path.get_file()), "Reopening identifies the active named draft")
+	check(editor.workflow_footer.text.contains(test_draft_path.get_file()), "The active named file is visible outside the scrolling task panel")
+	check(editor.draft_status.text.contains("Draft saved · differs") and editor.workflow_footer.text.contains("draft differs from registered parcel"), "Saved object edits remain distinct from the registered source")
+	check(editor.workflow_footer.text.contains("Unsaved"), "The shared footer retains the separate unsaved field state")
+	editor.draft.select(new_path)
+	editor._translate_selected(Vector3.RIGHT * 0.5)
+	editor._save_draft()
+	check(editor.discard_dialog.visible and editor.discard_dialog.dialog_text.contains(test_draft_path.get_file()), "Save targets the active named file after reopening")
+	editor.discard_dialog.get_ok_button().pressed.emit()
+	await process_frame
+	var stored: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(test_draft_path))
+	var stored_added: Dictionary = stored.placements.filter(func(record): return record.path == new_path)[0]
+	check(stored_added.position == editor.draft.placement(new_path).position and not editor.draft.dirty, "The named file receives the new transform after Save")
+	editor.thumbnail_toggle.button_pressed = false
+	check(not editor.asset_preview.visible, "The asset thumbnail collapses to expose editing controls")
 	DirAccess.remove_absolute(test_draft_path)
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A)

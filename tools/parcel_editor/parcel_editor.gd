@@ -39,6 +39,10 @@ var _add_asset_button: Button
 var asset_preview
 var tactical_scope: OptionButton
 var tactical_legend: Label
+var thumbnail_toggle: CheckButton
+var workflow_footer: Label
+var export_path_display: LineEdit
+var export_actions: HBoxContainer
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -193,9 +197,14 @@ func _build_ui() -> void:
 	_asset_picker.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_asset_picker.fit_to_longest_item = false
 	browser.add_child(_asset_picker)
+	thumbnail_toggle = CheckButton.new()
+	thumbnail_toggle.text = "Asset preview"
+	thumbnail_toggle.button_pressed = true
+	browser.add_child(thumbnail_toggle)
 	asset_preview = AssetPreview.new()
 	browser.add_child(asset_preview)
 	asset_preview.setup()
+	thumbnail_toggle.toggled.connect(func(enabled): asset_preview.visible = enabled)
 	_asset_picker.item_selected.connect(func(_index): asset_preview.show_asset(String(_asset_picker.get_selected_metadata())))
 	var asset_actions := HBoxContainer.new()
 	browser.add_child(asset_actions)
@@ -301,6 +310,23 @@ func _build_ui() -> void:
 	field_panel.setup(self)
 	task_tabs.add_child(field_panel)
 	task_tabs.tab_changed.connect(_on_task_changed)
+	workflow_footer = Label.new()
+	workflow_footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	workflow_footer.add_theme_font_size_override("font_size", 13)
+	column.add_child(workflow_footer)
+	export_actions = HBoxContainer.new()
+	column.add_child(export_actions)
+	export_path_display = LineEdit.new()
+	export_path_display.editable = false
+	export_path_display.placeholder_text = "Exported scene path"
+	export_path_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	export_actions.add_child(export_path_display)
+	for spec in [["Copy path", func(): DisplayServer.clipboard_set(export_path_display.text)], ["Folder", func(): OS.shell_open(export_path_display.text.get_base_dir())]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.pressed.connect(spec[1])
+		export_actions.add_child(button)
+	export_actions.hide()
 	var back := Button.new()
 	back.text = "Back to Match Setup"
 	back.pressed.connect(func(): _confirm_discard(func(): get_tree().change_scene_to_file("res://ui/match_setup.tscn")))
@@ -345,6 +371,7 @@ func _on_task_changed(task: int) -> void:
 		field_panel.sync_draft_context()
 		field_panel.refresh()
 		field_panel.update_preview_controls()
+	update_workflow_footer()
 
 func _request_parcel(index: int) -> void:
 	if index < 0 or index >= _definitions.size() or _definitions[index].parcel_id == displayed_parcel_id:
@@ -390,6 +417,7 @@ func choose_draft_file(path: String, saving: bool, action: Callable) -> void:
 		_draft_file_dialog = FileDialog.new()
 		_draft_file_dialog.access = FileDialog.ACCESS_USERDATA
 		_draft_file_dialog.filters = PackedStringArray(["*.json ; FuseFire draft"])
+		_draft_file_dialog.display_mode = FileDialog.DISPLAY_LIST
 		_draft_file_dialog.transient = true
 		_draft_file_dialog.exclusive = true
 		_draft_file_dialog.file_selected.connect(func(destination: String): _draft_file_action.call(destination))
@@ -419,6 +447,23 @@ func update_draft_badge() -> void:
 	draft_badge.modulate = Color("93a8ba") if scopes.is_empty() else Color("ffd077")
 	if field_panel != null and is_instance_valid(field_panel.handoff_steps):
 		field_panel.update_handoff()
+
+func update_workflow_footer() -> void:
+	if not is_instance_valid(workflow_footer):
+		return
+	var state := "Unsaved" if draft.dirty or field_panel.has_unsaved_changes() else "Saved"
+	var differs: bool = draft.placements != draft.base_placements or not field_panel.session.fields.is_empty()
+	workflow_footer.text = "%s · %s\n%s" % [state, "draft differs from registered parcel" if differs else "matches registered parcel", field_panel.export_state()]
+	var active: String = field_panel.session.active_path if task_tabs.current_tab == Task.POPULATION_FIELDS else draft.active_path
+	if not active.is_empty():
+		workflow_footer.text = active.get_file() + "\n" + workflow_footer.text
+	workflow_footer.tooltip_text = active
+	var path: String = field_panel.last_export_path
+	export_actions.visible = not path.is_empty()
+	if export_path_display.text != path:
+		export_path_display.text = path
+		export_path_display.caret_column = path.length()
+	export_path_display.tooltip_text = path
 
 func select_parcel(parcel_id: StringName) -> bool:
 	var index := _definition_index(parcel_id)
@@ -665,17 +710,17 @@ func _apply_draft(message := "") -> void:
 	_update_history_buttons()
 
 func _save_draft() -> void:
-	var path: String = draft.draft_path()
+	var path: String = draft.active_path if not draft.active_path.is_empty() else draft.draft_path()
 	confirm_replace_draft(path, func(): _save_draft_to(path))
 
 func _save_draft_as() -> void:
-	choose_draft_file(draft.draft_path(), true, _save_draft_to)
+	choose_draft_file(draft.active_path if not draft.active_path.is_empty() else draft.draft_path(), true, _save_draft_to)
 
 func _save_draft_to(path: String) -> void:
 	_update_draft_status("Saved visual-only draft to %s." % path if draft.save_to(path) else draft.last_error)
 
 func _load_draft() -> void:
-	_load_draft_from(draft.draft_path())
+	_load_draft_from(draft.active_path if not draft.active_path.is_empty() else draft.draft_path())
 
 func _open_draft() -> void:
 	choose_draft_file(draft.draft_path(), false, _load_draft_from)
@@ -699,7 +744,12 @@ func _update_draft_status(message := "") -> void:
 		var selected := displayed_parcel.get_node_or_null(NodePath(String(record.path))) as Node3D
 		if selected and not selected.is_visible_in_tree():
 			selection += "\nPopulation template. Use Population fields → Preview to see placed objects."
-	var state := "unsaved" if draft.dirty else "saved/source"
+	var state := "Unsaved draft"
+	if not draft.dirty:
+		state = "Registered source" if draft.placements == draft.base_placements else "Draft saved · differs from registered parcel"
+	var active: String = draft.active_path
+	_visual_destination.text = "Active draft · %s\nDefault copy · %s" % [active.get_file() if not active.is_empty() else "registered source", draft.draft_path().get_file()]
+	_visual_destination.tooltip_text = "Save target · " + ProjectSettings.globalize_path(active if not active.is_empty() else draft.draft_path())
 	draft_status.text = "%s · %s\n%s%s" % [String(draft.parcel_id), state, selection, "\n" + message if not message.is_empty() else ""]
 	_update_history_buttons()
 	_update_selection_marker()
