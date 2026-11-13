@@ -10,6 +10,8 @@ signal attack_mode_toggled(is_active: bool)
 signal shield_mode_toggled(is_active: bool)
 signal overwatch_mode_toggled(is_active: bool)
 signal attack_preview_changed(text: String)
+signal tactical_preview_changed(text: String)
+signal combat_log_changed(text: String)
 signal attack_resolved(attacker: TacticalUnit, target: TacticalUnit, did_hit: bool, hit_chance: int)
 signal action_state_changed(is_busy: bool)
 signal units_registered(player_units: Array[TacticalUnit])
@@ -38,6 +40,9 @@ var last_map_quality: MapQualityReport
 var current_movement_zone: Array[Vector3i] = []
 var current_attack_zone: Array[Vector3i] = []
 var _last_attack_preview := ""
+var _last_tactical_preview := ""
+var _movement_feedback_key := ""
+var combat_log := PackedStringArray()
 var debug_enemy_control: bool = false
 var debug_player_ai: bool = false
 var ai_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
@@ -240,8 +245,13 @@ func _ensure_tactical_id(unit: TacticalUnit) -> void:
 func _on_action_service_busy_changed(is_busy: bool) -> void:
 	action_state_changed.emit(is_busy)
 
-func _on_action_committed(_result) -> void:
+func _on_action_committed(result) -> void:
 	_refresh_overwatch_range()
+	for entry in TacticalFeedbackText.committed(result):
+		combat_log.append(entry)
+	while combat_log.size() > 5:
+		combat_log.remove_at(0)
+	combat_log_changed.emit("\n".join(combat_log))
 
 func _refresh_overwatch_range() -> void:
 	if not is_instance_valid(overwatch_range_visualizer):
@@ -372,6 +382,9 @@ func toggle_overwatch_mode() -> void:
 
 func _process(_delta: float) -> void:
 	if not turn_manager or not is_current_phase_manually_controlled():
+		_set_tactical_preview("")
+		if shot_trajectory_visualizer: shot_trajectory_visualizer.clear()
+		if path_visualizer: path_visualizer.clear_path()
 		return
 
 	var floor_hit = mouse_raycaster.get_floor_raycast_result() if mouse_raycaster else {}
@@ -382,6 +395,7 @@ func _process(_delta: float) -> void:
 			grid_cursor.update_hover_position(floor_hit.position)
 	if not is_move_mode_active or not is_instance_valid(tactical_unit) or tactical_unit.is_moving:
 		path_visualizer.clear_path()
+		_movement_feedback_key = ""
 	else:
 		_update_movement_preview(floor_hit)
 
@@ -394,16 +408,33 @@ func _update_movement_preview(floor_hit: Dictionary) -> void:
 			var query := query_move(tactical_unit, hover_grid)
 			if query.is_legal() and query.path.size() > 1:
 				path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
+				var feedback_key := "%s:%s:%d" % [tactical_unit.tactical_id, hover_grid, action_service.state_revision]
+				if feedback_key != _movement_feedback_key:
+					_movement_feedback_key = feedback_key
+					var opponents: Array[TacticalUnit] = []
+					opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
+					_set_tactical_preview(TacticalFeedbackText.movement(query, tactical_unit, opponents, grid_manager))
 				return
 	path_visualizer.clear_path()
+	_movement_feedback_key = ""
+	_set_tactical_preview("")
+
+func _set_tactical_preview(text: String) -> void:
+	if text != _last_tactical_preview:
+		_last_tactical_preview = text
+		tactical_preview_changed.emit(text)
 
 func _update_attack_preview() -> void:
 	var preview = ""
 	var trajectory_drawn := false
-	if is_attack_mode_active and is_instance_valid(tactical_unit):
+	var feedback_shown := false
+	var inspect_shot := is_attack_mode_active or (not is_move_mode_active and not is_shield_mode_active and not is_overwatch_mode_active)
+	if inspect_shot and not is_action_in_progress and is_instance_valid(tactical_unit):
 		var hovered = mouse_raycaster.get_unit_under_mouse()
-		if is_instance_valid(hovered) and hovered != tactical_unit:
+		if is_instance_valid(hovered) and FactionRules.are_hostile(tactical_unit.faction, hovered.faction):
 			var query := query_attack(tactical_unit, hovered)
+			_set_tactical_preview(TacticalFeedbackText.shot(query))
+			feedback_shown = true
 			preview = "%d%% HIT" % query.hit_chance if query.is_legal() else query.reason.to_upper()
 			if query.is_legal() and query.obstruction != "Clear":
 				preview += " — %s" % query.obstruction.to_upper()
@@ -411,11 +442,14 @@ func _update_attack_preview() -> void:
 				shot_trajectory_visualizer.draw_trajectory(
 					CombatRules.get_shot_origin(tactical_unit, grid_manager),
 					query.aim_point,
-					query.evaluation
+					query.evaluation,
+					true
 				)
 				trajectory_drawn = true
 	if not trajectory_drawn and shot_trajectory_visualizer:
 		shot_trajectory_visualizer.clear()
+	if not feedback_shown and not is_move_mode_active:
+		_set_tactical_preview("")
 	if preview != _last_attack_preview:
 		_last_attack_preview = preview
 		attack_preview_changed.emit(preview)

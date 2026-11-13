@@ -59,6 +59,7 @@ func _on_turn_phase_changed(new_phase: TurnManager.TurnPhase) -> void:
 	if turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
 		_show_battle_result(turn_manager.battle_result)
 		return
+	end_turn_button.show()
 	if battle_controller.replay_mode and new_phase != TurnManager.TurnPhase.TRANSITION:
 		turn_label.text = "REPLAY — ROUND %d" % turn_manager.current_round
 		turn_label.modulate = Color(0.55, 0.86, 1.0)
@@ -110,6 +111,7 @@ func _on_battle_ended(result: TurnManager.BattleResult) -> void:
 
 func _show_battle_result(result: TurnManager.BattleResult) -> void:
 	end_turn_button.disabled = true
+	end_turn_button.hide()
 	if result == TurnManager.BattleResult.VICTORY:
 		turn_label.text = "VICTORY"
 		turn_label.modulate = Color.GREEN
@@ -191,5 +193,7 @@ func _find_battle_level() -> BattleLevel:
 	return null
 
 func _on_player_actions_exhausted() -> void:
+	if turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
+		return
 	end_turn_button.text = "END TURN — NO AP"
 	end_turn_button.modulate = Color(1.0, 0.8, 0.2)

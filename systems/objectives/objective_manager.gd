@@ -354,6 +354,15 @@ func _remove_extracted_unit(unit: TacticalUnit) -> void:
 func get_result_report() -> String:
 	if mission and mission.mission_id == &"prototype_enemy_evacuation":
 		return "Enemies escaped %d/%d" % [escaped_enemies, get_objective(&"enemy_escape").definition.target_amount]
+	var has_extraction := false
+	for state in get_objectives():
+		has_extraction = has_extraction or state.definition.kind == MissionObjectiveDefinition.Kind.EXTRACT
+	if not has_extraction:
+		var summaries := PackedStringArray()
+		for state in get_objectives():
+			if state.definition.required:
+				summaries.append("%s: %d/%d" % [state.definition.title, state.progress, state.definition.target_amount])
+		return " | ".join(summaries)
 	var report := "VIPs extracted %d/%d | Units extracted %d/%d" % [extracted_vips, total_vips, extracted_units, total_units]
 	return report + (" | Left behind %d" % left_behind if left_behind > 0 else "")
 

@@ -19,11 +19,23 @@ class_name ActionHUDController
 var _tracked_stats: UnitStats
 var _tracked_tactical_state: TacticalState
 var _tracked_conditions: ConditionComponent
+var _preview_label: Label
+var _combat_log_label: Label
 
 func _ready() -> void:
 	if not battle_controller:
 		push_error("ActionHUDController: Missing BattleController reference!")
 		return
+	_preview_label = _make_feedback_label("TacticalPreview", Vector2(222, 94), 520)
+	_combat_log_label = _make_feedback_label("CombatLog", Vector2(20, 260), 370)
+	# The action buttons hide during AI turns; their combat feedback must remain visible.
+	_combat_log_label.reparent.call_deferred(get_parent(), false)
+	battle_controller.tactical_preview_changed.connect(func(text: String):
+		_preview_label.text = text
+		_preview_label.visible = not text.is_empty())
+	battle_controller.combat_log_changed.connect(func(text: String):
+		_combat_log_label.text = "RECENT COMBAT\n" + text
+		_combat_log_label.visible = not text.is_empty())
 	if move_button:
 		move_button.pressed.connect(_on_move_pressed)
 	if attack_button:
@@ -57,6 +69,25 @@ func _ready() -> void:
 		turn_mgr.active_unit_changed.connect(_on_active_unit_changed)
 		if turn_mgr.active_unit:
 			_on_active_unit_changed(turn_mgr.active_unit)
+
+func _make_feedback_label(node_name: String, screen_position: Vector2, width: float) -> Label:
+	var label := Label.new()
+	label.name = node_name
+	label.position = screen_position
+	label.size.x = width
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 14)
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color(0.035, 0.05, 0.065, 0.88)
+	background.content_margin_left = 8
+	background.content_margin_right = 8
+	background.content_margin_top = 6
+	background.content_margin_bottom = 6
+	label.add_theme_stylebox_override("normal", background)
+	label.hide()
+	add_child(label)
+	return label
 
 func _on_active_unit_changed(new_unit: TacticalUnit) -> void:
 	# Stop observing the old unit before connecting the new selection.
@@ -205,7 +236,8 @@ func _update_button_states() -> void:
 		reload_button.text = "Reload (1 AP)"
 	if aim_button:
 		aim_button.disabled = not aim_query.is_legal()
-		aim_button.tooltip_text = "Prepare the next Attack (+%d accuracy)" % aim_query.accuracy_bonus if aim_query.is_legal() else aim_query.reason()
+		aim_button.tooltip_text = "Costs %d AP immediately. +%d accuracy to the next Attack.\nConsumed by Attack; canceled by Move, Reload, Shield, Guard, other committed actions, defeat, or the next activation.\nConditions that prevent Aim also clear it. Current accuracy rules are provisional." % [aim_query.cost.ap, TacticalState.AIM_ACCURACY_BONUS]
+		if not aim_query.is_legal(): aim_button.tooltip_text += "\nUnavailable: " + aim_query.reason()
 		aim_button.text = "Aim (1 AP)"
 	if shield_button:
 		shield_button.visible = unit.shield_capability != null
@@ -214,7 +246,8 @@ func _update_button_states() -> void:
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "Confirm Guard: reserve one reaction against movement or a direct attack, then end this unit's activation." if battle_controller.is_overwatch_mode_active else ("Preview the guarded area before reserving one reaction." if overwatch_query.is_legal() else overwatch_query.reason())
+		overwatch_button.tooltip_text = "Preview first; Confirm spends all remaining AP (%d) and ends this activation.\nReserves one reaction against hostile movement or a direct attack.\nA reaction costs %d SP with %+d accuracy; Guard expires at the next activation." % [overwatch_query.actor_ap_before, TacticalActionService.OVERWATCH_SUPPLY_COST, TacticalActionService.OVERWATCH_ACCURACY_MODIFIER]
+		if not overwatch_query.is_legal(): overwatch_button.tooltip_text += "\nUnavailable: " + overwatch_query.reason()
 		overwatch_button.text = "CONFIRM GUARD" if battle_controller.is_overwatch_mode_active else "Guard"
 	if interact_button:
 		interact_button.visible = not terminal_query.candidate_results.is_empty() or not terminal_query.target_id.is_empty()
@@ -228,6 +261,7 @@ func _update_button_states() -> void:
 		emergency_seal_button.text = "Seal (1 AP · %d)" % unit.emergency_seal_charges
 	if supply_points_label:
 		supply_points_label.text = "SP %d/%d" % [stats.current_supply_points, stats.max_supply_points]
+		supply_points_label.tooltip_text = "Supply Points (SP): attacks and Guard reactions consume SP. Reload costs 1 AP and restores SP to maximum."
 	if tactical_state_label:
 		var condition_text := ""
 		if unit.conditions and not unit.conditions.active.is_empty():
