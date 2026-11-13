@@ -30,6 +30,8 @@ Open **Objects** to place new assets or select a visible object in the viewport 
 
 Use the fixed asset browser to search ground decoration or select a tactical template. **Place** shows a blue or red ghost as you move over the parcel. Click to place, use `R` to rotate, or press `Esc` to cancel. **Duplicate** starts another placement of a supported library asset. **Remove** works on standalone fixed objects. Add, duplicate, and remove share the visual undo and redo history. New tactical objects use existing authored volumes attached to their models. New placements are ground-level and check parcel bounds, solid overlap and the entrance.
 
+The browser renders the selected calibrated asset above Place. **Bounds · selected object only** limits the tactical overlay to the selected fixed object and follows that object into combined Preview. Orange marks solids, and cyan marks floor and access contracts. Select **Bounds · all objects** for the full parcel.
+
 Blue means the candidate fits the parcel and clears authored solids. Red identifies a footprint outside the parcel or a solid overlap. An invalid drop restores the starting pose. Rotation and nudges use the same checks. **Show current tactical bounds** displays attached gameplay volumes at the current transforms, including additions and removals. Floor support, deliberate stacking and physical door access still require authored contracts.
 
 **Save visuals** and **Load visuals** use the displayed parcel-specific file under `user://parcel_drafts/`. Replacing an existing quick-save file asks for confirmation. **Save visuals as…** chooses a separate file, and **Open visual draft…** opens one. A draft records the source parcel ID and exact revision, stable scene-node paths, asset IDs and visual transforms. It is rejected when the registered parcel revision, node identity or asset identity has changed.
@@ -60,6 +62,8 @@ On **Warehouse loading apron**, paint ground cells X 7–9 and Z 20–29 with **
 
 Gold outlines show fitting positions before Preview. Red outlines show rejected candidates, with a reason beside the preview controls. For example, paint X 2–4 and Z 21–25 and the existing `container_west` guide reserves that space. Empty guides retain their reservation so newly inferred positions cannot overlap a possible authored occupant. Smaller or disconnected paint reports that a contiguous 3 × 5 area is required.
 
+Hover the fitting message to highlight the first rejected candidate in pink and its blocker in gold. Click the message to frame that pair. The temporary highlight clears when you leave the message. Container preview leads with the occupied count, and **Preview technical details** expands the underlying socket and exclusion counts.
+
 **Warehouse loading apron — painted containers** is the registered proof. Its preview uses the Split-yard refinery loading slot's seed scope. In Match Setup, select **Refinery Family** and enable **Tactical Population**. The upper painted container position is occupied at seed **0** and empty at seed **12**. Other sites may resolve their loading slot differently.
 
 ### Override a parking row
@@ -82,6 +86,8 @@ Use **Export population scene** after inspecting the combined preview. It includ
 The result is a separate `.tscn` in `user://parcel_exports/`. The status shows its full path. It contains the original parcel, paint and the authored placement rules. At battle startup each accepted position gets its model and authored tactical volume. The filename identifies the exported rules, and an existing export is preserved. Review the scene in the source project before registering it in the parcel catalog. New equipment paint remains a preview tool for existing equipment positions.
 
 The finishing sequence is visible beside Export. Save both drafts for later editing, export, and use **Open exported scene folder** to locate the scene. Open it in Godot for visual review, then copy the approved scene into the project's authored parcels and add its ID, role, size and revision to `AuthoredParcelCatalog`. Add it to a compatible plot slot or role candidate set and verify a battle before treating it as published content. Exported scenes have a new identity. Registration remains an explicit source-project step.
+
+The checklist tracks saved drafts and whether the current composition matches its last export. Its next-step button opens the applicable save action, exports the current scene, or opens the exported scene folder. Edits mark an earlier export as stale. Godot review and registration stay marked as manual steps.
 
 ## Current boundary
 

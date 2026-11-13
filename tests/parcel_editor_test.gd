@@ -139,6 +139,7 @@ func _run() -> void:
 	editor._asset_filter.text = "box-large"
 	editor._asset_filter.text_changed.emit(editor._asset_filter.text)
 	check(editor._asset_picker.item_count == 1, "The fixed asset browser filters the calibrated library")
+	check(editor.asset_preview.asset_id == "factory_kit/box-large" and is_instance_valid(editor.asset_preview.model), "Filtering displays the actual selected asset in a separate preview viewport")
 	editor._start_library_placement()
 	var blocked_cursor: Vector2 = editor.camera.unproject_position(warehouse.global_position)
 	editor._update_library_placement(blocked_cursor)

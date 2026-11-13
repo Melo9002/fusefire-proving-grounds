@@ -52,6 +52,7 @@ static func inspect(draft, definition, root: Node3D, sockets: Array[Dictionary],
 			var bounds := AABB(pivot + template_bounds.position, template_bounds.size)
 			var space := AABB(Vector3(x - 0.5, 0, z - 0.5), Vector3(SLOT_SIZE.x, template_bounds.end.y, SLOT_SIZE.y))
 			var reason := ""
+			var blocker := AABB()
 			if not space.grow(0.001).encloses(bounds):
 				reason = "Calibrated container exceeds the candidate footprint"
 			elif draft.has_protected_overlap("ground", space):
@@ -59,12 +60,13 @@ static func inspect(draft, definition, root: Node3D, sockets: Array[Dictionary],
 			for other in unavailable:
 				if reason.is_empty() and space.grow(-0.001).intersects(other.bounds):
 					reason = other.reason
+					blocker = other.bounds
 			if reason == "Overlaps another fitted container position":
 				continue
 			if not reason.is_empty():
 				report.causes[reason] = int(report.causes.get(reason, 0)) + 1
 				if rejected.size() < 24:
-					rejected.append({"rect": rect, "reason": reason})
+					rejected.append({"rect": rect, "reason": reason, "blocker_bounds": blocker})
 				continue
 			var id := StringName("painted_container_%d_%d" % [x, z])
 			result.append({"socket_id": id, "region_id": id, "surface_id": &"ground", "asset_id": ASSET,

@@ -65,6 +65,9 @@ func _run() -> void:
 	editor.field_panel.session.add("ground", "containers", Rect2i(2, 21, 3, 5))
 	editor.field_panel.refresh()
 	await _capture(output.path_join("container-guide-conflict.png"))
+	editor.field_panel.locate_fit_conflict(true)
+	await _capture(output.path_join("container-conflict-located.png"))
+	editor._frame()
 	editor.field_panel.session.undo()
 	editor.field_panel.session.add("ground", "containers", Rect2i(7, 20, 3, 10))
 	editor.field_panel.density.value = 100
@@ -78,6 +81,11 @@ func _run() -> void:
 	editor.field_panel.preview()
 	await _capture(output.path_join("combined-truck-containers.png"))
 	editor.tactical_toggle.button_pressed = true
+	editor.tactical_scope.select(1)
+	editor.tactical_scope.item_selected.emit(1)
+	await _capture(output.path_join("selected-truck-tactical-bounds.png"))
+	editor.tactical_scope.select(0)
+	editor.tactical_scope.item_selected.emit(0)
 	await _capture(output.path_join("combined-tactical-bounds.png"))
 	editor.tactical_toggle.button_pressed = false
 	if not editor.field_panel.export_scene(output.path_join("combined-parcel.tscn")):
@@ -85,6 +93,9 @@ func _run() -> void:
 		quit(1)
 		return
 	await _capture(output.path_join("combined-export-status.png"))
+	var field_scroll := editor.field_panel.handoff_steps.get_parent().get_parent() as ScrollContainer
+	field_scroll.ensure_control_visible(editor.field_panel.handoff_next)
+	await _capture(output.path_join("export-handoff-checklist.png"))
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	editor._undo()
 	editor.field_panel.session.undo()

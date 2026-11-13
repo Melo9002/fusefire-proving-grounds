@@ -7,6 +7,7 @@ const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
 const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
 const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
 const PlacementLibrary = preload("res://tools/parcel_editor/parcel_placement_library.gd")
+const AssetPreview = preload("res://tools/parcel_editor/asset_preview.gd")
 var field_panel
 
 enum Task { INSPECT, MOVE_OBJECTS, POPULATION_FIELDS }
@@ -35,6 +36,9 @@ var _asset_picker: OptionButton
 var _asset_filter: LineEdit
 var _asset_category: OptionButton
 var _add_asset_button: Button
+var asset_preview
+var tactical_scope: OptionButton
+var tactical_legend: Label
 
 var parcel_picker: OptionButton
 var metadata_label: Label
@@ -189,6 +193,10 @@ func _build_ui() -> void:
 	_asset_picker.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_asset_picker.fit_to_longest_item = false
 	browser.add_child(_asset_picker)
+	asset_preview = AssetPreview.new()
+	browser.add_child(asset_preview)
+	asset_preview.setup()
+	_asset_picker.item_selected.connect(func(_index): asset_preview.show_asset(String(_asset_picker.get_selected_metadata())))
 	var asset_actions := HBoxContainer.new()
 	browser.add_child(asset_actions)
 	for action in [["Place", _start_library_placement], ["Duplicate", _start_duplicate], ["Remove", _remove_selected]]:
@@ -212,6 +220,17 @@ func _build_ui() -> void:
 	compare.toggled.connect(func(enabled: bool): tactical_toggle.button_pressed = enabled)
 	tactical_toggle.toggled.connect(func(enabled: bool): compare.set_pressed_no_signal(enabled))
 	move_page.add_child(compare)
+	tactical_scope = OptionButton.new()
+	tactical_scope.add_item("Bounds · all objects")
+	tactical_scope.add_item("Bounds · selected object only")
+	tactical_scope.item_selected.connect(func(_index): _refresh_active_tactical_overlay())
+	move_page.add_child(tactical_scope)
+	tactical_legend = Label.new()
+	tactical_legend.text = "Orange · solid volumes\nCyan · floor and access contracts"
+	tactical_legend.modulate = Color("93a8ba")
+	tactical_legend.visible = tactical_toggle.button_pressed
+	tactical_toggle.toggled.connect(func(enabled): tactical_legend.visible = enabled)
+	move_page.add_child(tactical_legend)
 	placement_picker = OptionButton.new()
 	placement_picker.name = "PlacementPicker"
 	placement_picker.fit_to_longest_item = false
@@ -398,6 +417,8 @@ func update_draft_badge() -> void:
 	var scopes := _unsaved_scopes()
 	draft_badge.text = "No unsaved changes" if scopes.is_empty() else "Unsaved · %s" % ", ".join(scopes)
 	draft_badge.modulate = Color("93a8ba") if scopes.is_empty() else Color("ffd077")
+	if field_panel != null and is_instance_valid(field_panel.handoff_steps):
+		field_panel.update_handoff()
 
 func select_parcel(parcel_id: StringName) -> bool:
 	var index := _definition_index(parcel_id)
@@ -481,6 +502,7 @@ func _refresh_asset_browser() -> void:
 		_asset_picker.set_item_metadata(index, id)
 		_asset_picker.set_item_tooltip(index, "%s · fixed %s" % [id, role.to_lower()])
 	_add_asset_button.disabled = _asset_picker.item_count == 0
+	asset_preview.show_asset(String(_asset_picker.get_item_metadata(0)) if _asset_picker.item_count else "")
 
 func _start_library_placement() -> void:
 	if _asset_picker.selected >= 0:
@@ -681,6 +703,8 @@ func _update_draft_status(message := "") -> void:
 	draft_status.text = "%s · %s\n%s%s" % [String(draft.parcel_id), state, selection, "\n" + message if not message.is_empty() else ""]
 	_update_history_buttons()
 	_update_selection_marker()
+	if tactical_scope.selected == 1:
+		_refresh_active_tactical_overlay()
 	update_draft_badge()
 
 func _update_history_buttons() -> void:
@@ -785,12 +809,21 @@ func refresh_tactical_overlay(scene_root: Node3D) -> void:
 	tactical_overlay.visible = tactical_toggle.button_pressed
 	add_child(tactical_overlay)
 
+func _refresh_active_tactical_overlay() -> void:
+	if not is_instance_valid(displayed_parcel):
+		return
+	var preview: Node3D = field_panel._runtime_preview if field_panel != null else null
+	refresh_tactical_overlay(preview if is_instance_valid(preview) else displayed_parcel)
+
 func _create_tactical_overlay(definition, scene_root: Node3D = displayed_parcel) -> Node3D:
 	var overlay := Node3D.new()
 	overlay.name = "TacticalContracts"
 	var solid_material := _overlay_material(Color(1.0, 0.42, 0.12, 0.34))
+	var selected := scene_root.get_node_or_null(NodePath(draft.selected_path)) if not draft.selected_path.is_empty() else null
 	for node in scene_root.find_children("*", "Node3D", true, false):
 		if not node.has_meta("solid_size") or _removed_from_draft(node, scene_root):
+			continue
+		if tactical_scope.selected == 1 and (selected == null or (node != selected and not selected.is_ancestor_of(node))):
 			continue
 		var box := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
@@ -801,6 +834,8 @@ func _create_tactical_overlay(definition, scene_root: Node3D = displayed_parcel)
 		# parcel node's world transform is also the overlay-local transform.
 		box.transform = (node as Node3D).global_transform
 		overlay.add_child(box)
+	if tactical_scope.selected == 1:
+		return overlay
 	var cyan := _overlay_material(Color(0.08, 0.86, 1.0, 0.36))
 	var deck_rect: Rect2i = displayed_parcel.get_meta("deck_local_rect", Rect2i())
 	if deck_rect.has_area():

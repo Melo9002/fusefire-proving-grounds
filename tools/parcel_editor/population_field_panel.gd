@@ -47,6 +47,13 @@ var _definition
 var _registered_area_count := 0
 var _aisle_obstacles: Array[AABB] = []
 var _registered_protection: Array[AABB] = []
+var _fit_report := {}
+var _conflict_marker: Node3D
+var _result_details: CheckButton
+var _preview_details := false
+var handoff_steps: Label
+var handoff_next: Button
+var _export_fingerprint := ""
 
 func setup(editor: Node3D) -> void:
 	host = editor
@@ -79,6 +86,12 @@ func setup(editor: Node3D) -> void:
 	preview_context = _add_label(self, "")
 	fit_feedback = _add_label(self, "")
 	fit_feedback.max_lines_visible = 4
+	fit_feedback.mouse_filter = Control.MOUSE_FILTER_STOP
+	fit_feedback.mouse_entered.connect(func(): locate_fit_conflict(false))
+	fit_feedback.mouse_exited.connect(_clear_conflict_marker)
+	fit_feedback.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			locate_fit_conflict(true))
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -105,7 +118,12 @@ func setup(editor: Node3D) -> void:
 		start_cell = null
 		refresh())
 	options.add_child(heading_picker)
+	_result_details = CheckButton.new()
+	_result_details.text = "Preview technical details"
+	_result_details.hide()
+	options.add_child(_result_details)
 	status = _add_label(options, "")
+	_result_details.toggled.connect(func(enabled): status.visible = enabled if _preview_details else true)
 	seed_input = SpinBox.new()
 	seed_input.max_value = 2147483647
 	seed_input.value = 17
@@ -133,6 +151,8 @@ func setup(editor: Node3D) -> void:
 	options.add_child(named_files)
 	_field_destination = _add_label(options, "")
 	export_button = _add_button(options, "Export population scene", export_scene)
+	handoff_steps = _add_label(options, "")
+	handoff_next = _add_button(options, "Next step", _next_handoff_step)
 	_add_label(options, "Finish · Save drafts → Export scene → Review in Godot → Register in AuthoredParcelCatalog. Export includes fixed edits and new positions, retains existing population rules, and uses their battle occupancy. Draft density affects Preview.").modulate = Color("93a8ba")
 	export_folder_button = _add_button(options, "Open exported scene folder", func(): OS.shell_open(export_folder_button.get_meta("folder")))
 	export_folder_button.disabled = true
@@ -224,6 +244,37 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 		measurement.text = "%s · %d × %d cells" % [String(latest.preset).replace("_", " ").capitalize(), rect.size.x, rect.size.y]
 	host.update_draft_badge()
 	update_preview_controls()
+	update_handoff()
+
+func _current_fingerprint() -> String:
+	return JSON.stringify([host.draft.placements, session.fields]).sha256_text()
+
+func update_handoff() -> void:
+	var objects_dirty: bool = host.draft.dirty
+	var fields_dirty := has_unsaved_changes()
+	var export_current := not _export_fingerprint.is_empty() and _export_fingerprint == _current_fingerprint()
+	handoff_steps.text = "%s 1. Save both drafts\n%s 2. Export current scene\n○ 3. Review the scene in Godot\n○ 4. Register and test a battle" % ["○" if objects_dirty or fields_dirty else "✓", "✓" if export_current else "○"]
+	if not _export_fingerprint.is_empty() and not export_current:
+		handoff_steps.text += "\nScene changed since export."
+	if objects_dirty:
+		handoff_next.text = "Save object draft"
+	elif fields_dirty:
+		handoff_next.text = "Save field draft"
+	elif export_current:
+		handoff_next.text = "Open folder for Godot review"
+	else:
+		handoff_next.text = "Export current scene"
+	handoff_next.disabled = not export_current and not objects_dirty and not fields_dirty and export_button.disabled
+
+func _next_handoff_step() -> void:
+	if host.draft.dirty:
+		host._save_draft()
+	elif has_unsaved_changes():
+		save_fields()
+	elif not _export_fingerprint.is_empty() and _export_fingerprint == _current_fingerprint():
+		export_folder_button.pressed.emit()
+	else:
+		export_scene()
 
 func update_preview_controls() -> void:
 	var has_visual_changes: bool = host.draft.placements != host.draft.base_placements
@@ -262,6 +313,8 @@ func begin(definition, scene_root: Node3D) -> void:
 		surface_picker.add_item("%s · level %d" % [id, session.surfaces[id].level])
 		surface_picker.set_item_metadata(surface_picker.item_count - 1, id)
 	active_tool = Tool.INSPECT
+	_export_fingerprint = ""
+	export_folder_button.disabled = true
 	refresh()
 
 func sync_draft_context() -> void:
@@ -486,6 +539,7 @@ func refresh(message := "") -> void:
 	_draw_aisle_arrow()
 	status.text = message
 	fit_feedback.text = ""
+	_fit_report = {}
 	if not bays.is_empty():
 		if not status.text.is_empty(): status.text += "\n"
 		status.text += "%d bays fit · %d rejected. %d authored sockets on this parcel." % [fitting, bays.size() - fitting, _source_sockets.size()]
@@ -499,7 +553,61 @@ func refresh(message := "") -> void:
 		template.free()
 		_draw_container_fit(report)
 		fit_feedback.text = _container_fit_text(report)
-		fit_feedback.tooltip_text = fit_feedback.text
+		_set_fit_report(report)
+
+func _set_fit_report(report: Dictionary) -> void:
+	_fit_report = report
+	fit_feedback.tooltip_text = fit_feedback.text + "\nHover to highlight the first conflict. Click to frame it."
+
+func _clear_conflict_marker() -> void:
+	if is_instance_valid(_conflict_marker):
+		_conflict_marker.free()
+
+func locate_fit_conflict(frame: bool) -> void:
+	_clear_conflict_marker()
+	if _fit_report.get("rejected", []).is_empty():
+		return
+	var rejected: Dictionary = _fit_report.rejected[0]
+	var rect: Rect2i = rejected.rect
+	var candidate := AABB(Vector3(rect.position.x - 0.5, 0.08, rect.position.y - 0.5), Vector3(rect.size.x, 0.05, rect.size.y))
+	var blocker: AABB = rejected.get("blocker_bounds", AABB())
+	_conflict_marker = Node3D.new()
+	_conflict_marker.position = host.displayed_parcel.position
+	host.add_child(_conflict_marker)
+	var mesh := ImmediateMesh.new()
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.vertex_color_use_as_albedo = true
+	material.no_depth_test = true
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	for spec in [[candidate, Color("ff627b")], [blocker, Color("ffd36a")]]:
+		var bounds: AABB = spec[0]
+		if not bounds.has_volume(): continue
+		mesh.surface_set_color(spec[1])
+		for corner in 8:
+			for edge in [1, 2, 4]:
+				if (corner & edge) == 0:
+					mesh.surface_add_vertex(bounds.get_endpoint(corner))
+					mesh.surface_add_vertex(bounds.get_endpoint(corner | edge))
+	mesh.surface_end()
+	var visual := MeshInstance3D.new()
+	visual.mesh = mesh
+	_conflict_marker.add_child(visual)
+	var label := Label3D.new()
+	var blocker_name := String(rejected.reason).trim_prefix("Reserved by existing placement ").trim_prefix("Overlaps a fixed object · ")
+	label.text = "Candidate (pink)\nBlocker (gold)\n" + blocker_name.left(30)
+	label.font_size = 64
+	label.pixel_size = 0.0004
+	label.fixed_size = true
+	label.no_depth_test = true
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = candidate.get_center() + Vector3.UP * 2
+	_conflict_marker.add_child(label)
+	if frame:
+		var bounds := candidate.merge(blocker) if blocker.has_volume() else candidate
+		host._camera_target = host.displayed_parcel.to_global(bounds.get_center())
+		host._distance = clampf(bounds.size.length() * 2.5, 12, 45)
+		host._update_camera()
 
 func _container_fit_text(report: Dictionary) -> String:
 	var message := "Containers · %d positions fit." % report.accepted.size()
@@ -611,7 +719,16 @@ func preview() -> void:
 	if not container_ids.is_empty() or session.fields.any(func(field): return field.preset == "containers"):
 		status.text += "\nNew containers · %d of %d fitted positions occupied." % [container_count, container_ids.size()]
 		fit_feedback.text = _container_fit_text(container_report)
-	preview_context.text = "Combined draft preview · seed %d · %d occupied. Tactical bounds follow current objects. Export and registration are separate." % [map_seed, choices.size()]
+		_set_fit_report(container_report)
+	var summary := "Population · %d occupied" % choices.size()
+	if not container_report.is_empty():
+		summary = "Containers · %d of %d new positions occupied" % [container_count, container_ids.size()]
+	elif session.fields.any(func(field): return field.preset == "parking"):
+		summary = "Parking · %d occupied, including %d new positions" % [choices.size(), row_count]
+	preview_context.text = "%s · Seed %d\nCombined with your fixed objects." % [summary, map_seed]
+	_preview_details = true
+	_result_details.show()
+	status.visible = _result_details.button_pressed
 
 func preview_registered() -> void:
 	clear_preview()
@@ -731,6 +848,10 @@ func _draw_outline(mesh: ImmediateMesh, rect: Rect2i, level: int, color: Color) 
 		mesh.surface_add_vertex(point)
 
 func clear_preview() -> void:
+	_clear_conflict_marker()
+	_preview_details = false
+	_result_details.hide()
+	status.show()
 	if is_instance_valid(_runtime_preview):
 		_runtime_preview.free()
 		status.show()
@@ -810,5 +931,7 @@ func export_scene(destination: String = "") -> bool:
 	status.text = "Exported %d parking bays and %d container positions to %s" % [result.bay_count, result.container_count, ProjectSettings.globalize_path(destination)]
 	export_folder_button.set_meta("folder", ProjectSettings.globalize_path(destination.get_base_dir()))
 	export_folder_button.disabled = false
+	_export_fingerprint = _current_fingerprint()
+	update_handoff()
 	preview_context.text = "Scene exported. Review it in Godot, then register its new ID and revision in AuthoredParcelCatalog. Saved drafts remain available."
 	return true
