@@ -585,11 +585,11 @@ func locate_fit_conflict(frame: bool) -> void:
 	_conflict_marker.position = host.displayed_parcel.position
 	host.add_child(_conflict_marker)
 	var mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	material.no_depth_test = true
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var overlay_material := StandardMaterial3D.new()
+	overlay_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	overlay_material.vertex_color_use_as_albedo = true
+	overlay_material.no_depth_test = true
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, overlay_material)
 	for spec in [[candidate, Color("ff627b")], [blocker, Color("ffd36a")]]:
 		var bounds: AABB = spec[0]
 		if not bounds.has_volume(): continue
@@ -629,13 +629,13 @@ func _container_fit_text(report: Dictionary) -> String:
 
 func _draw_container_fit(report: Dictionary) -> void:
 	var mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	material.no_depth_test = true
+	var overlay_material := StandardMaterial3D.new()
+	overlay_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	overlay_material.vertex_color_use_as_albedo = true
+	overlay_material.no_depth_test = true
 	if report.accepted.is_empty() and report.rejected.is_empty():
 		return
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, overlay_material)
 	for candidate in report.accepted:
 		_draw_outline(mesh, candidate.rect, 0, Color("ffd077"))
 	for candidate in report.rejected:
@@ -648,12 +648,12 @@ func _draw_container_fit(report: Dictionary) -> void:
 
 func _draw_paint_conflicts(conflict: Dictionary) -> void:
 	var mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	material.no_depth_test = true
+	var overlay_material := StandardMaterial3D.new()
+	overlay_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	overlay_material.vertex_color_use_as_albedo = true
+	overlay_material.no_depth_test = true
 	var color := Color("ff626b")
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, overlay_material)
 	for cell: Vector2i in conflict.cells:
 		_draw_outline(mesh, Rect2i(cell, Vector2i.ONE), conflict.level, color)
 	if conflict.rect.has_area():
@@ -794,11 +794,11 @@ func _draw_aisle_arrow() -> void:
 	if active_tool != Tool.PARKING_ROW:
 		return
 	var mesh := ImmediateMesh.new()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color("a0ffb4")
-	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	var overlay_material := StandardMaterial3D.new()
+	overlay_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	overlay_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	overlay_material.albedo_color = Color("a0ffb4")
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, overlay_material)
 	for point in [Vector2(-0.14, 0), Vector2(0.14, 0), Vector2(0.14, 1.4), Vector2(-0.14, 0), Vector2(0.14, 1.4), Vector2(-0.14, 1.4), Vector2(-0.52, 1.4), Vector2(0.52, 1.4), Vector2(0, 2.2)]:
 		mesh.surface_add_vertex(Vector3(point.x, 0, point.y))
 	mesh.surface_end()

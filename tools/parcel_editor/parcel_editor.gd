@@ -630,15 +630,15 @@ func _rotate_selected(turns: int) -> void:
 func _selected_object() -> Node3D:
 	return displayed_parcel.get_node_or_null(NodePath(draft.selected_path)) as Node3D if not draft.selected_path.is_empty() else null
 
-func _try_visual_pose(selected: Node3D, position: Vector3, yaw: float) -> void:
+func _try_visual_pose(selected: Node3D, candidate_position: Vector3, yaw: float) -> void:
 	var original := selected.transform
-	selected.position = position
+	selected.position = candidate_position
 	selected.rotation_degrees.y = yaw
 	var issue := _validate_visual_pose(selected)
 	selected.transform = original
 	if not issue.is_empty():
 		_update_draft_status("Placement rejected · " + issue)
-	elif draft.place_selected(position, yaw):
+	elif draft.place_selected(candidate_position, yaw):
 		_apply_draft("Placed visual draft object.")
 
 func _validate_visual_pose(selected: Node3D) -> String:
@@ -804,15 +804,15 @@ func _update_selection_marker() -> void:
 				lines.surface_add_vertex(bounds.get_endpoint(corner))
 				lines.surface_add_vertex(bounds.get_endpoint(corner | edge))
 	var pivot := selected.global_position
-	var basis := (selected.get_parent() as Node3D).global_basis.orthonormalized()
-	for spec in [[basis.x, "X+", Color("ff827d")], [basis.y, "Y+", Color("8deeb4")], [basis.z, "Z+", Color("83c8ff")]]:
+	var parent_basis := (selected.get_parent() as Node3D).global_basis.orthonormalized()
+	for spec in [[parent_basis.x, "X+", Color("ff827d")], [parent_basis.y, "Y+", Color("8deeb4")], [parent_basis.z, "Z+", Color("83c8ff")]]:
 		var axis: Vector3 = spec[0]
 		var length := clampf(bounds.size.length() * 0.36, 1.5, 6.0)
 		var tip := pivot + axis * length
 		lines.surface_set_color(spec[2])
 		lines.surface_add_vertex(pivot)
 		lines.surface_add_vertex(tip)
-		var side := (basis.x if spec[1] == "Y+" else basis.y) * length * 0.08
+		var side := (parent_basis.x if spec[1] == "Y+" else parent_basis.y) * length * 0.08
 		for sign_value in [-1.0, 1.0]:
 			lines.surface_add_vertex(tip)
 			lines.surface_add_vertex(tip - axis * length * 0.15 + side * sign_value)
@@ -1053,12 +1053,12 @@ func _ghost_color() -> Color:
 func _finish_object_drag(commit: bool) -> void:
 	if not is_instance_valid(_dragged):
 		return
-	var position := _dragged.position
+	var dropped_position := _dragged.position
 	var issue := _placement_issue
 	_clear_placement_ghost()
 	_dragged.transform = _drag_origin
 	_dragged = null
-	if commit and issue.is_empty() and draft.place_selected(position, _drag_yaw):
+	if commit and issue.is_empty() and draft.place_selected(dropped_position, _drag_yaw):
 		_apply_draft("Placed visual draft object.")
 	else:
 		_update_draft_status("Placement rejected · " + issue if commit and not issue.is_empty() else "")

@@ -17,10 +17,10 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 		if fixed_draft.parcel_id != source.parcel_id or fixed_draft.parcel_revision != source.revision:
 			scene_root.free()
 			return {"error": "Fixed-object draft source revision no longer matches."}
-		var failures: PackedStringArray = fixed_draft.apply(scene_root)
-		if not failures.is_empty():
+		var draft_failures: PackedStringArray = fixed_draft.apply(scene_root)
+		if not draft_failures.is_empty():
 			scene_root.free()
-			return {"error": " ".join(failures)}
+			return {"error": " ".join(draft_failures)}
 		var copy: Node3D = fixed_draft.preview_root(scene_root)
 		scene_root.free()
 		scene_root = copy
