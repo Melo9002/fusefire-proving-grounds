@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/road-straight.glb" id="road"]
+
+[node name="RoadStrip85" type="Node3D"]
+metadata/asset_id = "city_kit_roads/road-straight"
+metadata/calibrated_scale = 5.0
+metadata/tile_pitch = 5.0
+
+[node name="Tile00" parent="." instance=ExtResource("road")]
+scale = Vector3(5, 5, 5)
+[node name="Tile01" parent="." instance=ExtResource("road")]
+position = Vector3(5, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile02" parent="." instance=ExtResource("road")]
+position = Vector3(10, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile03" parent="." instance=ExtResource("road")]
+position = Vector3(15, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile04" parent="." instance=ExtResource("road")]
+position = Vector3(20, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile05" parent="." instance=ExtResource("road")]
+position = Vector3(25, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile06" parent="." instance=ExtResource("road")]
+position = Vector3(30, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile07" parent="." instance=ExtResource("road")]
+position = Vector3(35, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile08" parent="." instance=ExtResource("road")]
+position = Vector3(40, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile09" parent="." instance=ExtResource("road")]
+position = Vector3(45, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile10" parent="." instance=ExtResource("road")]
+position = Vector3(50, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile11" parent="." instance=ExtResource("road")]
+position = Vector3(55, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile12" parent="." instance=ExtResource("road")]
+position = Vector3(60, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile13" parent="." instance=ExtResource("road")]
+position = Vector3(65, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile14" parent="." instance=ExtResource("road")]
+position = Vector3(70, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile15" parent="." instance=ExtResource("road")]
+position = Vector3(75, 0, 0)
+scale = Vector3(5, 5, 5)
+[node name="Tile16" parent="." instance=ExtResource("road")]
+position = Vector3(80, 0, 0)
+scale = Vector3(5, 5, 5)

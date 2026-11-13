@@ -1,6 +1,8 @@
 class_name TacticalCamera
 extends Node3D
 
+const EnvironmentApertures = preload("res://presentation/overlays/environment_camera_apertures.gd")
+
 @export_group("References")
 @export var map_floor: CSGBox3D
 @export var camera: Camera3D
@@ -12,6 +14,8 @@ extends Node3D
 @export_range(0.0, 20.0, 0.1, "suffix:m") var map_margin: float = 2.0
 @export_range(10.0, 360.0, 1.0, "suffix:°/s") var rotation_speed: float = 90.0
 @export_range(0.01, 2.0, 0.01) var drag_sensitivity: float = 0.3
+@export_range(0.0, 30.0, 0.5) var minimum_pitch_degrees: float = 2.0
+@export_range(45.0, 89.0, 0.5) var maximum_pitch_degrees: float = 88.0
 @export_group("Zoom")
 @export_range(1.0, 80.0, 0.5, "suffix:m") var min_zoom: float = 4.0
 @export_range(1.0, 120.0, 0.5, "suffix:m") var max_zoom: float = 56.0
@@ -34,6 +38,7 @@ var _selection_focus_tween: Tween
 var _tactical_fov := 25.70093
 var _zoom: float = 42.0
 var _rotating: bool = false
+var _manual_pitch := false
 var _dragging := false
 var _drag_anchor := Vector3.ZERO
 var _cinematic_actor: TacticalUnit
@@ -43,6 +48,8 @@ var _cinematic_active := false
 var _cinematic_camera_position := Vector3.ZERO
 var _cinematic_look_target := Vector3.ZERO
 var _faded_occluders: Dictionary = {}
+var _cinematic_hidden: Dictionary = {}
+var _environment_apertures := EnvironmentApertures.new()
 var _inspected_floor := Vector3.INF
 var _inspection_actor: TacticalUnit
 var _inspection_actor_cell := Vector3i.ZERO
@@ -74,16 +81,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _transitioning:
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if _cinematic_active:
 		_update_cinematic_camera(delta)
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if not get_window().has_focus():
 		_dragging = false
 		_rotating = false
-		_update_camera_occlusion()
+		_update_camera_occlusion(delta)
 		return
 	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		_dragging = false
@@ -126,25 +133,29 @@ func _process(delta: float) -> void:
 	if turn_direction != 0.0:
 		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-turn_direction * rotation_speed * delta))
-	_update_camera_occlusion()
+	_update_camera_occlusion(delta)
 
 func _exit_tree() -> void:
+	_restore_cinematic_visibility({})
 	_restore_faded_occluders({})
-	for group in ["tactical_roof_cutaways", "tactical_visual_occluders"]:
+	_environment_apertures.restore_view()
+	for group in ["tactical_roof_cutaways", "tactical_visual_occluders", TacticalCameraAperture.GROUP]:
 		for visual in get_tree().get_nodes_in_group(group):
 			visual.restore_view()
 
-func _update_camera_occlusion() -> void:
+func _update_camera_occlusion(delta: float = 0.016) -> void:
 	if not is_instance_valid(camera) or not is_inside_tree():
 		_restore_faded_occluders({})
 		return
 	var focuses := _camera_occlusion_focuses()
+	_update_cinematic_visibility()
 	# Explicit roof layers and visual-only props use the same camera subjects
 	# as ordinary occlusion, including nested-reaction targets.
 	for roof in get_tree().get_nodes_in_group("tactical_roof_cutaways"):
 		roof.update_view(camera.global_position, focuses)
+	var using_apertures := _update_local_apertures(delta)
 	for visual in get_tree().get_nodes_in_group("tactical_visual_occluders"):
-		visual.update_view(camera.global_position, focuses)
+		visual.update_view(camera.global_position, focuses, not using_apertures, _environment_apertures.active)
 	if focuses.is_empty():
 		_restore_faded_occluders({})
 		return
@@ -161,12 +172,54 @@ func _update_camera_occlusion() -> void:
 			if collider and collider.has_method("get_rid"):
 				excluded.append(collider.get_rid())
 			var geometry := _occluder_geometry(collider, int(hit.get("shape", -1)))
-			if geometry and geometry != map_floor:
+			if geometry and geometry != map_floor and not _environment_apertures.active.has(geometry) \
+			and (not using_apertures or not geometry is TacticalCameraAperture):
 				faded_now[geometry] = true
 				if not _faded_occluders.has(geometry):
 					_faded_occluders[geometry] = geometry.transparency
 				geometry.transparency = occluder_transparency
 	_restore_faded_occluders(faded_now)
+
+func _update_cinematic_visibility() -> void:
+	var hidden_now := {}
+	if _cinematic_active and is_instance_valid(_cinematic_actor):
+		var actor_focus := _cinematic_actor.global_position
+		if is_instance_valid(_cinematic_actor.visual_adapter):
+			actor_focus = _cinematic_actor.visual_adapter.get_camera_focus()
+		for geometry in _environment_apertures.cinematic_blockers(camera.global_position, actor_focus, _cinematic_hidden):
+			hidden_now[geometry] = true
+			if not _cinematic_hidden.has(geometry):
+				_cinematic_hidden[geometry] = geometry.visible
+				geometry.hide()
+	_restore_cinematic_visibility(hidden_now)
+
+func _restore_cinematic_visibility(hidden_now: Dictionary) -> void:
+	for geometry in _cinematic_hidden.keys():
+		if is_instance_valid(geometry) and not hidden_now.has(geometry):
+			geometry.visible = _cinematic_hidden[geometry]
+		if not hidden_now.has(geometry):
+			_cinematic_hidden.erase(geometry)
+
+func register_environment_apertures(environment: Node3D) -> void:
+	_environment_apertures.register_environment(environment, map_floor)
+
+func _update_local_apertures(delta: float) -> bool:
+	var surfaces := get_tree().get_nodes_in_group(TacticalCameraAperture.GROUP)
+	# An inspected floor is a browsing context, not a selected protagonist.
+	var actor := _selected_unit() if not _cinematic_active and not _transitioning and _inspected_floor == Vector3.INF else null
+	if not actor or not actor.is_visible_in_tree() or not actor.stats or actor.stats.is_defeated \
+	or actor.faction not in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY]:
+		for surface in surfaces:
+			surface.restore_view()
+		_environment_apertures.restore_view()
+		return false
+	var subject := actor.global_position
+	if camera.is_position_behind(subject) or not get_viewport().get_visible_rect().has_point(camera.unproject_position(subject)):
+		subject = Vector3.INF
+	for surface in surfaces:
+		surface.update_view(camera.global_position, subject, delta)
+	_environment_apertures.update_view(camera.global_position, subject, delta)
+	return subject.is_finite()
 
 func _camera_occlusion_focuses() -> Array[Vector3]:
 	if _cinematic_active:
@@ -217,7 +270,7 @@ func _restore_faded_occluders(still_faded: Dictionary) -> void:
 			_faded_occluders.erase(geometry)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _cinematic_active:
+	if _cinematic_active or _transitioning:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_F, KEY_HOME]:
 		focus_selected_unit()
@@ -243,6 +296,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _rotating:
 		_cancel_selection_focus()
 		rotate_y(deg_to_rad(-event.relative.x * drag_sensitivity))
+		if not is_zero_approx(event.relative.y):
+			_manual_pitch = true
+			rotation.x = clampf(rotation.x - deg_to_rad(event.relative.y * drag_sensitivity), -deg_to_rad(maximum_pitch_degrees), -deg_to_rad(minimum_pitch_degrees))
+		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
 		var point = _ground_point(event.position)
 		if point != null:
@@ -380,6 +437,7 @@ func _on_selection_focus_requested(unit: TacticalUnit, force_recenter: bool) -> 
 
 func clear_cinematic_view() -> void:
 	_cancel_camera_transition()
+	_restore_cinematic_visibility({})
 	if not _cinematic_active:
 		return
 	_cinematic_active = false
@@ -399,6 +457,7 @@ func return_to_tactical_view() -> void:
 	var actor := _cinematic_actor
 	_cinematic_active = false
 	_cinematic_actor = null
+	_restore_cinematic_visibility({})
 	# Selection can change synchronously while an action camera is active. Its
 	# focus request is intentionally ignored during the cinematic, so the return
 	# transition must honor the current player selection instead of restoring the
@@ -453,26 +512,29 @@ func _update_cinematic_camera(delta: float) -> void:
 	var shoulder_side := direction.cross(Vector3.UP).normalized()
 	var base := eye + Vector3.UP * (0.25 * size_scale) - direction * (2.8 * size_scale)
 	var desired_position := base + shoulder_side * (0.65 * size_scale * _cinematic_side)
-	if not _camera_path_clear(focus, desired_position):
+	if not _cinematic_view_clear(focus, desired_position):
 		var opposite := base - shoulder_side * (0.65 * size_scale * _cinematic_side)
-		if _camera_path_clear(focus, opposite):
+		if _cinematic_view_clear(focus, opposite):
 			_cinematic_side *= -1.0
 			desired_position = opposite
 		else:
 			# Both shoulders blocked: try an elevated tactical angle first.
 			var elevated := focus - direction * (3.0 * size_scale) + Vector3.UP * (3.0 * size_scale)
-			desired_position = elevated if _camera_path_clear(focus, elevated) else _safe_camera_position(focus, desired_position)
+			desired_position = elevated if _cinematic_view_clear(focus, elevated) else _safe_camera_position(focus, elevated)
 	var distance_to_focus := actor_position.distance_to(_cinematic_focus)
 	var forward_interest := minf(distance_to_focus * 0.2, 1.8 * size_scale)
 	var desired_target := focus + direction * forward_interest
 	var blend := 1.0 if delta >= 0.99 else 1.0 - exp(-8.0 * delta)
 	var eased_position := _cinematic_camera_position.lerp(desired_position, blend)
 	# Never ease through a wall when changing shoulders. Pull inward immediately.
-	_cinematic_camera_position = eased_position if _camera_path_clear(focus, eased_position) else desired_position
+	_cinematic_camera_position = eased_position if _cinematic_view_clear(focus, eased_position) else desired_position
 	_cinematic_look_target = desired_target if delta >= 0.99 else _cinematic_look_target.lerp(desired_target, blend)
 	camera.fov = 55.0
 	camera.global_position = _cinematic_camera_position
 	camera.look_at(_cinematic_look_target, Vector3.UP)
+
+func _cinematic_view_clear(subject: Vector3, eye: Vector3) -> bool:
+	return _camera_path_clear(subject, eye) and _environment_apertures.cinematic_blockers(eye, subject, _cinematic_hidden, true).is_empty()
 
 # Terrain uses collision layers 1 and 2; units on layer 3 do not block cameras.
 func _safe_camera_position(origin: Vector3, destination: Vector3) -> Vector3:
@@ -512,7 +574,8 @@ func _set_zoom(value: float) -> void:
 		return
 	# Lower the viewing angle continuously inside the old closest zoom.
 	var close_blend := smoothstep(min_zoom, 20.0, _zoom)
-	rotation.x = deg_to_rad(lerpf(-12.0, -45.0, close_blend))
+	if not _manual_pitch:
+		rotation.x = deg_to_rad(lerpf(-12.0, -45.0, close_blend))
 	camera.position = Vector3(0.0, 0.0, _zoom)
 
 func _clamp_to_map() -> void:

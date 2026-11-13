@@ -1,0 +1,769 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/suv.glb" id="suv"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="Script" path="res://presentation/overlays/warehouse_roof_cutaway.gd" id="cutaway"]
+[ext_resource type="Script" path="res://presentation/overlays/tactical_camera_aperture.gd" id="aperture"]
+[ext_resource type="Shader" path="res://presentation/overlays/tactical_camera_aperture.gdshader" id="aperture_shader"]
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.56, 0.56, 0.53, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="pavement"]
+albedo_color = Color(0.32, 0.34, 0.36, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="stripe"]
+albedo_color = Color(0.82, 0.79, 0.66, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="safety"]
+albedo_color = Color(0.85, 0.53, 0.17, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="fascia"]
+albedo_color = Color(0.21, 0.30, 0.34, 1)
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="base"]
+size = Vector3(32, 0.12, 32)
+material = SubResource("pavement")
+
+[sub_resource type="BoxMesh" id="deck"]
+size = Vector3(22, 0.22, 24)
+material = SubResource("concrete")
+
+[sub_resource type="BoxShape3D" id="deck_pick_surface"]
+size = Vector3(22, 0.04, 24)
+
+[sub_resource type="ShaderMaterial" id="column_aperture"]
+shader = ExtResource("aperture_shader")
+shader_parameter/surface_color = Color(0.56, 0.56, 0.53, 1)
+
+[sub_resource type="ShaderMaterial" id="band_aperture"]
+shader = ExtResource("aperture_shader")
+shader_parameter/surface_color = Color(0.85, 0.53, 0.17, 1)
+
+[sub_resource type="BoxMesh" id="pillar"]
+size = Vector3(0.85, 3.78, 0.85)
+material = SubResource("column_aperture")
+
+[sub_resource type="BoxMesh" id="belt"]
+size = Vector3(0.9, 0.36, 0.9)
+material = SubResource("band_aperture")
+
+[sub_resource type="BoxMesh" id="line"]
+size = Vector3(0.09, 0.012, 5.6)
+material = SubResource("stripe")
+
+[sub_resource type="BoxMesh" id="stop_line"]
+size = Vector3(3.0, 0.012, 0.09)
+material = SubResource("stripe")
+
+[sub_resource type="BoxMesh" id="front_west"]
+size = Vector3(2.7, 0.72, 0.20)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="front_east"]
+size = Vector3(17.7, 0.72, 0.20)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="side_full"]
+size = Vector3(0.20, 0.72, 24)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="side_front"]
+size = Vector3(0.20, 0.72, 15.7)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="side_rear"]
+size = Vector3(0.20, 0.72, 6.7)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="rear_flank"]
+size = Vector3(8, 0.72, 0.20)
+material = SubResource("fascia")
+
+[sub_resource type="BoxMesh" id="rear_gate"]
+size = Vector3(6, 0.42, 0.15)
+material = SubResource("safety")
+
+[sub_resource type="BoxMesh" id="crossbeam"]
+size = Vector3(21.85, 0.34, 0.7)
+material = SubResource("concrete")
+
+[sub_resource type="StandardMaterial3D" id="lamp"]
+albedo_color = Color(0.95, 0.85, 0.65, 1)
+emission_enabled = true
+emission = Color(1, 0.82, 0.55, 1)
+
+[sub_resource type="BoxMesh" id="lamp_strip"]
+size = Vector3(2.2, 0.08, 0.25)
+material = SubResource("lamp")
+
+[node name="ServiceGarage" type="Node3D"]
+metadata/parcel_id = &"parking_garage_a"
+metadata/parcel_role = &"parking_garage"
+metadata/parcel_size = Vector2i(32, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0)
+metadata/access_cell = Vector3i(12, 0, 0)
+metadata/access_direction = Vector2i(0, -1)
+metadata/access_width = 8
+metadata/access_kind = &"garage_driveway"
+
+[node name="Asphalt" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, -0.054, 15.5)
+mesh = SubResource("base")
+
+[node name="WestColumn1" type="MeshInstance3D" parent="."]
+position = Vector3(5, 1.89, 9)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="WestColumn1"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="WestColumn2" type="MeshInstance3D" parent="."]
+position = Vector3(5, 1.89, 19)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="WestColumn2"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="WestColumn3" type="MeshInstance3D" parent="."]
+position = Vector3(5, 1.89, 30)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="WestColumn3"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="EastColumn1" type="MeshInstance3D" parent="."]
+position = Vector3(26, 1.89, 9)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="EastColumn1"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="EastColumn2" type="MeshInstance3D" parent="."]
+position = Vector3(26, 1.89, 19)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="EastColumn2"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="EastColumn3" type="MeshInstance3D" parent="."]
+position = Vector3(26, 1.89, 30)
+mesh = SubResource("pillar")
+script = ExtResource("aperture")
+metadata/solid_size = Vector3(0.85, 3.78, 0.85)
+
+[node name="SafetyBand" type="MeshInstance3D" parent="EastColumn3"]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("belt")
+script = ExtResource("aperture")
+
+[node name="UpperDeck" type="Node3D" parent="."]
+script = ExtResource("cutaway")
+interior_bounds = AABB(4.5, -0.1, 7.5, 22, 4.1, 24)
+roof_bounds = AABB(4.5, 3.78, 7.5, 22, 0.22, 24)
+surface_height = 4.0
+metadata/deck_local_rect = Rect2i(5, 8, 22, 24)
+metadata/deck_level = 4
+metadata/deck_label = "Upper parking deck"
+metadata/population_surface_id = &"upper"
+
+[node name="ConcreteSlab" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.89, 19.5)
+mesh = SubResource("deck")
+
+[node name="UpperFloorPickSurface" type="StaticBody3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.98, 19.5)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Surface" type="CollisionShape3D" parent="UpperDeck/UpperFloorPickSurface"]
+shape = SubResource("deck_pick_surface")
+
+[node name="FrontCrossbeam" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.61, 9)
+mesh = SubResource("crossbeam")
+
+[node name="CenterCrossbeam" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.61, 19)
+mesh = SubResource("crossbeam")
+
+[node name="RearCrossbeam" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(15.5, 3.61, 30)
+mesh = SubResource("crossbeam")
+
+[node name="WestAisleStrip" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(10, 3.40, 19)
+mesh = SubResource("lamp_strip")
+
+[node name="EastAisleStrip" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(21, 3.40, 19)
+mesh = SubResource("lamp_strip")
+
+[node name="WestAisleLight" type="OmniLight3D" parent="."]
+position = Vector3(10, 3.28, 19)
+light_color = Color(1, 0.88, 0.72, 1)
+light_energy = 0.7
+omni_range = 9.0
+
+[node name="EastAisleLight" type="OmniLight3D" parent="."]
+position = Vector3(21, 3.28, 19)
+light_color = Color(1, 0.88, 0.72, 1)
+light_energy = 0.7
+omni_range = 9.0
+
+[node name="FrontWest" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(5.85, 4.36, 7.6)
+mesh = SubResource("front_west")
+metadata/solid_size = Vector3(2.7, 0.72, 0.20)
+
+[node name="FrontEast" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(17.65, 4.36, 7.6)
+mesh = SubResource("front_east")
+metadata/solid_size = Vector3(17.7, 0.72, 0.20)
+
+[node name="WestParapet" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(4.6, 4.36, 19.5)
+mesh = SubResource("side_full")
+metadata/solid_size = Vector3(0.20, 0.72, 24)
+
+[node name="EastFront" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(26.4, 4.36, 15.35)
+mesh = SubResource("side_front")
+metadata/solid_size = Vector3(0.20, 0.72, 15.7)
+
+[node name="EastRear" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(26.4, 4.36, 28.15)
+mesh = SubResource("side_rear")
+metadata/solid_size = Vector3(0.20, 0.72, 6.7)
+
+[node name="RearWest" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(8.5, 4.36, 31.4)
+mesh = SubResource("rear_flank")
+metadata/solid_size = Vector3(8, 0.72, 0.20)
+
+[node name="RearEast" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(22.5, 4.36, 31.4)
+mesh = SubResource("rear_flank")
+metadata/solid_size = Vector3(8, 0.72, 0.20)
+
+[node name="RampGate" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(15.5, 4.21, 31.4)
+mesh = SubResource("rear_gate")
+metadata/solid_size = Vector3(6, 0.42, 0.15)
+
+[node name="FrontClimb" type="Node" parent="."]
+metadata/ladder_local_bottom = Vector3i(8, 0, 7)
+metadata/ladder_local_top = Vector3i(8, 4, 8)
+
+[node name="SideClimb" type="Node" parent="."]
+metadata/ladder_local_bottom = Vector3i(27, 0, 24)
+metadata/ladder_local_top = Vector3i(26, 4, 24)
+
+[node name="FrontLadder" parent="." instance=ExtResource("ladder")]
+position = Vector3(8, 0, 7.45)
+
+[node name="SideLadder" parent="." instance=ExtResource("ladder")]
+position = Vector3(26.55, 0, 24)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="GroundFrontBays" type="Node" parent="."]
+metadata/population_region_id = &"ground_front_bays"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(6, 9, 20, 7)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan", "car_kit/suv", "car_kit/taxi")
+metadata/min_count = 1
+metadata/max_count = 4
+
+[node name="GroundFrontBay1WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(6.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay1EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(9.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay1StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(8, 0.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="GroundFrontBay1" type="Node3D" parent="."]
+visible = false
+position = Vector3(8, 0, 12)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"ground_front_bays_1"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_front_bays"
+
+[node name="Visual" parent="GroundFrontBay1" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundFrontBay1"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="GroundFrontBay2WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(10.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay2EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(13.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay2StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(12, 0.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="GroundFrontBay2" type="Node3D" parent="."]
+visible = false
+position = Vector3(12, 0, 12)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"ground_front_bays_2"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_front_bays"
+
+[node name="Visual" parent="GroundFrontBay2" instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundFrontBay2"]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)
+
+[node name="GroundFrontBay3WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(17.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay3EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(20.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay3StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(19, 0.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="GroundFrontBay3" type="Node3D" parent="."]
+visible = false
+position = Vector3(19, 0, 12)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"ground_front_bays_3"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_front_bays"
+
+[node name="Visual" parent="GroundFrontBay3" instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundFrontBay3"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="GroundFrontBay4WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(21.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay4EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(24.5, 0.016, 12)
+mesh = SubResource("line")
+
+[node name="GroundFrontBay4StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(23, 0.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="GroundFrontBay4" type="Node3D" parent="."]
+visible = false
+position = Vector3(23, 0, 12)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"ground_front_bays_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_front_bays"
+
+[node name="Visual" parent="GroundFrontBay4" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundFrontBay4"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="GroundRearBays" type="Node" parent="."]
+metadata/population_region_id = &"ground_rear_bays"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(6, 23, 20, 7)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan", "car_kit/suv", "car_kit/taxi")
+metadata/min_count = 1
+metadata/max_count = 4
+
+[node name="GroundRearBay1WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(6.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay1EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(9.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay1StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(8, 0.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="GroundRearBay1" type="Node3D" parent="."]
+visible = false
+position = Vector3(8, 0, 26)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"ground_rear_bays_1"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_rear_bays"
+
+[node name="Visual" parent="GroundRearBay1" instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundRearBay1"]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)
+
+[node name="GroundRearBay2WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(10.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay2EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(13.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay2StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(12, 0.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="GroundRearBay2" type="Node3D" parent="."]
+visible = false
+position = Vector3(12, 0, 26)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"ground_rear_bays_2"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_rear_bays"
+
+[node name="Visual" parent="GroundRearBay2" instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundRearBay2"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="GroundRearBay3WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(17.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay3EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(20.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay3StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(19, 0.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="GroundRearBay3" type="Node3D" parent="."]
+visible = false
+position = Vector3(19, 0, 26)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"ground_rear_bays_3"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_rear_bays"
+
+[node name="Visual" parent="GroundRearBay3" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundRearBay3"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="GroundRearBay4WestLine" type="MeshInstance3D" parent="."]
+position = Vector3(21.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay4EastLine" type="MeshInstance3D" parent="."]
+position = Vector3(24.5, 0.016, 26)
+mesh = SubResource("line")
+
+[node name="GroundRearBay4StopLine" type="MeshInstance3D" parent="."]
+position = Vector3(23, 0.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="GroundRearBay4" type="Node3D" parent="."]
+visible = false
+position = Vector3(23, 0, 26)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"ground_rear_bays_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"ground_rear_bays"
+
+[node name="Visual" parent="GroundRearBay4" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="GroundRearBay4"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperFrontBays" type="Node" parent="UpperDeck"]
+metadata/population_region_id = &"upper_front_bays"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(6, 9, 20, 7)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan", "car_kit/suv", "car_kit/taxi")
+metadata/min_count = 1
+metadata/max_count = 4
+metadata/population_surface_id = &"upper"
+
+[node name="UpperFrontBay1WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(6.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay1EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(9.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay1StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(8, 4.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="UpperFrontBay1" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(8, 4, 12)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"upper_front_bays_1"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_front_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperFrontBay1" instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperFrontBay1"]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)
+
+[node name="UpperFrontBay2WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(10.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay2EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(13.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay2StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(12, 4.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="UpperFrontBay2" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(12, 4, 12)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"upper_front_bays_2"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_front_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperFrontBay2" instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperFrontBay2"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperFrontBay3WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(17.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay3EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(20.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay3StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(19, 4.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="UpperFrontBay3" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(19, 4, 12)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"upper_front_bays_3"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_front_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperFrontBay3" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperFrontBay3"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperFrontBay4WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(21.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay4EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(24.5, 4.016, 12)
+mesh = SubResource("line")
+
+[node name="UpperFrontBay4StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(23, 4.016, 9.2)
+mesh = SubResource("stop_line")
+
+[node name="UpperFrontBay4" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(23, 4, 12)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"upper_front_bays_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_front_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperFrontBay4" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperFrontBay4"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperRearBays" type="Node" parent="UpperDeck"]
+metadata/population_region_id = &"upper_rear_bays"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(6, 23, 20, 7)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/sedan", "car_kit/suv", "car_kit/taxi")
+metadata/min_count = 1
+metadata/max_count = 4
+metadata/population_surface_id = &"upper"
+
+[node name="UpperRearBay1WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(6.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay1EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(9.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay1StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(8, 4.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="UpperRearBay1" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(8, 4, 26)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"upper_rear_bays_1"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_rear_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperRearBay1" instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperRearBay1"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperRearBay2WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(10.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay2EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(13.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay2StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(12, 4.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="UpperRearBay2" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(12, 4, 26)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"upper_rear_bays_2"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_rear_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperRearBay2" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperRearBay2"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperRearBay3WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(17.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay3EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(20.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay3StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(19, 4.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="UpperRearBay3" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(19, 4, 26)
+metadata/asset_id = "car_kit/sedan"
+metadata/population_socket_id = &"upper_rear_bays_3"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_rear_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperRearBay3" instance=ExtResource("sedan")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperRearBay3"]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+
+[node name="UpperRearBay4WestLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(21.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay4EastLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(24.5, 4.016, 26)
+mesh = SubResource("line")
+
+[node name="UpperRearBay4StopLine" type="MeshInstance3D" parent="UpperDeck"]
+position = Vector3(23, 4.016, 28.8)
+mesh = SubResource("stop_line")
+
+[node name="UpperRearBay4" type="Node3D" parent="UpperDeck"]
+visible = false
+position = Vector3(23, 4, 26)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"upper_rear_bays_4"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+metadata/population_region_id = &"upper_rear_bays"
+metadata/population_surface_id = &"upper"
+
+[node name="Visual" parent="UpperDeck/UpperRearBay4" instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="UpperDeck/UpperRearBay4"]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)

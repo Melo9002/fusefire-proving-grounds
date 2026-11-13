@@ -14,6 +14,12 @@ var zones: Dictionary[StringName, MapZoneData] = {}
 var source_kind: String = "authored"
 var generation_seed: int = 0
 var map_size := Vector2i.ZERO
+## Exact authored content choices used to construct this map. A seed records
+## provenance but is not a durable substitute for these resolved choices.
+var content_manifest: Dictionary = {}
+## Fatal construction diagnostics. Callers must not activate a battle when
+## this list is non-empty.
+var generation_errors: Array[Dictionary] = []
 var transport_footprints: Dictionary = {}
 ## Optional presentation names keyed by authoritative grid elevation. Missing
 ## names fall back to Ground / Level N in generic floor controls.
@@ -135,4 +141,6 @@ func clear() -> void:
 	source_kind = "authored"
 	generation_seed = 0
 	map_size = Vector2i.ZERO
+	content_manifest.clear()
+	generation_errors.clear()
 	elevation_labels = {0: "Ground"}

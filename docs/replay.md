@@ -98,7 +98,8 @@ godot_console --headless --path . --script tests/replay_schema_test.gd
 godot_console --headless --path . --script tests/battle_replay_smoke.gd
 godot_console --headless --path . --script tests/rescue_battle_replay_smoke.gd
 godot_console --headless --path . --script tests/departure_replay_smoke.gd
-godot_console --headless --path . --script tests/generation_2_replay_edited_map_test.gd
+godot_console --headless --path . --script tests/refinery_2_smoke.gd
+godot_console --headless --path . --script tests/battlefield_catalog_test.gd
 ```
 
 The complete release gate also runs action-service, AI determinism, objective, evacuation, traversal, dependency-isolation, and Prototype 1 milestone suites.

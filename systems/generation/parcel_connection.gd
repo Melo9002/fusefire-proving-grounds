@@ -22,3 +22,25 @@ func validate(size: Vector2i) -> String:
 	if along + width > limit:
 		return "Connection width exceeds parcel edge"
 	return ""
+
+static func from_scene(root: Node) -> ParcelConnection:
+	var result := ParcelConnection.new()
+	result.kind = StringName(root.get_meta("access_kind", &"path"))
+	result.cell = root.get_meta("access_cell", Vector3i.ZERO)
+	result.outward = root.get_meta("access_direction", Vector2i.ZERO)
+	result.width = int(root.get_meta("access_width", 0))
+	return result
+
+func world_cell(size: Vector2i, origin: Vector3i, quarter_turns: int) -> Vector3i:
+	return ParcelTransform.cell(cell, size, origin, quarter_turns)
+
+## Walk the span in local order so a rotated tangent can run backward in world space.
+func world_span(size: Vector2i, origin: Vector3i, quarter_turns: int) -> Array[Vector3i]:
+	var along := Vector3i.RIGHT if outward.y != 0 else Vector3i.BACK
+	var result: Array[Vector3i] = []
+	for offset in width:
+		result.append(ParcelTransform.cell(cell + along * offset, size, origin, quarter_turns))
+	return result
+
+func world_outward(quarter_turns: int) -> Vector2i:
+	return ParcelTransform.direction(outward, quarter_turns)

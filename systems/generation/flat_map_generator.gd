@@ -8,7 +8,7 @@ const MAP_SIZES: Array[Vector2i] = [Vector2i(24, 20), Vector2i(32, 24), Vector2i
 const CONTAINER_HEIGHT := 2.0
 const BUILDING_ROOF_LEVEL := 3
 
-static func generate(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5) -> MapData:
+static func generate(width: int, depth: int, cell_size: float, map_seed: int, spawn_capacity: int = 5, extra_ally_slots: int = 0) -> MapData:
 	var map_data := MapData.new()
 	map_data.source_kind = "generated_flat"
 	map_data.generation_seed = map_seed
@@ -35,7 +35,7 @@ static func generate(width: int, depth: int, cell_size: float, map_seed: int, sp
 	_shuffle(available_rows, rng)
 	var enemy_rows := available_rows.slice(0, spawn_capacity)
 	_shuffle(available_rows, rng)
-	var ally_rows := available_rows.slice(0, spawn_capacity)
+	var ally_rows := available_rows.slice(0, spawn_capacity + extra_ally_slots)
 	var player_x := 1
 	var enemy_x := width - 2
 	if rng.randi_range(0, 1) == 1:

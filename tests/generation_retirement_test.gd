@@ -1,6 +1,7 @@
 extends SceneTree
 
-# Intentional retirement contract: never reinterpret a retired map as Generator 1.
+# Intentional retirement contract: never reinterpret retired replay presets.
+const Catalog = preload("res://systems/generation/battlefield_catalog.gd")
 var failures := 0
 
 func _initialize() -> void:
@@ -15,16 +16,14 @@ func _run() -> void:
 	var menu = load("res://ui/match_setup.tscn").instantiate()
 	root.add_child(menu)
 	await process_frame
-	menu.generated_map_toggle.button_pressed = true
-	menu.map_size_option.select(3)
 	menu.seed_input.value = 24680
 	var selected: BattleConfiguration = menu._build_battle_configuration()
-	check(selected.refinery and selected.map_size == Vector2i(40, 30) and selected.battle_seed == 24680, "Match setup preserves explicit Refinery size and seed")
-	check(selected.battlefield_preset == BattleConfiguration.BattlefieldPreset.LEGACY, "Match setup uses Generator 1")
+	check(selected.resolved_battlefield_id() == Catalog.SERVICE_DEPOT and selected.map_size == Vector2i(40, 40) and selected.battle_seed == 24680, "Match setup defaults to the compact depot and preserves the explicit seed")
+	check(selected.battlefield_preset == BattleConfiguration.BattlefieldPreset.LEGACY, "Match setup preserves the supported replay envelope")
 	menu.free()
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	check(config.validate_generation_selection().is_empty(), "Generator 1 remains supported")
+	check(config.validate_generation_selection().is_empty(), "The internal Generator 1 fixture remains available to regression scripts")
 	for preset in [1, 2, 99]:
 		config.battlefield_preset = preset as BattleConfiguration.BattlefieldPreset
 		check(not config.validate_generation_selection().is_empty(), "Retired/unknown preset rejects explicitly")

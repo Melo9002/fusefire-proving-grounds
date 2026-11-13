@@ -62,7 +62,6 @@ func _run() -> void:
 	check(setup.start_button.text == "START BATTLE", "The primary action remains concise while the briefing carries configuration details")
 	check(setup.randomize_seed_button != null and setup.copy_seed_button != null, "Battlefield seed actions are easy to discover")
 	check(setup.auto_seed_toggle.button_pressed and setup.seed_input.value >= 1, "A fresh setup prepares a valid automatic seed")
-	setup.generated_map_toggle.button_pressed = true
 	setup.auto_seed_toggle.button_pressed = false
 	setup.seed_input.value = 4242
 	check(setup.seed_input.editable and int(setup.seed_input.value) == 4242, "Manual seed mode accepts a reproducible seed")

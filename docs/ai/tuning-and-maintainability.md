@@ -103,6 +103,7 @@ Weights alone cannot express every personality because action categories are cho
 
 ## Further investigation before Goal 2 tuning
 
+- **Urban courtyard Rescue, seed 17:** Normal AI secured the VIP and lost before extraction in round nine. Reproduce with `godot_console --headless --path . --script res://tests/refinery_family_mission_matrix.gd -- urban`. Review escort decisions and extraction progress during the broader AI pass.
 - Capture decision distributions across current baseline maps: Move, Attack, Aim, Guard, Shield, Wait, and objective action counts.
 - Measure how often candidate movement is rejected as outside route, unsafe, below threshold, or squad-reserved.
 - Compare high-ground selection frequency with equivalent ground positions before proposing an elevation bonus.

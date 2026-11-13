@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/roads/road_strip_85.tscn" id="road"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="landmark"]
+
+[sub_resource type="StandardMaterial3D" id="periphery"]
+albedo_color = Color(0.19, 0.225, 0.21, 1)
+roughness = 0.94
+
+[sub_resource type="BoxMesh" id="ground"]
+material = SubResource("periphery")
+size = Vector3(144, 0.08, 144)
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.39, 0.41, 0.41, 1)
+roughness = 0.95
+
+[sub_resource type="PlaneMesh" id="aisle"]
+material = SubResource("concrete")
+size = Vector2(32, 4)
+
+[node name="DepotServiceSpine" type="Node3D"]
+
+[node name="Surroundings" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.065, 0)
+mesh = SubResource("ground")
+
+[node name="ServiceRoad" parent="." instance=ExtResource("road")]
+position = Vector3(-17.5, 0.005, -25)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="ProcessApproach" type="MeshInstance3D" parent="."]
+position = Vector3(1, 0.003, 1)
+mesh = SubResource("aisle")
+
+[node name="FarLandmark" parent="." instance=ExtResource("landmark")]
+position = Vector3(29, 0, 28)
+scale = Vector3(6, 6, 6)

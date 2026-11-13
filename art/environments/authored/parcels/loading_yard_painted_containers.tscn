@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/parcels/loading_yard.tscn" id="yard"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container"]
+
+[node name="LoadingYardPaintedContainers" instance=ExtResource("yard")]
+metadata/parcel_id = &"loading_yard_a_painted_containers"
+metadata/revision = 1
+metadata/population_preview_instance = "refinery_site_a/loading"
+metadata/container_population_paint = [{"preset": "containers", "rect": Rect2i(7, 20, 3, 10), "surface": "ground"}]
+
+[node name="painted_container_7_20" type="Node" parent="."]
+metadata/population_region_id = &"painted_container_7_20"
+metadata/population_role = &"shipping_container"
+metadata/local_rect = Rect2i(7, 20, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a")
+metadata/max_count = 1
+
+[node name="Container_painted_container_7_20" type="Node3D" parent="."]
+position = Vector3(8, 0, 22)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"painted_container_7_20"
+metadata/population_region_id = &"painted_container_7_20"
+
+[node name="Visual" parent="Container_painted_container_7_20" instance=ExtResource("container")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000008, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Container_painted_container_7_20"]
+position = Vector3(0, 0.8702, 0)
+metadata/solid_size = Vector3(1.863001, 1.7404, 4.113)
+metadata/round_volume = false
+
+[node name="painted_container_7_25" type="Node" parent="."]
+metadata/population_region_id = &"painted_container_7_25"
+metadata/population_role = &"shipping_container"
+metadata/local_rect = Rect2i(7, 25, 3, 5)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a")
+metadata/max_count = 1
+
+[node name="Container_painted_container_7_25" type="Node3D" parent="."]
+position = Vector3(8, 0, 27)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"painted_container_7_25"
+metadata/population_region_id = &"painted_container_7_25"
+
+[node name="Visual" parent="Container_painted_container_7_25" instance=ExtResource("container")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0.0000008, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="Container_painted_container_7_25"]
+position = Vector3(0, 0.8702, 0)
+metadata/solid_size = Vector3(1.863001, 1.7404, 4.113)
+metadata/round_volume = false

@@ -20,11 +20,11 @@ func _ready() -> void:
 	blocker_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(blocker_marker)
 
-func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRules.AttackEvaluation) -> void:
+func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRules.AttackEvaluation, targeting := false) -> void:
 	last_origin = origin
 	last_destination = destination
 	last_reason = evaluation.reason
-	if not debug_enabled or origin.is_equal_approx(destination):
+	if (not debug_enabled and not targeting) or origin.is_equal_approx(destination):
 		clear()
 		return
 
@@ -73,6 +73,9 @@ func _draw_blocker(evaluation: CombatRules.AttackEvaluation) -> void:
 	box.size = Vector3(grid_manager.cell_size * 0.92, last_blocking_cell.cover_height, grid_manager.cell_size * 0.92)
 	blocker_marker.mesh = box
 	blocker_marker.position = last_blocking_cell.world_position + Vector3.UP * last_blocking_cell.cover_height * 0.5
+	if last_blocking_cell.authored_shot_bounds.has_volume():
+		box.size = last_blocking_cell.authored_shot_bounds.size
+		blocker_marker.position = last_blocking_cell.authored_shot_bounds.get_center()
 	blocker_marker.material_override = _make_material(Color(1.0, 0.05, 0.05, 0.28))
 
 func _make_material(color: Color) -> StandardMaterial3D:

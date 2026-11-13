@@ -143,7 +143,9 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 		query.base_hit_chance = base_evaluation.hit_chance
 		query.aim_bonus = _aim_bonus(actor)
 		query.aim_applied = query.aim_bonus > 0
-		evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus, shield_enabled)
+		evaluation = base_evaluation
+		if query.aim_applied:
+			evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus, shield_enabled)
 	var validation := _validate_attack(actor, target, evaluation, supply_points_enabled)
 	query.validation = validation
 	query.reason = validation.message

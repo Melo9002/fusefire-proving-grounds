@@ -2,12 +2,14 @@ class_name BattleLevel
 extends Node3D
 
 signal battle_initialization_finished(success: bool, errors: Array)
+signal battle_initialization_progress(stage: String, progress: float)
 
 const ReplayRecorderData := preload("res://systems/replay/battle_replay_recorder.gd")
 const ReplayPlayerData := preload("res://systems/replay/battle_replay_player.gd")
 const ReplaySessionData := preload("res://systems/replay/battle_replay_session.gd")
 const ActionCameraDirectorData := preload("res://presentation/camera/action_camera_director.gd")
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
@@ -33,12 +35,10 @@ var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
 var use_generated_map: bool = false
 var battlefield_preset: BattleConfigurationData.BattlefieldPreset = BattleConfigurationData.BattlefieldPreset.LEGACY
+var battlefield_id: StringName = BattlefieldCatalogData.GENERATED_COVER
 var battle_seed: int = 1
 var generation_seed: int = 1
 var generated_size := Vector2i(32, 24)
-var use_refinery_map := false
-var use_industrial_warehouse := false
-var use_refinery_2 := false
 var include_vip := false
 var vip_behavior := MissionActor.VIPBehavior.PLAYER_CONTROLLED
 var mission_definition: MissionDefinition
@@ -51,6 +51,7 @@ var shield_enabled := true
 var overwatch_enabled := true
 var conditions_enabled := true
 var tactical_tempo_enabled := true
+var requested_content_manifest: Dictionary = {}
 var pending_replay
 var _replay_configuration: Dictionary = {}
 var _replay_recorder
@@ -85,7 +86,8 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	config.normalize_rosters()
 	_configuration_errors = config.validate_generation_selection()
 	battlefield_preset = config.battlefield_preset
-	generated_size = config.map_size if FlatMapGenerator.MAP_SIZES.has(config.map_size) else Vector2i(32, 24)
+	battlefield_id = config.resolved_battlefield_id()
+	generated_size = BattlefieldCatalogData.map_size(battlefield_id, config.map_size)
 	player_unit_count = clampi(config.player_count, 1, 5)
 	enemy_unit_count = clampi(config.enemy_count, 1, 5)
 	allied_unit_count = clampi(config.ally_count, 0, 5)
@@ -93,9 +95,6 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	enemy_archetypes = TacticalArchetypeCatalog.normalize_ids(config.enemy_archetypes, enemy_unit_count)
 	ally_archetypes = TacticalArchetypeCatalog.normalize_ids(config.ally_archetypes, allied_unit_count)
 	use_generated_map = config.generated_map
-	use_refinery_map = config.refinery
-	use_industrial_warehouse = config.industrial_warehouse
-	use_refinery_2 = config.refinery_2
 	battle_seed = config.battle_seed
 	generation_seed = config.battle_seed
 	include_vip = config.include_vip
@@ -110,6 +109,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	overwatch_enabled = config.overwatch_enabled
 	conditions_enabled = config.conditions_enabled
 	tactical_tempo_enabled = config.tactical_tempo_enabled
+	requested_content_manifest = config.content_manifest.duplicate(true)
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed
@@ -128,6 +128,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.ally_archetypes = ally_archetypes.duplicate()
 	normalized.generated_map = use_generated_map
 	normalized.battlefield_preset = battlefield_preset
+	normalized.battlefield_id = battlefield_id
 	normalized.battle_seed = battle_seed
 	normalized.map_size = generated_size
 	normalized.include_vip = include_vip
@@ -142,9 +143,8 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	normalized.overwatch_enabled = overwatch_enabled
 	normalized.conditions_enabled = conditions_enabled
 	normalized.tactical_tempo_enabled = tactical_tempo_enabled
-	normalized.refinery = use_refinery_map
-	normalized.industrial_warehouse = use_industrial_warehouse
-	normalized.refinery_2 = use_refinery_2
+	normalized.content_manifest = requested_content_manifest.duplicate(true)
+	normalized.select_battlefield(battlefield_id)
 	_replay_configuration = normalized.to_replay()
 
 func configure_replay(recording) -> void:
@@ -157,6 +157,7 @@ func configure_replay(recording) -> void:
 	battle_controller.replay_mode = true
 
 func _ready() -> void:
+	battle_initialization_progress.emit("Validating battle configuration…", 0.10)
 	action_camera_director = ActionCameraDirectorData.new()
 	action_camera_director.name = "ActionCameraDirector"
 	add_child(action_camera_director)
@@ -169,14 +170,19 @@ func _ready() -> void:
 		_fail_battle_initialization(_configuration_errors)
 		return
 	if mission_definition != null:
+		battle_initialization_progress.emit("Preparing mission requirements…", 0.18)
 		objective_manager.load_mission(mission_definition)
 	if use_generated_map:
 		await _initialize_generated_battle()
 	else:
+		var rig := get_node("CameraRig") as TacticalCamera
+		rig.register_environment_apertures($Environment)
+		battle_initialization_progress.emit("Deploying combatants…", 0.62)
 		_spawn_team(player_unit_count, player_spawn_zone, player_units_parent, false)
 		_spawn_team(allied_unit_count, ally_spawn_zone, allied_units_parent, true)
 		_spawn_vip()
 		_spawn_team(enemy_unit_count, enemy_spawn_zone, enemy_units_parent, true)
+		battle_initialization_progress.emit("Validating tactical battlefield…", 0.82)
 		if await battle_controller.initialize_battle(null, mission_definition):
 			_initialize_objectives()
 			_initialize_replay_support()
@@ -187,13 +193,22 @@ func _ready() -> void:
 func _initialize_generated_battle() -> void:
 	battle_initialization_attempted = true
 	var grid := battle_controller.grid_manager
-	var generated_map := preload("res://systems/generation/refinery_2_layout.gd").generate(generation_seed, grid.cell_size) if use_refinery_2 else FlatMapGenerator.generate_with_cover(generated_size.x, generated_size.y, grid.cell_size, generation_seed, 5, use_refinery_map, use_industrial_warehouse)
+	battle_initialization_progress.emit("Constructing tactical battlefield…", 0.28)
+	var generated_map := BattlefieldCatalogData.generate(battlefield_id, generated_size, generation_seed, grid.cell_size, requested_content_manifest)
 	active_generated_map = generated_map
+	_replay_configuration["content_manifest"] = generated_map.content_manifest.duplicate(true)
+	if not generated_map.generation_errors.is_empty():
+		var errors: Array[Dictionary] = []
+		for failure: Dictionary in generated_map.generation_errors:
+			errors.append(_diagnostic(String(failure.get("code", "GENERATION_FAILED")), "content_manifest", String(failure.get("detail", "battlefield content could not be resolved"))))
+		_abort_generated_state()
+		_fail_battle_initialization(errors)
+		return
 	generated_size = generated_map.map_size
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size
 	grid.map_floor.size.z = generated_size.y * grid.cell_size
-	if use_refinery_2:
+	if battlefield_id == BattlefieldCatalogData.REFINERY_2:
 		var earth := StandardMaterial3D.new()
 		earth.albedo_color = Color("865b46")
 		earth.roughness = 0.9
@@ -206,14 +221,18 @@ func _initialize_generated_battle() -> void:
 	var generated_geometry := Node3D.new()
 	generated_geometry.name = "GeneratedTerrain"
 	add_child(generated_geometry)
+	battle_initialization_progress.emit("Building environment presentation…", 0.48)
 	GeneratedTerrainPresenter.build(generated_map, generated_geometry, grid.cell_size)
+	rig.register_environment_apertures(generated_geometry)
+	battle_initialization_progress.emit("Deploying combatants…", 0.65)
 	_spawn_generated_team(player_unit_count, TacticalUnit.Faction.PLAYER, player_units_parent, generated_map)
 	_spawn_generated_team(allied_unit_count, TacticalUnit.Faction.ALLY, allied_units_parent, generated_map)
 	_spawn_generated_vip(generated_map)
 	_spawn_generated_team(enemy_unit_count, TacticalUnit.Faction.ENEMY, enemy_units_parent, generated_map)
 	var cover_counts := _count_cover(generated_map)
-	var generator_label := "COVER"
+	var generator_label := BattlefieldCatalogData.label(battlefield_id).to_upper()
 	print_rich("[color=cyan][MapGenerator][/color] %s — seed %d, %dx%d, %d low, %d full, %d building(s), %d platform(s), %d hill(s)" % [generator_label, generation_seed, generated_size.x, generated_size.y, cover_counts.x, cover_counts.y, generated_map.buildings.size(), generated_map.platforms.size(), generated_map.hills.size()])
+	battle_initialization_progress.emit("Validating tactical battlefield…", 0.82)
 	if await battle_controller.initialize_battle(generated_map, mission_definition):
 		_initialize_objectives()
 		_initialize_replay_support()
@@ -224,6 +243,7 @@ func _initialize_generated_battle() -> void:
 		_fail_battle_initialization([_diagnostic("TACTICAL_INITIALIZATION_FAILED", "compiled_map", message)])
 
 func _complete_battle_initialization() -> void:
+	battle_initialization_progress.emit("Finalizing mission and replay…", 0.96)
 	battle_initialization_attempted = true
 	battle_initialization_succeeded = true
 	battle_initialization_errors.clear()
@@ -285,11 +305,12 @@ func _configure_replay_presentation() -> void:
 			control.hide()
 
 func replay_last_battle() -> void:
-	if not ReplaySessionData.has_recording():
+	var recording = pending_replay if pending_replay else ReplaySessionData.last_recording
+	if not recording or not recording.is_playable():
 		return
 	get_tree().paused = false
 	var replay_level := load(BATTLE_SCENE_PATH).instantiate() as BattleLevel
-	replay_level.configure_replay(ReplaySessionData.last_recording)
+	replay_level.configure_replay(recording)
 	get_tree().root.add_child(replay_level)
 	get_tree().current_scene = replay_level
 	queue_free()

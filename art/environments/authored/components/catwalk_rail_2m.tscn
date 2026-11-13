@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="StandardMaterial3D" id="rail_material"]
+albedo_color = Color(0.875, 0.714, 0.298, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="rail_mesh"]
+size = Vector3(0.08, 0.08, 2)
+material = SubResource("rail_material")
+
+[sub_resource type="BoxMesh" id="post_mesh"]
+size = Vector3(0.08, 1.1, 0.08)
+material = SubResource("rail_material")
+
+[node name="catwalk_rail_2m" type="Node3D"]
+
+[node name="TopRail" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.05, 0)
+mesh = SubResource("rail_mesh")
+
+[node name="PostA" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.55, -0.96)
+mesh = SubResource("post_mesh")
+
+[node name="PostB" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.55, 0.96)
+mesh = SubResource("post_mesh")

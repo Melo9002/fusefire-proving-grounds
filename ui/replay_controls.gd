@@ -75,6 +75,9 @@ func _select_camera(index: int) -> void:
 func _on_progressed(completed: int, total: int) -> void:
 	progress_label.text = "ACTION %d / %d" % [completed, total]
 
-func _on_finished(_success: bool) -> void:
+func _on_finished(success: bool) -> void:
 	play_button.disabled = true
-	play_button.text = "FINISHED"
+	play_button.text = "FINISHED" if success else "STOPPED"
+	if not success:
+		progress_label.text = "REPLAY DIVERGED · %d / %d" % [replay_player.verified_actions, replay_player.recording.actions.size()]
+		progress_label.tooltip_text = replay_player.last_divergence

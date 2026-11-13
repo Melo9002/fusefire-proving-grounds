@@ -5,6 +5,7 @@ signal unit_clicked(unit: TacticalUnit)
 
 @export var camera: Camera3D
 @export var grid_manager: GridManager
+@export var objective_hud: Control
 @export var click_drag_threshold := 6.0
 
 var _left_pressed := false
@@ -36,8 +37,6 @@ func _ready() -> void:
 func _build_level_panel(layer: CanvasLayer) -> void:
 	_level_panel = PanelContainer.new()
 	_level_panel.name = "LevelInspection"
-	_level_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_level_panel.position = Vector2(-290, 78)
 	_level_panel.size = Vector2(278, 84)
 	layer.add_child(_level_panel)
 	var rows := VBoxContainer.new()
@@ -59,8 +58,9 @@ func _inspect_level(height: float) -> void:
 		return
 	var point := rig.global_position
 	var roofs := get_tree().get_nodes_in_group("tactical_roof_cutaways")
-	if not roofs.is_empty():
-		point = (roofs[0] as Node3D).global_position
+	if not roofs.is_empty() and roofs[0] is WarehouseRoofCutaway:
+		var roof := roofs[0] as WarehouseRoofCutaway
+		point = roof.to_global(roof.interior_bounds.get_center())
 	point.y = height
 	rig.inspect_floor(point)
 	_update_level_panel()
@@ -72,6 +72,8 @@ func _update_level_panel() -> void:
 	if not _level_panel.visible:
 		return
 	_sync_level_buttons(levels)
+	var top := objective_hud.get_global_rect().end.y + 8.0 if objective_hud and objective_hud.is_visible_in_tree() else 78.0
+	_level_panel.position = Vector2(get_viewport().get_visible_rect().size.x - _level_panel.size.x - 18.0, top)
 	var height := rig.inspected_floor_height()
 	var level := _nearest_level(height, levels)
 	_level_label.text = "VIEW: %s · Level %d" % [grid_manager.map_data.get_elevation_label(level), level]

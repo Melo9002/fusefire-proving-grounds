@@ -1,6 +1,8 @@
 class_name BattleConfiguration
 extends RefCounted
 
+const BattlefieldCatalogData = preload("res://systems/generation/battlefield_catalog.gd")
+
 ## Named inputs used to start a battle. Keep match setup, simulations, and
 ## replay restoration readable by assigning these fields before configuration.
 
@@ -31,6 +33,7 @@ var conditions_enabled := true
 var tactical_tempo_enabled := true
 var generated_map := false
 var battlefield_preset: BattlefieldPreset = BattlefieldPreset.LEGACY
+var battlefield_id: StringName = BattlefieldCatalogData.GENERATED_COVER
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
 var include_vip := false
@@ -42,6 +45,10 @@ var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAU
 var refinery := false
 var industrial_warehouse := false
 var refinery_2 := false
+var loading_yard := false
+## Exact accepted authored content for generated parcel maps. Empty means a new
+## resolution may be made; replay stores the resolved value after generation.
+var content_manifest: Dictionary = {}
 
 
 func apply_replay(data: Dictionary) -> void:
@@ -72,6 +79,9 @@ func apply_replay(data: Dictionary) -> void:
 	refinery = data.get("refinery", false)
 	industrial_warehouse = data.get("industrial_warehouse", false)
 	refinery_2 = data.get("refinery_2", false)
+	loading_yard = data.get("loading_yard", false)
+	battlefield_id = StringName(data.get("battlefield_id", BattlefieldCatalogData.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)))
+	content_manifest = data.get("content_manifest", {}).duplicate(true)
 
 
 func to_replay() -> Dictionary:
@@ -81,6 +91,7 @@ func to_replay() -> Dictionary:
 		"enemy_count": enemy_count,
 		"generated_map": generated_map,
 		"battlefield_preset": battlefield_preset,
+		"battlefield_id": resolved_battlefield_id(),
 		"seed": battle_seed,
 		"ally_count": ally_count,
 		"player_archetypes": player_archetypes.duplicate(),
@@ -102,13 +113,30 @@ func to_replay() -> Dictionary:
 		"refinery": refinery,
 		"industrial_warehouse": industrial_warehouse,
 		"refinery_2": refinery_2,
+		"loading_yard": loading_yard,
+		"content_manifest": content_manifest.duplicate(true),
 	}
 
 func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
 	if battlefield_preset != BattlefieldPreset.LEGACY:
 		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Generator 2 is quarantined; use the local archived project for its maps and recordings"))
+	if generated_map and not BattlefieldCatalogData.has(resolved_battlefield_id()):
+		failures.append(_failure("UNKNOWN_BATTLEFIELD", "battlefield_id", "Unknown battlefield identity: %s" % battlefield_id))
 	return failures
+
+func resolved_battlefield_id() -> StringName:
+	var legacy := BattlefieldCatalogData.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)
+	if legacy != BattlefieldCatalogData.GENERATED_COVER:
+		return legacy
+	return battlefield_id if not battlefield_id.is_empty() else BattlefieldCatalogData.GENERATED_COVER
+
+func select_battlefield(id: StringName) -> void:
+	battlefield_id = id
+	refinery = id == BattlefieldCatalogData.REFINERY
+	industrial_warehouse = id == BattlefieldCatalogData.INDUSTRIAL_WAREHOUSE
+	refinery_2 = id == BattlefieldCatalogData.REFINERY_2
+	loading_yard = id == BattlefieldCatalogData.LOADING_YARD
 
 static func _failure(code: String, field: String, message: String) -> Dictionary:
 	return {"code": code, "field": field, "reference": "", "message": message}

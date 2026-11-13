@@ -2,12 +2,14 @@ class_name MatchSetup
 extends Control
 
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
+const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
+const ParcelEditorScene := preload("res://tools/parcel_editor/parcel_editor.tscn")
 
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
 @export var ally_count: SpinBox
 @export var start_button: Button
-@export var generated_map_toggle: CheckButton
 @export var auto_seed_toggle: CheckButton
 @export var seed_input: SpinBox
 @export var map_size_option: OptionButton
@@ -23,6 +25,7 @@ var compatibility_toggle: CheckButton
 var compatibility_status: Label
 var randomize_seed_button: Button
 var copy_seed_button: Button
+var population_toggle: CheckButton
 var roster_side_option: OptionButton
 var roster_entries: VBoxContainer
 var reset_roster_button: Button
@@ -30,6 +33,10 @@ var player_archetypes: Array[StringName] = []
 var enemy_archetypes: Array[StringName] = []
 var ally_archetypes: Array[StringName] = []
 var _seed_rng := RandomNumberGenerator.new()
+var _loading_screen: Control
+var _launch_in_progress := false
+var _replay_dialog: FileDialog
+var _replay_error: AcceptDialog
 
 const DISPLAY_SETTINGS_PATH := "user://display_settings.cfg"
 const COMPATIBILITY_SECTION := "rendering"
@@ -37,29 +44,26 @@ const COMPATIBILITY_KEY := "compatibility_mode"
 const RESTART_MARKER := "--fusefire-renderer-restart"
 
 func _ready() -> void:
+	_build_population_setup()
 	_build_objective_setup()
 	_build_vip_setup()
 	_build_compatibility_setup()
+	_build_authoring_tools()
 	_build_seed_actions()
 	_build_deployment_summary()
 	_build_roster_editor()
 	_seed_rng.randomize()
 	_prepare_new_seed()
-	var size_names := ["Small", "Medium", "Large"]
-	for index in FlatMapGenerator.MAP_SIZES.size():
-		var dimensions := FlatMapGenerator.MAP_SIZES[index]
-		map_size_option.add_item("%s — %d × %d tiles" % [size_names[index], dimensions.x, dimensions.y])
-	map_size_option.add_item("Special — Refinery (40 × 30)")
-	map_size_option.add_item("Special — Industrial Warehouse (40 × 30)")
-	map_size_option.add_item("Authored - Refinery 2.0 (96 x 80)")
-	map_size_option.select(1)
+	for id: StringName in BattlefieldCatalogData.PLAYABLE:
+		_add_battlefield_option(id)
+	map_size_option.select(0)
 	_refresh_generation_controls()
 	start_button.pressed.connect(_start_battle)
+	%OpenReplayButton.pressed.connect(_choose_replay_file)
 	player_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.PLAYER))
 	enemy_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ENEMY))
 	ally_count.value_changed.connect(_on_force_count_changed.bind(TacticalUnit.Faction.ALLY))
-	generated_map_toggle.toggled.connect(_on_generation_toggled)
-	map_size_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	map_size_option.item_selected.connect(_on_battlefield_selected)
 	difficulty_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	player_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	enemy_commander_option.item_selected.connect(func(_index: int): _update_summary(0.0))
@@ -68,6 +72,40 @@ func _ready() -> void:
 	_refresh_seed_controls()
 	_update_summary(0.0)
 	_apply_saved_renderer_preference()
+
+func _build_authoring_tools() -> void:
+	var box := VBoxContainer.new()
+	box.name = "AuthoringTools"
+	var label := Label.new()
+	label.text = "AUTHORING TOOLS"
+	box.add_child(label)
+	var parcel_editor := Button.new()
+	parcel_editor.name = "ParcelEditorButton"
+	parcel_editor.text = "OPEN PARCEL EDITOR"
+	parcel_editor.tooltip_text = "Inspect registered 16×16, 16×32, and 32×32 authored parcels and their tactical contracts."
+	parcel_editor.pressed.connect(func(): get_tree().change_scene_to_packed(ParcelEditorScene))
+	box.add_child(parcel_editor)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(box)
+
+func _add_battlefield_option(id: StringName) -> void:
+	var definition := BattlefieldCatalogData.definition(id)
+	var battlefield_size: Vector2i = definition.fixed_size
+	map_size_option.add_item("%s (%d × %d)" % [definition.label, battlefield_size.x, battlefield_size.y])
+	map_size_option.set_item_metadata(map_size_option.item_count - 1, id)
+
+func _selected_battlefield_id() -> StringName:
+	return StringName(map_size_option.get_item_metadata(map_size_option.selected))
+
+func _build_population_setup() -> void:
+	population_toggle = CheckButton.new()
+	population_toggle.name = "TacticalPopulationToggle"
+	population_toggle.text = "TACTICAL POPULATION"
+	population_toggle.tooltip_text = "Place deterministic parcel-authored vehicles, containers, and other approved tactical occupants. The structures and parcels remain when disabled."
+	population_toggle.button_pressed = true
+	population_toggle.toggled.connect(func(_enabled: bool): _update_summary(0.0))
+	var generation := $CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation
+	generation.add_child(population_toggle)
+	generation.move_child(population_toggle, 0)
 
 func _build_roster_editor() -> void:
 	player_archetypes = TacticalArchetypeCatalog.normalize_ids([], int(player_count.value))
@@ -403,16 +441,7 @@ func _on_objective_selected(index: int) -> void:
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:
-	var map_label := "HANDMADE"
-	if generated_map_toggle.button_pressed:
-		if map_size_option.selected == 3:
-			map_label = "REFINERY"
-		elif map_size_option.selected == 5:
-			map_label = "REFINERY 2.0"
-		elif map_size_option.selected == 4:
-			map_label = "INDUSTRIAL WAREHOUSE"
-		else:
-			map_label = "GENERATED — %s" % map_size_option.get_item_text(map_size_option.selected)
+	var map_label := BattlefieldCatalogData.label(_selected_battlefield_id()).to_upper()
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
 	var player_vip := 1 if has_vip and vip_behavior.selected == MissionActor.VIPBehavior.PLAYER_CONTROLLED else 0
@@ -424,16 +453,17 @@ func _update_summary(_value: float) -> void:
 		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
 		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
-		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), difficulty_label, player_commander_label, enemy_commander_label]
+		var population_line := "\nPopulation: %s" % ("ON" if population_toggle.button_pressed else "OFF") if population_toggle.visible else ""
+		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
-func _on_generation_toggled(_enabled: bool) -> void:
+func _on_battlefield_selected(_index: int) -> void:
+	population_toggle.set_pressed_no_signal(_selected_battlefield_id() != BattlefieldCatalogData.TACTICAL_TEST_RANGE)
 	_refresh_generation_controls()
-	_refresh_seed_controls()
 	_update_summary(0.0)
 
 func _refresh_generation_controls() -> void:
-	map_size_option.disabled = not generated_map_toggle.button_pressed
+	population_toggle.visible = BattlefieldCatalogData.uses_population(_selected_battlefield_id())
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -449,31 +479,103 @@ func _refresh_seed_controls() -> void:
 	seed_input.editable = not auto_seed_toggle.button_pressed
 
 func _start_battle() -> void:
+	if not _launch_in_progress:
+		_launch_battle(_build_battle_configuration())
+
+func _choose_replay_file() -> void:
+	if _launch_in_progress:
+		return
+	if not _replay_dialog:
+		_replay_dialog = FileDialog.new()
+		_replay_dialog.name = "OpenReplayDialog"
+		_replay_dialog.title = "Open FuseFire Replay"
+		_replay_dialog.access = FileDialog.ACCESS_FILESYSTEM
+		_replay_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+		_replay_dialog.filters = PackedStringArray(["*.json ; FuseFire replay files"])
+		_replay_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
+		_replay_dialog.file_selected.connect(_open_replay_file)
+		add_child(_replay_dialog)
+	_replay_dialog.popup_centered_ratio(0.75)
+
+func _open_replay_file(path: String) -> void:
+	if _launch_in_progress:
+		return
+	var recording := BattleReplayRecording.load_json(path)
+	var issue := recording.validation_message()
+	if issue.is_empty() and (not bool(recording.configuration.get("generated_map", false)) \
+	or StringName(recording.configuration.get("battlefield_id", "")) not in BattlefieldCatalogData.PLAYABLE):
+		issue = "This recording uses a retired battlefield."
+	if not issue.is_empty():
+		if not _replay_error:
+			_replay_error = AcceptDialog.new()
+			_replay_error.name = "ReplayOpenError"
+			_replay_error.title = "Could Not Open Replay"
+			add_child(_replay_error)
+		_replay_error.dialog_text = issue
+		_replay_error.popup_centered()
+		return
+	_launch_battle(null, recording)
+
+func _launch_battle(config: BattleConfigurationData, recording: BattleReplayRecording = null) -> void:
+	if _launch_in_progress:
+		return
+	_launch_in_progress = true
+	start_button.disabled = true
+	%OpenReplayButton.disabled = true
+	_loading_screen = BattleLoadingScreenData.new()
+	_loading_screen.name = "BattleLoadingScreen"
+	_loading_screen.dismissed.connect(_dismiss_loading_failure)
+	add_child(_loading_screen)
+	var stage := "Reconstructing saved battle…" if recording else "Preparing %s…" % BattlefieldCatalogData.label(config.resolved_battlefield_id())
+	_loading_screen.set_stage(stage, 0.05)
+	# Allow the opaque transition to render before synchronous map construction.
+	await get_tree().process_frame
 	var battle = battle_scene.instantiate() as BattleLevel
-	var config := _build_battle_configuration()
-	battle.configure_battle(config)
+	battle.battle_initialization_progress.connect(_loading_screen.set_stage)
+	battle.battle_initialization_finished.connect(_on_battle_initialization_finished.bind(battle), CONNECT_ONE_SHOT)
+	if recording:
+		battle.configure_replay(recording)
+	else:
+		battle.configure_battle(config)
 	get_tree().root.add_child(battle)
-	get_tree().current_scene = battle
-	queue_free()
+
+func _on_battle_initialization_finished(success: bool, errors: Array, battle: BattleLevel) -> void:
+	if success:
+		_loading_screen.set_stage("Battlefield ready", 1.0)
+		get_tree().current_scene = battle
+		queue_free()
+		return
+	if is_instance_valid(battle):
+		battle.queue_free()
+	_loading_screen.show_failure(errors)
+
+func _dismiss_loading_failure() -> void:
+	if is_instance_valid(_loading_screen):
+		_loading_screen.queue_free()
+	_loading_screen = null
+	_launch_in_progress = false
+	start_button.disabled = false
+	%OpenReplayButton.disabled = false
 
 func _build_battle_configuration() -> BattleConfigurationData:
 	var config := BattleConfigurationData.new()
 	config.player_count = int(player_count.value)
 	config.enemy_count = int(enemy_count.value)
-	config.generated_map = generated_map_toggle.button_pressed
+	config.generated_map = true
 	config.battle_seed = int(seed_input.value)
 	config.ally_count = int(ally_count.value)
 	config.player_archetypes = player_archetypes.duplicate()
 	config.enemy_archetypes = enemy_archetypes.duplicate()
 	config.ally_archetypes = ally_archetypes.duplicate()
-	config.map_size = Vector2i(96, 80) if map_size_option.selected == 5 else (Vector2i(40, 30) if map_size_option.selected >= 3 else FlatMapGenerator.MAP_SIZES[map_size_option.selected])
+	var battlefield := _selected_battlefield_id()
+	config.map_size = BattlefieldCatalogData.map_size(battlefield, Vector2i.ZERO)
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
-	config.refinery = map_size_option.selected == 3
-	config.industrial_warehouse = map_size_option.selected == 4
-	config.refinery_2 = map_size_option.selected == 5
+	config.select_battlefield(battlefield)
+	if BattlefieldCatalogData.uses_population(battlefield):
+		config.content_manifest = {"population_enabled": population_toggle.button_pressed}
 	return config

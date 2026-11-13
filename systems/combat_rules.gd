@@ -42,40 +42,23 @@ class AttackEvaluation:
 static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
-	var default_aim := get_shot_destination(target, grid)
-	if attacker.is_carrying_unit():
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Cannot shoot while carrying", default_aim)
-	if not attacker.stats or not target.stats or attacker.stats.is_defeated or target.stats.is_defeated:
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Unit defeated", default_aim)
-	if not FactionRules.are_hostile(attacker.faction, target.faction):
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Not hostile", default_aim)
+	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield)
 
-	var attacker_grid = grid.get_unit_grid(attacker)
-	var target_grid = grid.get_unit_grid(target)
-	var grid_distance = attack_distance(attacker_grid, target_grid, grid)
-	if grid_distance > attacker.attack_range:
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
-	var visibility := _evaluate_target_visibility(attacker, target, grid)
-	if visibility.visible_count == 0:
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.FULL, "Blocked", visibility.aim_point, 0.0, "Blocked", visibility.blocker)
-
-	var cover := get_directional_cover(attacker_grid, target_grid, grid)
-	var cover_penalty := 50 if cover != MapCellData.CoverType.NONE else 0
-	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
-	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
-	var shield := get_shield_protection(attacker, target, grid) if allow_shield else {}
-	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
-	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus + shield_accuracy, 5, 100)
-	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
-	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
-
-## Pure checkpoint evaluation used by movement reactions. The target node and
-## live occupancy remain untouched; geometry is evaluated as though the target
-## occupied target_cell.
+## Pure checkpoint evaluation for reactions and incoming destination previews.
 static func evaluate_attack_at_cell(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
+	if not is_instance_valid(attacker):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, target_cell, grid, accuracy_bonus, allow_shield)
+
+## Pure outgoing preview. Moving cancels Aim, so callers should use zero bonus.
+static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
+	if not is_instance_valid(target):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	return _evaluate_attack_cells(attacker, attacker_cell, target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield)
+
+static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
-	var attacker_cell := grid.get_unit_grid(attacker)
 	var default_aim := _shot_destination_at(target, target_cell, grid)
 	if attacker.is_carrying_unit():
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Cannot shoot while carrying", default_aim)
@@ -85,7 +68,7 @@ static func evaluate_attack_at_cell(attacker: TacticalUnit, target: TacticalUnit
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Not hostile", default_aim)
 	if attack_distance(attacker_cell, target_cell, grid) > attacker.attack_range:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
-	var visibility := _evaluate_target_visibility_at(attacker, target, target_cell, grid)
+	var visibility := _evaluate_target_visibility_cells(attacker, attacker_cell, target, target_cell, grid)
 	if visibility.visible_count == 0:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.FULL, "Blocked", visibility.aim_point, 0.0, "Blocked", visibility.blocker)
 	var cover := get_directional_cover(attacker_cell, target_cell, grid)
@@ -161,41 +144,8 @@ static func get_shot_origin(attacker: TacticalUnit, grid: GridManager) -> Vector
 static func get_shot_destination(target: TacticalUnit, grid: GridManager) -> Vector3:
 	return grid.grid_to_world(grid.get_unit_grid(target)) + Vector3.UP * target.standing_height
 
-static func _evaluate_target_visibility(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
-	var origin := get_shot_origin(attacker, grid)
-	var center := get_shot_destination(target, grid)
-	var horizontal := center - origin
-	horizontal.y = 0.0
-	var side := Vector3.RIGHT
-	if not horizontal.is_zero_approx():
-		side = Vector3(-horizontal.z, 0.0, horizontal.x).normalized()
-	var base := grid.grid_to_world(grid.get_unit_grid(target))
-	var samples: Array[Vector3] = [
-		base + Vector3.UP * target.standing_height * 1.2,
-		base + Vector3.UP * target.standing_height * 1.75,
-		base + Vector3.UP * target.standing_height * 0.9 + side * grid.cell_size * 0.28,
-		base + Vector3.UP * target.standing_height * 0.9 - side * grid.cell_size * 0.28,
-		base + Vector3.UP * target.standing_height * 0.5,
-	]
-	var visible: Array[Vector3] = []
-	var first_blocker: MapCellData = null
-	var ignored_cells: Array[Vector3i] = [grid.get_unit_grid(attacker), grid.get_unit_grid(target)]
-	for sample in samples:
-		var blocker := _get_geometry_between(origin, sample, grid, false, ignored_cells)
-		if blocker:
-			if not first_blocker: first_blocker = blocker
-		else:
-			visible.append(sample)
-	return {
-		"visible_count": visible.size(),
-		"sample_count": samples.size(),
-		"aim_point": visible[0] if not visible.is_empty() else center,
-		"blocker": first_blocker,
-	}
-
-static func _evaluate_target_visibility_at(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Dictionary:
-	var attacker_cell := grid.get_unit_grid(attacker)
-	var origin := get_shot_origin(attacker, grid)
+static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Dictionary:
+	var origin := grid.grid_to_world(attacker_cell) + Vector3.UP * attacker.standing_height
 	var center := _shot_destination_at(target, target_cell, grid)
 	var horizontal := center - origin
 	horizontal.y = 0.0
@@ -249,7 +199,7 @@ static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridM
 static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = []) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
-	var candidates: Array = grid.map_data.los_blocking_cells if los_blockers_only else grid.map_data.cells.values()
+	var candidates := _shot_candidates(grid, origin_cell, target_cell, los_blockers_only)
 	var grazed: Array[MapCellData] = []
 	for data: MapCellData in candidates:
 		if data.cover_height <= 0.0:
@@ -268,13 +218,40 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			grazed.append(data)
 	return null
 
+static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, los_blockers_only: bool) -> Array:
+	var column_count := (absi(to.x - from.x) + 3) * (absi(to.z - from.z) + 3)
+	var cell_count := grid.map_data.los_blocking_cells.size() if los_blockers_only else grid.map_data.cells.size()
+	if not grid.map_floor or column_count >= cell_count:
+		return grid.map_data.los_blocking_cells if los_blockers_only else grid.map_data.cells.values()
+	# The extra column on each edge preserves diagonal seam checks and the
+	# narrow-phase tolerance at cell boundaries.
+	var candidates: Array[MapCellData] = []
+	for x in range(mini(from.x, to.x) - 1, maxi(from.x, to.x) + 2):
+		for z in range(mini(from.z, to.z) - 1, maxi(from.z, to.z) + 2):
+			for cell: MapCellData in grid.map_data.columns.get(Vector2i(x, z), []):
+				if cell.cover_height > 0.0 and (not los_blockers_only or cell.blocks_line_of_sight):
+					candidates.append(cell)
+	return candidates
+
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
+	if not cell.authored_shot_parts.is_empty():
+		for part in cell.authored_shot_parts:
+			if _segment_enters_bounds(origin, destination, cell, cell_size, closed_edges, part): return true
+		return false
+	return _segment_enters_bounds(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds)
+
+static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> bool:
 	var inset := 0.001
 	# Full-height obstacles meet at their edges. Shrinking their horizontal
 	# bounds creates artificial cracks through touching diagonal blocks.
 	var half_cell = cell_size * 0.5 + inset if closed_edges else cell_size * 0.5 - inset
 	var minimum = Vector3(cell.world_position.x - half_cell, cell.world_position.y + inset, cell.world_position.z - half_cell)
 	var maximum = Vector3(cell.world_position.x + half_cell, cell.world_position.y + cell.cover_height - inset, cell.world_position.z + half_cell)
+	if bounds.has_volume():
+		minimum = minimum.max(bounds.position)
+		maximum = maximum.min(bounds.end)
+		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
+			return false
 	var direction = destination - origin
 	var enter := 0.0
 	var exit := 1.0

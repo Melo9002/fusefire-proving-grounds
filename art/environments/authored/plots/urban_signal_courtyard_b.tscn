@@ -1,0 +1,82 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/light-curved.glb" id="light"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-h.glb" id="building_h"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-i.glb" id="building_i"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-j.glb" id="building_j"]
+
+[sub_resource type="StandardMaterial3D" id="ground_material"]
+albedo_color = Color(0.19, 0.205, 0.205, 1)
+roughness = 0.96
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(256, 0.08, 256)
+material = SubResource("ground_material")
+
+[sub_resource type="StandardMaterial3D" id="approach_material"]
+albedo_color = Color(0.34, 0.35, 0.33, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="approach_mesh"]
+size = Vector3(64, 0.04, 16)
+material = SubResource("approach_material")
+
+[node name="UrbanSignalCourtyardB" type="Node3D"]
+metadata/plot_id = &"urban_signal_courtyard_b"
+metadata/revision = 1
+metadata/map_size = Vector2i(64, 64)
+metadata/composition = &"enclosed_courtyard"
+
+[node name="VisibleGround" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("ground_mesh")
+
+[node name="SouthApproach" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5, -0.01, 23.5)
+mesh = SubResource("approach_mesh")
+
+[node name="CourtyardLights" type="Node3D" parent="."]
+
+[node name="SouthWest" type="Node3D" parent="CourtyardLights"]
+position = Vector3(-18, 0, 18)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+[node name="Visual" parent="CourtyardLights/SouthWest" instance=ExtResource("light")]
+scale = Vector3(5, 5, 5)
+
+[node name="SouthEast" type="Node3D" parent="CourtyardLights"]
+position = Vector3(18, 0, 18)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_roads/light-curved"
+[node name="Visual" parent="CourtyardLights/SouthEast" instance=ExtResource("light")]
+scale = Vector3(5, 5, 5)
+
+[node name="FarBackdrop" type="Node3D" parent="."]
+
+[node name="NorthWestBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-43, 0, -43)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_industrial/building-h"
+[node name="Visual" parent="FarBackdrop/NorthWestBlock" instance=ExtResource("building_h")]
+scale = Vector3(10, 10, 10)
+
+[node name="NorthEastBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(43, 0, -43)
+rotation = Vector3(0, 3.141593, 0)
+metadata/asset_id = "city_kit_industrial/building-i"
+[node name="Visual" parent="FarBackdrop/NorthEastBlock" instance=ExtResource("building_i")]
+scale = Vector3(10, 10, 10)
+
+[node name="WestBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(-48, 0, 4)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "city_kit_industrial/building-j"
+[node name="Visual" parent="FarBackdrop/WestBlock" instance=ExtResource("building_j")]
+scale = Vector3(10, 10, 10)
+
+[node name="EastBlock" type="Node3D" parent="FarBackdrop"]
+position = Vector3(48, 0, 4)
+rotation = Vector3(0, -1.570796, 0)
+metadata/asset_id = "city_kit_industrial/building-j"
+[node name="Visual" parent="FarBackdrop/EastBlock" instance=ExtResource("building_j")]
+scale = Vector3(10, 10, 10)

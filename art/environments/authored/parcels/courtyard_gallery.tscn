@@ -1,0 +1,110 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_deck_2x2.tscn" id="deck"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_support_2m.tscn" id="support"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_rail_2m.tscn" id="rail"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/screen-hanging-wide.glb" id="screen"]
+
+[sub_resource type="StandardMaterial3D" id="pad_material"]
+albedo_color = Color(0.235, 0.255, 0.255, 1)
+roughness = 0.94
+
+[sub_resource type="BoxMesh" id="pad_mesh"]
+size = Vector3(16, 0.04, 32)
+material = SubResource("pad_material")
+
+[node name="CourtyardGallery" type="Node3D"]
+metadata/parcel_id = &"courtyard_gallery_a"
+metadata/parcel_role = &"urban_gallery"
+metadata/parcel_size = Vector2i(16, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(0, 0, 12)
+metadata/access_direction = Vector2i(-1, 0)
+metadata/access_width = 8
+metadata/access_kind = &"courtyard_edge"
+metadata/deck_local_rect = Rect2i(2, 6, 2, 20)
+metadata/deck_level = 4
+
+[node name="Pad" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, -0.01, 15.5)
+mesh = SubResource("pad_mesh")
+
+[node name="LadderContract" type="Node" parent="."]
+metadata/ladder_local_bottom = Vector3i(4, 0, 5)
+metadata/ladder_local_top = Vector3i(3, 4, 6)
+
+[node name="Ladder" parent="." instance=ExtResource("ladder")]
+position = Vector3(4.05, 0, 5.5)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="SignalDisplay" type="Node3D" parent="."]
+position = Vector3(4.1, 5.4, 15.5)
+rotation = Vector3(0, 1.570796, 0)
+metadata/asset_id = "factory_kit/screen-hanging-wide"
+
+[node name="Visual" parent="SignalDisplay" instance=ExtResource("screen")]
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Deck06" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 6.5)
+[node name="Deck08" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 8.5)
+[node name="Deck10" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 10.5)
+[node name="Deck12" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 12.5)
+[node name="Deck14" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 14.5)
+[node name="Deck16" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 16.5)
+[node name="Deck18" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 18.5)
+[node name="Deck20" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 20.5)
+[node name="Deck22" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 22.5)
+[node name="Deck24" parent="." instance=ExtResource("deck")]
+position = Vector3(2.5, 4, 24.5)
+
+[node name="Support08" parent="." instance=ExtResource("support")]
+position = Vector3(2.5, 0, 8.5)
+[node name="Support16" parent="." instance=ExtResource("support")]
+position = Vector3(2.5, 0, 16.5)
+[node name="Support24" parent="." instance=ExtResource("support")]
+position = Vector3(2.5, 0, 24.5)
+
+[node name="Rails" type="Node3D" parent="."]
+[node name="Inner06" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 6.5)
+[node name="Inner08" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 8.5)
+[node name="Inner10" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 10.5)
+[node name="Inner20" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 20.5)
+[node name="Inner22" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 22.5)
+[node name="Inner24" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(3.5, 4, 24.5)
+[node name="Outer06" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 6.5)
+[node name="Outer08" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 8.5)
+[node name="Outer10" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 10.5)
+[node name="Outer12" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 12.5)
+[node name="Outer14" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 14.5)
+[node name="Outer16" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 16.5)
+[node name="Outer18" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 18.5)
+[node name="Outer20" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 20.5)
+[node name="Outer22" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 22.5)
+[node name="Outer24" parent="Rails" instance=ExtResource("rail")]
+position = Vector3(1.5, 4, 24.5)

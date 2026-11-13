@@ -92,7 +92,13 @@ The full tier reports these as skipped by policy:
 - `container_maps_smoke.gd`
 - `map_quality_metrics_smoke.gd`
 - `prototype_1_milestone.gd`
+- `refinery_family_ai_smoke.gd`
+- `refinery_family_mission_matrix.gd`
 - `asset_lab_capture.gd`
+- `parcel_editor_capture.gd`
+- `urban_frontage_capture.gd`
+- `urban_plot_capture.gd`
+- `urban_courtyard_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`
 - `semantic_asset_review_capture.gd`

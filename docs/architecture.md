@@ -30,6 +30,9 @@ Keep this layout while the prototype is small. Add folders when they group a rea
 | `MapData` / `MapCellData` | Terrain, elevation, cover, LOS, and traversal facts | Asking what a battlefield cell contains |
 | `MapValidator` | Reports whether runtime map and spawn data can support a battle | Adding legality rules shared by handmade and generated maps |
 | `FlatMapGenerator` | Produces seeded flat terrain, cover, and faction spawn cells | Changing the first procedural map source |
+| `BattlefieldCatalog` | Resolves one stable battlefield ID to size, construction and special presentation | Adding or selecting a supported battlefield without new flags/UI branches |
+| `AuthoredSceneMapCompiler` | Converts explicit authored-scene tactical metadata into MapData | Extending the shared authored-map metadata vocabulary |
+| `ParcelTransform` / `ParcelConnection` | Rotates parcel-local cells and validates measured boundary interfaces | Authoring bounded reusable environment areas |
 | `GeneratedElevationPlacer` | Adds seeded freestanding platform surfaces as elevated map cells | Changing generated elevation placement |
 | `GeneratedTerrainPresenter` | Builds disposable 3D cover meshes from generated MapData | Changing generated-map presentation |
 | `MapBatchTester` | Generates and validates a range of seeds without scene instances | Adding structural batch checks and metrics |

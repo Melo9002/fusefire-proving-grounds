@@ -2,6 +2,7 @@ class_name AIMatchSimulator
 extends Node
 
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
+const BattlefieldCatalog := preload("res://systems/generation/battlefield_catalog.gd")
 
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 
@@ -30,6 +31,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		"refinery": bool(config.get("refinery", false)),
 		"industrial_warehouse": bool(config.get("industrial_warehouse", false)),
 		"refinery_2": bool(config.get("refinery_2", false)),
+		"loading_yard": bool(config.get("loading_yard", false)),
+		"battlefield_id": String(config.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER)),
 		"difficulty": AIDifficultyPolicy.Tier.keys()[result.difficulty],
 		"player_commander": AICommanderPolicy.get_label(config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)),
 		"enemy_commander": AICommanderPolicy.get_label(config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)),
@@ -57,6 +60,11 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.refinery = config.get("refinery", false)
 	battle_config.industrial_warehouse = config.get("industrial_warehouse", false)
 	battle_config.refinery_2 = config.get("refinery_2", false)
+	battle_config.loading_yard = config.get("loading_yard", false)
+	battle_config.battlefield_id = StringName(config.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER))
+	if config.has("content_manifest"):
+		battle_config.content_manifest = config.content_manifest.duplicate(true)
+		result.configuration.content_manifest = _serializable_value(battle_config.content_manifest)
 	level.configure_battle(battle_config)
 	add_child(level)
 	var setup_deadline := Time.get_ticks_msec() + 10000

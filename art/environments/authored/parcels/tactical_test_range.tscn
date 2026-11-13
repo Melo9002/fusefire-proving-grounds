@@ -1,0 +1,602 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/suv.glb" id="suv"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="container_a"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="container_b"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="crate"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/construction-barrier.glb" id="barrier"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_rail_2m.tscn" id="rail"]
+[ext_resource type="Script" path="res://systems/grid/elevation_path.gd" id="elevation_path"]
+
+[sub_resource type="StandardMaterial3D" id="asphalt"]
+albedo_color = Color(0.25, 0.31, 0.33, 1)
+roughness = 0.92
+
+[sub_resource type="PlaneMesh" id="yard"]
+material = SubResource("asphalt")
+size = Vector2(32, 32)
+
+[sub_resource type="StandardMaterial3D" id="deck"]
+albedo_color = Color(0.28, 0.34, 0.38, 1)
+roughness = 0.84
+
+[sub_resource type="StandardMaterial3D" id="paint"]
+albedo_color = Color(0.88, 0.76, 0.39, 1)
+roughness = 0.92
+
+[sub_resource type="PlaneMesh" id="bay_line"]
+material = SubResource("paint")
+size = Vector2(0.085, 4.2)
+
+[node name="TacticalTestRange" type="Node3D"]
+metadata/parcel_id = &"tactical_range_a"
+metadata/parcel_role = &"tactical_range"
+metadata/revision = 1
+metadata/parcel_size = Vector2i(32, 32)
+metadata/allowed_rotations = PackedInt32Array(0)
+metadata/access_cell = Vector3i(12, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 8
+metadata/access_kind = &"range_entry"
+
+[node name="Yard" type="MeshInstance3D" parent="."]
+position = Vector3(15.5, 0.004, 15.5)
+cast_shadow = 0
+mesh = SubResource("yard")
+
+[node name="TrainingGallery" type="Node3D" parent="."]
+
+[node name="LowerGallery" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(8.5, 2.89, 8.5)
+size = Vector3(10, 0.22, 8)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="LowerTacticalSurface" type="Node" parent="TrainingGallery"]
+metadata/deck_local_rect = Rect2i(4, 5, 10, 8)
+metadata/deck_level = 3
+metadata/deck_label = "Control gallery"
+
+[node name="UpperGallery" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(6.5, 5.89, 6.5)
+size = Vector3(6, 0.22, 4)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="UpperTacticalSurface" type="Node" parent="TrainingGallery"]
+metadata/deck_local_rect = Rect2i(4, 5, 6, 4)
+metadata/deck_level = 6
+metadata/deck_label = "Observation deck"
+
+[node name="GroundClimb" type="Node3D" parent="TrainingGallery"]
+metadata/ladder_local_bottom = Vector3i(12, 0, 4)
+metadata/ladder_local_top = Vector3i(12, 3, 5)
+
+[node name="Ladder" parent="TrainingGallery/GroundClimb" instance=ExtResource("ladder")]
+position = Vector3(12, 0, 4.45)
+scale = Vector3(1, 0.75, 1)
+
+[node name="UpperClimb" type="Node3D" parent="TrainingGallery"]
+metadata/ladder_local_bottom = Vector3i(7, 3, 9)
+metadata/ladder_local_top = Vector3i(7, 6, 8)
+
+[node name="Ladder" parent="TrainingGallery/UpperClimb" instance=ExtResource("ladder")]
+position = Vector3(7, 3, 8.55)
+scale = Vector3(1, 0.75, 1)
+
+[node name="Ramp" type="Node3D" parent="TrainingGallery"]
+script = ExtResource("elevation_path")
+start_cell = Vector3i(11, 0, 14)
+step_count = 2
+
+[node name="RampSurface" type="CSGBox3D" parent="TrainingGallery/Ramp"]
+position = Vector3(11, 1.43, 13.45)
+rotation = Vector3(0.7853982, 0, 0)
+size = Vector3(1, 0.16, 4.24)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Stairs" type="Node3D" parent="TrainingGallery"]
+script = ExtResource("elevation_path")
+start_cell = Vector3i(6, 0, 14)
+step_count = 2
+
+[node name="Tread1" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 0.25, 14.75)
+size = Vector3(1, 0.5, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tread2" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 0.5, 14.25)
+size = Vector3(1, 1.0, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tread3" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 0.75, 13.75)
+size = Vector3(1, 1.5, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tread4" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 1.0, 13.25)
+size = Vector3(1, 2.0, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tread5" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 1.25, 12.75)
+size = Vector3(1, 2.5, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tread6" type="CSGBox3D" parent="TrainingGallery/Stairs"]
+position = Vector3(6, 1.5, 12.25)
+size = Vector3(1, 3.0, 0.5)
+material = SubResource("deck")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="Support1_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(4, 1.39, 5)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support1_3" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(4, 4.39, 5)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support2_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(9, 1.39, 5)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support2_3" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(9, 4.39, 5)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support3_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(4, 1.39, 8)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support3_3" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(4, 4.39, 8)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support4_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(9, 1.39, 8)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support4_3" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(9, 4.39, 8)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support5_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(13, 1.39, 5)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support6_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(4, 1.39, 12)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="Support7_0" type="CSGBox3D" parent="TrainingGallery"]
+position = Vector3(13, 1.39, 12)
+size = Vector3(0.38, 2.78, 0.38)
+material = SubResource("deck")
+metadata/solid_size = Vector3(0.48, 2.78, 0.48)
+
+[node name="EdgeRail1" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 3, 5.5)
+
+[node name="EdgeRail2" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(13.46, 3, 5.5)
+
+[node name="EdgeRail3" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 3, 7.5)
+
+[node name="EdgeRail4" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(13.46, 3, 7.5)
+
+[node name="EdgeRail5" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 3, 9.5)
+
+[node name="EdgeRail6" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(13.46, 3, 9.5)
+
+[node name="EdgeRail7" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 3, 11.5)
+
+[node name="EdgeRail8" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(13.46, 3, 11.5)
+
+[node name="EdgeRail9" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(4.5, 3, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail10" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(6.5, 3, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail11" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(8.5, 3, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail12" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(10.5, 3, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail13" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(4.5, 3, 12.46)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail14" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(8, 3, 12.46)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail15" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(12.5, 3, 12.46)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail16" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 6, 5.5)
+
+[node name="EdgeRail17" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(9.46, 6, 5.5)
+
+[node name="EdgeRail18" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(3.54, 6, 7.5)
+
+[node name="EdgeRail19" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(9.46, 6, 7.5)
+
+[node name="EdgeRail20" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(4.5, 6, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail21" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(6.5, 6, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail22" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(8.5, 6, 4.54)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail23" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(4.5, 6, 8.46)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="EdgeRail24" parent="TrainingGallery" instance=ExtResource("rail")]
+position = Vector3(8.5, 6, 8.46)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="VehicleBay" type="Node3D" parent="."]
+
+[node name="CargoBay" type="Node3D" parent="."]
+
+[node name="CoverCourse" type="Node3D" parent="."]
+
+[node name="MissionStations" type="Node3D" parent="."]
+
+[node name="PlayerDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 0
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(2, 0, 12), Vector3i(2, 0, 10), Vector3i(2, 0, 8), Vector3i(2, 0, 6), Vector3i(2, 0, 4)])
+
+[node name="EnemyDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 1
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(29, 0, 12), Vector3i(29, 0, 9), Vector3i(29, 0, 15), Vector3i(29, 0, 6), Vector3i(29, 0, 18)])
+
+[node name="AllyDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 2
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(2, 0, 16), Vector3i(2, 0, 18), Vector3i(2, 0, 20), Vector3i(2, 0, 22), Vector3i(2, 0, 24), Vector3i(2, 0, 26)])
+
+[node name="ReferenceSedan" type="Node3D" parent="VehicleBay"]
+position = Vector3(6.5, 0, 22)
+metadata/asset_id = "car_kit/sedan"
+rotation = Vector3(0, 3.1415927, 0)
+
+[node name="Visual" parent="VehicleBay/ReferenceSedan" instance=ExtResource("sedan")]
+scale = Vector3(1.08, 1.08, 1.08)
+
+[node name="TacticalVolume" type="Node3D" parent="VehicleBay/ReferenceSedan"]
+position = Vector3(0, 0.71, 0)
+metadata/solid_size = Vector3(1.72, 1.42, 2.9)
+
+[node name="parking" type="Node" parent="VehicleBay"]
+metadata/population_region_id = &"parking"
+metadata/population_role = &"parked_vehicle"
+metadata/local_rect = Rect2i(3, 24, 10, 7)
+metadata/allowed_asset_ids = PackedStringArray("car_kit/suv", "car_kit/taxi")
+metadata/min_count = 0
+metadata/max_count = 2
+
+[node name="suv" type="Node3D" parent="VehicleBay"]
+visible = false
+position = Vector3(5, 0, 27)
+metadata/asset_id = "car_kit/suv"
+metadata/population_socket_id = &"suv"
+metadata/population_region_id = &"parking"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="Visual" parent="VehicleBay/suv" instance=ExtResource("suv")]
+scale = Vector3(1.08, 1.08, 1.08)
+
+[node name="TacticalVolume" type="Node3D" parent="VehicleBay/suv"]
+position = Vector3(0, 0.825, 0)
+metadata/solid_size = Vector3(1.78, 1.65, 3.6)
+
+[node name="taxi" type="Node3D" parent="VehicleBay"]
+visible = false
+position = Vector3(10, 0, 27)
+metadata/asset_id = "car_kit/taxi"
+metadata/population_socket_id = &"taxi"
+metadata/population_region_id = &"parking"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="Visual" parent="VehicleBay/taxi" instance=ExtResource("taxi")]
+scale = Vector3(1.08, 1.08, 1.08)
+
+[node name="TacticalVolume" type="Node3D" parent="VehicleBay/taxi"]
+position = Vector3(0, 0.825, 0)
+metadata/solid_size = Vector3(1.78, 1.65, 3.6)
+
+[node name="Stripe1" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(5.1, 0.015, 22)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="Stripe2" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(7.9, 0.015, 22)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="Stripe3" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(3.6, 0.015, 27)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="Stripe4" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(6.4, 0.015, 27)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="Stripe5" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(8.6, 0.015, 27)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="Stripe6" type="MeshInstance3D" parent="VehicleBay"]
+position = Vector3(11.4, 0.015, 27)
+cast_shadow = 0
+mesh = SubResource("bay_line")
+
+[node name="ReferenceStack" type="Node3D" parent="CargoBay"]
+position = Vector3(24, 0, 19)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="Visual" parent="CargoBay/ReferenceStack" instance=ExtResource("container_a")]
+scale = Vector3(2.85, 2.85, 2.85)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoBay/ReferenceStack"]
+position = Vector3(0, 1.0, 0)
+metadata/solid_size = Vector3(1.18, 2.0, 2.45)
+
+[node name="UpperCargo" parent="CargoBay/ReferenceStack" instance=ExtResource("container_b")]
+position = Vector3(0, 0.992, 0)
+scale = Vector3(2.85, 2.85, 2.85)
+
+[node name="staging" type="Node" parent="CargoBay"]
+metadata/population_region_id = &"staging"
+metadata/population_role = &"container_storage"
+metadata/local_rect = Rect2i(21, 23, 8, 7)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b")
+metadata/min_count = 0
+metadata/max_count = 2
+
+[node name="cargo_1" type="Node3D" parent="CargoBay"]
+visible = false
+position = Vector3(23, 0, 25)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"cargo_1"
+metadata/population_region_id = &"staging"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="Visual" parent="CargoBay/cargo_1" instance=ExtResource("container_a")]
+scale = Vector3(3.9, 3.9, 3.9)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoBay/cargo_1"]
+position = Vector3(0, 0.7, 0)
+metadata/solid_size = Vector3(1.52, 1.4, 3.26)
+
+[node name="cargo_2" type="Node3D" parent="CargoBay"]
+visible = false
+position = Vector3(27, 0, 27)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+metadata/population_socket_id = &"cargo_2"
+metadata/population_region_id = &"staging"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="Visual" parent="CargoBay/cargo_2" instance=ExtResource("container_b")]
+scale = Vector3(3.9, 3.9, 3.9)
+
+[node name="TacticalVolume" type="Node3D" parent="CargoBay/cargo_2"]
+position = Vector3(0, 0.7, 0)
+metadata/solid_size = Vector3(1.52, 1.4, 3.26)
+
+[node name="VaultBarrier20" type="Node3D" parent="CoverCourse"]
+position = Vector3(20, 0, 10)
+metadata/asset_id = "city_kit_roads/construction-barrier"
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="Visual" parent="CoverCourse/VaultBarrier20" instance=ExtResource("barrier")]
+scale = Vector3(4.2, 4.2, 4.2)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/VaultBarrier20"]
+position = Vector3(0, 0.28, 0)
+metadata/solid_size = Vector3(0.6, 0.56, 0.95)
+metadata/movement_cost = 2
+
+[node name="VaultBarrier21" type="Node3D" parent="CoverCourse"]
+position = Vector3(21, 0, 10)
+metadata/asset_id = "city_kit_roads/construction-barrier"
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="Visual" parent="CoverCourse/VaultBarrier21" instance=ExtResource("barrier")]
+scale = Vector3(4.2, 4.2, 4.2)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/VaultBarrier21"]
+position = Vector3(0, 0.28, 0)
+metadata/solid_size = Vector3(0.6, 0.56, 0.95)
+metadata/movement_cost = 2
+
+[node name="VaultBarrier22" type="Node3D" parent="CoverCourse"]
+position = Vector3(22, 0, 10)
+metadata/asset_id = "city_kit_roads/construction-barrier"
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="Visual" parent="CoverCourse/VaultBarrier22" instance=ExtResource("barrier")]
+scale = Vector3(4.2, 4.2, 4.2)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/VaultBarrier22"]
+position = Vector3(0, 0.28, 0)
+metadata/solid_size = Vector3(0.6, 0.56, 0.95)
+metadata/movement_cost = 2
+
+[node name="CoverCrate23_7" type="Node3D" parent="CoverCourse"]
+position = Vector3(23, 0, 7)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CoverCourse/CoverCrate23_7" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/CoverCrate23_7"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="CoverCrate26_12" type="Node3D" parent="CoverCourse"]
+position = Vector3(26, 0, 12)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CoverCourse/CoverCrate26_12" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/CoverCrate26_12"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="CoverCrate17_14" type="Node3D" parent="CoverCourse"]
+position = Vector3(17, 0, 14)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="CoverCourse/CoverCrate17_14" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="CoverCourse/CoverCrate17_14"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="ObservationReach" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"reach"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(5, 6, 6), Vector3i(6, 6, 6), Vector3i(5, 6, 7), Vector3i(6, 6, 7)])
+
+[node name="SouthernExtraction" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"extract"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(14, 0, 28), Vector3i(15, 0, 28), Vector3i(14, 0, 29), Vector3i(15, 0, 29)])
+
+[node name="NorthernExtraction" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"enemy_extract"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(19, 0, 2), Vector3i(20, 0, 2), Vector3i(19, 0, 3), Vector3i(20, 0, 3)])
+
+[node name="RescuePoint" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"rescue_spawn"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(19, 0, 19)])
+
+[node name="GalleryTerminal" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"terminal"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(11, 3, 8)])
+
+[node name="ElevationSign" type="Label3D" parent="."]
+position = Vector3(8.5, 0.019, 16.2)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "01  RAMP  /  STAIRS"
+
+[node name="CoverSign" type="Label3D" parent="."]
+position = Vector3(22, 0.019, 14.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "02  COVER  /  REACTIONS"
+
+[node name="VehicleSign" type="Label3D" parent="."]
+position = Vector3(7.5, 0.019, 24.35)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "03  VEHICLE OCCLUSION"
+
+[node name="CargoSign" type="Label3D" parent="."]
+position = Vector3(25, 0.019, 22)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "04  CARGO STAGING"
+
+[node name="ExtractSign" type="Label3D" parent="."]
+position = Vector3(14.5, 0.019, 28.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "EXTRACT"

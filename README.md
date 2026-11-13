@@ -52,6 +52,8 @@ The prototype has weighted 3D paths, low-cover vaulting, directional cover, elev
 
 Match setup supports zero to five green AI allies. Turns proceed from player to allies to enemies. Allies use the same validated movement, attack, and defense actions as every other combatant, are friendly toward players, and are hostile toward enemies. Allies do not appear in the player portrait selector and cannot be selected manually.
 
+Starting a match opens an opaque battlefield-preparation screen before map construction. It reports real initialization stages and only enters combat after tactical validation succeeds; a failed map returns an actionable error instead of activating a partial battle.
+
 The 32×24 test battlefield is a systems lab: separated 5v5 spawn zones, long firing lanes, a central gate complex, a southern vault course, twin platforms, a three-route high platform, and stacked decks that allow units above and below the same X/Z position.
 
 All combatant Beans currently use a shared 10-tile attack range to make cover and visibility testing easier. A future weapon definition will supply each unit's effective range and damage.
@@ -93,7 +95,7 @@ The smoke tests load the real battle scene and check terrain data, shared player
 
 `MapValidator` checks the completed runtime `MapData` before combat starts. A valid map prints its cell, traversal-link, and spawn-cell totals. Invalid maps report stable issue codes and readable messages for invalid cells, path-state mismatches, stale LOS indexes, broken traversal links, bad or insufficient spawn cells, and disconnected opposing spawn zones. A failed validation leaves the battle in its transition state instead of starting on broken data.
 
-The match setup runs Generator 1. Enable **Use Generated Map**, choose a size or **Special — Refinery**, disable **Automatic New Seed**, and enter a seed to reproduce a map. Generator 2 and its authoring tools are quarantined outside the project; see [the current generation status](docs/generation/status.md).
+Match Setup resolves every generated or authored battlefield through one stable catalog identity. Enable **Use Generated Map**, choose a generated size or a named authored battlefield, disable **Automatic New Seed**, and enter a seed to reproduce it. Generator 2 and its authoring tools are quarantined outside the project; see [the current map architecture](docs/generation/current-map-architecture.md).
 
 The default legacy selection remains the established `FlatMapGenerator` path. It creates the ground, faction spawn cells, seeded tactical cover formations, and accessible rooftops directly as `MapData`; `MapGraphBuilder` derives pathfinding from that data, validation approves it, and units spawn from its cells. Barricades, corners, low walls, and staggered positions rotate and move with the seed while cover density stays comparable. Reusing a seed reproduces spawns, cover, and buildings. Spawn bands and a central route remain clear.
 
