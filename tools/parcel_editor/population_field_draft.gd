@@ -196,7 +196,7 @@ func parking_obstacles(definition, scene_root: Node3D) -> Array[AABB]:
 	# Decoration consumes visual space without acquiring tactical occupancy.
 	for node in scene_root.get_children():
 		if node is Node3D and node.has_meta("asset_id") and not node.has_meta("population_socket_id") and not node.has_meta("solid_size"):
-			var solids := node.find_children("*", "Node3D", true, false).filter(func(child): return child.has_meta("solid_size"))
+			var solids := node.find_children("*", "Node3D", true, false).filter(func(child): return AuthoredSceneMapCompiler.is_active_solid(child))
 			if solids.is_empty():
 				obstacles.append(EnvironmentAssetPlacement.mesh_bounds(node))
 	obstacles.append_array(registered_aisles(scene_root))

@@ -40,7 +40,7 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		})
 		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
-		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds)
+		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, int(resolved.compiler_revision))
 		root.free()
 	for interface in interfaces:
 		var failure := SlotContract.validate_compiled_span(data, interface.slot_path, interface.span, interface.outward)

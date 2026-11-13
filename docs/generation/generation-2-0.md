@@ -293,3 +293,9 @@ The foundation is ready for acceptance testing across the current refinery, urba
 | 9. Quality and cost | There is fixed-seed evidence for reachability, cover, deployment, replay and turn counts. | Record generation/loading time and render frame time on the reference machine, then playtest travel, cover and camera readability. |
 
 Use Refinery 2 seed 16, Garage seed 17 with population both on and off, and the composed refinery and urban families at seeds 16 and 17. Record failures with the battlefield ID, seed, mission and a saved replay when available. Close the generation milestone when this pass produces playable, reproducible maps and the author can reopen an export. Carry visual preferences and interface friction into the subsequent polish pass.
+
+## Asset replacement and fitted boundaries
+
+Owner direction, 2026-11-13: current art is replaceable. Use each imported asset's mesh to generate fitted, editable boundary shapes during authoring, then reuse one reviewed tactical template across its instances. Separate movement footprint and character clearance from shot-blocking height and cover; do not turn a roof, foliage or empty space around a mesh into a tall obstacle merely because it shares an overall bounding box. Mesh-based automatic baking is pending; the first measured warehouse/planter and shared delivery-truck refinements use compiler revision 3 while retaining revision-1/2 reconstruction. Implementation evidence and limitations live in [battlefield polish](../quality/battlefield-polish.md).
+
+Later procedural cover animation should use the same authored surfaces for contact, height and facing while preserving the authoritative tactical grid position. It is animation polish, not a second collision or combat model.

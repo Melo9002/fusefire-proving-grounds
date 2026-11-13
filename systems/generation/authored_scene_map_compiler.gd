@@ -3,10 +3,15 @@ extends RefCounted
 ## Compiles explicit tactical metadata from an authored Godot scene into
 ## MapData. Imported visual geometry never becomes tactical authority.
 
-static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY, precise_shot_bounds := true) -> void:
+const SHAPE_REVISION := 3
+
+static func is_active_solid(node: Node, revision := SHAPE_REVISION) -> bool:
+	return node.has_meta("solid_size") and int(node.get_meta("min_shape_revision", 1)) <= revision and int(node.get_meta("max_shape_revision", SHAPE_REVISION)) >= revision
+
+static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY, precise_shot_bounds := true, shape_revision := SHAPE_REVISION) -> void:
 	# Establish every walkable surface before any object can stamp onto it.
 	_compile_surfaces(root, root_transform, data, cell_size)
-	_compile_contents(root, root_transform, data, cell_size, precise_shot_bounds)
+	_compile_contents(root, root_transform, data, cell_size, precise_shot_bounds, shape_revision)
 	data.rebuild_los_index()
 
 static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: MapData, unit: float) -> void:
@@ -42,12 +47,12 @@ static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: M
 	for child in node.get_children():
 		_compile_surfaces(child, transform, data, unit)
 
-static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float, precise_shot_bounds: bool) -> void:
+static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float, precise_shot_bounds: bool, shape_revision: int) -> void:
 	var transform := parent_transform
 	if node is Node3D: transform *= node.transform
-	if node.has_meta("solid_size"):
+	if is_active_solid(node, shape_revision):
 		var use_precise_bounds := precise_shot_bounds and bool(node.get_meta("precise_shot_bounds", false))
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds)
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3)
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -68,7 +73,7 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 		var origin: Vector3i = node.get_meta("grid_origin")
 		for offset in 5: data.add_spawn_cell(int(node.get_meta("faction")) as TacticalUnit.Faction, origin + Vector3i(0, 0, offset))
 	for child in node.get_children():
-		_compile_contents(child, transform, data, unit, precise_shot_bounds)
+		_compile_contents(child, transform, data, unit, precise_shot_bounds, shape_revision)
 
 static func _stamp_local_deck(data: MapData, transform: Transform3D, rect: Rect2i, level: int, unit: float, include_slab := true) -> void:
 	for x in range(rect.position.x, rect.end.x):
@@ -86,7 +91,7 @@ static func _local_cell_to_grid(transform: Transform3D, local: Vector3i, data: M
 	var world := transform * Vector3(local)
 	return Vector3i(roundi(world.x / unit + data.map_size.x * 0.5 - 0.5), roundi(world.y / unit), roundi(world.z / unit + data.map_size.y * 0.5 - 0.5))
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var shot_bounds := AABB(bounds.position * unit, bounds.size * unit)
 	var lower := Vector2i(floori(bounds.position.x + data.map_size.x * 0.5), floori(bounds.position.z + data.map_size.y * 0.5))
@@ -103,7 +108,12 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				if round_volume and pow(maxf(absf(point.x) - 0.5, 0.0) / (dimensions.x * 0.5), 2) + pow(maxf(absf(point.z) - 0.5, 0.0) / (dimensions.z * 0.5), 2) > 1.0: continue
 				cell.can_stop = false
 				# Overlapping solids retain the conservative cell contract.
-				cell.authored_shot_bounds = shot_bounds if precise_shot_bounds and not round_volume and cell.cover_height <= 0.0 else AABB()
+				if separate_parts and precise_shot_bounds and not round_volume and (cell.cover_height <= 0.0 or not cell.authored_shot_parts.is_empty()):
+					cell.authored_shot_parts.append(shot_bounds)
+					cell.authored_shot_bounds = shot_bounds if cell.authored_shot_parts.size() == 1 else cell.authored_shot_bounds.merge(shot_bounds)
+				else:
+					cell.authored_shot_parts.clear()
+					cell.authored_shot_bounds = shot_bounds if precise_shot_bounds and not round_volume and cell.cover_height <= 0.0 else AABB()
 				cell.cover_height = maxf(cell.cover_height, (bounds.end.y - height) * unit)
 				cell.cover_type = MapCellData.CoverType.FULL if cell.cover_height >= 1.2 * unit else MapCellData.CoverType.LOW
 				cell.walkable = cell.cover_type == MapCellData.CoverType.LOW

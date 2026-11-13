@@ -70,6 +70,25 @@ func _run() -> void:
 	var description := TacticalFeedbackText.movement(move, actor, [enemy], grid)
 	check(description.contains("1 AP") and description.contains(String(enemy.tactical_id)) and description.contains("cover"), "Movement describes AP and directional cover against the actual enemy")
 	check(fingerprint == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager), "Preview never moves actors or changes authoritative state")
+	blocker.cover_type = MapCellData.CoverType.LOW
+	blocker.cover_height = 0.6
+	actor.tactical_state.establish_aim()
+	var aimed_fingerprint := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
+	var proposed := CombatRules.evaluate_attack_from_cell(actor, move.target_cell, enemy, grid, actor.get_world_3d())
+	check(proposed.is_legal and proposed.hit_chance == 50, "Outgoing hypothetical shot uses real directional cover and excludes Aim canceled by movement")
+	check(TacticalFeedbackText.movement(move, actor, [enemy], grid).contains("Your shot → %s: 50%% hit" % enemy.tactical_id), "Move hover describes an outgoing shot from the proposed cell")
+	check(aimed_fingerprint == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager), "Outgoing preview preserves Aim, AP, positions and occupancy")
+	var remaining_ap := move.actor_ap_after
+	move.actor_ap_after = 0
+	check(TacticalFeedbackText.movement(move, actor, [enemy], grid).contains("No AP after moving"), "A geometrically clear shot is not promised when the move exhausts AP")
+	move.actor_ap_after = remaining_ap
+	actor.stats.consume_supply_points(actor.stats.current_supply_points)
+	check(TacticalFeedbackText.movement(move, actor, [enemy], grid).contains("No SP"), "A clear hypothetical shot still reports missing Supply Points")
+	check(not TacticalFeedbackText.movement(move, actor, [enemy], grid, false).contains("No SP"), "Historical SP-disabled battles do not acquire new resource restrictions")
+	actor.stats.reload_supply_points()
+	var committed_move := await battle.action_service.submit_move(battle.action_service.make_move_request(actor, move.target_cell, TacticalActionRequest.Source.PLAYER), true)
+	var actual_after_move := battle.query_attack(actor, enemy)
+	check(committed_move != null and not actor.tactical_state.is_aiming and actual_after_move.hit_chance == proposed.hit_chance and actual_after_move.obstruction == proposed.obstruction, "Actual Move then live Attack query matches the prior pure outgoing preview")
 
 	var hud := level.get_node("Visualizers/BattleUI/ActionHUDController") as ActionHUDController
 	check(hud.aim_button.tooltip_text.contains("immediately") and hud.aim_button.tooltip_text.contains("next activation"), "Aim explains cost and expiration before activation")

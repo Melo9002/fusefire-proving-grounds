@@ -57,16 +57,19 @@ func _run() -> void:
 	check(panel.status.visible and panel.status.text.contains("authored sockets"), "Technical preview details remain available")
 	editor.tactical_scope.select(1)
 	editor.tactical_scope.item_selected.emit(1)
-	check(editor.tactical_overlay.get_child_count() == 1, "Selected-only bounds show the fixed truck without tinting other structures")
 	var truck_node: Node3D = panel._runtime_preview.get_node(NodePath(added_path))
-	check(editor.tactical_overlay.get_child(0).global_transform.is_equal_approx(truck_node.get_node("TacticalVolume").global_transform), "The selected overlay matches the real rotated volume")
+	var truck_parts := truck_node.find_children("*", "Node3D", true, false).filter(func(node): return AuthoredSceneMapCompiler.is_active_solid(node))
+	check(truck_parts.size() == 3 and editor.tactical_overlay.get_child_count() == 3, "Selected-only bounds show the truck's cargo, cab and hood without tinting other structures")
+	for index in truck_parts.size():
+		check(editor.tactical_overlay.get_child(index).global_transform.is_equal_approx(truck_parts[index].global_transform), "Each selected overlay matches its real rotated truck part")
 	editor.tactical_scope.select(0)
 	editor.tactical_scope.item_selected.emit(0)
 	check(panel.fit_feedback.text.contains("Overlaps a fixed object"), "The rotated fixed truck explains rejected container candidates")
 	var clone: Node3D = panel._runtime_preview
 	var volumes: Array[AABB] = []
 	for node in clone.find_children("*", "Node3D", true, false):
-		if node.has_meta("solid_size"):
+		# Historical revision-1/2 envelopes coexist with the active compound shapes.
+		if AuthoredSceneMapCompiler.is_active_solid(node):
 			var dimensions: Vector3 = node.get_meta("solid_size")
 			volumes.append(node.global_transform * AABB(-dimensions * 0.5, dimensions))
 	for a in volumes.size():

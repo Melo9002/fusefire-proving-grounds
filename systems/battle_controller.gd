@@ -413,7 +413,7 @@ func _update_movement_preview(floor_hit: Dictionary) -> void:
 					_movement_feedback_key = feedback_key
 					var opponents: Array[TacticalUnit] = []
 					opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
-					_set_tactical_preview(TacticalFeedbackText.movement(query, tactical_unit, opponents, grid_manager))
+					_set_tactical_preview(TacticalFeedbackText.movement(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled))
 				return
 	path_visualizer.clear_path()
 	_movement_feedback_key = ""

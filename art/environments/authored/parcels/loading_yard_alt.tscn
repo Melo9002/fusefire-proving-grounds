@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/delivery.glb" id="delivery"]
 [ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="box_large"]
 
+[ext_resource type="PackedScene" path="res://art/environments/authored/tactical/delivery_shapes.tscn" id="delivery_shapes"]
+
 [sub_resource type="StandardMaterial3D" id="apron_material"]
 albedo_color = Color(0.61, 0.62, 0.58, 1)
 roughness = 0.88
@@ -56,6 +58,7 @@ metadata/asset_id = "city_kit_industrial/building-j"
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 4.347951, 0, -2.74)
 
 [node name="TacticalVolume" type="Node3D" parent="Warehouse"]
+metadata/max_shape_revision = 2
 position = Vector3(0, 4.305729, 0)
 metadata/solid_size = Vector3(10.266218, 8.611458, 13)
 metadata/round_volume = false
@@ -104,6 +107,7 @@ metadata/population_region_id = &"loading_vehicles"
 transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03125)
 
 [node name="TacticalVolume" type="Node3D" parent="Truck"]
+metadata/max_shape_revision = 2
 position = Vector3(0, 1.03125, 0)
 metadata/solid_size = Vector3(1.875, 2.0625, 4.0625)
 metadata/round_volume = false
@@ -132,3 +136,17 @@ transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 position = Vector3(0, 0.4125, 0)
 metadata/solid_size = Vector3(1.65, 0.825, 1.5)
 metadata/round_volume = false
+
+[node name="TacticalShell" type="Node3D" parent="Warehouse"]
+position = Vector3(0.56595, 4.305729, 0)
+metadata/solid_size = Vector3(8, 8.611458, 12)
+metadata/precise_shot_bounds = true
+metadata/min_shape_revision = 3
+
+[node name="TacticalPlanter" type="Node3D" parent="Warehouse"]
+position = Vector3(-4.28405, 0.25, -2.51851)
+metadata/solid_size = Vector3(1.7, 0.5, 4)
+metadata/precise_shot_bounds = true
+metadata/min_shape_revision = 3
+
+[node name="TacticalShapes" parent="Truck" instance=ExtResource("delivery_shapes")]

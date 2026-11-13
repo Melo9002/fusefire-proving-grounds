@@ -64,6 +64,11 @@ func _run() -> void:
 
 func _check_depot_shot_bounds() -> void:
 	var data := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 66566043, 1.0)
+	# This regression protects revision 2's sub-cell LOS correction and unchanged
+	# movement reservations. Revision 3's intentional shape changes have a separate suite.
+	var revision_2 := data.content_manifest.duplicate(true)
+	revision_2.compiler_revision = 2
+	data = Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 66566043, 1.0, revision_2)
 	var legacy_manifest := data.content_manifest.duplicate(true)
 	legacy_manifest.compiler_revision = 1
 	var legacy := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 66566043, 1.0, legacy_manifest)

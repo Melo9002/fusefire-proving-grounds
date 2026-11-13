@@ -85,7 +85,7 @@ static func inspect(draft, definition, root: Node3D, sockets: Array[Dictionary],
 
 static func _obstacle_reason(root: Node3D, bounds: AABB) -> String:
 	for node in root.find_children("*", "Node3D", true, false):
-		if not node.has_meta("solid_size"):
+		if not AuthoredSceneMapCompiler.is_active_solid(node):
 			continue
 		var transform := Transform3D.IDENTITY
 		var parent: Node = node

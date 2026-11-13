@@ -659,7 +659,7 @@ func _validate_visual_pose(selected: Node3D) -> String:
 		if moving_solids.is_empty() and local_bounds.has_volume():
 			moving_solids.append(displayed_parcel.global_transform * local_bounds)
 	for obstacle: Node3D in displayed_parcel.find_children("*", "Node3D", true, false):
-		if not obstacle.has_meta("solid_size") or obstacle == selected or selected.is_ancestor_of(obstacle) or obstacle.is_ancestor_of(selected):
+		if not AuthoredSceneMapCompiler.is_active_solid(obstacle) or obstacle == selected or selected.is_ancestor_of(obstacle) or obstacle.is_ancestor_of(selected):
 			continue
 		var owner_node: Node = obstacle
 		while owner_node != displayed_parcel and not owner_node.has_meta("asset_id"):
@@ -674,10 +674,10 @@ func _validate_visual_pose(selected: Node3D) -> String:
 
 func _visual_solid_bounds(object: Node3D) -> Array[AABB]:
 	var bounds: Array[AABB] = []
-	if object.has_meta("solid_size"):
+	if AuthoredSceneMapCompiler.is_active_solid(object):
 		bounds.append(_solid_world_bounds(object))
 	for node: Node3D in object.find_children("*", "Node3D", true, false):
-		if node.has_meta("solid_size"):
+		if AuthoredSceneMapCompiler.is_active_solid(node):
 			bounds.append(_solid_world_bounds(node))
 	return bounds
 
@@ -871,7 +871,7 @@ func _create_tactical_overlay(definition, scene_root: Node3D = displayed_parcel)
 	var solid_material := _overlay_material(Color(1.0, 0.42, 0.12, 0.34))
 	var selected := scene_root.get_node_or_null(NodePath(draft.selected_path)) if not draft.selected_path.is_empty() else null
 	for node in scene_root.find_children("*", "Node3D", true, false):
-		if not node.has_meta("solid_size") or _removed_from_draft(node, scene_root):
+		if not AuthoredSceneMapCompiler.is_active_solid(node) or _removed_from_draft(node, scene_root):
 			continue
 		if tactical_scope.selected == 1 and (selected == null or (node != selected and not selected.is_ancestor_of(node))):
 			continue
