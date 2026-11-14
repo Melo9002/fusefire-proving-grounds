@@ -121,13 +121,14 @@ func _execute_turn() -> void:
 	# Queue changes emit active_unit_changed synchronously. Clear this guard first
 	# so a partially spent automated player can be selected again immediately.
 	_is_executing = false
-	if should_advance:
+	if should_advance and _should_control_unit():
 		if turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN:
 			turn_manager.advance_automated_player(unit)
 		else:
 			turn_manager.end_current_turn()
 
 func _run_activation() -> bool:
+	if not _battle_is_live(): return false
 	# Brief pause makes the enemy activation visible before it acts.
 	await get_tree().create_timer(ACTIVATION_PRESENTATION_DELAY_SECONDS, false).timeout
 	if not _should_control_unit():
@@ -141,6 +142,7 @@ func _run_activation() -> bool:
 	# action exists. Give that action one deterministic submission opportunity.
 	if unit.stats.current_ap <= 0:
 		var free_step := await _try_mission_step(false)
+		if not _battle_is_live(): return false
 		if free_step == MissionStepResult.EXTRACTED:
 			return false
 	if current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
@@ -150,7 +152,9 @@ func _run_activation() -> bool:
 		and turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
 		and _should_control_unit():
 		current_mission_intent = _get_ai_mission_intent()
-		if await _try_emergency_seal():
+		var sealed := await _try_emergency_seal()
+		if not _battle_is_live(): return false
+		if sealed:
 			_record_ai_decision("Emergency Seal", unit.name, "Stopped authoritative Leaking damage.", "Attack, Move, Objective")
 			continue
 		var escorted_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
@@ -158,13 +162,16 @@ func _run_activation() -> bool:
 		# threats before repositioning. A blocker clears the lane first.
 		if escorted_carrier and escorted_carrier != unit and not _carrier_route(escorted_carrier).has(unit.grid_position):
 			var escort_target := _find_attack_target()
-			if escort_target and await battle_controller.try_attack(unit, escort_target):
+			var escort_shot := escort_target != null and await battle_controller.try_attack(unit, escort_target)
+			if not _battle_is_live(): return false
+			if escort_shot:
 				if is_instance_valid(escort_target):
 					_squad_context.reserve_target(unit, escort_target)
 				_record_ai_decision("Attack", String(escort_target.name) if is_instance_valid(escort_target) else "defeated target", "Protected the VIP carrier from a legal threat.", "Clear route, Reposition, Wait")
 				await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
 				continue
 		var mission_step := await _try_mission_step(has_moved)
+		if not _battle_is_live(): return false
 		if mission_step == MissionStepResult.EXTRACTED:
 			return false
 		if mission_step == MissionStepResult.MOVED:
@@ -177,10 +184,14 @@ func _run_activation() -> bool:
 			_wait_for_next_turn(_movement_wait_reason("Carrier cannot advance toward extraction."), "Move")
 			break
 		var attack_target = _find_attack_target()
-		if attack_target and await _try_aim_for_attack(attack_target):
+		var aimed := attack_target != null and await _try_aim_for_attack(attack_target)
+		if not _battle_is_live(): return false
+		if aimed:
 			_record_ai_decision("Aim", attack_target.name, "Improved a legal shot through the authoritative Aim query.", "Attack, Move, Wait")
 			continue
-		if attack_target and await battle_controller.try_attack(unit, attack_target):
+		var attacked := attack_target != null and await battle_controller.try_attack(unit, attack_target)
+		if not _battle_is_live(): return false
+		if attacked:
 			# A cinematic kill can keep this coroutine suspended until the defeated
 			# target has finished its presentation and left the tree.
 			if is_instance_valid(attack_target):
@@ -189,7 +200,9 @@ func _run_activation() -> bool:
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Wait")
 			await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
 			continue
-		if await _try_reload_if_useful():
+		var reloaded := await _try_reload_if_useful()
+		if not _battle_is_live(): return false
+		if reloaded:
 			_record_ai_decision("Reload", "%d/%d SP" % [unit.stats.current_supply_points, unit.stats.max_supply_points], "Restored attack supply through the authoritative Reload query.", "Move, Wait")
 			continue
 		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
@@ -198,31 +211,45 @@ func _run_activation() -> bool:
 		var movement_target = _find_nearest_hostile()
 		var protected_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		if protected_carrier and protected_carrier != unit:
-			if not has_moved and await _clear_carrier_route(protected_carrier):
+			var cleared_route := not has_moved and await _clear_carrier_route(protected_carrier)
+			if not _battle_is_live(): return false
+			if cleared_route:
 				has_moved = true
 				continue
-			if not has_moved and _grid_distance_to(protected_carrier) > ESCORT_REJOIN_DISTANCE \
-			and await _move_toward_range(protected_carrier, ESCORT_APPROACH_RANGE):
+			var rejoined := not has_moved and _grid_distance_to(protected_carrier) > ESCORT_REJOIN_DISTANCE \
+			and await _move_toward_range(protected_carrier, ESCORT_APPROACH_RANGE)
+			if not _battle_is_live(): return false
+			if rejoined:
 				has_moved = true
 				_record_ai_decision("Support", protected_carrier.name, "Closed into escort range while respecting the carrier corridor.", "Attack, Clear route, Wait")
 				continue
-			if not has_moved and await _move_to_escort_position(protected_carrier):
+			var escorted := not has_moved and await _move_to_escort_position(protected_carrier)
+			if not _battle_is_live(): return false
+			if escorted:
 				has_moved = true
 				continue
 			_wait_for_next_turn(_movement_wait_reason("No useful escort move or legal shot."), "Move, Extract")
 			break
-		if not has_moved and movement_target and await _move_toward(movement_target):
+		var approached := not has_moved and movement_target != null and await _move_toward(movement_target)
+		if not _battle_is_live(): return false
+		if approached:
 			has_moved = true
 			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; approached the nearest hostile unit.", "Attack, Wait")
 			continue
-		if has_moved and await _try_safe_second_advance(movement_target):
+		var advanced := has_moved and await _try_safe_second_advance(movement_target)
+		if not _battle_is_live(): return false
+		if advanced:
 			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Wait")
 			continue
 		var defensive_threat := _most_relevant_defensive_threat()
-		if unit.stats.current_ap == 1 and defensive_threat and await _try_shield_against(defensive_threat):
+		var shielded := unit.stats.current_ap == 1 and defensive_threat != null and await _try_shield_against(defensive_threat)
+		if not _battle_is_live(): return false
+		if shielded:
 			_record_ai_decision("Shield", defensive_threat.name, "Used the final AP to face a credible hostile threat.", "Guard, Wait")
 			continue
-		if await _try_guard_if_useful():
+		var guarded := await _try_guard_if_useful()
+		if not _battle_is_live(): return false
+		if guarded:
 			_record_ai_decision("Guard", unit.name, "Reserved a reaction because a hostile can plausibly move or attack.", "Shield, Wait")
 			break
 		var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
@@ -599,7 +626,15 @@ func _on_debug_player_ai_changed(enabled: bool) -> void:
 		and turn_manager.active_unit == unit:
 		_execute_turn()
 
+func _battle_is_live() -> bool:
+	# Awaited decisions may resume after their owning scene has been removed.
+	if not is_inside_tree() or is_queued_for_deletion(): return false
+	for dependency in [unit, turn_manager, battle_controller]:
+		if not is_instance_valid(dependency) or not dependency.is_inside_tree() or dependency.is_queued_for_deletion(): return false
+	return true
+
 func _should_control_unit() -> bool:
+	if not _battle_is_live(): return false
 	if battle_controller.replay_mode:
 		return false
 	if not is_instance_valid(unit) or turn_manager.active_unit != unit:
@@ -618,6 +653,7 @@ func _execute_vip_turn() -> void:
 		if not escorts.is_empty():
 			if await _move_toward(escorts[0]):
 				_record_ai_decision("Move", str(_last_move_destination), "Followed the nearest available escort.", "Wait")
+	if not _should_control_unit(): return
 	if unit.stats.current_ap > 0:
 		_wait_for_next_turn("VIP has no useful follow movement.", "Move")
 	if _should_control_unit():

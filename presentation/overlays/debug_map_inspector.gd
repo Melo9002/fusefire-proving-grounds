@@ -11,7 +11,8 @@ var hovered_cell: MapCellData
 var _zone_mesh := MeshInstance3D.new()
 var _link_mesh := MeshInstance3D.new()
 
-func _ready() -> void:
+## Own child resources even if the battle exits before this overlay enters the tree.
+func _init() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_zone_mesh.name = "ZoneMarkers"
 	_link_mesh.name = "TraversalLinks"

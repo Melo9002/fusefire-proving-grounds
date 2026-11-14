@@ -29,7 +29,8 @@ var _position_mesh := MeshInstance3D.new()
 var _target_mesh := MeshInstance3D.new()
 var _score_labels := Node3D.new()
 
-func _ready() -> void:
+## Own child resources even if the battle exits before this overlay enters the tree.
+func _init() -> void:
 	_position_mesh.name = "PositionScores"
 	_target_mesh.name = "TargetScores"
 	_score_labels.name = "MovementScoreLabels"

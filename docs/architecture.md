@@ -19,7 +19,7 @@ Within that folder, `authored_plot_resolver.gd` chooses compatible content, `aut
 
 `systems/generation/battlefield_catalog.gd` is the narrow integration point. A future generator can supply the same MapData/accepted-choices/presentation boundary and be selected here without changing combat. No universal generator framework is required.
 
-`levels/prototype_map/battle_level.gd` owns battle initialization. `systems/battle_controller.gd` dispatches tactical actions; `systems/turn_manager.gd` manages turns. Movement, LOS, cover and occupancy use MapData through the existing grid/combat systems. Imported mesh collision never silently replaces tactical authority.
+`levels/prototype_map/battle_level.gd` owns battle initialization. Asynchronous AI decisions recheck the owning scene after yielding; removed battles cannot continue targeting or advancing turns. `tests/ai_scene_lifetime_test.gd` protects removal during both the initial delay and a suspended decision. `systems/battle_controller.gd` dispatches tactical actions; `systems/turn_manager.gd` manages turns. Movement, LOS, cover and occupancy use MapData through the existing grid/combat systems. Imported mesh collision never silently replaces tactical authority.
 
 Replay uses `systems/replay/` and records accepted content, seed/configuration and action/state evidence. The existing numeric replay preset/envelope is retained; its historical `LEGACY` enum name does not mean Service Depot invokes Generator 1. Old recordings for quarantined maps reject explicitly; do not substitute a different battlefield.
 

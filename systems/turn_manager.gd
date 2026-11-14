@@ -47,6 +47,7 @@ func start_battle() -> void:
 
 ## Players end their phase manually; each AI ends its own activation.
 func end_current_turn() -> void:
+	if not is_inside_tree() or is_queued_for_deletion(): return
 	if get_tree().paused:
 		return
 	if action_completion_barrier.is_valid() and action_completion_barrier.call():
@@ -83,6 +84,7 @@ func select_player_unit(unit: TacticalUnit) -> bool:
 	return true
 
 func advance_automated_player(finished_unit: TacticalUnit) -> void:
+	if not is_inside_tree() or is_queued_for_deletion(): return
 	if current_phase != TurnPhase.PLAYER_TURN or battle_result != BattleResult.ONGOING:
 		return
 	# AP exhaustion may already have selected the next unit.
@@ -132,9 +134,9 @@ func remove_unit(unit: TacticalUnit) -> void:
 		_continue_after_active_unit_removed.call_deferred(was_player, was_ally, was_enemy)
 
 func _continue_after_active_unit_removed(was_player: bool, was_ally: bool, was_enemy: bool) -> void:
-	while action_completion_barrier.is_valid() and action_completion_barrier.call():
+	while is_inside_tree() and action_completion_barrier.is_valid() and action_completion_barrier.call():
 		await get_tree().process_frame
-	if battle_result != BattleResult.ONGOING or is_instance_valid(active_unit):
+	if not is_inside_tree() or battle_result != BattleResult.ONGOING or is_instance_valid(active_unit):
 		return
 	if current_phase == TurnPhase.PLAYER_TURN and was_player:
 		var candidate := _find_next_eligible(player_units, -1, false)
@@ -192,16 +194,18 @@ func _on_player_ap_changed(current: int, _maximum: int, unit: TacticalUnit) -> v
 		_advance_exhausted_unit_if_needed.call_deferred(unit.get_instance_id())
 
 func _advance_exhausted_unit_if_needed(exhausted_unit_id: int) -> void:
+	if not is_inside_tree() or is_queued_for_deletion(): return
 	if get_tree().paused:
 		await get_tree().create_timer(0.0, false).timeout
-	while action_completion_barrier.is_valid() and action_completion_barrier.call():
+	while is_inside_tree() and action_completion_barrier.is_valid() and action_completion_barrier.call():
 		await get_tree().process_frame
+	if not is_inside_tree(): return
 	var exhausted_unit := instance_from_id(exhausted_unit_id) as TacticalUnit
 	if not is_instance_valid(exhausted_unit):
 		return
 	if is_instance_valid(exhausted_unit) and exhausted_unit.is_moving:
 		await exhausted_unit.movement_finished
-	if current_phase != TurnPhase.PLAYER_TURN or active_unit != exhausted_unit:
+	if not is_inside_tree() or current_phase != TurnPhase.PLAYER_TURN or active_unit != exhausted_unit:
 		return
 	if not is_instance_valid(exhausted_unit) or not exhausted_unit.stats or exhausted_unit.stats.current_ap > 0:
 		return

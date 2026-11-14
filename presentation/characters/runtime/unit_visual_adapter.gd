@@ -80,7 +80,9 @@ func _ready() -> void:
 	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
+	if not is_inside_tree(): return
 	await get_tree().process_frame
+	if not is_inside_tree(): return
 	_align_weapon_to_aim()
 
 func setup(unit: TacticalUnit) -> void:
