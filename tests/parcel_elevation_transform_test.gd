@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.gd")
 var failures := 0
 
 func _initialize() -> void:

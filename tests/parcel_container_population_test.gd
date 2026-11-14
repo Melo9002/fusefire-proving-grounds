@@ -1,9 +1,9 @@
 extends SceneTree
 
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
 const Draft = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Export = preload("res://tools/parcel_editor/population_scene_export.gd")
-const Layout = preload("res://systems/generation/refinery_family_layout.gd")
+const Layout = preload("res://systems/generation2/generator.gd")
 const Recording = preload("res://systems/replay/battle_replay_recording.gd")
 const BattleScene = preload("res://levels/prototype_map/prototype_map.tscn")
 const FIELD := Rect2i(7, 20, 3, 10)
@@ -23,11 +23,11 @@ func _run() -> void:
 	var on_seed := -1
 	var off_seed := -1
 	for map_seed in range(0, 32, 4):
-		var manifest := RefineryPlotResolver.resolve(map_seed)
-		check(manifest.errors.is_empty(), "Refinery seed %d resolves the painted apron" % map_seed)
+		var manifest := AuthoredPlotResolver.resolve(Layout.DepotPlots, map_seed)
+		check(manifest.errors.is_empty(), "Service Depot seed %d resolves the painted apron" % map_seed)
 		var loading := _loading(manifest)
 		if loading.is_empty(): continue
-		check(loading.parcel_id == Catalog.LOADING_YARD_PAINTED, "Refinery %d selects the registered painted apron" % map_seed)
+		check(loading.parcel_id == Catalog.LOADING_YARD_PAINTED, "Service Depot %d selects the registered painted apron" % map_seed)
 		if _occupied(loading) and on_seed < 0: on_seed = map_seed
 		if not _occupied(loading) and off_seed < 0: off_seed = map_seed
 		if on_seed >= 0 and off_seed >= 0: break
@@ -80,11 +80,11 @@ func _check_battle(map_seed: int, occupied: bool) -> void:
 	var config := BattleConfiguration.new()
 	config.generated_map = true
 	config.battle_seed = map_seed
-	config.select_battlefield(BattlefieldCatalog.REFINERY_FAMILY)
+	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
 	var level := BattleScene.instantiate() as BattleLevel
 	level.configure_battle(config)
 	root.add_child(level)
-	check(level.battle_initialization_succeeded, "Seed %d starts a playable refinery battle" % map_seed)
+	check(level.battle_initialization_succeeded, "Seed %d starts a playable depot battle" % map_seed)
 	if level.battle_initialization_succeeded:
 		var data := level.active_generated_map
 		var grid := level.battle_controller.grid_manager
@@ -106,9 +106,9 @@ func _check_battle(map_seed: int, occupied: bool) -> void:
 		check(not path.is_empty() and path.has(cell.world_position) != occupied, "Seed %d preserves a route with a detour around the container when present" % map_seed)
 		check(graph.calculate_3d_path(from, center).is_empty() == occupied, "Seed %d permits moving to the painted cell only while empty" % map_seed)
 		var recording := Recording.new()
-		recording.configuration = {"battlefield_id": &"refinery_family", "content_manifest": data.content_manifest}
+		recording.configuration = {"battlefield_id": &"service_depot", "content_manifest": data.content_manifest}
 		var restored := Recording.from_dictionary(JSON.parse_string(JSON.stringify(recording.to_dictionary())))
-		var replay := Layout.generate(999, 1.0, restored.configuration.content_manifest)
+		var replay := Layout.generate(Layout.DEPOT_SOURCE, 999, 1.0, restored.configuration.content_manifest)
 		check(replay.generation_errors.is_empty() and replay.content_manifest.placements == data.content_manifest.placements, "Seed %d stores exact container choices through replay reconstruction" % map_seed)
 	level.queue_free()
 	await process_frame

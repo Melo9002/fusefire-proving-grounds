@@ -23,7 +23,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://artifacts")
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.select_battlefield(Catalog.PARKING_GARAGE)
+	config.select_battlefield(Catalog.SERVICE_DEPOT)
 	config.battle_seed = 17
 	config.player_count = 3
 	config.enemy_count = 3
@@ -40,10 +40,10 @@ func _run() -> void:
 		await process_frame
 	var recording: BattleReplayRecording = BattleReplaySession.last_recording
 	if not recording or not recording.is_playable() or original.turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
-		push_error("The real garage battle did not produce a complete replay")
+		push_error("The real depot battle did not produce a complete replay")
 		quit(1)
 		return
-	_check(hud.save_replay_button.visible, "Completed garage battle shows Save Replay")
+	_check(hud.save_replay_button.visible, "Completed depot battle shows Save Replay")
 	await _capture("battle-result")
 	hud.save_replay_button.pressed.emit()
 	_check(hud._save_dialog.visible and hud._save_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save button opens a Save As picker")
@@ -89,6 +89,10 @@ func _run() -> void:
 	menu._replay_dialog.file_selected.emit(stale_path)
 	await process_frame
 	await process_frame
+	if menu._loading_screen == null:
+		_check(false, "Stale supported content must reach the loading screen, not an earlier selection rejection")
+		quit(1)
+		return
 	_check(current_scene == menu and menu._loading_screen._back_button.visible and "STALE_PLOT_REVISION" in menu._loading_screen._detail.text, "Incompatible content fails through the loading screen")
 	_check(BattleReplaySession.last_recording == recording, "Stale file does not replace the last completed recording")
 	menu._loading_screen._back_button.pressed.emit()
@@ -105,7 +109,7 @@ func _run() -> void:
 	if current_scene is BattleLevel:
 		var replay := current_scene as BattleLevel
 		var player := replay.get_node_or_null("BattleReplayPlayer") as BattleReplayPlayer
-		_check(player != null and replay.active_generated_map.content_manifest == recording.configuration.content_manifest, "Playback reconstructs the exact saved garage and occupants")
+		_check(player != null and replay.active_generated_map.content_manifest == recording.configuration.content_manifest, "Playback reconstructs the exact saved depot and occupants")
 		if player:
 			player.set_playback_speed(4.0)
 			deadline = Time.get_ticks_msec() + 30000

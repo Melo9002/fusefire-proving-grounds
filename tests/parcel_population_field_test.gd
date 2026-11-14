@@ -1,9 +1,9 @@
 extends SceneTree
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
-const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
+const Resolver = preload("res://systems/generation2/authored_plot_resolver.gd")
 const Recording = preload("res://systems/replay/battle_replay_recording.gd")
-const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.gd")
 var failures := 0
 
 func _initialize() -> void:

@@ -1,8 +1,7 @@
 extends SceneTree
 
-const Repair = preload("res://systems/generation/authored_deployment_repair.gd")
-const Urban = preload("res://systems/generation/urban_family_layout.gd")
-const Refinery = preload("res://systems/generation/refinery_family_layout.gd")
+const Repair = preload("res://systems/generation2/authored_deployment_repair.gd")
+const Layout = preload("res://systems/generation2/generator.gd")
 var failures := 0
 
 func _initialize() -> void:
@@ -14,15 +13,15 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	# Exercise a real compiled gallery support rather than invented mesh geometry.
-	var data := Urban.generate(17)
+	# Exercise a real compiled parcel obstacle rather than invented mesh geometry.
+	var data := Layout.generate(Layout.DEPOT_SOURCE, 17, 1.0, {})
 	var blocked := Vector3i(-1, 0, -1)
 	for position: Vector3i in data.cells:
 		var cell := data.get_cell(position)
-		if position.y == 0 and position.z > 1 and position.z < 62 and not cell.can_stop:
+		if position.y == 0 and position.z > 1 and position.z < data.map_size.y - 2 and not cell.can_stop:
 			blocked = position
 			break
-	check(blocked.x >= 0, "Real courtyard contains authored non-stopping terrain")
+	check(blocked.x >= 0, "Real Service Depot contains authored non-stopping terrain")
 	var zone := data.get_zone(&"deployment_2")
 	zone.cells = [blocked]
 	var graph := Pathfinder.new()
@@ -41,13 +40,13 @@ func _run() -> void:
 		cell.can_stop = false
 	zone.cells = [blocked]
 	check(not Repair.apply(data) and zone.cells == [blocked], "Unsatisfiable column fails without partial zone changes")
-	for layout in [Urban, Refinery]:
+	for source_kind in [Layout.DEPOT_SOURCE, Layout.RANGE_SOURCE]:
 		for map_seed in range(16):
-			var compiled: MapData = layout.generate(map_seed)
-			var repeated: MapData = layout.generate(map_seed)
-			check(compiled.generation_errors.is_empty(), "%s seed %d constructs successfully" % [layout.SOURCE_KIND, map_seed])
+			var compiled: MapData = Layout.generate(source_kind, map_seed, 1.0, {})
+			var repeated: MapData = Layout.generate(source_kind, map_seed, 1.0, {})
+			check(compiled.generation_errors.is_empty(), "%s seed %d constructs successfully" % [source_kind, map_seed])
 			MapGraphBuilder.build(compiled, graph)
-			check(MapValidator.validate(compiled, graph).is_valid(), "%s seed %d validates all three deployment factions" % [layout.SOURCE_KIND, map_seed])
+			check(MapValidator.validate(compiled, graph).is_valid(), "%s seed %d validates all three deployment factions" % [source_kind, map_seed])
 			for faction in [0, 1, 2]:
 				check(compiled.get_spawn_cells(faction) == repeated.get_spawn_cells(faction), "Deployment repair is deterministic")
 	print("Authored deployment repair: %d failure(s)" % failures)

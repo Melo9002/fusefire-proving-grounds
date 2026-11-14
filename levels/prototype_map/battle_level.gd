@@ -208,11 +208,6 @@ func _initialize_generated_battle() -> void:
 	_set_authored_geometry_enabled(false)
 	grid.map_floor.size.x = generated_size.x * grid.cell_size
 	grid.map_floor.size.z = generated_size.y * grid.cell_size
-	if battlefield_id == BattlefieldCatalogData.REFINERY_2:
-		var earth := StandardMaterial3D.new()
-		earth.albedo_color = Color("865b46")
-		earth.roughness = 0.9
-		grid.map_floor.material = earth
 	(get_node("Visualizers/GridVisualizer") as GridVisualizer).generate_grid_lines()
 	var rig := get_node("CameraRig") as TacticalCamera
 	var scale_factor := maxf(float(generated_size.x) / 32.0, float(generated_size.y) / 24.0)
@@ -222,7 +217,10 @@ func _initialize_generated_battle() -> void:
 	generated_geometry.name = "GeneratedTerrain"
 	add_child(generated_geometry)
 	battle_initialization_progress.emit("Building environment presentation…", 0.48)
-	GeneratedTerrainPresenter.build(generated_map, generated_geometry, grid.cell_size)
+	if not BattlefieldCatalogData.present(generated_map, generated_geometry, grid.cell_size):
+		_abort_generated_state()
+		_fail_battle_initialization([_diagnostic("PRESENTATION_FAILED", "content_manifest", "Accepted battlefield could not reconstruct its imported presentation")])
+		return
 	rig.register_environment_apertures(generated_geometry)
 	battle_initialization_progress.emit("Deploying combatants…", 0.65)
 	_spawn_generated_team(player_unit_count, TacticalUnit.Faction.PLAYER, player_units_parent, generated_map)

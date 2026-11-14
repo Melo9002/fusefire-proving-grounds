@@ -1,5 +1,5 @@
 extends SceneTree
-const Connection = preload("res://systems/generation/parcel_connection.gd")
+const Connection = preload("res://systems/generation2/parcel_connection.gd")
 func _initialize() -> void:
 	var failures := 0
 	var port = Connection.new()

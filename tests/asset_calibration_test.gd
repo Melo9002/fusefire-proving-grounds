@@ -136,7 +136,7 @@ func run() -> void:
 	root.add_child(lab)
 	await process_frame
 	check(lab.asset_list.item_count == 549, "Empty search shows every asset")
-	check(lab.workspace_tabs.get_tab_count() == 5, "Asset workflow separates adjustment, meaning, view, advanced controls and boundary authoring")
+	check(lab.workspace_tabs.get_tab_count() == 4, "Asset workflow separates adjustment, meaning, view, advanced controls")
 	lab.select_asset("car_kit/sedan")
 	check("Sedan" in lab.selection_heading.text, "Persistent heading identifies the selected asset")
 	check("UNSAVED" not in lab.save_status.text, "Loading an inherited profile does not report phantom edits")
@@ -144,7 +144,7 @@ func run() -> void:
 	check("UNSAVED" in lab.save_status.text, "Editing scale reports unsaved changes")
 	lab.factor.value = 1.25
 	check("UNSAVED" not in lab.save_status.text, "Restoring scale clears dirty state")
-	for tab in 5:
+	for tab in 4:
 		lab.workspace_tabs.current_tab = tab
 		check(lab.save_button.is_visible_in_tree() and lab.reviewed_toggle.is_visible_in_tree() and lab.asset_list.is_visible_in_tree(), "Save, review and browsing remain available in each workspace")
 	lab.workspace_tabs.current_tab = 0

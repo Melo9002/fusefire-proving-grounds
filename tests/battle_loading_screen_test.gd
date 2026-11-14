@@ -33,7 +33,7 @@ func _check_real_transition() -> void:
 	root.add_child(menu)
 	current_scene = menu
 	for index in menu.map_size_option.item_count:
-		if StringName(menu.map_size_option.get_item_metadata(index)) == Catalog.LOADING_YARD:
+		if StringName(menu.map_size_option.get_item_metadata(index)) == Catalog.SERVICE_DEPOT:
 			menu.map_size_option.select(index)
 			break
 	menu._start_battle()
@@ -45,6 +45,6 @@ func _check_real_transition() -> void:
 	if current_scene is BattleLevel:
 		var battle := current_scene as BattleLevel
 		check(battle.battle_initialization_succeeded, "Loading transition only activates a validated battle")
-		check(battle.active_generated_map != null and battle.active_generated_map.source_kind == "authored_loading_yard", "Loading transition preserves the selected battlefield")
+		check(battle.active_generated_map != null and battle.active_generated_map.source_kind == "authored_service_depot", "Loading transition preserves the selected battlefield")
 		battle.queue_free()
 		await process_frame

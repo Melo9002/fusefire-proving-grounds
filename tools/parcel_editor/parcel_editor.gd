@@ -3,7 +3,7 @@ extends Node3D
 ## Small registered-parcel inspection shell. This deliberately does not restore
 ## the retired chunk generator, publication system, or runtime dependencies.
 
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
 const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
 const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
 const PlacementLibrary = preload("res://tools/parcel_editor/parcel_placement_library.gd")

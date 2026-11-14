@@ -34,7 +34,7 @@ Run from the repository root in PowerShell:
 
 Available subsystem names are `combat`, `movement`, `ai`, `replay`, `generation`, `missions`, `assets`, and `ui`. Use `-List` to inspect a tier without executing it. Use `-Godot C:\path\to\godot_console.exe` when the executable is not on `PATH`.
 
-The smoke tier runs the project scan and eight representative critical regressions. Subsystem tiers select existing tests by stable filename conventions. Full discovers every top-level test except the explicit-only visual and extended lists in the runner. This keeps new ordinary tests in broad verification without maintaining a second exhaustive manifest.
+The smoke tier runs the project scan and ten representative critical regressions. Subsystem tiers select existing tests by stable filename conventions. Full discovers every top-level test except the explicit-only visual and extended lists in the runner. This keeps new ordinary tests in broad verification without maintaining a second exhaustive manifest.
 
 Each run prints suite-level pass/fail/skip totals and elapsed time. Detailed stdout, stderr, and Godot engine logs are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. The runner supplies a writable isolated test-output directory for tests that serialize reports. A missing executable, missing required script, or nonzero Godot result produces a nonzero runner result.
 
@@ -92,13 +92,8 @@ The full tier reports these as skipped by policy:
 - `container_maps_smoke.gd`
 - `map_quality_metrics_smoke.gd`
 - `prototype_1_milestone.gd`
-- `refinery_family_ai_smoke.gd`
-- `refinery_family_mission_matrix.gd`
 - `asset_lab_capture.gd`
 - `parcel_editor_capture.gd`
-- `urban_frontage_capture.gd`
-- `urban_plot_capture.gd`
-- `urban_courtyard_capture.gd`
 - `industrial_warehouse_capture.gd`
 - `semantic_asset_contact_sheet.gd`
 - `semantic_asset_review_capture.gd`
@@ -116,7 +111,7 @@ Run long scripts directly when their subsystem changes. Run capture scripts with
 
 After the first hosted smoke run, the next useful milestones are optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
 
-The maintained behavior-level classification and prioritized coverage gaps are documented in [Ironclad Test Contract Inventory](test-contract-inventory.md).
+Retired map-specific suites are preserved in the outside-project quarantine recorded in [Generation 2.0](../generation-2.md). Shared parcel/deployment/population checks now use Service Depot, and `current_generation_test.gd` protects the one-map menu and standalone generator boundary. Mechanics fixtures live under `tests/fixtures/`; the runner discovers only top-level suite scripts. No assertion was removed merely to make a failure pass.
 
 ## GitHub smoke automation
 

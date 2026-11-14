@@ -27,7 +27,7 @@ A current recording contains:
 - a typed request and resolved result for unit actions;
 - a post-commit state fingerprint.
 
-Generator 2 recordings are no longer playable in the active project. Their stored document fields are recognized only to reject them explicitly; use the local quarantined project for those recordings. Generator 1 seed/configuration reconstruction and action verification remain supported.
+Current Service Depot recordings store the accepted plot, parcel transforms and population in `configuration.content_manifest`. Reconstruction validates content/compiler revisions and retains those choices. The earlier quarantined Generator 2 used a different layout-document preset: those recordings reject explicitly. Recordings for removed Refinery 2, refinery-family, urban-family and standalone Loading Yard maps also reject; do not reinterpret them as Service Depot. Internal Generator 1 fixtures retain their existing action/reconstruction checks.
 
 Requests use stable tactical actor IDs. Current Attack results include the deterministic roll, hit chance, damage, AP/HP changes, Supply Points before/cost/after, defeat, and battle result. Reload records AP and Supply Points before/after and consumes no combat RNG. Move results include origin, destination, AP, objective state, and carried actor. Mission results include objectives, extraction counters, and roster removal. Turn and departure records remain commands because they do not have unit-action target and cost semantics.
 
@@ -85,12 +85,6 @@ Mission terminal activation uses payload schema 8. The record identifies the act
 
 New recordings also set `tactical_tempo_enabled`. Their fingerprints include each unit's Base AP, effective maximum, activation capacity, spent AP, current AP, and AP modifiers sorted by stable source ID. This detects internal tempo divergence even when both states display the same value, such as `2 / 3 AP`. A recording without the flag retains the earlier fingerprint shape. This compatibility boundary changes neither the schema-3 envelope nor any action payload because tactical requests and results did not change.
 
-## XCOM history lesson and future rewind
-
-XCOM 2's installed SDK keeps indexed authoritative `XComGameStateHistory` frames and lets its replay manager move visualization through committed history indices. FuseFire uses a smaller request/result journal suited to Godot and the current game, while preserving stable identities, ordered revisions, and a presentation boundary.
-
-A future rewind should restore a recorded snapshot or reconstruct from the initial configuration through a chosen `record_index`, then resume forward presentation. It should not reverse animations or invent inverse actions. Snapshot cadence, branching history, and timeline UI are outside Prototype 1.5.
-
 ## Tests
 
 ```powershell
@@ -98,8 +92,8 @@ godot_console --headless --path . --script tests/replay_schema_test.gd
 godot_console --headless --path . --script tests/battle_replay_smoke.gd
 godot_console --headless --path . --script tests/rescue_battle_replay_smoke.gd
 godot_console --headless --path . --script tests/departure_replay_smoke.gd
-godot_console --headless --path . --script tests/refinery_2_smoke.gd
-godot_console --headless --path . --script tests/battlefield_catalog_test.gd
+godot_console --headless --path . --script tests/current_generation_test.gd
+godot_console --headless --path . --script tests/replay_file_workflow_test.gd
 ```
 
-The complete release gate also runs action-service, AI determinism, objective, evacuation, traversal, dependency-isolation, and Prototype 1 milestone suites.
+The broad regression tier also runs action-service, AI determinism, objective, evacuation, traversal, dependency-isolation, and Prototype 1 milestone suites.

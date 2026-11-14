@@ -2,7 +2,7 @@ extends SceneTree
 ## Explicit-only visual evidence for the compact Parcel Editor inspection shell.
 
 const EditorScene = preload("res://tools/parcel_editor/parcel_editor.tscn")
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
 
 func _initialize() -> void:
 	_run.call_deferred()

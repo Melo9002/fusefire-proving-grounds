@@ -8,10 +8,11 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	# The retired refinery/urban scenes were fixtures, not the picking contract.
+	# Keep the same real-deck/ground/action assertions on supported mechanics scenes.
 	var cases := [
-		[Catalog.REFINERY_2, 16, [Vector3i(16, 4, 27)]],
-		[Catalog.REFINERY_FAMILY, 16, [Vector3i(8, 4, 52)]],
-		[Catalog.URBAN_FAMILY, 17, [Vector3i(12, 4, 41), Vector3i(51, 4, 22)]],
+		[Catalog.TACTICAL_TEST_RANGE, 17, [Vector3i(12, 3, 5), Vector3i(7, 6, 7)]],
+		[Catalog.PARKING_GARAGE, 17, [Vector3i(8, 4, 8), Vector3i(16, 4, 19)]],
 	]
 	for test_case in cases:
 		var config := BattleConfiguration.new()
@@ -38,7 +39,7 @@ func _run() -> void:
 				rig.camera.global_position = target + Vector3(0, 18, 0.2)
 				rig.camera.look_at(target)
 				var screen_point := rig.camera.unproject_position(target)
-				raycaster._inspect_level(4.0)
+				raycaster._inspect_level(float(expected.y))
 				var hit := raycaster.get_floor_raycast_result(screen_point)
 				_check(hit.get("grid_position") == expected, "%s picks its authored deck at %s: %s" % [test_case[0], expected, hit])
 				raycaster._inspect_level(0.0)
@@ -49,9 +50,9 @@ func _run() -> void:
 					_check(ground_hit.get("grid_position") == ground_position, "%s can also pick ground below %s: %s" % [test_case[0], expected, ground_hit])
 				else:
 					_check(ground_hit.is_empty(), "%s leaves blocked ground under %s unpickable" % [test_case[0], expected])
-				if test_case[0] == Catalog.REFINERY_FAMILY and hit.get("grid_position") == expected:
+				if test_case[0] == Catalog.TACTICAL_TEST_RANGE and expected == Vector3i(12, 3, 5) and hit.get("grid_position") == expected:
 					var actor := level.turn_manager.active_unit
-					var ladder_bottom := Vector3i(8, 0, 53)
+					var ladder_bottom := Vector3i(12, 0, 4)
 					grid.update_unit_position(actor, actor.grid_position, ladder_bottom)
 					actor.global_position = grid.grid_to_world(ladder_bottom) + Vector3.UP * actor.standing_height
 					var completed := await controller.try_move(actor, grid.world_to_grid(hit.position))

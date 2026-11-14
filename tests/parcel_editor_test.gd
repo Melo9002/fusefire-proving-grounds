@@ -1,8 +1,8 @@
 extends SceneTree
 
 const EditorScene = preload("res://tools/parcel_editor/parcel_editor.tscn")
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
-const Definition = preload("res://systems/generation/authored_parcel_definition.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
+const Definition = preload("res://systems/generation2/authored_parcel_definition.gd")
 const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd")
 var failures := 0
 

@@ -1,7 +1,7 @@
 extends SceneTree
 
 const EditorScene = preload("res://tools/parcel_editor/parcel_editor.tscn")
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
 const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 var failures := 0
 

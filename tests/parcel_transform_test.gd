@@ -1,6 +1,6 @@
 extends SceneTree
 
-const TransformRules = preload("res://systems/generation/parcel_transform.gd")
+const TransformRules = preload("res://systems/generation2/parcel_transform.gd")
 
 func _initialize() -> void:
 	var failures := 0

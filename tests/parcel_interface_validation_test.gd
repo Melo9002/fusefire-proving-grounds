@@ -1,16 +1,18 @@
 extends SceneTree
 
-const Contract = preload("res://systems/generation/parcel_slot_contract.gd")
-const PlotCatalog = preload("res://systems/generation/refinery_plot_catalog.gd")
-const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
-const Layout = preload("res://systems/generation/refinery_family_layout.gd")
-const Site = preload("res://art/environments/authored/plots/refinery_site_a.tscn")
+const Contract = preload("res://systems/generation2/parcel_slot_contract.gd")
+const PlotCatalog = preload("res://systems/generation2/generator.gd").DepotPlots
+const Resolver = preload("res://systems/generation2/authored_plot_resolver.gd")
+const Layout = preload("res://systems/generation2/authored_battlefield_layout.gd")
+const Site = preload("res://art/environments/authored/plots/depot_loading_crossing.tscn")
 var failures := 0
 
 class ShortRoadCatalog:
 	static func choose(_map_seed: int) -> Dictionary:
-		var plot := PlotCatalog.get_definition(PlotCatalog.SITE_A)
-		plot.road_rects = [Rect2i(0, 24, 16, 5)]
+		var plot := PlotCatalog.get_definition(PlotCatalog.EAST_WEST)
+		plot.slots = [plot.slots[1]]
+		plot.road_rects = [Rect2i(29, 32, 1, 5)]
+		plot.circulation_rects = []
 		return plot
 
 func _initialize() -> void:
@@ -30,12 +32,12 @@ func _run() -> void:
 		var span := connection.world_span(Vector2i(16, 32), Vector3i(10, 1, 20), turn)
 		_check(span == expected[turn], "Rectangular elevated rotation %d: expected %s, got %s" % [turn, expected[turn], span])
 
-	var short := Resolver.resolve(16, true, {}, ShortRoadCatalog)
-	_check(not Resolver.is_valid(short) and _has_failure(short.errors, "MISSING_INTERFACE_APPROACH", "process at (16, 0, 23)"), "Runtime rejects a road that meets the anchor but misses the next interface cell")
-	var plot := PlotCatalog.get_definition(PlotCatalog.SITE_A)
+	var short := Resolver.resolve(ShortRoadCatalog, 16)
+	_check(not Resolver.is_valid(short) and _has_failure(short.errors, "MISSING_INTERFACE_APPROACH", "process at (30, 0, 31)"), "Runtime rejects a road that meets the anchor but misses the next interface cell")
+	var plot := PlotCatalog.get_definition(PlotCatalog.EAST_WEST)
 	plot.slots[1].origin = plot.slots[0].origin
 	_check(Contract.validate_plot_footprints(plot).get("code") == "OVERLAPPING_PLOT_SLOTS", "Runtime rejects parcel overlap before compiling")
-	plot = PlotCatalog.get_definition(PlotCatalog.SITE_A)
+	plot = PlotCatalog.get_definition(PlotCatalog.EAST_WEST)
 	plot.slots[0].origin.z += 1
 	_check(Contract.validate_plot_footprints(plot).get("code") == "SLOT_OVERLAPS_ROAD", "Runtime rejects a parcel crossing a reserved road")
 	plot.slots[0].origin.x = -1
@@ -64,12 +66,12 @@ func _run() -> void:
 
 	# Bypass the footprint gate only in this fixture to check that a real
 	# imported parcel solid still triggers the independent compilation gate.
-	var conflicting := Resolver.resolve(16)
+	var conflicting := Resolver.resolve(PlotCatalog, 16)
 	for placement: Dictionary in conflicting.placements:
 		if placement.slot_id == &"storage":
-			placement.origin = Vector3i(21, 0, 17)
-	var compiled := Layout.compile_resolved(conflicting, 16, 1.0, Layout.SOURCE_KIND)
-	_check(_has_failure(compiled.generation_errors, "BLOCKED_PARCEL_INTERFACE", "refinery_site_a/loading") or _has_failure(compiled.generation_errors, "BLOCKED_INTERFACE_APPROACH", "refinery_site_a/loading"), "The compile boundary rejects a real obstruction on the loading seam: %s" % [compiled.generation_errors])
+			placement.origin = Vector3i(9, 0, 30)
+	var compiled := Layout.compile_resolved(conflicting, 16, 1.0, "authored_service_depot")
+	_check(_has_failure(compiled.generation_errors, "BLOCKED_PARCEL_INTERFACE", "depot_loading_crossing/loading") or _has_failure(compiled.generation_errors, "BLOCKED_INTERFACE_APPROACH", "depot_loading_crossing/loading"), "The compile boundary rejects a real obstruction on the loading seam: %s" % [compiled.generation_errors])
 	var parent := Node3D.new()
 	_check(not Layout.present_resolved(compiled, parent, 1.0, Site) and parent.get_child_count() == 0, "A failed compile cannot present a partial plot")
 	parent.free()

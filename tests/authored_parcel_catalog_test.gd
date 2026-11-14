@@ -1,8 +1,8 @@
 extends SceneTree
 
-const Catalog = preload("res://systems/generation/authored_parcel_catalog.gd")
-const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
-const PopulationRegion = preload("res://systems/generation/parcel_population_region.gd")
+const Catalog = preload("res://systems/generation2/authored_parcel_catalog.gd")
+const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.gd")
+const PopulationRegion = preload("res://systems/generation2/parcel_population_region.gd")
 var failures := 0
 
 func _initialize() -> void:

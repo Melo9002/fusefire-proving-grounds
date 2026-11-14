@@ -1,8 +1,8 @@
 extends SceneTree
 
-const Plots = preload("res://systems/generation/refinery_plot_catalog.gd")
-const Parcels = preload("res://systems/generation/authored_parcel_catalog.gd")
-const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
+const Plots = preload("res://systems/generation2/generator.gd").DepotPlots
+const Parcels = preload("res://systems/generation2/authored_parcel_catalog.gd")
+const Resolver = preload("res://systems/generation2/authored_plot_resolver.gd")
 const Recording = preload("res://systems/replay/battle_replay_recording.gd")
 var failures := 0
 
@@ -31,12 +31,12 @@ func _initialize() -> void:
 
 func _run() -> void:
 	for map_seed in [16, 17, 18, 19]:
-		var original := Resolver.resolve(map_seed)
-		var reversed := Resolver.resolve(map_seed, true, {}, ReorderedPlots)
+		var original := Resolver.resolve(Plots, map_seed)
+		var reversed := Resolver.resolve(ReorderedPlots, map_seed)
 		_check(Resolver.is_valid(original) and Resolver.is_valid(reversed), "Both orders resolve seed %d" % map_seed)
 		_check(original.placements.front().slot_id != reversed.placements.front().slot_id, "Fixture actually changes slot ordering")
 		_check(_by_slot(original.placements) == _by_slot(reversed.placements), "Reordering slots keeps each slot's exact choices for seed %d" % map_seed)
-		var reconstructed := Resolver.resolve(999, true, original, ReorderedPlots)
+		var reconstructed := Resolver.resolve(ReorderedPlots, 999, true, original)
 		_check(reconstructed == original, "Replay retains original seed, placements, population and compile order")
 
 	var parcel = Parcels.get_definition(Parcels.PARKING_GARAGE_A)
@@ -54,14 +54,14 @@ func _run() -> void:
 	var unaffected: Array = baseline.choices.filter(func(choice): return choice.region_id != removed.region_id)
 	_check(smaller.choices == unaffected, "Removing an unrelated region preserves count, selected sockets and headings in the remaining regions")
 
-	var manifest := Resolver.resolve(16)
+	var manifest := Resolver.resolve(Plots, 16)
 	manifest.erase("compiler_revision")
 	manifest.placements.reverse()
-	var legacy := Resolver.resolve(999, true, _json_round_trip(manifest))
+	var legacy := Resolver.resolve(Plots, 999, true, _json_round_trip(manifest))
 	_check(Resolver.is_valid(legacy) and legacy.compiler_revision == Resolver.LEGACY_COMPILER_REVISION and legacy.placements == manifest.placements, "Unversioned exact recordings use the baseline compiler and retain recorded choices")
 	for revision in [99, 1.5, "1"]:
 		manifest.compiler_revision = revision
-		var rejected := Resolver.resolve(16, true, _json_round_trip(manifest))
+		var rejected := Resolver.resolve(Plots, 16, true, _json_round_trip(manifest))
 		_check(not Resolver.is_valid(rejected) and rejected.errors[0].code == "UNSUPPORTED_COMPILER_REVISION", "Recorded compiler revision %s rejects explicitly" % str(revision))
 	print("Parcel population streams: %d failure(s)" % failures)
 	quit(1 if failures else 0)

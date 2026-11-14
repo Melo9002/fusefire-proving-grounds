@@ -2,7 +2,7 @@ extends RefCounted
 ## Save reviewed painted placements for seeded battle population. The editor owns the
 ## export, while the registered parcel contract owns compilation and replay.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
-const Compiler = preload("res://systems/generation/authored_scene_map_compiler.gd")
+const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.gd")
 const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 
 static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
@@ -125,7 +125,7 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 		full_population.append({"socket_id": socket.socket_id, "asset_id": asset})
 	for turn in definition.allowed_rotations():
 		var extent := ParcelTransform.rotated_size(definition.size, turn)
-		var map := FlatMapGenerator.generate(extent.x, extent.y, 1.0, 0)
+		var map := TacticalMapBuilder.generate(extent.x, extent.y, 1.0, 0)
 		var instance := definition.instantiate()
 		definition.apply_population(instance, full_population)
 		instance.transform = ParcelTransform.scene_transform(definition.size, Vector3i.ZERO, turn, extent)

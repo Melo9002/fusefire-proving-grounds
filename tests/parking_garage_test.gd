@@ -1,7 +1,7 @@
 extends SceneTree
 
 const Catalog = preload("res://systems/generation/battlefield_catalog.gd")
-const Parcels = preload("res://systems/generation/authored_parcel_catalog.gd")
+const Parcels = preload("res://systems/generation2/authored_parcel_catalog.gd")
 const Recording = preload("res://systems/replay/battle_replay_recording.gd")
 const FRONT := Vector3i(8, 0, 7)
 const SIDE := Vector3i(27, 0, 24)

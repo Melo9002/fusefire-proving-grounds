@@ -1,9 +1,9 @@
 extends VBoxContainer
 ## Small editor-only UI; field data and persistence live in PopulationFieldDraft.
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
-const Vehicles = preload("res://systems/generation/parking_vehicle_templates.gd")
+const Vehicles = preload("res://systems/generation2/parking_vehicle_templates.gd")
 const SceneExport = preload("res://tools/parcel_editor/population_scene_export.gd")
-const Resolver = preload("res://systems/generation/refinery_plot_resolver.gd")
+const Resolver = preload("res://systems/generation2/authored_plot_resolver.gd")
 const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
 var session = Session.new()
 var surface_picker: OptionButton
@@ -778,7 +778,7 @@ func _present_preview() -> void:
 	host.add_child(_runtime_preview)
 	host.displayed_parcel.hide()
 	_authored_guides.hide()
-	compiled_preview = FlatMapGenerator.generate(_definition.size.x, _definition.size.y, 1.0, int(seed_input.value))
+	compiled_preview = TacticalMapBuilder.generate(_definition.size.x, _definition.size.y, 1.0, int(seed_input.value))
 	AuthoredSceneMapCompiler.compile(_runtime_preview, compiled_preview, 1.0)
 	host.refresh_tactical_overlay(_runtime_preview)
 
