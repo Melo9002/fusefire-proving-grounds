@@ -11,8 +11,8 @@ static func generate(id: StringName, size: Vector2i, map_seed: int, cell_size: f
 		return Garage.generate(map_seed, cell_size, manifest, bool(manifest.get("population_enabled", true)))
 	return FlatMapGenerator.generate_with_cover(size.x, size.y, cell_size, map_seed, 5, id == &"legacy_refinery", id == &"industrial_warehouse")
 
-static func present_garage(data: MapData, parent: Node3D, cell_size: float) -> bool:
-	return Garage.present(data, parent, cell_size)
+static func present_garage(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
+	return Garage.present(data, parent, cell_size, world_environment)
 
 static func present(data: MapData, parent: Node3D, cell_size: float) -> void:
 	GeneratedTerrainPresenter.build(data, parent, cell_size)

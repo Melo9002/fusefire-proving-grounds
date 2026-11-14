@@ -33,8 +33,10 @@
 
 [sub_resource type="PlaceholderMesh" id="PlaceholderMesh_8x357"]
 
-[node name="BattleLevel" type="Node3D" unique_id=1534168603 node_paths=PackedStringArray("player_spawn_zone", "enemy_spawn_zone", "ally_spawn_zone", "player_units_parent", "allied_units_parent", "enemy_units_parent", "objective_units_parent", "turn_manager", "battle_controller", "objective_manager", "objective_zone_visualizer")]
+[node name="BattleLevel" type="Node3D" unique_id=1534168603 node_paths=PackedStringArray("authored_environment", "world_environment", "player_spawn_zone", "enemy_spawn_zone", "ally_spawn_zone", "player_units_parent", "allied_units_parent", "enemy_units_parent", "objective_units_parent", "turn_manager", "battle_controller", "objective_manager", "objective_zone_visualizer")]
 script = ExtResource("16_level")
+authored_environment = NodePath("Environment")
+world_environment = NodePath("Environment/WorldEnvironment")
 unit_scene = ExtResource("4_tsi40")
 player_spawn_zone = NodePath("SpawnZones/PlayerSpawnZone")
 enemy_spawn_zone = NodePath("SpawnZones/EnemySpawnZone")
@@ -69,9 +71,10 @@ camera = NodePath("../../CameraRig/Camera3D")
 grid_manager = NodePath("../GridManager")
 objective_hud = NodePath("../../Visualizers/BattleUI/ObjectiveHUD")
 
-[node name="BattleController" type="Node3D" parent="Systems" unique_id=1810984402 node_paths=PackedStringArray("mouse_raycaster", "grid_cursor", "path_visualizer", "cover_visualizer", "shot_trajectory_visualizer", "overwatch_range_visualizer", "grid_manager", "turn_manager")]
+[node name="BattleController" type="Node3D" parent="Systems" unique_id=1810984402 node_paths=PackedStringArray("battle_root", "mouse_raycaster", "grid_cursor", "path_visualizer", "cover_visualizer", "shot_trajectory_visualizer", "overwatch_range_visualizer", "grid_manager", "turn_manager")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72652817, -1.000001, -0.05766487)
 script = ExtResource("3_fg2v6")
+battle_root = NodePath("../..")
 mouse_raycaster = NodePath("../MouseRaycaster")
 grid_cursor = NodePath("../../Visualizers/GridCursor")
 path_visualizer = NodePath("../../Visualizers/PathVisualizer")

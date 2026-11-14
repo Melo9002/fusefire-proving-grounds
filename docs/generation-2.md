@@ -67,17 +67,18 @@ Reusable parcels, imported kits, calibration and semantic data remain. The inter
 
 ## Remaining work, in order
 
-1. Make ordinary asset placement derive useful starting tactical boundaries automatically; keep movement, sight and cover behavior understandable.
-2. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
-3. Validate that workflow and the current maps with real missions, replay and clean visual inspection.
-4. Only then add content/variety or expand composition.
+1. Extract reusable cars, containers and trucks from example parcels into ordinary reusable scenes, preserving their current transforms and tactical data.
+2. Make ordinary asset placement derive useful starting tactical boundaries automatically; keep movement, sight and cover behavior understandable.
+3. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
+4. Consolidate old selection flags at compatibility entry points, then migrate remaining legacy mechanics coverage deliberately.
+5. Validate the simplified workflow with real missions, replay and clean visual inspection before adding content/variety.
 
 The longer-term direction remains: fully authored places, fixed places with varied movable objects, and seeded arrangements of authored areas through the same pipeline. Catwalks belong to authored functional connections between important places, not arbitrary decoration. A future parking structure needs explicit multi-floor access and camera occlusion checks. Neither requires a new general solver now.
 
 ## Cleanup verification — 2026-11-14
 
 - The full Ironclad run completed with **109 pass, 2 fail, 14 explicit-only skipped**. Both failures were stale test fixtures for retired menu maps, not ignored failures: `parcel_gallery_picking_test.gd` now exercises the retained range/garage decks, and `replay_file_workflow_test.gd` uses Service Depot. Both passed focused reruns with their picking, movement, save/load and replay assertions preserved. The replay test now exits explicitly if its expected loading screen is absent.
-- Those focused corrections were not followed by another full run. There are no unresolved failures from that run, but its raw result remains 109/2/14. Final smoke: **11 pass, 0 fail, 0 skip** in 36.42 seconds (`artifacts/test-results/20261114-153932-smoke/`).
+- At that cleanup stage, no further full run was made. The later audit batch has a complete rerun recorded below; the original raw result remains 109/2/14. Final smoke: **11 pass, 0 fail, 0 skip** in 36.42 seconds (`artifacts/test-results/20261114-153932-smoke/`).
 - Service Depot seed 17 completed a real Reach battle; saved-file playback verified **28/28 actions** and the same victory. The exact saved content was reconstructed and rewatch/return-to-setup checks passed.
 - Rendered inspection of Service Depot seeds 16 and 17 preserved their existing road, building and equipment presentation. Grid overlays were disabled; ordinary HUD remained. The internal range also completed its terminal interaction. This is bounded inspection, not blanket visual approval or an asset-boundary fix.
 - Full logs: `artifacts/test-results/20261114-152548-full/`. Focused follow-ups: `artifacts/cleanup-gallery-picking.log` and `artifacts/cleanup-replay-file-final.log`. Images: `artifacts/cleanup-views/`. Local diagnostics are ignored by Git.
@@ -91,3 +92,25 @@ godot_console --headless --path . --script res://tests/replay_file_workflow_test
 ```
 
 Direct sandboxed Godot launches reported certificate-store/user-settings access errors; the isolated Ironclad project scan passed. These environment messages are separate from the corrected fixture failures. No final script parse/compile failures remained.
+
+## Independent audit follow-up — first batch
+
+Completed scope: active-shape consistency, environment initialization ownership, and the obsolete refinery recipe. No draft-format, replay-schema, configuration-selection or automatic-boundary redesign is included.
+
+- **Clearance:** both warehouse variants now exclude revision-2 envelopes from current obstacle collection and population bounds. Their shell and planter still block their authored regions. Historical compiler revisions are unchanged. The new regression reproduced four failures before correction and passes afterward.
+- **Ownership:** atmosphere receives the owning battle's explicit environment. Geometry toggles stay inside its authored environment, and hazards stay inside its battle root. The extended isolation test reproduced ten failures before correction and now passes with unrelated environment/group nodes plus two overlapping Depot battles. Own hazards still stamp correctly. Rewatch also checks the replacement's atmosphere while the original battle remains alive.
+- **Quarantine:** the obsolete `refinery_2_author.py` recipe is at `C:/Users/Blue/Documents/Codex/quarantine/fusefire-audit-cleanup-2026-11-14`. Recovery hashes and an inventory of its four retained shared-component outputs are included. Current component scenes were not regenerated or changed.
+- **Rendered inspection:** Depot seeds 16/17 and saved-file replay rewatch were captured and inspected. Grid overlays were disabled; normal HUD/objective markers remain. The warehouse's current compound shapes were inspected separately. No geometry/visual approval beyond these bounded checks is claimed.
+- **Evidence:** focused logs are `artifacts/audit-focused-*.log`; baseline failures are `artifacts/audit-clearance-baseline.log` and `artifacts/audit-isolation-before.log`. Captures are in `artifacts/audit-batch1-depot/`, `artifacts/audit-batch1-replay/` and `artifacts/refined-warehouse-*.png`.
+- **Verification:** seven focused suites passed. The full Ironclad rerun passed **113 suites, 0 failures, 14 explicit-only skips** in 597.50 seconds. Logs: `artifacts/test-results/20261114-192237-full/`. Saved-file replay verified **28/28 actions** and the same victory. The full run had no script parse/compile/runtime errors; the pre-existing four-ObjectDB-instance warning in `allied_faction_smoke.gd` also appears in the earlier full log and remains outside this batch. Direct sandboxed render/focused runs retain the known certificate-store warning.
+
+Reproduce the key checks:
+
+```powershell
+godot_console --headless --path . --script res://tests/parcel_active_shape_clearance_test.gd
+godot_console --headless --path . --script res://tests/battle_dependency_isolation_test.gd
+godot_console --path . --script res://tests/compact_battlefield_test.gd -- capture artifacts/audit-batch1-depot
+godot_console --path . --script res://tests/replay_file_workflow_test.gd -- capture artifacts/audit-batch1-replay
+```
+
+Remaining audit work includes reusable occupant scenes, geometry-derived default boundaries, unified parcel save/preview/test handoff, canonical configuration selection, and legacy coverage migration. Legacy authored-fixture `MapBuilder` discovery and some camera group scans have not been redesigned in this batch; these checks establish scoped environment initialization, not universal multi-battle isolation.

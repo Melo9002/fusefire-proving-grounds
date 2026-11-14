@@ -184,14 +184,14 @@ func _collect_fixed_obstacles(node: Node, parent_transform: Transform3D, result:
 	if node.has_meta("population_socket_id"): return
 	var transform := parent_transform
 	if node is Node3D and not is_root: transform *= node.transform
-	if node.has_meta("solid_size"):
+	if AuthoredSceneMapCompiler.is_active_solid(node):
 		var dimensions: Vector3 = node.get_meta("solid_size")
 		result.append(transform * AABB(-dimensions * 0.5, dimensions))
 	for child in node.get_children():
 		_collect_fixed_obstacles(child, transform, result)
 
 func _collect_population_bounds(node: Node, transform: Transform3D, volumes: Array[AABB]) -> void:
-	if node.has_meta("solid_size"):
+	if AuthoredSceneMapCompiler.is_active_solid(node):
 		var dimensions: Vector3 = node.get_meta("solid_size")
 		volumes.append(transform * AABB(-dimensions * 0.5, dimensions))
 	for child in node.get_children():

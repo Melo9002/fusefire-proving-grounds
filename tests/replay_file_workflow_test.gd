@@ -108,6 +108,7 @@ func _run() -> void:
 	_check(current_scene is BattleLevel, "Valid file launches the normal replay battle")
 	if current_scene is BattleLevel:
 		var replay := current_scene as BattleLevel
+		_check((replay.get_node("Environment/WorldEnvironment") as WorldEnvironment).environment.fog_enabled, "Saved Depot replay configures its own atmosphere")
 		var player := replay.get_node_or_null("BattleReplayPlayer") as BattleReplayPlayer
 		_check(player != null and replay.active_generated_map.content_manifest == recording.configuration.content_manifest, "Playback reconstructs the exact saved depot and occupants")
 		if player:
@@ -122,9 +123,14 @@ func _run() -> void:
 			replay_hud.replay_button.pressed.emit()
 			_check(current_scene != replay and current_scene is BattleLevel and current_scene.pending_replay == player.recording, "Rewatch uses the opened file rather than a previous in-memory battle")
 			var reopened := current_scene as BattleLevel
+			_check((reopened.get_node("Environment/WorldEnvironment") as WorldEnvironment).environment.fog_enabled, "Rewatch atmosphere belongs to the replacement scene even while the original still exists")
 			var reopened_player := reopened.get_node("BattleReplayPlayer") as BattleReplayPlayer
 			reopened_player.set_playback_paused(true)
 			await process_frame
+			if not capture_directory.is_empty():
+				reopened.get_node("Visualizers/GridVisualizer").hide()
+				reopened.get_node("Visualizers/GridCursor").hide()
+			await _capture("replay-rewatch")
 			var return_button := reopened.find_child("ReplaySetupButton", true, false) as Button
 			return_button.pressed.emit()
 			await process_frame

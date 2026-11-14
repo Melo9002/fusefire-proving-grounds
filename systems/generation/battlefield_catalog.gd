@@ -69,16 +69,16 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 			return rejected
 
 ## Returns true when this catalog supplied the complete special presentation.
-static func present_special(data: MapData, parent: Node3D, cell_size: float) -> bool:
+static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	match data.source_kind:
-		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE: return CurrentGenerator.present(data, parent, cell_size)
-		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size)
+		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
+		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size, world_environment)
 		_: return false
 
 ## Current maps bypass the old procedural renderer entirely.
-static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
+static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, "authored_parking_garage"]:
-		return present_special(data, parent, cell_size)
+		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:
 		_fixtures().present(data, parent, cell_size)
 		return true

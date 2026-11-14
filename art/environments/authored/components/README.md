@@ -1,6 +1,6 @@
 # Custom environment components
 
-These original structural pieces complement the downloaded packs in the adjacent `kenney/` collection. Refinery 2.0 references these scene files directly.
+These original structural pieces complement the downloaded packs in the adjacent `kenney/` collection. Current maintenance/courtyard parcels, the garage and the tactical range reuse these scenes directly. Edit them as ordinary Godot scenes.
 
 All dimensions are in metres. Keep scene transforms uniform when fitting them to the tactical grid. Visual/collision geometry alone does not declare a walkable tactical surface or a traversal link: the map must author those records explicitly.
 
@@ -12,4 +12,4 @@ All dimensions are in metres. Keep scene transforms uniform when fitting them to
 | catwalk_support_2m | Ground at Y=0, paired posts along X | Two-metre-wide gallery with surface Y=4 |
 | pipe_rack_support | Ground at Y=0, column spacing along Z | Support overhead pipes above a service route |
 
-The offline refinery recipe originally emitted the structural files. Avoid regenerating over manual improvements without transferring them to the recipe. Boundary railings remain parcel-authored so junctions and ladder approaches stay deliberate.
+The old refinery recipe is retired in `C:/Users/Blue/Documents/Codex/quarantine/fusefire-audit-cleanup-2026-11-14`. It originally emitted the deck, ladder, pipe-rack support and catwalk support; the quarantine records their retained paths and hashes. It is historical reference, not a supported regeneration step. Boundary railings remain parcel-authored so junctions and ladder approaches stay deliberate.

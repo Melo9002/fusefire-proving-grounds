@@ -21,6 +21,7 @@ signal ai_decision_recorded(record: Dictionary)
 signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
 
+@export var battle_root: Node3D
 @export var tactical_unit: TacticalUnit
 @export var mouse_raycaster: MouseRaycaster
 @export var grid_cursor: GridCursor
@@ -179,7 +180,9 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 	return true
 
 func _apply_authored_tile_hazards() -> void:
+	if not is_instance_valid(battle_root): return
 	for node in get_tree().get_nodes_in_group("tile_hazards"):
+		if not battle_root.is_ancestor_of(node): continue
 		var definition: ConditionDefinition = node.get("condition") if node is Node3D else null
 		if definition == null: continue
 		var cell := grid_manager.map_data.get_cell(grid_manager.world_to_grid((node as Node3D).global_position))

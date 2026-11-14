@@ -33,9 +33,9 @@ static func generate(map_seed: int, cell_size: float = 1.0, requested: Dictionar
 	var resolved := Resolver.resolve(ParkingGarageLayout, map_seed, population_enabled, requested)
 	return SharedLayout.compile_resolved(resolved, map_seed, cell_size, SOURCE_KIND)
 
-static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
+static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	var manifest := data.content_manifest
 	var checked := Resolver.resolve(ParkingGarageLayout, data.generation_seed, bool(manifest.get("population_enabled", true)), manifest)
 	if not Resolver.is_valid(checked) or checked.placements != manifest.get("placements", []):
 		return false
-	return SharedLayout.present_resolved(data, parent, cell_size, Surroundings)
+	return SharedLayout.present_resolved(data, parent, cell_size, Surroundings, world_environment)

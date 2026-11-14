@@ -73,7 +73,7 @@ static func generate(source_kind: String, map_seed: int, cell_size: float, reque
 	var resolved := Resolver.resolve(plots, map_seed, enabled, requested)
 	return SharedLayout.compile_resolved(resolved, map_seed, cell_size, source_kind, 1)
 
-static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
+static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	if data.source_kind not in [DEPOT_SOURCE, RANGE_SOURCE]: return false
 	var plots = RangePlot if data.source_kind == RANGE_SOURCE else DepotPlots
 	var manifest := data.content_manifest
@@ -81,4 +81,4 @@ static func present(data: MapData, parent: Node3D, cell_size: float) -> bool:
 	if not Resolver.is_valid(checked) or checked.placements != manifest.get("placements", []):
 		return false
 	var plot: Dictionary = plots.get_definition(manifest.plot_id)
-	return SharedLayout.present_resolved(data, parent, cell_size, plot.scene)
+	return SharedLayout.present_resolved(data, parent, cell_size, plot.scene, world_environment)

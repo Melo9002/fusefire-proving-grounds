@@ -13,6 +13,8 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
 
+@export var authored_environment: Node3D
+@export var world_environment: WorldEnvironment
 @export var unit_scene: PackedScene
 @export var player_spawn_zone: SpawnZone
 @export var enemy_spawn_zone: SpawnZone
@@ -217,7 +219,7 @@ func _initialize_generated_battle() -> void:
 	generated_geometry.name = "GeneratedTerrain"
 	add_child(generated_geometry)
 	battle_initialization_progress.emit("Building environment presentation…", 0.48)
-	if not BattlefieldCatalogData.present(generated_map, generated_geometry, grid.cell_size):
+	if not BattlefieldCatalogData.present(generated_map, generated_geometry, grid.cell_size, world_environment):
 		_abort_generated_state()
 		_fail_battle_initialization([_diagnostic("PRESENTATION_FAILED", "content_manifest", "Accepted battlefield could not reconstruct its imported presentation")])
 		return
@@ -438,8 +440,10 @@ func _faction_name(faction: TacticalUnit.Faction) -> String:
 			return "Player"
 
 func _set_authored_geometry_enabled(enabled: bool) -> void:
+	if not is_instance_valid(authored_environment): return
 	for group_name in ["terrain_features", "elevated_surfaces", "elevation_paths", "traversal_links"]:
 		for node in get_tree().get_nodes_in_group(group_name):
+			if not authored_environment.is_ancestor_of(node): continue
 			if node is Node3D:
 				(node as Node3D).visible = enabled
 			_set_collision_enabled(node, enabled)

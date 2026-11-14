@@ -43,14 +43,14 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		data.generation_errors.append({"code": "UNSATISFIABLE_DEPLOYMENT", "detail": "No connected stopping cells remain in a required deployment column"})
 	return data
 
-static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene) -> bool:
+static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene, world_environment: WorldEnvironment = null) -> bool:
 	var resolved := data.content_manifest
 	if not data.generation_errors.is_empty() or not Resolver.is_valid(resolved):
 		return false
 	var plot_root := plot_scene.instantiate() as Node3D
 	plot_root.scale = Vector3.ONE * cell_size
 	parent.add_child(plot_root)
-	_apply_industrial_atmosphere(parent)
+	_apply_industrial_atmosphere(world_environment)
 	for placement: Dictionary in resolved.placements:
 		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
@@ -61,11 +61,9 @@ static func present_resolved(data: MapData, parent: Node3D, cell_size: float, pl
 		parent.add_child(root)
 	return true
 
-static func _apply_industrial_atmosphere(parent: Node3D) -> void:
-	if not parent.is_inside_tree():
-		return
-	var world_environment := parent.get_tree().root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	if world_environment == null or world_environment.environment == null:
+static func _apply_industrial_atmosphere(world_environment: WorldEnvironment) -> void:
+	# The owning battle supplies its environment; never search the scene-tree root.
+	if not is_instance_valid(world_environment) or world_environment.environment == null:
 		return
 	var environment := world_environment.environment.duplicate(true) as Environment
 	environment.background_mode = Environment.BG_COLOR
