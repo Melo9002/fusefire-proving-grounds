@@ -36,7 +36,15 @@ static func pose(turn: int) -> Transform3D:
 
 static func present(parent: Node3D, unit: float) -> void:
 	var parcel: Node3D = parcel_definition().instantiate()
+	# This standalone map compiles all authored occupants as fixed content. Their
+	# source parcel hides population guides until a presentation owner activates them.
+	_show_fixed_occupants(parcel)
 	parcel.transform = pose(0)
 	parcel.position *= unit
 	parcel.scale *= unit
 	parent.add_child(parcel)
+
+static func _show_fixed_occupants(node: Node) -> void:
+	if node is Node3D and node.has_meta("population_socket_id"):
+		node.show()
+	for child in node.get_children(): _show_fixed_occupants(child)

@@ -5,6 +5,8 @@ const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const Placement = preload("res://presentation/environment_asset_placement.gd")
 const PlacementConventions = preload("res://tools/asset_lab/asset_placement_conventions.gd")
 const OrbitCamera = preload("res://tools/inspection_orbit_camera.gd")
+const BoundaryPanel = preload("res://tools/asset_lab/boundary_authoring_panel.gd")
+var boundary_panel: VBoxContainer
 const MIRA_REFERENCE_HEIGHT := 1.60
 const MIRA_RUNTIME_HEIGHT := 1.60
 @export_file("*.json") var calibration_path := Catalog.DATA_PATH
@@ -339,6 +341,17 @@ func _ready() -> void:
 	_workspace_tab("Meaning", "Optional description. Meaning has its own Save button.", meaning_controls)
 	_workspace_tab("View", "Camera and overlays are preview-only. Q/E changes asset rotation.", view_controls)
 	_workspace_tab("Advanced", "Shared presets affect other assets. Use Adjust for individual exceptions.", advanced_controls)
+	var boundary_page := VBoxContainer.new()
+	boundary_page.name = "Boundaries"
+	workspace_tabs.add_child(boundary_page)
+	var boundary_scroll := ScrollContainer.new()
+	boundary_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	boundary_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	boundary_page.add_child(boundary_scroll)
+	boundary_panel = BoundaryPanel.new()
+	boundary_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	boundary_scroll.add_child(boundary_panel)
+	boundary_panel.footer.reparent(boundary_page)
 	for control in [save_status, save_button, reviewed_toggle, next_button]:
 		control.reparent(sidebar)
 	save_button.tooltip_text = "Save this asset without marking it visually reviewed."
@@ -552,6 +565,9 @@ func rebuild(frame := false) -> void:
 		_build_assembly(mode.selected)
 		info.text = "Assembly %d — family calibration policy, authored origins.\nBounds are visual envelopes, not solids.\nIndividual controls apply only in asset mode.\n" % mode.selected
 	current_bounds = Placement.mesh_bounds(content)
+	boundary_panel.bind_source(content.get_child(0) if mode.selected == 0 and not duplicate_piece.button_pressed else null, selected, {
+		"scale": factor.value, "yaw": angle.value, "anchor": anchor.selected,
+		"position": [x_offset.value, y_offset.value, z_offset.value]})
 	display_bounds = current_bounds
 	if mode.selected == 0 and facing_compass_toggle.button_pressed:
 		_facing_compass(overlays, current_bounds, deg_to_rad(angle.value), _selected_working_faces(), str(semantic_front.get_item_metadata(semantic_front.selected)))
@@ -817,6 +833,10 @@ func _view_input(event: InputEvent) -> void:
 
 func _shortcut_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if get_viewport().gui_get_focus_owner() is LineEdit or get_viewport().gui_get_focus_owner() is TextEdit:
+		return
+	if boundary_panel.file_dialog and boundary_panel.file_dialog.visible:
 		return
 	match event.keycode:
 		KEY_F: _frame_camera()
