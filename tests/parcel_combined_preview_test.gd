@@ -91,6 +91,11 @@ func _run() -> void:
 		var scene := ResourceLoader.load(export_path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
 		var reopened := scene.instantiate() as Node3D
 		check(reopened.has_node(NodePath(added_path)) and reopened.get_node(NodePath(added_path)).has_node("TacticalVolume"), "Reopening the scene retains the added truck and its authored volume")
+		var exported_truck := reopened.get_node(NodePath(added_path)) as Node3D
+		for part in ["CargoBody", "Cab", "Hood"]:
+			var shape := exported_truck.get_node_or_null("TacticalShapes/" + part) as Node3D
+			check(shape != null and shape.has_meta("solid_size") and shape.get_meta("min_shape_revision", 0) == 3, "Export preserves the reusable truck's current %s shape" % part)
+		check(exported_truck.get_node("TacticalVolume").get_meta("max_shape_revision") == 2, "Export also preserves the truck's historical replay shape")
 		var map := FlatMapGenerator.generate(16, 32, 1.0, 17)
 		reopened.transform = ParcelTransform.scene_transform(Vector2i(16, 32), Vector3i.ZERO, 0, Vector2i(16, 32))
 		var exported := AuthoredParcelDefinition.new(reopened.get_meta("parcel_id"), "Export", Catalog.LOADING_SERVICE, 1, Vector2i(16, 32), scene)

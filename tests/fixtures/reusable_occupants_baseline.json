@@ -1,0 +1,21 @@
+{
+	"objects": {
+		"box_large": "e2e7389cca05f8fc63226f0f2f1706576b093c7ff77401133b864379122be44b",
+		"container_a": "a8d6209ccd91c0e36142921d56c20c63a28ad6b82a69c7f9a1a1bcd1ba012864",
+		"container_b": "5f58750b993646507e6af6b02df541691c9dccbd6df792cfbb435f6caa3e498f",
+		"container_c": "5f9139bf1243ab233f92fa114fc3ac1db80d1c7b508ba2905f639af7ea42e6c1",
+		"delivery": "1a718be9047acf7ab10a6acbca75981065509e0c7e4b3f212f62d08818e9d9fc",
+		"sedan": "22f5f306b480bb04df4a509ef85980edff6e3a93b7bb5938d56ffcfda8c87677",
+		"suv": "668a2376f7b444cf433841fb5ec1b30177f58a12e7f31e98f1032a16ac90cbbb",
+		"taxi": "03deafb59d9637d8c8fd8a562a485cb434debec4a1677d0fcf66e5f21cf82d10"
+	},
+	"parcels": {
+		"industrial_office_painted_parking": "abbf11575c3fcb38551ae7e511736c34b9d330dacbd6e1d0d8283a847cc4b3bd",
+		"industrial_office_parking": "fa2bda7414ffe7d0f16ee4e116f5fba1bd0e09ae3795c46f9457e676b3426186",
+		"industrial_office_parking_rules": "75a062a631d62b97d96e41786bfd48de213be8ae8aeade18a1b2d4681df92064",
+		"loading_yard": "0def65a66e4d282f4c8b27f2b104b012a440142db627021f2859955cb9e57592",
+		"loading_yard_alt": "c2998551cc07a6efc6c5f769490134da1e9e0064ca653b5a6da74009f0c62c42",
+		"loading_yard_painted_containers": "6c3e231b07993235cb1a9f0f2f92fba5d18fc84723688d97fde7f60e6d956195"
+	},
+	"source_commit": "4c465f2"
+}

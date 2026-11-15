@@ -57,6 +57,9 @@ func _check_authoring() -> void:
 	var exported := AuthoredParcelDefinition.new(result.definition.parcel_id, "Container draft", Catalog.LOADING_SERVICE, 1, Vector2i(16, 32), scene)
 	var root_node := exported.instantiate()
 	check(exported.validate().is_empty() and not (root_node.get_node("Container_painted_container_7_20") as Node3D).visible, "Reopened rules preserve an empty authoring view")
+	for socket_id in ["painted_container_7_20", "painted_container_7_25"]:
+		var container := root_node.get_node("Container_" + socket_id)
+		check(container.get_child_count() == 2 and container.has_node("Visual") and container.has_node("TacticalVolume"), "Export retains exactly one visual and tactical volume per reusable container")
 	root_node.free()
 	DirAccess.remove_absolute(path)
 	var registered = Catalog.get_definition(Catalog.LOADING_YARD_PAINTED)

@@ -128,5 +128,5 @@ static func add_to_scene(root: Node3D, template: Node3D, candidate: Dictionary) 
 	container.hide()
 	root.add_child(container)
 	container.owner = root
-	for child in container.get_children():
-		child.owner = root
+	# The reusable scene owns its children. Reassigning them to the parcel would
+	# serialize them twice: once through the instance and again as added nodes.

@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
+
+[node name="TaxiEast" type="Node3D"]
+metadata/asset_id = "car_kit/taxi"
+
+[node name="Visual" parent="." instance=ExtResource("taxi")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0, 0.9, 0)
+metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
+metadata/round_volume = false

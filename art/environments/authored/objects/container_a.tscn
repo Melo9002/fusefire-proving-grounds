@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-a.glb" id="asset_city_kit_industrial_shipping_container_a"]
+
+[node name="ContainerA" type="Node3D"]
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="Visual" parent="." instance=ExtResource("asset_city_kit_industrial_shipping_container_a")]
+transform = Transform3D(5.0000000, 0.0000000, 0.0000000, 0.0000000, 5.0000000, 0.0000000, -0.0000000, 0.0000000, 5.0000000, 0.0000008, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0.000000, 0.870200, 0.000000)
+metadata/solid_size = Vector3(1.863001, 1.740400, 4.113000)
+metadata/round_volume = false

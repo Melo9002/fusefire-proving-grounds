@@ -3,12 +3,11 @@ extends RefCounted
 
 const Assets = preload("res://tools/asset_lab/asset_catalog.gd")
 const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
-const LoadingYard = preload("res://art/environments/authored/parcels/loading_yard.tscn")
 const TACTICAL := {
-	"factory_kit/box-large": "CrateA",
-	"city_kit_industrial/shipping-container-a": "ContainerA",
-	"city_kit_industrial/shipping-container-b": "ContainerB",
-	"car_kit/delivery": "Truck",
+	"factory_kit/box-large": preload("res://art/environments/authored/objects/box_large.tscn"),
+	"city_kit_industrial/shipping-container-a": preload("res://art/environments/authored/objects/container_a.tscn"),
+	"city_kit_industrial/shipping-container-b": preload("res://art/environments/authored/objects/container_b.tscn"),
+	"car_kit/delivery": preload("res://art/environments/authored/objects/delivery.tscn"),
 }
 
 static func entries() -> Dictionary:
@@ -24,14 +23,7 @@ static func entries() -> Dictionary:
 
 static func create(id: String) -> Node3D:
 	if id in TACTICAL:
-		var source := LoadingYard.instantiate()
-		var piece := source.get_node(TACTICAL[id]).duplicate() as Node3D
-		source.free()
-		piece.position = Vector3.ZERO
-		piece.show()
-		for property in ["population_socket_id", "population_region_id", "population_surface_id", "population_yaw_turns"]:
-			piece.remove_meta(property)
-		return piece
+		return TACTICAL[id].instantiate() as Node3D
 	# Reuse the calibrated pivot and scale inside a grid-centered wrapper.
 	var root := Node3D.new()
 	if Assets.place(root, id, Vector3.ZERO) == null:

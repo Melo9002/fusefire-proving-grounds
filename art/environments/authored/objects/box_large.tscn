@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="asset_factory_kit_box_large"]
+
+[node name="CrateA" type="Node3D"]
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="." instance=ExtResource("asset_factory_kit_box_large")]
+transform = Transform3D(1.5000000, 0.0000000, 0.0000000, 0.0000000, 1.5000000, 0.0000000, -0.0000000, 0.0000000, 1.5000000, -0.0000000, -0.0000000, -0.0000000)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0.000000, 0.412500, 0.000000)
+metadata/solid_size = Vector3(1.650000, 0.825000, 1.500000)
+metadata/round_volume = false

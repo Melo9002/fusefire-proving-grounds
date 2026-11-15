@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/delivery.glb" id="asset_car_kit_delivery"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/tactical/delivery_shapes.tscn" id="delivery_shapes"]
+
+[node name="Truck" type="Node3D"]
+metadata/asset_id = "car_kit/delivery"
+
+[node name="Visual" parent="." instance=ExtResource("asset_car_kit_delivery")]
+transform = Transform3D(1.2500000, 0.0000000, 0.0000000, 0.0000000, 1.2500000, 0.0000000, -0.0000000, 0.0000000, 1.2500000, -0.0000000, -0.0000000, 0.0312500)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+metadata/max_shape_revision = 2
+position = Vector3(0.000000, 1.031250, 0.000000)
+metadata/solid_size = Vector3(1.875000, 2.062500, 4.062500)
+metadata/round_volume = false
+metadata/precise_shot_bounds = true
+
+[node name="TacticalShapes" parent="." instance=ExtResource("delivery_shapes")]

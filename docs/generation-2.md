@@ -67,11 +67,10 @@ Reusable parcels, imported kits, calibration and semantic data remain. The inter
 
 ## Remaining work, in order
 
-1. Extract reusable cars, containers and trucks from example parcels into ordinary reusable scenes, preserving their current transforms and tactical data.
-2. Make ordinary asset placement derive useful starting tactical boundaries automatically; keep movement, sight and cover behavior understandable.
-3. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
-4. Consolidate old selection flags at compatibility entry points, then migrate remaining legacy mechanics coverage deliberately.
-5. Validate the simplified workflow with real missions, replay and clean visual inspection before adding content/variety.
+1. Make ordinary asset placement derive useful starting tactical boundaries automatically; keep movement, sight and cover behavior understandable.
+2. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
+3. Consolidate old selection flags at compatibility entry points, then migrate remaining legacy mechanics coverage deliberately.
+4. Validate the simplified workflow with real missions, replay and clean visual inspection before adding content/variety.
 
 The longer-term direction remains: fully authored places, fixed places with varied movable objects, and seeded arrangements of authored areas through the same pipeline. Catwalks belong to authored functional connections between important places, not arbitrary decoration. A future parking structure needs explicit multi-floor access and camera occlusion checks. Neither requires a new general solver now.
 
@@ -113,4 +112,18 @@ godot_console --path . --script res://tests/compact_battlefield_test.gd -- captu
 godot_console --path . --script res://tests/replay_file_workflow_test.gd -- capture artifacts/audit-batch1-replay
 ```
 
-Remaining audit work includes reusable occupant scenes, geometry-derived default boundaries, unified parcel save/preview/test handoff, canonical configuration selection, and legacy coverage migration. Legacy authored-fixture `MapBuilder` discovery and some camera group scans have not been redesigned in this batch; these checks establish scoped environment initialization, not universal multi-battle isolation.
+Remaining audit work includes geometry-derived default boundaries, unified parcel save/preview/test handoff, canonical configuration selection, and legacy coverage migration. Legacy authored-fixture `MapBuilder` discovery and some camera group scans have not been redesigned in this batch; these checks establish scoped environment initialization, not universal multi-battle isolation.
+
+## Reusable object extraction — 2026-11-14
+
+The crate, containers A/B/C, delivery truck, sedan, SUV and taxi now have ordinary editable scenes in `art/environments/authored/objects/`. Loading Yard, its alternate/painted variant, and the office parking parcels instance them directly. Parcel-specific names, transforms, visibility and population sockets remain on the parcel instances. Editor creation and parking templates use those same object scenes; neither needs to instantiate an example parcel or find a named node inside it.
+
+This extraction preserves mesh calibration, tactical metadata, asset IDs, seeded vehicle ordering, parcel revisions and historical/current truck shapes. It adds no placement workflow, asset registry, boundary format or replay schema. Independently authored objects elsewhere remain untouched. Ordinary imported meshes do **not** gain automatic tactical boundaries yet.
+
+Export now preserves ownership of instanced container children. Reassigning those children to the exported parcel duplicated visual/tactical parts on reopening and leaked objects; the focused regression checks exactly one visual and volume per container. Combined export also checks all three current truck parts and its historical volume.
+
+`tests/reusable_occupant_test.gd` protects independence from example parcels and compares the extracted meshes, transforms, visibility and metadata against fingerprints captured from commit `4c465f2` before extraction. These fingerprints protect this unchanged-content contract; intentional future content revisions must review and update the corresponding baseline, rather than treating it as an immutable art specification.
+
+Verification: six focused suites passed. The full Ironclad run passed **114 suites, 0 failures, 14 explicit-only skips** in 594.29 seconds (`artifacts/test-results/20261114-220224-full/`), including editor save/load, combined export/reopen, generation and replay. Before the fix, the new independence check failed for both example-parcel dependencies; the new container export assertion reproduced duplicate children. Both now pass. No script parse/compile/runtime errors or new object leaks were found in the full logs; the existing four-instance warning in `allied_faction_smoke.gd` remains. Sandboxed runs also retain certificate-store/editor-settings permission diagnostics.
+
+Rendered inspection covered Service Depot seeds 16/17 and the internal garage's ground cutaway. The rendered compact-battlefield check also completed the range terminal mission. Captures are under `artifacts/occupant-extraction-depot/` and `artifacts/occupant-extraction-parking/`. These are bounded visual checks, not full UI or animation approval. The five pre-existing texture-import edits are outside this commit.

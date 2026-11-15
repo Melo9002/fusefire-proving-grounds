@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/suv.glb" id="suv"]
+
+[node name="SuvMid" type="Node3D"]
+metadata/asset_id = "car_kit/suv"
+
+[node name="Visual" parent="." instance=ExtResource("suv")]
+scale = Vector3(1.25, 1.25, 1.25)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0, 1, 0)
+metadata/solid_size = Vector3(1.875, 2, 4.0625)
+metadata/round_volume = false

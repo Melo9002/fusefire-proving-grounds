@@ -27,6 +27,8 @@ Replay uses `systems/replay/` and records accepted content, seed/configuration a
 
 `tools/parcel_editor/` edits and previews parcel scenes/rules. `tools/asset_lab/` browses and calibrates imported assets. Their current limitations are in [Generation 2.0](generation-2.md).
 
+`art/environments/authored/objects/` contains the reusable crate, three containers, delivery truck and three parking cars. Loading-yard and office parcels instance these scenes, keeping positions and population membership on the parcel instances. The editor placement library and parking vehicle templates instantiate the object scenes directly; they no longer load an example parcel or look up an object by its node name. The object scene owns its visual and tactical children, including historical/current truck shapes. Export preserves that ownership instead of packing the same children twice. This changes ownership only; ordinary imported meshes still need the planned automatic-boundary work.
+
 ## Compatibility is separate
 
 `tests/fixtures/legacy_generation/` contains old implementations required by existing mechanics regressions. `tests/fixtures/legacy_battlefields.gd` dispatches them only for explicit fixture identities. They are not menu options and Generation2 does not import them. The integration catalog retains a deliberate compatibility branch for those tests/recordings; this is not part of Generation2.

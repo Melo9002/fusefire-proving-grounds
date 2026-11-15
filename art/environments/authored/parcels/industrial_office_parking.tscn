@@ -1,9 +1,12 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/sedan.tscn" id="object_sedan"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/suv.tscn" id="object_suv"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/taxi.tscn" id="object_taxi"]
+
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-a.glb" id="building"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/sedan.glb" id="sedan"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/suv.glb" id="suv"]
-[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/taxi.glb" id="taxi"]
 
 [sub_resource type="StandardMaterial3D" id="lot_material"]
 albedo_color = Color(0.42, 0.43, 0.42, 1)
@@ -62,7 +65,7 @@ position = Vector3(0, 7.35, 0)
 metadata/solid_size = Vector3(20.83588, 14.7, 12.420001)
 metadata/round_volume = false
 
-[node name="SedanWest" type="Node3D" parent="."]
+[node name="SedanWest" parent="." instance=ExtResource("object_sedan")]
 visible = false
 position = Vector3(6, 0, 8)
 metadata/asset_id = "car_kit/sedan"
@@ -70,15 +73,7 @@ metadata/population_socket_id = &"parking_west"
 metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
 
-[node name="Visual" parent="SedanWest" instance=ExtResource("sedan")]
-scale = Vector3(1.25, 1.25, 1.25)
-
-[node name="TacticalVolume" type="Node3D" parent="SedanWest"]
-position = Vector3(0, 0.9, 0)
-metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
-metadata/round_volume = false
-
-[node name="SuvMid" type="Node3D" parent="."]
+[node name="SuvMid" parent="." instance=ExtResource("object_suv")]
 visible = false
 position = Vector3(11, 0, 8)
 metadata/asset_id = "car_kit/suv"
@@ -86,26 +81,10 @@ metadata/population_socket_id = &"parking_mid"
 metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
 
-[node name="Visual" parent="SuvMid" instance=ExtResource("suv")]
-scale = Vector3(1.25, 1.25, 1.25)
-
-[node name="TacticalVolume" type="Node3D" parent="SuvMid"]
-position = Vector3(0, 1, 0)
-metadata/solid_size = Vector3(1.875, 2, 4.0625)
-metadata/round_volume = false
-
-[node name="TaxiEast" type="Node3D" parent="."]
+[node name="TaxiEast" parent="." instance=ExtResource("object_taxi")]
 visible = false
 position = Vector3(26, 0, 8)
 metadata/asset_id = "car_kit/taxi"
 metadata/population_socket_id = &"parking_east"
 metadata/population_yaw_turns = PackedInt32Array(0, 2)
 metadata/population_region_id = &"visitor_parking"
-
-[node name="Visual" parent="TaxiEast" instance=ExtResource("taxi")]
-scale = Vector3(1.25, 1.25, 1.25)
-
-[node name="TacticalVolume" type="Node3D" parent="TaxiEast"]
-position = Vector3(0, 0.9, 0)
-metadata/solid_size = Vector3(1.875, 1.8, 4.0625)
-metadata/round_volume = false
