@@ -183,6 +183,16 @@ func _apply_authored_tile_hazards() -> void:
 	if not is_instance_valid(battle_root): return
 	for node in get_tree().get_nodes_in_group("tile_hazards"):
 		if not battle_root.is_ancestor_of(node): continue
+		# Plot scenery is presentation only, even when a reused component carries
+		# a hazard marker over a valid tactical cell.
+		var ancestor := node.get_parent()
+		var scenery := false
+		while ancestor != null and ancestor != battle_root:
+			if ancestor.is_in_group("peripheral_scenery") or ancestor.is_in_group("distant_scenery"):
+				scenery = true
+				break
+			ancestor = ancestor.get_parent()
+		if scenery: continue
 		var definition: ConditionDefinition = node.get("condition") if node is Node3D else null
 		if definition == null: continue
 		var cell := grid_manager.map_data.get_cell(grid_manager.world_to_grid((node as Node3D).global_position))

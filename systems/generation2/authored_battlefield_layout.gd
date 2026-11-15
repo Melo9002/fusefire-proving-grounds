@@ -50,6 +50,15 @@ static func present_resolved(data: MapData, parent: Node3D, cell_size: float, pl
 	var plot_root := plot_scene.instantiate() as Node3D if plot_scene else Node3D.new()
 	plot_root.scale = Vector3.ONE * cell_size
 	parent.add_child(plot_root)
+	# Current plots author these ordinary groups. Local tests and historical
+	# fixtures without them receive empty groups through the same presentation path.
+	for area in ["Tactical", "Peripheral", "Distant"]:
+		if plot_root.get_node_or_null(area) == null:
+			var layer := Node3D.new()
+			layer.name = area
+			plot_root.add_child(layer)
+		plot_root.get_node(area).add_to_group({"Tactical": "tactical_area", "Peripheral": "peripheral_scenery", "Distant": "distant_scenery"}[area])
+	var tactical := plot_root.get_node("Tactical") as Node3D
 	_apply_industrial_atmosphere(world_environment)
 	for placement: Dictionary in resolved.placements:
 		var parcel = parcels.get_definition(StringName(placement.parcel_id))
@@ -57,8 +66,9 @@ static func present_resolved(data: MapData, parent: Node3D, cell_size: float, pl
 			return false
 		var root: Node3D = parcel.instantiate()
 		parcel.apply_population(root, placement.get("population", []))
-		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, data.map_size, cell_size)
-		parent.add_child(root)
+		# The plot already applies cell_size; parcel-local units must not scale twice.
+		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, data.map_size)
+		tactical.add_child(root)
 	return true
 
 static func _apply_industrial_atmosphere(world_environment: WorldEnvironment) -> void:

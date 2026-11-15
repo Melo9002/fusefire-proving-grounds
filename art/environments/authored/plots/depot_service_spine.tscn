@@ -21,18 +21,25 @@ size = Vector2(32, 4)
 
 [node name="DepotServiceSpine" type="Node3D"]
 
-[node name="Surroundings" type="MeshInstance3D" parent="."]
+[node name="Tactical" type="Node3D" parent="." groups=["tactical_area"]]
+
+[node name="Peripheral" type="Node3D" parent="." groups=["peripheral_scenery"]]
+
+[node name="Distant" type="Node3D" parent="." groups=["distant_scenery"]]
+
+
+[node name="Surroundings" type="MeshInstance3D" parent="Peripheral"]
 position = Vector3(0, -0.065, 0)
 mesh = SubResource("ground")
 
-[node name="ServiceRoad" parent="." instance=ExtResource("road")]
+[node name="ServiceRoad" parent="Peripheral" instance=ExtResource("road")]
 position = Vector3(-17.5, 0.005, -25)
 rotation = Vector3(0, -1.5707963, 0)
 
-[node name="ProcessApproach" type="MeshInstance3D" parent="."]
+[node name="ProcessApproach" type="MeshInstance3D" parent="Tactical"]
 position = Vector3(1, 0.003, 1)
 mesh = SubResource("aisle")
 
-[node name="FarLandmark" parent="." instance=ExtResource("landmark")]
+[node name="FarLandmark" parent="Distant" instance=ExtResource("landmark")]
 position = Vector3(29, 0, 28)
 scale = Vector3(6, 6, 6)

@@ -23,40 +23,47 @@ size = Vector3(32, 0.03, 1)
 
 [node name="FleetStationNorth" type="Node3D" unique_id=1968209105]
 
-[node name="Surroundings" type="MeshInstance3D" parent="." unique_id=750159067]
+[node name="Tactical" type="Node3D" parent="." groups=["tactical_area"]]
+
+[node name="Peripheral" type="Node3D" parent="." groups=["peripheral_scenery"]]
+
+[node name="Distant" type="Node3D" parent="." groups=["distant_scenery"]]
+
+
+[node name="Surroundings" type="MeshInstance3D" parent="Peripheral" unique_id=750159067]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0)
 mesh = SubResource("BoxMesh_54inq")
 
-[node name="RoadStrip85" type="Node3D" parent="." unique_id=297968161 instance=ExtResource("1_v0wsj")]
+[node name="RoadStrip85" type="Node3D" parent="Peripheral" unique_id=297968161 instance=ExtResource("1_v0wsj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.005, -17.5)
 metadata/asset_id = "city_kit_roads/road-straight"
 metadata/calibrated_scale = 5.0
 metadata/tile_pitch = 5.0
 
-[node name="FrontSidewalk" type="MeshInstance3D" parent="." unique_id=202307205]
+[node name="FrontSidewalk" type="MeshInstance3D" parent="Tactical" unique_id=202307205]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, -14.5)
 mesh = SubResource("BoxMesh_e3v7o")
 
-[node name="OuterStorage" type="Node3D" parent="." unique_id=40825617 instance=ExtResource("2_hwkcd")]
+[node name="OuterStorage" type="Node3D" parent="Peripheral" unique_id=40825617 instance=ExtResource("2_hwkcd")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -27, 0, -7)
 metadata/asset_id = "city_kit_industrial/shipping-container-b"
 
-[node name="OuterStorage2" type="Node3D" parent="." unique_id=74172137 instance=ExtResource("3_f6ues")]
+[node name="OuterStorage2" type="Node3D" parent="Peripheral" unique_id=74172137 instance=ExtResource("3_f6ues")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -27, 2.3, -7)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
 
-[node name="DistantWorkshop" type="Node3D" parent="." unique_id=1365885570 instance=ExtResource("4_lf00l")]
+[node name="DistantWorkshop" type="Node3D" parent="Distant" unique_id=1365885570 instance=ExtResource("4_lf00l")]
 transform = Transform3D(-0.9, 0, -7.86805e-08, 0, 0.9, 0, 7.86805e-08, 0, -0.9, -27, 0, -29)
 metadata/asset_id = "city_kit_industrial/building-i"
 
-[node name="OuterStorage3" type="Node3D" parent="." unique_id=2064273502 instance=ExtResource("2_hwkcd")]
+[node name="OuterStorage3" type="Node3D" parent="Peripheral" unique_id=2064273502 instance=ExtResource("2_hwkcd")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 27, 0, -7)
 metadata/asset_id = "city_kit_industrial/shipping-container-b"
 
-[node name="OuterStorage4" type="Node3D" parent="." unique_id=399787142 instance=ExtResource("3_f6ues")]
+[node name="OuterStorage4" type="Node3D" parent="Peripheral" unique_id=399787142 instance=ExtResource("3_f6ues")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 27, 2.3, -7)
 metadata/asset_id = "city_kit_industrial/shipping-container-a"
 
-[node name="DistantWorkshop2" type="Node3D" parent="." unique_id=872335281 instance=ExtResource("4_lf00l")]
+[node name="DistantWorkshop2" type="Node3D" parent="Distant" unique_id=872335281 instance=ExtResource("4_lf00l")]
 transform = Transform3D(-0.9, 0, -7.86805e-08, 0, 0.9, 0, 7.86805e-08, 0, -0.9, 27, 0, -29)
 metadata/asset_id = "city_kit_industrial/building-i"
