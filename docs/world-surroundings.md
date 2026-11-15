@@ -58,3 +58,7 @@ The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains t
 ## Step 3 — Depot continuity proof
 
 Both Depot layouts now use connected neighboring yards, extended roads, a first low-detail distant placeholder and a yellow dashed playable perimeter. These are ordinary scene instances under the existing three groups. The owner accepted the marking for prototype use. [Content locations, validation and remaining scope](quality/depot-continuity-2026-11-15.md).
+
+## Step 4 — Readable Depot boundary
+
+Depot now combines its yellow dashed limit with short low fence runs, corner cones and BATTLE LIMIT ground labels at open road crossings. The cues stay outside playable cells; roads and entrances remain open. [Editable scenes and validation](quality/depot-boundary-readability-2026-11-15.md). The next step is improving the distant view; the other sites receive this pattern in the later rollout.

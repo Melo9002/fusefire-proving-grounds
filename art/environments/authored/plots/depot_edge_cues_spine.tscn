@@ -1,0 +1,177 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="1_oaxj6"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/construction-cone.glb" id="2_g25jc"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/construction-fence.glb" id="3_f03yy"]
+
+[node name="DepotBoundaryCuesSpine" type="Node3D" unique_id=1774481707]
+
+[node name="Corners" type="Node3D" parent="." unique_id=1411418066]
+
+[node name="Corner0" type="Node3D" parent="Corners" unique_id=1317097397]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, -20.65, 0.01, -20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-cone.glb"
+
+[node name="construction-cone2" type="Node3D" parent="Corners/Corner0" unique_id=1973407227 instance=ExtResource("2_g25jc")]
+
+[node name="Corner1" type="Node3D" parent="Corners" unique_id=635491366]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, -20.65, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-cone.glb"
+
+[node name="construction-cone2" type="Node3D" parent="Corners/Corner1" unique_id=1532147469 instance=ExtResource("2_g25jc")]
+
+[node name="Corner2" type="Node3D" parent="Corners" unique_id=899935781]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, -20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-cone.glb"
+
+[node name="construction-cone2" type="Node3D" parent="Corners/Corner2" unique_id=1795420639 instance=ExtResource("2_g25jc")]
+
+[node name="Corner3" type="Node3D" parent="Corners" unique_id=1559824235]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-cone.glb"
+
+[node name="construction-cone2" type="Node3D" parent="Corners/Corner3" unique_id=688158776 instance=ExtResource("2_g25jc")]
+
+[node name="ShortFenceRuns" type="Node3D" parent="." unique_id=372413639]
+
+[node name="East" type="Node3D" parent="ShortFenceRuns" unique_id=733752888]
+
+[node name="Panel00" type="Node3D" parent="ShortFenceRuns/East" unique_id=805327928]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, -6.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel00" unique_id=1612576422 instance=ExtResource("3_f03yy")]
+
+[node name="Panel01" type="Node3D" parent="ShortFenceRuns/East" unique_id=1792865171]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, -4.75)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel01" unique_id=384854728 instance=ExtResource("3_f03yy")]
+
+[node name="Panel02" type="Node3D" parent="ShortFenceRuns/East" unique_id=736915862]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, -2.85)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel02" unique_id=166853278 instance=ExtResource("3_f03yy")]
+
+[node name="Panel03" type="Node3D" parent="ShortFenceRuns/East" unique_id=1499883511]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, -0.95)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel03" unique_id=533482612 instance=ExtResource("3_f03yy")]
+
+[node name="Panel04" type="Node3D" parent="ShortFenceRuns/East" unique_id=909812612]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, 0.95)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel04" unique_id=482822683 instance=ExtResource("3_f03yy")]
+
+[node name="Panel05" type="Node3D" parent="ShortFenceRuns/East" unique_id=613927211]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, 2.85)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel05" unique_id=130051248 instance=ExtResource("3_f03yy")]
+
+[node name="Panel06" type="Node3D" parent="ShortFenceRuns/East" unique_id=1610702439]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, 4.75)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel06" unique_id=850238471 instance=ExtResource("3_f03yy")]
+
+[node name="Panel07" type="Node3D" parent="ShortFenceRuns/East" unique_id=1057479399]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 20.65, 0.01, 6.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/East/Panel07" unique_id=18560919 instance=ExtResource("3_f03yy")]
+
+[node name="South" type="Node3D" parent="ShortFenceRuns" unique_id=465092953]
+
+[node name="Panel00" type="Node3D" parent="ShortFenceRuns/South" unique_id=1140730500]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, -6.65, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel00" unique_id=2044928024 instance=ExtResource("3_f03yy")]
+
+[node name="Panel01" type="Node3D" parent="ShortFenceRuns/South" unique_id=989430361]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, -4.75, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel01" unique_id=1260441129 instance=ExtResource("3_f03yy")]
+
+[node name="Panel02" type="Node3D" parent="ShortFenceRuns/South" unique_id=1993233754]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, -2.85, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel02" unique_id=160609538 instance=ExtResource("3_f03yy")]
+
+[node name="Panel03" type="Node3D" parent="ShortFenceRuns/South" unique_id=2006394012]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, -0.95, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel03" unique_id=1315396071 instance=ExtResource("3_f03yy")]
+
+[node name="Panel04" type="Node3D" parent="ShortFenceRuns/South" unique_id=714269133]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, 0.95, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel04" unique_id=2033112487 instance=ExtResource("3_f03yy")]
+
+[node name="Panel05" type="Node3D" parent="ShortFenceRuns/South" unique_id=1936386927]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, 2.85, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel05" unique_id=183524063 instance=ExtResource("3_f03yy")]
+
+[node name="Panel06" type="Node3D" parent="ShortFenceRuns/South" unique_id=320379039]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, 4.75, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel06" unique_id=1752208645 instance=ExtResource("3_f03yy")]
+
+[node name="Panel07" type="Node3D" parent="ShortFenceRuns/South" unique_id=585189656]
+transform = Transform3D(-2.1855695e-07, 0, 5, 0, 5, 0, -5, 0, -2.1855695e-07, 6.65, 0.01, 20.65)
+script = ExtResource("1_oaxj6")
+metadata/asset_path = "res://art/environments/kenney/city_kit_roads/models/construction-fence.glb"
+
+[node name="construction-fence2" type="Node3D" parent="ShortFenceRuns/South/Panel07" unique_id=454479970 instance=ExtResource("3_f03yy")]
+
+[node name="OpenRoadLabels" type="Node3D" parent="." unique_id=1828600422]
+
+[node name="North" type="Label3D" parent="OpenRoadLabels" unique_id=159423282]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -17.5, 0.18, -23)
+pixel_size = 0.015
+modulate = Color(0.98, 0.85, 0.43, 1)
+outline_modulate = Color(0.12, 0.14, 0.14, 1)
+text = "BATTLE
+LIMIT"
+font_size = 64
+outline_size = 6
+
+[node name="South" type="Label3D" parent="OpenRoadLabels" unique_id=1065727383]
+transform = Transform3D(-1, 8.742278e-08, 3.821371e-15, 0, -4.371139e-08, 1, 8.742278e-08, 1, 4.371139e-08, -17.5, 0.18, 23)
+pixel_size = 0.015
+modulate = Color(0.98, 0.85, 0.43, 1)
+outline_modulate = Color(0.12, 0.14, 0.14, 1)
+text = "BATTLE
+LIMIT"
+font_size = 64
+outline_size = 6

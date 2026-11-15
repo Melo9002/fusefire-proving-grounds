@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://art/environments/authored/plots/depot_playable_boundary.tscn" id="boundary"]
 [ext_resource type="PackedScene" path="res://art/environments/authored/plots/depot_distant_blocks.tscn" id="distant_blocks"]
 
+[ext_resource type="PackedScene" path="res://art/environments/authored/plots/depot_edge_cues_crossing.tscn" id="edge_cues"]
+
 [sub_resource type="StandardMaterial3D" id="periphery"]
 albedo_color = Color(0.19, 0.225, 0.21, 1)
 roughness = 0.94
@@ -59,3 +61,5 @@ position = Vector3(60, 0.005, 14.5)
 [node name="PlayableBoundary" parent="Tactical" instance=ExtResource("boundary")]
 
 [node name="BackgroundBlocks" parent="Distant" instance=ExtResource("distant_blocks")]
+
+[node name="BoundaryCues" parent="Peripheral" instance=ExtResource("edge_cues")]
