@@ -10,7 +10,7 @@ const SlotContract = preload("res://systems/generation2/parcel_slot_contract.gd"
 const COMPILER_REVISION := 3
 const LEGACY_COMPILER_REVISION := 1
 
-static func resolve(catalog, map_seed: int, population_enabled: bool = true, requested: Dictionary = {}) -> Dictionary:
+static func resolve(catalog, map_seed: int, population_enabled: bool = true, requested: Dictionary = {}, parcels = ParcelCatalog) -> Dictionary:
 	var plot: Dictionary = catalog.get_definition(StringName(requested.plot_id)) if requested.has("plot_id") else catalog.choose(map_seed)
 	if plot.is_empty():
 		return _failure(map_seed, population_enabled, "UNKNOWN_PLOT", String(requested.get("plot_id", "")))
@@ -56,7 +56,7 @@ static func resolve(catalog, map_seed: int, population_enabled: bool = true, req
 		if requested.has("plot_id") and (requested_placement.is_empty() or requested_placement.get("origin") != slot.origin or requested_placement.get("rotation") != slot.rotation):
 			result.errors.append(_error("INVALID_RECORDED_TRANSFORM", String(slot.slot_id)))
 			continue
-		var parcel = _parcel_for_slot(slot, map_seed, requested_placement)
+		var parcel = _parcel_for_slot(slot, map_seed, requested_placement, parcels)
 		if parcel == null:
 			result.errors.append(_error("MISSING_COMPATIBLE_PARCEL", String(slot.slot_id)))
 			continue
@@ -83,6 +83,9 @@ static func resolve(catalog, map_seed: int, population_enabled: bool = true, req
 static func _resolve_population(parcel, map_seed: int, requested: Dictionary, population_enabled: bool, instance_id: String, scene_root: Node3D = null) -> Dictionary:
 	var sockets: Array[Dictionary] = parcel.population_sockets(scene_root) if scene_root else parcel.population_sockets()
 	var regions: Array = parcel.population_regions(scene_root) if scene_root else parcel.population_regions()
+	return resolve_population_data(regions, sockets, map_seed, requested, population_enabled, instance_id, String(parcel.parcel_id))
+
+static func resolve_population_data(regions: Array, sockets: Array[Dictionary], map_seed: int, requested: Dictionary, population_enabled: bool, instance_id: String, parcel_id: String) -> Dictionary:
 	if sockets.is_empty():
 		if not requested.get("population", []).is_empty():
 			return {"error": "INVALID_POPULATION_CHOICES"}
@@ -103,8 +106,12 @@ static func _resolve_population(parcel, map_seed: int, requested: Dictionary, po
 		if candidates.size() < region.min_count or candidates.is_empty():
 			return {"error": "INSUFFICIENT_POPULATION_SOCKETS"}
 		var maximum := mini(region.max_count, candidates.size())
-		var scope := [map_seed, instance_id, String(parcel.parcel_id), String(region.region_id)]
+		var scope := [map_seed, instance_id, parcel_id, String(region.region_id)]
 		var count: int = region.min_count + _stable_roll(scope + ["population_count_v1"]) % (maximum - region.min_count + 1)
+		if region.occupancy_percent >= 0:
+			count = region.min_count
+			for optional in range(maximum - region.min_count):
+				if _stable_roll(scope + [optional, "painted_occupancy_v1"]) % 100 < region.occupancy_percent: count += 1
 		var ranks := {}
 		for candidate in candidates:
 			ranks[candidate.socket_id] = _stable_roll(scope + [String(candidate.socket_id), "population_socket_v1"])
@@ -155,18 +162,18 @@ static func _population_valid(regions: Array, sockets: Array[Dictionary], choice
 static func is_valid(resolved: Dictionary) -> bool:
 	return resolved.has("errors") and resolved.errors.is_empty()
 
-static func _parcel_for_slot(slot: Dictionary, map_seed: int, requested: Dictionary):
+static func _parcel_for_slot(slot: Dictionary, map_seed: int, requested: Dictionary, parcels = ParcelCatalog):
 	if not requested.is_empty():
-		var parcel = ParcelCatalog.get_definition(StringName(requested.get("parcel_id", &"")))
+		var parcel = parcels.get_definition(StringName(requested.get("parcel_id", &"")))
 		if parcel == null or parcel.revision != int(requested.get("parcel_revision", 0)):
 			return null
 		return parcel
 	if slot.has("preferred_parcel_id"):
-		return ParcelCatalog.get_definition(slot.preferred_parcel_id)
+		return parcels.get_definition(slot.preferred_parcel_id)
 	if slot.role == ParcelCatalog.LOADING_SERVICE:
 		# Plot identity and content variation use different seed bits.
-		return ParcelCatalog.choose(slot.role, slot.size, floori(map_seed / 2.0))
-	var candidates := ParcelCatalog.candidates(slot.role, slot.size)
+		return parcels.choose(slot.role, slot.size, floori(map_seed / 2.0))
+	var candidates := parcels.candidates(slot.role, slot.size)
 	return candidates[0] if not candidates.is_empty() else null
 
 static func _failure(map_seed: int, population_enabled: bool, code: String, detail: String) -> Dictionary:

@@ -47,7 +47,8 @@ func _build_battle_end_buttons() -> void:
 	container.add_child(_save_status)
 	setup_button = Button.new()
 	setup_button.name = "MatchSetupButton"
-	setup_button.text = "RETURN TO MATCH SETUP"
+	var level := _find_battle_level()
+	setup_button.text = level.return_button_text() if level else "RETURN TO MATCH SETUP"
 	setup_button.visible = false
 	setup_button.pressed.connect(_on_setup_pressed)
 	container.add_child(setup_button)

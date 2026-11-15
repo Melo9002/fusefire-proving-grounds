@@ -18,6 +18,9 @@ static func regions(root: Node) -> Array:
 		region.local_rect = bay.rect
 		region.allowed_asset_ids = assets
 		region.max_count = 1
+		region.occupancy_percent = int(bay.get("occupancy_percent", -1))
+		if region.occupancy_percent == 100: region.min_count = 1
+		if region.occupancy_percent == 0: region.max_count = 0
 		result.append(region)
 	return result
 

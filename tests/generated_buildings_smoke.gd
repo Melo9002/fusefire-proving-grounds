@@ -24,7 +24,16 @@ func _run() -> void:
 				_check_building(data, graph, building)
 
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(2, 2, true, 12345, 1, Vector2i(32, 24))
+	# Explicit historical fixture: this suite protects generated structure geometry.
+	var config := BattleConfiguration.new()
+	config.player_count = 2
+	config.enemy_count = 2
+	config.ally_count = 1
+	config.generated_map = true
+	config.battle_seed = 12345
+	config.map_size = Vector2i(32,24)
+	config.select_battlefield(BattlefieldCatalog.GENERATED_COVER)
+	level.configure_battle(config)
 	root.add_child(level)
 	await create_timer(0.2).timeout
 	var terrain := level.get_node("GeneratedTerrain")
@@ -35,6 +44,11 @@ func _run() -> void:
 		check(roof != null and roof.collision_layer == 2, "Generated roofs expose a floor-click surface")
 	var battle := level.battle_controller
 	var grid := battle.grid_manager
+	check(not grid.map_data.buildings.is_empty(), "The historical fixture contains a building to exercise stairs and ladders")
+	if grid.map_data.buildings.is_empty():
+		level.free()
+		quit(1)
+		return
 	var building := grid.map_data.buildings[0]
 	for position in building.stair_cells + building.upper_cells:
 		var point := grid.map_data.get_cell(position).world_position

@@ -57,7 +57,7 @@ func _build_interface() -> void:
 	row.add_child(camera_button)
 	var setup_button := Button.new()
 	setup_button.name = "ReplaySetupButton"
-	setup_button.text = "RETURN TO SETUP"
+	setup_button.text = replay_player.level.return_button_text("RETURN TO SETUP")
 	setup_button.pressed.connect(replay_player.level.return_to_match_setup)
 	row.add_child(setup_button)
 

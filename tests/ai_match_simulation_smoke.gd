@@ -10,6 +10,7 @@ const MISSION_KINDS: Array[MissionObjectiveDefinition.Kind] = [
 	MissionObjectiveDefinition.Kind.SURVIVE,
 	MissionObjectiveDefinition.Kind.EXTRACT,
 	MissionObjectiveDefinition.Kind.ENEMY_EVACUATION,
+	MissionObjectiveDefinition.Kind.INTERACT_TERMINAL,
 ]
 
 func _initialize() -> void:
@@ -27,7 +28,6 @@ func _run() -> void:
 	var batch := AIMatchSimulationBatch.new()
 	for index in match_count:
 		var mission_kind := MISSION_KINDS[(mission_offset + index) % MISSION_KINDS.size()]
-		var dimensions := FlatMapGenerator.MAP_SIZES[index % FlatMapGenerator.MAP_SIZES.size()]
 		batch.add(await simulator.run_match({
 			"seed": first_seed + index,
 			"mission_kind": mission_kind,
@@ -35,7 +35,8 @@ func _run() -> void:
 			"enemy_count": 2,
 			"ally_count": 1 if mission_kind in [MissionObjectiveDefinition.Kind.PROTECT, MissionObjectiveDefinition.Kind.RESCUE] else 0,
 			"include_vip": mission_kind == MissionObjectiveDefinition.Kind.PROTECT,
-			"map_size": dimensions,
+			"battlefield_id": BattlefieldCatalog.SERVICE_DEPOT,
+			"map_size": Generation2.DEPOT_SIZE,
 			"maximum_rounds": 20,
 			"stall_seconds": 4.0,
 			"timeout_seconds": 20.0,

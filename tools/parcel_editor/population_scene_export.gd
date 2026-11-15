@@ -11,8 +11,10 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	var source_errors: PackedStringArray = source.validate()
 	if not source_errors.is_empty():
 		return {"error": "Source parcel contract failed: %s" % "; ".join(source_errors)}
-	var scene_root: Node3D = source.instantiate()
 	var fixed_changed: bool = fixed_draft != null and fixed_draft.placements != fixed_draft.base_placements
+	if draft.fields.is_empty() and not fixed_changed:
+		return {"definition": source, "bay_count": 0, "container_count": 0}
+	var scene_root: Node3D = source.instantiate()
 	if fixed_changed:
 		if fixed_draft.parcel_id != source.parcel_id or fixed_draft.parcel_revision != source.revision:
 			scene_root.free()
@@ -33,20 +35,13 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	if draft.surfaces != current.surfaces:
 		scene_root.free()
 		return {"error": "Draft surfaces no longer match the authored parcel."}
+	var obstacles: Array[AABB] = draft.parking_obstacles(source, scene_root)
+	if not draft.fields.is_empty(): _apply_permission(source, scene_root, draft, obstacles)
 	var sockets: Array[Dictionary] = source.population_sockets(scene_root)
-	for socket in sockets:
-		for turn: int in socket.allowed_yaw_turns:
-			if draft.has_protected_overlap(String(socket.surface_id), Session.socket_bounds_at_turn(socket, turn)):
-				scene_root.free()
-				return {"error": "Protected paint intersects original socket %s. The export preserves original sockets." % socket.socket_id}
 	var has_parking: bool = draft.fields.any(func(field): return field.preset == "parking")
 	var has_containers: bool = draft.fields.any(func(field): return field.preset == "containers")
-	if has_parking and has_containers:
-		scene_root.free()
-		return {"error": "Export one population type at a time. Save the field draft before separating the paint."}
-	var obstacles: Array[AABB] = draft.parking_obstacles(source, scene_root)
 	var bays: Array[Dictionary] = draft.parking_bays(sockets, obstacles, {}, true)
-	if has_parking and bays.is_empty():
+	if has_parking and bays.is_empty() and not sockets.any(func(socket): return socket.asset_id.begins_with("car_kit/")):
 		scene_root.free()
 		return {"error": "No parking bays fit. Expand the parking paint or adjust the aisle."}
 	if has_parking and vehicles.asset_ids().is_empty():
@@ -62,18 +57,22 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 		if not bay.reason.is_empty():
 			scene_root.free()
 			return {"error": "%s: %s. Adjust the draft before exporting." % [bay.id, bay.reason]}
-		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle})
-	if not bays.is_empty():
+		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle, "occupancy_percent": draft.occupancy})
+	if not rules.is_empty():
 		scene_root.set_meta("painted_parking_bays", rules)
 		scene_root.set_meta("parking_population_paint", paint)
 	var container_slots: Array[Dictionary] = []
 	if has_containers:
 		var template := Containers.Library.create(Containers.ASSET)
-		container_slots = Containers.candidates(draft, source, scene_root, sockets, obstacles, template)
+		container_slots = Containers.candidates(draft, source, scene_root, sockets, obstacles + parking_clearance(bays), template)
 		for candidate in container_slots:
 			Containers.add_to_scene(scene_root, template, candidate)
+			var region := scene_root.get_node(String(candidate.socket_id))
+			region.set_meta("occupancy_percent", draft.occupancy)
+			region.set_meta("min_count", 1 if draft.occupancy == 100 else 0)
+			region.set_meta("max_count", 0 if draft.occupancy == 0 else 1)
 		template.free()
-	if bays.is_empty() and container_slots.is_empty() and not fixed_changed:
+	if draft.fields.any(func(field): return field.preset != "protected") and bays.is_empty() and container_slots.is_empty() and sockets.is_empty():
 		scene_root.free()
 		return {"error": "No new positions fit. Ground containers need a clear 3 × 5 area away from existing occupants and the entrance."}
 	if not container_slots.is_empty():
@@ -82,7 +81,14 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 			if field.surface == "ground" and field.preset in ["containers", "protected"]:
 				container_paint.append({"surface": field.surface, "preset": field.preset, "rect": Session.rectangle(field)})
 		scene_root.set_meta("container_population_paint", container_paint)
+	for socket in source.population_sockets(scene_root):
+		for turn in socket.allowed_yaw_turns:
+			var bounds := Session.socket_bounds_at_turn(socket, turn)
+			if obstacles.any(func(other): return bounds.grow(-0.001).intersects(other)):
+				scene_root.free()
+				return {"error": "Population position %s overlaps a fixed object." % socket.socket_id}
 	var signature := [String(source.parcel_id), source.revision, rules, paint, container_slots, scene_root.get_meta("container_population_paint", [])]
+	if not draft.fields.is_empty(): signature.append([draft.fields, draft.occupancy])
 	if fixed_changed:
 		signature.append(fixed_draft.placements)
 		# Derived parts are saved content, not a runtime guess. Include them in
@@ -176,3 +182,40 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 			if graph.calculate_3d_path(start, target).is_empty():
 				return "No tactical route from entrance to aisle %s at rotation %d." % [rect, turn]
 	return ""
+
+static func parking_clearance(bays: Array[Dictionary]) -> Array[AABB]:
+	var result: Array[AABB] = []
+	for bay in bays:
+		if not bay.reason.is_empty(): continue
+		for rect: Rect2i in [bay.rect, bay.aisle]:
+			result.append(AABB(Vector3(rect.position.x - 0.5, bay.level, rect.position.y - 0.5), Vector3(rect.size.x, Session.PARKING_HEADROOM, rect.size.y)))
+	return result
+
+static func _apply_permission(source, root: Node3D, draft, obstacles: Array[AABB]) -> void:
+	var original: Array[Dictionary] = source.population_sockets(root)
+	var has_permission: bool = draft.fields.any(func(field): return field.preset != "protected")
+	var kept: Array[Dictionary] = draft.permitted_sockets(original, obstacles, not has_permission)
+	var ids := {}
+	for socket in kept: ids[String(socket.socket_id)] = true
+	for node in root.find_children("*", "Node", true, false):
+		if is_instance_valid(node) and node.has_meta("population_socket_id") and not ids.has(String(node.get_meta("population_socket_id"))): node.free()
+	if root.has_meta("painted_parking_bays"):
+		var rules: Array = root.get_meta("painted_parking_bays").duplicate(true)
+		rules = rules.filter(func(bay): return ids.has(String(bay.id)))
+		if has_permission:
+			for bay in rules: bay.occupancy_percent = draft.occupancy
+		root.set_meta("painted_parking_bays", rules)
+	var counts := {}
+	for socket in source.population_sockets(root): counts[socket.region_id] = int(counts.get(socket.region_id, 0)) + 1
+	for node in root.find_children("*", "Node", true, false):
+		if not is_instance_valid(node) or not node.has_meta("population_role"): continue
+		var count := int(counts.get(node.get_meta("population_region_id"), 0))
+		if count == 0:
+			node.free()
+		elif has_permission:
+			node.set_meta("occupancy_percent", draft.occupancy)
+			node.set_meta("min_count", count if draft.occupancy == 100 else 0)
+			node.set_meta("max_count", 0 if draft.occupancy == 0 else count)
+		else:
+			node.set_meta("min_count", mini(count, int(node.get_meta("min_count", 0))))
+			node.set_meta("max_count", mini(count, int(node.get_meta("max_count", count))))

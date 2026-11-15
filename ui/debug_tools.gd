@@ -354,7 +354,7 @@ func _update_seed_display() -> void:
 	_seed_label.text = "MATCH SEED: %d   |   MAP: %s%s" % [
 		battle_controller.battle_seed,
 		source,
-		" (%d)" % map_seed if source.begins_with("GENERATED") else "",
+		" (%d)" % map_seed if source.begins_with("GENERATED") or not grid_manager.map_data.content_manifest.is_empty() else "",
 	]
 
 func _copy_battle_seed() -> void:

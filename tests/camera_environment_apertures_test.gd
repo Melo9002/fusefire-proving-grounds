@@ -3,9 +3,11 @@ extends SceneTree
 const Apertures := preload("res://presentation/overlays/environment_camera_apertures.gd")
 const Car := preload("res://art/environments/kenney/car_kit/models/sedan.glb")
 const Catalog := preload("res://systems/generation/battlefield_catalog.gd")
+const Content = preload("res://systems/generation2/local_parcel_content.gd")
 var failures := 0
 
 func _initialize() -> void:
+	if OS.get_environment("FUSEFIRE_TEST_OUTPUT_DIR").is_empty(): OS.set_environment("FUSEFIRE_TEST_OUTPUT_DIR", ProjectSettings.globalize_path("res://.godot/camera-aperture-output"))
 	_run.call_deferred()
 
 func _run() -> void:
@@ -55,7 +57,17 @@ func _run() -> void:
 func _check_catalog_environment(battlefield_id: StringName) -> void:
 	var generated := Node3D.new()
 	root.add_child(generated)
-	var map := Catalog.generate(battlefield_id, Vector2i(32, 24), 17, 1.0)
+	var archived := {}
+	var requested := {}
+	if battlefield_id == Catalog.PARCEL_TEST:
+		archived = Content.archive(AuthoredParcelCatalog.get_definition(AuthoredParcelCatalog.LOADING_YARD_A).scene)
+		_check(not archived.has("error"), "Local parcel aperture check preserves its required source content")
+		if archived.has("error"):
+			generated.free()
+			return
+		requested.local_content = archived.content
+	var map := Catalog.generate(battlefield_id, Vector2i(32, 24), 17, 1.0, requested)
+	_check(map.generation_errors.is_empty(), "%s generates valid content before checking presentation" % battlefield_id)
 	GeneratedTerrainPresenter.build(map, generated, 1.0)
 	var apertures := Apertures.new()
 	apertures.register_environment(generated, null)
@@ -75,6 +87,7 @@ func _check_catalog_environment(battlefield_id: StringName) -> void:
 			break
 	_check(verified, "%s has compatible geometry through the shared environment presenter" % battlefield_id)
 	generated.free()
+	if archived.get("created", false): DirAccess.remove_absolute(Content.snapshot_path(archived.content.snapshot))
 
 func _check(ok: bool, message: String) -> void:
 	if not ok:

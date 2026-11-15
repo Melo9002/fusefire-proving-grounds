@@ -8,7 +8,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.industrial_warehouse = true
+	config.select_battlefield(BattlefieldCatalog.INDUSTRIAL_WAREHOUSE)
 	config.map_size = Vector2i(40, 30)
 	var battle := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 	battle.configure_battle(config)

@@ -23,7 +23,9 @@ func _run() -> void:
 	menu.free()
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	check(config.validate_generation_selection().is_empty(), "The internal Generator 1 fixture remains available to regression scripts")
+	check(config.resolved_battlefield_id() == Catalog.SERVICE_DEPOT and config.validate_generation_selection().is_empty(), "New configurations use the supported current map")
+	config.select_battlefield(Catalog.GENERATED_COVER)
+	check(config.validate_generation_selection().is_empty(), "Explicit historical fixtures remain available to regression scripts")
 	for preset in [1, 2, 99]:
 		config.battlefield_preset = preset as BattleConfiguration.BattlefieldPreset
 		check(not config.validate_generation_selection().is_empty(), "Retired/unknown preset rejects explicitly")

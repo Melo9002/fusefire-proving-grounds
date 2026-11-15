@@ -46,7 +46,14 @@ func _check_data_generation() -> void:
 
 func _check_playable_generated_battle() -> void:
 	var level = load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(5, 5, true, 4242)
+	# This suite deliberately protects the historical generator fixture.
+	var config := BattleConfiguration.new()
+	config.player_count = 5
+	config.enemy_count = 5
+	config.generated_map = true
+	config.battle_seed = 4242
+	config.select_battlefield(BattlefieldCatalog.GENERATED_COVER)
+	level.configure_battle(config)
 	root.add_child(level)
 	await create_timer(0.2).timeout
 	var battle: BattleController = level.battle_controller

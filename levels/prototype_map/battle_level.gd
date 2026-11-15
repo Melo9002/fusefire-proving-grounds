@@ -12,6 +12,8 @@ const BattleConfigurationData := preload("res://systems/battle_configuration.gd"
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const BATTLE_SCENE_PATH := "res://levels/prototype_map/prototype_map.tscn"
+## Runtime-only return route for local authoring tests; never serialized in replay.
+var return_action: Callable
 
 @export var authored_environment: Node3D
 @export var world_environment: WorldEnvironment
@@ -78,18 +80,18 @@ func configure(player_count: int, enemy_count: int, generate_map: bool = false, 
 	config.difficulty = selected_difficulty
 	config.player_commander = selected_player_commander
 	config.enemy_commander = selected_enemy_commander
-	config.refinery = refinery
+	config.select_battlefield(BattlefieldCatalogData.REFINERY if refinery else BattlefieldCatalogData.SERVICE_DEPOT)
 	configure_battle(config)
 
 
 ## Preferred human-readable entry point. The positional configure() wrapper is
 ## retained for existing Prototype 1 scripts and external callers.
 func configure_battle(config: BattleConfigurationData) -> void:
-	config.normalize_rosters()
+	config = config.normalized()
 	_configuration_errors = config.validate_generation_selection()
 	battlefield_preset = config.battlefield_preset
 	battlefield_id = config.resolved_battlefield_id()
-	generated_size = BattlefieldCatalogData.map_size(battlefield_id, config.map_size)
+	generated_size = config.map_size
 	player_unit_count = clampi(config.player_count, 1, 5)
 	enemy_unit_count = clampi(config.enemy_count, 1, 5)
 	allied_unit_count = clampi(config.ally_count, 0, 5)
@@ -121,33 +123,7 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	battle_controller.shield_enabled = shield_enabled
 	battle_controller.overwatch_enabled = overwatch_enabled
 	battle_controller.conditions_enabled = conditions_enabled
-	var normalized := BattleConfigurationData.new()
-	normalized.player_count = player_unit_count
-	normalized.enemy_count = enemy_unit_count
-	normalized.ally_count = allied_unit_count
-	normalized.player_archetypes = player_archetypes.duplicate()
-	normalized.enemy_archetypes = enemy_archetypes.duplicate()
-	normalized.ally_archetypes = ally_archetypes.duplicate()
-	normalized.generated_map = use_generated_map
-	normalized.battlefield_preset = battlefield_preset
-	normalized.battlefield_id = battlefield_id
-	normalized.battle_seed = battle_seed
-	normalized.map_size = generated_size
-	normalized.include_vip = include_vip
-	normalized.vip_behavior = vip_behavior
-	normalized.mission = mission_definition
-	normalized.difficulty = ai_difficulty
-	normalized.player_commander = config.player_commander
-	normalized.enemy_commander = config.enemy_commander
-	normalized.supply_points_enabled = supply_points_enabled
-	normalized.aim_enabled = aim_enabled
-	normalized.shield_enabled = shield_enabled
-	normalized.overwatch_enabled = overwatch_enabled
-	normalized.conditions_enabled = conditions_enabled
-	normalized.tactical_tempo_enabled = tactical_tempo_enabled
-	normalized.content_manifest = requested_content_manifest.duplicate(true)
-	normalized.select_battlefield(battlefield_id)
-	_replay_configuration = normalized.to_replay()
+	_replay_configuration = config.to_replay()
 
 func configure_replay(recording) -> void:
 	pending_replay = recording
@@ -310,6 +286,7 @@ func replay_last_battle() -> void:
 		return
 	get_tree().paused = false
 	var replay_level := load(BATTLE_SCENE_PATH).instantiate() as BattleLevel
+	replay_level.return_action = return_action
 	replay_level.configure_replay(recording)
 	get_tree().root.add_child(replay_level)
 	get_tree().current_scene = replay_level
@@ -317,7 +294,14 @@ func replay_last_battle() -> void:
 
 func return_to_match_setup() -> void:
 	get_tree().paused = false
+	if return_action.is_valid():
+		return_action.call()
+		queue_free()
+		return
 	get_tree().change_scene_to_file(MATCH_SETUP_PATH)
+
+func return_button_text(default_text := "RETURN TO MATCH SETUP") -> String:
+	return "RETURN TO PARCEL EDITOR" if return_action.is_valid() else default_text
 
 func _initialize_objectives() -> void:
 	if mission_definition == null:

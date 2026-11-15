@@ -3,9 +3,10 @@ extends VBoxContainer
 const Session = preload("res://tools/parcel_editor/population_field_draft.gd")
 const Vehicles = preload("res://systems/generation2/parking_vehicle_templates.gd")
 const SceneExport = preload("res://tools/parcel_editor/population_scene_export.gd")
+const TestLayout = preload("res://systems/generation2/parcel_test_layout.gd")
 const Resolver = preload("res://systems/generation2/authored_plot_resolver.gd")
 const Containers = preload("res://tools/parcel_editor/container_field_placements.gd")
-var session = Session.new()
+var session: PopulationFieldDraft = Session.new()
 var surface_picker: OptionButton
 var preset_picker: OptionButton
 enum Tool { INSPECT, DRAW, ERASE, PARKING_ROW }
@@ -36,9 +37,10 @@ var drag_cell: Variant = null
 var _source_sockets: Array[Dictionary] = []
 var _fixed_obstacles: Array[AABB] = []
 var _vehicles = Vehicles.new()
-var _row_preview: Node3D
 var _registered_preview := false
 var compiled_preview: MapData
+var preview_manifest: Dictionary = {}
+var preview_definition
 var _aisle_arrow: MeshInstance3D
 var _field_destination: Label
 var _authored_guides: Node3D
@@ -146,11 +148,14 @@ func setup(editor: Node3D) -> void:
 	_add_button(files, "Save fields", save_fields)
 	_add_button(files, "Load fields", load_fields)
 	options.add_child(files)
+	files.hide()
 	var named_files := HBoxContainer.new()
 	_add_button(named_files, "Save fields as…", _save_fields_as)
 	_add_button(named_files, "Open field draft…", _open_fields)
 	options.add_child(named_files)
+	named_files.hide()
 	_field_destination = _add_label(options, "")
+	_field_destination.hide()
 	export_button = _add_button(options, "Export population scene", export_scene)
 	handoff_steps = _add_label(options, "")
 	handoff_next = _add_button(options, "Next step", _next_handoff_step)
@@ -231,7 +236,7 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 				"containers":
 					guidance.text = "Paint ground cells. New container positions need a clear 3 × 5 area."
 				"equipment":
-					guidance.text = "Paint permission to preview existing equipment sockets. New equipment paint is preview-only."
+					guidance.text = "Paint permission for existing equipment positions. Paint does not create new equipment geometry."
 				_:
 					guidance.text = "Drag to protect cells on the selected floor."
 		Tool.ERASE:
@@ -250,7 +255,7 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 	update_handoff()
 
 func _current_fingerprint() -> String:
-	return JSON.stringify([host.draft.placements, session.fields]).sha256_text()
+	return JSON.stringify([host.draft.placements, session.fields, int(density.value)]).sha256_text()
 
 func export_state() -> String:
 	if _export_fingerprint.is_empty():
@@ -258,39 +263,27 @@ func export_state() -> String:
 	return "Export · current" if _export_fingerprint == _current_fingerprint() else "Export · outdated"
 
 func update_handoff() -> void:
-	var objects_dirty: bool = host.draft.dirty
-	var fields_dirty := has_unsaved_changes()
-	var export_current := not _export_fingerprint.is_empty() and _export_fingerprint == _current_fingerprint()
-	handoff_steps.text = "%s 1. Save both drafts\n%s 2. Export current scene\n○ 3. Review the scene in Godot\n○ 4. Register and test a battle" % ["○" if objects_dirty or fields_dirty else "✓", "✓" if export_current else "○"]
-	if not _export_fingerprint.is_empty() and not export_current:
-		handoff_steps.text += "\nScene changed since export."
-	if objects_dirty:
-		handoff_next.text = "Save object draft"
-	elif fields_dirty:
-		handoff_next.text = "Save field draft"
-	elif export_current:
-		handoff_next.text = "Open folder for Godot review"
-	else:
-		handoff_next.text = "Export current scene"
-	handoff_next.disabled = not export_current and not objects_dirty and not fields_dirty and export_button.disabled
+	var saved: bool = not host.active_session_path.is_empty() and host._unsaved_scopes().is_empty()
+	var previewed := is_instance_valid(_runtime_preview) and not _registered_preview
+	var tested: bool = not host.tested_fingerprint.is_empty() and host.tested_fingerprint == host._session_fingerprint()
+	handoff_steps.text = "%s 1. Save parcel\n%s 2. Preview current content\n%s 3. Test battle" % ["✓" if saved else "○", "✓" if previewed else "○", "✓" if tested else "○"]
+	if not _export_fingerprint.is_empty() and _export_fingerprint != _current_fingerprint(): handoff_steps.text += "\nScene changed since export."
+	handoff_steps.text += "\nLocal tests do not publish changes to normal maps."
+	handoff_next.text = "Save parcel" if not saved else ("Preview" if not previewed else "Test battle")
+	handoff_next.disabled = false
 	host.update_workflow_footer()
 
 func _next_handoff_step() -> void:
-	if host.draft.dirty:
-		host._save_draft()
-	elif has_unsaved_changes():
-		save_fields()
-	elif not _export_fingerprint.is_empty() and _export_fingerprint == _current_fingerprint():
-		export_folder_button.pressed.emit()
-	else:
-		export_scene()
+	if host.active_session_path.is_empty() or not host._unsaved_scopes().is_empty(): host._save_session()
+	elif not is_instance_valid(_runtime_preview): preview()
+	else: host.test_in_battle()
 
 func update_preview_controls() -> void:
 	var has_visual_changes: bool = host.draft.placements != host.draft.base_placements
-	preview_button.disabled = session.fields.is_empty() and _source_sockets.is_empty() and not has_visual_changes
+	preview_button.disabled = _definition == null
 	next_seed_button.disabled = preview_button.disabled and not is_instance_valid(_runtime_preview)
 	registered_preview_button.visible = has_visual_changes
-	registered_preview_button.disabled = _source_sockets.is_empty()
+	registered_preview_button.disabled = _definition == null
 	if is_instance_valid(_runtime_preview):
 		return
 	if has_visual_changes:
@@ -300,7 +293,7 @@ func update_preview_controls() -> void:
 	elif session.fields.is_empty():
 		preview_context.text = "Preview uses the registered rules for this seed."
 	else:
-		preview_context.text = "Preview uses draft paint. Only registered rules appear in battle."
+		preview_context.text = "Draft paint defines movable permission. Preview and Test battle use the same rules."
 
 func begin(definition, scene_root: Node3D) -> void:
 	_definition = definition
@@ -543,7 +536,8 @@ func refresh(message := "") -> void:
 	if not conflict.is_empty():
 		_draw_paint_conflicts(conflict)
 		message = conflict.reason
-	var bays: Array[Dictionary] = session.parking_bays(_source_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {}, start_cell == null)
+	var fitting_sockets := _fitting_sockets()
+	var bays: Array[Dictionary] = session.parking_bays(fitting_sockets, _fixed_obstacles, provisional if provisional.get("preset") == Session.PARKING_ROW else {}, start_cell == null)
 	var fitting := _draw_bays(bays)
 	_update_tools(provisional)
 	_draw_aisle_arrow()
@@ -559,7 +553,7 @@ func refresh(message := "") -> void:
 		if not rejected.is_empty(): status.text += " First rejection: %s." % rejected[0].reason
 	if session.fields.any(func(field): return field.preset == "containers") or provisional.get("preset") == "containers":
 		var template := Containers.Library.create(Containers.ASSET)
-		var report := Containers.inspect(session, _definition, host.displayed_parcel, _source_sockets, _fixed_obstacles, template, provisional)
+		var report := Containers.inspect(session, _definition, host.displayed_parcel, fitting_sockets, _fixed_obstacles + SceneExport.parking_clearance(bays), template, provisional)
 		template.free()
 		_draw_container_fit(report)
 		fit_feedback.text = _container_fit_text(report)
@@ -666,111 +660,62 @@ func _draw_paint_conflicts(conflict: Dictionary) -> void:
 	visual.position = host.displayed_parcel.position
 	overlay.add_child(visual)
 
+func build_current() -> Dictionary:
+	host._finish_object_drag(false)
+	host._finish_library_placement(false)
+	cancel_drag()
+	if not session.fields.is_empty():
+		session.preview_seed = int(seed_input.value)
+		session.occupancy = int(density.value)
+	for record in host.draft.placements:
+		var node := host.displayed_parcel.get_node_or_null(NodePath(record.path)) as Node3D
+		if node and not record.get("removed", false):
+			var issue: String = host._validate_visual_pose(node)
+			if not issue.is_empty(): return {"error": "Placement rejected at %s · %s" % [record.path, issue]}
+	return SceneExport.build(_definition, session, _vehicles, host.draft)
+
 func preview() -> void:
 	clear_preview()
-	sync_draft_context()
-	if session.fields.is_empty():
-		preview_layout(false)
+	var built := build_current()
+	if built.has("error"):
+		preview_context.text = built.error
+		status.text = built.error
+		status.show()
 		return
-	_runtime_preview = host.draft.preview_root(host.displayed_parcel)
-	var map_seed := int(seed_input.value)
-	var candidates := _source_sockets.duplicate()
-	var row_candidates := {}
-	for bay: Dictionary in host.displayed_parcel.get_meta("painted_parking_bays", []):
-		var candidate := _vehicles.candidate(bay, map_seed, session.parcel_id)
-		if not candidate.is_empty():
-			row_candidates[candidate.socket_id] = candidate
-	var draft_bays := {}
-	for bay: Dictionary in session.parking_bays(_source_sockets, _fixed_obstacles, {}, true):
-		if not bay.reason.is_empty(): continue
-		var candidate := _vehicles.candidate(bay, map_seed, session.parcel_id)
-		if not candidate.is_empty():
-			row_candidates[candidate.socket_id] = candidate
-			draft_bays[candidate.socket_id] = true
-			candidates.append(candidate)
-	var container_template: Node3D
-	var container_ids := {}
-	var container_report := {}
-	if session.fields.any(func(field): return field.preset == "containers"):
-		container_template = Containers.Library.create(Containers.ASSET)
-		container_report = Containers.inspect(session, _definition, _runtime_preview, _source_sockets, _fixed_obstacles, container_template)
-		for candidate in container_report.accepted:
-			candidates.append(candidate)
-			container_ids[candidate.socket_id] = candidate
-	var choices: Array[Dictionary] = session.preview(candidates, map_seed, int(density.value), _fixed_obstacles)
-	_definition.apply_population(_runtime_preview, choices)
-	var row_count := 0
-	var container_count := 0
-	for choice in choices:
-		if not draft_bays.has(choice.socket_id) and not container_ids.has(choice.socket_id):
-			continue
-		var candidate: Dictionary = row_candidates.get(choice.socket_id, container_ids.get(choice.socket_id, {}))
-		if candidate.is_empty(): continue
-		if not is_instance_valid(_row_preview):
-			_row_preview = Node3D.new()
-			_row_preview.name = "DraftPopulation"
-			_runtime_preview.add_child(_row_preview)
-		var template: Node3D = candidate.get("template", container_template)
-		var occupant := template.duplicate() as Node3D
-		occupant.name = String(choice.socket_id)
-		occupant.position = candidate.local_position
-		occupant.rotation.y = -(int(candidate.get("heading", 0)) + int(choice.yaw_turns)) * PI * 0.5
-		_row_preview.add_child(occupant)
-		if draft_bays.has(choice.socket_id):
-			row_count += 1
-		if container_ids.has(choice.socket_id):
-			container_count += 1
-	if container_template:
-		container_template.free()
+	preview_definition = built.definition
+	var layout := TestLayout.new(preview_definition)
+	preview_manifest = layout.resolve(int(seed_input.value))
+	if not Resolver.is_valid(preview_manifest):
+		preview_context.text = "Preview rejected · " + str(preview_manifest.errors)
+		return
+	_runtime_preview = preview_definition.instantiate()
+	var choices: Array = preview_manifest.placements[0].population
+	preview_definition.apply_population(_runtime_preview, choices)
 	_present_preview()
 	_update_tools()
-	var excluded := _source_sockets.filter(func(socket): return session.field_excluded_sockets.has(socket.socket_id)).size()
-	status.text = "%d authored sockets + %d row bay%s occupied. %d of %d authored sockets excluded by permission or protection. %d left empty by occupancy, %d conflicts. Seed %d." % [choices.size() - row_count - container_count, row_count, "" if row_count == 1 else "s", excluded, _source_sockets.size(), session.occupancy_skips, session.conflict_count, map_seed]
-	if not container_ids.is_empty() or session.fields.any(func(field): return field.preset == "containers"):
-		status.text += "\nNew containers · %d of %d fitted positions occupied." % [container_count, container_ids.size()]
-		fit_feedback.text = _container_fit_text(container_report)
-		_set_fit_report(container_report)
-	var summary := "Population · %d occupied" % choices.size()
-	if not container_report.is_empty():
-		summary = "Containers · %d of %d new positions occupied" % [container_count, container_ids.size()]
-	elif session.fields.any(func(field): return field.preset == "parking"):
-		summary = "Parking · %d occupied, including %d new positions" % [choices.size(), row_count]
-	preview_context.text = "%s · Seed %d\nCombined with your fixed objects." % [summary, map_seed]
+	var excluded := session.field_excluded_sockets.size()
+	status.text = "%d authored sockets considered. %d excluded by permission/protection. %d occupied placements. %d new parking bays, %d new container positions. Seed %d." % [_source_sockets.size(), excluded, choices.size(), built.bay_count, built.container_count, int(seed_input.value)]
+	var title := "Containers" if session.fields.any(func(field): return field.preset == "containers") else "Population"
+	preview_context.text = "%s · %d occupied · seed %d. Preview, export and Test battle use the same rules. Show guides returns to editing." % [title, choices.size(), int(seed_input.value)]
 	_preview_details = true
 	_result_details.show()
 	status.visible = _result_details.button_pressed
+	update_handoff()
 
 func preview_registered() -> void:
 	clear_preview()
-	preview_layout(true)
-
-func preview_layout(registered: bool) -> void:
-	_registered_preview = registered
-	var map_seed := int(seed_input.value)
-	var scope := String(host.displayed_parcel.get_meta("population_preview_instance", "parcel_editor"))
-	var scene_root: Node3D = null if registered else host.draft.preview_root(host.displayed_parcel)
-	var resolved := Resolver._resolve_population(_definition, map_seed, {}, true, scope, scene_root)
-	if resolved.has("error"):
-		if scene_root: scene_root.free()
-		preview_context.text = String(resolved.error)
+	_registered_preview = true
+	var resolved := TestLayout.new(_definition).resolve(int(seed_input.value))
+	if not Resolver.is_valid(resolved):
+		preview_context.text = "Source preview rejected · " + str(resolved.errors)
 		return
-	if not registered:
-		var sockets: Array[Dictionary] = _definition.population_sockets(scene_root)
-		for choice in resolved.choices:
-			var socket: Dictionary = sockets.filter(func(item): return item.socket_id == choice.socket_id)[0]
-			var bounds := Session.socket_bounds_at_turn(socket, int(choice.get("yaw_turns", 0)))
-			if _fixed_obstacles.any(func(other): return bounds.grow(-0.001).intersects(other)):
-				scene_root.free()
-				preview_context.text = "Draft population overlaps a fixed object at %s. Move the fixed object or paint a different population area." % choice.socket_id
-				return
-	_runtime_preview = _definition.instantiate() if registered else scene_root
-	_definition.apply_population(_runtime_preview, resolved.choices)
+	_runtime_preview = _definition.instantiate()
+	_definition.apply_population(_runtime_preview, resolved.placements[0].population)
 	_present_preview()
-	if registered:
-		overlay.hide()
-	status.text = "Seed %d · %d of %d placements occupied." % [map_seed, resolved.choices.size(), _source_sockets.size()]
+	overlay.hide()
+	status.text = "Source rules · %d occupied · seed %d." % [resolved.placements[0].population.size(), int(seed_input.value)]
 	status.hide()
-	preview_context.text = ("%s preview · " % ("Registered" if registered else "Combined draft")) + status.text + " Show guides restores your editor view."
+	preview_context.text = "Registered preview · " + status.text + " Show guides restores both drafts."
 	update_preview_controls()
 
 func _present_preview() -> void:
@@ -872,6 +817,8 @@ func clear_preview() -> void:
 		host.refresh_tactical_overlay(host.displayed_parcel)
 	_registered_preview = false
 	compiled_preview = null
+	preview_manifest = {}
+	preview_definition = null
 
 func reset_preview() -> void:
 	refresh("Painted guides and empty placements.")
@@ -915,15 +862,7 @@ func _apply_loaded_fields(path: String) -> void:
 
 func export_scene(destination: String = "") -> bool:
 	clear_preview()
-	for record in host.draft.placements:
-		var node := host.displayed_parcel.get_node_or_null(NodePath(record.path)) as Node3D
-		if node and not record.get("removed", false):
-			var issue: String = host._validate_visual_pose(node)
-			if not issue.is_empty():
-				status.text = "Export rejected at %s · %s" % [record.path, issue]
-				return false
-	var source = host.Catalog.get_definition(host.displayed_parcel_id)
-	var result := SceneExport.build(source, session, _vehicles, host.draft)
+	var result := build_current()
 	if result.has("error"):
 		status.text = result.error
 		return false
@@ -945,5 +884,10 @@ func export_scene(destination: String = "") -> bool:
 	export_folder_button.set_meta("folder", last_export_path.get_base_dir())
 	_export_fingerprint = _current_fingerprint()
 	update_handoff()
-	preview_context.text = "Scene exported. Review it in Godot, then register its new ID and revision in AuthoredParcelCatalog. Saved drafts remain available."
+	preview_context.text = "Scene exported for optional Godot review. Test battle uses the same content directly; normal maps remain unchanged."
 	return true
+
+func _fitting_sockets() -> Array[Dictionary]:
+	if session.fields.is_empty(): return _source_sockets
+	var inherit: bool = not session.fields.any(func(field): return field.preset != "protected")
+	return session.permitted_sockets(_source_sockets, _fixed_obstacles, inherit)

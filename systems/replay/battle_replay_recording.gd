@@ -2,6 +2,7 @@ class_name BattleReplayRecording
 extends RefCounted
 
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
+const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
 const SIMULATION_VERSION := "prototype-1.5-action-pipeline"
@@ -31,11 +32,14 @@ func validation_message() -> String:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
 	if configuration.is_empty(): return "Replay has no battle_configuration"
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
-		return "Generator 2 is quarantined; open this recording with the local archived project"
+		return "Archived experimental generator presets/layouts are quarantined; current Generation 2 uses named battlefields"
 	var battlefield_id := StringName(configuration.get("battlefield_id", &""))
-	if BattlefieldCatalogData.uses_population(battlefield_id) \
+	if bool(configuration.get("generated_map", false)) and BattlefieldCatalogData.uses_population(battlefield_id) \
 	and not configuration.get("content_manifest", {}).has("plot_id"):
 		return "Replay is missing the recorded plot and parcel choices"
+	if battlefield_id == BattlefieldCatalogData.PARCEL_TEST:
+		var issue := LocalContent.validate(configuration.get("content_manifest", {}).get("local_content", {}))
+		if not issue.is_empty(): return "Local parcel replay: " + issue
 	if actions.is_empty(): return "Replay has no ordered_records"
 	for index in actions.size():
 		var issue := ReplayRecordTools.validate_action_record(actions[index], schema_version)
@@ -200,7 +204,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"industrial_warehouse": bool(source.get("industrial_warehouse", false)),
 		"refinery_2": bool(source.get("refinery_2", false)),
 		"loading_yard": bool(source.get("loading_yard", false)),
-		"battlefield_id": String(source.get("battlefield_id", BattlefieldCatalogData.GENERATED_COVER)),
+		"battlefield_id": String(BattlefieldCatalogData.id_from_configuration(source)),
 		"content_manifest": _manifest_to_data(source.get("content_manifest", {})),
 	}
 
@@ -236,7 +240,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"industrial_warehouse": bool(data.get("industrial_warehouse", false)),
 		"refinery_2": bool(data.get("refinery_2", false)),
 		"loading_yard": bool(data.get("loading_yard", false)),
-		"battlefield_id": String(data.get("battlefield_id", BattlefieldCatalogData.GENERATED_COVER)),
+		"battlefield_id": String(BattlefieldCatalogData.id_from_configuration(data)),
 		"content_manifest": _manifest_from_data(data.get("content_manifest", {})),
 	}
 
@@ -255,6 +259,7 @@ static func _manifest_to_data(manifest: Dictionary) -> Dictionary:
 	var result := {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
 	if manifest.has("compiler_revision"):
 		result.compiler_revision = manifest.compiler_revision
+	if manifest.get("local_content") is Dictionary: result.local_content = manifest.local_content.duplicate(true)
 	return result
 
 static func _manifest_from_data(manifest: Variant) -> Dictionary:
@@ -274,6 +279,7 @@ static func _manifest_from_data(manifest: Variant) -> Dictionary:
 	if manifest.has("compiler_revision"):
 		var revision: Variant = manifest.compiler_revision
 		result.compiler_revision = int(revision) if revision is float and revision == int(revision) else revision
+	if manifest.get("local_content") is Dictionary: result.local_content = manifest.local_content.duplicate(true)
 	return result
 
 static func _string_array(values: Variant) -> Array[String]:

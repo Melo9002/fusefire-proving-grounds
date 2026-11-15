@@ -82,7 +82,7 @@ func _run() -> void:
 	check(editor.draft.placements == before and panel.session.fields == paint and editor.draft.dirty and panel.has_unsaved_changes(), "Show guides preserves fixed-object and paint drafts")
 	var export_path := "res://.godot/combined_preview_export.tscn"
 	check(panel.export_scene(export_path), "Combined fixed truck and container rules export together: " + panel.status.text)
-	check(panel.handoff_steps.text.contains("✓ 2. Export") and panel.handoff_next.text == "Save object draft", "The handoff records a current export while keeping unsaved drafts visible")
+	check(panel.export_state() == "Export · current" and panel.handoff_steps.text.contains("1. Save parcel") and panel.handoff_next.text == "Save parcel" and editor.draft.dirty, "The handoff keeps export status while directing unsaved edits to one complete save")
 	check(editor.workflow_footer.text.contains("Export · current") and editor.export_path_display.text == ProjectSettings.globalize_path(export_path) and editor.export_actions.visible, "The shared footer exposes current export status and its exact path")
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	check(editor.export_actions.visible and editor.workflow_footer.text.contains("Export · current"), "Export state remains visible while editing objects")
@@ -96,7 +96,7 @@ func _run() -> void:
 			var shape := exported_truck.get_node_or_null("TacticalShapes/" + part) as Node3D
 			check(shape != null and shape.has_meta("solid_size") and shape.get_meta("min_shape_revision", 0) == 3, "Export preserves the reusable truck's current %s shape" % part)
 		check(exported_truck.get_node("TacticalVolume").get_meta("max_shape_revision") == 2, "Export also preserves the truck's historical replay shape")
-		var map := FlatMapGenerator.generate(16, 32, 1.0, 17)
+		var map := TacticalMapBuilder.generate(16, 32, 1.0, 17)
 		reopened.transform = ParcelTransform.scene_transform(Vector2i(16, 32), Vector3i.ZERO, 0, Vector2i(16, 32))
 		var exported := AuthoredParcelDefinition.new(reopened.get_meta("parcel_id"), "Export", Catalog.LOADING_SERVICE, 1, Vector2i(16, 32), scene)
 		exported.apply_population(reopened, [])

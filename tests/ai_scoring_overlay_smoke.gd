@@ -19,7 +19,7 @@ func _run() -> void:
 	level.battle_controller.ai_decision_recorded.connect(_capture_scored_record)
 	var debug_tools := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
 	debug_tools.set_panel_open(true)
-	check(debug_tools._seed_label.text.contains("MATCH SEED: 24104") and debug_tools._seed_label.text.contains("GENERATED_COVER (24104)"), "F3 preserves generated match and map seeds")
+	check(debug_tools._seed_label.text.contains("MATCH SEED: 24104") and debug_tools._seed_label.text.contains("AUTHORED_SERVICE_DEPOT (24104)"), "F3 preserves generated match and map seeds")
 	debug_tools.set_panel_open(false)
 	debug_tools.set_auto_battle(true)
 	for tick in 140:

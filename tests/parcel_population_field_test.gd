@@ -115,7 +115,7 @@ func _run() -> void:
 	panel.density.value = 100
 	panel.preview()
 	check(panel.status.text.begins_with("3 authored sockets"), "Editor preview uses authored parking sockets")
-	check(panel.status.text.contains("4 row bays occupied") and panel.session.fields.size() == 1, "Paint alone derives four new eligible bays without adding a manual row to the draft")
+	check(panel.preview_manifest.placements[0].population.filter(func(choice): return String(choice.socket_id).begins_with("row_bay_")).size() == 4 and panel.session.fields.size() == 1, "Paint alone derives four new eligible bays without adding a manual row to the draft")
 	panel.reset_preview()
 	var vertices: int = panel.overlay.get_child(0).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
 	panel.session.add("ground", "parking", Rect2i(2, 4, 28, 8))
@@ -148,19 +148,19 @@ func _run() -> void:
 	panel.handle_input(event)
 	check(panel.session.fields.size() == 3 and panel.session.fields[-1].preset == Session.PARKING_ROW, "Mouse release commits the row draft")
 	panel.preview()
-	check(panel.status.text.contains("3 authored sockets + 4 row bays occupied"), "100% preview fills four new bays alongside the original three")
-	if is_instance_valid(panel._row_preview):
-		check(panel._row_preview.get_child_count() == 4, "New bays display four calibrated vehicle scene instances")
-		var poses: Array = panel._row_preview.get_children().map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")])
-		panel.preview()
-		check(panel._row_preview.get_children().map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")]) == poses, "Same preview seed reproduces model and pose")
+	check(panel.preview_manifest.placements[0].population.size() == 7, "100% preview fills four new bays alongside the original three")
+	var row_cars: Array = panel._runtime_preview.get_children().filter(func(node): return String(node.name).begins_with("Car_row_bay_"))
+	check(row_cars.size() == 4, "The runtime-rule preview creates all four calibrated vehicle instances")
+	var poses: Array = row_cars.map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")])
+	panel.preview()
+	check(panel._runtime_preview.get_children().filter(func(node): return String(node.name).begins_with("Car_row_bay_")).map(func(node): return [node.position, node.rotation.y, node.get_meta("asset_id")]) == poses, "Same runtime preview seed reproduces models and poses")
 	panel.density.value = 0
 	panel.preview()
-	check(not is_instance_valid(panel._row_preview), "0% occupancy keeps empty outlines without vehicles")
+	check(panel.preview_manifest.placements[0].population.is_empty(), "0% occupancy keeps the same empty guides in preview and runtime rules")
 	_check_export(editor)
 	panel.session.add("ground", "protected", Rect2i(2, 4, 28, 8))
 	panel.preview()
-	check(panel.status.text.contains("3 of 3 authored sockets excluded by permission or protection"), "Preview explains why the source cars disappeared")
+	check(not is_instance_valid(panel._runtime_preview) and panel.preview_context.text.contains("protected"), "A fully protected manual parking row rejects clearly without activating a misleading preview")
 	editor.free()
 	print("Population fields: %d failure(s)" % failures)
 	quit(1 if failures else 0)
@@ -204,7 +204,11 @@ func _check_export(editor) -> void:
 	check(not panel.export_scene(path), "Scene export rejects an unresolved protected bay")
 	panel.session.undo()
 	panel.session.add("ground", "protected", Rect2i(5, 6, 1, 1))
-	check(not panel.export_scene(path) and panel.status.text.contains("original socket"), "Export rejects protected paint crossing an original socket it preserves")
+	check(panel.export_scene(path), "Protected paint excludes an original position in both export and preview")
+	var protected_scene := ResourceLoader.load(path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+	var protected_root := protected_scene.instantiate() as Node3D
+	check(not protected_root.has_node("SedanWest"), "The protected source car guide does not return when the export is reopened")
+	protected_root.free()
 	panel.session.undo()
 	var saved: bool = panel.export_scene(path)
 	check(saved, "Editor exports its fully validated parking scene: %s" % panel.status.text)
@@ -222,6 +226,16 @@ func _check_export(editor) -> void:
 	var car := scene_root.get_node_or_null("Car_row_bay_ground_13_6") as Node3D
 	check(car != null and car.visible and car.get_node_or_null("Visual") != null and car.get_node_or_null("TacticalVolume") != null, "Applying the resolved seed choice creates the calibrated imported scene and tactical volume")
 	scene_root.free()
+	var empty_resolved := Resolver._resolve_population(exported, 18, {}, true, "export-test")
+	check(not empty_resolved.has("error") and empty_resolved.choices.is_empty(), "The exported 0% rule really remains empty at runtime")
+	panel.density.value = 100
+	check(panel.export_scene(path), "Export the 100% version for occupied geometry and replay checks")
+	scene = ResourceLoader.load(path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+	var full_root := scene.instantiate() as Node3D
+	var full_definition := AuthoredParcelDefinition.new(full_root.get_meta("parcel_id"), "Full export", Catalog.URBAN_FRONTAGE, 1, Vector2i(32, 32), scene)
+	full_root.free()
+	check(full_definition.parcel_id != exported.parcel_id, "Changing occupancy creates a different content identity")
+	exported = full_definition
 	var resolved := Resolver._resolve_population(exported, 18, {}, true, "export-test")
 	check(not resolved.has("error") and resolved.choices.any(func(choice): return String(choice.socket_id).begins_with("row_bay_")), "Existing runtime population resolver accepts exported bays")
 	var recording := Recording.new()
@@ -236,8 +250,8 @@ func _check_export(editor) -> void:
 	var pose := ParcelTransform.scene_transform(Vector2i(32, 32), Vector3i.ZERO, 0, Vector2i(32, 32))
 	occupied.transform = pose
 	empty.transform = pose
-	var full_map := FlatMapGenerator.generate(32, 32, 1.0, 18)
-	var empty_map := FlatMapGenerator.generate(32, 32, 1.0, 18)
+	var full_map := TacticalMapBuilder.generate(32, 32, 1.0, 18)
+	var empty_map := TacticalMapBuilder.generate(32, 32, 1.0, 18)
 	Compiler.compile(occupied, full_map, 1.0)
 	Compiler.compile(empty, empty_map, 1.0)
 	check(exported.population_sockets(empty).is_empty(), "Population-off removes every exported vehicle")

@@ -7,7 +7,7 @@ const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.
 const DeploymentRepair = preload("res://systems/generation2/authored_deployment_repair.gd")
 const SlotContract = preload("res://systems/generation2/parcel_slot_contract.gd")
 
-static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String, extra_ally_slots: int = 0) -> MapData:
+static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String, extra_ally_slots: int = 0, parcels = ParcelCatalog) -> MapData:
 	var size: Vector2i = resolved.get("map_size", Vector2i(40, 40))
 	var data := TacticalMapBuilder.generate(size.x, size.y, cell_size, int(resolved.get("seed", map_seed)), 5, extra_ally_slots)
 	data.source_kind = source_kind
@@ -18,7 +18,7 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 	var interfaces: Array[Dictionary] = []
 	var precise_shot_bounds := int(resolved.compiler_revision) != Resolver.LEGACY_COMPILER_REVISION
 	for placement: Dictionary in resolved.placements:
-		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
+		var parcel = parcels.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
 			data.generation_errors.append({"code": "STALE_PARCEL_DEPENDENCY", "detail": String(placement.parcel_id)})
 			continue
@@ -43,16 +43,16 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		data.generation_errors.append({"code": "UNSATISFIABLE_DEPLOYMENT", "detail": "No connected stopping cells remain in a required deployment column"})
 	return data
 
-static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene, world_environment: WorldEnvironment = null) -> bool:
+static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene, world_environment: WorldEnvironment = null, parcels = ParcelCatalog) -> bool:
 	var resolved := data.content_manifest
 	if not data.generation_errors.is_empty() or not Resolver.is_valid(resolved):
 		return false
-	var plot_root := plot_scene.instantiate() as Node3D
+	var plot_root := plot_scene.instantiate() as Node3D if plot_scene else Node3D.new()
 	plot_root.scale = Vector3.ONE * cell_size
 	parent.add_child(plot_root)
 	_apply_industrial_atmosphere(world_environment)
 	for placement: Dictionary in resolved.placements:
-		var parcel = ParcelCatalog.get_definition(StringName(placement.parcel_id))
+		var parcel = parcels.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
 			return false
 		var root: Node3D = parcel.instantiate()

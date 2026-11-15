@@ -52,7 +52,7 @@ func _check_generated_map() -> void:
 	var tools := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
 	var inspector = tools._map_inspector
 	var summary := "\n".join(inspector.get_map_summary())
-	check(summary.contains("generated") and summary.contains("24x20") and summary.contains("seed 24680"), "Generated metadata reports map kind, dimensions, and reproducible seed")
+	check(summary.contains("authored_service_depot") and summary.contains("40x40") and summary.contains("seed 24680"), "Generated metadata reports map kind, dimensions, and reproducible seed")
 	check(level.battle_controller.grid_manager.map_data.zones.size() >= 2, "Generated inspector can enumerate deployment zones")
 	level.queue_free()
 	await process_frame

@@ -118,3 +118,30 @@ Retired map-specific suites are preserved in the outside-project quarantine reco
 `.github/workflows/ironclad-smoke.yml` runs the existing smoke tier on pushes and pull requests targeting `main`. The Windows job downloads the official Godot 4.7.2 stable archive from `godotengine/godot-builds`, verifies its pinned SHA-256, and passes the extracted executable directly to this runner. It has read-only repository permissions and uploads only `artifacts/test-results/` when the job fails.
 
 This workflow has been validated locally for structure, paths, engine version and runner behavior. Its first GitHub-hosted execution still requires a future push or pull request.
+
+
+## Audit follow-up coverage — 2026-11-15
+
+- `parcel_session_file_test.gd`: complete object/field save/open, overwrite, stale payload rejection and failure recovery.
+- `parcel_population_runtime_parity_test.gd`: mixed parking/container paint across densities 0/65/100 and seeds 17/18; preview and runtime accepted choices and tactical geometry agree. Protection-only edits can intentionally exclude every position.
+- `parcel_test_content_test.gd` and `parcel_editor_handoff_test.gd`: immutable local scene dependencies, explicit unavailable/changed-content rejection, Save/Open → Preview → Test battle → saved replay → return with edits preserved.
+- `battle_configuration_test.gd`: canonical named selection, legacy-input decoding, normalization and historical feature flags.
+- `current_mission_replay_matrix_test.gd`: 16 validated starts/replays covering eight mission kinds on both Depot plots. This is bounded initialization and real-action reconstruction coverage, not a full AI victory matrix.
+- `retired_tactical_metadata_test.gd`: obsolete absolute-coordinate metadata rejects before partial compilation; current relative deck/ladder contracts remain valid.
+
+Historical geometry suites explicitly request their legacy fixture IDs rather than relying on the default battle selection. Generic empty-grid parcel tests use TacticalMapBuilder directly. See [fixture classification](../../tests/fixtures/README.md). No historical assertions were removed to make current-map tests pass.
+
+The rendered editor handoff is available with:
+
+```powershell
+godot_console --path . --script res://tests/parcel_editor_handoff_test.gd -- capture artifacts/report-cleanup-handoff
+```
+
+Local parcel recordings require their hash-named snapshot cache and unchanged project dependencies. The isolated runner redirects that cache into its per-run output directory; this keeps tests separate from actual editor content.
+
+
+Final verification: **122 suites passed, 0 failed, 14 explicit-only skipped**, in **631.59 seconds** (`artifacts/test-results/20261115-083347-full/`). The preceding integration run was **115/7/14** (`20261115-082155-full`): its failures exposed old default-map expectations, missing local content in the aperture fixture, a helper placed outside the protected Generation 2 dependency boundary, and the intentional mission-copy ownership change. The historical building script also indexed missing fixture geometry and had to be stopped; it now selects its fixture explicitly and fails clearly if that geometry is unavailable. Assertions were preserved or revised to check the new contract, including complete mission equality rather than shared resource identity. Focused reruns and the subsequent full run passed.
+
+Additional executed checks: the historical container sweep passed **300 seeds across three sizes** (`artifacts/report-container-fixture.txt`); the current Depot AI Eliminate battle completed with **0 issues, six rounds, 53 decisions** (`artifacts/depot-ai-batch.txt`); and the rendered editor/save/preview/local-battle/replay/return check passed with captures inspected in `artifacts/report-cleanup-handoff/`. The building suite's separate 300-seed sweep passed as well. The policy-skipped extended AI matrix, stress tests and other capture workflows were not all run; do not infer their results from these bounded checks.
+
+Final logs contain no script parse/compile/runtime errors or new leak warnings. The pre-existing **four ObjectDB instances** warning in `allied_faction_smoke.gd` remains, along with sandbox certificate-store diagnostics. These are recorded limitations, not silently reclassified passes for new failures. The five pre-existing texture-import edits are outside the cleanup commit.

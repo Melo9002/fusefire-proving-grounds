@@ -35,7 +35,16 @@ func _run() -> void:
 	_check_invalid_platform_is_rejected()
 
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(2, 2, true, 12345, 0, Vector2i(32, 24))
+	# Explicit historical fixture: this suite protects generated structure geometry.
+	var config := BattleConfiguration.new()
+	config.player_count = 2
+	config.enemy_count = 2
+	config.ally_count = 0
+	config.generated_map = true
+	config.battle_seed = 12345
+	config.map_size = Vector2i(32,24)
+	config.select_battlefield(BattlefieldCatalog.GENERATED_COVER)
+	level.configure_battle(config)
 	root.add_child(level)
 	await create_timer(0.2).timeout
 	var data := level.battle_controller.grid_manager.map_data
@@ -99,7 +108,16 @@ func _check_hill(data: MapData, graph: Pathfinder, hill: GeneratedHillData) -> v
 
 func _check_large_map_hill_presentation() -> void:
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(2, 2, true, 54321, 0, Vector2i(40, 30))
+	# Explicit historical fixture: this suite protects generated structure geometry.
+	var config := BattleConfiguration.new()
+	config.player_count = 2
+	config.enemy_count = 2
+	config.ally_count = 0
+	config.generated_map = true
+	config.battle_seed = 54321
+	config.map_size = Vector2i(40,30)
+	config.select_battlefield(BattlefieldCatalog.GENERATED_COVER)
+	level.configure_battle(config)
 	root.add_child(level)
 	await create_timer(0.2).timeout
 	var grid := level.battle_controller.grid_manager

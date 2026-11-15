@@ -55,7 +55,7 @@ func _run() -> void:
 	for turn in 4:
 		var instance: Node3D = definition.instantiate()
 		instance.transform = ParcelTransform.scene_transform(Vector2i(32, 32), Vector3i.ZERO, turn, Vector2i(32, 32))
-		var data := FlatMapGenerator.generate(32, 32, 1.0, 42)
+		var data := TacticalMapBuilder.generate(32, 32, 1.0, 42)
 		Compiler.compile(instance, data, 1.0)
 		var lower := ParcelTransform.cell(Vector3i(6, 0, 8), Vector2i(32, 32), Vector3i.ZERO, turn)
 		var top := lower + Vector3i(0, 4, 0)
@@ -70,7 +70,7 @@ func _run() -> void:
 		var landing := ParcelTransform.cell(Vector3i(3, 4, 4), Vector2i(32, 32), Vector3i.ZERO, turn)
 		check(not graph.calculate_3d_path(base, landing).is_empty(), "rotation %d retains the ground-to-deck approach" % turn)
 		instance.move_child(instance.get_node("ParkingDeck"), 0)
-		var reordered := FlatMapGenerator.generate(32, 32, 1.0, 42)
+		var reordered := TacticalMapBuilder.generate(32, 32, 1.0, 42)
 		Compiler.compile(instance, reordered, 1.0)
 		check(_same_tactical_cells(data, reordered), "rotation %d deck and occupant sibling order produces identical tactical cells" % turn)
 		instance.free()

@@ -14,7 +14,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.industrial_warehouse = true
+	config.select_battlefield(BattlefieldCatalog.INDUSTRIAL_WAREHOUSE)
 	config.map_size = Vector2i(40, 30)
 	config.battle_seed = 940059876
 	var battle := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel

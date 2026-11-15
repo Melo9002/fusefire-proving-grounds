@@ -10,6 +10,9 @@ var surface_id: StringName = &"ground"
 var allowed_asset_ids: PackedStringArray
 var min_count: int
 var max_count: int
+## -1 preserves historical bounded-count selection. New painted rules may
+## specify the same occupancy percentage used by authoring and local battles.
+var occupancy_percent := -1
 
 func validate(parcel_size: Vector2i) -> String:
 	if region_id.is_empty() or role.is_empty():
@@ -22,4 +25,5 @@ func validate(parcel_size: Vector2i) -> String:
 		return "EMPTY_POPULATION_ALLOW_LIST"
 	if min_count < 0 or max_count < min_count:
 		return "INVALID_POPULATION_COUNT"
+	if occupancy_percent < -1 or occupancy_percent > 100: return "INVALID_POPULATION_OCCUPANCY"
 	return ""

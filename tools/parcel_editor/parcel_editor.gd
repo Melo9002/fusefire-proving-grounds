@@ -8,6 +8,13 @@ const DraftSession = preload("res://tools/parcel_editor/parcel_draft_session.gd"
 const FieldPanel = preload("res://tools/parcel_editor/population_field_panel.gd")
 const PlacementLibrary = preload("res://tools/parcel_editor/parcel_placement_library.gd")
 const AssetPreview = preload("res://tools/parcel_editor/asset_preview.gd")
+const SessionFile = preload("res://tools/parcel_editor/parcel_session_file.gd")
+const LocalContent = preload("res://systems/generation2/local_parcel_content.gd")
+var test_battle: BattleLevel
+var tested_fingerprint := ""
+var _saved_editor_environment: Environment
+var active_session_path := ""
+var _saved_session_fingerprint := ""
 var field_panel
 
 enum Task { INSPECT, MOVE_OBJECTS, POPULATION_FIELDS }
@@ -57,7 +64,7 @@ var camera: Camera3D
 var displayed_parcel_id: StringName = &""
 var displayed_parcel: Node3D
 var tactical_overlay: Node3D
-var draft = DraftSession.new()
+var draft: ParcelDraftSession = DraftSession.new()
 
 var _definitions: Array = []
 var _grid: MeshInstance3D
@@ -83,6 +90,7 @@ func _ready() -> void:
 
 func _build_stage() -> void:
 	var world := WorldEnvironment.new()
+	world.name = "EditorWorldEnvironment"
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("17232d")
@@ -221,7 +229,7 @@ func _build_ui() -> void:
 	_asset_category.item_selected.connect(func(_value): _refresh_asset_browser())
 	_refresh_asset_browser()
 	var move_help := Label.new()
-	move_help.text = "Place adds a fixed object. Drag to move. R rotates, Shift+R reverses, Esc cancels. Attached tactical volumes move with the object in draft preview. Save and register the scene to use changes in battle."
+	move_help.text = "Place adds a fixed object. Drag to move. R rotates, Shift+R reverses, Esc cancels. Tactical boundaries follow the object. Preview and Test battle use this edit; normal maps stay unchanged."
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(move_help)
 	var compare := CheckButton.new()
@@ -290,6 +298,7 @@ func _build_ui() -> void:
 		(button as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	move_page.add_child(history)
 	move_page.add_child(files)
+	files.hide()
 	var named_files := HBoxContainer.new()
 	for spec in [["Save visuals as…", _save_draft_as], ["Open visual draft…", _open_draft]]:
 		var button := Button.new()
@@ -297,9 +306,11 @@ func _build_ui() -> void:
 		button.pressed.connect(spec[1])
 		named_files.add_child(button)
 	move_page.add_child(named_files)
+	named_files.hide()
 	_visual_destination = Label.new()
 	_visual_destination.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(_visual_destination)
+	_visual_destination.hide()
 	draft_status = Label.new()
 	draft_status.name = "DraftStatus"
 	draft_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -310,6 +321,34 @@ func _build_ui() -> void:
 	field_panel.setup(self)
 	task_tabs.add_child(field_panel)
 	task_tabs.tab_changed.connect(_on_task_changed)
+	var session_files := HBoxContainer.new()
+	for spec in [["Save parcel", _save_session], ["Save as…", _save_session_as], ["Open parcel…", _open_session]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(spec[1])
+		session_files.add_child(button)
+	column.add_child(session_files)
+	var play_actions := HBoxContainer.new()
+	for spec in [["Preview", func(): field_panel.preview()], ["Test battle", test_in_battle]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(spec[1])
+		play_actions.add_child(button)
+	column.add_child(play_actions)
+	var legacy := CheckButton.new()
+	legacy.text = "Import older drafts"
+	column.add_child(legacy)
+	var imports := HBoxContainer.new()
+	for spec in [["Object draft…", _open_draft], ["Field draft…", func(): field_panel._open_fields()]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.pressed.connect(spec[1])
+		imports.add_child(button)
+	imports.hide()
+	legacy.toggled.connect(func(enabled): imports.visible = enabled)
+	column.add_child(imports)
 	workflow_footer = Label.new()
 	workflow_footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	workflow_footer.add_theme_font_size_override("font_size", 13)
@@ -415,7 +454,7 @@ func choose_draft_file(path: String, saving: bool, action: Callable) -> void:
 		return
 	if not _draft_file_dialog:
 		_draft_file_dialog = FileDialog.new()
-		_draft_file_dialog.access = FileDialog.ACCESS_USERDATA
+		_draft_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 		_draft_file_dialog.filters = PackedStringArray(["*.json ; FuseFire draft"])
 		_draft_file_dialog.display_mode = FileDialog.DISPLAY_LIST
 		_draft_file_dialog.transient = true
@@ -425,7 +464,7 @@ func choose_draft_file(path: String, saving: bool, action: Callable) -> void:
 	_draft_file_action = action
 	_draft_file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE if saving else FileDialog.FILE_MODE_OPEN_FILE
 	_draft_file_dialog.title = "Save draft as" if saving else "Open draft"
-	_draft_file_dialog.current_dir = path.get_base_dir()
+	_draft_file_dialog.current_dir = ProjectSettings.globalize_path(path.get_base_dir())
 	_draft_file_dialog.current_file = path.get_file() if saving else ""
 	_draft_file_dialog.popup_centered_ratio(0.72)
 
@@ -439,6 +478,7 @@ func _unsaved_scopes() -> PackedStringArray:
 	var scopes := PackedStringArray()
 	if draft.dirty: scopes.append("visual moves")
 	if field_panel.has_unsaved_changes(): scopes.append("population fields")
+	if scopes.is_empty() and not active_session_path.is_empty() and _session_fingerprint() != _saved_session_fingerprint: scopes.append("parcel session")
 	return scopes
 
 func update_draft_badge() -> void:
@@ -451,10 +491,11 @@ func update_draft_badge() -> void:
 func update_workflow_footer() -> void:
 	if not is_instance_valid(workflow_footer):
 		return
-	var state := "Unsaved" if draft.dirty or field_panel.has_unsaved_changes() else "Saved"
+	var state := "Unsaved" if not _unsaved_scopes().is_empty() else "Saved"
 	var differs: bool = draft.placements != draft.base_placements or not field_panel.session.fields.is_empty()
 	workflow_footer.text = "%s · %s\n%s" % [state, "draft differs from registered parcel" if differs else "matches registered parcel", field_panel.export_state()]
 	var active: String = field_panel.session.active_path if task_tabs.current_tab == Task.POPULATION_FIELDS else draft.active_path
+	if not active_session_path.is_empty(): active = active_session_path
 	if not active.is_empty():
 		workflow_footer.text = active.get_file() + "\n" + workflow_footer.text
 	workflow_footer.tooltip_text = active
@@ -515,9 +556,125 @@ func _show_index(index: int) -> void:
 	_visual_destination.text = "Quick save / load · " + draft.draft_path()
 	_visual_destination.tooltip_text = ProjectSettings.globalize_path(draft.draft_path())
 	field_panel.begin(definition, displayed_parcel)
+	active_session_path = ""
+	tested_fingerprint = ""
+	_saved_session_fingerprint = _session_fingerprint()
 	_refresh_placement_picker()
 	_update_draft_status("Source parcel loaded; runtime content is unchanged.")
 	_frame()
+
+func _session_fingerprint() -> String:
+	return JSON.stringify([draft.to_record(), field_panel.session.fields, int(field_panel.seed_input.value), int(field_panel.density.value)]).sha256_text()
+
+func _session_default_path() -> String:
+	return "user://parcel_sessions/%s.parcel.json" % displayed_parcel_id
+
+func _save_session() -> void:
+	if active_session_path.is_empty(): _save_session_as()
+	else: _save_session_to(active_session_path)
+
+func _save_session_as() -> void:
+	choose_draft_file(active_session_path if not active_session_path.is_empty() else _session_default_path(), true, _save_session_to)
+
+func _save_session_to(path: String) -> bool:
+	field_panel.session.preview_seed = int(field_panel.seed_input.value)
+	field_panel.session.occupancy = int(field_panel.density.value)
+	var error := SessionFile.save_to(path, draft, field_panel.session)
+	if not error.is_empty():
+		_update_draft_status("Parcel save failed · " + error)
+		return false
+	active_session_path = path
+	_saved_session_fingerprint = _session_fingerprint()
+	_update_draft_status("Saved complete parcel · " + path.get_file())
+	return true
+
+func test_in_battle() -> void:
+	if is_instance_valid(test_battle): return
+	_finish_object_drag(false)
+	_finish_library_placement(false)
+	field_panel.cancel_drag()
+	field_panel.clear_preview()
+	var built: Dictionary = field_panel.build_current()
+	if built.has("error"):
+		_update_draft_status("Test rejected · " + String(built.error))
+		return
+	var preserved := LocalContent.archive(built.definition.scene)
+	if preserved.has("error"):
+		_update_draft_status(preserved.error)
+		return
+	var config := BattleConfiguration.new()
+	config.generated_map = true
+	config.select_battlefield(BattlefieldCatalog.PARCEL_TEST)
+	config.map_size = built.definition.size
+	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, config.enemy_count)
+	config.battle_seed = int(field_panel.seed_input.value)
+	config.content_manifest = {"local_content": preserved.content}
+	test_battle = load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
+	test_battle.return_action = _return_from_test
+	test_battle.configure_battle(config)
+	var environment := get_node("EditorWorldEnvironment") as WorldEnvironment
+	_saved_editor_environment = environment.environment
+	environment.environment = null
+	# Remove authored physics/hazards from the live world while preserving the
+	# edit in memory. Hiding rendering or disabling input does not remove physics.
+	remove_child(displayed_parcel)
+	hide()
+	_panel.hide()
+	process_mode = Node.PROCESS_MODE_DISABLED
+	get_tree().root.add_child(test_battle)
+	get_tree().current_scene = test_battle
+	for frame in 240:
+		if not is_instance_valid(test_battle) or not is_inside_tree(): return
+		if test_battle.battle_initialization_succeeded or not test_battle.battle_initialization_errors.is_empty(): break
+		await get_tree().process_frame
+	if not is_instance_valid(test_battle): return
+	if not test_battle.battle_initialization_succeeded:
+		var message := str(test_battle.battle_initialization_errors)
+		test_battle.queue_free()
+		_return_from_test()
+		_update_draft_status("Test could not start · " + message)
+	else:
+		tested_fingerprint = _session_fingerprint()
+
+func _return_from_test() -> void:
+	get_tree().paused = false
+	get_tree().current_scene = self
+	process_mode = Node.PROCESS_MODE_INHERIT
+	(get_node("EditorWorldEnvironment") as WorldEnvironment).environment = _saved_editor_environment
+	_saved_editor_environment = null
+	if displayed_parcel.get_parent() == null: add_child(displayed_parcel)
+	show()
+	_panel.show()
+	camera.make_current()
+	test_battle = null
+	_update_draft_status("Returned from local test. Your parcel edits are preserved.")
+
+func _exit_tree() -> void:
+	if is_instance_valid(displayed_parcel) and displayed_parcel.get_parent() == null:
+		displayed_parcel.free()
+
+func _open_session() -> void:
+	choose_draft_file(active_session_path if not active_session_path.is_empty() else _session_default_path(), false, func(path): _confirm_discard(func(): _apply_session(path)))
+
+func _apply_session(path: String) -> bool:
+	var loaded := SessionFile.open_file(path)
+	if loaded.has("error"):
+		_update_draft_status(loaded.error)
+		return false
+	_show_index(_definition_index(loaded.definition.parcel_id))
+	draft = loaded.objects
+	field_panel.session = loaded.population
+	draft.apply(displayed_parcel)
+	field_panel.seed_input.set_value_no_signal(field_panel.session.preview_seed)
+	field_panel.density.set_value_no_signal(field_panel.session.occupancy)
+	field_panel.sync_draft_context()
+	field_panel.refresh()
+	_refresh_placement_picker()
+	refresh_tactical_overlay(displayed_parcel)
+	active_session_path = path
+	_saved_session_fingerprint = _session_fingerprint()
+	_update_draft_status("Opened complete parcel · " + path.get_file())
+	return true
 
 func _refresh_placement_picker() -> void:
 	placement_picker.clear()
@@ -1073,6 +1230,7 @@ func _clear_placement_ghost() -> void:
 	_placement_hint.hide()
 
 func _input(event: InputEvent) -> void:
+	if discard_dialog.visible or (is_instance_valid(_draft_file_dialog) and _draft_file_dialog.visible): return
 	if is_instance_valid(_dragged):
 		if event is InputEventMouseMotion:
 			_preview_object_drag(event.position)
@@ -1099,6 +1257,7 @@ func _input(event: InputEvent) -> void:
 		field_panel.cancel_drag()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if discard_dialog.visible or (is_instance_valid(_draft_file_dialog) and _draft_file_dialog.visible): return
 	if is_instance_valid(_pending_asset):
 		if event is InputEventMouseMotion and not _orbiting and not _panning:
 			_update_library_placement(event.position)

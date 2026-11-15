@@ -43,7 +43,9 @@ func set_open(open: bool) -> void:
 
 func _return_to_setup() -> void:
 	get_tree().paused = false
-	get_tree().change_scene_to_file(MATCH_SETUP_PATH)
+	var level := get_node_or_null("../../..") as BattleLevel
+	if level: level.return_to_match_setup()
+	else: get_tree().change_scene_to_file(MATCH_SETUP_PATH)
 
 func _build_interface() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -106,7 +108,7 @@ func _build_interface() -> void:
 
 	var setup := Button.new()
 	setup.name = "SetupButton"
-	setup.text = "RETURN TO MATCH SETUP"
+	setup.text = battle_level.return_button_text() if battle_level else "RETURN TO MATCH SETUP"
 	setup.pressed.connect(_return_to_setup)
 	options.add_child(setup)
 

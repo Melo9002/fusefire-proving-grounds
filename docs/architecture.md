@@ -25,7 +25,13 @@ Current parcel clearance uses the compiler's existing active-shape predicate. Hi
 
 Replay uses `systems/replay/` and records accepted content, seed/configuration and action/state evidence. The existing numeric replay preset/envelope is retained; its historical `LEGACY` enum name does not mean Service Depot invokes Generator 1. Old recordings for quarantined maps reject explicitly; do not substitute a different battlefield.
 
-`tools/parcel_editor/` edits and previews parcel scenes/rules. `tools/asset_lab/` browses and calibrates imported assets. Their current limitations are in [Generation 2.0](generation-2.md).
+`tools/parcel_editor/` edits one complete parcel session. `parcel_session_file.gd` wraps the existing object/field payloads in one validated Save/Open operation. Preview builds the current scene/rules through `population_scene_export.gd`, then uses the runtime plot resolver. Test battle archives that built scene and exercises it directly through Generation 2; optional review export is no longer a prerequisite for local play.
+
+`systems/generation2/parcel_test_layout.gd` supplies a single-parcel plot and parcel lookup to the existing resolver/compiler. It is not a second generator. `systems/generation2/local_parcel_content.gd` preserves local snapshots by hash and validates dependency hashes for replay. Battles never import editor implementation code. The editor retains its session, detaches its displayed parcel during the battle, and restores it through BattleLevel's return callback, which also survives rewatch.
+
+`BattleConfiguration.normalized()` is the single configuration normalization step; its existing codec also supplies replay inputs. Internally there is one named battlefield ID. Old map booleans are interpreted only at compatibility inputs, and explicit named IDs take priority.
+
+`tools/asset_lab/` browses and calibrates imported assets. Workflow and limitations are in [Generation 2.0](generation-2.md).
 
 `art/environments/authored/objects/` contains the reusable crate, three containers, delivery truck and three parking cars. Loading-yard and office parcels instance these scenes, keeping positions and population membership on the parcel instances. The editor placement library and parking vehicle templates instantiate the object scenes directly; they no longer load an example parcel or look up an object by its node name. The object scene owns its visual and tactical children, including historical/current truck shapes. Export preserves that ownership instead of packing the same children twice.
 
@@ -38,3 +44,5 @@ For newly placed ordinary objects, `tools/parcel_editor/mesh_tactical_bounds.gd`
 Shared map data types and quality metrics still live in `systems/generation/`; their historical names do not mean they run an old generator. Renaming every type is unnecessary for this cleanup.
 
 `tests/current_generation_test.gd` checks both source dependencies and a real Service Depot initialization: the old generator and procedural renderer must not even be loaded. Tests for retired authored maps were preserved outside the project; core mechanics tests remain active.
+
+Generator-independent empty-map tests now call TacticalMapBuilder directly. Retained generator-specific fixtures are classified in [the fixture guide](../tests/fixtures/README.md). The current mission/replay matrix covers all eight mission kinds on both Depot plots without relying on those generators. Obsolete absolute-coordinate scene metadata is rejected explicitly; current relative geometry contracts and historical solid revisions remain intact.

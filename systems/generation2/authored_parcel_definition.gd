@@ -33,6 +33,7 @@ func validate() -> PackedStringArray:
 	if root == null:
 		failures.append("MISSING_PARCEL_SCENE")
 		return failures
+	failures.append_array(AuthoredSceneMapCompiler.retired_metadata(root))
 	if StringName(root.get_meta("parcel_id", &"")) != parcel_id:
 		failures.append("PARCEL_ID_MISMATCH")
 	if StringName(root.get_meta("parcel_role", &"")) != role:
@@ -134,6 +135,7 @@ func _collect_population_regions(node: Node, result: Array) -> void:
 		region.allowed_asset_ids = node.get_meta("allowed_asset_ids", PackedStringArray())
 		region.min_count = int(node.get_meta("min_count", 0))
 		region.max_count = int(node.get_meta("max_count", 0))
+		region.occupancy_percent = int(node.get_meta("occupancy_percent", -1))
 		result.append(region)
 	for child in node.get_children():
 		_collect_population_regions(child, result)

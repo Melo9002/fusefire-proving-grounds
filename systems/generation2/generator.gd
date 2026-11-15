@@ -6,6 +6,7 @@ extends RefCounted
 const Resolver := preload("res://systems/generation2/authored_plot_resolver.gd")
 const SharedLayout := preload("res://systems/generation2/authored_battlefield_layout.gd")
 const Parcels := preload("res://systems/generation2/authored_parcel_catalog.gd")
+const ParcelTest := preload("res://systems/generation2/parcel_test_layout.gd")
 const DEPOT_SOURCE := "authored_service_depot"
 const RANGE_SOURCE := "authored_tactical_test_range"
 const DEPOT_SIZE := Vector2i(40, 40)
@@ -64,6 +65,7 @@ class RangePlot:
 		}]}
 
 static func generate(source_kind: String, map_seed: int, cell_size: float, requested: Dictionary) -> MapData:
+	if source_kind == ParcelTest.SOURCE: return ParcelTest.generate(map_seed, cell_size, requested)
 	if source_kind not in [DEPOT_SOURCE, RANGE_SOURCE]:
 		var rejected := MapData.new()
 		rejected.generation_errors.append({"code": "UNSUPPORTED_GENERATION2_SOURCE", "detail": source_kind})
@@ -74,6 +76,7 @@ static func generate(source_kind: String, map_seed: int, cell_size: float, reque
 	return SharedLayout.compile_resolved(resolved, map_seed, cell_size, source_kind, 1)
 
 static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
+	if data.source_kind == ParcelTest.SOURCE: return ParcelTest.present(data, parent, cell_size, world_environment)
 	if data.source_kind not in [DEPOT_SOURCE, RANGE_SOURCE]: return false
 	var plots = RangePlot if data.source_kind == RANGE_SOURCE else DepotPlots
 	var manifest := data.content_manifest

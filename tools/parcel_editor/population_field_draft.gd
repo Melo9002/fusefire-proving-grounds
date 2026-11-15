@@ -291,56 +291,64 @@ func redo() -> bool:
 	fields.assign(future.pop_back())
 	return true
 
-func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles: Array[AABB] = []) -> Array[Dictionary]:
-	preview_seed = map_seed
-	occupancy = clampi(density, 0, 100)
+func permitted_sockets(sockets: Array[Dictionary], obstacles: Array[AABB] = [], inherited_permission := false) -> Array[Dictionary]:
 	conflict_count = 0
 	field_excluded_sockets.clear()
-	occupancy_skips = 0
 	var accepted: Array[Dictionary] = []
 	var occupied: Array[AABB] = []
 	var ordered := sockets.duplicate()
 	ordered.sort_custom(func(a, b): return String(a.socket_id) < String(b.socket_id))
 	for socket in ordered:
-		var key := JSON.stringify([map_seed, parcel_id, String(socket.surface_id), String(socket.socket_id)])
 		var turns: PackedInt32Array = socket.allowed_yaw_turns
-		var turn_index := posmod((key + "/heading_v1").sha256_text().substr(0, 8).hex_to_int(), turns.size())
-		var bounds := socket_bounds_at_turn(socket, turns[turn_index])
-		if bounds.size.x <= 0 or bounds.size.z <= 0:
-			conflict_count += 1
-			continue
-		if has_protected_overlap(String(socket.surface_id), bounds):
-			field_excluded_sockets[socket.socket_id] = true
-			continue
-		var permission_cells := {}
+		var bounds := socket_bounds_at_turn(socket, turns[0])
+		for turn in turns: bounds = bounds.merge(socket_bounds_at_turn(socket, turn))
+		var permission := {}
 		for field in fields:
 			if field.surface != String(socket.surface_id) or field.preset == PARKING_ROW: continue
-			var rect := rectangle(field)
 			if PRESETS[field.preset].has(String(socket.asset_id)):
+				var rect := rectangle(field)
 				for x in range(rect.position.x, rect.end.x):
-					for z in range(rect.position.y, rect.end.y):
-						permission_cells[Vector2i(x, z)] = true
-		var permitted := true
+					for z in range(rect.position.y, rect.end.y): permission[Vector2i(x, z)] = true
+		var permitted := not has_protected_overlap(String(socket.surface_id), bounds)
 		for x in range(floori(bounds.position.x + 0.5), ceili(bounds.end.x + 0.5 - 0.00001)):
 			for z in range(floori(bounds.position.z + 0.5), ceili(bounds.end.z + 0.5 - 0.00001)):
-				if not permission_cells.has(Vector2i(x, z)): permitted = false
+				if not inherited_permission and not permission.has(Vector2i(x, z)): permitted = false
 		if not permitted:
 			field_excluded_sockets[socket.socket_id] = true
 			continue
-		if posmod((key + "/occupancy_v1").sha256_text().substr(0, 8).hex_to_int(), 100) >= occupancy:
-			occupancy_skips += 1
-			continue
-		var intersects := false
+		var conflict := bounds.size.x <= 0 or bounds.size.z <= 0
 		for obstacle in obstacles + occupied:
-			if bounds.grow(-0.001).intersects(obstacle):
-				intersects = true
-				break
-		if intersects:
+			if bounds.grow(-0.001).intersects(obstacle): conflict = true
+		if conflict:
 			conflict_count += 1
 			continue
 		occupied.append(bounds)
-		accepted.append({"socket_id": socket.socket_id, "asset_id": socket.asset_id, "yaw_turns": turns[turn_index]})
+		accepted.append(socket)
 	return accepted
+
+func preview(sockets: Array[Dictionary], map_seed: int, density: int, obstacles: Array[AABB] = []) -> Array[Dictionary]:
+	# Compatibility fitting diagnostic: selection itself uses the runtime resolver.
+	# The normal editor Preview builds/export-validates the full parcel instead.
+	preview_seed = map_seed
+	occupancy = clampi(density, 0, 100)
+	var allowed := permitted_sockets(sockets, obstacles)
+	var regions: Array = []
+	var candidates: Array[Dictionary] = []
+	for socket in allowed:
+		var candidate := socket.duplicate(true)
+		candidate.region_id = socket.socket_id
+		candidates.append(candidate)
+		var region := ParcelPopulationRegion.new()
+		region.region_id = candidate.region_id
+		region.min_count = 0
+		region.max_count = 1
+		region.occupancy_percent = occupancy
+		regions.append(region)
+	var result := AuthoredPlotResolver.resolve_population_data(regions, candidates, map_seed, {}, true, "field_fit", parcel_id)
+	occupancy_skips = candidates.size() - result.choices.size()
+	var choices: Array[Dictionary] = []
+	choices.assign(result.choices)
+	return choices
 
 static func rectangle(record: Dictionary) -> Rect2i:
 	var r: Array = record.rect
@@ -383,11 +391,14 @@ func save_to(destination: String) -> bool:
 	if file == null:
 		last_error = "Cannot open field draft for writing."
 		return false
-	file.store_string(JSON.stringify({"schema": 1, "parcel_id": parcel_id, "revision": revision, "surfaces": surfaces, "fields": fields, "preview_seed": preview_seed, "occupancy": occupancy}, "\t"))
+	file.store_string(JSON.stringify(to_record(), "\t"))
 	file.close()
 	_mark_saved()
 	active_path = destination
 	return true
+
+func to_record() -> Dictionary:
+	return {"schema": 1, "parcel_id": parcel_id, "revision": revision, "surfaces": surfaces.duplicate(true), "fields": fields.duplicate(true), "preview_seed": preview_seed, "occupancy": occupancy}
 
 func load_from(source: String) -> bool:
 	var file := FileAccess.open(source, FileAccess.READ)
@@ -398,7 +409,9 @@ func load_from(source: String) -> bool:
 	if parser.parse(file.get_as_text()) != OK:
 		last_error = "Invalid field draft JSON."
 		return false
-	var record: Variant = parser.data
+	return load_record(parser.data, source)
+
+func load_record(record: Variant, source := "") -> bool:
 	if not record is Dictionary or record.get("schema") != 1 or record.get("parcel_id") != parcel_id or record.get("revision") != revision or not _same_surfaces(record.get("surfaces")) or not record.get("fields") is Array:
 		last_error = "Incompatible field draft, parcel revision or surfaces."
 		return false
@@ -419,6 +432,9 @@ func load_from(source: String) -> bool:
 		ids[field.id] = true
 	_checkpoint()
 	fields.assign(record.fields)
+	for field in fields:
+		field.rect = (field.rect as Array).map(func(value): return int(value))
+		if field.has("heading"): field.heading = int(field.heading)
 	preview_seed = int(record.get("preview_seed", 17))
 	occupancy = clampi(int(record.get("occupancy", 65)), 0, 100)
 	next_id = 1

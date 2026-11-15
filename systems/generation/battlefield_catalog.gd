@@ -2,7 +2,7 @@ class_name BattlefieldCatalog
 extends RefCounted
 ## Service Depot is the only normal menu map. Other supported IDs are internal
 ## mechanics fixtures. Retired identities reject explicitly. Legacy boolean
-## fields remain readable in BattleConfiguration, but new code resolves here.
+## fields are translated at compatibility inputs; current code uses one ID.
 
 const GENERATED_COVER := &"generated_cover"
 const REFINERY := &"legacy_refinery"
@@ -14,10 +14,12 @@ const URBAN_FAMILY := &"urban_family"
 const PARKING_GARAGE := &"parking_garage"
 const SERVICE_DEPOT := &"service_depot"
 const TACTICAL_TEST_RANGE := &"tactical_test_range"
+const PARCEL_TEST := &"parcel_editor_test"
 const CurrentGenerator = preload("res://systems/generation2/generator.gd")
 
 
 const DEFINITIONS := {
+	PARCEL_TEST: {"label": "Local parcel test", "source_kind": CurrentGenerator.ParcelTest.SOURCE, "fixed_size": Vector2i.ZERO},
 	SERVICE_DEPOT: {"label": "Service Depot", "source_kind": CurrentGenerator.DEPOT_SOURCE, "fixed_size": CurrentGenerator.DEPOT_SIZE},
 	TACTICAL_TEST_RANGE: {"label": "Tactical Test Range", "source_kind": CurrentGenerator.RANGE_SOURCE, "fixed_size": CurrentGenerator.RANGE_SIZE},
 	PARKING_GARAGE: {"label": "Authored proof — Two-level Parking Garage", "source_kind": "authored_parking_garage", "fixed_size": Vector2i(32, 32)},
@@ -30,7 +32,7 @@ const DEFINITIONS := {
 const PLAYABLE := [SERVICE_DEPOT]
 
 static func uses_population(id: StringName) -> bool:
-	return id in [SERVICE_DEPOT, TACTICAL_TEST_RANGE, PARKING_GARAGE]
+	return id in [SERVICE_DEPOT, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
 
 static func has(id: StringName) -> bool:
 	return DEFINITIONS.has(id)
@@ -54,9 +56,18 @@ static func resolve_legacy_id(refinery: bool, warehouse: bool, refinery_2: bool,
 	if refinery: return REFINERY
 	return GENERATED_COVER
 
+## Compatibility input only. Once selected, a named identity is authoritative.
+static func id_from_configuration(data: Dictionary, fallback: StringName = GENERATED_COVER) -> StringName:
+	var named := StringName(data.get("battlefield_id", &""))
+	if not named.is_empty(): return named
+	var legacy := resolve_legacy_id(bool(data.get("refinery", false)), bool(data.get("industrial_warehouse", false)), bool(data.get("refinery_2", false)), bool(data.get("loading_yard", false)))
+	return legacy if legacy != GENERATED_COVER else fallback
+
 static func generate(id: StringName, requested_size: Vector2i, map_seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
+		PARCEL_TEST:
+			return CurrentGenerator.generate(CurrentGenerator.ParcelTest.SOURCE, map_seed, cell_size, requested_manifest)
 		SERVICE_DEPOT:
 			return CurrentGenerator.generate(CurrentGenerator.DEPOT_SOURCE, map_seed, cell_size, requested_manifest)
 		TACTICAL_TEST_RANGE:
@@ -71,13 +82,13 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	match data.source_kind:
-		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
+		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
 		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size, world_environment)
 		_: return false
 
 ## Current maps bypass the old procedural renderer entirely.
 static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
-	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, "authored_parking_garage"]:
+	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
 		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:
 		_fixtures().present(data, parent, cell_size)

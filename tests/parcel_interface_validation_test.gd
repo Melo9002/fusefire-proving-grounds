@@ -43,7 +43,7 @@ func _run() -> void:
 	plot.slots[0].origin.x = -1
 	_check(Contract.validate_plot_footprints(plot).get("code") == "SLOT_OUTSIDE_PLOT", "Runtime rejects a slot outside the plot")
 
-	var map := FlatMapGenerator.generate(16, 16, 1.0, 16)
+	var map := TacticalMapBuilder.generate(16, 16, 1.0, 16)
 	var span: Array[Vector3i] = [Vector3i(4, 3, 8), Vector3i(5, 3, 8), Vector3i(6, 3, 8)]
 	for inside in span:
 		_add_deck_cell(map, inside)

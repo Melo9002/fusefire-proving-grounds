@@ -33,7 +33,7 @@ var conditions_enabled := true
 var tactical_tempo_enabled := true
 var generated_map := false
 var battlefield_preset: BattlefieldPreset = BattlefieldPreset.LEGACY
-var battlefield_id: StringName = BattlefieldCatalogData.GENERATED_COVER
+var battlefield_id: StringName = BattlefieldCatalogData.SERVICE_DEPOT
 var battle_seed: int = 1
 var map_size := Vector2i(32, 24)
 var include_vip := false
@@ -42,10 +42,6 @@ var mission: MissionDefinition
 var difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL
 var player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
 var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT
-var refinery := false
-var industrial_warehouse := false
-var refinery_2 := false
-var loading_yard := false
 ## Exact accepted authored content for generated parcel maps. Empty means a new
 ## resolution may be made; replay stores the resolved value after generation.
 var content_manifest: Dictionary = {}
@@ -76,11 +72,7 @@ func apply_replay(data: Dictionary) -> void:
 	difficulty = data.get("difficulty", AIDifficultyPolicy.Tier.NORMAL)
 	player_commander = int(data.get("player_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
 	enemy_commander = int(data.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)) as AICommanderPolicy.Profile
-	refinery = data.get("refinery", false)
-	industrial_warehouse = data.get("industrial_warehouse", false)
-	refinery_2 = data.get("refinery_2", false)
-	loading_yard = data.get("loading_yard", false)
-	battlefield_id = StringName(data.get("battlefield_id", BattlefieldCatalogData.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)))
+	battlefield_id = BattlefieldCatalogData.id_from_configuration(data)
 	content_manifest = data.get("content_manifest", {}).duplicate(true)
 
 
@@ -110,33 +102,34 @@ func to_replay() -> Dictionary:
 		"difficulty": difficulty,
 		"player_commander": player_commander,
 		"enemy_commander": enemy_commander,
-		"refinery": refinery,
-		"industrial_warehouse": industrial_warehouse,
-		"refinery_2": refinery_2,
-		"loading_yard": loading_yard,
 		"content_manifest": content_manifest.duplicate(true),
 	}
 
 func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
 	if battlefield_preset != BattlefieldPreset.LEGACY:
-		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Generator 2 is quarantined; use the local archived project for its maps and recordings"))
+		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Archived experimental generator presets are quarantined; current Generation 2 uses named battlefields."))
 	if generated_map and not BattlefieldCatalogData.has(resolved_battlefield_id()):
 		failures.append(_failure("UNKNOWN_BATTLEFIELD", "battlefield_id", "Unknown battlefield identity: %s" % battlefield_id))
 	return failures
 
 func resolved_battlefield_id() -> StringName:
-	var legacy := BattlefieldCatalogData.resolve_legacy_id(refinery, industrial_warehouse, refinery_2, loading_yard)
-	if legacy != BattlefieldCatalogData.GENERATED_COVER:
-		return legacy
 	return battlefield_id if not battlefield_id.is_empty() else BattlefieldCatalogData.GENERATED_COVER
 
 func select_battlefield(id: StringName) -> void:
 	battlefield_id = id
-	refinery = id == BattlefieldCatalogData.REFINERY
-	industrial_warehouse = id == BattlefieldCatalogData.INDUSTRIAL_WAREHOUSE
-	refinery_2 = id == BattlefieldCatalogData.REFINERY_2
-	loading_yard = id == BattlefieldCatalogData.LOADING_YARD
+
+func normalized() -> BattleConfiguration:
+	# Share the existing complete configuration codec instead of rebuilding a
+	# second hand-copied configuration in BattleLevel for replay.
+	var result := BattleConfiguration.new()
+	result.apply_replay(to_replay())
+	result.player_count = clampi(result.player_count, 1, 5)
+	result.enemy_count = clampi(result.enemy_count, 1, 5)
+	result.ally_count = clampi(result.ally_count, 0, 5)
+	if result.generated_map: result.map_size = BattlefieldCatalogData.map_size(result.battlefield_id, result.map_size)
+	result.normalize_rosters()
+	return result
 
 static func _failure(code: String, field: String, message: String) -> Dictionary:
 	return {"code": code, "field": field, "reference": "", "message": message}

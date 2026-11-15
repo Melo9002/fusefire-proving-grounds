@@ -53,11 +53,11 @@ $subsystemPatterns = @{
     combat     = "action|aim_|ap_|combat|condition|overwatch|shield|shot_|supply|tempo|archetype"
     movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault"
     ai         = "^ai_|commander|objective_ai|protect_rescue_ai|rescue_carrier|rescue_refinery|squad_context|survive_ai"
-    replay     = "replay|determinism|seed_failure"
-    generation = "current_generation|reusable_occupant|parking_garage|parking_population|authored_deployment|authored_tactical|battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_|loading_yard|parcel_|urban_|map_generation|map_quality|map_validation|transport_placement"
+    replay     = "replay|determinism|seed_failure|parcel_test_content|parcel_editor_handoff"
+    generation = "current_generation|current_mission|battle_configuration|retired_tactical|reusable_occupant|parking_garage|parking_population|authored_deployment|authored_tactical|battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_|loading_yard|parcel_|urban_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
     assets     = "asset|environment_asset|mesh_boundary|locomotion|pose|unit_visual"
-    ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
+    ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar|parcel_editor|parcel_session"
 }
 
 # Explicitly invoked workflows: rendered captures require a GPU/output path; extended

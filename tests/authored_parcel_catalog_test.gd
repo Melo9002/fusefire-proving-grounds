@@ -45,7 +45,7 @@ func _run() -> void:
 	for turn in 4:
 		var map_size := Vector2i(64, 64)
 		var origin := Vector3i(16, 0, 16)
-		var data := FlatMapGenerator.generate(map_size.x, map_size.y, 1.0, 810 + turn)
+		var data := TacticalMapBuilder.generate(map_size.x, map_size.y, 1.0, 810 + turn)
 		var root: Node3D = gallery.instantiate()
 		root.transform = ParcelTransform.scene_transform(gallery.size, origin, turn, map_size)
 		Compiler.compile(root, data, 1.0)
@@ -93,7 +93,7 @@ func _check_compilation(parcel, turn: int) -> void:
 	var map_size := Vector2i(48, 48)
 	var rotated_size := ParcelTransform.rotated_size(parcel.size, turn)
 	var origin := Vector3i((map_size.x - rotated_size.x) / 2, 0, (map_size.y - rotated_size.y) / 2)
-	var data := FlatMapGenerator.generate(map_size.x, map_size.y, 1.0, 700 + turn)
+	var data := TacticalMapBuilder.generate(map_size.x, map_size.y, 1.0, 700 + turn)
 	var root: Node3D = parcel.instantiate()
 	root.transform = ParcelTransform.scene_transform(parcel.size, origin, turn, map_size)
 	Compiler.compile(root, data, 1.0)

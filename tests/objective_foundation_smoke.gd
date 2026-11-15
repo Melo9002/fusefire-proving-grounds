@@ -93,7 +93,7 @@ func _run() -> void:
 	root.add_child(level)
 	var scene_manager := level.get_node("Systems/ObjectiveManager") as ObjectiveManager
 	check(scene_manager != null, "The battle scene exposes an ObjectiveManager")
-	check(scene_manager.mission == selected_mission, "Battle setup loads its selected mission")
+	check(scene_manager.mission != selected_mission and BattleReplayRecording._mission_to_data(scene_manager.mission) == BattleReplayRecording._mission_to_data(selected_mission), "Battle setup owns an independent copy of the complete selected mission")
 	check(scene_manager.get_objective(&"survive").definition.target_amount == 3, "Preset data reaches runtime objective state")
 	level.queue_free()
 	await process_frame

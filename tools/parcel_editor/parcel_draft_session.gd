@@ -203,10 +203,13 @@ func save_to(path: String) -> bool:
 		return false
 	file.store_string(JSON.stringify(to_record(), "\t"))
 	file.close()
-	_saved_placements = placements.duplicate(true)
+	mark_saved()
 	active_path = path
 	last_error = ""
 	return true
+
+func mark_saved() -> void:
+	_saved_placements = placements.duplicate(true)
 
 func load_for(definition, root: Node3D) -> bool:
 	return load_from(_draft_path_for(definition.parcel_id), definition, root)
@@ -219,6 +222,9 @@ func load_from(path: String, definition, root: Node3D) -> bool:
 	if not parsed is Dictionary:
 		last_error = "MALFORMED_DRAFT"
 		return false
+	return load_record(parsed, definition, root, path)
+
+func load_record(parsed: Dictionary, definition, root: Node3D, path := "") -> bool:
 	var failures := validate_record(parsed, definition, root)
 	if not failures.is_empty():
 		last_error = "; ".join(failures)
@@ -227,6 +233,9 @@ func load_from(path: String, definition, root: Node3D) -> bool:
 	parcel_revision = int(parsed.parcel_revision)
 	parcel_size = Vector2i(int(parsed.parcel_size[0]), int(parsed.parcel_size[1]))
 	placements.assign(parsed.placements.map(func(value): return (value as Dictionary).duplicate(true)))
+	for record in placements:
+		for key in ["position", "rotation_degrees", "scale"]:
+			record[key] = _vector3_record(_record_vector3(record[key]))
 	if base_placements.is_empty():
 		_collect_into(root, root, base_placements)
 		base_placements.sort_custom(func(a: Dictionary, b: Dictionary): return String(a.path) < String(b.path))

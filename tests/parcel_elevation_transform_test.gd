@@ -17,7 +17,7 @@ func _run() -> void:
 	var map_size := Vector2i(64, 64)
 	var deck := Rect2i(4, 5, 4, 2)
 	for turn in 4:
-		var data := FlatMapGenerator.generate(map_size.x, map_size.y, 1.0, 900 + turn)
+		var data := TacticalMapBuilder.generate(map_size.x, map_size.y, 1.0, 900 + turn)
 		var root := Node3D.new()
 		root.transform = ParcelTransform.scene_transform(parcel_size, origin, turn, map_size)
 		root.set_meta("deck_local_rect", deck)

@@ -57,15 +57,13 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.difficulty = result.difficulty
 	battle_config.player_commander = config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)
 	battle_config.enemy_commander = config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)
-	battle_config.refinery = config.get("refinery", false)
-	battle_config.industrial_warehouse = config.get("industrial_warehouse", false)
-	battle_config.refinery_2 = config.get("refinery_2", false)
-	battle_config.loading_yard = config.get("loading_yard", false)
-	battle_config.battlefield_id = StringName(config.get("battlefield_id", BattlefieldCatalog.GENERATED_COVER))
+	battle_config.select_battlefield(BattlefieldCatalog.id_from_configuration(config, BattlefieldCatalog.SERVICE_DEPOT))
+	result.configuration.battlefield_id = String(battle_config.battlefield_id)
 	if config.has("content_manifest"):
 		battle_config.content_manifest = config.content_manifest.duplicate(true)
 		result.configuration.content_manifest = _serializable_value(battle_config.content_manifest)
 	level.configure_battle(battle_config)
+	result.configuration.map_size = _serializable_value(level.generated_size)
 	add_child(level)
 	var setup_deadline := Time.get_ticks_msec() + 10000
 	while level.turn_manager.current_round == 0 and Time.get_ticks_msec() < setup_deadline:

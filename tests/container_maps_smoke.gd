@@ -30,7 +30,15 @@ func _run() -> void:
 						var cell := data.get_cell(position)
 						check(cell != null and not cell.walkable and cell.blocks_line_of_sight, "Container cells block movement and LOS")
 		var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-		level.configure(5, 5, true, 12345, 5, dimensions)
+		var config := BattleConfiguration.new()
+		config.player_count = 5
+		config.enemy_count = 5
+		config.ally_count = 5
+		config.generated_map = true
+		config.battle_seed = 12345
+		config.map_size = dimensions
+		config.select_battlefield(BattlefieldCatalog.GENERATED_COVER)
+		level.configure_battle(config)
 		root.add_child(level)
 		await create_timer(0.2).timeout
 		var grid := level.battle_controller.grid_manager
