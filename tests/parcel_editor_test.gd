@@ -54,7 +54,7 @@ func _run() -> void:
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	check(is_instance_valid(editor._selection_marker), "Move task shows the selected object's bounds and axes")
 	editor._translate_selected(Vector3.RIGHT * 0.5)
-	check(editor.draft.dirty and "visual moves" in editor.draft_badge.text, "Visual edits update the scoped unsaved indicator")
+	check(editor.draft.dirty and "object changes" in editor.draft_badge.text, "Visual edits update the scoped unsaved indicator")
 	editor._undo()
 	check(not editor.draft.dirty, "Undoing to the source transforms clears the visual dirty state")
 	editor._top_view()

@@ -41,7 +41,7 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	var has_parking: bool = draft.fields.any(func(field): return field.preset == "parking")
 	var has_containers: bool = draft.fields.any(func(field): return field.preset == "containers")
 	var bays: Array[Dictionary] = draft.parking_bays(sockets, obstacles, {}, true)
-	if has_parking and bays.is_empty() and not sockets.any(func(socket): return socket.asset_id.begins_with("car_kit/")):
+	if has_parking and bays.is_empty() and not sockets.any(func(socket): return socket.asset_id in Session.PRESETS.parking):
 		scene_root.free()
 		return {"error": "No parking bays fit. Expand the parking paint or adjust the aisle."}
 	if has_parking and vehicles.asset_ids().is_empty():
@@ -72,7 +72,7 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 			region.set_meta("min_count", 1 if draft.occupancy == 100 else 0)
 			region.set_meta("max_count", 0 if draft.occupancy == 0 else 1)
 		template.free()
-	if draft.fields.any(func(field): return field.preset != "protected") and bays.is_empty() and container_slots.is_empty() and sockets.is_empty():
+	if draft.fields.any(func(field): return field.preset != "protected") and bays.is_empty() and container_slots.is_empty() and not sockets.any(func(socket): return draft.edits_socket(socket)):
 		scene_root.free()
 		return {"error": "No new positions fit. Ground containers need a clear 3 × 5 area away from existing occupants and the entrance."}
 	if not container_slots.is_empty():
@@ -88,7 +88,7 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 				scene_root.free()
 				return {"error": "Population position %s overlaps a fixed object." % socket.socket_id}
 	var signature := [String(source.parcel_id), source.revision, rules, paint, container_slots, scene_root.get_meta("container_population_paint", [])]
-	if not draft.fields.is_empty(): signature.append([draft.fields, draft.occupancy])
+	if not draft.fields.is_empty(): signature.append([draft.fields, draft.occupancy, "permission_by_type_v2"])
 	if fixed_changed:
 		signature.append(fixed_draft.placements)
 		# Derived parts are saved content, not a runtime guess. Include them in
@@ -193,8 +193,13 @@ static func parking_clearance(bays: Array[Dictionary]) -> Array[AABB]:
 
 static func _apply_permission(source, root: Node3D, draft, obstacles: Array[AABB]) -> void:
 	var original: Array[Dictionary] = source.population_sockets(root)
-	var has_permission: bool = draft.fields.any(func(field): return field.preset != "protected")
-	var kept: Array[Dictionary] = draft.permitted_sockets(original, obstacles, not has_permission)
+	var edited_regions := {}
+	var edited_sockets := {}
+	for socket in original:
+		if draft.edits_socket(socket):
+			edited_regions[socket.region_id] = true
+			edited_sockets[String(socket.socket_id)] = true
+	var kept: Array[Dictionary] = draft.permitted_sockets(original, obstacles, false, true)
 	var ids := {}
 	for socket in kept: ids[String(socket.socket_id)] = true
 	for node in root.find_children("*", "Node", true, false):
@@ -202,8 +207,8 @@ static func _apply_permission(source, root: Node3D, draft, obstacles: Array[AABB
 	if root.has_meta("painted_parking_bays"):
 		var rules: Array = root.get_meta("painted_parking_bays").duplicate(true)
 		rules = rules.filter(func(bay): return ids.has(String(bay.id)))
-		if has_permission:
-			for bay in rules: bay.occupancy_percent = draft.occupancy
+		for bay in rules:
+			if edited_sockets.has(String(bay.id)): bay.occupancy_percent = draft.occupancy
 		root.set_meta("painted_parking_bays", rules)
 	var counts := {}
 	for socket in source.population_sockets(root): counts[socket.region_id] = int(counts.get(socket.region_id, 0)) + 1
@@ -212,7 +217,7 @@ static func _apply_permission(source, root: Node3D, draft, obstacles: Array[AABB
 		var count := int(counts.get(node.get_meta("population_region_id"), 0))
 		if count == 0:
 			node.free()
-		elif has_permission:
+		elif edited_regions.has(node.get_meta("population_region_id")):
 			node.set_meta("occupancy_percent", draft.occupancy)
 			node.set_meta("min_count", count if draft.occupancy == 100 else 0)
 			node.set_meta("max_count", 0 if draft.occupancy == 0 else count)

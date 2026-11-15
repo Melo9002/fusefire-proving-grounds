@@ -20,6 +20,8 @@ var preview_button: Button
 var next_seed_button: Button
 var registered_preview_button: Button
 var preview_context: Label
+var guides_button: Button
+var rule_context: Label
 var density_context: Label
 var fit_feedback: Label
 var export_button: Button
@@ -85,10 +87,10 @@ func setup(editor: Node3D) -> void:
 	# The shared footer owns the primary action; retain the handle for control state.
 	preview_button.hide()
 	next_seed_button = _add_button(preview_controls, "Next seed", _next_seed)
-	_add_button(preview_controls, "Show guides", reset_preview)
+	guides_button = _add_button(preview_controls, "Show guides", reset_preview)
 	add_child(preview_controls)
 	registered_preview_button = _add_button(self, "Compare original", preview_registered)
-	registered_preview_button.tooltip_text = "Temporarily show the original parcel without your edits. Show guides restores your test copy."
+	registered_preview_button.tooltip_text = "Temporarily show the original parcel without your edits. Return to my parcel restores your test copy."
 	preview_context = _add_label(self, "")
 	fit_feedback = _add_label(self, "")
 	fit_feedback.max_lines_visible = 4
@@ -117,6 +119,7 @@ func setup(editor: Node3D) -> void:
 		preset_picker.set_item_metadata(preset_picker.item_count - 1, preset)
 	preset_picker.item_selected.connect(func(_index): _update_tools())
 	options.add_child(preset_picker)
+	rule_context = _add_label(options, "")
 	heading_picker = OptionButton.new()
 	for label in ["Aisle toward +Z", "Aisle toward −X", "Aisle toward −Z", "Aisle toward +X"]:
 		heading_picker.add_item(label)
@@ -209,6 +212,8 @@ func _on_preview_settings_changed(_value: float) -> void:
 	_update_tools()
 
 func _update_tools(provisional: Dictionary = {}) -> void:
+	var selected_preset: String = String(preset_picker.get_selected_metadata())
+	if is_instance_valid(rule_context): rule_context.text = "Protected paint excludes every movable type where it overlaps. Fixed objects stay." if selected_preset == "protected" else "%s paint replaces existing %s permission on this floor. Matching positions outside the paint are excluded. Other object types and floors keep their rules." % [selected_preset.capitalize(), "parking-car" if selected_preset == "parking" else selected_preset]
 	_field_destination.text = "Active fields · %s\nDefault copy · %s" % [session.active_path.get_file() if not session.active_path.is_empty() else "registered source", session.path().get_file()]
 	_field_destination.tooltip_text = "Save target · " + ProjectSettings.globalize_path(session.active_path if not session.active_path.is_empty() else session.path())
 	var parking_allowed := false
@@ -283,6 +288,7 @@ func _next_handoff_step() -> void:
 	else: host.test_in_battle()
 
 func update_preview_controls() -> void:
+	if is_instance_valid(guides_button): guides_button.text = "Return to my parcel" if _registered_preview else "Show guides"
 	var has_visual_changes: bool = host.draft.placements != host.draft.base_placements
 	preview_button.disabled = _definition == null
 	next_seed_button.disabled = preview_button.disabled and not is_instance_valid(_runtime_preview)
@@ -297,7 +303,7 @@ func update_preview_controls() -> void:
 	elif session.fields.is_empty():
 		preview_context.text = "Preview shows one arrangement for this seed."
 	else:
-		preview_context.text = "Draft paint defines movable permission. Preview and Test battle use the same rules."
+		preview_context.text = "Paint changes permission for its object type and floor. Other population rules stay. Preview and Test battle agree."
 
 func begin(definition, scene_root: Node3D) -> void:
 	_definition = definition
@@ -683,8 +689,8 @@ func preview() -> void:
 	var built := build_current()
 	if built.has("error"):
 		preview_context.text = built.error
-		status.text = built.error
-		status.show()
+		status.text = ""
+		status.hide()
 		return
 	preview_definition = built.definition
 	var layout := TestLayout.new(preview_definition)
@@ -719,7 +725,7 @@ func preview_registered() -> void:
 	overlay.hide()
 	status.text = "Source rules · %d occupied · seed %d." % [resolved.placements[0].population.size(), int(seed_input.value)]
 	status.hide()
-	preview_context.text = "Original layout · " + status.text + " Show guides restores both drafts."
+	preview_context.text = "Original layout · " + status.text + " Return to my parcel restores both drafts."
 	update_preview_controls()
 
 func _present_preview() -> void:
@@ -820,6 +826,7 @@ func clear_preview() -> void:
 			overlay.visible = is_visible_in_tree()
 		host.refresh_tactical_overlay(host.displayed_parcel)
 	_registered_preview = false
+	if is_instance_valid(guides_button): guides_button.text = "Show guides"
 	compiled_preview = null
 	preview_manifest = {}
 	preview_definition = null
@@ -893,5 +900,4 @@ func export_scene(destination: String = "") -> bool:
 
 func _fitting_sockets() -> Array[Dictionary]:
 	if session.fields.is_empty(): return _source_sockets
-	var inherit: bool = not session.fields.any(func(field): return field.preset != "protected")
-	return session.permitted_sockets(_source_sockets, _fixed_obstacles, inherit)
+	return session.permitted_sockets(_source_sockets, _fixed_obstacles, false, true)

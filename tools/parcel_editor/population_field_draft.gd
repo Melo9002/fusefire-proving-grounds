@@ -291,7 +291,10 @@ func redo() -> bool:
 	fields.assign(future.pop_back())
 	return true
 
-func permitted_sockets(sockets: Array[Dictionary], obstacles: Array[AABB] = [], inherited_permission := false) -> Array[Dictionary]:
+func edits_socket(socket: Dictionary) -> bool:
+	return fields.any(func(field): return field.surface == String(socket.surface_id) and field.preset != "protected" and field.preset != PARKING_ROW and PRESETS[field.preset].has(String(socket.asset_id)))
+
+func permitted_sockets(sockets: Array[Dictionary], obstacles: Array[AABB] = [], inherited_permission := false, scope_by_type := false) -> Array[Dictionary]:
 	conflict_count = 0
 	field_excluded_sockets.clear()
 	var accepted: Array[Dictionary] = []
@@ -312,7 +315,7 @@ func permitted_sockets(sockets: Array[Dictionary], obstacles: Array[AABB] = [], 
 		var permitted := not has_protected_overlap(String(socket.surface_id), bounds)
 		for x in range(floori(bounds.position.x + 0.5), ceili(bounds.end.x + 0.5 - 0.00001)):
 			for z in range(floori(bounds.position.z + 0.5), ceili(bounds.end.z + 0.5 - 0.00001)):
-				if not inherited_permission and not permission.has(Vector2i(x, z)): permitted = false
+				if not inherited_permission and (not scope_by_type or edits_socket(socket)) and not permission.has(Vector2i(x, z)): permitted = false
 		if not permitted:
 			field_excluded_sockets[socket.socket_id] = true
 			continue

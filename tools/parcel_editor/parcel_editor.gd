@@ -400,16 +400,15 @@ func _on_task_changed(task: int) -> void:
 	_finish_library_placement(false)
 	if task != Task.POPULATION_FIELDS:
 		field_panel.cancel_drag()
-		field_panel.clear_preview()
 	if is_instance_valid(field_panel.overlay):
-		field_panel.overlay.visible = task == Task.POPULATION_FIELDS
+		field_panel.overlay.visible = task == Task.POPULATION_FIELDS and not is_instance_valid(field_panel._runtime_preview)
 	if task == Task.MOVE_OBJECTS:
 		_update_draft_status()
 	else:
 		_update_selection_marker()
 	if task == Task.POPULATION_FIELDS:
 		field_panel.sync_draft_context()
-		field_panel.refresh()
+		if not is_instance_valid(field_panel._runtime_preview): field_panel.refresh()
 		field_panel.update_preview_controls()
 	update_workflow_footer()
 
@@ -477,7 +476,7 @@ func _definition_index(id: StringName) -> int:
 
 func _unsaved_scopes() -> PackedStringArray:
 	var scopes := PackedStringArray()
-	if draft.dirty: scopes.append("visual moves")
+	if draft.dirty: scopes.append("object changes")
 	if field_panel.has_unsaved_changes(): scopes.append("population fields")
 	if scopes.is_empty() and not active_session_path.is_empty() and _session_fingerprint() != _saved_session_fingerprint: scopes.append("parcel session")
 	return scopes
@@ -720,6 +719,7 @@ func _start_duplicate() -> void:
 	_start_fixed_placement(String(selected.get_meta("asset_id")), selected.rotation_degrees.y)
 
 func _start_fixed_placement(id: String, yaw := 0.0) -> void:
+	field_panel.clear_preview()
 	_finish_library_placement(false)
 	if not _asset_entries.has(id):
 		_update_draft_status("This object has no reusable fixed placement in the library.")
@@ -1198,6 +1198,7 @@ func _pick_placement(screen: Vector2) -> String:
 	return picked
 
 func _start_object_drag(screen: Vector2) -> bool:
+	field_panel.clear_preview()
 	var path := _pick_placement(screen)
 	if path.is_empty() or not draft.select(path):
 		return false

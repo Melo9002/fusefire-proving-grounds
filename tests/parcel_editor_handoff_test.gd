@@ -36,7 +36,7 @@ func _run() -> void:
 	field.preview()
 	check(is_instance_valid(field._runtime_preview), "The exact current draft has a runtime-rule preview: %s" % field.preview_context.text)
 	var choices: Array = field.preview_manifest.get("placements", []).duplicate(true)
-	check(choices.size() == 1 and choices[0].population.size() == 1, "100% preview uses the single fitted container position")
+	check(choices.size() == 1 and choices[0].population.size() == 2 and choices[0].population.any(func(choice): return choice.asset_id == "car_kit/delivery") and choices[0].population.any(func(choice): return choice.socket_id != &"loading_vehicle"), "100% preview fills the new container and retains the unrelated delivery rule")
 	await _capture("editor-preview")
 	var objects: Array = editor.draft.placements.duplicate(true)
 	var fields: Array = field.session.fields.duplicate(true)
