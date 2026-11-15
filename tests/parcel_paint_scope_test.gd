@@ -24,7 +24,7 @@ func _run() -> void:
 	editor._apply_draft()
 	check(editor.draft_badge.text.contains("object changes"), "Adding the ambulance is described as an object change")
 	var panel = editor.field_panel
-	check(panel.rule_context.text.contains("Other object types and floors keep their rules"), "Permission scope is explained before the first stroke")
+	check(panel.rule_context.text.contains("Existing parking spaces") and panel.rule_context.text.contains("won't spawn cars") and panel.rule_context.text.contains("Trucks, containers and other floors"), "Permission scope is explained before the first stroke")
 	panel.session.add("ground", "parking", Rect2i(6, 21, 2, 2))
 	panel.refresh()
 	panel.preview()

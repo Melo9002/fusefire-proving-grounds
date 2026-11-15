@@ -213,7 +213,12 @@ func _on_preview_settings_changed(_value: float) -> void:
 
 func _update_tools(provisional: Dictionary = {}) -> void:
 	var selected_preset: String = String(preset_picker.get_selected_metadata())
-	if is_instance_valid(rule_context): rule_context.text = "Protected paint excludes every movable type where it overlaps. Fixed objects stay." if selected_preset == "protected" else "%s paint replaces existing %s permission on this floor. Matching positions outside the paint are excluded. Other object types and floors keep their rules." % [selected_preset.capitalize(), "parking-car" if selected_preset == "parking" else selected_preset]
+	if is_instance_valid(rule_context):
+		match selected_preset:
+			"parking": rule_context.text = "Paint where parked cars can appear. Existing parking spaces outside your painted areas on this floor won't spawn cars. Trucks, containers and other floors keep their rules."
+			"containers": rule_context.text = "Paint where containers can appear. Existing container spots outside your painted areas on this floor won't spawn containers. Vehicles and other floors keep their rules."
+			"equipment": rule_context.text = "Paint where equipment can appear. Existing equipment spots outside your painted areas on this floor won't spawn equipment. Other objects and floors keep their rules."
+			"protected": rule_context.text = "Movable objects that overlap protected paint won't appear. Fixed objects stay."
 	_field_destination.text = "Active fields · %s\nDefault copy · %s" % [session.active_path.get_file() if not session.active_path.is_empty() else "registered source", session.path().get_file()]
 	_field_destination.tooltip_text = "Save target · " + ProjectSettings.globalize_path(session.active_path if not session.active_path.is_empty() else session.path())
 	var parking_allowed := false
@@ -303,7 +308,7 @@ func update_preview_controls() -> void:
 	elif session.fields.is_empty():
 		preview_context.text = "Preview shows one arrangement for this seed."
 	else:
-		preview_context.text = "Paint changes permission for its object type and floor. Other population rules stay. Preview and Test battle agree."
+		preview_context.text = "Paint sets where those objects can appear on this floor. Other objects keep their rules. Preview and Test battle agree."
 
 func begin(definition, scene_root: Node3D) -> void:
 	_definition = definition
