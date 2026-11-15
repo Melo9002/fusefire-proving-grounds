@@ -82,10 +82,13 @@ func setup(editor: Node3D) -> void:
 
 	var preview_controls := HBoxContainer.new()
 	preview_button = _add_button(preview_controls, "Preview", preview)
+	# The shared footer owns the primary action; retain the handle for control state.
+	preview_button.hide()
 	next_seed_button = _add_button(preview_controls, "Next seed", _next_seed)
 	_add_button(preview_controls, "Show guides", reset_preview)
 	add_child(preview_controls)
-	registered_preview_button = _add_button(self, "Preview registered parcel", preview_registered)
+	registered_preview_button = _add_button(self, "Compare original", preview_registered)
+	registered_preview_button.tooltip_text = "Temporarily show the original parcel without your edits. Show guides restores your test copy."
 	preview_context = _add_label(self, "")
 	fit_feedback = _add_label(self, "")
 	fit_feedback.max_lines_visible = 4
@@ -133,6 +136,7 @@ func setup(editor: Node3D) -> void:
 	seed_input.prefix = "Seed "
 	seed_input.value_changed.connect(_on_preview_settings_changed)
 	options.add_child(seed_input)
+	_add_label(options, "Seed is saved with this parcel.")
 	density = SpinBox.new()
 	density.max_value = 100
 	density.value = 65
@@ -287,11 +291,11 @@ func update_preview_controls() -> void:
 	if is_instance_valid(_runtime_preview):
 		return
 	if has_visual_changes:
-		preview_context.text = "Preview includes your fixed objects and their tactical volumes. Registered preview compares the original layout."
+		preview_context.text = "Preview includes your placed objects and their gameplay boundaries. Compare original temporarily shows the starting layout."
 	elif preview_button.disabled:
 		preview_context.text = "Paint a population area to preview this parcel."
 	elif session.fields.is_empty():
-		preview_context.text = "Preview uses the registered rules for this seed."
+		preview_context.text = "Preview shows one arrangement for this seed."
 	else:
 		preview_context.text = "Draft paint defines movable permission. Preview and Test battle use the same rules."
 
@@ -715,7 +719,7 @@ func preview_registered() -> void:
 	overlay.hide()
 	status.text = "Source rules · %d occupied · seed %d." % [resolved.placements[0].population.size(), int(seed_input.value)]
 	status.hide()
-	preview_context.text = "Registered preview · " + status.text + " Show guides restores both drafts."
+	preview_context.text = "Original layout · " + status.text + " Show guides restores both drafts."
 	update_preview_controls()
 
 func _present_preview() -> void:

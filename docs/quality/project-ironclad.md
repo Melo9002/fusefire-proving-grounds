@@ -145,3 +145,6 @@ Final verification: **122 suites passed, 0 failed, 14 explicit-only skipped**, i
 Additional executed checks: the historical container sweep passed **300 seeds across three sizes** (`artifacts/report-container-fixture.txt`); the current Depot AI Eliminate battle completed with **0 issues, six rounds, 53 decisions** (`artifacts/depot-ai-batch.txt`); and the rendered editor/save/preview/local-battle/replay/return check passed with captures inspected in `artifacts/report-cleanup-handoff/`. The building suite's separate 300-seed sweep passed as well. The policy-skipped extended AI matrix, stress tests and other capture workflows were not all run; do not infer their results from these bounded checks.
 
 Final logs contain no script parse/compile/runtime errors or new leak warnings. The pre-existing **four ObjectDB instances** warning in `allied_faction_smoke.gd` remains, along with sandbox certificate-store diagnostics. These are recorded limitations, not silently reclassified passes for new failures. The five pre-existing texture-import edits are outside the cleanup commit.
+
+
+The subsequent [parcel UX and live-battle follow-up](parcel-playtest-2026-11-15.md) records the narrower UI/focused checks, saved ambulance battle completion, and three added suites. Its results do not replace the dated full-run evidence above.

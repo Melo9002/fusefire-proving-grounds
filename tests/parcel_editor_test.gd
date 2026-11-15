@@ -22,7 +22,7 @@ func _run() -> void:
 	check(editor.task_tabs.current_tab == ParcelEditor.Task.INSPECT and not editor.metadata_label.visible, "Editor opens on compact inspection with technical details collapsed")
 	check(editor.select_parcel(Catalog.MAINTENANCE_GALLERY_A), "Parcel Editor opens the maintenance gallery by stable ID")
 	check(editor.displayed_parcel != null and editor.displayed_parcel_id == Catalog.MAINTENANCE_GALLERY_A, "Selected registered scene is instantiated")
-	check(editor.validation_label.text.begins_with("VALID"), "Registered parcel validation is visible")
+	check(editor.validation_label.text == "Ready to preview", "Registered parcel validation is visible")
 	check(editor.tactical_overlay.get_child_count() >= 4, "Maintenance gallery exposes solid, deck, and access contracts independently of its meshes")
 	check(editor.select_parcel(Catalog.LOADING_YARD_A), "Parcel Editor opens a populated loading parcel")
 	var population_nodes: Array = editor.displayed_parcel.find_children("*", "Node3D", true, false).filter(func(node): return node.has_meta("population_socket_id"))
@@ -86,7 +86,7 @@ func _run() -> void:
 	check(container.position.is_equal_approx(container_start) and not editor.draft.dirty and editor.draft.undo_stack.is_empty(), "Escape restores a live pose without adding history")
 	var target_container := editor.displayed_parcel.get_node("ContainerB") as Node3D
 	editor._translate_selected(target_container.position - container.position)
-	check(container.position.is_equal_approx(container_start) and "Overlaps ContainerB" in editor.draft_status.text, "A nudge cannot place the container inside another solid")
+	check(container.position.is_equal_approx(container_start) and "Reserved container position" in editor.draft_status.text, "A nudge cannot place the container inside another solid")
 	var warehouse := editor.displayed_parcel.get_node("Warehouse") as Node3D
 	editor._translate_selected(warehouse.position - container.position)
 	check(container.position.is_equal_approx(container_start) and "Overlaps Warehouse" in editor.draft_status.text, "A container cannot be placed inside the warehouse")
@@ -131,7 +131,7 @@ func _run() -> void:
 	var registered: Node3D = panel._runtime_preview
 	check(is_instance_valid(registered) and (registered.get_node("CrateA") as Node3D).position == original_crate_position and not panel.overlay.visible, "Registered Preview uses a separate source scene and hides draft paint")
 	panel.next_seed_button.pressed.emit()
-	check(is_instance_valid(panel._runtime_preview) and "Registered preview" in panel.preview_context.text, "Next seed stays in the registered preview while drafts are parked")
+	check(is_instance_valid(panel._runtime_preview) and "Original layout" in panel.preview_context.text, "Next seed stays in the registered preview while drafts are parked")
 	panel.reset_preview()
 	check(crate.position == moved_crate_position and panel.session.fields.size() == 1 and editor.draft.dirty and panel.has_unsaved_changes(), "Exiting registered preview preserves both unsaved drafts")
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
@@ -169,7 +169,7 @@ func _run() -> void:
 	check(editor.displayed_parcel.has_node(NodePath(new_path)) and not editor.draft.dirty, "Opening a saved draft reconstructs its manually placed object")
 	check(editor.draft.active_path == test_draft_path and editor._visual_destination.text.contains(test_draft_path.get_file()), "Reopening identifies the active named draft")
 	check(editor.workflow_footer.text.contains(test_draft_path.get_file()), "The active named file is visible outside the scrolling task panel")
-	check(editor.draft_status.text.contains("Draft saved · differs") and editor.workflow_footer.text.contains("draft differs from registered parcel"), "Saved object edits remain distinct from the registered source")
+	check(editor.draft_status.text.contains("Draft saved · differs") and editor.workflow_footer.text.contains("edited layout"), "Saved object edits remain distinct from the registered source")
 	check(editor.workflow_footer.text.contains("Unsaved"), "The shared footer retains the separate unsaved field state")
 	editor.draft.select(new_path)
 	editor._translate_selected(Vector3.RIGHT * 0.5)

@@ -22,6 +22,7 @@ var task_tabs: TabContainer
 var draft_badge: Label
 var discard_dialog: ConfirmationDialog
 var _selection_marker: Node3D
+var _reservation_marker: Node3D
 var _panel: PanelContainer
 var _discard_action: Callable
 var _draft_file_dialog: FileDialog
@@ -172,7 +173,7 @@ func _build_ui() -> void:
 	inspect_page.add_child(population_toggle)
 	tactical_toggle = CheckButton.new()
 	tactical_toggle.name = "TacticalToggle"
-	tactical_toggle.text = "Show tactical contracts"
+	tactical_toggle.text = "Show gameplay boundaries"
 	tactical_toggle.tooltip_text = "Cyan: elevated route/access. Orange: explicit tactical solid volumes. These overlays, not imported meshes, explain gameplay authority."
 	tactical_toggle.button_pressed = false
 	tactical_toggle.toggled.connect(func(enabled: bool): if tactical_overlay: tactical_overlay.visible = enabled)
@@ -189,7 +190,7 @@ func _build_ui() -> void:
 
 	var move_page := _add_task_page("Objects")
 	var limits := Label.new()
-	limits.text = "New objects get starting boundaries from their visible mesh parts. Existing authored shapes are kept. Checks bounds and solid overlap; ground placement only. Battle routes and registration remain separate."
+	limits.text = "Place an object on the ground; its starting boundaries are added automatically. Existing custom shapes are kept. Preview checks your layout; Test battle checks it in play."
 	limits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(limits)
 	var browser := VBoxContainer.new()
@@ -233,7 +234,7 @@ func _build_ui() -> void:
 	move_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(move_help)
 	var compare := CheckButton.new()
-	compare.text = "Show current tactical bounds"
+	compare.text = "Show object boundaries"
 	compare.toggled.connect(func(enabled: bool): tactical_toggle.button_pressed = enabled)
 	tactical_toggle.toggled.connect(func(enabled: bool): compare.set_pressed_no_signal(enabled))
 	move_page.add_child(compare)
@@ -243,7 +244,7 @@ func _build_ui() -> void:
 	tactical_scope.item_selected.connect(func(_index): _refresh_active_tactical_overlay())
 	move_page.add_child(tactical_scope)
 	tactical_legend = Label.new()
-	tactical_legend.text = "Orange · solid volumes\nCyan · floor and access contracts"
+	tactical_legend.text = "Orange · object boundaries\nCyan · floors and access"
 	tactical_legend.modulate = Color("93a8ba")
 	tactical_legend.visible = tactical_toggle.button_pressed
 	tactical_toggle.toggled.connect(func(enabled): tactical_legend.visible = enabled)
@@ -491,9 +492,9 @@ func update_draft_badge() -> void:
 func update_workflow_footer() -> void:
 	if not is_instance_valid(workflow_footer):
 		return
-	var state := "Unsaved" if not _unsaved_scopes().is_empty() else "Saved"
+	var state := "Unsaved test copy" if not _unsaved_scopes().is_empty() else ("Saved test copy" if not active_session_path.is_empty() or not draft.active_path.is_empty() else "Original parcel")
 	var differs: bool = draft.placements != draft.base_placements or not field_panel.session.fields.is_empty()
-	workflow_footer.text = "%s · %s\n%s" % [state, "draft differs from registered parcel" if differs else "matches registered parcel", field_panel.export_state()]
+	workflow_footer.text = "%s · %s\n%s" % [state, "edited layout" if differs else "original layout", field_panel.export_state()]
 	var active: String = field_panel.session.active_path if task_tabs.current_tab == Task.POPULATION_FIELDS else draft.active_path
 	if not active_session_path.is_empty(): active = active_session_path
 	if not active.is_empty():
@@ -547,7 +548,8 @@ func _show_index(index: int) -> void:
 		var surface: Dictionary = surfaces.get(region.surface_id, {})
 		metadata_label.text += "\nPopulation  %s · %s · level %s · %s" % [region.region_id, region.surface_id, str(surface.get("level", "missing")), region.local_rect]
 	var failures: PackedStringArray = definition.validate()
-	validation_label.text = "VALID — registered scene and contracts agree" if failures.is_empty() else "INVALID — %s" % "; ".join(failures)
+	validation_label.text = "Ready to preview" if failures.is_empty() else "Needs attention · %s" % "; ".join(failures)
+	validation_label.tooltip_text = "Source scene checks passed. Preview checks your current edits; Test battle validates gameplay before starting." if failures.is_empty() else "; ".join(failures)
 	validation_label.modulate = Color("79d99b") if failures.is_empty() else Color("ff7a7a")
 	population_toggle.button_pressed = true
 	population_toggle.disabled = definition.population_sockets().is_empty()
@@ -735,6 +737,7 @@ func _update_library_placement(screen: Vector2) -> void:
 	var on_canvas := not _panel.get_global_rect().has_point(screen) and get_viewport().get_visible_rect().has_point(screen)
 	var hit: Variant = _drag_plane_hit(screen, displayed_parcel.global_position.y) if on_canvas else null
 	if hit == null:
+		_clear_reservation_marker()
 		_pending_asset.hide()
 		_placement_hint.hide()
 		return
@@ -799,6 +802,7 @@ func _try_visual_pose(selected: Node3D, candidate_position: Vector3, yaw: float)
 		_apply_draft("Placed visual draft object.")
 
 func _validate_visual_pose(selected: Node3D) -> String:
+	_clear_reservation_marker()
 	var local_bounds := EnvironmentAssetPlacement.mesh_bounds(selected, displayed_parcel.global_transform.affine_inverse() * (selected.get_parent() as Node3D).global_transform)
 	var footprint := Rect2(Vector2(local_bounds.position.x, local_bounds.position.z), Vector2(local_bounds.size.x, local_bounds.size.z))
 	var parcel_bounds := Rect2(Vector2(-0.5, -0.5), Vector2(draft.parcel_size))
@@ -826,8 +830,57 @@ func _validate_visual_pose(selected: Node3D) -> String:
 		var bounds := _solid_world_bounds(obstacle)
 		for solid in moving_solids:
 			if solid.grow(-0.01).intersects(bounds):
+				var reservation: Node = obstacle
+				while reservation != displayed_parcel and not reservation.has_meta("population_socket_id"):
+					reservation = reservation.get_parent()
+				if reservation != displayed_parcel:
+					var asset := String(reservation.get_meta("asset_id", ""))
+					var title := "Reserved container position" if asset.contains("container") else ("Reserved vehicle position" if asset.begins_with("car_kit/") else "Reserved object position")
+					_show_reservation_marker(reservation as Node3D, title)
+					return title + "\nMay be occupied in another seed"
 				return "Overlaps %s" % (obstacle.name if owner_node == displayed_parcel else owner_node.name)
 	return ""
+
+func _clear_reservation_marker() -> void:
+	if is_instance_valid(_reservation_marker): _reservation_marker.free()
+	_reservation_marker = null
+
+func _show_reservation_marker(object: Node3D, title: String) -> void:
+	var volumes := _visual_solid_bounds(object)
+	if volumes.is_empty(): return
+	var bounds := volumes[0]
+	for volume in volumes: bounds = bounds.merge(volume)
+	_reservation_marker = Node3D.new()
+	_reservation_marker.name = "PlacementReservation"
+	add_child(_reservation_marker)
+	_reservation_marker.top_level = true
+	_reservation_marker.global_transform = Transform3D.IDENTITY
+	var mesh := ImmediateMesh.new()
+	var line_material := StandardMaterial3D.new()
+	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_material.albedo_color = Color("ffce70")
+	line_material.no_depth_test = true
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, line_material)
+	for corner in 8:
+		for edge in [1, 2, 4]:
+			if (corner & edge) == 0:
+				mesh.surface_add_vertex(bounds.get_endpoint(corner))
+				mesh.surface_add_vertex(bounds.get_endpoint(corner | edge))
+	mesh.surface_end()
+	var visual := MeshInstance3D.new()
+	visual.mesh = mesh
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_reservation_marker.add_child(visual)
+	var label := Label3D.new()
+	label.text = title.replace(" position", "\nposition")
+	label.fixed_size = true
+	label.pixel_size = 0.0005
+	label.position = bounds.get_center() + Vector3.UP * (bounds.size.y * 0.5 + 0.4)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.font_size = 28
+	label.modulate = Color("ffce70")
+	_reservation_marker.add_child(label)
 
 func _visual_solid_bounds(object: Node3D) -> Array[AABB]:
 	var bounds: Array[AABB] = []
@@ -1221,6 +1274,7 @@ func _finish_object_drag(commit: bool) -> void:
 		_update_draft_status("Placement rejected · " + issue if commit and not issue.is_empty() else "")
 
 func _clear_placement_ghost() -> void:
+	_clear_reservation_marker()
 	for mesh_node in _drag_materials:
 		if is_instance_valid(mesh_node):
 			mesh_node.material_override = _drag_materials[mesh_node]
