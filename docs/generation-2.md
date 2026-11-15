@@ -95,3 +95,5 @@ Exact reconstruction validates content/compiler revisions. This supports compati
 The three normal sites share one generator. Historical generators remain only as explicit regression fixtures, outside Generation 2's dependency path. Retired maps/documents and the refinery recipe are preserved in external quarantine; the recovery locations, audit changes and dated test evidence are in [cleanup history](generation-2-history.md). The current code map is [architecture.md](architecture.md); test commands and results are in [Project Ironclad](quality/project-ironclad.md).
 
 World-beyond-the-map work is tracked separately in [World surroundings](world-surroundings.md). Normal plots now expose Tactical, Peripheral and Distant scene groups; this does not change their tactical generation rules.
+
+Service Depot now demonstrates connected off-map industrial yards, extended roads and low-detail background placeholders. Yellow dashes mark its unchanged playable footprint. See the [Depot continuity proof](quality/depot-continuity-2026-11-15.md).

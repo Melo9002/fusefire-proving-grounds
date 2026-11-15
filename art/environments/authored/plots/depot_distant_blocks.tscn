@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="1_v5lwb"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_commercial/models/low-detail-building-wide-a.glb" id="2_52r21"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_commercial/models/low-detail-building-d.glb" id="3_ttu5o"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_commercial/models/low-detail-building-wide-b.glb" id="4_kwlk5"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_commercial/models/low-detail-building-g.glb" id="5_l5j2t"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_commercial/models/low-detail-building-f.glb" id="6_l31h8"]
+
+[node name="DepotDistantBlocks" type="Node3D" unique_id=1889148837]
+
+[node name="NorthBlocksA" type="Node3D" parent="." unique_id=285678565]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, -26, 0, -78)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-wide-a.glb"
+
+[node name="low-detail-building-wide-a2" type="Node3D" parent="NorthBlocksA" unique_id=390733841 instance=ExtResource("2_52r21")]
+
+[node name="NorthBlocksB" type="Node3D" parent="." unique_id=772104774]
+transform = Transform3D(-4.371139e-07, 0, 10, 0, 10, 0, -10, 0, -4.371139e-07, 2, 0, -88)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-d.glb"
+
+[node name="low-detail-building-d2" type="Node3D" parent="NorthBlocksB" unique_id=630243953 instance=ExtResource("3_ttu5o")]
+
+[node name="NorthBlocksC" type="Node3D" parent="." unique_id=2037455628]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 32, 0, -82)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-wide-b.glb"
+
+[node name="low-detail-building-wide-b2" type="Node3D" parent="NorthBlocksC" unique_id=904459453 instance=ExtResource("4_kwlk5")]
+
+[node name="EastBlocks" type="Node3D" parent="." unique_id=2145979375]
+transform = Transform3D(-4.371139e-07, 0, -10, 0, 10, 0, 10, 0, -4.371139e-07, 82, 0, -15)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-g.glb"
+
+[node name="low-detail-building-g2" type="Node3D" parent="EastBlocks" unique_id=1415574210 instance=ExtResource("5_l5j2t")]
+
+[node name="WestBlocks" type="Node3D" parent="." unique_id=1353515734]
+transform = Transform3D(-4.371139e-07, 0, 10, 0, 10, 0, -10, 0, -4.371139e-07, -80, 0, -22)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-wide-a.glb"
+
+[node name="low-detail-building-wide-a2" type="Node3D" parent="WestBlocks" unique_id=863150312 instance=ExtResource("2_52r21")]
+
+[node name="SouthBlocks" type="Node3D" parent="." unique_id=1624114935]
+transform = Transform3D(-10, 0, -8.742278e-07, 0, 10, 0, 8.742278e-07, 0, -10, 8, 0, 86)
+script = ExtResource("1_v5lwb")
+metadata/asset_path = "res://art/environments/kenney/city_kit_commercial/models/low-detail-building-f.glb"
+
+[node name="low-detail-building-f2" type="Node3D" parent="SouthBlocks" unique_id=40478265 instance=ExtResource("6_l31h8")]

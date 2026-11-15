@@ -44,7 +44,7 @@ Global lighting/fog remains owned by the battle's explicit WorldEnvironment. No 
 
 `tests/world_area_ownership_test.gd` checks all three sites and seeds 16/17: editable groups, parcel world transforms at presentation scales 1 and 2, bounded grid, unchanged manifest reconstruction, scenery without physics bodies, and ignored scenery hazards alongside working Tactical hazards. Generation/compilation uses the existing unit-tile contract; the scale-2 case tests presentation separately, not new arbitrary-scale tactical compilation support.
 
-The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. Next is one Service Depot continuity proof: connect its edges to the setting using these groups. Physical boundary readability, horizon composition, actual action/replay camera angles and performance budgets remain later tasks. Grouping alone does not solve those visual problems.
+The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The next milestone was the Service Depot continuity proof, now recorded below. Physical boundary readability, horizon composition, actual action/replay camera angles and performance budgets remain later tasks. Grouping alone does not solve those visual problems.
 
 ### Step-2 evidence — 2026-11-15
 
@@ -54,3 +54,7 @@ The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains t
 - Fresh rendered capture: **30 views, zero failures**, under `artifacts/surroundings-areas/`. Comparison against the step-1 images showed mean absolute RGB differences below 0.001 out of 255 for every view. A representative reverse view was inspected directly; this supports preserved appearance, not a claim that the step-1 visual problems are fixed.
 - The initial regression setup attempted tactical compilation at tile scale 2, which is outside the current unit-tile authoring contract, then dereferenced a failed presentation. That was a test setup defect; the final test explicitly exercises presentation scale separately and safely handles failed presentation. No compiler assertions or existing gameplay rules were relaxed.
 - Sandbox certificate/log-store diagnostics remain environmental. Captures and final focused runs had no script/parse errors.
+
+## Step 3 — Depot continuity proof
+
+Both Depot layouts now use connected neighboring yards, extended roads, a first low-detail distant placeholder and a yellow dashed playable perimeter. These are ordinary scene instances under the existing three groups. The owner accepted the marking for prototype use. [Content locations, validation and remaining scope](quality/depot-continuity-2026-11-15.md).

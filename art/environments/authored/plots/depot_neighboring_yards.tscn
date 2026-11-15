@@ -1,0 +1,154 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="1_1pdov"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-i.glb" id="2_7gw0k"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-c.glb" id="3_fdpmn"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_a.tscn" id="4_nfay3"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_b.tscn" id="5_wvcm5"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_c.tscn" id="6_3str6"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank-large.glb" id="7_ov12o"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank.glb" id="8_oc23i"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i4ue0"]
+albedo_color = Color(0.6666667, 0.6627451, 0.6078431, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_n7blm"]
+material = SubResource("StandardMaterial3D_i4ue0")
+size = Vector3(26, 0.04, 66)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_seh41"]
+albedo_color = Color(0.48, 0.5, 0.47, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_h84h0"]
+material = SubResource("StandardMaterial3D_seh41")
+size = Vector3(26, 0.04, 66)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ou3ix"]
+albedo_color = Color(0.54, 0.53, 0.48, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_ukryi"]
+material = SubResource("StandardMaterial3D_ou3ix")
+size = Vector3(40, 0.04, 24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o3jxh"]
+albedo_color = Color(0.6666667, 0.6627451, 0.6078431, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_ue43t"]
+material = SubResource("StandardMaterial3D_o3jxh")
+size = Vector3(40, 0.04, 24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spskv"]
+albedo_color = Color(0.39, 0.41, 0.41, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_22ewr"]
+material = SubResource("StandardMaterial3D_spskv")
+size = Vector3(60, 0.03, 4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4rt6c"]
+albedo_color = Color(0.39, 0.41, 0.41, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_24a55"]
+material = SubResource("StandardMaterial3D_4rt6c")
+size = Vector3(60, 0.03, 4)
+
+[node name="DepotNeighboringYards" type="Node3D" unique_id=542445446]
+
+[node name="ConnectedYards" type="Node3D" parent="." unique_id=926266846]
+
+[node name="WestLoadingApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=1340681731]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33, -0.01, -3)
+mesh = SubResource("BoxMesh_n7blm")
+
+[node name="EastProcessApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=8397666]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, -0.01, -3)
+mesh = SubResource("BoxMesh_h84h0")
+
+[node name="NorthStorageApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=1049342909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, -32)
+mesh = SubResource("BoxMesh_ukryi")
+
+[node name="SouthDeliveryApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=839046884]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, 32)
+mesh = SubResource("BoxMesh_ue43t")
+
+[node name="NeighboringWorkshops" type="Node3D" parent="ConnectedYards" unique_id=1283875643]
+
+[node name="WestWarehouse" type="Node3D" parent="ConnectedYards/NeighboringWorkshops" unique_id=1540692722]
+transform = Transform3D(-4.371139e-07, 0, 10, 0, 10, 0, -10, 0, -4.371139e-07, -36.74, -1.2993812e-15, -12.341371)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/building-i.glb"
+
+[node name="building-i2" type="Node3D" parent="ConnectedYards/NeighboringWorkshops/WestWarehouse" unique_id=674916441 instance=ExtResource("2_7gw0k")]
+
+[node name="NorthWarehouse" type="Node3D" parent="ConnectedYards/NeighboringWorkshops" unique_id=409770532]
+transform = Transform3D(-10, 0, -8.742278e-07, 0, 10, 0, 8.742278e-07, 0, -10, -13.341371, -1.2993812e-15, -30.26)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/building-i.glb"
+
+[node name="building-i2" type="Node3D" parent="ConnectedYards/NeighboringWorkshops/NorthWarehouse" unique_id=101115935 instance=ExtResource("2_7gw0k")]
+
+[node name="SouthWarehouse" type="Node3D" parent="ConnectedYards/NeighboringWorkshops" unique_id=1978827186]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 14.341372, -1.2993812e-15, 32.260002)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/building-i.glb"
+
+[node name="building-i2" type="Node3D" parent="ConnectedYards/NeighboringWorkshops/SouthWarehouse" unique_id=1080219563 instance=ExtResource("2_7gw0k")]
+
+[node name="EastWorkshop" type="Node3D" parent="ConnectedYards/NeighboringWorkshops" unique_id=764964191]
+transform = Transform3D(-4.371139e-07, 0, -10, 0, 10, 0, 10, 0, -4.371139e-07, 36.430107, 2.2757131e-14, -8.961734)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/building-c.glb"
+
+[node name="building-c2" type="Node3D" parent="ConnectedYards/NeighboringWorkshops/EastWorkshop" unique_id=288088090 instance=ExtResource("3_fdpmn")]
+
+[node name="AdjacentStorage" type="Node3D" parent="ConnectedYards" unique_id=2124977446]
+
+[node name="WestContainer" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=334235881 instance=ExtResource("4_nfay3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 0, 5)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="WestStack" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=1664407456 instance=ExtResource("5_wvcm5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 2.3, 5)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+
+[node name="NorthContainer" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=1789880893 instance=ExtResource("6_3str6")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 8, 0, -28)
+metadata/asset_id = "city_kit_industrial/shipping-container-c"
+
+[node name="NorthSecondContainer" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=89090504 instance=ExtResource("4_nfay3")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 8, 0, -35)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="SouthContainer" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=93175934 instance=ExtResource("5_wvcm5")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -9, 0, 30)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+
+[node name="EastTank" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=33885152]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 29, 2.707168e-15, -26.65)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/detail-tank-large.glb"
+
+[node name="detail-tank-large2" type="Node3D" parent="ConnectedYards/AdjacentStorage/EastTank" unique_id=829834100 instance=ExtResource("7_ov12o")]
+
+[node name="EastReserveTank" type="Node3D" parent="ConnectedYards/AdjacentStorage" unique_id=743734049]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 39, 1.4099833e-17, -28.000002)
+script = ExtResource("1_1pdov")
+metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/detail-tank.glb"
+
+[node name="detail-tank2" type="Node3D" parent="ConnectedYards/AdjacentStorage/EastReserveTank" unique_id=842830045 instance=ExtResource("8_oc23i")]
+
+[node name="ServiceConnections" type="Node3D" parent="ConnectedYards" unique_id=405157732]
+
+[node name="RearServiceLane" type="MeshInstance3D" parent="ConnectedYards/ServiceConnections" unique_id=1777800232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -23)
+mesh = SubResource("BoxMesh_22ewr")
+
+[node name="SouthServiceLane" type="MeshInstance3D" parent="ConnectedYards/ServiceConnections" unique_id=1387438746]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 23)
+mesh = SubResource("BoxMesh_24a55")

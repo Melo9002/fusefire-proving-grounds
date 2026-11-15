@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" path="res://presentation/overlays/playable_boundary.gdshader" id="boundary_shader"]
+
+[sub_resource type="ShaderMaterial" id="boundary_material"]
+shader = ExtResource("boundary_shader")
+
+[sub_resource type="PlaneMesh" id="edge"]
+material = SubResource("boundary_material")
+size = Vector2(40, 0.22)
+
+[node name="DepotPlayableBoundary" type="Node3D"]
+metadata/tactical_size = Vector2i(40, 40)
+
+[node name="North" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, -20)
+cast_shadow = 0
+mesh = SubResource("edge")
+
+[node name="South" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, 20)
+cast_shadow = 0
+mesh = SubResource("edge")
+
+[node name="West" type="MeshInstance3D" parent="."]
+position = Vector3(-20, 0.16, 0)
+rotation = Vector3(0, -1.5707963, 0)
+cast_shadow = 0
+mesh = SubResource("edge")
+
+[node name="East" type="MeshInstance3D" parent="."]
+position = Vector3(20, 0.16, 0)
+rotation = Vector3(0, -1.5707963, 0)
+cast_shadow = 0
+mesh = SubResource("edge")
