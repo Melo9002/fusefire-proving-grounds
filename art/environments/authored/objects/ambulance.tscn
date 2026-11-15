@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="1_tpva7"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/ambulance.glb" id="2_ws5hr"]
+
+[node name="Ambulance" type="Node3D" unique_id=184147971]
+metadata/asset_id = "car_kit/ambulance"
+metadata/mesh_boundary_version = 1
+
+[node name="ambulance" type="Node3D" parent="." unique_id=689220506]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03124997)
+script = ExtResource("1_tpva7")
+metadata/asset_path = "res://art/environments/kenney/car_kit/models/ambulance.glb"
+
+[node name="ambulance" type="Node3D" parent="ambulance" unique_id=2140777190 instance=ExtResource("2_ws5hr")]
+
+[node name="MeshBoundaries" type="Node3D" parent="." unique_id=1648096117]
+
+[node name="Part0" type="Node3D" parent="MeshBoundaries" unique_id=1066334518]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 1.25, -2.9802322e-08)
+metadata/solid_size = Vector3(1.5, 1.6, 3.2499998)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part1" type="Node3D" parent="MeshBoundaries" unique_id=1199523956]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -0.56250006, 0.375, 1.29375)
+metadata/solid_size = Vector3(0.3000001, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part2" type="Node3D" parent="MeshBoundaries" unique_id=1199531693]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0.56250006, 0.375, 1.29375)
+metadata/solid_size = Vector3(0.3000001, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part3" type="Node3D" parent="MeshBoundaries" unique_id=563550987]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -0.56250006, 0.375, -1.1062499)
+metadata/solid_size = Vector3(0.3000001, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part4" type="Node3D" parent="MeshBoundaries" unique_id=352867635]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0.56250006, 0.375, -1.1062499)
+metadata/solid_size = Vector3(0.3000001, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part5" type="Node3D" parent="MeshBoundaries" unique_id=2010644654]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -0.34375, 1.1875, -1.8125001)
+metadata/solid_size = Vector3(0.55, 1.1, 0.050000094)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part6" type="Node3D" parent="MeshBoundaries" unique_id=870986894]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0.34375, 1.1875, -1.8125001)
+metadata/solid_size = Vector3(0.55, 1.1, 0.050000094)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0

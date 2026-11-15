@@ -4,10 +4,11 @@ extends RefCounted
 ## MapData. Editor-derived mesh parts use this same saved-metadata path;
 ## battle compilation never infers solids from rendering geometry.
 
-const SHAPE_REVISION := 3
+const ShapeRules = preload("res://systems/generation2/tactical_shape_rules.gd")
+const SHAPE_REVISION := ShapeRules.REVISION
 
 static func is_active_solid(node: Node, revision := SHAPE_REVISION) -> bool:
-	return node.has_meta("solid_size") and int(node.get_meta("min_shape_revision", 1)) <= revision and int(node.get_meta("max_shape_revision", SHAPE_REVISION)) >= revision
+	return ShapeRules.is_active_solid(node, revision)
 
 static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY, precise_shot_bounds := true, shape_revision := SHAPE_REVISION) -> void:
 	var retired := retired_metadata(root)

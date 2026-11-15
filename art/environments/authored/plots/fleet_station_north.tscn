@@ -1,0 +1,62 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/roads/road_strip_85.tscn" id="1_v0wsj"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_b.tscn" id="2_hwkcd"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_a.tscn" id="3_f6ues"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/service_office.tscn" id="4_lf00l"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3x0cj"]
+albedo_color = Color(0.20392157, 0.24705882, 0.2509804, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_54inq"]
+material = SubResource("StandardMaterial3D_3x0cj")
+size = Vector3(144, 0.08, 144)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ws2vd"]
+albedo_color = Color(0.63529414, 0.6431373, 0.58431375, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_e3v7o"]
+material = SubResource("StandardMaterial3D_ws2vd")
+size = Vector3(32, 0.03, 1)
+
+[node name="FleetStationNorth" type="Node3D" unique_id=1968209105]
+
+[node name="Surroundings" type="MeshInstance3D" parent="." unique_id=750159067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0)
+mesh = SubResource("BoxMesh_54inq")
+
+[node name="RoadStrip85" type="Node3D" parent="." unique_id=297968161 instance=ExtResource("1_v0wsj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.005, -17.5)
+metadata/asset_id = "city_kit_roads/road-straight"
+metadata/calibrated_scale = 5.0
+metadata/tile_pitch = 5.0
+
+[node name="FrontSidewalk" type="MeshInstance3D" parent="." unique_id=202307205]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, -14.5)
+mesh = SubResource("BoxMesh_e3v7o")
+
+[node name="OuterStorage" type="Node3D" parent="." unique_id=40825617 instance=ExtResource("2_hwkcd")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -27, 0, -7)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+
+[node name="OuterStorage2" type="Node3D" parent="." unique_id=74172137 instance=ExtResource("3_f6ues")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -27, 2.3, -7)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="DistantWorkshop" type="Node3D" parent="." unique_id=1365885570 instance=ExtResource("4_lf00l")]
+transform = Transform3D(-0.9, 0, -7.86805e-08, 0, 0.9, 0, 7.86805e-08, 0, -0.9, -27, 0, -29)
+metadata/asset_id = "city_kit_industrial/building-i"
+
+[node name="OuterStorage3" type="Node3D" parent="." unique_id=2064273502 instance=ExtResource("2_hwkcd")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 27, 0, -7)
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+
+[node name="OuterStorage4" type="Node3D" parent="." unique_id=399787142 instance=ExtResource("3_f6ues")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 27, 2.3, -7)
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+
+[node name="DistantWorkshop2" type="Node3D" parent="." unique_id=872335281 instance=ExtResource("4_lf00l")]
+transform = Transform3D(-0.9, 0, -7.86805e-08, 0, 0.9, 0, 7.86805e-08, 0, -0.9, 27, 0, -29)
+metadata/asset_id = "city_kit_industrial/building-i"

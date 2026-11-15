@@ -55,6 +55,7 @@ func _run() -> void:
 		piece.free()
 	var vehicles = load("res://systems/generation2/parking_vehicle_templates.gd").new()
 	check(vehicles.asset_ids() == PackedStringArray(["car_kit/sedan", "car_kit/suv", "car_kit/taxi"]), "Vehicle ordering preserves seeded choices")
+	check(vehicles.asset_ids("mixed").size() == 5, "New vehicle sources also load independently of example parcels")
 	for id in ["loading_yard", "industrial_office_parking"]:
 		check(not ResourceLoader.has_cached(parcel_path(id)), "Object creation must not load the example parcel %s" % id)
 	vehicles = null

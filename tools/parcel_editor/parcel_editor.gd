@@ -839,6 +839,16 @@ func _validate_visual_pose(selected: Node3D) -> String:
 					_show_reservation_marker(reservation as Node3D, title)
 					return title + "\nMay be occupied in another seed"
 				return "Overlaps %s" % (obstacle.name if owner_node == displayed_parcel else owner_node.name)
+	# Painted bays are data, not hidden vehicle nodes. Reserve their possible
+	# occupants during placement just like native population templates.
+	for socket: Dictionary in field_panel._source_sockets:
+		if String(selected.get_meta("population_socket_id", "")) == String(socket.socket_id): continue
+		var bounds := displayed_parcel.global_transform * PopulationFieldDraft.socket_bounds_at_turn(socket, socket.allowed_yaw_turns[0])
+		for turn in socket.allowed_yaw_turns: bounds = bounds.merge(displayed_parcel.global_transform * PopulationFieldDraft.socket_bounds_at_turn(socket, turn))
+		if moving_solids.any(func(solid): return solid.grow(-0.01).intersects(bounds)):
+			var title := "Reserved vehicle position" if String(socket.asset_id).begins_with("car_kit/") else "Reserved object position"
+			_show_reservation_bounds(bounds, title)
+			return title + "\nMay be occupied in another seed"
 	return ""
 
 func _clear_reservation_marker() -> void:
@@ -850,6 +860,9 @@ func _show_reservation_marker(object: Node3D, title: String) -> void:
 	if volumes.is_empty(): return
 	var bounds := volumes[0]
 	for volume in volumes: bounds = bounds.merge(volume)
+	_show_reservation_bounds(bounds, title)
+
+func _show_reservation_bounds(bounds: AABB, title: String) -> void:
 	_reservation_marker = Node3D.new()
 	_reservation_marker.name = "PlacementReservation"
 	add_child(_reservation_marker)

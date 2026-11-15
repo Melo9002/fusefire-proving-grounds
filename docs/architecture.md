@@ -1,6 +1,6 @@
 # The current code map
 
-Start a normal game in `ui/match_setup.tscn`. There is one normal map: Service Depot.
+Start a normal game in `ui/match_setup.tscn`. The three normal sites—Service Depot, Freight Yard and Fleet Station—share Generation 2.
 
 ```text
 Match Setup (seed + mission + population on/off)
@@ -45,4 +45,9 @@ Shared map data types and quality metrics still live in `systems/generation/`; t
 
 `tests/current_generation_test.gd` checks both source dependencies and a real Service Depot initialization: the old generator and procedural renderer must not even be loaded. Tests for retired authored maps were preserved outside the project; core mechanics tests remain active.
 
-Generator-independent empty-map tests now call TacticalMapBuilder directly. Retained generator-specific fixtures are classified in [the fixture guide](../tests/fixtures/README.md). The current mission/replay matrix covers all eight mission kinds on both Depot plots without relying on those generators. Obsolete absolute-coordinate scene metadata is rejected explicitly; current relative geometry contracts and historical solid revisions remain intact.
+Generator-independent empty-map tests now call TacticalMapBuilder directly. Retained generator-specific fixtures are classified in [the fixture guide](../tests/fixtures/README.md). The current mission/replay matrix covers all eight mission kinds on seeds 16/17 of all three current sites without relying on those generators. Obsolete absolute-coordinate scene metadata is rejected explicitly; current relative geometry contracts and historical solid revisions remain intact.
+
+
+The content release adds three ordinary parcel scenes and two bounded site definitions, rather than another generator. `generator.gd` dispatches their plot catalogs into the same resolver/compiler/presenter. Freight swaps two compatible aprons; Fleet Station uses the service court with explicit north/south connections. New painted bays opt into the mixed vehicle set through their saved bay metadata. Missing vehicle-set metadata means the original classic set, preserving older choices. Reusable ambulance/van scenes contain mesh-derived saved boundaries; the service office reuses the current warehouse compound shapes. Runtime content has no dependency on the temporary authoring scripts used to assemble these scenes.
+
+Active tactical shape revision selection lives in `systems/generation2/tactical_shape_rules.gd`. The compiler delegates its existing predicate to it; vehicle fitting reads it directly so creating an ordinary object does not transitively load map compilation or example parcels.

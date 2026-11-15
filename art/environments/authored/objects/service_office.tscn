@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/building-i.glb" id="1_n1145"]
+
+[node name="ServiceOffice" type="Node3D" unique_id=1365885570]
+metadata/asset_id = "city_kit_industrial/building-i"
+
+[node name="Visual" type="Node3D" parent="." unique_id=674916441 instance=ExtResource("1_n1145")]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 4.341371, 0, -2.74)
+
+[node name="TacticalVolume" type="Node3D" parent="." unique_id=874211307]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.667705, 0)
+metadata/max_shape_revision = 2
+metadata/solid_size = Vector3(10.281378, 7.33541, 13.000001)
+metadata/round_volume = false
+metadata/precise_shot_bounds = true
+
+[node name="TacticalShell" type="Node3D" parent="." unique_id=706095448]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.559371, 3.667705, 0)
+metadata/solid_size = Vector3(8, 7.33541, 12)
+metadata/precise_shot_bounds = true
+metadata/min_shape_revision = 3
+
+[node name="TacticalPlanter" type="Node3D" parent="." unique_id=1349861286]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.290629, 0.25, -2.51851)
+metadata/solid_size = Vector3(1.7, 0.5, 4)
+metadata/precise_shot_bounds = true
+metadata/min_shape_revision = 3

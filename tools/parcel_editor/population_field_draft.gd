@@ -3,7 +3,7 @@ extends RefCounted
 ## Editor-only permission fields over reviewed authored occupant sockets.
 ## A field cannot manufacture compatible geometry or tactical contracts.
 const PRESETS := {
-	"parking": ["car_kit/sedan", "car_kit/suv", "car_kit/taxi"],
+	"parking": ["car_kit/sedan", "car_kit/suv", "car_kit/taxi", "car_kit/ambulance", "car_kit/van"],
 	"containers": ["city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b", "city_kit_industrial/shipping-container-c"],
 	"equipment": ["factory_kit/machine", "factory_kit/machine-fortified"],
 	"protected": [],

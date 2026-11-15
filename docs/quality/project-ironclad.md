@@ -148,3 +148,6 @@ Final logs contain no script parse/compile/runtime errors or new leak warnings. 
 
 
 The subsequent [parcel UX and live-battle follow-up](parcel-playtest-2026-11-15.md) records the narrower UI/focused checks, saved ambulance battle completion, and three added suites. Its results do not replace the dated full-run evidence above.
+
+
+The [current content release](current-content-release.md) adds new parcel/site and mixed-vehicle regressions and extends the mission/replay matrix to 48 cases. The former one-menu-map assertion is intentionally replaced by three curated site IDs sharing one generator; retired IDs and legacy-isolation assertions remain.

@@ -1,0 +1,237 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/service_office.tscn" id="1_5a2os"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/box_large.tscn" id="2_p63yf"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_emg5u"]
+albedo_color = Color(0.31764707, 0.3647059, 0.39215687, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_38hvn"]
+material = SubResource("StandardMaterial3D_emg5u")
+size = Vector3(16, 0.04, 32)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jhd8o"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_h84bv"]
+material = SubResource("StandardMaterial3D_jhd8o")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nsh6g"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_vnlrf"]
+material = SubResource("StandardMaterial3D_nsh6g")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fmwde"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_0rhef"]
+material = SubResource("StandardMaterial3D_fmwde")
+size = Vector3(3, 0.008, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_va26u"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_nja1i"]
+material = SubResource("StandardMaterial3D_va26u")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4ehbv"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_jg2i4"]
+material = SubResource("StandardMaterial3D_4ehbv")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qfu0p"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_bd80v"]
+material = SubResource("StandardMaterial3D_qfu0p")
+size = Vector3(3, 0.008, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q17nq"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_ob62b"]
+material = SubResource("StandardMaterial3D_q17nq")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ru5y5"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_07bvx"]
+material = SubResource("StandardMaterial3D_ru5y5")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y0ene"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_b27iv"]
+material = SubResource("StandardMaterial3D_y0ene")
+size = Vector3(3, 0.008, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ti5gb"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_8g853"]
+material = SubResource("StandardMaterial3D_ti5gb")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p0rqf"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_b81t5"]
+material = SubResource("StandardMaterial3D_p0rqf")
+size = Vector3(0.06, 0.008, 4.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ea5x5"]
+albedo_color = Color(0.827451, 0.79607844, 0.6392157, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_203wk"]
+material = SubResource("StandardMaterial3D_ea5x5")
+size = Vector3(3, 0.008, 0.06)
+
+[node name="FleetApron" type="Node3D" unique_id=613156768]
+metadata/parcel_id = &"fleet_service_apron"
+metadata/parcel_role = &"freight_apron"
+metadata/parcel_size = Vector2i(16, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(6, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 4
+metadata/access_kind = &"service"
+metadata/painted_parking_bays = Array[Dictionary]([{
+"aisle": Rect2i(1, 18, 14, 4),
+"heading": 0,
+"id": "fleet_2_13",
+"level": 0,
+"occupancy_percent": 100,
+"rect": Rect2i(2, 13, 3, 5),
+"surface": "ground",
+"vehicle_pool": "mixed"
+}, {
+"aisle": Rect2i(1, 18, 14, 4),
+"heading": 0,
+"id": "fleet_11_13",
+"level": 0,
+"occupancy_percent": 65,
+"rect": Rect2i(11, 13, 3, 5),
+"surface": "ground",
+"vehicle_pool": "mixed"
+}, {
+"aisle": Rect2i(1, 18, 14, 4),
+"heading": 2,
+"id": "fleet_2_22",
+"level": 0,
+"occupancy_percent": 65,
+"rect": Rect2i(2, 22, 3, 5),
+"surface": "ground",
+"vehicle_pool": "mixed"
+}, {
+"aisle": Rect2i(1, 18, 14, 4),
+"heading": 2,
+"id": "fleet_11_22",
+"level": 0,
+"occupancy_percent": 65,
+"rect": Rect2i(11, 22, 3, 5),
+"surface": "ground",
+"vehicle_pool": "mixed"
+}])
+metadata/parking_population_paint = [{
+"preset": "parking",
+"rect": Rect2i(1, 12, 14, 15),
+"surface": "ground"
+}]
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1084880641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, -0.01, 15.5)
+mesh = SubResource("BoxMesh_38hvn")
+
+[node name="FleetOffice" type="Node3D" parent="." unique_id=1365885570 instance=ExtResource("1_5a2os")]
+transform = Transform3D(-0.55, 0, -4.8082526e-08, 0, 0.55, 0, 4.8082526e-08, 0, -0.55, 7.5, 0, 5)
+metadata/asset_id = "city_kit_industrial/building-i"
+
+[node name="ToolCrates" type="Node3D" parent="." unique_id=1703012621 instance=ExtResource("2_p63yf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 11)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover" type="Node3D" parent="." unique_id=1867793059 instance=ExtResource("2_p63yf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0, 10)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover2" type="Node3D" parent="." unique_id=151173224 instance=ExtResource("2_p63yf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0, 29)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover3" type="Node3D" parent="." unique_id=1082149818 instance=ExtResource("2_p63yf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.2, 0, 10)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover4" type="Node3D" parent="." unique_id=1624722744 instance=ExtResource("2_p63yf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.2, 0, 29)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="BayLine" type="MeshInstance3D" parent="." unique_id=243685701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.52, 0.014, 15)
+mesh = SubResource("BoxMesh_h84bv")
+
+[node name="BayLine2" type="MeshInstance3D" parent="." unique_id=2119776248]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.48, 0.014, 15)
+mesh = SubResource("BoxMesh_vnlrf")
+
+[node name="BayEnd" type="MeshInstance3D" parent="." unique_id=1168766383]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.014, 12.52)
+mesh = SubResource("BoxMesh_0rhef")
+
+[node name="BayLine3" type="MeshInstance3D" parent="." unique_id=958296186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.52, 0.014, 15)
+mesh = SubResource("BoxMesh_nja1i")
+
+[node name="BayLine4" type="MeshInstance3D" parent="." unique_id=882809015]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.48, 0.014, 15)
+mesh = SubResource("BoxMesh_jg2i4")
+
+[node name="BayEnd2" type="MeshInstance3D" parent="." unique_id=1381025992]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.014, 12.52)
+mesh = SubResource("BoxMesh_bd80v")
+
+[node name="BayLine5" type="MeshInstance3D" parent="." unique_id=746457278]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.52, 0.014, 24)
+mesh = SubResource("BoxMesh_ob62b")
+
+[node name="BayLine6" type="MeshInstance3D" parent="." unique_id=846480630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.48, 0.014, 24)
+mesh = SubResource("BoxMesh_07bvx")
+
+[node name="BayEnd3" type="MeshInstance3D" parent="." unique_id=1131632068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.014, 21.52)
+mesh = SubResource("BoxMesh_b27iv")
+
+[node name="BayLine7" type="MeshInstance3D" parent="." unique_id=1292882354]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.52, 0.014, 24)
+mesh = SubResource("BoxMesh_8g853")
+
+[node name="BayLine8" type="MeshInstance3D" parent="." unique_id=1768072738]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.48, 0.014, 24)
+mesh = SubResource("BoxMesh_b81t5")
+
+[node name="BayEnd4" type="MeshInstance3D" parent="." unique_id=1426652094]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.014, 21.52)
+mesh = SubResource("BoxMesh_203wk")

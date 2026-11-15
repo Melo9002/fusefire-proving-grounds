@@ -1,0 +1,104 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/service_office.tscn" id="1_yxj4y"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/box_large.tscn" id="2_2p36t"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_a.tscn" id="3_071pb"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_b.tscn" id="4_j4hb7"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/container_c.tscn" id="5_ochp6"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ef80"]
+albedo_color = Color(0.63529414, 0.6509804, 0.61960787, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_x6ygs"]
+material = SubResource("StandardMaterial3D_8ef80")
+size = Vector3(16, 0.04, 32)
+
+[node name="ContainerStaging" type="Node3D" unique_id=456330686]
+metadata/parcel_id = &"container_staging_apron"
+metadata/parcel_role = &"freight_apron"
+metadata/parcel_size = Vector2i(16, 32)
+metadata/revision = 1
+metadata/allowed_rotations = PackedInt32Array(0, 1, 2, 3)
+metadata/access_cell = Vector3i(6, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 4
+metadata/access_kind = &"service"
+metadata/container_population_paint = [{
+"preset": "containers",
+"rect": Rect2i(1, 12, 14, 16),
+"surface": "ground"
+}]
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1421820240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, -0.01, 15.5)
+mesh = SubResource("BoxMesh_x6ygs")
+
+[node name="DispatchOffice" type="Node3D" parent="." unique_id=1365885570 instance=ExtResource("1_yxj4y")]
+transform = Transform3D(-0.55, 0, -4.8082526e-08, 0, 0.55, 0, 4.8082526e-08, 0, -0.55, 7.5, 0, 5)
+metadata/asset_id = "city_kit_industrial/building-i"
+
+[node name="ApronSupplies" type="Node3D" parent="." unique_id=73207619 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 18)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="GateSupplies" type="Node3D" parent="." unique_id=37481659 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 27)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover" type="Node3D" parent="." unique_id=1452848408 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0, 10)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover2" type="Node3D" parent="." unique_id=2002874684 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0, 19)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover3" type="Node3D" parent="." unique_id=383703897 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.2, 0, 10)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ApproachCover4" type="Node3D" parent="." unique_id=1185187292 instance=ExtResource("2_2p36t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.2, 0, 19)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="ContainerPositions" type="Node" parent="." unique_id=1083429406]
+metadata/population_region_id = &"staging_containers"
+metadata/population_role = &"shipping_container"
+metadata/local_rect = Rect2i(1, 12, 14, 16)
+metadata/allowed_asset_ids = PackedStringArray("city_kit_industrial/shipping-container-a", "city_kit_industrial/shipping-container-b", "city_kit_industrial/shipping-container-c")
+metadata/min_count = 1
+metadata/max_count = 4
+metadata/occupancy_percent = 65
+
+[node name="ContainerPosition0" type="Node3D" parent="." unique_id=634104002 instance=ExtResource("3_071pb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 15)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"staging_0"
+metadata/population_region_id = &"staging_containers"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="ContainerPosition1" type="Node3D" parent="." unique_id=807506747 instance=ExtResource("4_j4hb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 15)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-b"
+metadata/population_socket_id = &"staging_1"
+metadata/population_region_id = &"staging_containers"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="ContainerPosition2" type="Node3D" parent="." unique_id=728443918 instance=ExtResource("5_ochp6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 24)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-c"
+metadata/population_socket_id = &"staging_2"
+metadata/population_region_id = &"staging_containers"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)
+
+[node name="ContainerPosition3" type="Node3D" parent="." unique_id=1512115859 instance=ExtResource("3_071pb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 24)
+visible = false
+metadata/asset_id = "city_kit_industrial/shipping-container-a"
+metadata/population_socket_id = &"staging_3"
+metadata/population_region_id = &"staging_containers"
+metadata/population_yaw_turns = PackedInt32Array(0, 2)

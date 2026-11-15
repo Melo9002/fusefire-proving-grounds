@@ -18,7 +18,7 @@ func _run() -> void:
 	_check_generation_boundary()
 	var unknown := Layout.generate("missing_source", 17, 1.0, {})
 	check(not unknown.generation_errors.is_empty() and unknown.cells.is_empty(), "Standalone entry rejects unsupported source instead of using Depot")
-	check(Catalog.PLAYABLE == [Catalog.SERVICE_DEPOT], "One normal map and one current generation path")
+	check(Catalog.PLAYABLE == [Catalog.SERVICE_DEPOT, Catalog.FREIGHT_YARD, Catalog.FLEET_STATION], "Three curated sites share one current generation path")
 	check(Catalog.map_size(Catalog.SERVICE_DEPOT, Vector2i.ONE) == Vector2i(40, 40), "Authored plot owns map dimensions")
 	for retired in [Catalog.REFINERY_2, Catalog.LOADING_YARD, Catalog.REFINERY_FAMILY, Catalog.URBAN_FAMILY, &"missing_map"]:
 		var config := BattleConfiguration.new()
@@ -30,7 +30,7 @@ func _run() -> void:
 	var menu = load("res://ui/match_setup.tscn").instantiate()
 	root.add_child(menu)
 	await process_frame
-	check(menu.map_size_option.item_count == 1 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Real setup exposes only Service Depot")
+	check(menu.map_size_option.item_count == 3 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Real setup exposes the curated sites and defaults to Service Depot")
 	var selected: BattleConfiguration = menu._build_battle_configuration()
 	check(selected.content_manifest.population_enabled and menu.population_toggle.visible, "Population is explicit and enabled by default")
 	menu.population_toggle.button_pressed = false

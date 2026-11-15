@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="1_qdloe"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/car_kit/models/van.glb" id="2_yud1j"]
+
+[node name="Van" type="Node3D" unique_id=1646165098]
+metadata/asset_id = "car_kit/van"
+metadata/mesh_boundary_version = 1
+
+[node name="van" type="Node3D" parent="." unique_id=1428154176]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0.03124997)
+script = ExtResource("1_qdloe")
+metadata/asset_path = "res://art/environments/kenney/car_kit/models/van.glb"
+
+[node name="van" type="Node3D" parent="van" unique_id=1465079291 instance=ExtResource("2_yud1j")]
+
+[node name="MeshBoundaries" type="Node3D" parent="." unique_id=666319526]
+
+[node name="Part0" type="Node3D" parent="MeshBoundaries" unique_id=1758186253]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -0.5312501, 0.375, 0.9812499)
+metadata/solid_size = Vector3(0.3500002, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part1" type="Node3D" parent="MeshBoundaries" unique_id=203858773]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0.5312501, 0.375, 0.9812499)
+metadata/solid_size = Vector3(0.3500002, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part2" type="Node3D" parent="MeshBoundaries" unique_id=1343093753]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -0.5312501, 0.375, -0.91875005)
+metadata/solid_size = Vector3(0.3500002, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part3" type="Node3D" parent="MeshBoundaries" unique_id=854707656]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0.5312501, 0.375, -0.91875005)
+metadata/solid_size = Vector3(0.3500002, 0.6, 0.6)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0
+
+[node name="Part4" type="Node3D" parent="MeshBoundaries" unique_id=1183428474]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.93749994, -2.9802322e-08)
+metadata/solid_size = Vector3(1.5, 1.1999999, 2.7500002)
+metadata/precise_shot_bounds = true
+metadata/standing_clearance = 2.0

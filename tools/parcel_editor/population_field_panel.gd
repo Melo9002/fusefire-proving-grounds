@@ -215,7 +215,7 @@ func _update_tools(provisional: Dictionary = {}) -> void:
 	var selected_preset: String = String(preset_picker.get_selected_metadata())
 	if is_instance_valid(rule_context):
 		match selected_preset:
-			"parking": rule_context.text = "Paint where parked cars can appear. Existing parking spaces outside your painted areas on this floor won't spawn cars. Trucks, containers and other floors keep their rules."
+			"parking": rule_context.text = "Paint where cars, ambulances and vans can appear. Existing parking spaces outside your painted areas on this floor won't spawn cars. Trucks, containers and other floors keep their rules."
 			"containers": rule_context.text = "Paint where containers can appear. Existing container spots outside your painted areas on this floor won't spawn containers. Vehicles and other floors keep their rules."
 			"equipment": rule_context.text = "Paint where equipment can appear. Existing equipment spots outside your painted areas on this floor won't spawn equipment. Other objects and floors keep their rules."
 			"protected": rule_context.text = "Movable objects that overlap protected paint won't appear. Fixed objects stay."

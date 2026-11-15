@@ -1,6 +1,6 @@
 extends SceneTree
 ## Bounded current-content coverage before retiring more mechanics fixtures:
-## every mission initializes and replays a real committed action on both plots.
+## every mission initializes and replays a real committed action on both layouts of all current sites.
 const BattleScene = preload("res://levels/prototype_map/prototype_map.tscn")
 var failures := 0
 var cases := 0
@@ -14,18 +14,19 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	for map_seed in [16, 17]:
-		for preset in MissionCatalog.PRESETS:
-			await _case(map_seed, int(preset.kind))
+	for battlefield_id in BattlefieldCatalog.PLAYABLE:
+		for map_seed in [16, 17]:
+			for preset in MissionCatalog.PRESETS:
+				await _case(battlefield_id, map_seed, int(preset.kind))
 	print("Current mission/replay matrix: %d cases, %d failure(s)" % [cases, failures])
 	quit(1 if failures else 0)
 
-func _case(map_seed: int, kind: int) -> void:
+func _case(battlefield_id: StringName, map_seed: int, kind: int) -> void:
 	cases += 1
-	var context := "Depot seed %d, %s" % [map_seed, MissionObjectiveDefinition.Kind.keys()[kind]]
+	var context := "%s seed %d, %s" % [BattlefieldCatalog.label(battlefield_id), map_seed, MissionObjectiveDefinition.Kind.keys()[kind]]
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
+	config.select_battlefield(battlefield_id)
 	config.battle_seed = map_seed
 	config.include_vip = kind == MissionObjectiveDefinition.Kind.PROTECT
 	config.ally_count = 1 if kind in [MissionObjectiveDefinition.Kind.PROTECT, MissionObjectiveDefinition.Kind.RESCUE] else 0

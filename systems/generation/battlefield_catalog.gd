@@ -1,6 +1,6 @@
 class_name BattlefieldCatalog
 extends RefCounted
-## Service Depot is the only normal menu map. Other supported IDs are internal
+## The three normal sites share Generation 2. Other supported IDs are internal
 ## mechanics fixtures. Retired identities reject explicitly. Legacy boolean
 ## fields are translated at compatibility inputs; current code uses one ID.
 
@@ -12,6 +12,8 @@ const LOADING_YARD := &"loading_yard"
 const REFINERY_FAMILY := &"refinery_family"
 const URBAN_FAMILY := &"urban_family"
 const PARKING_GARAGE := &"parking_garage"
+const FREIGHT_YARD := &"freight_yard"
+const FLEET_STATION := &"fleet_station"
 const SERVICE_DEPOT := &"service_depot"
 const TACTICAL_TEST_RANGE := &"tactical_test_range"
 const PARCEL_TEST := &"parcel_editor_test"
@@ -19,6 +21,8 @@ const CurrentGenerator = preload("res://systems/generation2/generator.gd")
 
 
 const DEFINITIONS := {
+	FREIGHT_YARD: {"label": "Freight Yard", "source_kind": CurrentGenerator.FREIGHT_SOURCE, "fixed_size": CurrentGenerator.FREIGHT_SIZE},
+	FLEET_STATION: {"label": "Fleet Station", "source_kind": CurrentGenerator.FLEET_SOURCE, "fixed_size": CurrentGenerator.FLEET_SIZE},
 	PARCEL_TEST: {"label": "Local parcel test", "source_kind": CurrentGenerator.ParcelTest.SOURCE, "fixed_size": Vector2i.ZERO},
 	SERVICE_DEPOT: {"label": "Service Depot", "source_kind": CurrentGenerator.DEPOT_SOURCE, "fixed_size": CurrentGenerator.DEPOT_SIZE},
 	TACTICAL_TEST_RANGE: {"label": "Tactical Test Range", "source_kind": CurrentGenerator.RANGE_SOURCE, "fixed_size": CurrentGenerator.RANGE_SIZE},
@@ -29,10 +33,10 @@ const DEFINITIONS := {
 }
 
 # Internal battle fixtures retain their explicit IDs for the mechanics tests.
-const PLAYABLE := [SERVICE_DEPOT]
+const PLAYABLE := [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION]
 
 static func uses_population(id: StringName) -> bool:
-	return id in [SERVICE_DEPOT, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
+	return id in [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
 
 static func has(id: StringName) -> bool:
 	return DEFINITIONS.has(id)
@@ -66,6 +70,10 @@ static func id_from_configuration(data: Dictionary, fallback: StringName = GENER
 static func generate(id: StringName, requested_size: Vector2i, map_seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
+		FREIGHT_YARD:
+			return CurrentGenerator.generate(CurrentGenerator.FREIGHT_SOURCE, map_seed, cell_size, requested_manifest)
+		FLEET_STATION:
+			return CurrentGenerator.generate(CurrentGenerator.FLEET_SOURCE, map_seed, cell_size, requested_manifest)
 		PARCEL_TEST:
 			return CurrentGenerator.generate(CurrentGenerator.ParcelTest.SOURCE, map_seed, cell_size, requested_manifest)
 		SERVICE_DEPOT:
@@ -82,13 +90,13 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	match data.source_kind:
-		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
+		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
 		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size, world_environment)
 		_: return false
 
 ## Current maps bypass the old procedural renderer entirely.
 static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
-	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
+	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
 		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:
 		_fixtures().present(data, parent, cell_size)

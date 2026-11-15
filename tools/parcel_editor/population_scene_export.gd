@@ -57,7 +57,7 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 		if not bay.reason.is_empty():
 			scene_root.free()
 			return {"error": "%s: %s. Adjust the draft before exporting." % [bay.id, bay.reason]}
-		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle, "occupancy_percent": draft.occupancy})
+		rules.append({"id": bay.id, "surface": bay.surface, "level": bay.level, "heading": bay.heading, "rect": bay.rect, "aisle": bay.aisle, "occupancy_percent": draft.occupancy, "vehicle_pool": "mixed"})
 	if not rules.is_empty():
 		scene_root.set_meta("painted_parking_bays", rules)
 		scene_root.set_meta("parking_population_paint", paint)
@@ -141,9 +141,10 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 	var entrance := definition.connection()
 	var full_population := []
 	for socket in definition.population_sockets():
-		# The SUV has the same tactical footprint as the sedan and taxi, and
-		# the tallest tactical volume. Reserve it for the worst-case check.
-		var asset := "car_kit/suv" if "car_kit/suv" in socket.get("asset_options", []) else String(socket.asset_id)
+		# The ambulance encloses the mixed pool; older classic bays keep
+		# their conservative SUV check. All candidates fit the reserved bay.
+		var options: PackedStringArray = socket.get("asset_options", PackedStringArray())
+		var asset := "car_kit/ambulance" if "car_kit/ambulance" in options else ("car_kit/suv" if "car_kit/suv" in options else String(socket.asset_id))
 		full_population.append({"socket_id": socket.socket_id, "asset_id": asset})
 	for turn in definition.allowed_rotations():
 		var extent := ParcelTransform.rotated_size(definition.size, turn)

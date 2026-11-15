@@ -99,8 +99,8 @@ func _selected_battlefield_id() -> StringName:
 func _build_population_setup() -> void:
 	population_toggle = CheckButton.new()
 	population_toggle.name = "TacticalPopulationToggle"
-	population_toggle.text = "VARY CARS / CONTAINERS"
-	population_toggle.tooltip_text = "The battle seed selects cars and containers in authored areas. Off leaves those areas empty; fixed buildings and site layouts remain."
+	population_toggle.text = "VARY VEHICLES / CONTAINERS"
+	population_toggle.tooltip_text = "The battle seed selects vehicles and containers in authored areas, including ambulances and vans on the new sites. Off leaves those areas empty; fixed buildings and site layouts remain."
 	population_toggle.button_pressed = true
 	population_toggle.toggled.connect(func(_enabled: bool): _update_summary(0.0))
 	var generation := $CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Battlefield/Generation

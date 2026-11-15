@@ -9,8 +9,9 @@ const BAYS := &"painted_parking_bays"
 static func regions(root: Node) -> Array:
 	var result: Array = []
 	if not root.has_meta(BAYS): return result
-	var assets := Vehicles.new().asset_ids()
+	var templates := Vehicles.new()
 	for bay: Dictionary in root.get_meta(BAYS):
+		var assets := templates.asset_ids(String(bay.get("vehicle_pool", Vehicles.CLASSIC)))
 		var region := Region.new()
 		region.region_id = StringName(bay.id)
 		region.role = &"parked_vehicle"
@@ -28,9 +29,9 @@ static func sockets(root: Node) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if not root.has_meta(BAYS) or root.has_meta("painted_parking_resolved"): return result
 	var templates := Vehicles.new()
-	var assets := templates.asset_ids()
-	if assets.is_empty(): return result
 	for bay: Dictionary in root.get_meta(BAYS):
+		var assets := templates.asset_ids(String(bay.get("vehicle_pool", Vehicles.CLASSIC)))
+		if assets.is_empty(): continue
 		var socket := templates.candidate_for_asset(bay, assets[0])
 		for asset in assets:
 			socket.local_bounds = socket.local_bounds.merge(templates.candidate_for_asset(bay, asset).local_bounds)

@@ -4,15 +4,23 @@ This is the current map guide. Historical plans are reference only.
 
 ## What you can play now
 
-**Service Depot** is the only normal Match Setup choice. It is a 40 x 40 battlefield built through one plot/parcel pipeline.
+There are **three curated 40 × 40 sites**, all using the same Generation 2 pipeline:
+
+| Site | What is there | What varies |
+| --- | --- | --- |
+| Service Depot | Existing warehouse, process equipment and tank storage | Two site layouts, loading parcels, delivery truck and containers |
+| Freight Yard | Container staging apron beside a fleet service apron | Aprons swap sides; container positions and parked vehicles vary |
+| Fleet Station | Two small service offices and a vehicle court | Frontage faces north/south; occupied spaces and vehicle models vary |
+
+New parking bays can spawn sedans, SUVs, taxis, **ambulances and vans**. Older authored bays retain their original vehicle set. These vehicles use the existing obstacle, sight and cover rules.
 
 | Part | Authored or procedural? |
 | --- | --- |
 | Buildings, their shape and local arrangement | Authored in parcel scenes |
 | Roads and surroundings | Authored in each plot scene, using imported roads |
-| Site arrangement | Seed selects one of two authored plots |
-| Loading area | Seed selects a compatible authored parcel variant |
-| Cars and containers | Seed selects placements from eligible authored rules/positions |
+| Site arrangement | Seed selects one of two authored layouts for the chosen site |
+| Parcels | Seed selects the site’s declared parcel arrangement; Depot also varies its loading parcel |
+| Vehicles and containers | Seed selects occupied positions and eligible models from authored rules |
 | Tactical movement, shots and cover | Compiled from saved tactical shapes; the editor can derive starting shapes from ordinary objects' mesh parts |
 | Background beyond the map | Visual scenery, outside tactical play |
 
@@ -20,9 +28,9 @@ The generator combines authored content; it does not invent buildings or generat
 
 ## Reproduce and test
 
-1. F5 opens Match Setup. Select your mission and forces.
-2. Disable **Automatic New Seed**. Seed **16** selects the loading crossing; **17** selects the service spine.
-3. Toggle **Vary cars / containers** to compare populated and empty areas on the same site.
+1. F5 opens Match Setup. Choose **Service Depot**, **Freight Yard** or **Fleet Station**, then your mission and forces.
+2. Disable **Automatic New Seed**. Compare seeds **16** and **17**: Depot crossing/spine; Freight container apron west/east; Fleet Station frontage north/south.
+3. Toggle **Vary vehicles / containers** to compare populated and empty areas on the same site.
 4. Start Battle. Construction must validate before units can act; failure reports a reason.
 5. After the battle, use Replay Battle or Save Replay. The recording keeps actual accepted choices rather than regenerating from the seed alone.
 
@@ -38,8 +46,9 @@ The focused test checks menu selection, deterministic resolution, population-off
 
 ## Where to edit
 
-- **Plot:** `art/environments/authored/plots/depot_loading_crossing.tscn` or `depot_service_spine.tscn`. This owns fixed site scenery/routes. Slot definitions are in `systems/generation2/generator.gd`.
-- **Parcel:** ordinary Godot scenes under `art/environments/authored/parcels/`. Initial standard footprints are 16 x 16, 16 x 32 and 32 x 32, with supported quarter-turns.
+- **Plots:** editable scenes in `art/environments/authored/plots/`. Depot uses its crossing/spine; Freight uses `freight_yard_site.tscn`; Fleet uses `fleet_station_north.tscn` and `fleet_station_south.tscn`. Slot definitions remain in `systems/generation2/generator.gd`.
+- **New parcels:** `container_staging_apron.tscn` and `fleet_service_apron.tscn` are 16 × 32; `fleet_service_court.tscn` is 32 × 32. Open their Freight/Fleet labels in Parcel Editor.
+- **Parcels:** ordinary Godot scenes under `art/environments/authored/parcels/`. Initial standard footprints are 16 x 16, 16 x 32 and 32 x 32, with supported quarter-turns.
 - **Parcel Editor:** inspect/place/move objects and paint allowed population areas. The guides show intent; Preview shows one possible result. Illegal placement/paint gives a reason.
 - **Asset Lab:** inspect imported models and adjust existing calibration. The manual boundary-baking tab was removed from the active workflow.
 
@@ -51,11 +60,11 @@ The focused test checks menu selection, deterministic resolution, population-off
 4. Use **Preview** in the shared footer. **Next seed** compares arrangements; the seed is saved with the parcel. Tabs keep the preview visible. **Show guides** returns to editing. **Compare original** temporarily shows the starting layout; **Return to my parcel** restores your work.
 5. **Test battle** opens this exact parcel as a local Eliminate battlefield through the existing Generation 2 resolver/compiler. It needs no export or catalog registration. The battle activates its own camera, independent of the editor angle. The return button, including after replay, restores the editing session and editor view. Save a named copy before restarting the application; in-memory edits alone are not recovery storage.
 
-**What paint changes:** paint where that kind of object can appear on this floor. For example, **existing parking spaces outside your painted areas won’t spawn cars**. Multiple strokes combine. Parking controls sedan/SUV/taxi spaces; trucks, containers and other floors keep their rules. Container and equipment paint work the same way for their own objects. Movable objects overlapping protected paint won’t appear. Density affects the painted type: 0% leaves its positions empty; 100% fills valid positions. It does not change unrelated population.
+**What paint changes:** paint where that kind of object can appear on this floor. For example, **existing parking spaces outside your painted areas won’t spawn cars**. Multiple strokes combine. Parking controls car/ambulance/van spaces; trucks, containers and other floors keep their rules. Container and equipment paint work the same way for their own objects. Movable objects overlapping protected paint won’t appear. Density affects the painted type: 0% leaves its positions empty; 100% fills valid positions. It does not change unrelated population.
 
-A local test does **not** publish the parcel into normal Service Depot generation. Optional scene export remains available for Godot inspection; adding a reviewed scene to the normal parcel catalog is still an explicit content change. Save preserves editable work; Test battle exercises that work directly. They no longer require the export/register handoff just to test. A changed layout has a new content identity, so the same seed may choose different positions from the original comparison even where the original rules are retained. Preview and Test battle share the same single-parcel slot context. If later published into a different plot/slot, the same seed may choose a different arrangement because slot identity is part of deterministic population selection.
+A local test does **not** publish the parcel into the normal selectable sites. Optional scene export remains available for Godot inspection; adding a reviewed scene to the normal parcel catalog is still an explicit content change. Save preserves editable work; Test battle exercises that work directly. They no longer require the export/register handoff just to test. A changed layout has a new content identity, so the same seed may choose different positions from the original comparison even where the original rules are retained. Preview and Test battle share the same single-parcel slot context. If later published into a different plot/slot, the same seed may choose a different arrangement because slot identity is part of deterministic population selection.
 
-Local test recordings reference an immutable hash-named scene snapshot under `user://parcel_test_content`, plus hashes of its project dependencies. Keep that cache and the matching project content to reopen those replays. Missing snapshots or changed dependencies reject explicitly. A replay file alone does not bundle the local scene or assets for another computer. Published Depot recordings retain their existing reconstruction contract.
+Local test recordings reference an immutable hash-named scene snapshot under `user://parcel_test_content`, plus hashes of its project dependencies. Keep that cache and the matching project content to reopen those replays. Missing snapshots or changed dependencies reject explicitly. A replay file alone does not bundle the local scene or assets for another computer. Published site recordings retain their existing reconstruction contract.
 
 New ordinary objects placed through **Objects → Place** now get starting tactical boundaries automatically from their visible mesh parts. Moving, rotating or scaling the object carries those parts with it. Existing authored templates keep their current shapes, including historical replay shapes. Save and export use the existing workflow; no hull fitting, role assignment or separate boundary draft is required. This is a box approximation with the limitations below, not exact polygon collision.
 
@@ -81,6 +90,6 @@ Exact reconstruction validates content/compiler revisions. This supports compati
 
 **Checked in this follow-up:** the saved ambulance parcel completed Eliminate and replayed all **53/53 actions** to the same defeat. A live-battle regression checks separate-part openings, combined-mesh concavity and raised bodies. See the [focused playtest record](quality/parcel-playtest-2026-11-15.md).
 
-**Continue checking:** more real assets and camera angles, newly painted areas by hand, broader battle/replay outcomes, and normal Depot seeds 16/17. Technical checks do not establish that every asset's approximation feels right in play. Do not extend automatic boxes to structural assemblies on that assumption.
+**Stopping point for this phase:** use the three sites for normal playtesting. The content release checks seed variation, both layouts, all eight mission starts, complete sample battles and saved replays. Further map work should follow concrete gameplay bugs or actual content needs; the next development phase can focus on tactical feedback and AI. See [content release evidence](quality/current-content-release.md). Technical checks do not establish that every asset's approximation feels right in play. Do not extend automatic boxes to structural assemblies on that assumption.
 
-Service Depot is the sole normal map. Historical generators remain only as explicit regression fixtures, outside Generation 2's dependency path. Retired maps/documents and the refinery recipe are preserved in external quarantine; the recovery locations, audit changes and dated test evidence are in [cleanup history](generation-2-history.md). The current code map is [architecture.md](architecture.md); test commands and results are in [Project Ironclad](quality/project-ironclad.md).
+The three normal sites share one generator. Historical generators remain only as explicit regression fixtures, outside Generation 2's dependency path. Retired maps/documents and the refinery recipe are preserved in external quarantine; the recovery locations, audit changes and dated test evidence are in [cleanup history](generation-2-history.md). The current code map is [architecture.md](architecture.md); test commands and results are in [Project Ironclad](quality/project-ironclad.md).

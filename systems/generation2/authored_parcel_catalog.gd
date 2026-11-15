@@ -4,6 +4,14 @@ extends RefCounted
 ## during battle initialization.
 
 const Definition = preload("res://systems/generation2/authored_parcel_definition.gd")
+const CONTAINER_STAGING := &"container_staging_apron"
+const FLEET_APRON := &"fleet_service_apron"
+const FLEET_COURT := &"fleet_service_court"
+const FREIGHT_APRON_ROLE := &"freight_apron"
+const FLEET_COURT_ROLE := &"fleet_court"
+const ContainerStaging = preload("res://art/environments/authored/parcels/container_staging_apron.tscn")
+const FleetApron = preload("res://art/environments/authored/parcels/fleet_service_apron.tscn")
+const FleetCourt = preload("res://art/environments/authored/parcels/fleet_service_court.tscn")
 const LOADING_YARD_A := &"loading_yard_a"
 const LOADING_YARD_PAINTED := &"loading_yard_a_painted_containers"
 const LOADING_YARD_B := &"loading_yard_b"
@@ -43,6 +51,9 @@ const TacticalRangeA = preload("res://art/environments/authored/parcels/tactical
 
 static func all() -> Array:
 	return [
+		Definition.new(CONTAINER_STAGING, "Freight — container staging apron", FREIGHT_APRON_ROLE, 1, Vector2i(16, 32), ContainerStaging),
+		Definition.new(FLEET_APRON, "Freight — fleet service apron", FREIGHT_APRON_ROLE, 1, Vector2i(16, 32), FleetApron),
+		Definition.new(FLEET_COURT, "Fleet Station — service court", FLEET_COURT_ROLE, 1, Vector2i(32, 32), FleetCourt),
 		Definition.new(LOADING_YARD_A, "Warehouse loading apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardA),
 		Definition.new(LOADING_YARD_PAINTED, "Warehouse loading apron — painted containers", LOADING_SERVICE, 1, Vector2i(16, 32), LoadingYardPainted),
 		Definition.new(LOADING_YARD_B, "Container service apron", LOADING_SERVICE, 2, Vector2i(16, 32), LoadingYardB),
