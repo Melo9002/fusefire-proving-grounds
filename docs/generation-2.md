@@ -13,7 +13,7 @@ This is the current map guide. Historical plans are reference only.
 | Site arrangement | Seed selects one of two authored plots |
 | Loading area | Seed selects a compatible authored parcel variant |
 | Cars and containers | Seed selects placements from eligible authored rules/positions |
-| Tactical movement, shots and cover | Compiled from explicit tactical data, not guessed from mesh appearance |
+| Tactical movement, shots and cover | Compiled from saved tactical shapes; the editor can derive starting shapes from ordinary objects' mesh parts |
 | Background beyond the map | Visual scenery, outside tactical play |
 
 The generator combines authored content; it does not invent buildings or generate arbitrary street networks. Increasing density does not create unlimited placements: available positions, bounds and clearance limit it.
@@ -45,7 +45,7 @@ The focused test checks menu selection, deterministic resolution, population-off
 
 **Important:** draft save, exported scene and registered battle content are different states today. A draft does not automatically become playable. Export must preserve tactical metadata and population rules; registering a reviewed scene in the existing parcel catalog is still a code step. This handoff is unfinished, not an intended permanent workflow.
 
-Moving a tactical template in current draft preview moves its tactical bounds too. An ordinary imported mesh alone does not yet get automatic movement/shot/cover boundaries. The desired next simplification is **place a mesh -> automatic starting boundary**, with exceptional overrides discussed only when necessary. It has not been implemented by this cleanup. No hull fitting or boundary-draft export is required or offered as a replacement workflow.
+New ordinary objects placed through **Objects → Place** now get starting tactical boundaries automatically from their visible mesh parts. Moving, rotating or scaling the object carries those parts with it. Existing authored templates keep their current shapes, including historical replay shapes. Save and export use the existing workflow; no hull fitting, role assignment or separate boundary draft is required. This is a box approximation with the limitations below, not exact polygon collision.
 
 ## Generator boundary
 
@@ -67,10 +67,9 @@ Reusable parcels, imported kits, calibration and semantic data remain. The inter
 
 ## Remaining work, in order
 
-1. Make ordinary asset placement derive useful starting tactical boundaries automatically; keep movement, sight and cover behavior understandable.
-2. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
-3. Consolidate old selection flags at compatibility entry points, then migrate remaining legacy mechanics coverage deliberately.
-4. Validate the simplified workflow with real missions, replay and clean visual inspection before adding content/variety.
+1. Make one complete parcel edit/save/reopen/play workflow without manual registration chores.
+2. Consolidate old selection flags at compatibility entry points, then migrate remaining legacy mechanics coverage deliberately.
+3. Validate the simplified workflow with real missions, replay and clean visual inspection before adding content/variety. Inspect difficult meshes before extending automatic boundaries to structural assemblies.
 
 The longer-term direction remains: fully authored places, fixed places with varied movable objects, and seeded arrangements of authored areas through the same pipeline. Catwalks belong to authored functional connections between important places, not arbitrary decoration. A future parking structure needs explicit multi-floor access and camera occlusion checks. Neither requires a new general solver now.
 
@@ -112,13 +111,13 @@ godot_console --path . --script res://tests/compact_battlefield_test.gd -- captu
 godot_console --path . --script res://tests/replay_file_workflow_test.gd -- capture artifacts/audit-batch1-replay
 ```
 
-Remaining audit work includes geometry-derived default boundaries, unified parcel save/preview/test handoff, canonical configuration selection, and legacy coverage migration. Legacy authored-fixture `MapBuilder` discovery and some camera group scans have not been redesigned in this batch; these checks establish scoped environment initialization, not universal multi-battle isolation.
+At that stage, geometry-derived default boundaries and reusable object extraction were still pending; both later batches are recorded below. Remaining audit work includes the unified parcel save/preview/test handoff, canonical configuration selection, wider boundary validation and legacy coverage migration. Legacy authored-fixture `MapBuilder` discovery and some camera group scans have not been redesigned in this batch; these checks establish scoped environment initialization, not universal multi-battle isolation.
 
 ## Reusable object extraction — 2026-11-14
 
 The crate, containers A/B/C, delivery truck, sedan, SUV and taxi now have ordinary editable scenes in `art/environments/authored/objects/`. Loading Yard, its alternate/painted variant, and the office parking parcels instance them directly. Parcel-specific names, transforms, visibility and population sockets remain on the parcel instances. Editor creation and parking templates use those same object scenes; neither needs to instantiate an example parcel or find a named node inside it.
 
-This extraction preserves mesh calibration, tactical metadata, asset IDs, seeded vehicle ordering, parcel revisions and historical/current truck shapes. It adds no placement workflow, asset registry, boundary format or replay schema. Independently authored objects elsewhere remain untouched. Ordinary imported meshes do **not** gain automatic tactical boundaries yet.
+This extraction preserves mesh calibration, tactical metadata, asset IDs, seeded vehicle ordering, parcel revisions and historical/current truck shapes. It adds no placement workflow, asset registry, boundary format or replay schema. Independently authored objects elsewhere remain untouched. The extraction itself introduced no automatic mesh boundaries; the November 15 step below adds that editor fallback.
 
 Export now preserves ownership of instanced container children. Reassigning those children to the exported parcel duplicated visual/tactical parts on reopening and leaked objects; the focused regression checks exactly one visual and volume per container. Combined export also checks all three current truck parts and its historical volume.
 
@@ -127,3 +126,24 @@ Export now preserves ownership of instanced container children. Reassigning thos
 Verification: six focused suites passed. The full Ironclad run passed **114 suites, 0 failures, 14 explicit-only skips** in 594.29 seconds (`artifacts/test-results/20261114-220224-full/`), including editor save/load, combined export/reopen, generation and replay. Before the fix, the new independence check failed for both example-parcel dependencies; the new container export assertion reproduced duplicate children. Both now pass. No script parse/compile/runtime errors or new object leaks were found in the full logs; the existing four-instance warning in `allied_faction_smoke.gd` remains. Sandboxed runs also retain certificate-store/editor-settings permission diagnostics.
 
 Rendered inspection covered Service Depot seeds 16/17 and the internal garage's ground cutaway. The rendered compact-battlefield check also completed the range terminal mission. Captures are under `artifacts/occupant-extraction-depot/` and `artifacts/occupant-extraction-parking/`. These are bounded visual checks, not full UI or animation approval. The five pre-existing texture-import edits are outside this commit.
+
+## Automatic starting boundaries — 2026-11-15
+
+In Parcel Editor, open **Objects**, choose an ordinary ground prop and press **Place**. The calibrated visible mesh parts get starting box boundaries automatically. The existing blue/red ghost, overlap checks, Undo/Redo, selected-object tactical overlay, combined preview and scene export all use those parts. The browser labels the source as **Mesh boundaries** or **Authored boundaries**; these are filters, not new roles the owner must assign. Existing decoration entries remain available, and complete ground cargo/equipment can now use the same fallback. Roads, floors, structural fragments and new building/open-structure families have not been added to this fallback palette.
+
+The editor creates ordinary `solid_size` parts from each visible `MeshInstance3D`'s geometry bounds, including nested calibration transforms. Hidden and flat meshes without volume are ignored. It does not use renderer culling bounds or combine the whole object into one large box. An existing explicit solid anywhere in the object prevents replacement, including historical revision parts. Root movement, rotation and scale affect the visible object and its shapes together.
+
+The compiler keeps the existing movement and cover rules. New parts also reserve a standard **two-tile standing clearance** beneath raised geometry, preventing a soldier from standing inside a body that starts above ground. Shot bounds remain at the visible height. A safely overhead part does not reserve ground movement; overhead structures and elevated surfaces still need their authored contracts. Grid-cell padding accounts for part scale, so shrinking a prop at a cell corner does not make its tactical footprint disappear. Existing authored solids default to zero standing clearance and retain their previous compilation. No generator, manifest or replay schema was replaced.
+
+Derived parts are saved in exported scenes, and their transforms/metadata contribute to export identity. Battles compile those saved parts through MapData; they do not load editor code or regenerate boundaries from meshes during replay. Draft save/open recreates added objects through the same placement library. The draft-to-registration handoff remains separate and unfinished.
+
+Limitations: **these are per-mesh box approximations, not exact polygons**. A concavity, doorway or empty space inside one mesh can still be filled by its box; gaps between separate mesh parts remain separate. Movement still reserves whole tactical cells. The fixed standing clearance is the prototype's standard envelope, not a per-character capsule test. Existing truck/building shapes and already published maps are not automatically replaced. Dropping a raw imported mesh directly into an arbitrary Godot scene bypasses the placement library and does not add these shapes. Editing a model or its internal mesh transforms after baking does not refresh saved parts: recreate the placed object and export/review the new content. No manual hull fitting, clipping or new boundary-export workflow is introduced.
+
+Focused coverage is `tests/mesh_boundary_test.gd`: real imported placement, low/full cover, scaled corner footprints, transformed multi-part bodies, open gaps, raised-body shots, ground clearance, save/open, export/reopen, derived content identity, legal/illegal editor ghosts and Undo/Redo. Run it headless for assertions, or render the editor check with:
+
+```powershell
+godot_console --headless --path . --script res://tests/mesh_boundary_test.gd
+godot_console --path . --script res://tests/mesh_boundary_test.gd -- capture artifacts/mesh-boundaries-editor
+```
+
+Verification: seven focused suites passed. The final full Ironclad run passed **115 suites, 0 failures, 14 explicit-only skips** in 588.27 seconds (`artifacts/test-results/20261115-063044-full/`). The boundary suite also passed a focused rerun with the final same-cell shot-gap assertions. Reproductions failed before the ordinary-object, raised-body and scaled-footprint fixes; a negative control excluding derived shapes from export identity failed the new rebake-identity assertion. No assertion was weakened. The existing four-instance warning in `allied_faction_smoke.gd` and sandbox certificate/editor-settings diagnostics remain; no new script errors or object leaks were found. Rendered editor inspection passed for the placed box and its selected tactical overlay (`artifacts/mesh-boundaries-editor/ordinary-box-boundaries.png`); this is not visual approval of every newly eligible model. The five pre-existing texture-import edits remain outside this batch.

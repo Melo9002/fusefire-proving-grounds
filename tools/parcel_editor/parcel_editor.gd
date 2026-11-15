@@ -181,7 +181,7 @@ func _build_ui() -> void:
 
 	var move_page := _add_task_page("Objects")
 	var limits := Label.new()
-	limits.text = "Draft only · Checks bounds and solid overlap. New objects use ground level. Battle routes and runtime registration are separate."
+	limits.text = "New objects get starting boundaries from their visible mesh parts. Existing authored shapes are kept. Checks bounds and solid overlap; ground placement only. Battle routes and registration remain separate."
 	limits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	move_page.add_child(limits)
 	var browser := VBoxContainer.new()
@@ -190,7 +190,7 @@ func _build_ui() -> void:
 	_asset_filter.placeholder_text = "Search fixed assets"
 	browser.add_child(_asset_filter)
 	_asset_category = OptionButton.new()
-	for category in ["All fixed assets", "Decoration", "Tactical"]:
+	for category in ["All fixed assets", "Mesh boundaries", "Authored boundaries"]:
 		_asset_category.add_item(category)
 	browser.add_child(_asset_category)
 	_asset_picker = OptionButton.new()
@@ -244,7 +244,7 @@ func _build_ui() -> void:
 	placement_picker.name = "PlacementPicker"
 	placement_picker.fit_to_longest_item = false
 	placement_picker.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	placement_picker.tooltip_text = "Select an imported visual node. Tactical metadata remains unchanged."
+	placement_picker.tooltip_text = "Select an object. Moving or rotating it moves its tactical boundaries too."
 	placement_picker.item_selected.connect(_select_placement_index)
 	move_page.add_child(placement_picker)
 	var planar := HBoxContainer.new()

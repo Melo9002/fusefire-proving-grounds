@@ -1,7 +1,8 @@
 class_name AuthoredSceneMapCompiler
 extends RefCounted
 ## Compiles explicit tactical metadata from an authored Godot scene into
-## MapData. Imported visual geometry never becomes tactical authority.
+## MapData. Editor-derived mesh parts use this same saved-metadata path;
+## battle compilation never infers solids from rendering geometry.
 
 const SHAPE_REVISION := 3
 
@@ -52,7 +53,7 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 	if node is Node3D: transform *= node.transform
 	if is_active_solid(node, shape_revision):
 		var use_precise_bounds := precise_shot_bounds and bool(node.get_meta("precise_shot_bounds", false))
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3)
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))))
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -91,20 +92,28 @@ static func _local_cell_to_grid(transform: Transform3D, local: Vector3i, data: M
 	var world := transform * Vector3(local)
 	return Vector3i(roundi(world.x / unit + data.map_size.x * 0.5 - 0.5), roundi(world.y / unit), roundi(world.z / unit + data.map_size.y * 0.5 - 0.5))
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var shot_bounds := AABB(bounds.position * unit, bounds.size * unit)
 	var lower := Vector2i(floori(bounds.position.x + data.map_size.x * 0.5), floori(bounds.position.z + data.map_size.y * 0.5))
 	var upper := Vector2i(ceili(bounds.end.x + data.map_size.x * 0.5), ceili(bounds.end.z + data.map_size.y * 0.5))
 	var inverse := transform.affine_inverse()
+	var cell_margin := Vector2(0.5, 0.5)
+	if standing_clearance > 0.0:
+		# Convert a grid cell's horizontal half-extents into the part's local
+		# space. A fixed local margin would lose tiny scaled objects entirely.
+		cell_margin = Vector2(absf(inverse.basis.x.x) + absf(inverse.basis.z.x), absf(inverse.basis.x.z) + absf(inverse.basis.z.z)) * 0.5
 	for x in range(maxi(0, lower.x), mini(data.map_size.x, upper.x)):
 		for z in range(maxi(0, lower.y), mini(data.map_size.y, upper.y)):
 			for cell: MapCellData in data.columns.get(Vector2i(x, z), []):
 				var height := float(cell.grid_position.y)
-				if height < bounds.position.y - 0.001 or height >= bounds.end.y:
+				# New mesh-derived parts reserve a standing body's clearance below
+				# their visible bottom. Shot geometry remains the actual part bounds.
+				# Existing authored/historical shapes retain zero clearance by default.
+				if height + standing_clearance < bounds.position.y - 0.001 or height >= bounds.end.y:
 					continue
 				var point := inverse * (cell.world_position / unit)
-				if absf(point.x) >= dimensions.x * 0.5 + 0.5 or absf(point.z) >= dimensions.z * 0.5 + 0.5: continue
+				if absf(point.x) >= dimensions.x * 0.5 + cell_margin.x or absf(point.z) >= dimensions.z * 0.5 + cell_margin.y: continue
 				if round_volume and pow(maxf(absf(point.x) - 0.5, 0.0) / (dimensions.x * 0.5), 2) + pow(maxf(absf(point.z) - 0.5, 0.0) / (dimensions.z * 0.5), 2) > 1.0: continue
 				cell.can_stop = false
 				# Overlapping solids retain the conservative cell contract.

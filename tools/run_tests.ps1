@@ -56,7 +56,7 @@ $subsystemPatterns = @{
     replay     = "replay|determinism|seed_failure"
     generation = "current_generation|reusable_occupant|parking_garage|parking_population|authored_deployment|authored_tactical|battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_|loading_yard|parcel_|urban_|map_generation|map_quality|map_validation|transport_placement"
     missions   = "mission|objective|rescue|enemy_evacuation|survive_ai|transport_placement"
-    assets     = "asset|environment_asset|locomotion|pose|unit_visual"
+    assets     = "asset|environment_asset|mesh_boundary|locomotion|pose|unit_visual"
     ui         = "camera|debug_|feedback|hud|map_editor|match_setup|pause|portrait|visualizer|world_bar"
 }
 

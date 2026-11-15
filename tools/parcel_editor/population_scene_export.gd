@@ -85,6 +85,10 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	var signature := [String(source.parcel_id), source.revision, rules, paint, container_slots, scene_root.get_meta("container_population_paint", [])]
 	if fixed_changed:
 		signature.append(fixed_draft.placements)
+		# Derived parts are saved content, not a runtime guess. Include them in
+		# identity so changing a mesh/calibration cannot silently reuse an export ID.
+		var derived := _derived_boundaries(scene_root)
+		if not derived.is_empty(): signature.append(derived)
 	var parcel_id := StringName("%s_rules_%s" % [source.parcel_id, JSON.stringify(signature).sha256_text().substr(0, 16)])
 	scene_root.set_meta("parcel_id", parcel_id)
 	scene_root.set_meta("revision", 1)
@@ -101,6 +105,18 @@ static func build(source, draft, vehicles, fixed_draft = null) -> Dictionary:
 	if not route_error.is_empty():
 		return {"error": route_error}
 	return {"definition": definition, "bay_count": bays.size(), "container_count": container_slots.size()}
+
+static func _derived_boundaries(root: Node3D) -> Array:
+	var result := []
+	for object in root.find_children("*", "Node3D", true, false):
+		if not object.has_meta("mesh_boundary_version"): continue
+		var parts := []
+		for part in object.get_node("MeshBoundaries").get_children():
+			var metadata := {}
+			for key in part.get_meta_list(): metadata[String(key)] = part.get_meta(key)
+			parts.append([part.transform, metadata])
+		result.append([String(root.get_path_to(object)), object.get_meta("mesh_boundary_version"), parts])
+	return result
 
 static func _own_added_nodes(node: Node, root: Node) -> void:
 	node.owner = root
