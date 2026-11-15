@@ -20,7 +20,7 @@ BattleLevel / GeneratedTerrain
 | --- | --- | --- |
 | Tactical | The playable battlefield and its presented parcels. | MapData owns cells, movement, sight, shots and cover; GridManager owns unit occupancy. Existing parcel compilation and plot/mission contracts still supply gameplay data. |
 | Peripheral | Nearby visual continuation across the battlefield edge. | No new grid cells, tactical obstacles, targets, deployment or objectives. Hazard markers inside this group are ignored by battle discovery. |
-| Distant | Background structures and landmarks that establish the setting/horizon. | The same scenery-only restriction. Current placeholder models are not yet simplified into an optimized skyline. |
+| Distant | Background structures and landmarks that establish the setting/horizon. | The same scenery-only restriction. Depot now uses muted low-detail building districts; the other sites retain their initial placeholders. |
 
 These groups describe **ownership**, not three sharply separated volumes. Extended ground and continuing roads can cross the tactical footprint. Moving a visual into Tactical does not compile it into gameplay; gameplay objects still belong to the existing editable parcels. No new role assignment, boundary export or registration step is introduced.
 
@@ -61,4 +61,8 @@ Both Depot layouts now use connected neighboring yards, extended roads, a first 
 
 ## Step 4 — Readable Depot boundary
 
-Depot now combines its yellow dashed limit with short low fence runs, corner cones and BATTLE LIMIT ground labels at open road crossings. The cues stay outside playable cells; roads and entrances remain open. [Editable scenes and validation](quality/depot-boundary-readability-2026-11-15.md). The next step is improving the distant view; the other sites receive this pattern in the later rollout.
+Depot now combines its yellow dashed limit with short low fence runs, corner cones and BATTLE LIMIT ground labels at open road crossings. The cues stay outside playable cells; roads and entrances remain open. [Editable scenes and validation](quality/depot-boundary-readability-2026-11-15.md). The distant-view proof is recorded below; the other sites receive this pattern in the later rollout.
+
+## Step 5 — Depot distant view
+
+Six muted building districts now establish Depot’s horizon in all directions, using existing low-detail assets, no shadows or new lights, and 6,060 triangles. Normal high views retain focus on the battle. [Editing, captures, geometry cap and validation](quality/depot-distant-view-2026-11-15.md). Next is camera/obstruction review, including the saved EastWorkshop obstruction pose. No new generator or authoring workflow is required.

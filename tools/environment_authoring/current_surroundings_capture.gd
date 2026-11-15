@@ -34,12 +34,23 @@ func _run() -> void:
 			await _capture(level, rig, args[0], id, map_seed, "entry")
 			level.get_node("Visualizers/GridVisualizer").hide()
 			level.get_node("Visualizers/GridCursor").hide()
-			for view in [
+			var views := [
 				["overview", Vector3(22, 36, 42), Vector3.ZERO, 46.0],
 				["reverse", Vector3(-28, 32, -36), Vector3.ZERO, 46.0],
 				["low", Vector3(0, 4, 32), Vector3(0, 2, -8), 46.0],
 				["wide", Vector3(38, 48, 58), Vector3.ZERO, 65.0],
-			]:
+			]
+			if id == BattlefieldCatalog.SERVICE_DEPOT:
+				views.append_array([
+					["low_east", Vector3(-32, 4, 0), Vector3(8, 2, 0), 46.0],
+					# x=32 sits inside a neighboring workshop; keep this horizon
+					# review between that building and the tactical boundary.
+					["low_west", Vector3(25, 4, 0), Vector3(-8, 2, 0), 46.0],
+					["low_south", Vector3(0, 4, -32), Vector3(0, 2, 8), 46.0],
+					["high", Vector3(0, 55, 4), Vector3.ZERO, 46.0],
+					["high_wide", Vector3(0, 115, 5), Vector3.ZERO, 86.0],
+				])
+			for view in views:
 				rig.camera.global_position = view[1]
 				rig.camera.look_at(view[2])
 				rig.camera.fov = view[3]
