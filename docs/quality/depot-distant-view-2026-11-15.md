@@ -31,6 +31,8 @@ Reviewed Depot's four horizon directions, normal oblique/entry views, a near-ver
 
 ## Step-6 camera follow-up
 
+**Resolved in the [camera review](depot-camera-review-2026-11-15.md):** the workshop was moved and saved-scene fallback fade bounds are now derived on load. The original diagnostic case is retained below as evidence.
+
 The first westward diagnostic used eye `(32, 4, 0)`, looking at `(-8, 2, 0)`, FOV 46. That eye lies inside the nearby EastWorkshop and obscures the battlefield. Those images were retained locally as `service_depot-16-low_west-obstructed.png` and `service_depot-17-low_west-obstructed.png`. The horizon-review pose now uses eye `(25, 4, 0)` in the clear space between the workshop and the tactical edge.
 
 This is a concrete obstruction case to exercise in step 6. The capture script directly sets the camera while its normal rig processing is disabled; the image alone does **not** establish a failure of live/replay camera avoidance. Reproduce under actual camera control, inspect orbit/zoom/cinematic paths and existing aperture/fade behavior, and keep the saved blocked pose as a diagnostic. The step-5 change does not fix or claim to validate those behaviors.

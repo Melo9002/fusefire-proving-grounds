@@ -44,7 +44,7 @@ Global lighting/fog remains owned by the battle's explicit WorldEnvironment. No 
 
 `tests/world_area_ownership_test.gd` checks all three sites and seeds 16/17: editable groups, parcel world transforms at presentation scales 1 and 2, bounded grid, unchanged manifest reconstruction, scenery without physics bodies, and ignored scenery hazards alongside working Tactical hazards. Generation/compilation uses the existing unit-tile contract; the scale-2 case tests presentation separately, not new arbitrary-scale tactical compilation support.
 
-The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The next milestone was the Service Depot continuity proof, now recorded below. Physical boundary readability, horizon composition, actual action/replay camera angles and performance budgets remain later tasks. Grouping alone does not solve those visual problems.
+The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The next milestone was the Service Depot continuity proof, now recorded below. The bounded Depot boundary, horizon and camera proofs are recorded below. Tactical edge isolation, measured budgets and the other sites’ rollout remain later tasks.
 
 ### Step-2 evidence — 2026-11-15
 
@@ -66,3 +66,7 @@ Depot now combines its yellow dashed limit with short low fence runs, corner con
 ## Step 5 — Depot distant view
 
 Six muted building districts now establish Depot’s horizon in all directions, using existing low-detail assets, no shadows or new lights, and 6,060 triangles. Normal high views retain focus on the battle. [Editing, captures, geometry cap and validation](quality/depot-distant-view-2026-11-15.md). Next is camera/obstruction review, including the saved EastWorkshop obstruction pose. No new generator or authoring workflow is required.
+
+## Step 6 — Camera and obstruction review
+
+The neighboring workshop was moved out of the known camera pose. Saved scene instances now rebuild missing camera-only fade bounds automatically; floor inspection and replay use the existing fade correctly. Both Depot layouts passed 96 orbit/zoom poses and all three replay camera modes. UI/replay suites and a complete 66-action Depot cinematic replay passed. [Reproduction, renders, validation and limits](quality/depot-camera-review-2026-11-15.md). Next: tactical edge isolation and replay checks.

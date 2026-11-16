@@ -53,3 +53,5 @@ The content release adds three ordinary parcel scenes and two bounded site defin
 Active tactical shape revision selection lives in `systems/generation2/tactical_shape_rules.gd`. The compiler delegates its existing predicate to it; vehicle fitting reads it directly so creating an ordinary object does not transitively load map compilation or example parcels.
 
 Current normal plot scenes organize presentation as `SelectedPlot/Tactical`, `Peripheral` and `Distant`. Accepted parcels are children of Tactical; the plot supplies tile scale once. Only parcel compilation and existing map contracts supply MapData. Peripheral/Distant are visual scenery, excluded from hazard discovery. See [world surroundings](world-surroundings.md) for ownership and editing locations.
+
+`TacticalVisualOccluder` derives missing camera-only bounds from its saved mesh descendants on load, while retaining explicitly supplied bounds. This restores fallback fading for inspection/replay; it does not regenerate tactical shapes or MapData.

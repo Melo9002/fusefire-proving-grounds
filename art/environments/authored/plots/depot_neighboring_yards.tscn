@@ -23,7 +23,7 @@ roughness = 0.92
 
 [sub_resource type="BoxMesh" id="BoxMesh_h84h0"]
 material = SubResource("StandardMaterial3D_seh41")
-size = Vector3(26, 0.04, 66)
+size = Vector3(38, 0.04, 66)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ou3ix"]
 albedo_color = Color(0.54, 0.53, 0.48, 1)
@@ -66,7 +66,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33, -0.01, -3)
 mesh = SubResource("BoxMesh_n7blm")
 
 [node name="EastProcessApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=8397666]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, -0.01, -3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39, -0.01, -3)
 mesh = SubResource("BoxMesh_h84h0")
 
 [node name="NorthStorageApron" type="MeshInstance3D" parent="ConnectedYards" unique_id=1049342909]
@@ -101,7 +101,7 @@ metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/
 [node name="building-i2" type="Node3D" parent="ConnectedYards/NeighboringWorkshops/SouthWarehouse" unique_id=1080219563 instance=ExtResource("2_7gw0k")]
 
 [node name="EastWorkshop" type="Node3D" parent="ConnectedYards/NeighboringWorkshops" unique_id=764964191]
-transform = Transform3D(-4.371139e-07, 0, -10, 0, 10, 0, 10, 0, -4.371139e-07, 36.430107, 2.2757131e-14, -8.961734)
+transform = Transform3D(-4.371139e-07, 0, -10, 0, 10, 0, 10, 0, -4.371139e-07, 46.430107, 2.2757131e-14, -8.961734)
 script = ExtResource("1_1pdov")
 metadata/asset_path = "res://art/environments/kenney/city_kit_industrial/models/building-c.glb"
 
