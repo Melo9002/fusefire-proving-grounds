@@ -62,6 +62,12 @@ func _run() -> void:
 	_probe("Doorway", "Lintel", true)
 	_probe("Corners", "Seam", true)
 	_probe("Corners", "Single", false)
+	var beam_source := _point("RaisedBeam/Shooter")
+	var beam_target := _point("RaisedBeam/Target")
+	check(CombatRules.get_blocking_cell(beam_source, beam_target, grid) != null, "Raised beam blocks independently of any deck")
+	check(CombatRules.get_blocking_cell(beam_target, beam_source, grid) != null, "Raised beam blocks independently in reverse")
+	check(CombatRules.get_blocking_cell(beam_source - Vector3.UP * 1.7, beam_target - Vector3.UP * 1.7, grid) == null, "Raised beam leaves the ground-level firing lane clear")
+	check(grid.get_cell_data(Vector3i(17, 0, 17)).can_stop, "Raised beam does not become an invisible ground wall")
 	var seam_source := _point("Corners/SeamShooter") + Vector3.UP * 2
 	var seam_target := _point("Corners/SeamTarget") + Vector3.UP * 2
 	check(CombatRules.get_blocking_cell(seam_source, seam_target, grid) == null, "A shot above the sealed corner remains clear")
@@ -131,6 +137,8 @@ func _run() -> void:
 
 func _capture() -> void:
 	level.get_node("Visualizers/BattleUI").hide()
+	# The fixed ray diagnostic must not be cleared by normal mouse-hover updates.
+	level.battle_controller.set_process(false)
 	var camera := Camera3D.new()
 	root.add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -141,10 +149,17 @@ func _capture() -> void:
 		["doorway-and-crates", Vector3(16, 10, 20), Vector3(6, 1, 5), 19],
 		["doorway-front", Vector3(1.5, 3.5, 15), Vector3(1.5, 1.4, 6.5), 9],
 		["truck-and-corners", Vector3(15, 12, 9), Vector3(7, 0, -10), 18],
+		["raised-beam", Vector3(10, 7, 13), Vector3(1.5, 1.5, 1.5), 12],
 	]:
 		camera.size = view[3]
 		camera.position = view[1]
 		camera.look_at(view[2])
+		if view[0] == "raised-beam":
+			var source := _point("RaisedBeam/Shooter")
+			var destination := _point("RaisedBeam/Target")
+			var blocker := CombatRules.get_blocking_cell(source, destination, grid)
+			var diagnostic := CombatRules.AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Blocked", destination, 0, "Blocked", blocker)
+			level.battle_controller.shot_trajectory_visualizer.draw_trajectory(source, destination, diagnostic, true)
 		await process_frame
 		await RenderingServer.frame_post_draw
 		check(root.get_texture().get_image().save_png("res://artifacts/combat-examples/%s.png" % view[0]) == OK, "Rendered view saved: %s" % view[0])

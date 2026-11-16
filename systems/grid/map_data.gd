@@ -10,6 +10,9 @@ var columns: Dictionary = {}
 var traversal_links: Array[TraversalLinkData] = []
 var generated_traversals: Array[GeneratedTraversalData] = []
 var los_blocking_cells: Array[MapCellData] = []
+## Raised parts can obstruct rays without intersecting any standing surface.
+var shot_obstacles: Array[MapCellData] = []
+var shot_columns: Dictionary = {}
 var zones: Dictionary[StringName, MapZoneData] = {}
 var source_kind: String = "authored"
 var generation_seed: int = 0
@@ -102,6 +105,14 @@ func rebuild_los_index() -> void:
 	for cell: MapCellData in cells.values():
 		if cell.blocks_line_of_sight and cell.cover_height > 0.0:
 			los_blocking_cells.append(cell)
+	los_blocking_cells.append_array(shot_obstacles)
+
+func add_shot_obstacle(obstacle: MapCellData) -> void:
+	obstacle.is_shot_only = true
+	shot_obstacles.append(obstacle)
+	var column := Vector2i(obstacle.grid_position.x, obstacle.grid_position.z)
+	if not shot_columns.has(column): shot_columns[column] = []
+	shot_columns[column].append(obstacle)
 
 func get_walkable_elevation_levels() -> Array[int]:
 	var seen: Dictionary = {}
@@ -137,6 +148,8 @@ func clear() -> void:
 	traversal_links.clear()
 	generated_traversals.clear()
 	los_blocking_cells.clear()
+	shot_obstacles.clear()
+	shot_columns.clear()
 	zones.clear()
 	source_kind = "authored"
 	generation_seed = 0

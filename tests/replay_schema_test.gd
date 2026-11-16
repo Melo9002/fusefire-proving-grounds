@@ -72,6 +72,13 @@ func _run() -> void:
 	var unsupported := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	unsupported.schema_version = 999
 	check(unsupported.validation_message().contains("Unsupported replay schema"), "Unsupported schemas fail with an actionable error")
+	for incompatible_version in ["prototype-1.5-action-pipeline", "unknown-future-simulation", ""]:
+		var incompatible := recording.to_dictionary()
+		incompatible.simulation_version = incompatible_version
+		check(BattleReplayRecording.from_dictionary(incompatible).validation_message().contains("Incompatible replay simulation"), "Old, unknown and missing simulation identities reject before playback")
+	var missing_simulation := recording.to_dictionary()
+	missing_simulation.erase("simulation_version")
+	check(BattleReplayRecording.from_dictionary(missing_simulation).validation_message().contains("Incompatible replay simulation"), "Absent simulation identity cannot silently select today's shot rules")
 
 	var broken_recording := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	broken_recording.actions[0].erase("committed_revision")

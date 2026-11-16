@@ -36,7 +36,7 @@ size = Vector2(0.085, 4.2)
 [node name="TacticalTestRange" type="Node3D"]
 metadata/parcel_id = &"tactical_range_a"
 metadata/parcel_role = &"tactical_range"
-metadata/revision = 2
+metadata/revision = 3
 metadata/parcel_size = Vector2i(32, 32)
 metadata/allowed_rotations = PackedInt32Array(0)
 metadata/access_cell = Vector3i(12, 0, 31)

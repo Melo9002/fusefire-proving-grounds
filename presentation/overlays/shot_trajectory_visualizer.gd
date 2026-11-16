@@ -76,6 +76,9 @@ func _draw_blocker(evaluation: CombatRules.AttackEvaluation) -> void:
 	if last_blocking_cell.authored_shot_bounds.has_volume():
 		box.size = last_blocking_cell.authored_shot_bounds.size
 		blocker_marker.position = last_blocking_cell.authored_shot_bounds.get_center()
+	if evaluation.blocking_bounds.has_volume():
+		box.size = evaluation.blocking_bounds.size
+		blocker_marker.position = evaluation.blocking_bounds.get_center()
 	blocker_marker.material_override = _make_material(Color(1.0, 0.05, 0.05, 0.28))
 
 func _make_material(color: Color) -> StandardMaterial3D:

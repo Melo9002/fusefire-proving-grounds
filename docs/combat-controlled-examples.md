@@ -1,6 +1,6 @@
 # Controlled combat examples
 
-Milestone 04 step 3, 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It still uses today's combat formula. In particular, a passing geometry check does not mean the new cover penalties, accuracy plateau, chance colors or continuous height bonus have shipped.
+Milestone 04 step 3, extended by the step-4 raised-beam regression on 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It still uses today's combat formula. In particular, a passing geometry check does not mean the new cover penalties, accuracy plateau, chance colors or continuous height bonus have shipped.
 
 ## Open and edit
 
@@ -22,9 +22,10 @@ Gold ground labels identify stations; **S** and **T** mark shooter and target po
 | **06 Cargo / low hood** | Truck at `(17,0,7)`. Rays from X=14 to X=20 at Y=1.2: Z=6 through cargo; Z=9 over hood | Cargo ray blocked, above-hood ray clear, in both directions. Reuses the standalone delivery scene and its current compound shapes. |
 | **07 Open door / solid wall** | Rays from Z=20 to Z=24: X=17 at Y=1 through the opening; X=15 at Y=1 through the wall; X=17 at Y=2.9 through the beam | Door ray clear and ground traversable; wall and beam rays blocked, in both directions. Ladder `(15,0,23)` reaches the wall top `(15,3,22)`. |
 | **08 Sealed / grazing corners** | Sealed: `(25,1,3)` → `(26,1,4)` between touching blocks. Single: `(27,1,7)` → `(28,1,8)` | Touching pair blocks both ways; a single tangent corner clears both ways. Raising the sealed-pair ray to Y=3 clears both blocks. These coordinates are ray endpoints. |
+| **10 Raised beam** | Beam at `(17,2.65,17)`; ray `(17,2.7,15)` → `(17,2.7,19)` | Beam blocks both directions at its real height without a supporting deck. The same ray at Y=1 stays clear and the ground remains usable. |
 | **09 Clear range** | Shooter `(1,0,16)`; targets at Z=22, 24, 26 and 27, labeled T6/T8/T10/T11 | With weapon range 10, the first three targets are in reach and T11 is out of range. Future clear, level normal-shot expectations are 100%, 83%, 30%, and illegal respectively; current tests deliberately do not assert those future odds. |
 
-The doorway is an open wall section with a supported top beam, not a complete building or new asset template. Its beam uses the existing deck/slab contract, so it is represented above the open ground cell. Initial testing of an isolated floating lintel exposed a compiler limitation: a raised part with no intersecting tactical surface can be absent from LOS. General raised/concave mesh handling remains a concrete step-4 investigation; this supported fixture does not establish that every floating asset works.
+The doorway is an open wall section with a supported top beam, not a complete building or new asset template. Its beam uses the existing deck/slab contract, so it is represented above the open ground cell. Initial testing of an isolated floating lintel exposed a compiler limitation: a raised part with no intersecting tactical surface can be absent from LOS. Step 4 fixes raised precise parts through a shot-only index and adds station 10 to reproduce this case without a deck. Exact concave/polygon geometry is still not implied by per-mesh boxes.
 
 ## Repeat the checks
 
@@ -32,7 +33,7 @@ The doorway is an open wall section with a supported top beam, not a complete bu
 godot_console --headless --path . --script res://tests/combat_controlled_examples_test.gd
 ```
 
-The check starts a real range battle, tests body exposure and ray geometry, verifies standing/traversal, checks seed/population combinations, reconstructs the exact accepted manifest and rejects the old parcel revision. The range parcel revision was raised from 1 to 2 because fixed obstacles changed; older range recordings must not silently acquire them. This does not change Depot, Freight or Fleet content revisions or combat balance.
+The check starts a real range battle, tests body exposure and ray geometry, verifies standing/traversal, checks seed/population combinations, reconstructs the exact accepted manifest and rejects the old parcel revision. The range parcel revision is now 3 (revision 2 added the first controlled examples; revision 3 adds the raised beam); older range recordings must not silently acquire them. This does not change Depot, Freight or Fleet content revisions or combat balance.
 
 For review captures, run the same script with graphics:
 
@@ -40,14 +41,14 @@ For review captures, run the same script with graphics:
 godot_console --path . --script res://tests/combat_controlled_examples_test.gd -- capture
 ```
 
-It saves overview, doorway/crate, doorway-front and truck/corner views under `artifacts/combat-examples/`, then closes its own test window. It does not alter an already-running editor session. Captures show the real generated presentation; they are inspection aids, not automated visual comparisons or a completed manual battle.
+It saves overview, doorway/crate, doorway-front, truck/corner and raised-beam views under `artifacts/combat-examples/`, then closes its own test window. It does not alter an already-running editor session. Captures show the real generated presentation; they are inspection aids, not automated visual comparisons or a completed manual battle.
 
 ## Verification recorded for this change
 
-- Final headless controlled-example run: **97 checks, 0 failures**. Includes seeds 16/17, population on/off, bidirectional probes, crate exposure/flanks, doorway passage, gallery traversal, range reach, exact reconstruction and stale-content rejection.
+- Step-3 headless controlled-example run: **97 checks, 0 failures**; the step-4 range adds four raised-beam checks. Includes seeds 16/17, population on/off, bidirectional probes, crate exposure/flanks, doorway passage, gallery traversal, range reach, exact reconstruction and stale-content rejection.
 - Companion suites: diagonal combat, elevation combat, authored tactical shapes, authored parcel catalog and current generation all exited successfully with zero assertion failures. The current-generation suite's intentional stale-plot rejection is expected negative-test output.
 - Real Parcel Editor → Test battle → return smoke: **4 checks, 0 failures**, including retention of the examples, the open doorway and unchanged editor session. This was a temporary isolated check, not a saved user draft.
-- Headless editor scan passed. The rendered run passed **101 checks**, including four saved captures. Graphics captures were inspected; those checks establish presentation of these examples, not full playability, camera coverage or future balance correctness.
+- Headless editor scan passed. The step-3 rendered run passed **101 checks**, including four saved captures. See the [step-4 report](quality/combat-geometry-los-2026-11-16.md) for current verification. Graphics captures were inspected; those checks establish presentation of these examples, not full playability, camera coverage or future balance correctness.
 - Some verification processes reported the existing Windows root-certificate-store error. The first immediate-free test teardown also reported resource leaks; queued teardown with two frames completed cleanly in the final headless run. No claim of a full-project leak audit is made.
 
-Next: step 4, make geometry and LOS predictable, using these fixtures to reproduce mismatches. Add future-rule assertions alongside their implementation; do not rewrite today's balance tests as if the intended numbers were already running.
+Step 4 is now complete for the demonstrated mismatches. Next: step 5, directional cover and flanking, using these fixtures. Add future-rule assertions alongside their implementation; do not rewrite today's balance tests as if the intended numbers were already running.

@@ -93,15 +93,25 @@ static func _validate_cells(map_data: MapData, pathfinder: Pathfinder, result: M
 static func _validate_los_index(map_data: MapData, result: MapValidationResult) -> void:
 	var indexed: Dictionary = {}
 	for blocker in map_data.los_blocking_cells:
-		if not blocker or not map_data.has_cell(blocker.grid_position):
+		if not blocker or (not map_data.shot_obstacles.has(blocker) if blocker.is_shot_only else map_data.get_cell(blocker.grid_position) != blocker):
 			result.add_error("UNKNOWN_LOS_BLOCKER", "The LOS index references a missing cell.")
 			continue
-		indexed[blocker.grid_position] = true
+		indexed[blocker] = true
 		if not blocker.blocks_line_of_sight or blocker.cover_height <= 0.0:
 			result.add_error("STALE_LOS_BLOCKER", "The LOS index contains terrain that cannot block shots.", blocker.grid_position, true)
 	for cell: MapCellData in map_data.cells.values():
-		if cell.blocks_line_of_sight and cell.cover_height > 0.0 and not indexed.has(cell.grid_position):
+		if cell.blocks_line_of_sight and cell.cover_height > 0.0 and not indexed.has(cell):
 			result.add_error("LOS_BLOCKER_NOT_INDEXED", "LOS-blocking terrain is absent from the LOS index.", cell.grid_position, true)
+	for obstacle: MapCellData in map_data.shot_obstacles:
+		var column := Vector2i(obstacle.grid_position.x, obstacle.grid_position.z)
+		var bounds := obstacle.authored_shot_bounds
+		var finite := true
+		for axis in 3:
+			finite = finite and is_finite(bounds.position[axis]) and is_finite(bounds.size[axis])
+		if not obstacle.is_shot_only or obstacle.walkable or obstacle.can_stop or not finite or not bounds.has_volume() or not Rect2i(Vector2i.ZERO, map_data.map_size).has_point(column):
+			result.add_error("INVALID_SHOT_OBSTACLE", "Raised shot geometry must have finite bounds inside the map and cannot be walkable.", obstacle.grid_position, true)
+		if not indexed.has(obstacle) or not map_data.shot_columns.get(column, []).has(obstacle):
+			result.add_error("SHOT_OBSTACLE_NOT_INDEXED", "Raised shot geometry is missing from its LOS or column index.", obstacle.grid_position, true)
 
 static func _validate_links(map_data: MapData, pathfinder: Pathfinder, result: MapValidationResult) -> void:
 	for link in map_data.traversal_links:

@@ -5,7 +5,7 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
-const SIMULATION_VERSION := "prototype-1.5-action-pipeline"
+const SIMULATION_VERSION := "prototype-1.5-geometry-los-4"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
@@ -30,6 +30,8 @@ func validation_message() -> String:
 		return validation_error
 	if schema_version not in [LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
+	if simulation_version != SIMULATION_VERSION:
+		return "Incompatible replay simulation '%s'; this build requires '%s'. Shot geometry changed; start a new recording." % [simulation_version, SIMULATION_VERSION]
 	if configuration.is_empty(): return "Replay has no battle_configuration"
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Archived experimental generator presets/layouts are quarantined; current Generation 2 uses named battlefields"

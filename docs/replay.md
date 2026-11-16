@@ -14,6 +14,8 @@ FuseFire replay is a deterministic verification journal. It rebuilds the recorde
 | Current in-memory recording and file helpers | `systems/replay/battle_replay_session.gd` |
 | Pause, speed, and camera controls | `ui/replay_controls.gd` |
 
+Current simulation identity is `prototype-1.5-geometry-los-4`. Loading rejects old, missing or unknown simulation identities before reconstructing a battle: geometry and shot anchoring changed. Older recordings must be recorded again; compiler-revision support alone does not make old simulation outcomes compatible.
+
 ## Schema 3
 
 A current recording contains:

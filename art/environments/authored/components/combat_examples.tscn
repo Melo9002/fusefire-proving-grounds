@@ -422,3 +422,50 @@ font_size = 32
 outline_size = 4
 modulate = Color(1, 0.88, 0.5, 1)
 text = "09  CLEAR RANGE"
+
+[node name="RaisedBeam" type="Node3D" parent="."]
+
+[node name="Beam" type="CSGBox3D" parent="RaisedBeam"]
+position = Vector3(17, 2.65, 17)
+size = Vector3(4, 0.7, 0.4)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(4, 0.7, 0.4)
+metadata/precise_shot_bounds = true
+
+[node name="LeftPost" type="CSGBox3D" parent="RaisedBeam"]
+position = Vector3(15.2, 1.15, 17)
+size = Vector3(0.4, 2.3, 0.4)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(0.4, 2.3, 0.4)
+metadata/precise_shot_bounds = true
+
+[node name="RightPost" type="CSGBox3D" parent="RaisedBeam"]
+position = Vector3(18.8, 1.15, 17)
+size = Vector3(0.4, 2.3, 0.4)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(0.4, 2.3, 0.4)
+metadata/precise_shot_bounds = true
+
+[node name="Shooter" type="Marker3D" parent="RaisedBeam"]
+position = Vector3(17, 2.7, 15)
+
+[node name="Target" type="Marker3D" parent="RaisedBeam"]
+position = Vector3(17, 2.7, 19)
+
+[node name="Sign" type="Label3D" parent="RaisedBeam"]
+position = Vector3(17, 0.025, 18)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.008
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "10  RAISED BEAM"

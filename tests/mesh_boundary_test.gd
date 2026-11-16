@@ -90,6 +90,10 @@ func _check_parts() -> void:
 			from = (object.transform * Vector3(0, 1, -4)) * unit
 			to = (object.transform * Vector3(0, 1, 4)) * unit
 			check(CombatRules.get_blocking_cell(from, to, grid) == null, "The gap between separate mesh parts stays shootable")
+			from = (object.transform * Vector3(0, 3.5, -4)) * unit
+			to = (object.transform * Vector3(0, 3.5, 4)) * unit
+			check(CombatRules.get_blocking_cell(from, to, grid) != null, "An automatically derived overhead mesh blocks rays at its real height")
+			check(CombatRules.get_blocking_cell(to, from, grid) != null, "The automatically derived overhead mesh blocks in reverse too")
 			from = (object.transform * Vector3(0, 1, 4)) * unit
 			to = (object.transform * Vector3(0, 1, 8)) * unit
 			var gap_cell := grid.map_data.get_cell(grid.world_to_grid((object.transform * Vector3(0, 0, 6)) * unit))

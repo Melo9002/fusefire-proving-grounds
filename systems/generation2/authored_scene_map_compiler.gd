@@ -45,7 +45,7 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 	if node is Node3D: transform *= node.transform
 	if is_active_solid(node, shape_revision):
 		var use_precise_bounds := precise_shot_bounds and bool(node.get_meta("precise_shot_bounds", false))
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))))
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4)
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -79,7 +79,7 @@ static func _local_cell_to_grid(transform: Transform3D, local: Vector3i, data: M
 	var world := transform * Vector3(local)
 	return Vector3i(roundi(world.x / unit + data.map_size.x * 0.5 - 0.5), roundi(world.y / unit), roundi(world.z / unit + data.map_size.y * 0.5 - 0.5))
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var shot_bounds := AABB(bounds.position * unit, bounds.size * unit)
 	var lower := Vector2i(floori(bounds.position.x + data.map_size.x * 0.5), floori(bounds.position.z + data.map_size.y * 0.5))
@@ -92,6 +92,7 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 		cell_margin = Vector2(absf(inverse.basis.x.x) + absf(inverse.basis.z.x), absf(inverse.basis.x.z) + absf(inverse.basis.z.z)) * 0.5
 	for x in range(maxi(0, lower.x), mini(data.map_size.x, upper.x)):
 		for z in range(maxi(0, lower.y), mini(data.map_size.y, upper.y)):
+			var covered_from_bottom := false
 			for cell: MapCellData in data.columns.get(Vector2i(x, z), []):
 				var height := float(cell.grid_position.y)
 				# New mesh-derived parts reserve a standing body's clearance below
@@ -102,6 +103,7 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				var point := inverse * (cell.world_position / unit)
 				if absf(point.x) >= dimensions.x * 0.5 + cell_margin.x or absf(point.z) >= dimensions.z * 0.5 + cell_margin.y: continue
 				if round_volume and pow(maxf(absf(point.x) - 0.5, 0.0) / (dimensions.x * 0.5), 2) + pow(maxf(absf(point.z) - 0.5, 0.0) / (dimensions.z * 0.5), 2) > 1.0: continue
+				if cell.world_position.y / unit <= bounds.position.y + 0.001: covered_from_bottom = true
 				cell.can_stop = false
 				# Overlapping solids retain the conservative cell contract.
 				if separate_parts and precise_shot_bounds and not round_volume and (cell.cover_height <= 0.0 or not cell.authored_shot_parts.is_empty()):
@@ -116,6 +118,17 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				cell.blocks_line_of_sight = cell.cover_type == MapCellData.CoverType.FULL
 				if cell.walkable:
 					cell.movement_cost = maxi(cell.movement_cost, movement_cost)
+			if index_raised_shots and precise_shot_bounds and not round_volume and not covered_from_bottom:
+				# Keep the full raised part even when no standing cell can index it.
+				# This is shot data only: do not create a floor or reserve ground.
+				var position := Vector3((x - data.map_size.x * 0.5 + 0.5) * unit, shot_bounds.position.y, (z - data.map_size.y * 0.5 + 0.5) * unit)
+				var obstacle := MapCellData.new(Vector3i(x, floori(bounds.position.y), z), position)
+				obstacle.walkable = false
+				obstacle.can_stop = false
+				obstacle.cover_height = shot_bounds.size.y
+				obstacle.blocks_line_of_sight = true
+				obstacle.authored_shot_bounds = shot_bounds
+				data.add_shot_obstacle(obstacle)
 
 ## The retired refinery recipe was the only known producer. Never silently
 ## ignore an old export: local coordinates are now the supported scene contract.

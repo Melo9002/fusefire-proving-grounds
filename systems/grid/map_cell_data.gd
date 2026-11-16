@@ -19,6 +19,8 @@ var blocks_line_of_sight: bool = false
 var authored_shot_bounds := AABB()
 ## Revision 3 retains distinct authored parts when their cell reservations overlap.
 var authored_shot_parts: Array[AABB] = []
+## A raised obstruction indexed for shots only; never a navigable map cell.
+var is_shot_only := false
 var movement_cost: int = 1
 ## Optional authored environmental exposure. Empty cells have no hazard.
 var hazard_condition: ConditionDefinition
