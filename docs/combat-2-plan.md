@@ -1,6 +1,6 @@
 # Milestone 04 — Combat, cover, accuracy and LOS 2.0
 
-Ordered implementation checklist. Status: prepared; milestone implementation has not started. Builds on the existing actions/archetypes and Generation 2 content. Focused regressions accompany each behavioral change; the final step broadens verification and closes the milestone.
+Ordered implementation checklist. Status: **step 1 audited**; production combat behavior is unchanged. See the [current-rules sheet](combat-current-rules.md) and [ranked audit](quality/combat-audit-2026-11-15.md). Next: step 2. Builds on existing actions/archetypes and Generation 2 content. Focused regressions accompany each behavioral change; the final step broadens verification and closes the milestone.
 
 The existing CombatRules evaluation and TacticalActionService query/commit path are the foundation. Ordinary and predicted-cell attack evaluation already exist. Current accuracy applies a 50-point penalty to either half or full cover, combines cover/visibility penalties using their maximum, then applies bonuses and clamps the result. These are prototype contracts to audit, not assumptions that every difference is a bug.
 
