@@ -1158,6 +1158,7 @@ func _code_for_reason(reason: String) -> StringName:
 		"Unit defeated": return &"unit_defeated"
 		"Not hostile": return &"target_not_hostile"
 		"Out of range": return &"out_of_range"
+		"Outside battlefield": return &"outside_battlefield"
 		"Blocked": return &"blocked_los"
 		"Invalid target": return &"target_missing"
 		_: return &"illegal_attack"

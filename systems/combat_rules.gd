@@ -59,6 +59,8 @@ static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vec
 static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	if not grid.map_data.has_cell(attacker_cell) or not grid.map_data.has_cell(target_cell):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Outside battlefield", target.global_position)
 	var default_aim := _shot_destination_at(target, target_cell, grid)
 	if attacker.is_carrying_unit():
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Cannot shoot while carrying", default_aim)

@@ -249,6 +249,8 @@ func get_unit_under_mouse(screen_position := Vector2.INF) -> TacticalUnit:
 		var unit := result.collider as TacticalUnit
 		if not unit or not unit.is_visible_in_tree() or not unit.stats or unit.stats.is_defeated:
 			continue
+		if grid_manager and grid_manager.get_cell_data(unit.grid_position) == null:
+			continue
 		if is_finite(_preferred_floor_height):
 			var cell := grid_manager.get_cell_data(unit.grid_position)
 			if cell and cell.world_position.y > _preferred_floor_height + 0.1:
