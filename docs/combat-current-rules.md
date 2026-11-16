@@ -1,6 +1,6 @@
 # Combat today — milestone 04 baseline
 
-Baseline audited at `2bbc7b1`, 2026-11-15; prediction/feedback corrections followed on 2026-11-16 as noted below. Accuracy and damage rules are unchanged. This describes current behavior, not the proposed Combat 2.0 design. [Original ranked findings and reproduction](quality/combat-audit-2026-11-15.md).
+Baseline audited at `2bbc7b1`, 2026-11-15; prediction/feedback corrections followed on 2026-11-16 as noted below. Accuracy and damage rules are unchanged. This describes current behavior, not the [intended Combat 2.0 rules](combat-2-rules.md), which remain pending implementation. [Original ranked findings and reproduction](quality/combat-audit-2026-11-15.md).
 
 ## From click to damage
 
