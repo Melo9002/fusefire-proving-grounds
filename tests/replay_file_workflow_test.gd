@@ -120,8 +120,13 @@ func _run() -> void:
 		_check(not (replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController).save_replay_button.visible, "Playback keeps Save Replay hidden")
 		if player and player.playback_succeeded:
 			var replay_hud := replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
+			var opened_recording = player.recording
 			replay_hud.replay_button.pressed.emit()
-			_check(current_scene != replay and current_scene is BattleLevel and current_scene.pending_replay == player.recording, "Rewatch uses the opened file rather than a previous in-memory battle")
+			_check(current_scene == replay and is_instance_valid(replay._replay_loading), "Rewatch displays loading before replacing the battle")
+			deadline = Time.get_ticks_msec() + 30000
+			while current_scene == replay and Time.get_ticks_msec() < deadline:
+				await process_frame
+			_check(current_scene != replay and current_scene is BattleLevel and current_scene.pending_replay == opened_recording, "Rewatch uses the opened file rather than a previous in-memory battle")
 			var reopened := current_scene as BattleLevel
 			_check((reopened.get_node("Environment/WorldEnvironment") as WorldEnvironment).environment.fog_enabled, "Rewatch atmosphere belongs to the replacement scene even while the original still exists")
 			var reopened_player := reopened.get_node("BattleReplayPlayer") as BattleReplayPlayer

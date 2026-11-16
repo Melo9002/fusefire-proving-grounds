@@ -40,7 +40,14 @@ func _run() -> void:
 	await _capture("editor-preview")
 	var objects: Array = editor.draft.placements.duplicate(true)
 	var fields: Array = field.session.fields.duplicate(true)
-	await editor.test_in_battle()
+	_capture_next_loading("editor-loading")
+	editor.test_in_battle()
+	var loading := editor._test_loading
+	check(editor._test_starting and is_instance_valid(loading) and editor.process_mode == Node.PROCESS_MODE_DISABLED, "Editor test shows loading and suspends editing before construction")
+	editor.test_in_battle()
+	check(editor._test_loading == loading, "Repeated Test battle clicks do not create a second transition")
+	while editor._test_starting: await process_frame
+	check(editor._test_loading == null, "Editor loading closes only after the test battle is ready")
 	check(is_instance_valid(editor.test_battle) and editor.test_battle.battle_initialization_succeeded, "Test battle starts without manual registration")
 	if is_instance_valid(editor.test_battle):
 		check(editor.test_battle.active_generated_map.content_manifest.placements == choices, "Battle uses the same exact parcel and population choices as Preview")
@@ -55,7 +62,10 @@ func _run() -> void:
 		var loaded := BattleReplayRecording.load_json(replay_path)
 		check(loaded.is_playable(), "The local replay reloads with its exact archived content: " + loaded.validation_message())
 		BattleReplaySession.store(loaded)
+		_capture_next_loading("rewatch-loading")
 		live.replay_last_battle()
+		check(is_instance_valid(live._replay_loading) and live.process_mode == Node.PROCESS_MODE_DISABLED, "Rewatch covers the old battle and blocks its controls during reconstruction")
+		while current_scene == live: await process_frame
 		await process_frame
 		var replay := current_scene as BattleLevel
 		var player := replay.get_node("BattleReplayPlayer") as BattleReplayPlayer
@@ -85,3 +95,10 @@ func _capture(name: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	check(root.get_texture().get_image().save_png(args[1].path_join(name + ".png")) == OK, "Capture " + name)
+
+func _capture_next_loading(name: String) -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.size() != 2 or args[0] != "capture" or DisplayServer.get_name() == "headless": return
+	DirAccess.make_dir_recursive_absolute(args[1])
+	RenderingServer.frame_post_draw.connect(func():
+		check(root.get_texture().get_image().save_png(args[1].path_join(name + ".png")) == OK, "Capture real loading transition"), CONNECT_ONE_SHOT)

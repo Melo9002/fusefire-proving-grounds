@@ -64,6 +64,7 @@ var active_generated_map: MapData
 var battle_initialization_attempted := false
 var battle_initialization_succeeded := false
 var battle_initialization_errors: Array[Dictionary] = []
+var _replay_loading: Control
 var _configuration_errors: Array[Dictionary] = []
 
 func configure(player_count: int, enemy_count: int, generate_map: bool = false, match_seed: int = 1, ally_count: int = 0, map_size := Vector2i(32, 24), add_vip: bool = false, behavior: MissionActor.VIPBehavior = MissionActor.VIPBehavior.PLAYER_CONTROLLED, selected_mission: MissionDefinition = null, selected_difficulty: AIDifficultyPolicy.Tier = AIDifficultyPolicy.Tier.NORMAL, refinery: bool = false, selected_player_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT, selected_enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAULT) -> void:
@@ -281,14 +282,37 @@ func _configure_replay_presentation() -> void:
 			control.hide()
 
 func replay_last_battle() -> void:
+	if is_instance_valid(_replay_loading): return
 	var recording = pending_replay if pending_replay else ReplaySessionData.last_recording
 	if not recording or not recording.is_playable():
 		return
 	get_tree().paused = false
+	var previous_mode := process_mode
+	process_mode = Node.PROCESS_MODE_DISABLED
+	_replay_loading = preload("res://ui/battle_loading_screen.gd").new()
+	add_child(_replay_loading)
+	_replay_loading.set_stage("Reconstructing recorded battlefield…", 0.05)
+	await _replay_loading.wait_for_frame()
+	if not is_inside_tree(): return
 	var replay_level := load(BATTLE_SCENE_PATH).instantiate() as BattleLevel
+	replay_level.battle_initialization_progress.connect(_replay_loading.set_stage)
 	replay_level.return_action = return_action
 	replay_level.configure_replay(recording)
 	get_tree().root.add_child(replay_level)
+	while not replay_level.battle_initialization_succeeded and replay_level.battle_initialization_errors.is_empty():
+		await get_tree().process_frame
+	if not replay_level.battle_initialization_succeeded:
+		_replay_loading.show_failure(replay_level.battle_initialization_errors, "BACK TO BATTLE")
+		_replay_loading.dismissed.connect(func():
+			process_mode = previous_mode
+			_replay_loading.queue_free()
+			_replay_loading = null)
+		replay_level.queue_free()
+		(get_node("CameraRig") as TacticalCamera).camera.make_current()
+		return
+	_replay_loading.set_stage("Replay ready", 1.0)
+	await _replay_loading.wait_for_frame()
+	if not is_inside_tree(): return
 	get_tree().current_scene = replay_level
 	queue_free()
 

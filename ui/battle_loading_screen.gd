@@ -15,16 +15,20 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	z_index = 1000
+	# Stay above battle CanvasLayers while its first frame is prepared.
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
 
 	var background := ColorRect.new()
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.color = Color(0.008, 0.012, 0.02, 1.0)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(background)
+	background.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(background)
 
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	layer.add_child(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(620, 260)
 	var style := StyleBoxFlat.new()
@@ -63,7 +67,7 @@ func _ready() -> void:
 	_progress.custom_minimum_size.y = 14
 	column.add_child(_progress)
 	_detail = Label.new()
-	_detail.text = "MapData remains authoritative while visuals and combatants are prepared."
+	_detail.text = "Preparing the map, scenery and soldiers. Larger battlefields may take a moment."
 	_detail.modulate = Color(0.68, 0.76, 0.84)
 	_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -74,13 +78,24 @@ func _ready() -> void:
 	_back_button.pressed.connect(func(): dismissed.emit())
 	column.add_child(_back_button)
 
+func wait_for_frame() -> void:
+	# A process-frame yield alone can resume before drawing the overlay.
+	if DisplayServer.get_name() == "headless":
+		await get_tree().process_frame
+	else:
+		await RenderingServer.frame_post_draw
+
+func _input(event: InputEvent) -> void:
+	if not _back_button.visible and (event is InputEventKey or event is InputEventAction):
+		get_viewport().set_input_as_handled()
+
 func set_stage(label: String, progress: float) -> void:
 	if not is_node_ready():
 		await ready
 	_stage.text = label
 	_progress.value = clampf(progress, 0.0, 1.0)
 
-func show_failure(errors: Array) -> void:
+func show_failure(errors: Array, back_text := "BACK TO MATCH SETUP") -> void:
 	if not is_node_ready():
 		await ready
 	_stage.text = "BATTLEFIELD PREPARATION FAILED"
@@ -90,4 +105,5 @@ func show_failure(errors: Array) -> void:
 		messages.append("%s: %s" % [error.get("code", "INITIALIZATION_FAILED"), error.get("message", "Battle initialization failed")])
 	_detail.text = "\n".join(messages) if not messages.is_empty() else "Battle initialization failed without a diagnostic."
 	_detail.modulate = Color(1.0, 0.55, 0.48)
+	_back_button.text = back_text
 	_back_button.visible = true

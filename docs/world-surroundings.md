@@ -44,7 +44,7 @@ Global lighting/fog remains owned by the battle's explicit WorldEnvironment. No 
 
 `tests/world_area_ownership_test.gd` checks all three sites and seeds 16/17: editable groups, parcel world transforms at presentation scales 1 and 2, bounded grid, unchanged manifest reconstruction, scenery without physics bodies, and ignored scenery hazards alongside working Tactical hazards. Generation/compilation uses the existing unit-tile contract; the scale-2 case tests presentation separately, not new arbitrary-scale tactical compilation support.
 
-The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The bounded Depot continuity, boundary, horizon, camera and tactical-isolation proofs are recorded below. Measured budgets and the other sites’ scenery rollout remain later tasks.
+The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The bounded Depot continuity, boundary, horizon, camera, tactical-isolation and measured-cost proofs are recorded below. The other sites’ scenery rollout remains later work.
 
 ### Step-2 evidence — 2026-11-15
 
@@ -73,4 +73,8 @@ The neighboring workshop was moved out of the known camera pose. Saved scene ins
 
 ## Step 7 — Tactical isolation and replay
 
-MapData bounds now also guard shot predictions and unit picking. All four Depot edges reject off-map movement and targets while inside controls remain legal. The 48-case current-site mission/replay matrix checks mission placement and reconstructs matching fixed surroundings and atmosphere. Live/replay captures cover both Depot layouts. [Evidence, commands and limits](quality/world-tactical-isolation-2026-11-15.md). Next: measure performance before considering any extra rendering machinery.
+MapData bounds now also guard shot predictions and unit picking. All four Depot edges reject off-map movement and targets while inside controls remain legal. The 48-case current-site mission/replay matrix checks mission placement and reconstructs matching fixed surroundings and atmosphere. Live/replay captures cover both Depot layouts. [Evidence, commands and limits](quality/world-tactical-isolation-2026-11-15.md).
+
+## Step 8 — Measured cost and loading
+
+The repeatable 1600 × 900 Depot benchmark measured 21,600 frames across both layouts and three views. The largest paired median scenery addition was about 0.20 ms GPU on the development machine. Both plots fit the enforced 160-mesh / 25,000-triangle scenery cap; no LOD or streaming is needed from these measurements. Loading is always shown for matches, editor tests and replay transitions, through the first rendered frame. [Setup, results, budgets, loading behavior and limits](quality/surroundings-cost-2026-11-15.md). Next: apply/review the established scenery pattern on the other current sites.

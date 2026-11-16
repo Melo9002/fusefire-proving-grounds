@@ -31,6 +31,7 @@ func _run() -> void:
 			host.free()
 			continue
 		var plot := host.get_child(0)
+		_check_scenery_budget(plot)
 		var peripheral := plot.get_node("Peripheral") as Node3D
 		var yards := peripheral.get_node("NeighboringYards") as Node3D
 		var boundary := plot.get_node("Tactical/PlayableBoundary") as Node3D
@@ -72,3 +73,20 @@ func _run() -> void:
 		host.free()
 	print("Depot surroundings: %d failure(s)" % failures)
 	quit(1 if failures else 0)
+
+func _check_scenery_budget(plot: Node) -> void:
+	# Prototype content budget measured on 2026-11-15. Timing stays an explicit
+	# graphics measurement, never a hardware-dependent CI assertion.
+	var meshes := 0
+	var triangles := 0
+	for name in ["Peripheral", "Distant"]:
+		var area := plot.get_node(name)
+		check(area.find_children("*", "Light3D", true, false).is_empty(), "Surroundings stay within the no-extra-lights budget")
+		for instance: MeshInstance3D in area.find_children("*", "MeshInstance3D", true, false):
+			if instance.mesh == null: continue
+			meshes += 1
+			for surface in instance.mesh.get_surface_count():
+				var arrays := instance.mesh.surface_get_arrays(surface)
+				var indices: int = arrays[Mesh.ARRAY_INDEX].size() if arrays[Mesh.ARRAY_INDEX] != null else 0
+				triangles += int((indices if indices > 0 else arrays[Mesh.ARRAY_VERTEX].size()) / 3.0)
+	check(meshes > 0 and meshes <= 160 and triangles <= 25000, "Measured surroundings stay within 160 meshes / 25,000 triangles: %d / %d" % [meshes, triangles])

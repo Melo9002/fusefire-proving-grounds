@@ -1,0 +1,611 @@
+{
+  "source": "artifacts/surroundings-cost-20261115-measured/measurements.json",
+  "setup": {
+    "cpu": "AMD Ryzen 5 5500",
+    "engine": {
+      "build": "official",
+      "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "hex": 263938,
+      "major": 4,
+      "minor": 7,
+      "patch": 2,
+      "status": "stable",
+      "string": "4.7.2-stable (official)",
+      "timestamp": 0
+    },
+    "gpu": "NVIDIA GeForce RTX 5060",
+    "gpu_vendor": "NVIDIA",
+    "graphics_api": "12_0",
+    "max_fps": 0,
+    "memory": {
+      "available": 43909824512,
+      "free": 3042885632,
+      "physical": 17066278912,
+      "stack": 8388608
+    },
+    "notes": "Debug executable, same battle with Peripheral/Distant visibility toggled; full content stays allocated. Initial resource load occurs before script start due to preloads. No cold-disk or exported-build claim.",
+    "os": "Windows",
+    "renderer": "forward_plus",
+    "repeats": 3,
+    "resolution": [
+      1600,
+      900
+    ],
+    "sample_frames_per_block": 600,
+    "vsync": 0,
+    "warmup_frames_per_block": 120
+  },
+  "loading": [
+    {
+      "first_draw_ms": 6552.914,
+      "generation_ms": [
+        105.339,
+        104.32,
+        115.564
+      ],
+      "ready_ms": 1515.897,
+      "scenery_construction": [
+        {
+          "ms": 0.004,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.599,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.545,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.526,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.621,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.562,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 132,
+        "triangles": 19004
+      },
+      "seed": 16,
+      "stages": [
+        {
+          "elapsed_ms": 61.672,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 62.614,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 62.918,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 254.753,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 269.529,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 353.712,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 1515.87,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 1133.978,
+      "generation_ms": [
+        106.68,
+        86.62,
+        87.432
+      ],
+      "ready_ms": 712.358,
+      "scenery_construction": [
+        {
+          "ms": 0.006,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.003,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 1.164,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.097,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.205,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.182,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.136,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 132,
+        "triangles": 19964
+      },
+      "seed": 17,
+      "stages": [
+        {
+          "elapsed_ms": 19.869,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 20.246,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 20.342,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 107.082,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 112.34,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 146.546,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 712.345,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "seed": 16,
+      "view": "normal",
+      "off": {
+        "draw_calls": {
+          "median": 115.0,
+          "p95": 115
+        },
+        "frame_ms": {
+          "median": 0.617,
+          "p95": 1.02
+        },
+        "objects": {
+          "median": 394.0,
+          "p95": 394
+        },
+        "primitives": {
+          "median": 69238.0,
+          "p95": 69238
+        },
+        "render_cpu_ms": {
+          "median": 0.196,
+          "p95": 0.348
+        },
+        "render_gpu_ms": {
+          "median": 0.362,
+          "p95": 0.374
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 179.0,
+          "p95": 179
+        },
+        "frame_ms": {
+          "median": 0.748,
+          "p95": 1.241
+        },
+        "objects": {
+          "median": 566.0,
+          "p95": 566
+        },
+        "primitives": {
+          "median": 97660.0,
+          "p95": 97660
+        },
+        "render_cpu_ms": {
+          "median": 0.256,
+          "p95": 0.47
+        },
+        "render_gpu_ms": {
+          "median": 0.543,
+          "p95": 0.546
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      }
+    },
+    {
+      "seed": 16,
+      "view": "low",
+      "off": {
+        "draw_calls": {
+          "median": 120.0,
+          "p95": 120
+        },
+        "frame_ms": {
+          "median": 0.718,
+          "p95": 1.153
+        },
+        "objects": {
+          "median": 395.0,
+          "p95": 395
+        },
+        "primitives": {
+          "median": 75286.0,
+          "p95": 75286
+        },
+        "render_cpu_ms": {
+          "median": 0.213,
+          "p95": 0.391
+        },
+        "render_gpu_ms": {
+          "median": 0.467,
+          "p95": 0.615
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 177.0,
+          "p95": 177
+        },
+        "frame_ms": {
+          "median": 0.762,
+          "p95": 1.594
+        },
+        "objects": {
+          "median": 521.0,
+          "p95": 521
+        },
+        "primitives": {
+          "median": 98982.0,
+          "p95": 98982
+        },
+        "render_cpu_ms": {
+          "median": 0.25,
+          "p95": 0.564
+        },
+        "render_gpu_ms": {
+          "median": 0.604,
+          "p95": 0.746
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      }
+    },
+    {
+      "seed": 16,
+      "view": "high_wide",
+      "off": {
+        "draw_calls": {
+          "median": 78.0,
+          "p95": 78
+        },
+        "frame_ms": {
+          "median": 0.5745,
+          "p95": 0.852
+        },
+        "objects": {
+          "median": 353.0,
+          "p95": 353
+        },
+        "primitives": {
+          "median": 26423.0,
+          "p95": 26423
+        },
+        "render_cpu_ms": {
+          "median": 0.184,
+          "p95": 0.285
+        },
+        "render_gpu_ms": {
+          "median": 0.142,
+          "p95": 0.147
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 105.0,
+          "p95": 105
+        },
+        "frame_ms": {
+          "median": 0.658,
+          "p95": 1.042
+        },
+        "objects": {
+          "median": 495.0,
+          "p95": 495
+        },
+        "primitives": {
+          "median": 44427.0,
+          "p95": 44427
+        },
+        "render_cpu_ms": {
+          "median": 0.222,
+          "p95": 0.371
+        },
+        "render_gpu_ms": {
+          "median": 0.329,
+          "p95": 0.336
+        },
+        "video_memory_bytes": {
+          "median": 198426624.0,
+          "p95": 198426624
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "view": "normal",
+      "off": {
+        "draw_calls": {
+          "median": 118.0,
+          "p95": 118
+        },
+        "frame_ms": {
+          "median": 0.605,
+          "p95": 0.898
+        },
+        "objects": {
+          "median": 397.0,
+          "p95": 397
+        },
+        "primitives": {
+          "median": 71461.0,
+          "p95": 71461
+        },
+        "render_cpu_ms": {
+          "median": 0.193,
+          "p95": 0.313
+        },
+        "render_gpu_ms": {
+          "median": 0.36,
+          "p95": 0.368
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 185.0,
+          "p95": 185
+        },
+        "frame_ms": {
+          "median": 0.734,
+          "p95": 1.142
+        },
+        "objects": {
+          "median": 578.0,
+          "p95": 578
+        },
+        "primitives": {
+          "median": 102847.0,
+          "p95": 102847
+        },
+        "render_cpu_ms": {
+          "median": 0.246,
+          "p95": 0.418
+        },
+        "render_gpu_ms": {
+          "median": 0.556,
+          "p95": 0.697
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "view": "low",
+      "off": {
+        "draw_calls": {
+          "median": 135.0,
+          "p95": 135
+        },
+        "frame_ms": {
+          "median": 0.634,
+          "p95": 0.984
+        },
+        "objects": {
+          "median": 413.0,
+          "p95": 413
+        },
+        "primitives": {
+          "median": 128303.0,
+          "p95": 128303
+        },
+        "render_cpu_ms": {
+          "median": 0.202,
+          "p95": 0.343
+        },
+        "render_gpu_ms": {
+          "median": 0.415,
+          "p95": 0.421
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 201.0,
+          "p95": 201
+        },
+        "frame_ms": {
+          "median": 0.746,
+          "p95": 1.187
+        },
+        "objects": {
+          "median": 565.0,
+          "p95": 565
+        },
+        "primitives": {
+          "median": 151251.0,
+          "p95": 151251
+        },
+        "render_cpu_ms": {
+          "median": 0.251,
+          "p95": 0.436
+        },
+        "render_gpu_ms": {
+          "median": 0.522,
+          "p95": 0.527
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "view": "high_wide",
+      "off": {
+        "draw_calls": {
+          "median": 78.0,
+          "p95": 78
+        },
+        "frame_ms": {
+          "median": 0.573,
+          "p95": 0.861
+        },
+        "objects": {
+          "median": 353.0,
+          "p95": 353
+        },
+        "primitives": {
+          "median": 26423.0,
+          "p95": 26423
+        },
+        "render_cpu_ms": {
+          "median": 0.188,
+          "p95": 0.28
+        },
+        "render_gpu_ms": {
+          "median": 0.139,
+          "p95": 0.145
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      },
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "on": {
+        "draw_calls": {
+          "median": 104.0,
+          "p95": 104
+        },
+        "frame_ms": {
+          "median": 0.642,
+          "p95": 1.014
+        },
+        "objects": {
+          "median": 489.0,
+          "p95": 489
+        },
+        "primitives": {
+          "median": 45079.0,
+          "p95": 45079
+        },
+        "render_cpu_ms": {
+          "median": 0.222,
+          "p95": 0.354
+        },
+        "render_gpu_ms": {
+          "median": 0.301,
+          "p95": 0.307
+        },
+        "video_memory_bytes": {
+          "median": 198950912.0,
+          "p95": 198950912
+        }
+      }
+    }
+  ],
+  "failures": 0
+}

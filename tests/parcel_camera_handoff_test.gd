@@ -74,7 +74,7 @@ func _run() -> void:
 		await _capture(view + "-battle")
 		check(await live.battle_controller.try_aim(live.turn_manager.active_unit), "Record an action for camera ownership during rewatch")
 		BattleReplaySession.store(live._replay_recorder.recording)
-		live.replay_last_battle()
+		await live.replay_last_battle()
 		await process_frame
 		var replay := current_scene as BattleLevel
 		var replay_rig := replay.get_node("CameraRig") as TacticalCamera

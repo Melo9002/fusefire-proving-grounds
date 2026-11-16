@@ -529,7 +529,7 @@ func _launch_battle(config: BattleConfigurationData, recording: BattleReplayReco
 	var stage := "Reconstructing saved battle…" if recording else "Preparing %s…" % BattlefieldCatalogData.label(config.resolved_battlefield_id())
 	_loading_screen.set_stage(stage, 0.05)
 	# Allow the opaque transition to render before synchronous map construction.
-	await get_tree().process_frame
+	await _loading_screen.wait_for_frame()
 	var battle = battle_scene.instantiate() as BattleLevel
 	battle.battle_initialization_progress.connect(_loading_screen.set_stage)
 	battle.battle_initialization_finished.connect(_on_battle_initialization_finished.bind(battle), CONNECT_ONE_SHOT)
@@ -542,6 +542,9 @@ func _launch_battle(config: BattleConfigurationData, recording: BattleReplayReco
 func _on_battle_initialization_finished(success: bool, errors: Array, battle: BattleLevel) -> void:
 	if success:
 		_loading_screen.set_stage("Battlefield ready", 1.0)
+		# Keep the opaque screen over the battle's first rendered frame too.
+		await _loading_screen.wait_for_frame()
+		if not is_inside_tree() or not is_instance_valid(battle): return
 		get_tree().current_scene = battle
 		queue_free()
 		return

@@ -10,7 +10,10 @@ const PlacementLibrary = preload("res://tools/parcel_editor/parcel_placement_lib
 const AssetPreview = preload("res://tools/parcel_editor/asset_preview.gd")
 const SessionFile = preload("res://tools/parcel_editor/parcel_session_file.gd")
 const LocalContent = preload("res://systems/generation2/local_parcel_content.gd")
+const LoadingScreen = preload("res://ui/battle_loading_screen.gd")
 var test_battle: BattleLevel
+var _test_starting := false
+var _test_loading: Control
 var tested_fingerprint := ""
 var _saved_editor_environment: Environment
 var active_session_path := ""
@@ -590,17 +593,28 @@ func _save_session_to(path: String) -> bool:
 	return true
 
 func test_in_battle() -> void:
-	if is_instance_valid(test_battle): return
+	if _test_starting or is_instance_valid(test_battle): return
+	_test_starting = true
+	_test_loading = LoadingScreen.new()
+	add_child(_test_loading)
+	_test_loading.set_stage("Preparing your parcel for battle…", 0.05)
+	process_mode = Node.PROCESS_MODE_DISABLED
+	await _test_loading.wait_for_frame()
+	if not is_inside_tree(): return
 	_finish_object_drag(false)
 	_finish_library_placement(false)
 	field_panel.cancel_drag()
 	field_panel.clear_preview()
 	var built: Dictionary = field_panel.build_current()
 	if built.has("error"):
+		_finish_test_loading()
+		process_mode = Node.PROCESS_MODE_INHERIT
 		_update_draft_status("Test rejected · " + String(built.error))
 		return
 	var preserved := LocalContent.archive(built.definition.scene)
 	if preserved.has("error"):
+		_finish_test_loading()
+		process_mode = Node.PROCESS_MODE_INHERIT
 		_update_draft_status(preserved.error)
 		return
 	var config := BattleConfiguration.new()
@@ -611,6 +625,7 @@ func test_in_battle() -> void:
 	config.battle_seed = int(field_panel.seed_input.value)
 	config.content_manifest = {"local_content": preserved.content}
 	test_battle = load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
+	test_battle.battle_initialization_progress.connect(_test_loading.set_stage)
 	test_battle.return_action = _return_from_test
 	test_battle.configure_battle(config)
 	var environment := get_node("EditorWorldEnvironment") as WorldEnvironment
@@ -624,7 +639,7 @@ func test_in_battle() -> void:
 	process_mode = Node.PROCESS_MODE_DISABLED
 	get_tree().root.add_child(test_battle)
 	get_tree().current_scene = test_battle
-	for frame in 240:
+	while true:
 		if not is_instance_valid(test_battle) or not is_inside_tree(): return
 		if test_battle.battle_initialization_succeeded or not test_battle.battle_initialization_errors.is_empty(): break
 		await get_tree().process_frame
@@ -632,10 +647,19 @@ func test_in_battle() -> void:
 	if not test_battle.battle_initialization_succeeded:
 		var message := str(test_battle.battle_initialization_errors)
 		test_battle.queue_free()
+		_finish_test_loading()
 		_return_from_test()
 		_update_draft_status("Test could not start · " + message)
 	else:
+		_test_loading.set_stage("Battlefield ready", 1.0)
+		await _test_loading.wait_for_frame()
+		_finish_test_loading()
 		tested_fingerprint = _session_fingerprint()
+
+func _finish_test_loading() -> void:
+	if is_instance_valid(_test_loading): _test_loading.queue_free()
+	_test_loading = null
+	_test_starting = false
 
 func _return_from_test() -> void:
 	get_tree().paused = false

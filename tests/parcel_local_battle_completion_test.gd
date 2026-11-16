@@ -62,7 +62,7 @@ func _run() -> void:
 	var loaded := BattleReplayRecording.load_json(path)
 	check(loaded.is_playable(), "The saved local replay validates its snapshot and dependencies")
 	BattleReplaySession.store(loaded)
-	live.replay_last_battle()
+	await live.replay_last_battle()
 	await process_frame
 	var replay := current_scene as BattleLevel
 	var player := replay.get_node("BattleReplayPlayer") as BattleReplayPlayer
