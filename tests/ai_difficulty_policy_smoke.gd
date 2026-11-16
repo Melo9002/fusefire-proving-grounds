@@ -33,7 +33,12 @@ func _run() -> void:
 	setup.player_commander_option.select(AICommanderPolicy.Profile.CAUTIOUS)
 	setup.enemy_commander_option.select(AICommanderPolicy.Profile.AGGRESSIVE)
 	setup._start_battle()
-	await create_timer(0.2).timeout
+	check(setup._launch_in_progress and setup._loading_screen != null, "Configured launch displays loading before entering battle")
+	# Preparation now owns an explicit loading/first-frame transition. Wait for
+	# that state boundary, not a fixed 0.2-second assumption about loading speed.
+	var deadline := Time.get_ticks_msec() + 30000
+	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
+		await process_frame
 	var battle := current_scene as BattleLevel
 	check(battle != null, "Match setup starts the configured battle")
 	if battle:

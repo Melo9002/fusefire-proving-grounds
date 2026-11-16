@@ -561,8 +561,7 @@ func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
 		if distance == 0 or distance > attacker.attack_range:
 			continue
 
-		var world_pos = grid_manager.grid_to_world(grid_pos)
-		if CombatRules.has_line_of_sight_to_position(attacker, world_pos, grid_manager, get_world_3d()):
+		if CombatRules.has_firing_lane_to_cell(attacker, grid_pos, grid_manager):
 			cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
 		return a.x < b.x or (a.x == b.x and (a.z < b.z or (a.z == b.z and a.y < b.y))))

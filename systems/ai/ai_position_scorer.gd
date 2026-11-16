@@ -24,7 +24,6 @@ static func evaluate(
 	var firing := 0.0
 	var danger := 0.0
 	var incoming_lanes := 0
-	var candidate_world := grid.grid_to_world(candidate)
 	for hostile in hostiles:
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
@@ -37,7 +36,7 @@ static func evaluate(
 					cover += 4.0
 				MapCellData.CoverType.FULL:
 					cover += 7.0
-			if CombatRules.has_line_of_sight_to_position(hostile, candidate_world, grid, unit.get_world_3d()):
+			if CombatRules.evaluate_attack_after_move(hostile, unit, candidate, grid, unit.get_world_3d()).is_legal:
 				incoming_lanes += 1
 				match directional_cover:
 					MapCellData.CoverType.FULL:
@@ -47,9 +46,7 @@ static func evaluate(
 					_:
 						exposure -= 14.0
 		if not unit.is_carrying_unit() and distance <= unit.attack_range:
-			var origin := candidate_world + Vector3.UP * unit.standing_height
-			var target := CombatRules.get_shot_destination(hostile, grid)
-			if CombatRules.get_blocking_cell(origin, target, grid) == null:
+			if CombatRules.evaluate_attack_from_cell(unit, candidate, hostile, grid, unit.get_world_3d()).is_legal:
 				var target_cover := CombatRules.get_directional_cover(candidate, hostile_cell, grid)
 				firing += 6.0 if target_cover != MapCellData.CoverType.NONE else 10.0
 		if distance <= 2:

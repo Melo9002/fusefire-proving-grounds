@@ -44,11 +44,25 @@ static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: 
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield)
 
-## Pure checkpoint evaluation for reactions and incoming destination previews.
+## Pure checkpoint evaluation. Guard retains the mover's current Shield until
+## movement resolves; completed-destination previews use evaluate_attack_after_move.
 static func evaluate_attack_at_cell(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(attacker):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, target_cell, grid, accuracy_bonus, allow_shield)
+
+## A completed Move cancels the target's Shield. Do not mutate live stance for previews.
+static func evaluate_attack_after_move(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, world: World3D, accuracy_bonus := 0) -> AttackEvaluation:
+	return evaluate_attack_at_cell(attacker, target, target_cell, grid, world, accuracy_bonus, false)
+
+## Geometric coverage for a hypothetical hostile body, not AP/faction permission.
+## Occupied cells use the actual body's height; empty cells use the shooter's height.
+static func has_firing_lane_to_cell(attacker: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> bool:
+	if not is_instance_valid(attacker) or not attacker.stats or attacker.stats.is_defeated or attacker.is_carrying_unit(): return false
+	var source := grid.get_unit_grid(attacker)
+	if source == target_cell or not grid.map_data.has_cell(source) or not grid.map_data.has_cell(target_cell): return false
+	if attack_distance(source, target_cell, grid) > attacker.attack_range: return false
+	return _evaluate_target_visibility_cells(attacker, source, grid.get_unit_at(target_cell), target_cell, grid, true).visible_count > 0
 
 ## Pure outgoing preview. Moving cancels Aim, so callers should use zero bonus.
 static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
@@ -146,29 +160,34 @@ static func get_shot_origin(attacker: TacticalUnit, grid: GridManager) -> Vector
 static func get_shot_destination(target: TacticalUnit, grid: GridManager) -> Vector3:
 	return grid.grid_to_world(grid.get_unit_grid(target)) + Vector3.UP * target.standing_height
 
-static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Dictionary:
+static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, first_visible_only := false) -> Dictionary:
 	var origin := grid.grid_to_world(attacker_cell) + Vector3.UP * attacker.standing_height
-	var center := _shot_destination_at(target, target_cell, grid)
+	var body_height := target.standing_height if is_instance_valid(target) else attacker.standing_height
+	var center := grid.grid_to_world(target_cell) + Vector3.UP * body_height
 	var horizontal := center - origin
 	horizontal.y = 0.0
 	var side := Vector3.RIGHT
 	if not horizontal.is_zero_approx(): side = Vector3(-horizontal.z, 0.0, horizontal.x).normalized()
 	var base := grid.grid_to_world(target_cell)
 	var samples: Array[Vector3] = [
-		base + Vector3.UP * target.standing_height * 1.2,
-		base + Vector3.UP * target.standing_height * 1.75,
-		base + Vector3.UP * target.standing_height * 0.9 + side * grid.cell_size * 0.28,
-		base + Vector3.UP * target.standing_height * 0.9 - side * grid.cell_size * 0.28,
-		base + Vector3.UP * target.standing_height * 0.5,
+		base + Vector3.UP * body_height * 1.2,
+		base + Vector3.UP * body_height * 1.75,
+		base + Vector3.UP * body_height * 0.9 + side * grid.cell_size * 0.28,
+		base + Vector3.UP * body_height * 0.9 - side * grid.cell_size * 0.28,
+		base + Vector3.UP * body_height * 0.5,
 	]
 	var visible: Array[Vector3] = []
 	var first_blocker: MapCellData = null
 	var ignored_cells: Array[Vector3i] = [attacker_cell, target_cell]
 	for sample in samples:
-		var blocker := _get_geometry_between(origin, sample, grid, false, ignored_cells)
+		# Boolean coverage can stop at one clear body sample. Full evaluations
+		# count every sample, but need nearest-blocker detail only for the first.
+		var blocker := _get_geometry_between(origin, sample, grid, false, ignored_cells, not first_visible_only and first_blocker == null)
 		if blocker:
 			if not first_blocker: first_blocker = blocker
-		else: visible.append(sample)
+		else:
+			visible.append(sample)
+			if first_visible_only: break
 	return {"visible_count": visible.size(), "sample_count": samples.size(), "aim_point": visible[0] if not visible.is_empty() else center, "blocker": first_blocker}
 
 static func _shot_destination_at(target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Vector3:
@@ -198,11 +217,13 @@ static func get_directional_cover(attacker_cell: Vector3i, target_cell: Vector3i
 static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridManager) -> MapCellData:
 	return _get_geometry_between(origin, destination, grid, true)
 
-static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = []) -> MapCellData:
+static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
 	var candidates := _shot_candidates(grid, origin_cell, target_cell, los_blockers_only)
-	var grazed: Array[MapCellData] = []
+	var grazed: Array[Dictionary] = []
+	var nearest: MapCellData = null
+	var nearest_entry := INF
 	for data: MapCellData in candidates:
 		if data.cover_height <= 0.0:
 			continue
@@ -210,15 +231,33 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			continue
 		if data.grid_position == origin_cell or data.grid_position == target_cell:
 			continue
-		if _segment_enters_obstacle(origin, destination, data, grid.cell_size):
-			return data
-		if data.blocks_line_of_sight and _segment_enters_obstacle(origin, destination, data, grid.cell_size, true):
+		var entry := _obstacle_entry(origin, destination, data, grid.cell_size)
+		if is_finite(entry) and not nearest_blocker: return data
+		if is_finite(entry) and _closer_blocker(data, entry, nearest, nearest_entry):
+			nearest = data
+			nearest_entry = entry
+		var closed_entry := _obstacle_entry(origin, destination, data, grid.cell_size, true) if data.blocks_line_of_sight else INF
+		if is_finite(closed_entry):
 			for other in grazed:
-				var delta := data.grid_position - other.grid_position
+				var delta: Vector3i = data.grid_position - other.cell.grid_position
 				if delta.y == 0 and absi(delta.x) == 1 and absi(delta.z) == 1:
-					return data
-			grazed.append(data)
-	return null
+					if not nearest_blocker: return data
+					var seam_entry := maxf(closed_entry, float(other.entry))
+					var seam_cell: MapCellData = data
+					if float(other.entry) > closed_entry or (float(other.entry) == closed_entry and _closer_blocker(other.cell, seam_entry, data, seam_entry)):
+						seam_cell = other.cell
+					if _closer_blocker(seam_cell, seam_entry, nearest, nearest_entry):
+						nearest = seam_cell
+						nearest_entry = seam_entry
+			grazed.append({"cell": data, "entry": closed_entry})
+	return nearest
+
+static func _closer_blocker(cell: MapCellData, entry: float, nearest: MapCellData, nearest_entry: float) -> bool:
+	if entry != nearest_entry: return entry < nearest_entry
+	if nearest == null: return true
+	var a := cell.grid_position
+	var b := nearest.grid_position
+	return a.x < b.x or (a.x == b.x and (a.y < b.y or (a.y == b.y and a.z < b.z)))
 
 static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, los_blockers_only: bool) -> Array:
 	var column_count := (absi(to.x - from.x) + 3) * (absi(to.z - from.z) + 3)
@@ -236,13 +275,20 @@ static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, lo
 	return candidates
 
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
+	return is_finite(_obstacle_entry(origin, destination, cell, cell_size, closed_edges))
+
+static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> float:
 	if not cell.authored_shot_parts.is_empty():
+		var nearest := INF
 		for part in cell.authored_shot_parts:
-			if _segment_enters_bounds(origin, destination, cell, cell_size, closed_edges, part): return true
-		return false
-	return _segment_enters_bounds(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds)
+			nearest = minf(nearest, _bounds_entry(origin, destination, cell, cell_size, closed_edges, part))
+		return nearest
+	return _bounds_entry(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds)
 
 static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> bool:
+	return is_finite(_bounds_entry(origin, destination, cell, cell_size, closed_edges, bounds))
+
+static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> float:
 	var inset := 0.001
 	# Full-height obstacles meet at their edges. Shrinking their horizontal
 	# bounds creates artificial cracks through touching diagonal blocks.
@@ -253,7 +299,7 @@ static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: 
 		minimum = minimum.max(bounds.position)
 		maximum = maximum.min(bounds.end)
 		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
-			return false
+			return INF
 	var direction = destination - origin
 	var enter := 0.0
 	var exit := 1.0
@@ -262,7 +308,7 @@ static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: 
 		var delta: float = direction[axis]
 		if is_zero_approx(delta):
 			if start <= minimum[axis] or start >= maximum[axis]:
-				return false
+				return INF
 			continue
 		var first: float = (minimum[axis] - start) / delta
 		var second: float = (maximum[axis] - start) / delta
@@ -273,5 +319,5 @@ static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: 
 		enter = maxf(enter, first)
 		exit = minf(exit, second)
 		if enter >= exit:
-			return false
-	return exit > 0.0 and enter < 1.0
+			return INF
+	return enter if exit > 0.0 and enter < 1.0 else INF

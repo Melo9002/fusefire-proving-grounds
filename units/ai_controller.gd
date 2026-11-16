@@ -684,14 +684,13 @@ func _is_safe_advance_cell(candidate: Vector3i, current_exposure := NAN) -> bool
 
 func _advance_exposure(candidate: Vector3i) -> float:
 	var grid := battle_controller.grid_manager
-	var destination := grid.grid_to_world(candidate)
 	var exposure := 0.0
 	for hostile in _get_hostile_units():
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
 		var hostile_cell := grid.get_unit_grid(hostile)
 		var distance := CombatRules.attack_distance(hostile_cell, candidate, grid)
-		if distance <= hostile.attack_range and CombatRules.has_line_of_sight_to_position(hostile, destination, grid, unit.get_world_3d()):
+		if distance <= hostile.attack_range and CombatRules.evaluate_attack_after_move(hostile, unit, candidate, grid, unit.get_world_3d()).is_legal:
 			match CombatRules.get_directional_cover(hostile_cell, candidate, grid):
 				MapCellData.CoverType.FULL:
 					exposure += 0.35

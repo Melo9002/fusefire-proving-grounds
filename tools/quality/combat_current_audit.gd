@@ -107,7 +107,7 @@ func _run() -> void:
 	if shield_result == null: failures += 1
 	var destination := Vector3i(2, 0, 6)
 	var move_query := service.query_move(actor.tactical_id, destination)
-	var preview := CombatRules.evaluate_attack_at_cell(target, actor, destination, grid, actor.get_world_3d())
+	var preview := CombatRules.evaluate_attack_after_move(target, actor, destination, grid, actor.get_world_3d())
 	var text_before := TacticalFeedbackText.movement(move_query, actor, hostiles, grid)
 	var move_result = await service.submit_move(service.make_move_request(actor, destination, TacticalActionRequest.Source.PLAYER), true)
 	if move_result == null: failures += 1

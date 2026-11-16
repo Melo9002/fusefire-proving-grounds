@@ -1,0 +1,188 @@
+{
+  "baseline_commit": "2ccea40",
+  "seed": 1604,
+  "fixture_failures": 0,
+  "unchanged_controls": [
+    "cover_labelLOW",
+    "cover_labelFULL",
+    "dominant_axis_cover",
+    "clear_height",
+    "query_commit_control"
+  ],
+  "before_after": {
+    "center_ray_vs_body_samples": {
+      "before": {
+        "ai_position_firing_score": 0.0,
+        "barrier": [
+          5,
+          0,
+          5
+        ],
+        "barrier_height": 2.0,
+        "case": "center_ray_vs_body_samples",
+        "chance": 50,
+        "guard_chance": 35,
+        "guard_checkpoint_reactions": 1,
+        "inventory_agrees": true,
+        "range_overlay_includes_target": false,
+        "shot_legal": true,
+        "source": [
+          1,
+          0,
+          5
+        ],
+        "target": [
+          9,
+          2,
+          5
+        ],
+        "visibility": 0.2
+      },
+      "after": {
+        "ai_position_firing_score": 10.0,
+        "barrier": [
+          5,
+          0,
+          5
+        ],
+        "barrier_height": 2.0,
+        "case": "center_ray_vs_body_samples",
+        "chance": 50,
+        "guard_chance": 35,
+        "guard_checkpoint_reactions": 1,
+        "inventory_agrees": true,
+        "range_overlay_includes_target": true,
+        "shot_legal": true,
+        "source": [
+          1,
+          0,
+          5
+        ],
+        "target": [
+          9,
+          2,
+          5
+        ],
+        "visibility": 0.2
+      }
+    },
+    "low_barrier_false_lane": {
+      "before": {
+        "ai_position_firing_score": 10.0,
+        "barrier": [
+          2,
+          0,
+          5
+        ],
+        "barrier_height": 1.15,
+        "case": "low_barrier_false_lane",
+        "range_overlay_includes_target": true,
+        "reason": "Blocked",
+        "shot_legal": false,
+        "source": [
+          1,
+          0,
+          5
+        ],
+        "target": [
+          9,
+          0,
+          5
+        ],
+        "visibility": 0.0
+      },
+      "after": {
+        "ai_position_firing_score": 0.0,
+        "barrier": [
+          2,
+          0,
+          5
+        ],
+        "barrier_height": 1.15,
+        "case": "low_barrier_false_lane",
+        "range_overlay_includes_target": false,
+        "reason": "Blocked",
+        "shot_legal": false,
+        "source": [
+          1,
+          0,
+          5
+        ],
+        "target": [
+          9,
+          0,
+          5
+        ],
+        "visibility": 0.0
+      }
+    },
+    "blocker_order": {
+      "before": {
+        "case": "blocker_order",
+        "nearest_blocker": [
+          7,
+          0,
+          5
+        ],
+        "reason": "Blocked",
+        "reported_blocker": "Vector3i(3, 0, 5)",
+        "source": [
+          9,
+          0,
+          5
+        ],
+        "target": [
+          1,
+          0,
+          5
+        ]
+      },
+      "after": {
+        "case": "blocker_order",
+        "nearest_blocker": [
+          7,
+          0,
+          5
+        ],
+        "reason": "Blocked",
+        "reported_blocker": "Vector3i(7, 0, 5)",
+        "source": [
+          9,
+          0,
+          5
+        ],
+        "target": [
+          1,
+          0,
+          5
+        ]
+      }
+    },
+    "shield_destination": {
+      "before": {
+        "actual_damage_multiplier": 1.0,
+        "actual_destination_shield": false,
+        "actual_enemy_chance": 100,
+        "case": "shield_destination",
+        "feedback": "Move: 1 AP \u00c2\u00b7 1 AP remaining \u00c2\u00b7 route cost 1.0\nEnemyUnit1 from NE: cover none \u00c2\u00b7 has a line of fire\n  Your shot \u00e2\u2020\u2019 EnemyUnit1: 100% hit\nAfter Move: Aim canceled. Enemy actions and Guard along the route can change this.",
+        "move_legal": true,
+        "preview_damage_multiplier": 0.35,
+        "preview_enemy_chance": 80,
+        "preview_shield": true,
+        "shield_after_move": false
+      },
+      "after": {
+        "actual_damage_multiplier": 1.0,
+        "actual_destination_shield": false,
+        "actual_enemy_chance": 100,
+        "case": "shield_destination",
+        "feedback": "Move: 1 AP \u00c2\u00b7 1 AP remaining \u00c2\u00b7 route cost 1.0\nEnemyUnit1 from NE: cover none \u00c2\u00b7 has a line of fire\n  Your shot \u00e2\u2020\u2019 EnemyUnit1: 100% hit\nAfter Move: Aim canceled. Shield canceled. Enemy actions and Guard along the route can change this.",
+        "move_legal": true,
+        "preview_damage_multiplier": 1.0,
+        "preview_enemy_chance": 100,
+        "preview_shield": false,
+        "shield_after_move": false
+      }
+    }
+  }
+}

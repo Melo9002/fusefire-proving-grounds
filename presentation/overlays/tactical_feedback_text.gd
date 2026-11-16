@@ -17,7 +17,7 @@ static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.stats or enemy.stats.is_defeated or not FactionRules.are_hostile(actor.faction, enemy.faction):
 			continue
-		var evaluation := CombatRules.evaluate_attack_at_cell(enemy, actor, query.target_cell, grid, actor.get_world_3d(), 0, use_shield)
+		var evaluation := CombatRules.evaluate_attack_after_move(enemy, actor, query.target_cell, grid, actor.get_world_3d())
 		var cover := CombatRules.get_directional_cover(grid.get_unit_grid(enemy), query.target_cell, grid)
 		var cover_name: String = ["none", "low", "full"][cover]
 		var delta := grid.get_unit_grid(enemy) - query.target_cell
@@ -31,7 +31,7 @@ static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array
 		elif use_supply and actor.stats.current_supply_points < TacticalActionService.ATTACK_SUPPLY_COST:
 			shot_description = "No SP (geometry: %s)" % shot_description
 		lines.append("  Your shot → %s: %s" % [enemy.tactical_id, shot_description])
-	lines.append("After Move: Aim canceled. Enemy actions and Guard along the route can change this.")
+	lines.append("After Move: Aim canceled. Shield canceled. Enemy actions and Guard along the route can change this.")
 	return "\n".join(lines)
 
 static func committed(result) -> PackedStringArray:

@@ -1,6 +1,6 @@
 # Combat today — milestone 04 baseline
 
-Audited at `2bbc7b1`, 2026-11-15. This describes current behavior, not the proposed Combat 2.0 design. [Ranked findings and reproduction](quality/combat-audit-2026-11-15.md).
+Baseline audited at `2bbc7b1`, 2026-11-15; prediction/feedback corrections followed on 2026-11-16 as noted below. Accuracy and damage rules are unchanged. This describes current behavior, not the proposed Combat 2.0 design. [Original ranked findings and reproduction](quality/combat-audit-2026-11-15.md).
 
 ## From click to damage
 
@@ -30,7 +30,7 @@ The displayed chance is an outcome probability, not a promise of a particular ra
 
 Direct target hover already shows chance, AP/SP cost, damage on hit, cover label, obstruction and a shot line/blocker marker. Move hover lists route/AP, cover and firing lanes against enemies, plus outgoing shots and post-move AP/SP warnings. It explicitly cancels Aim for outgoing predictions.
 
-The main remaining inconsistencies are in supporting consumers: attack/Guard painted ranges and AI position scoring use single-line LOS helpers rather than the five-sample attack evaluation; destination evaluation retains current Shield state; blocker selection follows traversal order rather than nearest intersection. See the audit for exact reproductions and qualifications.
+The three reproduced consumer inconsistencies were corrected on 2026-11-16: attack/Guard painted ranges and AI position scoring now use the shared body-sample visibility; completed-destination evaluation excludes Shield canceled by Move; blocked-shot feedback selects the nearest intersection. Empty range cells represent a hypothetical hostile with the shooter's body height; occupied cells use the actual body's height. This geometric coverage remains separate from AP/faction permission to attack. During-route Guard retains the existing checkpoint Shield semantics. See the [fix verification](quality/combat-consistency-fixes-2026-11-16.md). The dated audit remains the original baseline.
 
 ## Owners
 
