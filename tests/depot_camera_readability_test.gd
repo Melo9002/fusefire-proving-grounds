@@ -1,9 +1,10 @@
 extends SceneTree
-## Real saved Depot scenes: controls, inspection, live framing and replay ownership.
+## All current sites, retaining the original saved Depot-specific regression: controls, inspection, live framing and replay ownership.
 const Fingerprint = preload("res://systems/replay/battle_state_fingerprint.gd")
 var failures := 0
 var output := ""
 var poses := 0
+var _site_prefix := ""
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -18,14 +19,16 @@ func _run() -> void:
 	if args.size() == 2 and args[0] == "capture" and DisplayServer.get_name() != "headless":
 		output = args[1]
 		DirAccess.make_dir_recursive_absolute(output)
-	for map_seed in [16, 17]: await _case(map_seed)
-	print("Depot camera readability: %d orbit/zoom poses, %d failure(s)" % [poses, failures])
+	for site in BattlefieldCatalog.PLAYABLE:
+		for map_seed in [16, 17]: await _case(site, map_seed)
+	print("Current-site camera readability: %d orbit/zoom poses, %d failure(s)" % [poses, failures])
 	quit(1 if failures else 0)
 
-func _case(map_seed: int) -> void:
+func _case(site: StringName, map_seed: int) -> void:
+	_site_prefix = String(site) + "-"
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
+	config.select_battlefield(site)
 	config.battle_seed = map_seed
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 	level.configure_battle(config)
@@ -39,29 +42,44 @@ func _case(map_seed: int) -> void:
 	rig._cancel_selection_focus()
 	var actor := level.turn_manager.active_unit
 	var before := Fingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager, true, true, true, true, true, true)
-	var workshop := level.find_child("EastWorkshop", true, false) as TacticalVisualOccluder
-	check(workshop != null and workshop.occlusion_bounds.size.length_squared() > 0, "Saved workshop derives usable visual-occlusion bounds on load")
-	var inside := false
-	var original_transparency := {}
-	for mesh: MeshInstance3D in workshop.find_children("*", "MeshInstance3D", true, false):
-		original_transparency[mesh] = mesh.transparency
-		inside = inside or mesh.get_aabb().has_point(mesh.to_local(Vector3(32, 4, 0)))
-	check(not inside, "Scenery placement clears the reported westward camera pose")
-	rig.camera.global_position = Vector3(32, 4, 0)
-	rig.camera.look_at(Vector3(-8, 2, 0))
-	rig._update_camera_occlusion(1.0)
-	await _image("%d-westward-clear" % map_seed)
-	# Use the actual floor-inspection/fallback path, where friendly apertures close.
-	rig.inspect_floor(Vector3(0, 0, -8))
-	rig.camera.global_position = Vector3(65, 3, -8)
-	rig.camera.look_at(Vector3(0, 0.5, -8))
-	rig._update_camera_occlusion(1.0)
-	for mesh: MeshInstance3D in workshop.find_children("*", "MeshInstance3D", true, false):
-		check(mesh.transparency >= 0.82 or is_equal_approx(mesh.transparency, 0.82), "Saved scenery fades during floor browsing: %s" % mesh.transparency)
-	await _image("%d-floor-inspection" % map_seed)
-	workshop.restore_view()
-	for mesh in original_transparency:
-		check(is_equal_approx(mesh.transparency, original_transparency[mesh]), "Leaving inspection restores the saved scene's original transparency")
+	if site == BattlefieldCatalog.SERVICE_DEPOT:
+		var workshop := level.find_child("EastWorkshop", true, false) as TacticalVisualOccluder
+		check(workshop != null and workshop.occlusion_bounds.size.length_squared() > 0, "Saved workshop derives usable visual-occlusion bounds on load")
+		var inside := false
+		var original_transparency := {}
+		for mesh: MeshInstance3D in workshop.find_children("*", "MeshInstance3D", true, false):
+			original_transparency[mesh] = mesh.transparency
+			inside = inside or mesh.get_aabb().has_point(mesh.to_local(Vector3(32, 4, 0)))
+		check(not inside, "Scenery placement clears the reported westward camera pose")
+		rig.camera.global_position = Vector3(32, 4, 0)
+		rig.camera.look_at(Vector3(-8, 2, 0))
+		rig._update_camera_occlusion(1.0)
+		await _image("%d-westward-clear" % map_seed)
+		# Use the actual floor-inspection/fallback path, where friendly apertures close.
+		rig.inspect_floor(Vector3(0, 0, -8))
+		rig.camera.global_position = Vector3(65, 3, -8)
+		rig.camera.look_at(Vector3(0, 0.5, -8))
+		rig._update_camera_occlusion(1.0)
+		for mesh: MeshInstance3D in workshop.find_children("*", "MeshInstance3D", true, false):
+			check(mesh.transparency >= 0.82 or is_equal_approx(mesh.transparency, 0.82), "Saved scenery fades during floor browsing: %s" % mesh.transparency)
+		await _image("%d-floor-inspection" % map_seed)
+		workshop.restore_view()
+		for mesh in original_transparency:
+			check(is_equal_approx(mesh.transparency, original_transparency[mesh]), "Leaving inspection restores the saved scene's original transparency")
+	else:
+		var office := level.find_child("WestOffice", true, false) as TacticalVisualOccluder
+		check(office != null and office.occlusion_bounds.size.length_squared() > 0, "Saved neighboring office derives camera-only bounds")
+		rig.inspect_floor(Vector3(0, 0, -12))
+		rig.camera.global_position = Vector3(-65, 3, -12)
+		rig.camera.look_at(Vector3(0, 0.5, -12))
+		rig._update_camera_occlusion(1.0)
+		for mesh: MeshInstance3D in office.find_children("*", "MeshInstance3D", true, false):
+			check(mesh.transparency >= 0.82 or is_equal_approx(mesh.transparency, 0.82), "Neighboring office fades during floor inspection")
+		await _image("%d-floor-inspection" % map_seed)
+		office.restore_view()
+		for mesh: MeshInstance3D in office.find_children("*", "MeshInstance3D", true, false):
+			check(is_zero_approx(mesh.transparency), "Leaving floor inspection restores neighboring office visibility")
+
 	rig._inspected_floor = Vector3.INF
 	# The diagnostic floor shot directly oriented the lens; normal orbit owns
 	# the rig rotation and expects its child lens to have zero local rotation.
@@ -142,4 +160,4 @@ func _image(title: String) -> void:
 	if output.is_empty(): return
 	await process_frame
 	await RenderingServer.frame_post_draw
-	check(root.get_texture().get_image().save_png(output.path_join(title + ".png")) == OK, "Capture " + title)
+	check(root.get_texture().get_image().save_png(output.path_join(_site_prefix + title + ".png")) == OK, "Capture " + title)

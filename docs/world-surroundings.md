@@ -1,80 +1,71 @@
 # World beyond the tactical area
 
-Step 2 establishes ownership, using ordinary editable Godot Node3D groups. It does not add scenery or another generator.
+Roadmap 03 uses three ordinary editable scene groups. The proven Depot approach now also covers Freight Yard and Fleet Station. There is still one Generation 2 pipeline; surroundings are fixed plot scenery, not another procedural system.
 
-## The three areas
-
-```text
-BattleLevel / GeneratedTerrain
-    Selected plot
-        Tactical
-            Internal approach/lane/sidewalk visuals
-            Accepted parcel instances, added when the battle is built
-        Peripheral
-            Extended ground, continuing road and nearby container stacks
-        Distant
-            Background workshops or the site's landmark
-```
-
-| Area | Purpose | Gameplay authority |
+| Layer | What belongs here | Gameplay |
 | --- | --- | --- |
-| Tactical | The playable battlefield and its presented parcels. | MapData owns cells, movement, sight, shots and cover; GridManager owns unit occupancy. Existing parcel compilation and plot/mission contracts still supply gameplay data. |
-| Peripheral | Nearby visual continuation across the battlefield edge. | No new grid cells, tactical obstacles, targets, deployment or objectives. Hazard markers inside this group are ignored by battle discovery. |
-| Distant | Background structures and landmarks that establish the setting/horizon. | The same scenery-only restriction. Depot now uses muted low-detail building districts; the other sites retain their initial placeholders. |
+| Tactical | The playable 40 × 40 area, internal lanes/sidewalks, yellow boundary and runtime parcel instances. | MapData owns terrain, movement, shots and cover; GridManager owns actor occupancy. Parcels supply compiled tactical content. |
+| Peripheral | Continuous ground, extended roads, neighboring yards, parked vehicles and boundary cues. | Visual only: no extra cells, actors, objectives, navigation or physics bodies. |
+| Distant | Six muted, low-detail building districts establishing the horizon. | Visual only; no lights or shadows. |
 
-These groups describe **ownership**, not three sharply separated volumes. Extended ground and continuing roads can cross the tactical footprint. Moving a visual into Tactical does not compile it into gameplay; gameplay objects still belong to the existing editable parcels. No new role assignment, boundary export or registration step is introduced.
+These are ownership groups, not three non-overlapping boxes. A continuing road or ground surface can cross the playable footprint. Moving an object into Tactical alone does not compile gameplay: gameplay content still belongs to the existing parcel workflow. No new roles, hull-fitting, boundary export or scenery registration is required.
 
 ## Where to edit
 
-The five scenes below cover the six normal site layouts:
+Open the plot scene in Godot. Its Tactical, Peripheral and Distant children are saved and editable. Generation adds accepted parcels under Tactical at runtime and applies tile scale once.
 
-- `art/environments/authored/plots/depot_loading_crossing.tscn`
-- `art/environments/authored/plots/depot_service_spine.tscn`
-- `art/environments/authored/plots/freight_yard_site.tscn` (shared by both apron arrangements)
-- `art/environments/authored/plots/fleet_station_north.tscn`
-- `art/environments/authored/plots/fleet_station_south.tscn`
+| Site / layout | Plot scene | Near scenery |
+| --- | --- | --- |
+| Depot, seed 16 | `art/environments/authored/plots/depot_loading_crossing.tscn` | `depot_neighboring_yards.tscn` |
+| Depot, seed 17 | `art/environments/authored/plots/depot_service_spine.tscn` | `depot_neighboring_yards.tscn` |
+| Freight, both apron arrangements | `art/environments/authored/plots/freight_yard_site.tscn` | `freight_neighboring_yards.tscn` |
+| Fleet, north frontage / seed 16 | `art/environments/authored/plots/fleet_station_north.tscn` | `fleet_neighboring_court.tscn` |
+| Fleet, south frontage / seed 17 | `art/environments/authored/plots/fleet_station_south.tscn` | `fleet_neighboring_court.tscn` |
 
-Each contains Tactical, Peripheral and Distant as ordinary scene children. The plot owns their saved scenery; parcels remain separately editable scenes. Generation 2 places the accepted parcels under Tactical at runtime. The plot applies tile scale once; children use parcel coordinates. Local parcel tests and historical fixture plot scenes without these nodes receive empty groups through the same presenter, without migrating their saved content.
+Near-scene filenames in the last column are in the same plots directory. Freight keeps container stacks and delivery vehicles; Fleet has service buildings and overflow parking. They use existing reusable asset scenes. The yards connect to 640-unit ground and three adjoining 85-unit road strips. Their different parcel arrangements/frontages remain intact.
 
-The groups also carry persistent Godot group names `tactical_area`, `peripheral_scenery` and `distant_scenery`. Discovery must not treat scenery as gameplay merely because a reused component contains tactical metadata or a hazard marker. Current scenery contains no PhysicsBody3D nodes. New collision-bearing scenery or actors would require review; these node labels do not automatically strip arbitrary physics bodies or scripts.
+Shared editable pieces, also in that directory:
 
-Global lighting/fog remains owned by the battle's explicit WorldEnvironment. No additional light, sky, streaming, LOD or backdrop framework is added. Plot/content revisions and replay schemas are unchanged because this step changes presentation ownership, not accepted tactical choices or scene positions.
+- `depot_playable_boundary.tscn`: the exact yellow dashed 40 × 40 limit, reused by all three sites.
+- `depot_edge_cues_crossing.tscn`: corner cones, short fence runs and BATTLE LIMIT road labels. Freight reuses it directly; Fleet overrides the two label positions to match its north/south road. Depot spine uses `depot_edge_cues_spine.tscn`.
+- `depot_distant_blocks.tscn`: the same inexpensive six-district industrial backdrop, reused by all three sites. Its filename records its origin; it is an ordinary shared scene, not a Depot generator dependency.
 
-## Validation and remaining work
+Editing a shared piece affects every instance. To change one site's arrangement, edit its plot instance/overrides or its own near scene. Lighting/fog stays with the owning battle's WorldEnvironment, configured in `systems/generation2/authored_battlefield_layout.gd`.
 
-`tests/world_area_ownership_test.gd` checks all three sites and seeds 16/17: editable groups, parcel world transforms at presentation scales 1 and 2, bounded grid, unchanged manifest reconstruction, scenery without physics bodies, and ignored scenery hazards alongside working Tactical hazards. Generation/compilation uses the existing unit-tile contract; the scale-2 case tests presentation separately, not new arbitrary-scale tactical compilation support.
+## Keep edits simple and safe
 
-The [step-1 inspection](quality/surroundings-inspection-2026-11-15.md) remains the visual backlog. The bounded Depot continuity, boundary, horizon, camera, tactical-isolation and measured-cost proofs are recorded below. The other sites’ scenery rollout remains later work.
+1. Keep tall nearby scenery outside playable cells and continuing roads. Match ground height and existing calibrated asset scale.
+2. Retain the yellow limit even where fences or curbs suggest a boundary. Roads can continue visually without becoming walkable off-map.
+3. Reused visual scenery can contain inert tactical metadata, but it must stay under Peripheral/Distant and outside compilation. Current scenes contain no physics bodies or navigation regions. Those group names do not strip arbitrary collision bodies, scripts or actors added later.
+4. Nearby visual wrappers use the existing camera occlusion helper; their camera-only bounds rebuild from their meshes. No tactical boundary fitting is needed for scenery.
+5. Meaningful saved content changes require the existing plot revision policy so replay reconstruction does not silently change. Freight and Fleet plots are revision 2 after this rollout; Depot remains revision 1. Old Freight/Fleet revision-1 recordings reject explicitly. Recordings do not bundle historical plot art.
 
-### Step-2 evidence — 2026-11-15
+## Review and cost
 
-- Ownership regression: zero failures across six current layouts at two presentation scales, plus the live hazard isolation check.
-- Ironclad smoke: **11 passed, 0 failed, 0 skipped** (`artifacts/test-results/20261115-192133-smoke`). No full-suite run was needed for this bounded change.
-- Complete saved replays: Freight 69/69, Fleet 47/47 and local ambulance parcel 53/53 actions verified to matching results. Camera handoff, tactical conditions, the garage fixture and garage camera-aperture checks also passed.
-- Fresh rendered capture: **30 views, zero failures**, under `artifacts/surroundings-areas/`. Comparison against the step-1 images showed mean absolute RGB differences below 0.001 out of 255 for every view. A representative reverse view was inspected directly; this supports preserved appearance, not a claim that the step-1 visual problems are fixed.
-- The initial regression setup attempted tactical compilation at tile scale 2, which is outside the current unit-tile authoring contract, then dereferenced a failed presentation. That was a test setup defect; the final test explicitly exercises presentation scale separately and safely handles failed presentation. No compiler assertions or existing gameplay rules were relaxed.
-- Sandbox certificate/log-store diagnostics remain environmental. Captures and final focused runs had no script/parse errors.
+Use seeds **16 and 17** in Match Setup to inspect both layouts of each site. Review normal entry, opposing overview, low cardinal, high and wide views. The rendered capture tool saves exact transforms/FOVs in `views.json`:
 
-## Step 3 — Depot continuity proof
+```powershell
+godot_console --path . --script res://tools/environment_authoring/current_surroundings_capture.gd -- artifacts/surroundings-review
+godot_console --path . --script res://tools/environment_authoring/surroundings_cost.gd -- artifacts/surroundings-cost
+```
 
-Both Depot layouts now use connected neighboring yards, extended roads, a first low-detail distant placeholder and a yellow dashed playable perimeter. These are ordinary scene instances under the existing three groups. The owner accepted the marking for prototype use. [Content locations, validation and remaining scope](quality/depot-continuity-2026-11-15.md).
+Both tools now cover all three sites. Keep the benchmark window visible and avoid other GPU work while measuring. It compares the same static battle/camera with Peripheral and Distant visible/hidden; it does not benchmark AI turns or unload hidden resources.
 
-## Step 4 — Readable Depot boundary
+Content budget per plot: **160 scenery meshes, 25,000 authored triangles, no additional lights**. The shared distant backdrop keeps its separate **60 meshes / 6,500 triangles / no shadows** cap. Current totals: Depot 132 meshes / 19,004–19,964 triangles; Freight 142 / 20,592; Fleet 150 / 21,496.
 
-Depot now combines its yellow dashed limit with short low fence runs, corner cones and BATTLE LIMIT ground labels at open road crossings. The cues stay outside playable cells; roads and entrances remain open. [Editable scenes and validation](quality/depot-boundary-readability-2026-11-15.md). The distant-view proof is recorded below; the other sites receive this pattern in the later rollout.
+The development-machine review thresholds remain added median GPU ≤1 ms, render CPU ≤0.5 ms, p95 frame interval ≤2 ms and draw calls ≤80 for the fixed benchmark views. These are review thresholds, not universal hardware guarantees or whole-game frame budgets. Simplify expensive scenery before considering streaming or LOD.
 
-## Step 5 — Depot distant view
+Loading always covers matches, editor tests and replay transitions through the first rendered frame, with initialization errors exposed and return controls preserved. It does not make construction threaded or guarantee recovery from out-of-memory crashes.
 
-Six muted building districts now establish Depot’s horizon in all directions, using existing low-detail assets, no shadows or new lights, and 6,060 triangles. Normal high views retain focus on the battle. [Editing, captures, geometry cap and validation](quality/depot-distant-view-2026-11-15.md). The camera review below includes the saved EastWorkshop obstruction pose. No new generator or authoring workflow is required.
+## Checks and milestone record
 
-## Step 6 — Camera and obstruction review
+Current checks protect all six layouts: continuous roads/ground, scenery budgets, readable boundary cues, camera behavior, tactical edge isolation, mission placement and matching scenery/atmosphere after replay reconstruction. Headless checks do not establish visual correctness; the closing review also includes rendered captures and real graphics measurements.
 
-The neighboring workshop was moved out of the known camera pose. Saved scene instances now rebuild missing camera-only fade bounds automatically; floor inspection and replay use the existing fade correctly. Both Depot layouts passed 96 orbit/zoom poses and all three replay camera modes. UI/replay suites and a complete 66-action Depot cinematic replay passed. [Reproduction, renders, validation and limits](quality/depot-camera-review-2026-11-15.md).
+See the [closing review](quality/world-surroundings-close-2026-11-15.md) for final results, reproduction and remaining limits. This closes the prototype world-surroundings milestone for the current curated sites; more varied art and arbitrary future maps remain normal content work.
 
-## Step 7 — Tactical isolation and replay
+Earlier evidence, retained as dated history rather than today's instructions:
 
-MapData bounds now also guard shot predictions and unit picking. All four Depot edges reject off-map movement and targets while inside controls remain legal. The 48-case current-site mission/replay matrix checks mission placement and reconstructs matching fixed surroundings and atmosphere. Live/replay captures cover both Depot layouts. [Evidence, commands and limits](quality/world-tactical-isolation-2026-11-15.md).
-
-## Step 8 — Measured cost and loading
-
-The repeatable 1600 × 900 Depot benchmark measured 21,600 frames across both layouts and three views. The largest paired median scenery addition was about 0.20 ms GPU on the development machine. Both plots fit the enforced 160-mesh / 25,000-triangle scenery cap; no LOD or streaming is needed from these measurements. Loading is always shown for matches, editor tests and replay transitions, through the first rendered frame. [Setup, results, budgets, loading behavior and limits](quality/surroundings-cost-2026-11-15.md). Next: apply/review the established scenery pattern on the other current sites.
+- [Initial inspection](quality/surroundings-inspection-2026-11-15.md)
+- [Depot continuity](quality/depot-continuity-2026-11-15.md), [boundary](quality/depot-boundary-readability-2026-11-15.md), [distant view](quality/depot-distant-view-2026-11-15.md), [camera review](quality/depot-camera-review-2026-11-15.md)
+- [Tactical isolation and replay](quality/world-tactical-isolation-2026-11-15.md)
+- [Initial cost measurement and loading](quality/surroundings-cost-2026-11-15.md)

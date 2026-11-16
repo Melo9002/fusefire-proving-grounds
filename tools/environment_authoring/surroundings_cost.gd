@@ -33,8 +33,8 @@ func _run() -> void:
 		"resolution": [1600, 900], "vsync": DisplayServer.window_get_vsync_mode(), "max_fps": Engine.max_fps,
 		"warmup_frames_per_block": WARMUP, "sample_frames_per_block": SAMPLES, "repeats": REPEATS,
 		"notes": "Debug executable, same battle with Peripheral/Distant visibility toggled; full content stays allocated. Initial resource load occurs before script start due to preloads. No cold-disk or exported-build claim."}
-	for map_seed in [16, 17]:
-		await _case(map_seed)
+	for site in BattlefieldCatalog.PLAYABLE:
+		for map_seed in [16, 17]: await _case(site, map_seed)
 	var report := {"setup": metadata, "loading": loads, "frames": records, "failures": failures}
 	var file := FileAccess.open(output.path_join("measurements.json"), FileAccess.WRITE)
 	if file: file.store_string(JSON.stringify(report, "\t"))
@@ -42,11 +42,11 @@ func _run() -> void:
 	print("Surroundings cost: %d blocks, %d failure(s); %s" % [records.size(), failures, output])
 	quit(1 if failures else 0)
 
-func _case(map_seed: int) -> void:
+func _case(site: StringName, map_seed: int) -> void:
 	var started := Time.get_ticks_usec()
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
+	config.select_battlefield(site)
 	config.battle_seed = map_seed
 	config.content_manifest = {"population_enabled": true}
 	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 2)
@@ -71,12 +71,12 @@ func _case(map_seed: int) -> void:
 	var plot := level.get_node("GeneratedTerrain").get_child(0)
 	var areas := [plot.get_node("Peripheral"), plot.get_node("Distant")]
 	var initial_state := Fingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager)
-	var load_record := {"seed": map_seed, "ready_ms": ready_ms, "first_draw_ms": first_draw_ms, "stages": stages,
-		"scenery_geometry": _geometry(areas), "scenery_construction": _construction(map_seed), "generation_ms": []}
+	var load_record := {"site": site, "seed": map_seed, "ready_ms": ready_ms, "first_draw_ms": first_draw_ms, "stages": stages,
+		"scenery_geometry": _geometry(areas), "scenery_construction": _construction(site, map_seed), "generation_ms": []}
 	# Generation has no scenery toggle: scenery is presentation, not tactical data.
 	for repeat in REPEATS:
 		var tick := Time.get_ticks_usec()
-		var data := BattlefieldCatalog.generate(BattlefieldCatalog.SERVICE_DEPOT, Vector2i.ZERO, map_seed, 1.0, {"population_enabled": true})
+		var data := BattlefieldCatalog.generate(site, Vector2i.ZERO, map_seed, 1.0, {"population_enabled": true})
 		load_record.generation_ms.append((Time.get_ticks_usec() - tick) / 1000.0)
 		if not data.generation_errors.is_empty(): failures += 1
 	loads.append(load_record)
@@ -92,15 +92,15 @@ func _case(map_seed: int) -> void:
 			# Reverse order each repeat to reduce one-sided warmup/drift bias.
 			for enabled in ([false, true] if repeat % 2 == 0 else [true, false]):
 				for area: Node3D in areas: area.visible = enabled
-				await _measure(map_seed, view[0], repeat, enabled)
+				await _measure(site, map_seed, view[0], repeat, enabled)
 				if repeat == 0:
-					var name := "%d-%s-%s.png" % [map_seed, view[0], "on" if enabled else "off"]
+					var name := "%s-%d-%s-%s.png" % [site, map_seed, view[0], "on" if enabled else "off"]
 					if root.get_texture().get_image().save_png(output.path_join(name)) != OK: failures += 1
 	if Fingerprint.capture(level.turn_manager, level.battle_controller.grid_manager, level.objective_manager) != initial_state: failures += 1
 	level.free()
 	await process_frame
 
-func _measure(map_seed: int, view: String, repeat: int, enabled: bool) -> void:
+func _measure(site: StringName, map_seed: int, view: String, repeat: int, enabled: bool) -> void:
 	for frame in WARMUP: await RenderingServer.frame_post_draw
 	var rows := []
 	var last := Time.get_ticks_usec()
@@ -115,10 +115,10 @@ func _measure(map_seed: int, view: String, repeat: int, enabled: bool) -> void:
 			"objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
 			"video_memory_bytes": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED)})
 		last = now
-	var record := {"seed": map_seed, "view": view, "repeat": repeat, "scenery_enabled": enabled,
+	var record := {"site": site, "seed": map_seed, "view": view, "repeat": repeat, "scenery_enabled": enabled,
 		"window_focused": DisplayServer.window_is_focused(), "samples": rows}
 	records.append(record)
-	print("[Cost] seed %d %s repeat %d scenery %s" % [map_seed, view, repeat, enabled])
+	print("[Cost] %s seed %d %s repeat %d scenery %s" % [site, map_seed, view, repeat, enabled])
 
 func _geometry(areas: Array) -> Dictionary:
 	var meshes := 0
@@ -133,12 +133,16 @@ func _geometry(areas: Array) -> Dictionary:
 				triangles += int((indices if indices > 0 else arrays[Mesh.ARRAY_VERTEX].size()) / 3.0)
 	return {"meshes": meshes, "triangles": triangles}
 
-func _construction(map_seed: int) -> Array:
+func _construction(site: StringName, map_seed: int) -> Array:
 	# Isolated warm-cache plot instantiation, not a second generator or a runtime flag.
 	# Pack equivalent plot copies with/without scenery to measure its construction cost.
 	var results := []
 	for enabled in [false, true]:
-		var definition: Dictionary = Generation2.DepotPlots.choose(map_seed)
+		var definition: Dictionary
+		match site:
+			BattlefieldCatalog.SERVICE_DEPOT: definition = Generation2.DepotPlots.choose(map_seed)
+			BattlefieldCatalog.FREIGHT_YARD: definition = Generation2.FreightPlots.choose(map_seed)
+			BattlefieldCatalog.FLEET_STATION: definition = Generation2.FleetPlots.choose(map_seed)
 		var copy := (definition.scene as PackedScene).instantiate()
 		# Only measure plot scenery, not the populated Tactical subtree.
 		for child in copy.get_node("Tactical").get_children(): child.free()

@@ -1,0 +1,132 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/overlays/tactical_visual_occluder.gd" id="fade"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/service_office.tscn" id="office"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/ambulance.tscn" id="ambulance"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/van.tscn" id="van"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/sedan.tscn" id="sedan"]
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.6666667, 0.6627451, 0.6078431, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="side_pad"]
+material = SubResource("concrete")
+size = Vector3(34, 0.04, 74)
+
+[sub_resource type="BoxMesh" id="end_pad"]
+material = SubResource("concrete")
+size = Vector3(40, 0.04, 34)
+
+[sub_resource type="StandardMaterial3D" id="asphalt"]
+albedo_color = Color(0.39, 0.41, 0.41, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="service_lane"]
+material = SubResource("asphalt")
+size = Vector3(82, 0.025, 4)
+
+[sub_resource type="StandardMaterial3D" id="parking_paint"]
+albedo_color = Color(0.91, 0.86, 0.64, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="parking_line"]
+material = SubResource("parking_paint")
+size = Vector3(5.5, 0.02, 0.1)
+
+[node name="fleet_neighboring_court" type="Node3D"]
+
+[node name="WestApron" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(-37, -0.01, 0)
+mesh = SubResource("side_pad")
+
+[node name="EastApron" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(37, -0.01, 0)
+mesh = SubResource("side_pad")
+
+[node name="RearApron" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(0, -0.01, -37)
+mesh = SubResource("end_pad")
+
+[node name="DeliveryApron" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(0, -0.01, 37)
+mesh = SubResource("end_pad")
+
+[node name="RearLane" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(0, 0.01, -24)
+mesh = SubResource("service_lane")
+
+[node name="SouthLane" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(0, 0.01, 24)
+mesh = SubResource("service_lane")
+
+[node name="ServiceBuildings" type="Node3D" parent="."]
+
+[node name="WestOffice" parent="ServiceBuildings" instance=ExtResource("office")]
+position = Vector3(-46, 0, -12)
+rotation = Vector3(0, 1.5707963, 0)
+script = ExtResource("fade")
+
+[node name="EastOffice" parent="ServiceBuildings" instance=ExtResource("office")]
+position = Vector3(46, 0, -12)
+rotation = Vector3(0, -1.5707963, 0)
+script = ExtResource("fade")
+
+[node name="OverflowParking" type="Node3D" parent="."]
+
+[node name="WestVan" parent="OverflowParking" instance=ExtResource("van")]
+position = Vector3(-29, 0, -5)
+rotation = Vector3(0, 0, 0)
+script = ExtResource("fade")
+
+[node name="WestSedan" parent="OverflowParking" instance=ExtResource("sedan")]
+position = Vector3(-29, 0, 3)
+rotation = Vector3(0, 0, 0)
+script = ExtResource("fade")
+
+[node name="EastVan" parent="OverflowParking" instance=ExtResource("van")]
+position = Vector3(29, 0, -5)
+rotation = Vector3(0, 3.1415927, 0)
+script = ExtResource("fade")
+
+[node name="ReserveAmbulance" parent="OverflowParking" instance=ExtResource("ambulance")]
+position = Vector3(29, 0, 3)
+rotation = Vector3(0, 3.1415927, 0)
+script = ExtResource("fade")
+
+
+[node name="WestBayLine0" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(-29, 0.025, -9)
+mesh = SubResource("parking_line")
+
+[node name="WestBayLine1" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(-29, 0.025, -1)
+mesh = SubResource("parking_line")
+
+[node name="WestBayLine2" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(-29, 0.025, 7)
+mesh = SubResource("parking_line")
+
+[node name="EastBayLine0" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(29, 0.025, -9)
+mesh = SubResource("parking_line")
+
+[node name="EastBayLine1" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(29, 0.025, -1)
+mesh = SubResource("parking_line")
+
+[node name="EastBayLine2" type="MeshInstance3D" parent="OverflowParking"]
+cast_shadow = 0
+position = Vector3(29, 0.025, 7)
+mesh = SubResource("parking_line")

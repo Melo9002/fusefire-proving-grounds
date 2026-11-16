@@ -1,0 +1,1267 @@
+{
+  "source": "artifacts/world-rollout-cost-final/measurements.json",
+  "setup": {
+    "cpu": "AMD Ryzen 5 5500",
+    "engine": {
+      "build": "official",
+      "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "hex": 263938,
+      "major": 4,
+      "minor": 7,
+      "patch": 2,
+      "status": "stable",
+      "string": "4.7.2-stable (official)",
+      "timestamp": 0
+    },
+    "gpu": "NVIDIA GeForce RTX 5060",
+    "gpu_vendor": "NVIDIA",
+    "graphics_api": "12_0",
+    "max_fps": 0,
+    "memory": {
+      "available": 43909824512,
+      "free": 4572364800,
+      "physical": 17066278912,
+      "stack": 8388608
+    },
+    "notes": "Debug executable, same battle with Peripheral/Distant visibility toggled; full content stays allocated. Initial resource load occurs before script start due to preloads. No cold-disk or exported-build claim.",
+    "os": "Windows",
+    "renderer": "forward_plus",
+    "repeats": 3,
+    "resolution": [
+      1600,
+      900
+    ],
+    "sample_frames_per_block": 600,
+    "vsync": 0,
+    "warmup_frames_per_block": 120
+  },
+  "loading": [
+    {
+      "first_draw_ms": 4260.756,
+      "generation_ms": [
+        86.919,
+        89.608,
+        85.001
+      ],
+      "ready_ms": 1050.225,
+      "scenery_construction": [
+        {
+          "ms": 0.005,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.706,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.621,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.612,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.592,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.605,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 132,
+        "triangles": 19004
+      },
+      "seed": 16,
+      "site": "service_depot",
+      "stages": [
+        {
+          "elapsed_ms": 36.956,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 37.783,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 38.026,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 184.334,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 196.197,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 258.16,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 1050.207,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 999.051,
+      "generation_ms": [
+        96.557,
+        98.944,
+        82.113
+      ],
+      "ready_ms": 634.42,
+      "scenery_construction": [
+        {
+          "ms": 0.007,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.006,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.669,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.199,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.326,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.659,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.641,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 132,
+        "triangles": 19964
+      },
+      "seed": 17,
+      "site": "service_depot",
+      "stages": [
+        {
+          "elapsed_ms": 19.002,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.406,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.507,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 98.998,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 104.326,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 138.173,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 634.409,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 2703.51,
+      "generation_ms": [
+        85.143,
+        87.724,
+        87.699
+      ],
+      "ready_ms": 699.08,
+      "scenery_construction": [
+        {
+          "ms": 0.003,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 1.138,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.112,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.046,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.034,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.744,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 142,
+        "triangles": 20592
+      },
+      "seed": 16,
+      "site": "freight_yard",
+      "stages": [
+        {
+          "elapsed_ms": 19.138,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.488,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.607,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 107.527,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 117.181,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 149.688,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 699.07,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 1121.464,
+      "generation_ms": [
+        90.332,
+        92.437,
+        87.627
+      ],
+      "ready_ms": 700.132,
+      "scenery_construction": [
+        {
+          "ms": 0.006,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.702,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.648,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.63,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.614,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 0.614,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 142,
+        "triangles": 20592
+      },
+      "seed": 17,
+      "site": "freight_yard",
+      "stages": [
+        {
+          "elapsed_ms": 22.605,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 22.964,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 23.045,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 108.547,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 116.877,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 149.679,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 700.121,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 1094.785,
+      "generation_ms": [
+        93.217,
+        95.522,
+        91.333
+      ],
+      "ready_ms": 709.022,
+      "scenery_construction": [
+        {
+          "ms": 0.004,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.001,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 1.606,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.285,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.296,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.287,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.292,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 150,
+        "triangles": 21496
+      },
+      "seed": 16,
+      "site": "fleet_station",
+      "stages": [
+        {
+          "elapsed_ms": 19.159,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.56,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.642,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 106.178,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 114.701,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 148.058,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 709.011,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    },
+    {
+      "first_draw_ms": 1128.24,
+      "generation_ms": [
+        123.161,
+        90.89,
+        92.879
+      ],
+      "ready_ms": 726.26,
+      "scenery_construction": [
+        {
+          "ms": 0.006,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 0.002,
+          "scenery_enabled": false
+        },
+        {
+          "ms": 1.712,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.504,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.218,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.225,
+          "scenery_enabled": true
+        },
+        {
+          "ms": 1.179,
+          "scenery_enabled": true
+        }
+      ],
+      "scenery_geometry": {
+        "meshes": 150,
+        "triangles": 21496
+      },
+      "seed": 17,
+      "site": "fleet_station",
+      "stages": [
+        {
+          "elapsed_ms": 19.214,
+          "stage": "Validating battle configuration\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.62,
+          "stage": "Preparing mission requirements\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 19.728,
+          "stage": "Constructing tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 107.811,
+          "stage": "Building environment presentation\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 116.104,
+          "stage": "Deploying combatants\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 149.912,
+          "stage": "Validating tactical battlefield\u00e2\u20ac\u00a6"
+        },
+        {
+          "elapsed_ms": 726.249,
+          "stage": "Finalizing mission and replay\u00e2\u20ac\u00a6"
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "site": "service_depot",
+      "seed": 16,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.592,
+        0.6785
+      ],
+      "render_cpu_ms": [
+        0.187,
+        0.233
+      ],
+      "render_gpu_ms": [
+        0.361,
+        0.545
+      ],
+      "draw_calls": [
+        115.0,
+        179.0
+      ],
+      "primitives": [
+        69238.0,
+        97660.0
+      ],
+      "objects": [
+        394.0,
+        566.0
+      ],
+      "video_memory_bytes": [
+        198426624.0,
+        198426624.0
+      ],
+      "frame_p95_ms": [
+        0.794,
+        0.866
+      ]
+    },
+    {
+      "site": "service_depot",
+      "seed": 16,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.589,
+        0.702
+      ],
+      "render_cpu_ms": [
+        0.188,
+        0.231
+      ],
+      "render_gpu_ms": [
+        0.468,
+        0.604
+      ],
+      "draw_calls": [
+        120.0,
+        177.0
+      ],
+      "primitives": [
+        75286.0,
+        98982.0
+      ],
+      "objects": [
+        395.0,
+        521.0
+      ],
+      "video_memory_bytes": [
+        198426624.0,
+        198426624.0
+      ],
+      "frame_p95_ms": [
+        0.773,
+        0.893
+      ]
+    },
+    {
+      "site": "service_depot",
+      "seed": 16,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.533,
+        0.5935
+      ],
+      "render_cpu_ms": [
+        0.168,
+        0.2
+      ],
+      "render_gpu_ms": [
+        0.142,
+        0.33
+      ],
+      "draw_calls": [
+        78.0,
+        105.0
+      ],
+      "primitives": [
+        26423.0,
+        44427.0
+      ],
+      "objects": [
+        353.0,
+        495.0
+      ],
+      "video_memory_bytes": [
+        198426624.0,
+        198426624.0
+      ],
+      "frame_p95_ms": [
+        0.675,
+        0.768
+      ]
+    },
+    {
+      "site": "service_depot",
+      "seed": 17,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.593,
+        0.697
+      ],
+      "render_cpu_ms": [
+        0.19,
+        0.238
+      ],
+      "render_gpu_ms": [
+        0.36,
+        0.556
+      ],
+      "draw_calls": [
+        118.0,
+        185.0
+      ],
+      "primitives": [
+        71461.0,
+        102847.0
+      ],
+      "objects": [
+        397.0,
+        578.0
+      ],
+      "video_memory_bytes": [
+        198950912.0,
+        198950912.0
+      ],
+      "frame_p95_ms": [
+        0.793,
+        0.898
+      ]
+    },
+    {
+      "site": "service_depot",
+      "seed": 17,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.602,
+        0.691
+      ],
+      "render_cpu_ms": [
+        0.196,
+        0.243
+      ],
+      "render_gpu_ms": [
+        0.415,
+        0.523
+      ],
+      "draw_calls": [
+        135.0,
+        201.0
+      ],
+      "primitives": [
+        128303.0,
+        151251.0
+      ],
+      "objects": [
+        413.0,
+        565.0
+      ],
+      "video_memory_bytes": [
+        198950912.0,
+        198950912.0
+      ],
+      "frame_p95_ms": [
+        0.771,
+        0.894
+      ]
+    },
+    {
+      "site": "service_depot",
+      "seed": 17,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.538,
+        0.6
+      ],
+      "render_cpu_ms": [
+        0.168,
+        0.202
+      ],
+      "render_gpu_ms": [
+        0.139,
+        0.301
+      ],
+      "draw_calls": [
+        78.0,
+        104.0
+      ],
+      "primitives": [
+        26423.0,
+        45079.0
+      ],
+      "objects": [
+        353.0,
+        489.0
+      ],
+      "video_memory_bytes": [
+        198950912.0,
+        198950912.0
+      ],
+      "frame_p95_ms": [
+        0.683,
+        0.782
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 16,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.634,
+        0.735
+      ],
+      "render_cpu_ms": [
+        0.21,
+        0.263
+      ],
+      "render_gpu_ms": [
+        0.381,
+        0.537
+      ],
+      "draw_calls": [
+        160.0,
+        233.0
+      ],
+      "primitives": [
+        80536.0,
+        108684.0
+      ],
+      "objects": [
+        459.0,
+        642.0
+      ],
+      "video_memory_bytes": [
+        203931648.0,
+        203931648.0
+      ],
+      "frame_p95_ms": [
+        0.801,
+        0.918
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 16,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.638,
+        0.711
+      ],
+      "render_cpu_ms": [
+        0.214,
+        0.2525
+      ],
+      "render_gpu_ms": [
+        0.47,
+        0.568
+      ],
+      "draw_calls": [
+        176.0,
+        220.0
+      ],
+      "primitives": [
+        90208.0,
+        107094.0
+      ],
+      "objects": [
+        473.0,
+        583.0
+      ],
+      "video_memory_bytes": [
+        203931648.0,
+        203931648.0
+      ],
+      "frame_p95_ms": [
+        0.817,
+        0.899
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 16,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.559,
+        0.63
+      ],
+      "render_cpu_ms": [
+        0.179,
+        0.217
+      ],
+      "render_gpu_ms": [
+        0.146,
+        0.3
+      ],
+      "draw_calls": [
+        93.0,
+        123.0
+      ],
+      "primitives": [
+        28591.0,
+        46471.0
+      ],
+      "objects": [
+        383.0,
+        533.0
+      ],
+      "video_memory_bytes": [
+        203931648.0,
+        203931648.0
+      ],
+      "frame_p95_ms": [
+        0.698,
+        0.787
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 17,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.654,
+        0.757
+      ],
+      "render_cpu_ms": [
+        0.206,
+        0.258
+      ],
+      "render_gpu_ms": [
+        0.376,
+        0.533
+      ],
+      "draw_calls": [
+        147.0,
+        217.0
+      ],
+      "primitives": [
+        75705.0,
+        103853.0
+      ],
+      "objects": [
+        447.0,
+        630.0
+      ],
+      "video_memory_bytes": [
+        203866112.0,
+        203866112.0
+      ],
+      "frame_p95_ms": [
+        0.83,
+        0.963
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 17,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.647,
+        0.716
+      ],
+      "render_cpu_ms": [
+        0.217,
+        0.254
+      ],
+      "render_gpu_ms": [
+        0.479,
+        0.577
+      ],
+      "draw_calls": [
+        179.0,
+        219.0
+      ],
+      "primitives": [
+        139113.0,
+        155999.0
+      ],
+      "objects": [
+        476.0,
+        586.0
+      ],
+      "video_memory_bytes": [
+        203866112.0,
+        203866112.0
+      ],
+      "frame_p95_ms": [
+        0.821,
+        0.902
+      ]
+    },
+    {
+      "site": "freight_yard",
+      "seed": 17,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.574,
+        0.626
+      ],
+      "render_cpu_ms": [
+        0.185,
+        0.215
+      ],
+      "render_gpu_ms": [
+        0.143,
+        0.299
+      ],
+      "draw_calls": [
+        94.0,
+        122.0
+      ],
+      "primitives": [
+        27929.0,
+        45809.0
+      ],
+      "objects": [
+        380.0,
+        530.0
+      ],
+      "video_memory_bytes": [
+        203866112.0,
+        203866112.0
+      ],
+      "frame_p95_ms": [
+        0.74,
+        0.791
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 16,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.676,
+        0.763
+      ],
+      "render_cpu_ms": [
+        0.22,
+        0.271
+      ],
+      "render_gpu_ms": [
+        0.371,
+        0.517
+      ],
+      "draw_calls": [
+        175.0,
+        242.0
+      ],
+      "primitives": [
+        79812.0,
+        107790.0
+      ],
+      "objects": [
+        473.0,
+        663.0
+      ],
+      "video_memory_bytes": [
+        210878464.0,
+        210878464.0
+      ],
+      "frame_p95_ms": [
+        0.91,
+        1.046
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 16,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.687,
+        0.759
+      ],
+      "render_cpu_ms": [
+        0.233,
+        0.277
+      ],
+      "render_gpu_ms": [
+        0.419,
+        0.487
+      ],
+      "draw_calls": [
+        223.0,
+        279.0
+      ],
+      "primitives": [
+        98892.0,
+        120590.0
+      ],
+      "objects": [
+        518.0,
+        669.0
+      ],
+      "video_memory_bytes": [
+        210878464.0,
+        210878464.0
+      ],
+      "frame_p95_ms": [
+        0.877,
+        0.967
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 16,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.583,
+        0.645
+      ],
+      "render_cpu_ms": [
+        0.189,
+        0.225
+      ],
+      "render_gpu_ms": [
+        0.142,
+        0.298
+      ],
+      "draw_calls": [
+        105.0,
+        132.0
+      ],
+      "primitives": [
+        29469.0,
+        46009.0
+      ],
+      "objects": [
+        390.0,
+        546.0
+      ],
+      "video_memory_bytes": [
+        210878464.0,
+        210878464.0
+      ],
+      "frame_p95_ms": [
+        0.732,
+        0.796
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 17,
+      "view": "normal",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.637,
+        0.77
+      ],
+      "render_cpu_ms": [
+        0.21,
+        0.267
+      ],
+      "render_gpu_ms": [
+        0.377,
+        0.557
+      ],
+      "draw_calls": [
+        160.0,
+        227.0
+      ],
+      "primitives": [
+        74785.0,
+        102675.0
+      ],
+      "objects": [
+        448.0,
+        636.0
+      ],
+      "video_memory_bytes": [
+        211402752.0,
+        211402752.0
+      ],
+      "frame_p95_ms": [
+        0.862,
+        1.088
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 17,
+      "view": "low",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.644,
+        0.721
+      ],
+      "render_cpu_ms": [
+        0.215,
+        0.255
+      ],
+      "render_gpu_ms": [
+        0.497,
+        0.592
+      ],
+      "draw_calls": [
+        170.0,
+        220.0
+      ],
+      "primitives": [
+        133097.0,
+        153255.0
+      ],
+      "objects": [
+        458.0,
+        572.0
+      ],
+      "video_memory_bytes": [
+        211402752.0,
+        211402752.0
+      ],
+      "frame_p95_ms": [
+        0.849,
+        0.919
+      ]
+    },
+    {
+      "site": "fleet_station",
+      "seed": 17,
+      "view": "high_wide",
+      "samples_per_state": 1800,
+      "all_blocks_focused": true,
+      "frame_ms": [
+        0.574,
+        0.649
+      ],
+      "render_cpu_ms": [
+        0.185,
+        0.224
+      ],
+      "render_gpu_ms": [
+        0.142,
+        0.296
+      ],
+      "draw_calls": [
+        99.0,
+        126.0
+      ],
+      "primitives": [
+        27193.0,
+        43733.0
+      ],
+      "objects": [
+        379.0,
+        535.0
+      ],
+      "video_memory_bytes": [
+        211402752.0,
+        211402752.0
+      ],
+      "frame_p95_ms": [
+        0.734,
+        0.811
+      ]
+    }
+  ],
+  "failures": 0
+}

@@ -149,8 +149,19 @@ func _play_range() -> void:
 	_place(actor, Vector3i(7, 0, 19), grid)
 	rig.camera.global_position = actor.global_position + Vector3(0, 0.25, 5.5)
 	rig.camera.look_at(actor.global_position)
-	var sedan := level.get_node("GeneratedTerrain/TacticalTestRange/VehicleBay/ReferenceSedan")
-	var car_mesh := sedan.find_children("*", "MeshInstance3D", true, false)[0]
+	var sedan := level.get_node_or_null("GeneratedTerrain/TacticalTestRangeSite/Tactical/TacticalTestRange/VehicleBay/ReferenceSedan")
+	check(sedan != null, "The reference car exists under its owning plot's Tactical subtree")
+	if sedan == null:
+		level.queue_free()
+		await process_frame
+		return
+	var car_meshes := sedan.find_children("*", "MeshInstance3D", true, false)
+	check(not car_meshes.is_empty(), "The reference car has visible geometry for its aperture check")
+	if car_meshes.is_empty():
+		level.queue_free()
+		await process_frame
+		return
+	var car_mesh := car_meshes[0]
 	rig._update_camera_occlusion(0.2)
 	check(rig._environment_apertures.active.has(car_mesh), "The real selected-unit cutout reveals the actor through the imported reference car")
 	var blocker := CombatRules.get_blocking_cell(rig.camera.global_position, actor.global_position, grid)

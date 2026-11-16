@@ -76,7 +76,7 @@ class FreightPlots:
 		return get_definition(WEST if posmod(map_seed, 2) == 0 else EAST)
 	static func get_definition(id: StringName) -> Dictionary:
 		if id not in [WEST, EAST]: return {}
-		return {"plot_id": id, "revision": 1, "map_size": FREIGHT_SIZE, "scene": Site,
+		return {"plot_id": id, "revision": 2, "map_size": FREIGHT_SIZE, "scene": Site,
 			"road_rects": [Rect2i(0, 32, 40, 5)], "circulation_rects": [Rect2i(18, 0, 4, 32)],
 			"slots": [
 				_apron(&"west", Vector3i(2, 0, 0), Parcels.CONTAINER_STAGING if id == WEST else Parcels.FLEET_APRON),
@@ -96,7 +96,7 @@ class FleetPlots:
 	static func get_definition(id: StringName) -> Dictionary:
 		if id not in [NORTH, SOUTH]: return {}
 		var north := id == NORTH
-		return {"plot_id": id, "revision": 1, "map_size": FLEET_SIZE, "scene": NorthScene if north else SouthScene,
+		return {"plot_id": id, "revision": 2, "map_size": FLEET_SIZE, "scene": NorthScene if north else SouthScene,
 			"road_rects": [Rect2i(0, 0, 40, 5) if north else Rect2i(0, 33, 40, 5)],
 			"circulation_rects": [Rect2i(4, 5, 32, 1) if north else Rect2i(4, 32, 32, 1)],
 			"slots": [{"slot_id": &"service_court", "role": Parcels.FLEET_COURT_ROLE, "size": Vector2i(32, 32), "preferred_parcel_id": Parcels.FLEET_COURT,

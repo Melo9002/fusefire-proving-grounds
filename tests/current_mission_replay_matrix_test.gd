@@ -25,8 +25,8 @@ func check(ok: bool, message: String) -> void:
 
 func _run() -> void:
 	# The ordinary suite always runs all 48 cases. Explicit capture mode reviews
-	# only the two Depot Eliminate layouts, retaining every per-case assertion.
-	var sites: Array = BattlefieldCatalog.PLAYABLE if output.is_empty() else [BattlefieldCatalog.SERVICE_DEPOT]
+	# only the six current Eliminate layouts, retaining every per-case assertion.
+	var sites: Array = BattlefieldCatalog.PLAYABLE
 	var missions: Array = MissionCatalog.PRESETS if output.is_empty() else [MissionCatalog.PRESETS[0]]
 	for battlefield_id in sites:
 		for map_seed in [16, 17]:

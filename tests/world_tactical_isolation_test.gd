@@ -15,7 +15,8 @@ func check(ok: bool, message: String) -> void:
 
 func _run() -> void:
 	_check_fixed_scenery()
-	for map_seed in [16, 17]: await _case(map_seed)
+	for site in BattlefieldCatalog.PLAYABLE:
+		for map_seed in [16, 17]: await _case(site, map_seed)
 	Scenery.clear_cache()
 	print("World tactical isolation: %d edge cases, %d failure(s)" % [edge_cases, failures])
 	quit(1 if failures else 0)
@@ -24,16 +25,16 @@ func _place(unit: TacticalUnit, cell: Vector3i, grid: GridManager) -> void:
 	grid.update_unit_position(unit, unit.grid_position, cell)
 	unit.global_position = grid.grid_to_world(cell) + Vector3.UP * unit.standing_height
 
-func _case(map_seed: int) -> void:
+func _case(site: StringName, map_seed: int) -> void:
 	var config := BattleConfiguration.new()
 	config.generated_map = true
-	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
+	config.select_battlefield(site)
 	config.battle_seed = map_seed
 	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.EXTRACT, 2)
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 	level.configure_battle(config)
 	root.add_child(level)
-	check(level.battle_initialization_succeeded, "Isolation case starts a validated Depot")
+	check(level.battle_initialization_succeeded, "Isolation case starts a validated current-site battle")
 	if not level.battle_initialization_succeeded:
 		level.free()
 		return
@@ -108,23 +109,24 @@ func _case(map_seed: int) -> void:
 
 func _check_fixed_scenery() -> void:
 	var plots := {}
-	for map_seed in range(16, 24):
-		for population in [false, true]:
-			var data := BattlefieldCatalog.generate(BattlefieldCatalog.SERVICE_DEPOT, Vector2i.ZERO, map_seed, 1.0, {"population_enabled": population})
-			var host := Node3D.new()
-			root.add_child(host)
-			check(BattlefieldCatalog.present(data, host, 1.0), "Known seed presents fixed plot surroundings")
-			var plot := host.get_child(0)
-			var signature := Scenery.capture(plot)
-			check(signature.meshes > 0, "Scenery comparison includes actual meshes")
-			var id: StringName = data.content_manifest.plot_id
-			if plots.has(id): check(plots[id] == signature, "Population and seed changes do not randomize surroundings within a plot")
-			else: plots[id] = signature
-			var original: Transform3D = plot.get_node("Distant").transform
-			plot.get_node("Distant").position.x += 1.0
-			check(Scenery.capture(plot) != signature, "Appearance evidence detects a real scenery transform change")
-			plot.get_node("Distant").transform = original
-			check(Scenery.capture(plot) == signature, "Restoring authored scenery restores its appearance evidence")
-			host.free()
-	check(plots.size() == 2, "Both fixed Depot plot surroundings are exercised")
-	check(plots.values()[0] != plots.values()[1], "Different plots retain their own visible frontage")
+	for site in BattlefieldCatalog.PLAYABLE:
+		for map_seed in range(16, 24):
+			for population in [false, true]:
+				var data := BattlefieldCatalog.generate(site, Vector2i.ZERO, map_seed, 1.0, {"population_enabled": population})
+				var host := Node3D.new()
+				root.add_child(host)
+				check(BattlefieldCatalog.present(data, host, 1.0), "Known seed presents fixed plot surroundings")
+				var plot := host.get_child(0)
+				var signature := Scenery.capture(plot)
+				check(signature.meshes > 0, "Scenery comparison includes actual meshes")
+				var id: StringName = data.content_manifest.plot_id
+				if plots.has(id): check(plots[id] == signature, "Population and seed changes do not randomize surroundings within a plot")
+				else: plots[id] = signature
+				var original: Transform3D = plot.get_node("Distant").transform
+				plot.get_node("Distant").position.x += 1.0
+				check(Scenery.capture(plot) != signature, "Appearance evidence detects a real scenery transform change")
+				plot.get_node("Distant").transform = original
+				check(Scenery.capture(plot) == signature, "Restoring authored scenery restores its appearance evidence")
+				host.free()
+	check(plots.size() == 6, "Both fixed layouts of all three sites are exercised")
+	check(plots[&"depot_loading_crossing"] != plots[&"depot_service_spine"], "Different plots retain their own visible frontage")
