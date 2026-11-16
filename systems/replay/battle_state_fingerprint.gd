@@ -12,6 +12,8 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 		"result=%d" % turn_manager.battle_result,
 	]
 	var units: Array[TacticalUnit] = []
+	if grid.map_data.surface_placement_enabled:
+		parts.append("standing_map=" + SurfaceNavigation.signature(grid.map_data))
 	for value in grid.occupancy_map.values():
 		var unit := value as TacticalUnit
 		if is_instance_valid(unit) and not units.has(unit):
@@ -19,6 +21,9 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 	units.sort_custom(func(first: TacticalUnit, second: TacticalUnit): return _unit_id(first) < _unit_id(second))
 	for unit in units:
 		var cell := grid.get_unit_grid(unit)
+		if grid.map_data.surface_placement_enabled:
+			var point := (grid.grid_to_world(cell) / grid.map_data.surface_unit * SurfaceNavigation.PRECISION).round()
+			parts.append("standing=%s,%d,%d,%d" % [_unit_id(unit), point.x, point.y, point.z])
 		var carried_id := "none"
 		if unit.is_carrying_unit():
 			carried_id = _unit_id(unit.carried_unit)

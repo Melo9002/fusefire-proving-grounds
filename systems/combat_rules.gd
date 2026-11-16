@@ -156,6 +156,11 @@ static func can_reach_adjacent(from_cell: Vector3i, to_cell: Vector3i, grid: Gri
 	var delta := to_cell - from_cell
 	if delta.y != 0 or delta == Vector3i.ZERO or absi(delta.x) > 1 or absi(delta.z) > 1:
 		return false
+	if grid.map_data.surface_placement_enabled:
+		var from := grid.get_cell_data(from_cell)
+		var to := grid.get_cell_data(to_cell)
+		if not from or not to or from.world_position.distance_to(to.world_position) > grid.cell_size * 1.5: return false
+		if not SurfaceNavigation.edge_clear(grid.map_data, from.world_position, to.world_position): return false
 	if delta.x != 0 and delta.z != 0:
 		for side in [from_cell + Vector3i(delta.x, 0, 0), from_cell + Vector3i(0, 0, delta.z)]:
 			var data := grid.get_cell_data(side)
@@ -248,8 +253,14 @@ static func _protecting_cover(attacker_cell: Vector3i, target_cell: Vector3i, gr
 	var low_candidates: Array[MapCellData] = []
 	# Strongest qualifying surface wins. The shared ray routine also handles
 	# actual compound gaps and the same paired-corner sealing as shot legality.
-	for offset in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
-		var cell := grid.get_cell_data(target_cell + offset)
+	var nearby: Array[MapCellData] = []
+	if grid.map_data.surface_placement_enabled:
+		nearby = SurfaceNavigation.cover_surfaces(grid.map_data, ground)
+	else:
+		for offset in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
+			var neighbor := grid.get_cell_data(target_cell + offset)
+			if neighbor: nearby.append(neighbor)
+	for cell in nearby:
 		if not cell or cell.cover_type == MapCellData.CoverType.NONE: continue
 		var kind := _cover_type_for_ray(cell, origin, protected_point, ground.y, grid.cell_size)
 		if kind == MapCellData.CoverType.FULL: candidates.append(cell)

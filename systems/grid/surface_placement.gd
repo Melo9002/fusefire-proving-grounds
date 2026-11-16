@@ -14,7 +14,9 @@ static func _valid_bounds(bounds: AABB) -> bool:
 static func _intersects_body(point: Vector3, bounds: AABB, radius: float, height: float) -> bool:
 	if bounds.end.y <= point.y + 0.001 or bounds.position.y >= point.y + height: return false
 	var nearest := Vector2(clampf(point.x, bounds.position.x, bounds.end.x), clampf(point.z, bounds.position.z, bounds.end.z))
-	return Vector2(point.x, point.z).distance_squared_to(nearest) < radius * radius * 0.999999
+	# Vector3 uses float32: translated face candidates need a small relative
+	# tolerance as well as the downstream canonical-point precision check.
+	return Vector2(point.x, point.z).distance_squared_to(nearest) < radius * radius * 0.99998
 
 ## Closest tested fit to a requested point, constrained to its logical cell.
 ## The body may extend into adjacent open space; later occupancy must check it.

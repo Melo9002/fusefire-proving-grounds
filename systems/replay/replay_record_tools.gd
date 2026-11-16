@@ -72,7 +72,7 @@ static func validate_action_record(record: Dictionary, envelope_version: int) ->
 				return "unsupported Overwatch payload schema %s (expected 6)" % payload_version
 			if kind == "interact_terminal" and payload_version != 8:
 				return "unsupported terminal interaction payload schema %s (expected 8)" % payload_version
-			if kind == "move" and payload_version not in [2, 6, 9]:
+			if kind == "move" and payload_version not in [2, 6, 9, 10]:
 				return "unsupported Move payload schema %s" % payload_version
 			if kind == "emergency_seal" and payload_version != 9:
 				return "unsupported Emergency Seal payload schema %s" % payload_version

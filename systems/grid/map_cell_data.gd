@@ -9,6 +9,11 @@ enum CoverType {
 
 var grid_position: Vector3i
 var world_position: Vector3
+## Immutable support-cell center; world_position may be a resolved standing point.
+var support_center: Vector3
+var surface_candidate := false
+var surface_forbidden := false
+var support_surface := true
 var elevation: float = 0.0
 var walkable: bool = true
 var can_stop: bool = true
@@ -28,4 +33,5 @@ var hazard_condition: ConditionDefinition
 func _init(cell: Vector3i, position: Vector3) -> void:
 	grid_position = cell
 	world_position = position
+	support_center = position
 	elevation = position.y

@@ -740,6 +740,7 @@ func _present_preview() -> void:
 	_authored_guides.hide()
 	compiled_preview = TacticalMapBuilder.generate(_definition.size.x, _definition.size.y, 1.0, int(seed_input.value))
 	AuthoredSceneMapCompiler.compile(_runtime_preview, compiled_preview, 1.0)
+	SurfaceNavigation.resolve_map(compiled_preview, 1.0)
 	host.refresh_tactical_overlay(_runtime_preview)
 
 func _next_seed() -> void:

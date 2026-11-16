@@ -153,6 +153,7 @@ static func _check_aisles(definition: AuthoredParcelDefinition, bays: Array[Dict
 		definition.apply_population(instance, full_population)
 		instance.transform = ParcelTransform.scene_transform(definition.size, Vector3i.ZERO, turn, extent)
 		Compiler.compile(instance, map, 1.0)
+		SurfaceNavigation.resolve_map(map, 1.0)
 		instance.free()
 		var graph := Pathfinder.new()
 		MapGraphBuilder.build(map, graph)

@@ -25,6 +25,8 @@ const SIGNAL_COURTYARD_A := &"signal_courtyard_a"
 const COURTYARD_GALLERY_A := &"courtyard_gallery_a"
 const PARKING_GARAGE_A := &"parking_garage_a"
 const TACTICAL_RANGE_A := &"tactical_range_a"
+const SURFACE_FIT_RANGE := &"surface_fit_range"
+const SurfaceFitRange = preload("res://art/environments/authored/parcels/surface_fit_range.tscn")
 const LOADING_SERVICE := &"loading_service"
 const PROCESS := &"process"
 const STORAGE := &"storage"
@@ -51,6 +53,7 @@ const TacticalRangeA = preload("res://art/environments/authored/parcels/tactical
 
 static func all() -> Array:
 	return [
+		Definition.new(SURFACE_FIT_RANGE, "Surface Fit Range — container, truck, building edges", &"surface_fit_examples", 1, Vector2i(32, 32), SurfaceFitRange),
 		Definition.new(CONTAINER_STAGING, "Freight — container staging apron", FREIGHT_APRON_ROLE, 1, Vector2i(16, 32), ContainerStaging),
 		Definition.new(FLEET_APRON, "Freight — fleet service apron", FREIGHT_APRON_ROLE, 1, Vector2i(16, 32), FleetApron),
 		Definition.new(FLEET_COURT, "Fleet Station — service court", FLEET_COURT_ROLE, 1, Vector2i(32, 32), FleetCourt),

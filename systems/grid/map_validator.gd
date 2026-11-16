@@ -79,6 +79,9 @@ static func _validate_cells(map_data: MapData, pathfinder: Pathfinder, result: M
 			result.add_error("INVALID_COVER_HEIGHT", "Cover height cannot be negative.", cell.grid_position, true)
 		if cell.can_stop and not cell.walkable:
 			result.add_error("INVALID_STOP_CELL", "A stoppable cell must also be walkable.", cell.grid_position, true)
+		if map_data.surface_placement_enabled and cell.can_stop:
+			if not SurfaceNavigation.supported(map_data, cell.world_position, map_data.body_radius) or not SurfaceNavigation.body_clear(map_data, cell.world_position):
+				result.add_error("UNSAFE_STANDING_POINT", "Standing body lacks support or overlaps geometry.", cell.grid_position, true)
 		if cell.cover_type == MapCellData.CoverType.LOW and (not cell.walkable or cell.can_stop or cell.cover_height <= 0.0):
 			result.add_error("INVALID_LOW_COVER", "Low cover must be traversable, non-stoppable, and have positive height.", cell.grid_position, true)
 		if cell.cover_type == MapCellData.CoverType.FULL and (cell.walkable or cell.can_stop or cell.cover_height <= 0.0):
@@ -146,6 +149,16 @@ static func _validate_spawns(map_data: MapData, pathfinder: Pathfinder, required
 			elif not cell.walkable or not cell.can_stop:
 				result.add_error("SPAWN_CELL_INVALID", "Spawn must be a walkable stopping cell.", cell_position, true)
 
+	if map_data.surface_placement_enabled:
+		var spawn_keys := occupied_spawn_cells.keys()
+		for first in spawn_keys.size():
+			for second in range(first + 1, spawn_keys.size()):
+				var a := map_data.get_cell(spawn_keys[first])
+				var b := map_data.get_cell(spawn_keys[second])
+				if not a or not b: continue
+				var delta := a.world_position - b.world_position
+				if absf(delta.y) < map_data.body_height and Vector2(delta.x, delta.z).length() < map_data.body_radius * 2 + map_data.body_clearance:
+					result.add_error("SPAWN_BODIES_OVERLAP", "Different spawn cells overlap physical bodies.", a.grid_position, true)
 	for faction in required_counts:
 		var required: int = required_counts[faction]
 		var available := map_data.get_spawn_cells(faction).size()

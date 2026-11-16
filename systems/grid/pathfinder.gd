@@ -17,6 +17,8 @@ var movement_costs: Dictionary = {}
 var stoppable_cells: Dictionary = {}
 var next_id: int = 0
 var max_step_levels: int = 1
+var surface_map: MapData
+var live_grid: GridManager
 
 const DIRECTIONS: Array[Vector3i] = [
 	Vector3i.RIGHT,
@@ -26,6 +28,8 @@ const DIRECTIONS: Array[Vector3i] = [
 ]
 
 func clear() -> void:
+	surface_map = null
+	live_grid = null
 	astar.clear()
 	astar.cells.clear()
 	grid_to_id_map.clear()
@@ -83,7 +87,10 @@ func _refresh_diagonals_near(changed: Vector3i) -> void:
 					continue
 				var first: int = grid_to_id_map[pair[0]]
 				var second: int = grid_to_id_map[pair[1]]
-				if diagonal_is_clear:
+				var safe := diagonal_is_clear
+				if safe and surface_map and surface_map.surface_placement_enabled:
+					safe = SurfaceNavigation.edge_clear(surface_map, astar.get_point_position(first), astar.get_point_position(second))
+				if safe:
 					astar.connect_points(first, second)
 				elif astar.are_points_connected(first, second):
 					astar.disconnect_points(first, second)
@@ -104,6 +111,7 @@ func get_path_cost(path: PackedVector3Array, world_to_grid: Callable) -> float:
 func connect_cells(from_cell: Vector3i, to_cell: Vector3i, bidirectional: bool = true) -> bool:
 	if not grid_to_id_map.has(from_cell) or not grid_to_id_map.has(to_cell):
 		return false
+	if surface_map and not SurfaceNavigation.edge_clear(surface_map, astar.get_point_position(grid_to_id_map[from_cell]), astar.get_point_position(grid_to_id_map[to_cell])): return false
 	astar.connect_points(grid_to_id_map[from_cell], grid_to_id_map[to_cell], bidirectional)
 	return true
 
@@ -115,7 +123,12 @@ func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector
 
 	var start_id = grid_to_id_map[start_grid]
 	var end_id = grid_to_id_map[end_grid]
-	return astar.get_point_path(start_id, end_id)
+	var path := astar.get_point_path(start_id, end_id)
+	if surface_map and surface_map.surface_placement_enabled and is_instance_valid(live_grid) and not live_grid.occupancy_map.is_empty():
+		var actor := live_grid.get_unit_at(start_grid)
+		if path.is_empty() or not _path_respects_hypothetical_occupancy(path, start_grid, live_grid, actor):
+			return _calculate_hypothetical_fallback(start_grid, end_grid, live_grid, actor)
+	return path
 
 ## Read-only planning path. Occupied cells remain blocked except for the named
 ## actor's live origin, which is treated as vacated when planning from a future
@@ -127,7 +140,9 @@ func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, gri
 	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor)
 
 func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> bool:
-	for point in path:
+	for index in path.size():
+		var point := path[index]
+		if grid.map_data.surface_placement_enabled and not SurfaceNavigation.units_clear(grid, path[maxi(0, index - 1)], point, ignored_actor): return false
 		var cell: Vector3i = id_to_grid_map.get(astar.get_closest_point(point), Vector3i(-1, -1, -1))
 		var occupant := grid.get_unit_at(cell)
 		if is_instance_valid(occupant) and occupant != ignored_actor and cell != start_grid:
@@ -140,12 +155,13 @@ func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid:
 func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> PackedVector3Array:
 	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
 		return PackedVector3Array()
+	if not stoppable_cells.get(end_grid, false): return PackedVector3Array()
 	var start_id: int = grid_to_id_map[start_grid]
 	var end_id: int = grid_to_id_map[end_grid]
 	var open_ids: Array[int] = [start_id]
 	var came_from := {}
 	var costs := {start_id: 0.0}
-	var estimates := {start_id: astar.get_point_position(start_id).distance_to(astar.get_point_position(end_id))}
+	var estimates := {start_id: 0.0}
 	while not open_ids.is_empty():
 		var best_index := 0
 		for index in range(1, open_ids.size()):
@@ -167,13 +183,14 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 				continue
 			if astar.is_point_disabled(neighbor_id) and occupant != ignored_actor:
 				continue
-			var step := astar.get_point_position(current_id).distance_to(astar.get_point_position(neighbor_id))
+			if not SurfaceNavigation.units_clear(grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), ignored_actor): continue
+			var step := get_step_cost(id_to_grid_map[current_id], neighbor_cell) if grid.map_data.surface_placement_enabled else astar.get_point_position(current_id).distance_to(astar.get_point_position(neighbor_id))
 			var new_cost: float = costs[current_id] + step
 			if new_cost >= float(costs.get(neighbor_id, INF)):
 				continue
 			came_from[neighbor_id] = current_id
 			costs[neighbor_id] = new_cost
-			estimates[neighbor_id] = new_cost + astar.get_point_position(neighbor_id).distance_to(astar.get_point_position(end_id))
+			estimates[neighbor_id] = new_cost if grid.map_data.surface_placement_enabled else new_cost + astar.get_point_position(neighbor_id).distance_to(astar.get_point_position(end_id))
 			if neighbor_id not in open_ids:
 				open_ids.append(neighbor_id)
 	return PackedVector3Array()
@@ -217,6 +234,9 @@ func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Ve
 			var neighbor: Vector3i = id_to_grid_map[neighbor_id]
 			if astar.is_point_disabled(neighbor_id):
 				continue
+			if surface_map and surface_map.surface_placement_enabled and is_instance_valid(live_grid):
+				if live_grid.is_cell_occupied(neighbor): continue
+				if not SurfaceNavigation.units_clear(live_grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), live_grid.get_unit_at(start_grid)): continue
 			var new_cost = current_cost + get_step_cost(current_pos, neighbor)
 			if new_cost > movement_budget or (best_cost.has(neighbor) and best_cost[neighbor] <= new_cost):
 				continue

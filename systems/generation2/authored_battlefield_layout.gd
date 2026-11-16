@@ -16,6 +16,16 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 	if not data.generation_errors.is_empty():
 		return data
 	var interfaces: Array[Dictionary] = []
+	# Decide the map's geometry mode before compiling any parcel. An opt-in
+	# parcel must still collide with earlier neighboring parcels in this plot.
+	if int(resolved.compiler_revision) >= 5:
+		for placement: Dictionary in resolved.placements:
+			var definition = parcels.get_definition(StringName(placement.parcel_id))
+			if definition == null: continue
+			var probe: Node3D = definition.instantiate()
+			if probe:
+				data.surface_placement_enabled = data.surface_placement_enabled or bool(probe.get_meta("surface_placement_enabled", false))
+				probe.free()
 	var precise_shot_bounds := int(resolved.compiler_revision) != Resolver.LEGACY_COMPILER_REVISION
 	for placement: Dictionary in resolved.placements:
 		var parcel = parcels.get_definition(StringName(placement.parcel_id))
@@ -33,6 +43,12 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
 		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, int(resolved.compiler_revision))
 		root.free()
+	SurfaceNavigation.resolve_map(data, cell_size)
+	if data.surface_placement_enabled:
+		var signature := SurfaceNavigation.signature(data)
+		if resolved.has("standing_points_signature") and resolved.standing_points_signature != signature:
+			data.generation_errors.append({"code": "CHANGED_STANDING_POINTS", "detail": "Resolved body positions differ from the recorded map"})
+		data.content_manifest.standing_points_signature = signature
 	for interface in interfaces:
 		var failure := SlotContract.validate_compiled_span(data, interface.slot_path, interface.span, interface.outward)
 		if not failure.is_empty():

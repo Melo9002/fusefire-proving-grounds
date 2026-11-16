@@ -9,8 +9,14 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 	var ground := grid.get_cell_data(cell)
 	if not ground: return result
 	var best_score := -INF
-	for offset: Vector3i in [Vector3i.ZERO] + DIRECTIONS:
-		var neighbor := grid.get_cell_data(cell + offset)
+	var nearby: Array[MapCellData] = []
+	if grid.map_data.surface_placement_enabled:
+		nearby = SurfaceNavigation.cover_surfaces(grid.map_data, ground.world_position)
+	else:
+		for offset: Vector3i in [Vector3i.ZERO] + DIRECTIONS:
+			var neighbor := grid.get_cell_data(cell + offset)
+			if neighbor: nearby.append(neighbor)
+	for neighbor in nearby:
 		if not neighbor or neighbor.cover_height <= 0 or neighbor.cover_type == MapCellData.CoverType.NONE: continue
 		var bounds: Array[AABB] = neighbor.authored_shot_parts.duplicate()
 		if bounds.is_empty():

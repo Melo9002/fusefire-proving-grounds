@@ -25,6 +25,9 @@ func _ready() -> void:
 	_full_mesh.material_override = _create_material(full_cover_color)
 
 func draw_for_cells(destination_cells: Array[Vector3i]) -> void:
+	if grid_manager.map_data.surface_placement_enabled:
+		_draw_surface_contacts(destination_cells)
+		return
 	var low_edges: Array = []
 	var full_edges: Array = []
 	for cell in destination_cells:
@@ -42,6 +45,42 @@ func draw_for_cells(destination_cells: Array[Vector3i]) -> void:
 	full_indicator_count = full_edges.size()
 	_low_mesh.mesh = _build_edge_mesh(low_edges)
 	_full_mesh.mesh = _build_edge_mesh(full_edges)
+
+func _draw_surface_contacts(cells: Array[Vector3i]) -> void:
+	var low: Array = []
+	var full: Array = []
+	for key in cells:
+		var cell := grid_manager.get_cell_data(key)
+		if not cell: continue
+		var seen := {}
+		for obstacle in SurfaceNavigation.cover_surfaces(grid_manager.map_data, cell.world_position):
+			var bounds := obstacle.authored_shot_bounds
+			if seen.has(bounds): continue
+			seen[bounds] = true
+			var contact := SurfacePlacement.contact(cell.world_position, bounds)
+			if not contact.found: continue
+			var point: Vector3 = contact.surface_position
+			point.y = cell.world_position.y + 0.07
+			var marker := {"point": point, "normal": contact.surface_normal}
+			if bounds.end.y - cell.world_position.y >= grid_manager.cell_size * 1.2: full.append(marker)
+			else: low.append(marker)
+	low_indicator_count = low.size()
+	full_indicator_count = full.size()
+	_low_mesh.mesh = _build_contact_mesh(low)
+	_full_mesh.mesh = _build_contact_mesh(full)
+
+func _build_contact_mesh(contacts: Array) -> Mesh:
+	if contacts.is_empty(): return null
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for contact in contacts:
+		var normal: Vector3 = contact.normal
+		var tangent := Vector3(-normal.z, 0, normal.x) * grid_manager.cell_size * 0.35
+		var outer: Vector3 = contact.point + normal * 0.02
+		var inner := outer + normal * edge_width
+		for point in [outer - tangent, outer + tangent, inner + tangent, outer - tangent, inner + tangent, inner - tangent]: surface.add_vertex(point)
+	surface.generate_normals()
+	return surface.commit()
 
 func clear() -> void:
 	low_indicator_count = 0

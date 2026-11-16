@@ -2,7 +2,7 @@
 
 MIRA Zero is FuseFire's supported character presentation path. Open `art/characters/mira_0/demo/mira_0_pose_workbench.tscn` to inspect poses and action states, and `art/characters/mira_0/runtime/mira_0_unit_visual.tscn` to tune the live unit.
 
-The [asset-edge/hybrid foundation](asset-edge-placement.md) adds physical contact hints to authored pose selection and an isolated Surface Fit Lab. Proposed standing offsets are not applied in live battles; shared movement/LOS integration must come before enabling partly blocked cells. Authored over-low-cover and left/right-corner shots can later receive procedural fitting without animation changing tactical authority.
+The [asset-edge/hybrid pilot](asset-edge-placement.md) adds physical contacts to authored poses and enables supported within-cell standing points in the editable Surface Fit Range. Its movement, LOS and saved replay share the committed point; the visual adapter does not apply a separate cosmetic root shift. Existing cover and corner-shooting clips remain placeholders. New over-low-cover sequences and wall-hand/foot IK can follow without animation changing tactical authority.
 
 ## Where to edit
 

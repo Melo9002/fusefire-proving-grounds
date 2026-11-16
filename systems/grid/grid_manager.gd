@@ -10,13 +10,15 @@ var occupancy_map: Dictionary = {}
 signal unit_registered(unit: TacticalUnit, grid_pos: Vector3i)
 signal unit_unregistered(unit: TacticalUnit, grid_pos: Vector3i)
 
-func register_unit(unit: TacticalUnit, grid_pos: Vector3i) -> void:
+func register_unit(unit: TacticalUnit, grid_pos: Vector3i) -> bool:
+	if map_data.surface_placement_enabled and not can_unit_occupy_cell(unit, grid_pos): return false
 	occupancy_map[grid_pos] = unit
 	unit.grid_position = grid_pos
 	if unit.visual_adapter:
 		unit.visual_adapter.presentation_grid = self
 	print_rich("[color=cyan][GridManager][/color] Registered unit [b]%s[/b] at %s | Faction: %s" % [unit.name, grid_pos, unit.faction])
 	unit_registered.emit(unit, grid_pos)
+	return true
 
 func unregister_unit_at(grid_pos: Vector3i) -> void:
 	if occupancy_map.has(grid_pos):
@@ -43,11 +45,14 @@ func get_unit_at(grid_pos: Vector3i) -> TacticalUnit:
 func get_cell_data(grid_pos: Vector3i) -> MapCellData:
 	return map_data.get_cell(grid_pos)
 
-func can_unit_occupy_cell(_moving_unit: TacticalUnit, grid_pos: Vector3i) -> bool:
+func can_unit_occupy_cell(moving_unit: TacticalUnit, grid_pos: Vector3i) -> bool:
 	var cell = get_cell_data(grid_pos)
-	return cell != null and cell.walkable and cell.can_stop and not is_cell_occupied(grid_pos)
+	return cell != null and cell.walkable and cell.can_stop and not is_cell_occupied(grid_pos) and SurfaceNavigation.units_clear(self, cell.world_position, cell.world_position, moving_unit)
 
 func grid_to_world(grid_pos: Vector3i) -> Vector3:
+	if map_data.surface_placement_enabled:
+		var cell := get_cell_data(grid_pos)
+		if cell: return cell.world_position
 	if not map_floor:
 		return Vector3.ZERO
 	var half_width = map_floor.size.x / 2.0

@@ -7,7 +7,7 @@ const ParcelCatalog = preload("res://systems/generation2/authored_parcel_catalog
 const SlotContract = preload("res://systems/generation2/parcel_slot_contract.gd")
 ## Bump if the shared authored compilation or deployment repair changes
 ## the tactical result for an unchanged exact manifest.
-const COMPILER_REVISION := 4
+const COMPILER_REVISION := 5
 const LEGACY_COMPILER_REVISION := 1
 
 static func resolve(catalog, map_seed: int, population_enabled: bool = true, requested: Dictionary = {}, parcels = ParcelCatalog) -> Dictionary:
@@ -15,14 +15,15 @@ static func resolve(catalog, map_seed: int, population_enabled: bool = true, req
 	if plot.is_empty():
 		return _failure(map_seed, population_enabled, "UNKNOWN_PLOT", String(requested.get("plot_id", "")))
 	var result := {"schema": 1, "compiler_revision": COMPILER_REVISION, "plot_id": plot.plot_id, "plot_revision": plot.revision, "map_size": plot.map_size, "seed": map_seed, "population_enabled": population_enabled, "placements": [], "errors": []}
+	if requested.has("standing_points_signature"): result.standing_points_signature = requested.standing_points_signature
 	if requested.has("plot_id"):
 		result.seed = int(requested.get("seed", map_seed))
 		if int(requested.get("schema", 0)) != 1 or requested.get("map_size") != plot.map_size:
 			result.errors.append(_error("UNSUPPORTED_MANIFEST", String(plot.plot_id)))
 			return result
 		var revision: Variant = requested.get("compiler_revision", LEGACY_COMPILER_REVISION)
-		if not (revision is int or revision is float) or revision not in [1, 2, 3, COMPILER_REVISION]:
-			result.errors.append(_error("UNSUPPORTED_COMPILER_REVISION", "%s requires %s. This build supports revisions 1, 2, 3 and %d." % [plot.plot_id, revision, COMPILER_REVISION]))
+		if not (revision is int or revision is float) or revision not in [1, 2, 3, 4, COMPILER_REVISION]:
+			result.errors.append(_error("UNSUPPORTED_COMPILER_REVISION", "%s requires %s. This build supports revisions 1 through %d." % [plot.plot_id, revision, COMPILER_REVISION]))
 			return result
 		result.compiler_revision = int(revision)
 	if int(requested.get("plot_revision", plot.revision)) != int(plot.revision):

@@ -588,6 +588,10 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.objective_state_before = _capture_objectives()
 	actor.stats.consume_ap(result.cost.ap)
 	_resolve_overwatch_reactions(actor, result)
+	if _grid_manager.map_data.surface_placement_enabled:
+		for checkpoint in result.path_cells:
+			var point := (_grid_manager.grid_to_world(checkpoint) / _grid_manager.cell_size * SurfaceNavigation.PRECISION).round()
+			result.standing_points.append([int(point.x), int(point.y), int(point.z)])
 	if not actor.stats.is_defeated:
 		_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
 	else:

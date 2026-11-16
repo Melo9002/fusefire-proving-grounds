@@ -13,6 +13,13 @@ var los_blocking_cells: Array[MapCellData] = []
 ## Raised parts can obstruct rays without intersecting any standing surface.
 var shot_obstacles: Array[MapCellData] = []
 var shot_columns: Dictionary = {}
+## Bounded pilot: explicit scene opt-in, one deterministic point per supported cell.
+var surface_placement_enabled := false
+var surface_unit := 1.0
+var body_radius := 0.28
+var body_height := 1.8
+var body_clearance := 0.04
+var movement_parts: Array[AABB] = []
 var zones: Dictionary[StringName, MapZoneData] = {}
 var source_kind: String = "authored"
 var generation_seed: int = 0
@@ -138,6 +145,8 @@ func get_inspectable_elevation_levels() -> Array[int]:
 	return levels
 
 func clear() -> void:
+	surface_placement_enabled = false
+	movement_parts.clear()
 	transport_footprints.clear()
 	containers.clear()
 	buildings.clear()

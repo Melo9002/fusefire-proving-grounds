@@ -163,7 +163,9 @@ func _ready() -> void:
 		_spawn_team(enemy_unit_count, enemy_spawn_zone, enemy_units_parent, true)
 		battle_initialization_progress.emit("Validating tactical battlefield…", 0.82)
 		if await battle_controller.initialize_battle(null, mission_definition):
-			_initialize_objectives()
+			if not _initialize_objectives():
+				_fail_battle_initialization([_diagnostic("MISSION_BODY_PLACEMENT_FAILED", "mission", "Mission actor has no safe supported placement")])
+				return
 			_initialize_replay_support()
 			_complete_battle_initialization()
 		else:
@@ -211,7 +213,10 @@ func _initialize_generated_battle() -> void:
 	print_rich("[color=cyan][MapGenerator][/color] %s — seed %d, %dx%d, %d low, %d full, %d building(s), %d platform(s), %d hill(s)" % [generator_label, generation_seed, generated_size.x, generated_size.y, cover_counts.x, cover_counts.y, generated_map.buildings.size(), generated_map.platforms.size(), generated_map.hills.size()])
 	battle_initialization_progress.emit("Validating tactical battlefield…", 0.82)
 	if await battle_controller.initialize_battle(generated_map, mission_definition):
-		_initialize_objectives()
+		if not _initialize_objectives():
+			_abort_generated_state()
+			_fail_battle_initialization([_diagnostic("MISSION_BODY_PLACEMENT_FAILED", "mission", "Mission actor has no safe supported placement")])
+			return
 		_initialize_replay_support()
 		_complete_battle_initialization()
 	else:
@@ -327,22 +332,23 @@ func return_to_match_setup() -> void:
 func return_button_text(default_text := "RETURN TO MATCH SETUP") -> String:
 	return "RETURN TO PARCEL EDITOR" if return_action.is_valid() else default_text
 
-func _initialize_objectives() -> void:
+func _initialize_objectives() -> bool:
 	if mission_definition == null:
-		return
+		return true
 	objective_manager.begin_tracking(turn_manager, battle_controller, battle_controller.grid_manager)
 	objective_manager.initialize_terminals(battle_controller.pathfinder)
 	battle_controller.bind_objective_manager(objective_manager)
 	if objective_manager.get_objective(&"rescue"):
-		_spawn_rescue_target()
+		if not _spawn_rescue_target(): return false
 	objective_zone_visualizer.show_mission(mission_definition)
+	return true
 
-func _spawn_rescue_target() -> void:
+func _spawn_rescue_target() -> bool:
 	var grid := battle_controller.grid_manager
 	var spawn_cell := MissionZonePlanner.find_rescue_cell(grid.map_data)
-	if spawn_cell.x < 0 or grid.is_cell_occupied(spawn_cell):
+	if spawn_cell.x < 0 or not grid.can_unit_occupy_cell(null, spawn_cell):
 		push_error("BattleLevel: no valid RescueTarget cell")
-		return
+		return false
 	var unit := unit_scene.instantiate() as TacticalUnit
 	unit.name = "RescueTarget"
 	unit.tactical_id = &"RescueTarget"
@@ -351,7 +357,10 @@ func _spawn_rescue_target() -> void:
 	unit.mission_actor.kind = MissionActor.Kind.RESCUABLE
 	objective_units_parent.add_child(unit)
 	unit.global_position = grid.grid_to_world(spawn_cell) + Vector3.UP * unit.standing_height
-	battle_controller.register_mission_unit(unit, spawn_cell)
+	if not battle_controller.register_mission_unit(unit, spawn_cell):
+		unit.queue_free()
+		return false
+	return true
 
 func _spawn_team(count: int, zone: SpawnZone, parent: Node3D, _add_ai: bool) -> void:
 	if not unit_scene or not zone or not parent or not turn_manager:

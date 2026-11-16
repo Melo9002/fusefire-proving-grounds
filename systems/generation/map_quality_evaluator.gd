@@ -73,6 +73,16 @@ static func _cover_access(spawns: Array[Vector3i], map_data: MapData, pathfinder
 	return total / float(spawns.size())
 
 static func _cover_directions(position: Vector3i, map_data: MapData) -> int:
+	if map_data.surface_placement_enabled:
+		var cell := map_data.get_cell(position)
+		if not cell: return 0
+		var directions := {}
+		for surface in SurfaceNavigation.cover_surfaces(map_data, cell.world_position):
+			var contact := SurfacePlacement.contact(cell.world_position, surface.authored_shot_bounds)
+			if contact.found:
+				var direction: Vector3 = contact.direction
+				directions[Vector2i(signi(roundi(direction.x)), signi(roundi(direction.z)))] = true
+		return mini(4, directions.size())
 	var count := 0
 	for direction in CARDINALS:
 		var neighbor := map_data.get_cell(position + direction)
@@ -160,6 +170,15 @@ static func _lane_length(origin: Vector3i, direction: Vector3i, map_data: MapDat
 			break
 		if cell.blocks_line_of_sight:
 			break
+		if map_data.surface_placement_enabled:
+			var from := map_data.get_cell(origin).world_position + Vector3.UP * map_data.surface_unit
+			var to := cell.world_position + Vector3.UP * map_data.surface_unit
+			var blocked := false
+			for part in map_data.movement_parts:
+				if SurfaceNavigation.segment_enters(from, to, part):
+					blocked = true
+					break
+			if blocked: break
 		length = step
 	return length
 

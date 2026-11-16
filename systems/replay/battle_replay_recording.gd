@@ -5,7 +5,7 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
-const SIMULATION_VERSION := "prototype-1.5-directional-cover-5"
+const SIMULATION_VERSION := "prototype-1.5-surface-placement-6"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
@@ -49,6 +49,12 @@ func validation_message() -> String:
 	for index in actions.size():
 		var issue := ReplayRecordTools.validate_action_record(actions[index], schema_version)
 		if not issue.is_empty(): return "Replay record %d is invalid: %s" % [index, issue]
+		if configuration.get("content_manifest", {}).has("standing_points_signature") and actions[index].get("kind") == "move":
+			var resolved: Dictionary = actions[index].get("resolved", {})
+			var points: Variant = resolved.get("standing_points")
+			if not points is Array or points.size() != resolved.get("path", []).size(): return "Surface Move is missing its resolved standing points"
+			for point in points:
+				if not _coordinate(point, 3): return "Surface Move contains invalid standing coordinates"
 	return ""
 
 func to_dictionary() -> Dictionary:
@@ -266,6 +272,7 @@ static func _manifest_to_data(manifest: Dictionary) -> Dictionary:
 	var result := {"schema": int(manifest.get("schema", 1)), "plot_id": String(manifest.get("plot_id", "")), "plot_revision": int(manifest.get("plot_revision", 0)), "map_size": [size.x, size.y], "seed": int(manifest.get("seed", 0)), "population_enabled": bool(manifest.get("population_enabled", true)), "placements": placements}
 	if manifest.has("compiler_revision"):
 		result.compiler_revision = manifest.compiler_revision
+	if manifest.has("standing_points_signature"): result.standing_points_signature = manifest.standing_points_signature
 	if manifest.get("local_content") is Dictionary: result.local_content = manifest.local_content.duplicate(true)
 	return result
 
@@ -286,6 +293,7 @@ static func _manifest_from_data(manifest: Variant) -> Dictionary:
 	if manifest.has("compiler_revision"):
 		var revision: Variant = manifest.compiler_revision
 		result.compiler_revision = int(revision) if revision is float and revision == int(revision) else revision
+	if manifest.has("standing_points_signature"): result.standing_points_signature = manifest.standing_points_signature
 	if manifest.get("local_content") is Dictionary: result.local_content = manifest.local_content.duplicate(true)
 	return result
 

@@ -51,7 +51,7 @@ $smokeTests = @(
 
 $subsystemPatterns = @{
     combat     = "action|aim_|ap_|combat|condition|overwatch|shield|shot_|supply|tempo|archetype"
-    movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault"
+    movement   = "movement|path_|traversal|elevation|locomotion|map_data|vault|surface_"
     ai         = "^ai_|commander|objective_ai|protect_rescue_ai|rescue_carrier|rescue_refinery|squad_context|survive_ai"
     replay     = "replay|determinism|seed_failure|current_content_playthrough|parcel_test_content|parcel_editor_handoff|parcel_local_battle_completion"
     generation = "depot_camera|depot_distant|depot_boundary|depot_surroundings|world_surroundings|world_tactical|world_area|current_content|current_generation|current_mission|battle_configuration|retired_tactical|reusable_occupant|parking_garage|parking_population|authored_deployment|authored_tactical|battlefield|container_maps|flat_map|generated_|generation_retirement|industrial_|refinery_|loading_yard|parcel_|urban_|map_generation|map_quality|map_validation|transport_placement"

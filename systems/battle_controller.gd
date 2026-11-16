@@ -125,6 +125,7 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 	if prebuilt_map:
 		grid_manager.map_data = prebuilt_map
 		MapGraphBuilder.build(prebuilt_map, pathfinder)
+		pathfinder.live_grid = grid_manager
 	else:
 		pathfinder.clear()
 		MapBuilder.build(grid_manager, pathfinder)
@@ -140,6 +141,7 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 		MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
 	_apply_authored_tile_hazards()
 	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
+	pathfinder.live_grid = grid_manager
 	var faction_counts := {
 		TacticalUnit.Faction.PLAYER: 0,
 		TacticalUnit.Faction.ALLY: 0,
@@ -171,7 +173,7 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 		if not action_service.register_actor(unit_item):
 			return false
 		var start_grid = world_to_grid(unit_item.global_position - Vector3.UP * unit_item.standing_height)
-		grid_manager.register_unit(unit_item, start_grid)
+		if not grid_manager.register_unit(unit_item, start_grid): return false
 		unit_item.defeated.connect(_on_unit_defeated)
 	_orient_units_toward_opposition(battle_units)
 	units_registered.emit(turn_manager.player_units)
@@ -306,6 +308,8 @@ func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var path := pathfinder.calculate_3d_path(start_cell, target_cell)
 	if path.is_empty():
 		return {"accepted": false, "code": "path_unavailable", "message": "No path reaches the destination"}
+	if pathfinder.get_path_cost(path, world_to_grid) > movement_budget:
+		return {"accepted": false, "code": "unreachable", "message": "Safe route exceeds movement budget"}
 	var path_cells: Array[Vector3i] = []
 	for point in path:
 		path_cells.append(world_to_grid(point))
@@ -850,9 +854,10 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 	if not unit.defer_stat_presentation:
 		unit.finish_defeat_presentation()
 
-func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> void:
+func register_mission_unit(unit: TacticalUnit, grid_position: Vector3i) -> bool:
+	if not grid_manager.register_unit(unit, grid_position): return false
 	_ensure_tactical_id(unit)
 	if is_instance_valid(action_service):
 		action_service.register_actor(unit)
-	grid_manager.register_unit(unit, grid_position)
 	unit.defeated.connect(_on_unit_defeated)
+	return true
