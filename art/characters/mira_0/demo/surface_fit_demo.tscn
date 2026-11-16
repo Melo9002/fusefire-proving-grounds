@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://art/characters/mira_0/demo/surface_fit_demo.gd" id="demo"]
+
+[node name="SurfaceFitDemo" type="Node3D"]
+script = ExtResource("demo")

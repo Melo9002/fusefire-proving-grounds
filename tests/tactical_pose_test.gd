@@ -22,8 +22,13 @@ func run() -> void:
 		var cell := MapCellData.new(cell_pos, grid.grid_to_world(cell_pos))
 		grid.map_data.add_cell(cell)
 	grid.get_cell_data(Vector3i(3, 0, 2)).cover_type = MapCellData.CoverType.LOW
+	grid.get_cell_data(Vector3i(3, 0, 2)).cover_height = 0.8
 	var cover := CONTEXT.cover_at(grid, Vector3i(2, 0, 2), Vector3.RIGHT)
 	check(cover.type == MapCellData.CoverType.LOW and cover.direction == Vector3.RIGHT, "Cover normal follows neighboring cover")
+	check(cover.has("surface_position") and cover.has("surface_normal"), "Authored cover pose receives world-space procedural contact hints")
+	grid.get_cell_data(Vector3i(3, 0, 2)).cover_height = 0
+	check(CONTEXT.cover_at(grid, Vector3i(2, 0, 2), Vector3.RIGHT).type == MapCellData.CoverType.NONE, "An empty label alone does not select a physical cover pose")
+	grid.get_cell_data(Vector3i(3, 0, 2)).cover_height = 0.8
 	var path := PackedVector3Array()
 	for cell_pos in [Vector3i(2, 0, 2), Vector3i(3, 0, 2), Vector3i(4, 0, 2), Vector3i(4, 2, 2), Vector3i(4, 0, 2)]:
 		path.append(grid.grid_to_world(cell_pos))

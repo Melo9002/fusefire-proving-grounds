@@ -41,6 +41,8 @@ func get_camera_height() -> float:
 
 var tactical_unit: TacticalUnit
 var presentation_grid: GridManager
+## Read-only world-space hints for hybrid pose fitting. Never applied as a root offset.
+var last_cover_contact: Dictionary = {}
 var _segment_state: StringName = &"move"
 var _passenger: Node3D
 
@@ -153,8 +155,10 @@ func present_movement_end() -> void:
 
 func _cover_context() -> Dictionary:
 	if is_instance_valid(presentation_grid) and is_instance_valid(tactical_unit):
-		return POSE_CONTEXT.cover_at(presentation_grid, tactical_unit.grid_position, global_basis.z)
-	return {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
+		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, tactical_unit.grid_position, global_basis.z)
+	else:
+		last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
+	return last_cover_contact
 
 func present_idle() -> void:
 	_return_generation += 1
