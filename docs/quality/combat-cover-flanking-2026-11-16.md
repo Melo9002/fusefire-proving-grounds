@@ -4,7 +4,7 @@
 
 ## Current contract
 
-- Inspect the four cardinal neighbor cells at the defender's supported level. Trace from the attacker's actual firing origin to the defender's lower-body reference, half its `standing_height` above its supported position.
+- On current maps, inspect actual nearby part contacts around the defender's resolved standing point, including own-cell and diagonal parts. Historical non-surface fixtures retain the four-neighbor lookup. Trace from the attacker's actual firing origin to the defender's lower-body reference, half its `standing_height` above its supported position.
 - Use the same ray/compound-part/corner checks as shot legality. An empty tile label, an empty gap or a surface below the ray supplies no protection. Side/rear attacks are flanks when that surface no longer intersects the ray. A high shooter can clear a low obstacle without an extra accuracy modifier.
 - Among surfaces that actually protect the target, use the strongest. Low protection costs **20 points**, full protection **40**. Precise parts use the existing full-height threshold of **1.2 tile widths above the defender's supported surface**. A low part does not inherit strength from an unrelated tall part sharing its cell. Legacy non-precise cells retain their explicit category, but still need a physical ray intersection.
 - Keep the existing five-sample exposure table. Apply `max(cover, exposure)`, never their sum. Shield remains a separate active modifier. No flank critical or additional flank bonus is added.
@@ -26,7 +26,7 @@ The full-crate example explains why “full cover” does not always mean precis
 
 Open `systems/combat_cover_tuning.tres` in Godot to change `low_cover_penalty` and `full_cover_penalty`. Values are integer percentage points. The resource requires `0 <= low <= full <= 100`; invalid values reject normal and predicted shots with a clear reason. Edit before launching a new battle. No per-asset role or boundary authoring is required.
 
-`CombatRules.cover_tuning` is the shared runtime resource. The replay simulation identity is now **`prototype-1.5-directional-cover-5`**, and recordings include its cover-value signature, currently `cover-1:20:40`. Old simulations or changed/missing cover signatures reject before playback. The action schema, compiler/content revisions, actual cover geometry and files already on disk are not rewritten.
+`CombatRules.cover_tuning` is the shared runtime resource. The initial step-5 simulation was `prototype-1.5-directional-cover-5`; the current standing-point rollout uses **`prototype-1.5-surface-placement-7`**, and recordings include its cover-value signature, currently `cover-1:20:40`. Old simulations or changed/missing cover signatures reject before playback. The action schema, compiler/content revisions, actual cover geometry and files already on disk are not rewritten.
 
 ## Regression and fixture decisions
 
@@ -63,3 +63,35 @@ godot_console --path . --script res://tests/combat_cover_direction_test.gd -- ca
 Captures under `artifacts/cover-direction/` come from a fresh, normally compiled range with its unchanged authored geometry; captions read actual query contributions. They are test annotations, not a new battle HUD. Visual inspection does not establish a full manual battle or cover animations. Some processes printed the existing Windows certificate-store error; this was not a tactical assertion failure.
 
 Next is step 6: implement the agreed height/range accuracy tuning using these established protection and geometry rules. Per-mesh boxes remain approximations; this step does not turn concave assets into exact polygon boundaries.
+
+
+## Follow-up after the standing-point rollout
+
+Rechecked at parent commit `ae3eb1c`, 2026-11-16. The core cover rules already worked; this follow-up changes **regressions and documentation only**, with no implementation, tuning, geometry or replay-schema changes. It closes step 5 against the new supported points rather than adding another cover system.
+
+The focused test now adds 48 assertions to the original 40. A compiler-6 part overlaps the defender's own cell, automatically shifts its standing point, and is tested at four rotations:
+
+- A low face protects from the front: 20 cover versus 10 exposure, combined 20, 80% hit chance.
+- A short full-height face leaves both shoulder samples clear: 40 cover versus 10 exposure, combined 40, 60%.
+- A wider full face hides the shoulders: 40 cover versus 40 exposure, combined 40, still 60%.
+- Open side/rear attacks lose that face's protection. A diagonal ray that misses the short face gets no cover from its cell label.
+- Elevated fire retains low cover while the lower-body ray still intersects it, then removes protection when that same ray clears its top. Elevation does not automatically mean flanking.
+- Service queries, outgoing previews, destination evaluation and Guard checkpoints agree on the shifted point and chance, without mutating live state.
+
+The first expanded run had eight failures caused by two incorrect fixture assumptions: a 0.4-wide face does not hide the shoulders, and a near-face lower-body ray was still below the 0.8-high top at the proposed elevated origin. These were diagnosed geometrically before changing assertions. The narrow-face case now explicitly protects its four-clear-sample result; a separate wider face tests two clear samples. Both sides of the real elevation-clearance threshold are checked. No gameplay rule was changed to satisfy those assumptions.
+
+Executed follow-up evidence:
+
+| Check | Result |
+| --- | --- |
+| Directional cover, headless | **88 checks / 0 failures** |
+| Directional cover, rendered | **94 checks / 0 failures**, including three captures from the normally compiled Tactical Test Range |
+| Controlled combat examples | **101 checks / 0 failures** |
+| Combat prediction consistency | **0 failures** |
+| Surface navigation | **56 checks / 0 failures** |
+
+Logs: `artifacts/cover-standing-*.log` and `artifacts/cover-followup-*.log`. Rendered low-cover, flank and full-cover comparisons under `artifacts/cover-direction/` were inspected. These are controlled checks, not a complete manually played battle. The known shader dithering remains deferred. No broad suite was repeated for this test/documentation-only follow-up; the [preceding rollout evidence](surface-rollout-2026-11-16.md) remains separately reported.
+
+For a quick manual check, use the Tactical Test Range's **05 LOW / FULL CRATES** lane. Compare a frontal shot, an open-side shot, and a shot at the taller crate. In the controlled captures these read **80%, 100%, 50%** respectively. Those numbers apply to these setups: another obstacle, different body height, Shield or a different firing height can change them. A flank removes the relevant local cover; it does not erase unrelated obstruction. The gold markers should sit at actual protecting faces. Completed hand/weapon cover animation is outside this step.
+
+Step 5 is complete for the current prototype contract. Next is the separately scoped range/height/Aim tuning, using these same cover and visibility results.

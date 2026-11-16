@@ -50,6 +50,60 @@ func _solid(at: Vector3i, height: float, cover: MapCellData.CoverType) -> MapCel
 func _shot() -> CombatRules.AttackEvaluation:
 	return CombatRules.evaluate_attack(actor, target, grid, level.get_world_3d())
 
+## Current-map compiler fixture: a real part overlaps the defender's own cell.
+## Its supported point must shift, and every consumer must use that same point.
+func _surface_reset(turn: int, height: float, depth := 0.4) -> void:
+	_reset(turn)
+	var scene := Node3D.new()
+	scene.transform = Transform3D(Basis(Vector3.UP, turn * PI * 0.5), grid.get_cell_data(CENTER).support_center)
+	var part := Node3D.new()
+	part.position = Vector3(0.65, height * 0.5, 0)
+	part.set_meta("solid_size", Vector3(1, height, depth))
+	scene.add_child(part)
+	AuthoredSceneMapCompiler.compile(scene, grid.map_data, grid.cell_size)
+	scene.free()
+	MapGraphBuilder.build(grid.map_data, Pathfinder.new())
+	_place(actor, CENTER + _rot(Vector3i(5, 0, 0), turn))
+	_place(target, CENTER)
+
+func _check_surface_cover() -> void:
+	for turn in 4:
+		_surface_reset(turn, 0.8)
+		var cell := grid.get_cell_data(CENTER)
+		check(cell.can_stop and not cell.world_position.is_equal_approx(cell.support_center), "Own-cell low cover resolves a real safe standing offset; turn %d" % turn)
+		var front := _shot()
+		check(front.is_legal and front.cover_type == MapCellData.CoverType.LOW and front.hit_chance == 80 and front.cover_penalty == 20 and front.obstruction_penalty == 10 and front.protection_penalty == 20, "Shifted low cover uses max(20,10), not their sum; turn %d" % turn)
+		check(front.cover_cell != null and front.cover_cell.is_shot_only and front.cover_cell.authored_shot_bounds.has_point(cell.support_center + (Basis(Vector3.UP, turn * PI * 0.5) * Vector3(0.2, 0.4, 0))), "Protection identifies the actual own-cell part; turn %d" % turn)
+		var before := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
+		var query := level.battle_controller.query_attack(actor, target)
+		var outgoing := CombatRules.evaluate_attack_from_cell(actor, actor.grid_position, target, grid, null)
+		var incoming := CombatRules.evaluate_attack_after_move(actor, target, CENTER, grid, null)
+		var guard := CombatRules.evaluate_attack_at_cell(actor, target, CENTER, grid, null)
+		check(query.is_legal() and query.hit_chance == front.hit_chance and outgoing.hit_chance == front.hit_chance and incoming.hit_chance == front.hit_chance and guard.hit_chance == front.hit_chance, "Service, outgoing/destination previews and Guard agree on shifted protection; turn %d" % turn)
+		check(before == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager), "Standing-point cover queries stay pure; turn %d" % turn)
+		_place(actor, CENTER + _rot(Vector3i(-5, 0, 0), turn))
+		var rear := _shot()
+		check(rear.is_legal and rear.cover_type == MapCellData.CoverType.NONE and rear.hit_chance == 100, "The open rear flanks own-cell cover; turn %d" % turn)
+		_place(actor, CENTER + _rot(Vector3i(0, 0, 5), turn))
+		var side := _shot()
+		check(side.is_legal and side.cover_type == MapCellData.CoverType.NONE and side.hit_chance == 100, "The open side flanks own-cell cover; turn %d" % turn)
+		_place(actor, CENTER + _rot(Vector3i(4, 0, 4), turn))
+		check(_shot().cover_type == MapCellData.CoverType.NONE, "A diagonal ray missing the short face gains no cover from its cell label; turn %d" % turn)
+		_surface_reset(turn, 1.3)
+		grid.get_cell_data(actor.grid_position).world_position.y = 2.2
+		var full := _shot()
+		check(full.is_legal and full.cover_type == MapCellData.CoverType.FULL and full.cover_penalty == 40 and full.obstruction_penalty == 10 and full.protection_penalty == 40 and full.hit_chance == 60, "Short full-cover face leaves both shoulders visible and uses max(40,10); turn %d: legal=%s reason=%s cover=%d coverpen=%d exposure=%d chance=%d" % [turn, full.is_legal, full.reason, full.cover_type, full.cover_penalty, full.obstruction_penalty, full.hit_chance])
+		_surface_reset(turn, 1.3, 1.4)
+		grid.get_cell_data(actor.grid_position).world_position.y = 2.2
+		var wide := _shot()
+		check(wide.is_legal and wide.cover_type == MapCellData.CoverType.FULL and wide.cover_penalty == 40 and wide.obstruction_penalty == 40 and wide.protection_penalty == 40 and wide.hit_chance == 60, "A wider full face hides shoulders and uses max(40,40), never 80; turn %d" % turn)
+		_surface_reset(turn, 0.8)
+		grid.get_cell_data(actor.grid_position).world_position.y = 4
+		check(_shot().cover_type == MapCellData.CoverType.LOW and _shot().hit_chance == 80, "Elevation alone cannot remove protection while the actual lower ray still hits; turn %d" % turn)
+		grid.get_cell_data(actor.grid_position).world_position.y = 5
+		var elevated := _shot()
+		check(elevated.cover_type == MapCellData.CoverType.NONE and elevated.hit_chance == 100, "A physically clear elevated ray removes own-cell low protection; turn %d: %s chance=%d" % [turn, elevated.reason, elevated.hit_chance])
+
 func _run() -> void:
 	var config := BattleConfiguration.new()
 	config.generated_map = true
@@ -68,6 +122,7 @@ func _run() -> void:
 	grid = level.battle_controller.grid_manager
 	actor = level.turn_manager.player_units[0]
 	target = level.turn_manager.enemy_units[0]
+	_check_surface_cover()
 	for turn in 4:
 		_reset(turn)
 		_solid(CENTER + _rot(Vector3i.LEFT, turn), 0.8, MapCellData.CoverType.LOW)
