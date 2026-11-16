@@ -59,22 +59,26 @@ For a legal shot, all modifiers are **percentage points**:
 ```text
 d = 3D distance between supported foot positions, in tactical tile widths
 R = attacker's existing maximum weapon range, in the same units
-range penalty = 60 × (d / R)^3                 [0 <= d <= R; R must be positive]
+safe range fraction = 0.60                    [editable; R must be positive]
+t = clamp((d / R - safe range fraction) / (1 - safe range fraction), 0, 1)
+range penalty = 70 × t^2                      [reject d > R before this calculation]
 height bonus = clamp(5 × (shooter ground Y - target ground Y) / tile width, -20, +20)
-raw chance = 85 - range penalty - protection + height bonus
+raw chance = 100 - range penalty - protection + height bonus
              + action bonus + other explicit ability modifiers + Shield modifier
 chance = floor(clamp(raw chance, 5, 100) + 0.5)
 ```
 
 Retain fractional contributions until the final rounding, and use that same integer for preview and the actual roll. Reject invalid range/tuning rather than divide by zero. Height uses actual ground/support positions, not animation head height or named floor levels. Horizontal distance and vertical difference both contribute to weapon range; the height bonus is a separate advantage, not extra reach.
 
-The cubic power curve is a small, editable approximation of the requested gentle-then-steep falloff, not a literal exponential or a hard threshold. At 20/50/80/100% of weapon range its penalties are 0.48/7.5/30.72/60 points. Raising the exponent delays the steep part; changing 60 changes its strength. There is no extra weapon system to author.
+Owner clarification: the goal is to avoid routinely missing apparently dependable shots. Clear, level normal shots stay at **100% through the first 60% of weapon range**, then fall steeply toward its edge. Starting chances at 60/70/80/90/100% of range are 100/96/83/61/30%. This plateau followed by a quadratic falloff is a small, editable interpretation of the requested curve, not a literal exponential. The safe fraction controls where risk begins; strength 70 controls the endpoint; exponent 2 controls the bend. Validate `0 <= safe fraction < 1`, nonnegative strength and exponent greater than 1. There is no extra weapon system to author.
+
+The plateau describes the **range contribution** for an exposed target. Cover, partial visibility, low ground, Guard and Shield can reduce accuracy even nearby. Aim and high ground can restore reliability against those penalties. High ground may have no displayed benefit when a clear shot is already capped at 100%; it still offsets penalties in difficult shots. A genuine 95% shot can still miss: we change where risk arises and communicate it honestly, rather than silently converting it into a guarantee.
 
 | Starting value | Choice | Why |
 | --- | --- | --- |
-| Base accuracy | 85 | Clear short shots are reliable without making every exposed shot automatic. |
+| Base accuracy | 100 | Clear short-to-medium shots are dependable; positioning and longer range introduce risk. |
 | Half/full cover | 20 / 40 | A meaningful difference using familiar starting values. |
-| Range strength / exponent | 60 / 3 | Small close-range cost, substantial long-range cost. |
+| Safe range fraction / strength / exponent | 0.60 / 70 / 2 | Guaranteed exposed shots across a broad range, followed by a steep drop. |
 | Height per tile width / cap | 5 / ±20 | Ramps change accuracy gradually; extreme height cannot dominate every modifier. |
 | Aim | +35 | A substantial reward for spending an AP preparing a shot. |
 | Guard reaction | -15 instead of Aim | Keep the existing reaction tradeoff. |
@@ -90,22 +94,36 @@ Assume no unlisted modifiers and a legal shot. Heights below are differences in 
 
 | Setup | Calculation before rounding/clamp | Expected chance |
 | --- | --- | --- |
-| Clear, level, 20% range | 85 - 0.48 | 85% |
-| Clear, level, 50% range | 85 - 7.5 | 78% |
-| Clear, level, 80% range | 85 - 30.72 | 54% |
-| Clear, level, maximum range | 85 - 60 | 25% |
-| Same maximum-range shot with Aim | 85 - 60 + 35 | 60% |
-| Same shot with Aim, shooter two tiles higher | 85 - 60 + 35 + 10 | 70% |
-| Clear, 50% range, shooter two tiles higher / lower | 85 - 7.5 ± 10 | 88% / 68% |
-| Low cover, four clear samples, 50% range | 85 - 7.5 - max(20, 10) | 58% |
-| Full cover, two clear samples, 50% range | 85 - 7.5 - max(40, 40) | 38% |
-| Flank removes that cover; all samples now clear, 50% range | 85 - 7.5 | 78% |
-| Low cover, one clear sample, 50% range | 85 - 7.5 - max(20, 50) | 28% |
-| Full cover, maximum range | 85 - 60 - 40 | 5% floor |
-| Same full-cover shot with Aim | 85 - 60 - 40 + 35 | 20% |
-| Clear, 20% range, Aim | 85 - 0.48 + 35 | 100%, guaranteed hit |
-| Clear, 50% range, Guard reaction | 85 - 7.5 - 15 | 63% |
-| Clear, 50% range, target's Shield facing attacker | 85 - 7.5 - 20 | 58%; 9 damage on hit |
+| Clear, level, 20% range | 100 - 0 | 100%, guaranteed hit |
+| Clear, level, 50% range | 100 - 0 | 100%, guaranteed hit |
+| Clear, level, 80% range | 100 - 17.5 | 83% |
+| Clear, level, maximum range | 100 - 70 | 30% |
+| Same maximum-range shot with Aim | 100 - 70 + 35 | 65% |
+| Same shot with Aim, shooter two tiles higher | 100 - 70 + 35 + 10 | 75% |
+| Clear, 80% range, shooter two tiles higher / lower | 100 - 17.5 ± 10 | 93% / 73% |
+| Low cover, four clear samples, 50% range | 100 - 0 - max(20, 10) | 80% |
+| Full cover, two clear samples, 50% range | 100 - 0 - max(40, 40) | 60% |
+| Flank removes that cover; all samples now clear, 50% range | 100 - 0 | 100%, guaranteed hit |
+| Low cover, one clear sample, 50% range | 100 - 0 - max(20, 50) | 50% |
+| Full cover, maximum range | 100 - 70 - 40 | 5% floor |
+| Same full-cover shot with Aim | 100 - 70 - 40 + 35 | 25% |
+| Clear, 20% range, Aim | 100 - 0 + 35 | 100%; no benefit beyond the cap |
+| Clear, 50% range, Guard reaction | 100 - 0 - 15 | 85% |
+| Clear, 50% range, target's Shield facing attacker | 100 - 0 - 20 | 80%; 9 damage on hit |
+
+### Chance colors
+
+Color the **final chance**, after all modifiers, and always keep its exact percentage visible. Use these contiguous starting bands to fill the gaps in the owner's suggested examples:
+
+| Final chance | Color | Label |
+| --- | --- | --- |
+| 100% | Green | Guaranteed |
+| 70–99% | Blue | Favorable, can miss |
+| 40–69% | Orange | Risky |
+| 0–39% | Red | Poor |
+| Illegal shot | Neutral gray, with a reason | Blocked / out of range / unavailable |
+
+Thus 95% is blue, never guaranteed-green. The red band includes 0% for presentation consistency, although legal ordinary shots currently have a planned 5% floor. Do not present an illegal shot as a legal low-chance attempt. Color is a quick cue, not the sole explanation: the number, label and calculation breakdown must remain readable. Apply the same bands to direct shots and proposed-destination shot previews when those are implemented.
 
 ## Actions and damage
 
@@ -129,7 +147,7 @@ Future implementation should keep these scalar values and the exposure table in 
 
 Next is [step 3: controlled combat examples](combat-2-plan.md). Implement the geometry, cover, tuning and replay changes in their planned steps with focused regressions. Reuse existing scenes/assets and test both shot directions, corners, openings, fractional heights, partial exposure, modifier clamps and reaction/destination distinctions. Destructible cover remains a step-10 investigation; this sheet does not add destruction.
 
-Documentation verification: independently calculated 17 numerical cases above (counting the two height directions separately), Shield's rounded damage, a 1,001-point monotonic range sweep and both height caps; all passed. Local documentation links and whitespace checks passed. No gameplay suite or rendered test was run for this documentation-only decision; the new geometry and balance remain unverified in game.
+Documentation verification: independently calculated 17 numerical cases above (counting the two height directions separately), Shield's rounded damage, a 1,001-point monotonic range sweep, the 60% plateau, color-band boundaries and both height caps; all passed. Local documentation links and whitespace checks passed. No gameplay suite or rendered test was run for this documentation-only decision; the new geometry and balance remain unverified in game.
 
 ## Comparison source locations
 
