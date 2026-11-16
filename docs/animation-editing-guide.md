@@ -2,7 +2,7 @@
 
 MIRA Zero is FuseFire's supported character presentation path. Open `art/characters/mira_0/demo/mira_0_pose_workbench.tscn` to inspect poses and action states, and `art/characters/mira_0/runtime/mira_0_unit_visual.tscn` to tune the live unit.
 
-The [asset-edge/hybrid pilot](asset-edge-placement.md) adds physical contacts to authored poses and enables supported within-cell standing points in the editable Surface Fit Range. Its movement, LOS and saved replay share the committed point; the visual adapter does not apply a separate cosmetic root shift. Existing cover and corner-shooting clips remain placeholders. New over-low-cover sequences and wall-hand/foot IK can follow without animation changing tactical authority.
+The [asset-edge/hybrid workflow](asset-edge-placement.md) adds physical contacts to authored poses and enables supported within-cell standing points throughout current maps and editor previews/tests. Its movement, LOS and saved replay share the committed point; the visual adapter does not apply a separate cosmetic root shift. Existing cover and corner-shooting clips remain placeholders. New over-low-cover sequences and wall-hand/foot IK can follow without animation changing tactical authority.
 
 ## Where to edit
 

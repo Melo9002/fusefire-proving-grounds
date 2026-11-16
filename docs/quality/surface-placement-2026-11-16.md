@@ -1,5 +1,7 @@
 # Surface placement integration — 2026-11-16
 
+Historical pilot evidence. The subsequent [global rollout](surface-rollout-2026-11-16.md) supersedes its opt-in and flat-floor limits.
+
 ## Scope and contract
 
 An opt-in ordinary parcel can expose one supported, quantized standing point per logical cell. The current pipeline resolves existing asset boxes automatically. Standing cylinders must fit, and graph edges must clear a conservative swept enclosing box with floor support. Neighboring-cell bodies cannot overlap or be crossed by a route. Source/target shot geometry remains independently indexed. Physical cover contacts replace the four-neighbor shortcut in this mode, including cover overlays and pose context.

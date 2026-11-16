@@ -14,10 +14,13 @@ static func compile(root: Node, data: MapData, cell_size: float, root_transform 
 	var retired := retired_metadata(root)
 	for issue in retired: data.generation_errors.append({"code": "RETIRED_ABSOLUTE_TACTICAL_METADATA", "detail": issue})
 	if not retired.is_empty(): return
-	if shape_revision >= 5 and bool(root.get_meta("surface_placement_enabled", false)):
+	data.surface_points_resolved = false
+	if shape_revision >= 6 or (shape_revision == 5 and bool(root.get_meta("surface_placement_enabled", false))):
 		data.surface_placement_enabled = true
+	if data.surface_placement_enabled: data.surface_unit = cell_size
 	# Establish every walkable surface before any object can stamp onto it.
 	_compile_surfaces(root, root_transform, data, cell_size)
+	if shape_revision >= 6: _connect_surface_paths(root, root_transform, data, cell_size)
 	_compile_contents(root, root_transform, data, cell_size, precise_shot_bounds, shape_revision)
 	data.rebuild_los_index()
 
@@ -39,8 +42,28 @@ static func _compile_surfaces(node: Node, parent_transform: Transform3D, data: M
 					ground.cover_type = MapCellData.CoverType.FULL
 					ground.cover_height = step.y * unit
 					ground.blocks_line_of_sight = true
+					if data.surface_placement_enabled:
+						data.movement_parts.append(AABB(ground.support_center - Vector3(unit * 0.5, 0, unit * 0.5), Vector3(unit, step.y * unit, unit)))
 	for child in node.get_children():
 		_compile_surfaces(child, transform, data, unit)
+
+## Existing authored ramp/stair cells supply explicit supported transitions.
+## Resolve after all decks exist so scene child order cannot lose the exit.
+static func _connect_surface_paths(node: Node, parent_transform: Transform3D, data: MapData, unit: float) -> void:
+	var transform := parent_transform
+	if node is Node3D: transform *= node.transform
+	if node is ElevationPath:
+		var steps: Array[Vector3i] = node.get_cells()
+		if not steps.is_empty():
+			var entry: Vector3i = steps[0] - node.direction - Vector3i.UP * node.elevation_per_step
+			var route: Array[Vector3i] = [entry]
+			route.append_array(steps)
+			route.append(steps[-1] + node.direction + Vector3i.UP * node.elevation_per_step)
+			for index in range(1, route.size()):
+				var from := _local_cell_to_grid(transform, route[index - 1], data, unit)
+				var to := _local_cell_to_grid(transform, route[index], data, unit)
+				if data.has_cell(from) and data.has_cell(to): data.add_traversal_link(TraversalLinkData.new(from, to))
+	for child in node.get_children(): _connect_surface_paths(child, transform, data, unit)
 
 static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float, precise_shot_bounds: bool, shape_revision: int) -> void:
 	var transform := parent_transform
@@ -91,7 +114,7 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 	var world_units := data.surface_placement_enabled
 	var coordinate_unit := unit if world_units else 1.0
 	var shot_bounds := bounds if world_units else AABB(bounds.position * unit, bounds.size * unit)
-	if data.surface_placement_enabled and not data.movement_parts.has(shot_bounds): data.movement_parts.append(shot_bounds)
+	if data.surface_placement_enabled and not round_volume and not data.movement_parts.has(shot_bounds): data.movement_parts.append(shot_bounds)
 	var lower := Vector2i(floori(bounds.position.x / coordinate_unit + data.map_size.x * 0.5), floori(bounds.position.z / coordinate_unit + data.map_size.y * 0.5))
 	var upper := Vector2i(ceili(bounds.end.x / coordinate_unit + data.map_size.x * 0.5), ceili(bounds.end.z / coordinate_unit + data.map_size.y * 0.5))
 	var inverse := transform.affine_inverse()
@@ -130,6 +153,12 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				cell.cover_type = MapCellData.CoverType.FULL if cell.cover_height >= 1.2 * unit else MapCellData.CoverType.LOW
 				cell.walkable = cell.cover_type == MapCellData.CoverType.LOW
 				cell.blocks_line_of_sight = cell.cover_type == MapCellData.CoverType.FULL
+				if data.surface_placement_enabled and round_volume:
+					# Preserve the established rounded reservation rather than filling
+					# its empty corners with the entire enclosing rectangle.
+					var coarse := AABB(Vector3(cell.support_center.x - unit * 0.5, shot_bounds.position.y, cell.support_center.z - unit * 0.5), Vector3(unit, shot_bounds.size.y, unit))
+					if not data.movement_parts.has(coarse): data.movement_parts.append(coarse)
+					cell.authored_shot_bounds = coarse
 				if cell.walkable:
 					cell.movement_cost = maxi(cell.movement_cost, movement_cost)
 			if index_raised_shots and precise_shot_bounds and not round_volume and (not covered_from_bottom or data.surface_placement_enabled):

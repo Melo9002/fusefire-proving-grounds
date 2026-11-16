@@ -83,7 +83,7 @@ Exact reconstruction validates content/compiler revisions. This supports compati
 - Automatic boundaries are **one box per visible mesh part, not exact polygons**. Separate parts retain gaps; a doorway, arch or concavity inside a single mesh may still be blocked by its box. Raised bodies reserve standing space underneath while shots use their actual height. Existing authored truck/building shapes remain unchanged.
 - This automatic fallback covers ordinary props in the placement library. Raw meshes dropped directly into arbitrary Godot scenes do not gain boundaries. Floors, roads, structural fragments and multi-floor assemblies still need their existing authored traversal contracts.
 - Changing a model's internal geometry after placement does not refresh baked boundaries. Recreate the placed object before saving/reviewing the changed content.
-- Movement reserves whole tactical cells. A visible narrow gap is not necessarily wide enough for a soldier.
+- The grid retains one unit per cell, with an automatically resolved safe standing point inside partly occupied cells. Swept body clearance and neighboring bodies also constrain routes. A visible narrow gap is not necessarily wide enough for a soldier. Restart existing matches to use the current compilation; see [asset-edge placement](asset-edge-placement.md).
 - Local tests use an Eliminate mission. They validate a parcel alone, not every possible connection in a published full map. A unit can start behind a building from the current angle; select that soldier or rotate the camera to inspect it. Occlusion currently follows the active soldier rather than every squad member; camera presentation remains a separate playability check.
 
 ## What is complete and what needs testing

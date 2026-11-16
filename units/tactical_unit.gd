@@ -181,6 +181,19 @@ func _process(delta: float) -> void:
 func move_along_path(path: PackedVector3Array, visual_segments: Array[StringName] = []) -> void:
 	if path.size() == 0:
 		return
+	if visual_adapter and is_instance_valid(visual_adapter.presentation_grid) and visual_adapter.presentation_grid.map_data.surface_placement_enabled:
+		var data := visual_adapter.presentation_grid.map_data
+		var expanded := PackedVector3Array([path[0]])
+		var poses: Array[StringName] = [visual_segments[0] if not visual_segments.is_empty() else &"move"]
+		for index in range(1, path.size()):
+			var route := SurfaceNavigation.traversal_route(data, path[index - 1] - Vector3.UP * standing_height, path[index] - Vector3.UP * standing_height)
+			for waypoint in range(1, route.size()):
+				expanded.append(route[waypoint] + Vector3.UP * standing_height)
+				var pose: StringName = visual_segments[index] if index < visual_segments.size() else &"move"
+				if route.size() == 4: pose = &"vault"
+				poses.append(pose)
+		path = expanded
+		visual_segments = poses
 	current_path = path
 	_visual_segments = visual_segments
 	_visual_waypoint = -1

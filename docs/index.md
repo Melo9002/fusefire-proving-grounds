@@ -10,7 +10,7 @@
 - [Replay](replay.md): recording, files and playback.
 - [Simulation](simulation.md): deterministic AI/match diagnostics.
 - [Animation editing](animation-editing-guide.md): character work.
-- [Asset edges and hybrid animation](asset-edge-placement.md): supported standing points, swept clearance, tile-edge cover and the editable live battle/replay pilot.
+- [Asset edges and hybrid animation](asset-edge-placement.md): supported standing points, swept clearance, tile-edge cover and the current-map rollout and editable battle/replay example.
 - Dependency notices remain in `dependencies/`.
 
 Older map plans, historical reviews and experimental guides have been quarantined. They are reference material, not current instructions.

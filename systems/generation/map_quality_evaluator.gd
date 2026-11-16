@@ -174,7 +174,7 @@ static func _lane_length(origin: Vector3i, direction: Vector3i, map_data: MapDat
 			var from := map_data.get_cell(origin).world_position + Vector3.UP * map_data.surface_unit
 			var to := cell.world_position + Vector3.UP * map_data.surface_unit
 			var blocked := false
-			for part in map_data.movement_parts:
+			for part in SurfaceNavigation._local_parts(map_data, from, to, 0.0):
 				if SurfaceNavigation.segment_enters(from, to, part):
 					blocked = true
 					break

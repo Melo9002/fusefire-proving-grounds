@@ -49,7 +49,9 @@ func _run() -> void:
 	level.turn_manager.active_unit = actor
 	enemy.attack_range = 8
 	var before := CombatRules.evaluate_attack(enemy, actor, grid, level.get_world_3d())
-	_check(not before.is_legal and before.blocking_cell == grid.get_cell_data(Vector3i(5, 0, 9)), "The real column blocks a legal-range shot before the aperture")
+	# The column is independently indexed geometry, not the floor cell object.
+	var column_point := grid.grid_to_world(Vector3i(5, 0, 9)) + Vector3.UP
+	_check(not before.is_legal and before.blocking_cell != null and before.blocking_cell.is_shot_only and before.blocking_cell.authored_shot_bounds.has_point(column_point), "The real column blocks a legal-range shot before the aperture")
 
 	rig.camera.fov = 38
 	_view(rig, actor.global_position + Vector3(-9, 0.7, 0), actor.global_position)

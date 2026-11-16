@@ -98,12 +98,18 @@ func _check_battle(map_seed: int, occupied: bool) -> void:
 		var to := center + Vector3i.RIGHT * 2
 		var origin := grid.grid_to_world(from) + Vector3.UP
 		var destination := grid.grid_to_world(to) + Vector3.UP
-		var cover := CombatRules.get_directional_cover(from, center + Vector3i.RIGHT * 2, grid)
+		# Protection belongs to the nearby object face, not its blocked floor.
+		# Rotate the adjacent standing cell with the authored container.
+		var cover_from := ParcelTransform.cell(Vector3i(6, 0, 22), Vector2i(16, 32), loading.origin, loading.rotation)
+		var cover_to := ParcelTransform.cell(Vector3i(9, 0, 22), Vector2i(16, 32), loading.origin, loading.rotation)
+		var cover := CombatRules.get_directional_cover(cover_from, cover_to, grid)
 		var graph := Pathfinder.new()
 		MapGraphBuilder.build(data, graph)
 		check(_occupied(loading) == occupied and cell.can_stop != occupied, "Seed %d changes actual stopping legality at the painted position" % map_seed)
 		check((CombatRules.get_blocking_cell(origin, destination, grid) != null) == occupied, "Seed %d changes a real sightline through the painted position" % map_seed)
-		check((cell.cover_type == MapCellData.CoverType.FULL) == occupied, "Seed %d stamps authored full cover only for a placed container" % map_seed)
+		var blocker := CombatRules.get_blocking_cell(origin, destination, grid)
+		check((blocker != null and blocker.is_shot_only and blocker.cover_type == MapCellData.CoverType.FULL) == occupied, "Seed %d supplies independently indexed full cover only for a placed container" % map_seed)
+		check(data.get_cell(cover_to).can_stop, "Seed %d retains a safe standing point beside the actual container face" % map_seed)
 		check((cover == MapCellData.CoverType.FULL) == occupied, "Seed %d changes the directional cover query beside the position" % map_seed)
 		var path := graph.calculate_3d_path(from, to)
 		check(not path.is_empty() and path.has(cell.world_position) != occupied, "Seed %d preserves a route with a detour around the container when present" % map_seed)

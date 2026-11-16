@@ -11,16 +11,18 @@ static func _finite(point: Vector3) -> bool:
 static func _valid_bounds(bounds: AABB) -> bool:
 	return _finite(bounds.position) and _finite(bounds.size) and bounds.has_volume()
 
-static func _intersects_body(point: Vector3, bounds: AABB, radius: float, height: float) -> bool:
+static func _intersects_body(point: Vector3, bounds: AABB, radius: float, height: float, box_footprint := false) -> bool:
 	if bounds.end.y <= point.y + 0.001 or bounds.position.y >= point.y + height: return false
 	var nearest := Vector2(clampf(point.x, bounds.position.x, bounds.end.x), clampf(point.z, bounds.position.z, bounds.end.z))
+	if box_footprint:
+		return absf(point.x - nearest.x) < radius * 0.99999 and absf(point.z - nearest.y) < radius * 0.99999
 	# Vector3 uses float32: translated face candidates need a small relative
 	# tolerance as well as the downstream canonical-point precision check.
 	return Vector2(point.x, point.z).distance_squared_to(nearest) < radius * radius * 0.99998
 
 ## Closest tested fit to a requested point, constrained to its logical cell.
 ## The body may extend into adjacent open space; later occupancy must check it.
-static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF) -> Dictionary:
+static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF, box_footprint := false) -> Dictionary:
 	if not _finite(center) or not is_finite(radius) or not is_finite(height) or not is_finite(clearance) or not is_finite(cell_size) or radius <= 0 or height <= 0 or clearance < 0 or cell_size <= 0.002:
 		return {"fits": false, "reason": "Invalid body or cell dimensions"}
 	if preferred != Vector3.INF and not _finite(preferred): return {"fits": false, "reason": "Invalid requested point"}
@@ -56,7 +58,7 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 		tested += 1
 		var blocked := false
 		for bounds in local:
-			if _intersects_body(point, bounds, margin, height):
+			if _intersects_body(point, bounds, margin, height, box_footprint):
 				blocked = true
 				break
 		if not blocked: return {"fits": true, "position": point, "offset": point - center, "tested": tested, "reason": "Geometric fit only; support, route and occupancy still require validation"}

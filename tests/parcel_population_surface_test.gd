@@ -72,7 +72,9 @@ func _run() -> void:
 		instance.move_child(instance.get_node("ParkingDeck"), 0)
 		var reordered := TacticalMapBuilder.generate(32, 32, 1.0, 42)
 		Compiler.compile(instance, reordered, 1.0)
+		MapGraphBuilder.build(reordered, Pathfinder.new())
 		check(_same_tactical_cells(data, reordered), "rotation %d deck and occupant sibling order produces identical tactical cells" % turn)
+		check(SurfaceNavigation.signature(data) == SurfaceNavigation.signature(reordered), "rotation %d preserves resolved points and geometry independent of sibling order" % turn)
 		instance.free()
 	car.position.y = 0
 	check(definition_for(scene_root).validate().has("POPULATION_SOCKET_HEIGHT_MISMATCH: parking_west"), "Wrong physical floor rejects")

@@ -14,6 +14,8 @@ var support_center: Vector3
 var surface_candidate := false
 var surface_forbidden := false
 var support_surface := true
+## A checked airborne checkpoint while crossing low cover; never a destination.
+var is_vault_transit := false
 var elevation: float = 0.0
 var walkable: bool = true
 var can_stop: bool = true

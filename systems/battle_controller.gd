@@ -835,7 +835,7 @@ func _build_movement_path(unit: TacticalUnit, path: PackedVector3Array) -> Packe
 	for point in path:
 		var cell = grid_manager.get_cell_data(world_to_grid(point))
 		var standing_height = unit.standing_height
-		if cell and cell.cover_type == MapCellData.CoverType.LOW:
+		if cell and cell.cover_type == MapCellData.CoverType.LOW and not cell.is_vault_transit:
 			standing_height += cell.cover_height
 		animated_path.append(point + Vector3.UP * standing_height)
 	return animated_path

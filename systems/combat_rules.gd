@@ -298,6 +298,7 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 	var nearest: MapCellData = null
 	var nearest_entry := INF
 	for data: MapCellData in candidates:
+		if data.is_vault_transit: continue # Solid geometry lives in the independent index.
 		if data.cover_height <= 0.0:
 			continue
 		if not data.is_shot_only and data.grid_position in ignored_cells:
@@ -382,8 +383,11 @@ static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellDa
 	var minimum = Vector3(cell.world_position.x - half_cell, cell.world_position.y + inset, cell.world_position.z - half_cell)
 	var maximum = Vector3(cell.world_position.x + half_cell, cell.world_position.y + cell.cover_height - inset, cell.world_position.z + half_cell)
 	if bounds.has_volume():
-		minimum = minimum.max(bounds.position)
-		maximum = maximum.min(bounds.end)
+		# Closed corner probes must include a part's touching edge too. Clamping
+		# back to its open box discarded the exact seam after independent indexing.
+		var edge_tolerance := Vector3(inset, 0, inset) if closed_edges else Vector3.ZERO
+		minimum = minimum.max(bounds.position - edge_tolerance)
+		maximum = maximum.min(bounds.end + edge_tolerance)
 		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
 			return INF
 	var direction = destination - origin

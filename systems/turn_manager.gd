@@ -195,16 +195,15 @@ func _on_player_ap_changed(current: int, _maximum: int, unit: TacticalUnit) -> v
 
 func _advance_exhausted_unit_if_needed(exhausted_unit_id: int) -> void:
 	if not is_inside_tree() or is_queued_for_deletion(): return
-	if get_tree().paused:
-		await get_tree().create_timer(0.0, false).timeout
-	while is_inside_tree() and action_completion_barrier.is_valid() and action_completion_barrier.call():
-		await get_tree().process_frame
-	if not is_inside_tree(): return
 	var exhausted_unit := instance_from_id(exhausted_unit_id) as TacticalUnit
 	if not is_instance_valid(exhausted_unit):
 		return
-	if is_instance_valid(exhausted_unit) and exhausted_unit.is_moving:
-		await exhausted_unit.movement_finished
+	if get_tree().paused or (action_completion_barrier.is_valid() and action_completion_barrier.call()) or exhausted_unit.is_moving:
+		# A bound signal callback disconnects when this manager is freed. An
+		# awaiting function state could instead resume after scene teardown.
+		var retry := _advance_exhausted_unit_if_needed.bind(exhausted_unit_id)
+		if not get_tree().process_frame.is_connected(retry): get_tree().process_frame.connect(retry, CONNECT_ONE_SHOT)
+		return
 	if not is_inside_tree() or current_phase != TurnPhase.PLAYER_TURN or active_unit != exhausted_unit:
 		return
 	if not is_instance_valid(exhausted_unit) or not exhausted_unit.stats or exhausted_unit.stats.current_ap > 0:

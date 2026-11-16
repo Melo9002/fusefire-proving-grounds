@@ -67,7 +67,14 @@ func _run() -> void:
 		for choice: Dictionary in choices:
 			var index := sockets.find_custom(func(socket): return socket.socket_id == choice.socket_id)
 			var cell := data.get_cell(Vector3i(sockets[index].local_position))
-			check(cell != null and not cell.can_stop and cell.blocks_line_of_sight, "Selected bay %s compiles tactical occupancy on its own floor" % choice.socket_id)
+			# Current geometry is independently indexed, rather than a LOS flag on
+			# the standing floor. Retain both occupancy and real obstruction checks.
+			var grid := GridManager.new()
+			grid.map_data = data
+			var base := cell.support_center if cell else Vector3.ZERO
+			var blocker := CombatRules.get_blocking_cell(base + Vector3.UP * 0.01, base + Vector3.UP * 2.5, grid)
+			check(cell != null and not cell.can_stop and blocker != null and blocker.is_shot_only, "Selected bay %s compiles tactical occupancy and independent shot obstruction on its own floor" % choice.socket_id)
+			grid.free()
 
 	var empty := _generate(17, {"population_enabled": false})
 	check(empty.generation_errors.is_empty() and empty.content_manifest.placements[0].population.is_empty(), "Population-off preserves the garage without cars")

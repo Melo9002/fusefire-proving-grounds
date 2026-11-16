@@ -831,6 +831,7 @@ func clear_preview() -> void:
 		if is_instance_valid(overlay):
 			overlay.visible = is_visible_in_tree()
 		host.refresh_tactical_overlay(host.displayed_parcel)
+	_runtime_preview = null
 	_registered_preview = false
 	if is_instance_valid(guides_button): guides_button.text = "Show guides"
 	compiled_preview = null

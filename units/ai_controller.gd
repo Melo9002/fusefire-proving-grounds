@@ -708,16 +708,39 @@ func _move_toward(target: TacticalUnit, safe_only := false) -> bool:
 func _move_toward_range(target: TacticalUnit, desired_distance: int, safe_only := false) -> bool:
 	var start_cell = battle_controller.grid_manager.get_unit_grid(unit)
 	var target_cell = battle_controller.grid_manager.get_unit_grid(target)
-	var path = battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
+	var path := PackedVector3Array()
+	var leave_steps := desired_distance
+	if battle_controller.grid_manager.map_data.surface_placement_enabled:
+		# An occupied opponent is a goal to approach, never a legal body destination.
+		path = _path_to_target_neighbor(start_cell, target_cell)
+		leave_steps = maxi(0, desired_distance - 1)
+	else:
+		path = battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
 	if path.size() <= 1:
 		return false
 
 	# Leave the requested path distance between the mover and an occupied target.
-	for step in mini(desired_distance, path.size() - 1):
+	for step in mini(leave_steps, path.size() - 1):
 		path.remove_at(path.size() - 1)
 	if path.size() <= 1:
 		return false
 	return await _move_along_goal_path(path, start_cell, target_cell, safe_only)
+
+func _path_to_target_neighbor(start: Vector3i, target: Vector3i) -> PackedVector3Array:
+	var grid := battle_controller.grid_manager
+	var graph := battle_controller.pathfinder
+	var best := PackedVector3Array()
+	var best_cost := INF
+	for x in range(-1, 2):
+		for z in range(-1, 2):
+			var candidate := target + Vector3i(x, 0, z)
+			if not grid.can_unit_occupy_cell(unit, candidate) or not CombatRules.can_reach_adjacent(candidate, target, grid): continue
+			var route := graph.calculate_path_with_occupancy(start, candidate, grid, unit)
+			var cost := _route_cost(route) if not route.is_empty() else INF
+			if cost < best_cost:
+				best = route
+				best_cost = cost
+	return best
 
 func _grid_distance_to(target: TacticalUnit) -> int:
 	var from := battle_controller.grid_manager.get_unit_grid(unit)

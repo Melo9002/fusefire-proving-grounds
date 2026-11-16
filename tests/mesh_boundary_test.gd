@@ -74,30 +74,32 @@ func _check_parts() -> void:
 		grid.cell_size = unit
 		grid.map_floor = floor_mesh
 		for turn in 4:
-			object.transform = Transform3D(Basis(Vector3.UP, turn * PI * 0.5).scaled(Vector3(1.25, 1, 1.5)), Vector3(1, 0, -1))
+			object.transform = Transform3D(Basis(Vector3.UP, turn * PI * 0.5).scaled(Vector3(1.25, 1, 1.5) * unit), Vector3(1, 0, -1) * unit)
 			grid.map_data = TacticalMapBuilder.generate(23, 23, unit, 0)
 			AuthoredSceneMapCompiler.compile(object, grid.map_data, unit)
-			var center := grid.world_to_grid(object.transform.origin * unit)
-			var body := grid.world_to_grid((object.transform * Vector3(-2, 0, 0)) * unit)
-			check(not grid.map_data.get_cell(body).can_stop, "A raised body blocks standing inside it at unit %s, rotation %d" % [unit, turn])
+			MapGraphBuilder.build(grid.map_data, Pathfinder.new())
+			var center := grid.world_to_grid(object.transform.origin)
+			var body := grid.world_to_grid((object.transform * Vector3(-2, 0, 0)))
+			check(not SurfaceNavigation.body_clear(grid.map_data, object.transform * Vector3(-2, 0, 0)), "A raised body blocks standing inside it at unit %s, rotation %d" % [unit, turn])
+			check(not grid.map_data.get_cell(body).can_stop or SurfaceNavigation.body_clear(grid.map_data, grid.map_data.get_cell(body).world_position), "Any partly occupied cell resolves to actual body clearance")
 			check(grid.map_data.get_cell(center).can_stop, "The aisle and high beam do not become an invisible wall")
-			var from := (object.transform * Vector3(-4, 1, 0)) * unit
-			var to := (object.transform * Vector3(-0.5, 1, 0)) * unit
+			var from := (object.transform * Vector3(-4, 1, 0))
+			var to := (object.transform * Vector3(-0.5, 1, 0))
 			check(CombatRules.get_blocking_cell(from, to, grid) != null, "Visible raised body blocks the real shot query")
-			from = (object.transform * Vector3(-4, 0.15, 0)) * unit
-			to = (object.transform * Vector3(-0.5, 0.15, 0)) * unit
+			from = (object.transform * Vector3(-4, 0.15, 0))
+			to = (object.transform * Vector3(-0.5, 0.15, 0))
 			check(CombatRules.get_blocking_cell(from, to, grid) == null, "Movement clearance does not invent shot geometry below a raised body")
-			from = (object.transform * Vector3(0, 1, -4)) * unit
-			to = (object.transform * Vector3(0, 1, 4)) * unit
+			from = (object.transform * Vector3(0, 1, -4))
+			to = (object.transform * Vector3(0, 1, 4))
 			check(CombatRules.get_blocking_cell(from, to, grid) == null, "The gap between separate mesh parts stays shootable")
-			from = (object.transform * Vector3(0, 3.5, -4)) * unit
-			to = (object.transform * Vector3(0, 3.5, 4)) * unit
+			from = (object.transform * Vector3(0, 3.5, -4))
+			to = (object.transform * Vector3(0, 3.5, 4))
 			check(CombatRules.get_blocking_cell(from, to, grid) != null, "An automatically derived overhead mesh blocks rays at its real height")
 			check(CombatRules.get_blocking_cell(to, from, grid) != null, "The automatically derived overhead mesh blocks in reverse too")
-			from = (object.transform * Vector3(0, 1, 4)) * unit
-			to = (object.transform * Vector3(0, 1, 8)) * unit
-			var gap_cell := grid.map_data.get_cell(grid.world_to_grid((object.transform * Vector3(0, 0, 6)) * unit))
-			check(not gap_cell.can_stop and gap_cell.authored_shot_parts.size() == 2, "The narrow gap has a real occupied cell with both separate shot parts")
+			from = (object.transform * Vector3(0, 1, 4))
+			to = (object.transform * Vector3(0, 1, 8))
+			var gap_cell := grid.map_data.get_cell(grid.world_to_grid((object.transform * Vector3(0, 0, 6))))
+			check(not gap_cell.can_stop and grid.map_data.shot_columns.get(Vector2i(gap_cell.grid_position.x, gap_cell.grid_position.z), []).size() == 2, "The narrow gap has a real occupied cell with both separate shot parts")
 			check(CombatRules.get_blocking_cell(from, to, grid) == null, "Parts sharing a reserved grid cell still leave their visible shot gap open")
 		grid.free()
 		floor_mesh.free()

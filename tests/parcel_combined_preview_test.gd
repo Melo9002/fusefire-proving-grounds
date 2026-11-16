@@ -51,7 +51,9 @@ func _run() -> void:
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	panel.preview()
 	check(is_instance_valid(panel._runtime_preview) and panel._runtime_preview.has_node(NodePath(added_path)), "Combined Preview includes the manually placed delivery truck")
-	check(panel.compiled_preview != null and not panel.compiled_preview.get_cell(Vector3i(10, 0, 22)).can_stop, "The rotated truck's authored tactical footprint follows its visible rotation")
+	var truck_cell := panel.compiled_preview.get_cell(Vector3i(10, 0, 22)) as MapCellData
+	check(not SurfaceNavigation.body_clear(panel.compiled_preview, truck_cell.support_center), "The rotated truck blocks the original body position at its visible rotation")
+	check(not truck_cell.can_stop or SurfaceNavigation.body_clear(panel.compiled_preview, truck_cell.world_position), "Any usable partly occupied truck cell has a genuinely clear standing point")
 	check(panel.preview_context.text.begins_with("Containers") and not panel.status.visible and panel._result_details.visible, "The main result leads with containers and collapses technical counts")
 	panel._result_details.button_pressed = true
 	check(panel.status.visible and panel.status.text.contains("authored sockets"), "Technical preview details remain available")
@@ -101,7 +103,8 @@ func _run() -> void:
 		var exported := AuthoredParcelDefinition.new(reopened.get_meta("parcel_id"), "Export", Catalog.LOADING_SERVICE, 1, Vector2i(16, 32), scene)
 		exported.apply_population(reopened, [])
 		AuthoredSceneMapCompiler.compile(reopened, map, 1.0)
-		check(not map.get_cell(Vector3i(10, 0, 22)).can_stop, "The reopened export compiles the truck at its edited rotation")
+		MapGraphBuilder.build(map, Pathfinder.new())
+		check(not SurfaceNavigation.body_clear(map, map.get_cell(Vector3i(10, 0, 22)).support_center), "The reopened export compiles physical truck blocking at its edited rotation")
 		reopened.free()
 		DirAccess.remove_absolute(export_path)
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
@@ -111,7 +114,7 @@ func _run() -> void:
 	editor.task_tabs.current_tab = ParcelEditor.Task.POPULATION_FIELDS
 	check(panel.fit_feedback.text.contains("2 positions fit"), "Removing the fixed truck restores both fitting positions")
 	panel.preview()
-	check(not panel._runtime_preview.has_node(NodePath(added_path)) and panel.compiled_preview.get_cell(Vector3i(10, 0, 22)).can_stop, "Removed objects leave no invisible tactical blocker in combined Preview")
+	check(is_instance_valid(panel._runtime_preview) and not panel._runtime_preview.has_node(NodePath(added_path)) and panel.compiled_preview.get_cell(Vector3i(10, 0, 22)).can_stop, "Removed objects leave no invisible tactical blocker in combined Preview · %s" % panel.preview_context.text)
 	panel.reset_preview()
 	editor.task_tabs.current_tab = ParcelEditor.Task.MOVE_OBJECTS
 	editor.draft.select("CrateA")

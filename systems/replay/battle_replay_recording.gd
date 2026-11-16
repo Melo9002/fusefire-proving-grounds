@@ -5,7 +5,7 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
-const SIMULATION_VERSION := "prototype-1.5-surface-placement-6"
+const SIMULATION_VERSION := "prototype-1.5-surface-placement-7"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION

@@ -16,9 +16,10 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 	if not data.generation_errors.is_empty():
 		return data
 	var interfaces: Array[Dictionary] = []
+	data.surface_placement_enabled = int(resolved.compiler_revision) >= 6
 	# Decide the map's geometry mode before compiling any parcel. An opt-in
 	# parcel must still collide with earlier neighboring parcels in this plot.
-	if int(resolved.compiler_revision) >= 5:
+	if int(resolved.compiler_revision) == 5:
 		for placement: Dictionary in resolved.placements:
 			var definition = parcels.get_definition(StringName(placement.parcel_id))
 			if definition == null: continue

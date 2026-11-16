@@ -19,6 +19,7 @@ var next_id: int = 0
 var max_step_levels: int = 1
 var surface_map: MapData
 var live_grid: GridManager
+var defer_surface_edges := false
 
 const DIRECTIONS: Array[Vector3i] = [
 	Vector3i.RIGHT,
@@ -30,6 +31,7 @@ const DIRECTIONS: Array[Vector3i] = [
 func clear() -> void:
 	surface_map = null
 	live_grid = null
+	defer_surface_edges = false
 	astar.clear()
 	astar.cells.clear()
 	grid_to_id_map.clear()
@@ -88,7 +90,7 @@ func _refresh_diagonals_near(changed: Vector3i) -> void:
 				var first: int = grid_to_id_map[pair[0]]
 				var second: int = grid_to_id_map[pair[1]]
 				var safe := diagonal_is_clear
-				if safe and surface_map and surface_map.surface_placement_enabled:
+				if safe and surface_map and surface_map.surface_placement_enabled and not defer_surface_edges:
 					safe = SurfaceNavigation.edge_clear(surface_map, astar.get_point_position(first), astar.get_point_position(second))
 				if safe:
 					astar.connect_points(first, second)
@@ -134,7 +136,14 @@ func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector
 ## actor's live origin, which is treated as vacated when planning from a future
 ## candidate. This never changes occupancy_map or AStar disabled points.
 func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit = null) -> PackedVector3Array:
-	var path := calculate_3d_path(start_grid, end_grid)
+	var path := PackedVector3Array()
+	if grid.map_data.surface_placement_enabled:
+		# Hypothetical starts must vacate the explicitly named actor's real origin.
+		# Do not first plan as an anonymous actor and repeat an unnecessary detour.
+		if grid_to_id_map.has(start_grid) and grid_to_id_map.has(end_grid) and stoppable_cells.get(end_grid, false):
+			path = astar.get_point_path(grid_to_id_map[start_grid], grid_to_id_map[end_grid])
+	else:
+		path = calculate_3d_path(start_grid, end_grid)
 	if not path.is_empty() and _path_respects_hypothetical_occupancy(path, start_grid, grid, ignored_actor):
 		return path
 	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor)
@@ -156,6 +165,7 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
 		return PackedVector3Array()
 	if not stoppable_cells.get(end_grid, false): return PackedVector3Array()
+	if grid.map_data.surface_placement_enabled and not SurfaceNavigation.units_clear(grid, astar.get_point_position(grid_to_id_map[end_grid]), astar.get_point_position(grid_to_id_map[end_grid]), ignored_actor): return PackedVector3Array()
 	var start_id: int = grid_to_id_map[start_grid]
 	var end_id: int = grid_to_id_map[end_grid]
 	var open_ids: Array[int] = [start_id]
@@ -190,7 +200,13 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 				continue
 			came_from[neighbor_id] = current_id
 			costs[neighbor_id] = new_cost
-			estimates[neighbor_id] = new_cost if grid.map_data.surface_placement_enabled else new_cost + astar.get_point_position(neighbor_id).distance_to(astar.get_point_position(end_id))
+			var heuristic := astar.get_point_position(neighbor_id).distance_to(astar.get_point_position(end_id))
+			if grid.map_data.surface_placement_enabled:
+				heuristic = 0.0
+				if grid.map_data.traversal_links.is_empty():
+					var delta := (neighbor_cell - end_grid).abs()
+					heuristic = float(delta.x + delta.z) + (sqrt(2.0) - 2.0) * mini(delta.x, delta.z)
+			estimates[neighbor_id] = new_cost + heuristic
 			if neighbor_id not in open_ids:
 				open_ids.append(neighbor_id)
 	return PackedVector3Array()
