@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="CombatCoverTuning" format=3]
+
+[ext_resource type="Script" path="res://systems/combat_cover_tuning.gd" id="tuning"]
+
+[resource]
+script = ExtResource("tuning")
+low_cover_penalty = 20
+full_cover_penalty = 40

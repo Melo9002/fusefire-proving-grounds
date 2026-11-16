@@ -18,7 +18,7 @@ static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array
 		if not is_instance_valid(enemy) or not enemy.stats or enemy.stats.is_defeated or not FactionRules.are_hostile(actor.faction, enemy.faction):
 			continue
 		var evaluation := CombatRules.evaluate_attack_after_move(enemy, actor, query.target_cell, grid, actor.get_world_3d())
-		var cover := CombatRules.get_directional_cover(grid.get_unit_grid(enemy), query.target_cell, grid)
+		var cover := CombatRules.get_directional_cover(grid.get_unit_grid(enemy), query.target_cell, grid, enemy.standing_height, actor.standing_height)
 		var cover_name: String = ["none", "low", "full"][cover]
 		var delta := grid.get_unit_grid(enemy) - query.target_cell
 		var direction := ("N" if delta.z < 0 else "S") if delta.z != 0 else ""

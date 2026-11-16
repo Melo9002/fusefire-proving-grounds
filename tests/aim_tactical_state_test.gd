@@ -94,8 +94,24 @@ func _test_ai_and_hud() -> void:
 	var actor: TacticalUnit = level.turn_manager.player_units[0]
 	var target: TacticalUnit = level.turn_manager.enemy_units[0]
 	_prepare_attack(level, actor, target)
-	var actor_cell := level.battle_controller.grid_manager.get_cell_data(level.battle_controller.grid_manager.get_unit_grid(actor))
-	actor_cell.cover_type = MapCellData.CoverType.FULL
+	# A real intervening low surface makes Aim useful; a label on the
+	# shooter's own tile must no longer manufacture protection for the target.
+	var grid := level.battle_controller.grid_manager
+	var source := actor.grid_position
+	for step in range(1, 5):
+		var clear := grid.get_cell_data(source + Vector3i.RIGHT * step)
+		clear.cover_type = MapCellData.CoverType.NONE
+		clear.cover_height = 0
+		clear.blocks_line_of_sight = false
+	grid.update_unit_position(target, target.grid_position, source + Vector3i.RIGHT * 4)
+	target.global_position = grid.grid_to_world(target.grid_position) + Vector3.UP * target.standing_height
+	var protection := grid.get_cell_data(source + Vector3i.RIGHT * 3)
+	protection.cover_type = MapCellData.CoverType.LOW
+	protection.cover_height = 0.8
+	protection.walkable = true
+	protection.can_stop = false
+	grid.map_data.rebuild_los_index()
+	check(level.battle_controller.query_attack(actor, target).hit_chance == 80, "AI Aim setup has genuine physical cover rather than an empty tile label")
 	var ai := AIController.new()
 	ai.unit = actor
 	ai.turn_manager = level.turn_manager

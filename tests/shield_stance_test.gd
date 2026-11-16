@@ -73,13 +73,37 @@ func _test_capability_action_and_combat() -> void:
 	var cover_cell := actor_cell + Vector3i.RIGHT
 	var cover_data := grid.get_cell_data(cover_cell)
 	var previous_cover := cover_data.cover_type
+	var previous_height := cover_data.cover_height
+	var previous_walkable := cover_data.walkable
+	var previous_stop := cover_data.can_stop
+	var previous_los := cover_data.blocks_line_of_sight
+	var original_threat := threat.grid_position
+	var far_threat := actor_cell + Vector3i.RIGHT * 4
+	grid.update_unit_position(threat, original_threat, far_threat)
+	threat.global_position = grid.grid_to_world(far_threat) + Vector3.UP
 	cover_data.cover_type = MapCellData.CoverType.LOW
+	cover_data.cover_height = 0.8
+	cover_data.walkable = true
+	cover_data.can_stop = false
+	cover_data.blocks_line_of_sight = false
 	var combined := service.query_attack(threat.tactical_id, actor.tactical_id)
-	check(combined.shield_applied and combined.cover_type == MapCellData.CoverType.LOW and combined.hit_chance == 30, "Half cover and shield remain separately inspectable and combine to 30 percent")
+	check(combined.shield_applied and combined.cover_type == MapCellData.CoverType.LOW and combined.hit_chance == 60, "Physical half cover and Shield combine to 60 percent without double-counting exposure")
 	cover_data.cover_type = MapCellData.CoverType.FULL
+	cover_data.cover_height = 1.3
+	cover_data.walkable = false
+	cover_data.blocks_line_of_sight = true
+	var original_height := grid.get_cell_data(far_threat).world_position.y
+	grid.get_cell_data(far_threat).world_position.y = 1.2
 	var combined_full := service.query_attack(threat.tactical_id, actor.tactical_id)
-	check(combined_full.shield_applied and combined_full.cover_type == MapCellData.CoverType.FULL and combined_full.hit_chance == 30, "Full environmental cover and shield remain separately inspectable")
+	check(combined_full.shield_applied and combined_full.cover_type == MapCellData.CoverType.FULL and combined_full.hit_chance == 40, "Physical full cover, partial exposure and Shield combine to 40 percent")
+	grid.get_cell_data(far_threat).world_position.y = original_height
 	cover_data.cover_type = previous_cover
+	cover_data.cover_height = previous_height
+	cover_data.walkable = previous_walkable
+	cover_data.can_stop = previous_stop
+	cover_data.blocks_line_of_sight = previous_los
+	grid.update_unit_position(threat, far_threat, original_threat)
+	threat.global_position = grid.grid_to_world(original_threat) + Vector3.UP
 	level.turn_manager.current_phase = TurnManager.TurnPhase.ENEMY_TURN
 	level.turn_manager.active_unit = threat
 	threat.stats.set_available_ap_for_setup(2)

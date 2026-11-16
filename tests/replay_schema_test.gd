@@ -79,6 +79,12 @@ func _run() -> void:
 	var missing_simulation := recording.to_dictionary()
 	missing_simulation.erase("simulation_version")
 	check(BattleReplayRecording.from_dictionary(missing_simulation).validation_message().contains("Incompatible replay simulation"), "Absent simulation identity cannot silently select today's shot rules")
+	var stale_cover := recording.to_dictionary()
+	stale_cover.cover_tuning_signature = "cover-1:50:50"
+	check(BattleReplayRecording.from_dictionary(stale_cover).validation_message().contains("Incompatible replay cover tuning"), "Changed cover tuning rejects before playback")
+	var missing_cover := recording.to_dictionary()
+	missing_cover.erase("cover_tuning_signature")
+	check(BattleReplayRecording.from_dictionary(missing_cover).validation_message().contains("Incompatible replay cover tuning"), "Missing cover tuning identity cannot silently select today's penalties")
 
 	var broken_recording := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	broken_recording.actions[0].erase("committed_revision")

@@ -31,7 +31,8 @@ func _run() -> void:
 	var small_block = grid.get_cell_data(Vector3i(18, 0, 14))
 	place(attacker, Vector3i(17, 0, 14), grid)
 	place(target, Vector3i(19, 0, 14), grid)
-	check(battle.evaluate_attack(attacker, target).hit_chance == 50, "Small authored block permits a 50 percent shot")
+	var central := battle.evaluate_attack(attacker, target)
+	check(central.hit_chance == 60 and central.cover_penalty == 20 and central.obstruction_penalty == 40, "Central waist-high block uses max(20 cover, 40 exposure), yielding 60 percent")
 	check(level.get_node("Environment/Obstacles/CentralLowBlock").size.y == small_block.cover_height, "Small block height matches metadata")
 	# Sample preview parity across ground and elevated cells with full cover enabled.
 	small_block.blocks_line_of_sight = true
@@ -73,7 +74,7 @@ func _run() -> void:
 	place(target, Vector3i(9, 0, 9), grid)
 	var low_cover = battle.evaluate_attack(attacker, target)
 	check(low_cover.is_legal, "Low cover keeps the attack legal")
-	check(low_cover.hit_chance == 50, "Directional low cover gives 50 percent hit chance")
+	check(low_cover.hit_chance == 60 and low_cover.cover_penalty == 20 and low_cover.obstruction_penalty == 40 and low_cover.protection_penalty == 40, "Low barrier combines cover and partial exposure once, yielding 60 percent")
 	check(low_cover.cover_type == MapCellData.CoverType.LOW, "Evaluation reports low cover")
 	var low_cover_cell = Vector3i(9, 0, 8)
 	check(not battle.pathfinder.astar.is_point_disabled(battle.pathfinder.grid_to_id_map[low_cover_cell]), "Low cover remains connected for vault paths")

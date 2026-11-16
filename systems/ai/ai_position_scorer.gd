@@ -29,7 +29,7 @@ static func evaluate(
 			continue
 		var hostile_cell := grid.get_unit_grid(hostile)
 		var distance := CombatRules.attack_distance(hostile_cell, candidate, grid)
-		var directional_cover := CombatRules.get_directional_cover(hostile_cell, candidate, grid)
+		var directional_cover := CombatRules.get_directional_cover(hostile_cell, candidate, grid, hostile.standing_height, unit.standing_height)
 		if distance <= hostile.attack_range:
 			match directional_cover:
 				MapCellData.CoverType.LOW:
@@ -47,7 +47,7 @@ static func evaluate(
 						exposure -= 14.0
 		if not unit.is_carrying_unit() and distance <= unit.attack_range:
 			if CombatRules.evaluate_attack_from_cell(unit, candidate, hostile, grid, unit.get_world_3d()).is_legal:
-				var target_cover := CombatRules.get_directional_cover(candidate, hostile_cell, grid)
+				var target_cover := CombatRules.get_directional_cover(candidate, hostile_cell, grid, unit.standing_height, hostile.standing_height)
 				firing += 6.0 if target_cover != MapCellData.CoverType.NONE else 10.0
 		if distance <= 2:
 			danger -= 8.0

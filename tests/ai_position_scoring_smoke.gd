@@ -61,10 +61,26 @@ func _run() -> void:
 		check(cover_data != null, "Found a tile toward the enemy for cover comparison")
 		if cover_data:
 			var original_cover := cover_data.cover_type
+			var original_height := cover_data.cover_height
+			var original_bounds := cover_data.authored_shot_bounds
+			var original_parts := cover_data.authored_shot_parts.duplicate()
+			var original_walkable := cover_data.walkable
+			var original_stop := cover_data.can_stop
 			cover_data.cover_type = MapCellData.CoverType.LOW
+			cover_data.cover_height = 1.15
+			cover_data.authored_shot_bounds = AABB()
+			cover_data.authored_shot_parts.clear()
+			cover_data.walkable = true
+			cover_data.can_stop = false
+			check(CombatRules.get_directional_cover(hostile_cell, open_cell, grid, enemy.standing_height, player.standing_height) == MapCellData.CoverType.LOW, "AI comparison contains a real surface protecting the candidate")
 			var covered_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context)
 			check(covered_score.cover > normal_score.cover, "Directional cover increases position value")
 			cover_data.cover_type = original_cover
+			cover_data.cover_height = original_height
+			cover_data.authored_shot_bounds = original_bounds
+			cover_data.authored_shot_parts.assign(original_parts)
+			cover_data.walkable = original_walkable
+			cover_data.can_stop = original_stop
 		context.reserve_destination(ally, open_cell)
 		check(AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context).total == -INF, "Teammate reservation rejects the exact destination")
 	if adjacent_cell.x >= 0:

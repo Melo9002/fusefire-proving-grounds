@@ -5,10 +5,11 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
-const SIMULATION_VERSION := "prototype-1.5-geometry-los-4"
+const SIMULATION_VERSION := "prototype-1.5-directional-cover-5"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
+var cover_tuning_signature: String = CombatRules.cover_tuning.signature()
 var configuration: Dictionary = {}
 ## Read old document fields only to reject retired recordings explicitly.
 ## Generator 1 replay data and simulation semantics are unchanged.
@@ -31,7 +32,9 @@ func validation_message() -> String:
 	if schema_version not in [LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
 	if simulation_version != SIMULATION_VERSION:
-		return "Incompatible replay simulation '%s'; this build requires '%s'. Shot geometry changed; start a new recording." % [simulation_version, SIMULATION_VERSION]
+		return "Incompatible replay simulation '%s'; this build requires '%s'. Combat rules changed; start a new recording." % [simulation_version, SIMULATION_VERSION]
+	if cover_tuning_signature != CombatRules.cover_tuning.signature():
+		return "Incompatible replay cover tuning; the saved protection values differ from this build. Start a new recording."
 	if configuration.is_empty(): return "Replay has no battle_configuration"
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Archived experimental generator presets/layouts are quarantined; current Generation 2 uses named battlefields"
@@ -52,6 +55,7 @@ func to_dictionary() -> Dictionary:
 	return {
 		"schema_version": schema_version,
 		"simulation_version": simulation_version,
+		"cover_tuning_signature": cover_tuning_signature,
 		"battle_configuration": _configuration_to_data(configuration),
 		"battlefield_layout_document": battlefield_document.duplicate(true),
 		"battlefield_layout_signature": battlefield_document_signature,
@@ -65,6 +69,7 @@ static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
 	var replay := BattleReplayRecording.new()
 	replay.schema_version = int(data.get("schema_version", -1))
 	replay.simulation_version = String(data.get("simulation_version", "prototype-1" if replay.schema_version == LEGACY_SCHEMA_VERSION else "unknown"))
+	replay.cover_tuning_signature = String(data.get("cover_tuning_signature", ""))
 	replay.configuration = _configuration_from_data(data.get("battle_configuration", data.get("configuration", {})))
 	var encoded_document = data.get("battlefield_layout_document", {})
 	if encoded_document is Dictionary: replay.battlefield_document = encoded_document.duplicate(true)

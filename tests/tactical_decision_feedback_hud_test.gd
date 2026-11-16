@@ -71,12 +71,14 @@ func _run() -> void:
 	check(description.contains("1 AP") and description.contains(String(enemy.tactical_id)) and description.contains("cover"), "Movement describes AP and directional cover against the actual enemy")
 	check(fingerprint == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager), "Preview never moves actors or changes authoritative state")
 	blocker.cover_type = MapCellData.CoverType.LOW
-	blocker.cover_height = 0.6
+	# At this diagonal, 0.6 lies below the lower-body ray. Use a real
+	# protecting height so this remains an Aim-cancellation/cover preview case.
+	blocker.cover_height = 0.8
 	actor.tactical_state.establish_aim()
 	var aimed_fingerprint := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
 	var proposed := CombatRules.evaluate_attack_from_cell(actor, move.target_cell, enemy, grid, actor.get_world_3d())
-	check(proposed.is_legal and proposed.hit_chance == 50, "Outgoing hypothetical shot uses real directional cover and excludes Aim canceled by movement")
-	check(TacticalFeedbackText.movement(move, actor, [enemy], grid).contains("Your shot → %s: 50%% hit" % enemy.tactical_id), "Move hover describes an outgoing shot from the proposed cell")
+	check(proposed.is_legal and proposed.hit_chance == 80 and proposed.cover_penalty == 20, "Outgoing hypothetical shot uses physical low cover and excludes Aim canceled by movement")
+	check(TacticalFeedbackText.movement(move, actor, [enemy], grid).contains("Your shot → %s: 80%% hit" % enemy.tactical_id), "Move hover describes an outgoing shot from the proposed cell")
 	check(aimed_fingerprint == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager), "Outgoing preview preserves Aim, AP, positions and occupancy")
 	var remaining_ap := move.actor_ap_after
 	move.actor_ap_after = 0

@@ -1,5 +1,6 @@
 class_name CombatRules
 extends RefCounted
+static var cover_tuning = preload("res://systems/combat_cover_tuning.tres")
 
 class AttackEvaluation:
 	var is_legal: bool
@@ -11,6 +12,10 @@ class AttackEvaluation:
 	var obstruction: String
 	var blocking_cell: MapCellData
 	var blocking_bounds := AABB()
+	var cover_cell: MapCellData
+	var cover_penalty := 0
+	var obstruction_penalty := 0
+	var protection_penalty := 0
 	var shield_applied := false
 	var shield_accuracy_modifier := 0
 	var shield_damage_multiplier := 1.0
@@ -74,6 +79,8 @@ static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vec
 static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	if not cover_tuning.is_valid():
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid cover tuning")
 	if not grid.map_data.has_cell(attacker_cell) or not grid.map_data.has_cell(target_cell):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Outside battlefield", target.global_position)
 	var default_aim := _shot_destination_at(target, target_cell, grid)
@@ -90,15 +97,23 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 		var blocked := AttackEvaluation.new(false, 0, MapCellData.CoverType.FULL, "Blocked", visibility.aim_point, 0.0, "Blocked", visibility.blocker)
 		blocked.blocking_bounds = _blocking_part_bounds(get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height, visibility.aim_point, visibility.blocker, grid.cell_size)
 		return blocked
-	var cover := get_directional_cover(attacker_cell, target_cell, grid)
-	var cover_penalty := 50 if cover != MapCellData.CoverType.NONE else 0
+	var cover_cell := _protecting_cover(attacker_cell, target_cell, grid, attacker.standing_height, target.standing_height)
+	var protection_origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height
+	var target_ground := get_support_position(target_cell, grid)
+	var cover := _cover_type_for_ray(cover_cell, protection_origin, target_ground + Vector3.UP * target.standing_height * 0.5, target_ground.y, grid.cell_size)
+	var cover_penalty: int = cover_tuning.full_cover_penalty if cover == MapCellData.CoverType.FULL else cover_tuning.low_cover_penalty if cover == MapCellData.CoverType.LOW else 0
 	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
 	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
 	var shield := get_shield_protection_at_cells(attacker_cell, target, target_cell) if allow_shield else {}
 	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
 	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus + shield_accuracy, 5, 100)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
-	return AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+	evaluation.cover_cell = cover_cell
+	evaluation.cover_penalty = cover_penalty
+	evaluation.obstruction_penalty = obstruction_penalty
+	evaluation.protection_penalty = maxi(cover_penalty, obstruction_penalty)
+	return evaluation
 
 static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
 	if not is_instance_valid(attacker) or not is_instance_valid(target) or not target.tactical_state \
@@ -213,28 +228,61 @@ static func _obstruction_label(visible: int, total: int) -> String:
 	if visible <= 2: return "Heavily obstructed"
 	return "Partially obstructed"
 
-static func get_directional_cover(attacker_cell: Vector3i, target_cell: Vector3i, grid: GridManager) -> MapCellData.CoverType:
-	var delta = attacker_cell - target_cell
-	var candidates: Array[Vector3i] = []
-	if absi(delta.x) >= absi(delta.z) and delta.x != 0:
-		candidates.append(target_cell + Vector3i(signi(delta.x), 0, 0))
-	if absi(delta.z) >= absi(delta.x) and delta.z != 0:
-		candidates.append(target_cell + Vector3i(0, 0, signi(delta.z)))
+static func get_directional_cover(attacker_cell: Vector3i, target_cell: Vector3i, grid: GridManager, attacker_height := -1.0, target_height := -1.0) -> MapCellData.CoverType:
+	var attacker := grid.get_unit_at(attacker_cell)
+	var target := grid.get_unit_at(target_cell)
+	if attacker_height < 0: attacker_height = attacker.standing_height if is_instance_valid(attacker) else 1.0
+	if target_height < 0: target_height = target.standing_height if is_instance_valid(target) else 1.0
+	var surface := _protecting_cover(attacker_cell, target_cell, grid, attacker_height, target_height)
+	if not surface: return MapCellData.CoverType.NONE
+	var origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker_height
+	var ground := get_support_position(target_cell, grid)
+	return _cover_type_for_ray(surface, origin, ground + Vector3.UP * target_height * 0.5, ground.y, grid.cell_size)
 
-	var strongest = MapCellData.CoverType.NONE
-	for cell in candidates:
-		var data = grid.get_cell_data(cell)
-		if data and data.cover_type > strongest:
-			strongest = data.cover_type
-	return strongest
+static func _protecting_cover(attacker_cell: Vector3i, target_cell: Vector3i, grid: GridManager, attacker_height: float, target_height: float) -> MapCellData:
+	if not grid.map_data.has_cell(attacker_cell) or not grid.map_data.has_cell(target_cell): return null
+	var origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker_height
+	var ground := get_support_position(target_cell, grid)
+	var protected_point := ground + Vector3.UP * target_height * 0.5
+	var candidates: Array[MapCellData] = []
+	var low_candidates: Array[MapCellData] = []
+	# Strongest qualifying surface wins. The shared ray routine also handles
+	# actual compound gaps and the same paired-corner sealing as shot legality.
+	for offset in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.FORWARD, Vector3i.BACK]:
+		var cell := grid.get_cell_data(target_cell + offset)
+		if not cell or cell.cover_type == MapCellData.CoverType.NONE: continue
+		var kind := _cover_type_for_ray(cell, origin, protected_point, ground.y, grid.cell_size)
+		if kind == MapCellData.CoverType.FULL: candidates.append(cell)
+		elif kind == MapCellData.CoverType.LOW: low_candidates.append(cell)
+	candidates.append_array(low_candidates)
+	if candidates.is_empty(): return null
+	return _get_geometry_between(origin, protected_point, grid, false, [attacker_cell, target_cell], false, candidates)
+
+static func _cover_type_for_ray(cell: MapCellData, origin: Vector3, protected_point: Vector3, ground_y: float, cell_size: float) -> MapCellData.CoverType:
+	if not cell: return MapCellData.CoverType.NONE
+	if cell.authored_shot_parts.is_empty() and not cell.authored_shot_bounds.has_volume():
+		return cell.cover_type
+	var parts: Array[AABB] = cell.authored_shot_parts
+	if parts.is_empty(): parts = [cell.authored_shot_bounds]
+	var direct := MapCellData.CoverType.NONE
+	var tangent := MapCellData.CoverType.NONE
+	for part in parts:
+		var kind := MapCellData.CoverType.FULL if part.end.y - ground_y >= 1.2 * cell_size else MapCellData.CoverType.LOW
+		if is_finite(_bounds_entry(origin, protected_point, cell, cell_size, false, part)):
+			direct = maxi(direct, kind) as MapCellData.CoverType
+		elif is_finite(_bounds_entry(origin, protected_point, cell, cell_size, true, part)):
+			tangent = maxi(tangent, kind) as MapCellData.CoverType
+	# Tangency is only a candidate: the shared ray check must still confirm a
+	# sealed pair. A tall tangent part cannot upgrade a genuinely low direct hit.
+	return direct if direct != MapCellData.CoverType.NONE else tangent
 
 static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridManager) -> MapCellData:
 	return _get_geometry_between(origin, destination, grid, true)
 
-static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true) -> MapCellData:
+static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true, selected_candidates: Array[MapCellData] = []) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
-	var candidates := _shot_candidates(grid, origin_cell, target_cell, los_blockers_only)
+	var candidates: Array = _shot_candidates(grid, origin_cell, target_cell, los_blockers_only) if selected_candidates.is_empty() else selected_candidates
 	var grazed: Array[Dictionary] = []
 	var nearest: MapCellData = null
 	var nearest_entry := INF

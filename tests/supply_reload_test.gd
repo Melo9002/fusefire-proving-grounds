@@ -40,9 +40,9 @@ func _test_attack_supply_contract() -> void:
 	actor.stats.set_available_ap_for_setup(1)
 	actor.stats.current_supply_points = 1
 	target.stats.current_hp = target.stats.max_hp
-	var actor_cell_data := level.battle_controller.grid_manager.get_cell_data(level.battle_controller.grid_manager.get_unit_grid(actor))
-	actor_cell_data.cover_type = MapCellData.CoverType.FULL
+	_prepare_attack(level, actor, target, true)
 	var miss_query := service.query_attack(actor.tactical_id, target.tactical_id)
+	check(miss_query.is_legal() and miss_query.hit_chance == 80, "Miss setup uses actual protecting geometry so a miss is possible")
 	service._combat_rng.seed = _seed_for_outcome(miss_query.hit_chance, false)
 	var miss := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(miss != null and not miss.did_hit and miss.supply_points_before == 1 and miss.supply_points_after == 0, "A committed miss consumes the final SP")
@@ -190,11 +190,22 @@ func _create_battle() -> BattleLevel:
 	level.action_camera_director.frequency = ActionCameraDirector.Frequency.OFF
 	return level
 
-func _prepare_attack(level: BattleLevel, actor: TacticalUnit, target: TacticalUnit) -> void:
+func _prepare_attack(level: BattleLevel, actor: TacticalUnit, target: TacticalUnit, protected_target := false) -> void:
 	var grid := level.battle_controller.grid_manager
 	var actor_cell := grid.get_unit_grid(actor)
 	var old_target_cell := grid.get_unit_grid(target)
-	var target_cell := actor_cell + Vector3i.RIGHT
+	var target_cell := actor_cell + Vector3i.RIGHT * (4 if protected_target else 1)
+	if protected_target:
+		for step in range(1, 5):
+			var clear := grid.get_cell_data(actor_cell + Vector3i.RIGHT * step)
+			clear.cover_type = MapCellData.CoverType.NONE
+			clear.cover_height = 0
+			clear.blocks_line_of_sight = false
+		var protection := grid.get_cell_data(target_cell + Vector3i.LEFT)
+		protection.cover_type = MapCellData.CoverType.LOW
+		protection.cover_height = 0.8
+		protection.walkable = true
+		protection.can_stop = false
 	var target_data := grid.get_cell_data(target_cell)
 	if target_data:
 		target_data.cover_type = MapCellData.CoverType.NONE
