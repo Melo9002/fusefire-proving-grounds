@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_rail_2m.tscn" id="rail"]
 [ext_resource type="Script" path="res://systems/grid/elevation_path.gd" id="elevation_path"]
 
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/combat_examples.tscn" id="combat_examples"]
+
 [sub_resource type="StandardMaterial3D" id="asphalt"]
 albedo_color = Color(0.25, 0.31, 0.33, 1)
 roughness = 0.92
@@ -34,7 +36,7 @@ size = Vector2(0.085, 4.2)
 [node name="TacticalTestRange" type="Node3D"]
 metadata/parcel_id = &"tactical_range_a"
 metadata/parcel_role = &"tactical_range"
-metadata/revision = 1
+metadata/revision = 2
 metadata/parcel_size = Vector2i(32, 32)
 metadata/allowed_rotations = PackedInt32Array(0)
 metadata/access_cell = Vector3i(12, 0, 31)
@@ -600,3 +602,5 @@ font_size = 32
 outline_size = 0
 modulate = Color(0.91, 0.88, 0.72, 1)
 text = "EXTRACT"
+
+[node name="CombatExamples" parent="." instance=ExtResource("combat_examples")]

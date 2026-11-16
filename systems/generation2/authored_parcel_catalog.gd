@@ -66,7 +66,7 @@ static func all() -> Array:
 		Definition.new(SIGNAL_COURTYARD_A, "Industrial signal courtyard", URBAN_COURTYARD, 1, Vector2i(32, 32), SignalCourtyardA),
 		Definition.new(COURTYARD_GALLERY_A, "Inward-facing courtyard gallery", URBAN_GALLERY, 1, Vector2i(16, 32), CourtyardGalleryA),
 		Definition.new(PARKING_GARAGE_A, "Two-level service garage", PARKING_GARAGE, 1, Vector2i(32, 32), ParkingGarageA),
-		Definition.new(TACTICAL_RANGE_A, "Tactical Test Range", TACTICAL_RANGE, 1, Vector2i(32, 32), TacticalRangeA),
+		Definition.new(TACTICAL_RANGE_A, "Tactical Test Range", TACTICAL_RANGE, 2, Vector2i(32, 32), TacticalRangeA),
 	]
 
 static func get_definition(id: StringName):

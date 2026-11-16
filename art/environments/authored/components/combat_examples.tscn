@@ -1,0 +1,424 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/delivery.tscn" id="truck"]
+
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+
+[sub_resource type="StandardMaterial3D" id="wall"]
+albedo_color = Color(0.52, 0.59, 0.61, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="crate"]
+albedo_color = Color(0.59, 0.36, 0.16, 1)
+roughness = 0.9
+
+[node name="CombatExamples" type="Node3D"]
+
+[node name="Crates" type="Node3D" parent="."]
+
+[node name="LowCrate" type="CSGBox3D" parent="Crates"]
+position = Vector3(23, 0.4, 16)
+size = Vector3(0.9, 0.8, 0.9)
+material = SubResource("crate")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(0.9, 0.8, 0.9)
+metadata/precise_shot_bounds = true
+
+[node name="FullCrate" type="CSGBox3D" parent="Crates"]
+position = Vector3(27, 0.65, 16)
+size = Vector3(0.9, 1.3, 0.9)
+material = SubResource("crate")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(0.9, 1.3, 0.9)
+metadata/precise_shot_bounds = true
+
+[node name="LowShooter" type="Marker3D" parent="Crates"]
+position = Vector3(23, 0, 13)
+
+[node name="LowShooterLabel" type="Label3D" parent="Crates"]
+position = Vector3(23, 0.025, 13)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="LowTarget" type="Marker3D" parent="Crates"]
+position = Vector3(23, 0, 17)
+
+[node name="LowTargetLabel" type="Label3D" parent="Crates"]
+position = Vector3(23, 0.025, 17)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="FullShooter" type="Marker3D" parent="Crates"]
+position = Vector3(27, 0, 13)
+
+[node name="FullShooterLabel" type="Label3D" parent="Crates"]
+position = Vector3(27, 0.025, 13)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="FullTarget" type="Marker3D" parent="Crates"]
+position = Vector3(27, 0, 17)
+
+[node name="FullTargetLabel" type="Label3D" parent="Crates"]
+position = Vector3(27, 0.025, 17)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="Sign" type="Label3D" parent="Crates"]
+position = Vector3(30, 0.025, 16)
+rotation = Vector3(-1.5707963, 1.5707963, 0)
+pixel_size = 0.008
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "05  LOW / FULL CRATES"
+
+[node name="Truck" type="Node3D" parent="."]
+
+[node name="Delivery" parent="Truck" instance=ExtResource("truck")]
+position = Vector3(17, 0, 7)
+
+[node name="CargoShooter" type="Marker3D" parent="Truck"]
+position = Vector3(14, 1.2, 6)
+
+[node name="CargoShooterLabel" type="Label3D" parent="Truck"]
+position = Vector3(14, 0.025, 6)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="CargoTarget" type="Marker3D" parent="Truck"]
+position = Vector3(20, 1.2, 6)
+
+[node name="CargoTargetLabel" type="Label3D" parent="Truck"]
+position = Vector3(20, 0.025, 6)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="HoodShooter" type="Marker3D" parent="Truck"]
+position = Vector3(14, 1.2, 9)
+
+[node name="HoodShooterLabel" type="Label3D" parent="Truck"]
+position = Vector3(14, 0.025, 9)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="HoodTarget" type="Marker3D" parent="Truck"]
+position = Vector3(20, 1.2, 9)
+
+[node name="HoodTargetLabel" type="Label3D" parent="Truck"]
+position = Vector3(20, 0.025, 9)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="Sign" type="Label3D" parent="Truck"]
+position = Vector3(17, 0.025, 10.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.01
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "06  CARGO / LOW HOOD"
+
+[node name="Doorway" type="Node3D" parent="."]
+
+[node name="LeftWall" type="CSGBox3D" parent="Doorway"]
+position = Vector3(15.5, 1.5, 22)
+size = Vector3(2, 3, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(2, 3, 1)
+metadata/precise_shot_bounds = true
+
+[node name="RightWall" type="CSGBox3D" parent="Doorway"]
+position = Vector3(18.5, 1.5, 22)
+size = Vector3(2, 3, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(2, 3, 1)
+metadata/precise_shot_bounds = true
+
+[node name="Lintel" type="CSGBox3D" parent="Doorway"]
+position = Vector3(17, 2.89, 22)
+size = Vector3(1, 0.22, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(1, 0.22, 1)
+metadata/precise_shot_bounds = true
+
+[node name="OpeningShooter" type="Marker3D" parent="Doorway"]
+position = Vector3(17, 1, 20)
+
+[node name="OpeningShooterLabel" type="Label3D" parent="Doorway"]
+position = Vector3(17, 0.025, 20)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="OpeningTarget" type="Marker3D" parent="Doorway"]
+position = Vector3(17, 1, 24)
+
+[node name="OpeningTargetLabel" type="Label3D" parent="Doorway"]
+position = Vector3(17, 0.025, 24)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="WallShooter" type="Marker3D" parent="Doorway"]
+position = Vector3(15, 1, 20)
+
+[node name="WallShooterLabel" type="Label3D" parent="Doorway"]
+position = Vector3(15, 0.025, 20)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="WallTarget" type="Marker3D" parent="Doorway"]
+position = Vector3(15, 1, 24)
+
+[node name="WallTargetLabel" type="Label3D" parent="Doorway"]
+position = Vector3(15, 0.025, 24)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="LintelShooter" type="Marker3D" parent="Doorway"]
+position = Vector3(17, 2.9, 20)
+
+[node name="LintelTarget" type="Marker3D" parent="Doorway"]
+position = Vector3(17, 2.9, 24)
+
+[node name="Sign" type="Label3D" parent="Doorway"]
+position = Vector3(17, 0.025, 25.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.01
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "07  OPEN DOOR / SOLID WALL"
+
+[node name="Corners" type="Node3D" parent="."]
+
+[node name="SeamEast" type="CSGBox3D" parent="Corners"]
+position = Vector3(26, 1.25, 3)
+size = Vector3(1, 2.5, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(1, 2.5, 1)
+metadata/precise_shot_bounds = false
+
+[node name="SeamSouth" type="CSGBox3D" parent="Corners"]
+position = Vector3(25, 1.25, 4)
+size = Vector3(1, 2.5, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(1, 2.5, 1)
+metadata/precise_shot_bounds = false
+
+[node name="SingleCorner" type="CSGBox3D" parent="Corners"]
+position = Vector3(28, 1.25, 7)
+size = Vector3(1, 2.5, 1)
+material = SubResource("wall")
+use_collision = true
+collision_layer = 2
+collision_mask = 0
+metadata/solid_size = Vector3(1, 2.5, 1)
+metadata/precise_shot_bounds = false
+
+[node name="SeamShooter" type="Marker3D" parent="Corners"]
+position = Vector3(25, 1, 3)
+
+[node name="SeamShooterLabel" type="Label3D" parent="Corners"]
+position = Vector3(25, 0.025, 3)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="SeamTarget" type="Marker3D" parent="Corners"]
+position = Vector3(26, 1, 4)
+
+[node name="SeamTargetLabel" type="Label3D" parent="Corners"]
+position = Vector3(26, 0.025, 4)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="SingleShooter" type="Marker3D" parent="Corners"]
+position = Vector3(27, 1, 7)
+
+[node name="SingleShooterLabel" type="Label3D" parent="Corners"]
+position = Vector3(27, 0.025, 7)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="SingleTarget" type="Marker3D" parent="Corners"]
+position = Vector3(28, 1, 8)
+
+[node name="SingleTargetLabel" type="Label3D" parent="Corners"]
+position = Vector3(28, 0.025, 8)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T"
+
+[node name="Sign" type="Label3D" parent="Corners"]
+position = Vector3(26, 0.025, 1)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.01
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "08  SEALED / GRAZING CORNERS"
+
+[node name="WallTop" type="Node" parent="Doorway"]
+metadata/deck_local_rect = Rect2i(15, 22, 5, 1)
+metadata/deck_level = 3
+metadata/deck_label = "Control gallery"
+
+[node name="TopAccess" type="Node3D" parent="Doorway"]
+metadata/ladder_local_bottom = Vector3i(15, 0, 23)
+metadata/ladder_local_top = Vector3i(15, 3, 22)
+
+[node name="Ladder" parent="Doorway/TopAccess" instance=ExtResource("ladder")]
+position = Vector3(15, 0, 22.55)
+scale = Vector3(1, 0.75, 1)
+
+[node name="RangeLane" type="Node3D" parent="."]
+
+[node name="Shooter" type="Marker3D" parent="RangeLane"]
+position = Vector3(1, 0, 16)
+
+[node name="ShooterLabel" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 16)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "S"
+
+[node name="SafeTarget" type="Marker3D" parent="RangeLane"]
+position = Vector3(1, 0, 22)
+
+[node name="SafeTargetLabel" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 22)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T6"
+
+[node name="FalloffTarget" type="Marker3D" parent="RangeLane"]
+position = Vector3(1, 0, 24)
+
+[node name="FalloffTargetLabel" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 24)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T8"
+
+[node name="EdgeTarget" type="Marker3D" parent="RangeLane"]
+position = Vector3(1, 0, 26)
+
+[node name="EdgeTargetLabel" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 26)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T10"
+
+[node name="BeyondTarget" type="Marker3D" parent="RangeLane"]
+position = Vector3(1, 0, 27)
+
+[node name="BeyondTargetLabel" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 27)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "T11"
+
+[node name="Sign" type="Label3D" parent="RangeLane"]
+position = Vector3(1, 0.025, 20)
+rotation = Vector3(-1.5707963, 1.5707963, 0)
+pixel_size = 0.008
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "09  CLEAR RANGE"
