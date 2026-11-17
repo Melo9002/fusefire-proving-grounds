@@ -3,8 +3,6 @@ extends Node
 
 signal changed
 
-const AIM_ACCURACY_BONUS := 15
-
 var is_aiming := false
 var is_shielding := false
 var is_overwatching := false

@@ -236,7 +236,7 @@ func _update_button_states() -> void:
 		reload_button.text = "Reload (1 AP)"
 	if aim_button:
 		aim_button.disabled = not aim_query.is_legal()
-		aim_button.tooltip_text = "Costs %d AP immediately. +%d accuracy to the next Attack.\nConsumed by Attack; canceled by Move, Reload, Shield, Guard, other committed actions, defeat, or the next activation.\nConditions that prevent Aim also clear it. Current accuracy rules are provisional." % [aim_query.cost.ap, TacticalState.AIM_ACCURACY_BONUS]
+		aim_button.tooltip_text = "Costs %d AP immediately. +%d accuracy to the next Attack.\nConsumed by Attack; canceled by Move, Reload, Shield, Guard, other committed actions, defeat, or the next activation.\nConditions that prevent Aim also clear it. Current accuracy rules are provisional." % [aim_query.cost.ap, aim_query.accuracy_bonus]
 		if not aim_query.is_legal(): aim_button.tooltip_text += "\nUnavailable: " + aim_query.reason()
 		aim_button.text = "Aim (1 AP)"
 	if shield_button:
@@ -246,7 +246,7 @@ func _update_button_states() -> void:
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "Preview first; Confirm spends all remaining AP (%d) and ends this activation.\nReserves one reaction against hostile movement or a direct attack.\nA reaction costs %d SP with %+d accuracy; Guard expires at the next activation." % [overwatch_query.actor_ap_before, TacticalActionService.OVERWATCH_SUPPLY_COST, TacticalActionService.OVERWATCH_ACCURACY_MODIFIER]
+		overwatch_button.tooltip_text = "Preview first; Confirm spends all remaining AP (%d) and ends this activation.\nReserves one reaction against hostile movement or a direct attack.\nA reaction costs %d SP with %+d accuracy; Guard expires at the next activation." % [overwatch_query.actor_ap_before, TacticalActionService.OVERWATCH_SUPPLY_COST, CombatRules.cover_tuning.guard_accuracy_modifier]
 		if not overwatch_query.is_legal(): overwatch_button.tooltip_text += "\nUnavailable: " + overwatch_query.reason()
 		overwatch_button.text = "CONFIRM GUARD" if battle_controller.is_overwatch_mode_active else "Guard"
 	if interact_button:
@@ -275,7 +275,7 @@ func _update_button_states() -> void:
 		elif unit.tactical_state and unit.tactical_state.is_shielding:
 			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y] + (" · " + condition_text if not condition_text.is_empty() else "")
 		else:
-			var aim_text := "AIMED +%d" % TacticalState.AIM_ACCURACY_BONUS if unit.tactical_state and unit.tactical_state.is_aiming else ""
+			var aim_text := "AIMED +%d" % CombatRules.cover_tuning.aim_accuracy_bonus if unit.tactical_state and unit.tactical_state.is_aiming else ""
 			tactical_state_label.text = " · ".join([aim_text, condition_text].filter(func(value: String): return not value.is_empty()))
 	if end_unit_button:
 		end_unit_button.disabled = not wait_query.is_legal()

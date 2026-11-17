@@ -578,7 +578,7 @@ func can_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	return evaluate_attack(attacker, target).is_legal
 
 func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit) -> CombatRules.AttackEvaluation:
-	var bonus := TacticalState.AIM_ACCURACY_BONUS if aim_enabled and is_instance_valid(attacker) and attacker.tactical_state and attacker.tactical_state.is_aiming else 0
+	var bonus: int = CombatRules.cover_tuning.aim_accuracy_bonus if aim_enabled and is_instance_valid(attacker) and attacker.tactical_state and attacker.tactical_state.is_aiming else 0
 	return CombatRules.evaluate_attack(attacker, target, grid_manager, get_world_3d(), bonus, shield_enabled)
 
 func query_attack(attacker: TacticalUnit, target: TacticalUnit = null) -> AttackQueryResult:

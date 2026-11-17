@@ -117,9 +117,9 @@ func _run() -> void:
 			var shot := _shot()
 			check(shot.is_legal and shot.hit_chance == heights[2] and absf(shot.distance_tiles - 8) < 0.00001, "Height %s/%s at fixed 80%% 3D range, unit %s: expected %s, got %s" % [heights[0], heights[1], unit, heights[2], shot.hit_chance])
 	_setup(10)
-	check(_shot(TacticalState.AIM_ACCURACY_BONUS).hit_chance == 45, "Step 6 keeps Aim +15: max-range 30 becomes 45")
+	check(_shot(CombatRules.cover_tuning.aim_accuracy_bonus).hit_chance == 65, "Step 7 Aim +35: max-range 30 becomes 65")
 	_setup(5)
-	check(_shot(TacticalActionService.OVERWATCH_ACCURACY_MODIFIER).hit_chance == 85, "Guard retains its separate -15 modifier")
+	check(_shot(CombatRules.cover_tuning.guard_accuracy_modifier).hit_chance == 85, "Guard retains its separate -15 modifier")
 	_setup(5)
 	var wall := grid.get_cell_data(actor.grid_position + Vector3i.RIGHT * 2)
 	wall.cover_height = 4

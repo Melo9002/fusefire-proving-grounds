@@ -7,12 +7,10 @@ signal action_rejected(validation: ActionValidationResult)
 signal busy_changed(is_busy: bool)
 
 const ATTACK_AP_COST := 1
-const ATTACK_DAMAGE := 25
 const ATTACK_SUPPLY_COST := 1
 const RELOAD_AP_COST := 1
 const AIM_AP_COST := 1
 const OVERWATCH_SUPPLY_COST := 1
-const OVERWATCH_ACCURACY_MODIFIER := -15
 
 var actor_registry := TacticalActorRegistry.new()
 var state_revision := 0
@@ -142,7 +140,7 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 		var base_evaluation := CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), 0, shield_enabled)
 		query.base_hit_chance = base_evaluation.hit_chance
 		query.aim_bonus = _aim_bonus(actor)
-		query.aim_applied = query.aim_bonus > 0
+		query.aim_applied = aim_enabled and actor.tactical_state != null and actor.tactical_state.is_aiming
 		evaluation = base_evaluation
 		if query.aim_applied:
 			evaluation = CombatRules.evaluate_attack(actor, target, _grid_manager, actor.get_world_3d(), query.aim_bonus, shield_enabled)
@@ -153,7 +151,7 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 		return query
 	query.evaluation = evaluation
 	query.hit_chance = evaluation.hit_chance
-	query.damage_on_hit = maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
+	query.damage_on_hit = CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
 	query.minimum_damage = 0
 	query.maximum_damage = query.damage_on_hit
 	query.expected_damage = float(query.damage_on_hit) * float(evaluation.hit_chance) / 100.0
@@ -200,14 +198,14 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.hit_chance = evaluation.hit_chance
 	result.base_hit_chance = base_evaluation.hit_chance
 	result.aim_bonus = aim_bonus
-	result.aim_applied = aim_bonus > 0
+	result.aim_applied = aim_enabled and actor.tactical_state != null and actor.tactical_state.is_aiming
 	result.roll = _combat_rng.randf() * 100.0
 	result.did_hit = AttackActionResult.roll_hits(result.roll, result.hit_chance)
 	result.environmental_cover = evaluation.cover_type
 	result.shield_applied = evaluation.shield_applied
 	result.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
 	result.shield_damage_multiplier = evaluation.shield_damage_multiplier
-	result.damage = maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier)) if result.did_hit else 0
+	result.damage = CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier) if result.did_hit else 0
 	result.actor_ap_before = actor.stats.current_ap
 	result.supply_points_before = actor.stats.current_supply_points
 	result.max_supply_points = actor.stats.max_supply_points
@@ -278,6 +276,7 @@ func query_reload(actor_id: StringName) -> ReloadQueryResult:
 
 func query_aim(actor_id: StringName) -> AimQueryResult:
 	var query := AimQueryResult.new()
+	query.accuracy_bonus = CombatRules.cover_tuning.aim_accuracy_bonus
 	query.actor_id = actor_id
 	query.state_revision = state_revision
 	query.cost = ActionCost.new(AIM_AP_COST)
@@ -456,6 +455,7 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	is_committing = true
 	last_transaction_id += 1
 	var result := AimActionResult.new()
+	result.accuracy_bonus = query.accuracy_bonus
 	result.transaction_id = last_transaction_id
 	result.base_revision = state_revision
 	result.request = request
@@ -997,7 +997,7 @@ func _validate_overwatch(actor: TacticalUnit) -> ActionValidationResult:
 func _aim_bonus(actor: TacticalUnit) -> int:
 	if not aim_enabled or not is_instance_valid(actor) or not actor.tactical_state:
 		return 0
-	return TacticalState.AIM_ACCURACY_BONUS if actor.tactical_state.is_aiming else 0
+	return CombatRules.cover_tuning.aim_accuracy_bonus if actor.tactical_state.is_aiming else 0
 
 func _cancel_aim(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_aim() if is_instance_valid(actor) and actor.tactical_state else false
@@ -1035,7 +1035,7 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			var watcher := actor_registry.resolve(watcher_id)
 			if not _watcher_can_react(watcher, mover):
 				continue
-			var evaluation := CombatRules.evaluate_attack_at_cell(watcher, mover, checkpoint, _grid_manager, mover.get_world_3d(), OVERWATCH_ACCURACY_MODIFIER, shield_enabled)
+			var evaluation := CombatRules.evaluate_attack_at_cell(watcher, mover, checkpoint, _grid_manager, mover.get_world_3d(), CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
 			if not evaluation.is_legal:
 				continue
 			var event := OverwatchReactionEvent.new()
@@ -1054,7 +1054,7 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
 			watcher.tactical_state.clear_overwatch()
 			if event.did_hit:
-				var requested_damage := maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
+				var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
 				mover.defer_stat_presentation = true
 				mover.stats.take_damage(requested_damage)
 				mover.defer_stat_presentation = false
@@ -1122,7 +1122,7 @@ func _on_tactical_beat_ended(beat_number: int) -> void:
 func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, result: AttackActionResult) -> void:
 	if not overwatch_enabled or not _watcher_can_react(watcher, attacker):
 		return
-	var evaluation := CombatRules.evaluate_attack(watcher, attacker, _grid_manager, watcher.get_world_3d(), OVERWATCH_ACCURACY_MODIFIER, shield_enabled)
+	var evaluation := CombatRules.evaluate_attack(watcher, attacker, _grid_manager, watcher.get_world_3d(), CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
 	if not evaluation.is_legal:
 		return
 	var event := OverwatchReactionEvent.new()
@@ -1140,7 +1140,7 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
 	watcher.tactical_state.clear_overwatch()
 	if event.did_hit:
-		var requested_damage := maxi(1, roundi(float(ATTACK_DAMAGE) * evaluation.shield_damage_multiplier))
+		var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
 		attacker.defer_stat_presentation = true
 		attacker.stats.take_damage(requested_damage)
 		attacker.defer_stat_presentation = false

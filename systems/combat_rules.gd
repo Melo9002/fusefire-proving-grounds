@@ -22,6 +22,9 @@ class AttackEvaluation:
 	var height_modifier := 0.0
 	var accuracy_bonus := 0
 	var raw_chance := 0.0
+	var base_accuracy := 0
+	var minimum_hit_chance := 0
+	var maximum_hit_chance := 100
 	var shield_applied := false
 	var shield_accuracy_modifier := 0
 	var shield_damage_multiplier := 1.0
@@ -119,9 +122,9 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var range_penalty: float = cover_tuning.range_penalty_for(distance_fraction)
 	var height_delta := (get_support_position(attacker_cell, grid).y - target_ground.y) / grid.cell_size
 	var height_modifier: float = cover_tuning.height_modifier_for(height_delta)
-	var raw_chance := 100.0 - range_penalty - maxi(cover_penalty, obstruction_penalty) + height_modifier + accuracy_bonus + shield_accuracy
+	var raw_chance: float = cover_tuning.base_accuracy - range_penalty - maxi(cover_penalty, obstruction_penalty) + height_modifier + accuracy_bonus + shield_accuracy
 	# Round only once; epsilon absorbs arithmetic noise at exact half-points.
-	var chance := floori(clampf(raw_chance, 5.0, 100.0) + 0.5 + 0.0000001)
+	var chance := floori(clampf(raw_chance, cover_tuning.minimum_hit_chance, cover_tuning.maximum_hit_chance) + 0.5 + 0.0000001)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
 	evaluation.cover_cell = cover_cell
@@ -134,6 +137,9 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	evaluation.height_modifier = height_modifier
 	evaluation.accuracy_bonus = accuracy_bonus
 	evaluation.raw_chance = raw_chance
+	evaluation.base_accuracy = cover_tuning.base_accuracy
+	evaluation.minimum_hit_chance = cover_tuning.minimum_hit_chance
+	evaluation.maximum_hit_chance = cover_tuning.maximum_hit_chance
 	return evaluation
 
 static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:

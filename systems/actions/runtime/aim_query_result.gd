@@ -8,7 +8,7 @@ var cost := ActionCost.new(1)
 var actor_ap_before := 0
 var actor_ap_after := 0
 var aiming_before := false
-var accuracy_bonus := TacticalState.AIM_ACCURACY_BONUS
+var accuracy_bonus := 0
 
 func is_legal() -> bool:
 	return validation != null and validation.accepted

@@ -72,7 +72,7 @@ func _run() -> void:
 	var unsupported := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	unsupported.schema_version = 999
 	check(unsupported.validation_message().contains("Unsupported replay schema"), "Unsupported schemas fail with an actionable error")
-	for incompatible_version in ["prototype-1.5-action-pipeline", "prototype-1.5-surface-placement-7", "unknown-future-simulation", ""]:
+	for incompatible_version in ["prototype-1.5-action-pipeline", "prototype-1.5-surface-placement-7", "prototype-1.5-height-range-8", "unknown-future-simulation", ""]:
 		var incompatible := recording.to_dictionary()
 		incompatible.simulation_version = incompatible_version
 		check(BattleReplayRecording.from_dictionary(incompatible).validation_message().contains("Incompatible replay simulation"), "Old, unknown and missing simulation identities reject before playback")
@@ -86,11 +86,11 @@ func _run() -> void:
 	missing_cover.erase("cover_tuning_signature")
 	check(BattleReplayRecording.from_dictionary(missing_cover).validation_message().contains("Incompatible replay combat tuning"), "Missing cover tuning identity cannot silently select today's penalties")
 
-	# The retained wire field now fingerprints every scalar used by step 6.
+	# The retained wire field now fingerprints every scalar used by steps 6 and 7.
 	var tuning = CombatRules.cover_tuning
-	for key in ["safe_range_fraction", "range_penalty_at_limit", "range_exponent", "height_accuracy_per_tile", "height_accuracy_cap"]:
+	for key in ["base_accuracy", "minimum_hit_chance", "maximum_hit_chance", "aim_accuracy_bonus", "guard_accuracy_modifier", "damage_on_hit", "safe_range_fraction", "range_penalty_at_limit", "range_exponent", "height_accuracy_per_tile", "height_accuracy_cap"]:
 		var original: Variant = tuning.get(key)
-		tuning.set(key, original + 0.01)
+		tuning.set(key, original - 1 if key == "maximum_hit_chance" else original + (1 if original is int else 0.01))
 		check(BattleReplayRecording.from_dictionary(recording.to_dictionary()).validation_message().contains("Incompatible replay combat tuning"), "Changed %s rejects before playback" % key)
 		tuning.set(key, original)
 

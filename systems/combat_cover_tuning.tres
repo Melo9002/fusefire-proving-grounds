@@ -4,6 +4,12 @@
 
 [resource]
 script = ExtResource("tuning")
+base_accuracy = 100
+minimum_hit_chance = 5
+maximum_hit_chance = 100
+aim_accuracy_bonus = 35
+guard_accuracy_modifier = -15
+damage_on_hit = 25
 low_cover_penalty = 20
 full_cover_penalty = 40
 safe_range_fraction = 0.6

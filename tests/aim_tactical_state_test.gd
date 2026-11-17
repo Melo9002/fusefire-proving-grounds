@@ -30,7 +30,7 @@ func _test_aim_contract_and_attack() -> void:
 	var ap_before := actor.stats.current_ap
 	var query := service.query_aim(actor.tactical_id)
 	check(query.is_legal() and query.actor_ap_before == ap_before and query.actor_ap_after == ap_before - 1, "Aim query exposes its one-AP cost")
-	check(not query.aiming_before and query.accuracy_bonus == 15, "Aim query exposes state and +15 bonus")
+	check(not query.aiming_before and query.accuracy_bonus == 35, "Aim query exposes state and +35 bonus")
 	check(service.get_combat_rng_state() == rng_before and service.state_revision == 0, "Aim query changes no RNG or revision")
 	var stale := service.make_aim_request(actor, TacticalActionRequest.Source.PLAYER)
 	stale.expected_revision = -1
@@ -41,13 +41,13 @@ func _test_aim_contract_and_attack() -> void:
 	check(actor.stats.current_supply_points == 4 and service.get_combat_rng_state() == rng_before, "Aim consumes no SP or RNG")
 	check(service.query_aim(actor.tactical_id).validation.code == &"already_aiming", "Aimed actors cannot Aim repeatedly")
 	var attack_query := service.query_attack(actor.tactical_id, target.tactical_id)
-	check(attack_query.aim_applied and attack_query.hit_chance == mini(100, attack_query.base_hit_chance + 15), "Attack preview applies Aim before the final clamp")
+	check(attack_query.aim_applied and attack_query.hit_chance == mini(100, attack_query.base_hit_chance + 35), "Attack preview applies Aim before the final clamp")
 	actor.stats.current_supply_points = 0
 	var rejected := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
 	check(rejected == null and actor.tactical_state.is_aiming and actor.stats.current_supply_points == 0, "Rejected Attack preserves Aim and SP")
 	actor.stats.current_supply_points = 1
 	var attack := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)
-	check(attack != null and attack.aim_applied and attack.aim_bonus == 15 and not actor.tactical_state.is_aiming, "Committed Attack consumes Aim on its seeded outcome")
+	check(attack != null and attack.aim_applied and attack.aim_bonus == 35 and not actor.tactical_state.is_aiming, "Committed Attack consumes Aim on its seeded outcome")
 	check(actor.stats.current_supply_points == 0 and attack.supply_points_cost == 1, "Aimed Attack consumes exactly one SP")
 	check(attack.to_replay_record().schema_version == AttackActionResult.SCHEMA_VERSION, "Current Attack uses the condition-aware payload schema while retaining Aim, shield, and Guard fields")
 	level.queue_free()
@@ -120,7 +120,7 @@ func _test_ai_and_hud() -> void:
 	check(not await ai.call("_try_aim_for_attack", target), "AI does not Aim repeatedly")
 	var hud := level.get_node("Visualizers/BattleUI/ActionHUDController") as ActionHUDController
 	hud.call("_update_button_states")
-	check(hud.tactical_state_label.text == "AIMED +15" and hud.aim_button.disabled, "HUD shows Aim state and disables repeated Aim")
+	check(hud.tactical_state_label.text == "AIMED +35" and hud.aim_button.disabled, "HUD shows Aim state and disables repeated Aim")
 	ai.free()
 	level.queue_free()
 	await process_frame

@@ -5,7 +5,7 @@ const BattlefieldCatalogData := preload("res://systems/generation/battlefield_ca
 const LocalContent := preload("res://systems/generation2/local_parcel_content.gd")
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
-const SIMULATION_VERSION := "prototype-1.5-height-range-8"
+const SIMULATION_VERSION := "prototype-1.5-accuracy-damage-9"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
@@ -36,7 +36,7 @@ func validation_message() -> String:
 	if not CombatRules.cover_tuning.is_valid():
 		return "Invalid combat tuning; correct the shared settings before playback."
 	if cover_tuning_signature != CombatRules.cover_tuning.signature():
-		return "Incompatible replay combat tuning; the saved cover/range/height values differ from this build. Start a new recording."
+		return "Incompatible replay combat tuning; the saved accuracy/damage/cover/range/height values differ from this build. Start a new recording."
 	if configuration.is_empty(): return "Replay has no battle_configuration"
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Archived experimental generator presets/layouts are quarantined; current Generation 2 uses named battlefields"
