@@ -15,6 +15,8 @@ Open `project.godot` and press **F5**. Match Setup offers **Service Depot**, the
 
 ## Understand or edit
 
+See the [project backlog](https://github.com/Melo9002/fusefire-proving-grounds/issues/1) for current issues and contributor-sized tasks.
+
 Start with [Generation 2.0](docs/generation-2.md): what is authored, what varies, and how to test it.
 [Architecture](docs/architecture.md) is the short code map. [Other documentation](docs/index.md) covers replay, simulation and animation.
 

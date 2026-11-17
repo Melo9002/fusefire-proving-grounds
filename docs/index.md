@@ -1,5 +1,7 @@
 # FuseFire documentation
 
+- [Live project backlog](https://github.com/Melo9002/fusefire-proving-grounds/issues/1): prioritized bugs, investigations and future tasks. [Audit scope and evidence](quality/project-backlog-2026-11-16.md).
+
 - [Generation 2.0](generation-2.md): play, reproduce, author and understand the current maps.
 - [Architecture](architecture.md): code ownership and the battle data flow.
 - [Combat 2.0 plan](combat-2-plan.md): ordered tasks and completion criteria for milestone 04.
