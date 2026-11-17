@@ -213,7 +213,10 @@ try {
         # Godot can emit an unhandled script error and still exit zero.
         # Preserve expected application-level negative-test diagnostics, but
         # never accept unexpected parser/runtime script failures as PASS.
-        if ($exitCode -eq 0 -and ($output -match 'SCRIPT ERROR:|Parse Error:|Compile Error:')) {
+        $scriptErrorPattern = 'SCRIPT ERROR:|Parse Error:|Compile Error:'
+        $engineScriptError = (Test-Path -LiteralPath $engineLogPath) -and
+            (Select-String -LiteralPath $engineLogPath -Pattern $scriptErrorPattern -Quiet)
+        if ($exitCode -eq 0 -and (($output -match $scriptErrorPattern) -or $engineScriptError)) {
             $output += "Runner rejected a zero exit after a script/parser error."
             $exitCode = 1
         }

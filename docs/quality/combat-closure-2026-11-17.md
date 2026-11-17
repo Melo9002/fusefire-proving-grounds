@@ -107,6 +107,10 @@ Remaining explicit limits: provisional balance and human pacing feedback; rounde
 | Corrected gallery / visible ascent | Both focused checks pass; visible ascent **15 checks / 0 failures** |
 | Allied fixture ownership | Focused verbose rerun passes without the earlier ObjectDB/resource leaks |
 
+The short decision-preview graphics run overlapped the early part of the final broad run. Its functional results are recorded separately; broad-run duration is not an isolated performance benchmark. The final quiet query measurement was run after the broad and graphics processes exited.
+
+The runner now checks both stdout/stderr and the engine log for script errors. After the full pass, the engine-log channel was made explicit in the runner as well; every completed full-run engine log was independently checked against that stricter condition, and the smoke/negative diagnostic was rerun. No gameplay or test assertions changed after the full pass.
+
 Final full logs: `artifacts/test-results/20261117-150453-full/`; first completed diagnostic full: `artifacts/test-results/20261117-143756-full/`. The first run remains 158/1/14 in its original logs. Fresh full verification follows the contract/lifetime corrections; its totals are not assembled from selected reruns.
 
 All fourteen exclusions are the existing explicit-only policy: extended AI/stress/generation metrics and specialized asset/editor/render capture workflows. No exclusion or ordinary test assertion was removed to achieve the result. The separate graphics checks above supplement the full tier; they do not turn its policy skip count into zero.
