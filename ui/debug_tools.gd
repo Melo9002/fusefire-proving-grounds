@@ -3,6 +3,7 @@ extends Control
 
 const DebugMapInspectorData := preload("res://presentation/overlays/debug_map_inspector.gd")
 const DebugMissionControllerData := preload("res://systems/debug_mission_controller.gd")
+const DebugInspection := preload("res://ui/debug_inspection_snapshot.gd")
 const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_overlay.gd")
 
 @export_group("Debug Availability")
@@ -13,6 +14,7 @@ const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_ov
 @export var battle_controller: BattleController
 @export var turn_manager: TurnManager
 @export var grid_manager: GridManager
+@export var objective_manager: ObjectiveManager
 ## Battle-local parent for developer overlays; independent of scene hierarchy.
 @export var presentation_root: Node3D
 
@@ -43,6 +45,14 @@ var _ai_scoring_label: Label
 var _inspected_destination := Vector3i(-1, -1, -1)
 var _show_ai_decisions: bool = false
 var _latest_ai_decision: Dictionary = {}
+var _inspection_snapshot: Dictionary = {}
+var _inspection_labels: Dictionary = {}
+var _inspection_status: Label
+var _target_picker: OptionButton
+var _manifest_toggle: CheckButton
+var _tabs: TabContainer
+var _monitor_elapsed := 0.0
+var _inspection_invalidated := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -61,23 +71,29 @@ func _ready() -> void:
 		_set_overlay_visible(overlay_visible_at_start)
 
 func _process(_delta: float) -> void:
+	if panel_open:
+		_monitor_elapsed += _delta
+		if _monitor_elapsed >= 0.5:
+			_monitor_elapsed = 0.0
+			_update_inspection_status()
+			_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
 	if debug_tools_enabled and _overlay.visible:
 		_update_overlay()
 	if debug_tools_enabled and _map_inspector and _map_inspector.inspection_enabled:
 		_update_map_inspection()
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not debug_tools_enabled or not event.pressed or event.echo:
+	if not debug_tools_enabled or battle_controller.replay_mode or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_F3:
 		var pause_menu := get_tree().get_first_node_in_group("battle_pause_menu") as BattlePauseMenu
-		if pause_menu and pause_menu.is_open:
+		if (pause_menu and pause_menu.is_open) or (is_instance_valid(battle_controller.action_confirmation) and battle_controller.action_confirmation.visible):
 			return
 		set_panel_open(not panel_open)
 		get_viewport().set_input_as_handled()
 
 func set_panel_open(open: bool) -> void:
-	if not debug_tools_enabled or panel_open == open:
+	if not debug_tools_enabled or battle_controller.replay_mode or panel_open == open:
 		return
 	panel_open = open
 	_panel.visible = open
@@ -85,6 +101,8 @@ func set_panel_open(open: bool) -> void:
 		_update_seed_display()
 		_capture_inspected_destination()
 		_refresh_mission_controls()
+		_capture_inspection()
+		_layout_panel()
 		_paused_by_debug_tools = not get_tree().paused
 		get_tree().paused = true
 	elif _paused_by_debug_tools:
@@ -92,6 +110,7 @@ func set_panel_open(open: bool) -> void:
 		_paused_by_debug_tools = false
 
 func set_manual_enemy_control(enabled: bool) -> void:
+	if battle_controller.replay_mode: return
 	if enabled and battle_controller and battle_controller.debug_player_ai:
 		battle_controller.set_debug_player_ai(false)
 		_auto_battle_toggle.set_pressed_no_signal(false)
@@ -101,6 +120,7 @@ func set_manual_enemy_control(enabled: bool) -> void:
 		_manual_enemy_toggle.button_pressed = enabled
 
 func set_auto_battle(enabled: bool) -> void:
+	if battle_controller.replay_mode: return
 	if enabled:
 		battle_controller.set_debug_enemy_control(false)
 		_manual_enemy_toggle.set_pressed_no_signal(false)
@@ -223,22 +243,43 @@ func _build_interface() -> void:
 	seed_row.add_child(copy_seed)
 	_update_seed_display()
 
+	_inspection_status = Label.new()
+	_inspection_status.custom_minimum_size.x = 400
+	_inspection_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_inspection_status)
 	var tabs := TabContainer.new()
+	_tabs = tabs
 	tabs.name = "DebugSections"
-	tabs.custom_minimum_size = Vector2(468, 430)
+	tabs.custom_minimum_size = Vector2(0, 0)
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.use_hidden_tabs_for_min_size = false
+	for section in ["Unit", "Tactical", "AI", "Map", "Runtime"]:
+		_build_inspection_section(tabs, section)
 	content.add_child(tabs)
+	var diagnostics_scroll := ScrollContainer.new()
+	diagnostics_scroll.name = "Diagnostics"
+	diagnostics_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(diagnostics_scroll)
 	var diagnostics := VBoxContainer.new()
-	diagnostics.name = "Diagnostics"
+	diagnostics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	diagnostics.add_theme_constant_override("separation", 6)
-	tabs.add_child(diagnostics)
+	diagnostics_scroll.add_child(diagnostics)
+	var control_scroll := ScrollContainer.new()
+	control_scroll.name = "Control"
+	control_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(control_scroll)
 	var control := VBoxContainer.new()
-	control.name = "Control"
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	control.add_theme_constant_override("separation", 8)
-	tabs.add_child(control)
+	control_scroll.add_child(control)
+	var mission_scroll := ScrollContainer.new()
+	mission_scroll.name = "Mission"
+	mission_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(mission_scroll)
 	var mission := VBoxContainer.new()
-	mission.name = "Mission"
+	mission.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mission.add_theme_constant_override("separation", 8)
-	tabs.add_child(mission)
+	mission_scroll.add_child(mission)
 
 	_overlay_toggle = CheckButton.new()
 	_overlay_toggle.text = "Show battle-data overlay"
@@ -345,6 +386,8 @@ func _build_interface() -> void:
 	resume.text = "Resume Battle"
 	resume.pressed.connect(set_panel_open.bind(false))
 	content.add_child(resume)
+	get_viewport().size_changed.connect(_layout_panel)
+	_layout_panel()
 
 func _update_seed_display() -> void:
 	if not _seed_label or not battle_controller or not grid_manager:
@@ -437,11 +480,11 @@ func _format_optional_score(value: Variant) -> String:
 
 func _build_mission_controller() -> void:
 	_mission_controller = DebugMissionControllerData.new()
-	var objectives := get_tree().get_first_node_in_group("objective_manager") as ObjectiveManager
-	_mission_controller.configure(battle_controller, turn_manager, objectives, grid_manager)
+	_mission_controller.configure(battle_controller, turn_manager, objective_manager, grid_manager)
 	_mission_controller.command_executed.connect(_on_debug_mission_command)
 
 func _capture_inspected_destination() -> void:
+	_inspected_destination = Vector3i(-1, -1, -1)
 	if _map_inspector and _map_inspector.hovered_cell:
 		_inspected_destination = _map_inspector.hovered_cell.grid_position
 		return
@@ -451,6 +494,8 @@ func _capture_inspected_destination() -> void:
 			_inspected_destination = hit.grid_position
 
 func _refresh_mission_controls() -> void:
+	if not _mission_controller:
+		_build_mission_controller()
 	if not _mission_controller or not _objective_option or not _actor_option:
 		return
 	_objective_option.clear()
@@ -485,18 +530,22 @@ func _selected_actor() -> TacticalUnit:
 	return instance_from_id(int(_actor_option.get_item_metadata(_actor_option.selected))) as TacticalUnit
 
 func _debug_advance_round() -> void:
+	if battle_controller.replay_mode: return
 	_mission_controller.advance_round()
 	_refresh_mission_controls()
 
 func _debug_complete_objective() -> void:
+	if battle_controller.replay_mode: return
 	_mission_controller.complete_objective(_selected_objective_id())
 	_refresh_mission_controls()
 
 func _debug_fail_objective() -> void:
+	if battle_controller.replay_mode: return
 	_mission_controller.fail_objective(_selected_objective_id())
 	_refresh_mission_controls()
 
 func _debug_teleport_actor() -> void:
+	if battle_controller.replay_mode: return
 	if _inspected_destination.x < 0:
 		_on_debug_mission_command("Teleport rejected: hover a destination before opening F3.")
 		return
@@ -504,10 +553,13 @@ func _debug_teleport_actor() -> void:
 	_refresh_mission_controls()
 
 func _debug_force_extract() -> void:
+	if battle_controller.replay_mode: return
 	_mission_controller.force_extract(_selected_actor())
 	_refresh_mission_controls()
 
 func _on_debug_mission_command(message: String) -> void:
+	_inspection_invalidated = true
+	_update_inspection_status()
 	if _mission_status:
 		_mission_status.text = message
 
@@ -601,3 +653,66 @@ func _update_overlay() -> void:
 		if blocker:
 			lines.append("LOS blocker: %s  |  %s  |  %.1fm" % [blocker.grid_position, MapCellData.CoverType.keys()[blocker.cover_type], blocker.cover_height])
 	_overlay.text = "\n".join(lines)
+
+func _build_inspection_section(tabs: TabContainer, section: String) -> void:
+	var column := VBoxContainer.new()
+	column.name = section
+	tabs.add_child(column)
+	if section == "Tactical":
+		_target_picker = OptionButton.new()
+		_target_picker.item_selected.connect(_show_target_snapshot)
+		column.add_child(_target_picker)
+	if section == "Map":
+		_manifest_toggle = CheckButton.new()
+		_manifest_toggle.text = "Show technical manifest (recorded parcel/population choices)"
+		_manifest_toggle.toggled.connect(func(_enabled: bool): _show_map_snapshot())
+		column.add_child(_manifest_toggle)
+	var details := RichTextLabel.new()
+	details.name = "InspectionText"
+	details.selection_enabled = true
+	details.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details.custom_minimum_size = Vector2(0, 220)
+	details.bbcode_enabled = false
+	column.add_child(details)
+	_inspection_labels[section] = details
+
+func _layout_panel() -> void:
+	if not is_instance_valid(_panel): return
+	var viewport_size := get_viewport_rect().size
+	_panel.custom_minimum_size = Vector2.ZERO
+	_panel.size = Vector2(minf(940, viewport_size.x - 32), minf(650, viewport_size.y - 32))
+	_panel.position = (viewport_size - _panel.size) * 0.5
+
+func _capture_inspection() -> void:
+	_inspection_invalidated = false
+	_inspection_snapshot = DebugInspection.capture(battle_controller, _inspected_destination, not get_tree().paused and not battle_controller.replay_mode)
+	_inspection_labels["Unit"].text = _inspection_snapshot.unit
+	_target_picker.clear()
+	for target in _inspection_snapshot.targets: _target_picker.add_item(target.id)
+	_target_picker.disabled = _target_picker.item_count == 0
+	if _target_picker.item_count == 0: _target_picker.add_item("No live hostile action query available")
+	_show_target_snapshot(0)
+	_show_map_snapshot()
+	if not _latest_ai_decision.is_empty(): _update_ai_scoring_details(_latest_ai_decision)
+	_inspection_labels["AI"].text = ("Latest recorded decision (historical):\n" + _ai_decision_label.text + "\n\n" + _ai_scoring_label.text if not _latest_ai_decision.is_empty() else "No AI decision recorded in this battle yet.") + "\n\n" + _inspection_snapshot.squad
+	_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
+	_update_inspection_status()
+
+func _show_target_snapshot(index: int) -> void:
+	var text := "SHOT · pre-pause query\n"
+	var targets: Array = _inspection_snapshot.get("targets", [])
+	text += targets[index].text if index >= 0 and index < targets.size() else "No target snapshot. Replay/already-paused inspection does not invent live action legality."
+	_inspection_labels["Tactical"].text = text + "\n\nMOVEMENT · hovered destination\n" + _inspection_snapshot.get("movement", "Hover a destination, then open F3.")
+
+func _show_map_snapshot() -> void:
+	_inspection_labels["Map"].text = _inspection_snapshot.get("map", "Open F3 to capture map details.") + ("\n\nRecorded technical manifest:\n" + _inspection_snapshot.get("manifest", "") if _manifest_toggle.button_pressed else "\n\nEnable technical manifest for parcel IDs, revisions and population choices.")
+
+func _update_inspection_status() -> void:
+	var stale := _inspection_invalidated or not _inspection_snapshot.is_empty() and int(_inspection_snapshot.revision) != battle_controller.action_service.state_revision
+	_inspection_status.text = "STALE SNAPSHOT · state changed; close/reopen F3 to refresh." if stale else "Read-only snapshot at F3 open · revision %s · build %.2f ms. Hover a destination before opening. Live monitors are separate." % [_inspection_snapshot.get("revision", "?"), _inspection_snapshot.get("elapsed_ms", 0.0)]
+
+func _exit_tree() -> void:
+	if _paused_by_debug_tools and is_inside_tree():
+		get_tree().paused = false
+	_paused_by_debug_tools = false

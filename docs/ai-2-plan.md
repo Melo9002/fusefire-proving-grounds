@@ -4,6 +4,8 @@ Planning baseline: `e709f0c`, 2026-11-17. This is the ordered work plan; it does
 
 The current AI already has utility scorers, mission intent, squad reservations, commander preferences, difficulty policies, recovery behavior, debug explanations and simulation reporting. Preserve useful behavior and its tests. Start with evidence, then improve the specific boundaries and decisions that need work.
 
+Preparation: [F3 battle inspection](debug-inspection.md) now exposes existing unit, action-query, AI, map and runtime information. This helps collect evidence; it does not complete the AI audit, introduce profiles/expiry, or measure planning latency.
+
 ## Ordered tasks
 
 | Step | Work | Finished when |
