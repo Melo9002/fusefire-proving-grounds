@@ -15,6 +15,8 @@ var condition_removed := false
 var charges_before := 0
 var charges_after := 0
 var presentation_suppressed := false
+## Presentation only; replay regenerates this from the committed stance.
+var shield_retained := false
 var presentation_completed := false
 var presentation_error := ""
 

@@ -34,6 +34,9 @@ var battle_result_after: int
 var target_position := Vector3.ZERO
 var objective_state_before: Dictionary = {}
 var objective_state_after: Dictionary = {}
+## Presentation-only explanations; no new replay state or random draws.
+var guard_checks: Dictionary = {}
+var defense_notes := PackedStringArray()
 var reaction_events: Array[OverwatchReactionEvent] = []
 var condition_events: Array[Dictionary] = []
 var presentation_completed := false

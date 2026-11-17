@@ -236,17 +236,23 @@ func _update_button_states() -> void:
 		reload_button.text = "Reload (1 AP)"
 	if aim_button:
 		aim_button.disabled = not aim_query.is_legal()
-		aim_button.tooltip_text = "Costs %d AP immediately. +%d accuracy to the next Attack.\nConsumed by Attack; canceled by Move, Reload, Shield, Guard, other committed actions, defeat, or the next activation.\nConditions that prevent Aim also clear it. Current accuracy rules are provisional." % [aim_query.cost.ap, aim_query.accuracy_bonus]
+		aim_button.tooltip_text = "Costs %d AP immediately. +%d accuracy to the next Attack.\nConsumed by Attack; canceled by Move, Reload, Shield, Guard, other committed actions, defeat, or the next activation.\nConditions that prevent Aim also clear it. No damage bonus; repeated Aim does not stack. Cancels Shield or Guard." % [aim_query.cost.ap, aim_query.accuracy_bonus]
 		if not aim_query.is_legal(): aim_button.tooltip_text += "\nUnavailable: " + aim_query.reason()
 		aim_button.text = "Aim (1 AP)"
 	if shield_button:
 		shield_button.visible = unit.shield_capability != null
 		shield_button.disabled = not shield_query.is_legal() or not shield_query.has_legal_threats()
-		shield_button.tooltip_text = "Choose a hostile to face; protects a %.0f° arc" % shield_query.protected_arc_degrees if shield_query.is_legal() else shield_query.reason()
-		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (1 AP)"
+		var restrictions := PackedStringArray()
+		if unit.shield_capability:
+			if not unit.shield_capability.attacks_allowed: restrictions.append("Attack")
+			if not unit.shield_capability.reload_allowed: restrictions.append("Reload")
+		var restriction_text := " and ".join(restrictions) + " blocked while active." if not restrictions.is_empty() else "Shield does not restrict Attack or Reload."
+		shield_button.tooltip_text = "Costs %d AP; choose a hostile to face. Protects a %.0f° front arc: %+d incoming accuracy, ×%.2f damage.\nNo protection from outside the arc. Facing stays fixed; it does not track the target.\n%s Aim cancels Shield; Guard is unavailable.\nMove keeps protection during the route, then cancels it. Skip keeps Shield active. Other incompatible actions cancel it. Expires at the next activation." % [shield_query.cost.ap, shield_query.protected_arc_degrees, shield_query.accuracy_modifier, shield_query.damage_multiplier, restriction_text]
+		if not shield_query.is_legal(): shield_button.tooltip_text += "\nUnavailable: " + shield_query.reason()
+		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (%d AP)" % shield_query.cost.ap
 	if overwatch_button:
 		overwatch_button.disabled = not overwatch_query.is_legal()
-		overwatch_button.tooltip_text = "Preview first; Confirm spends all remaining AP (%d) and ends this activation.\nReserves one reaction against hostile movement or a direct attack.\nA reaction costs %d SP with %+d accuracy; Guard expires at the next activation." % [overwatch_query.actor_ap_before, TacticalActionService.OVERWATCH_SUPPLY_COST, CombatRules.cover_tuning.guard_accuracy_modifier]
+		overwatch_button.tooltip_text = "Preview first; Confirm spends all remaining AP (%d) and ends this activation.\nReserves one reaction against hostile movement or a direct attack.\nA reaction costs %d SP with %+d accuracy; no facing cone. Aim does not boost it.\nOnly hostile movement or an attack on this watcher triggers a check; Aim, Reload and other actions do not.\nBlocked/out-of-range checks spend no SP and keep the reaction reserved. A shot spends it even on a miss.\nGuard expires unused at the next activation; cancels Aim and cannot combine with Shield." % [overwatch_query.actor_ap_before, TacticalActionService.OVERWATCH_SUPPLY_COST, CombatRules.cover_tuning.guard_accuracy_modifier]
 		if not overwatch_query.is_legal(): overwatch_button.tooltip_text += "\nUnavailable: " + overwatch_query.reason()
 		overwatch_button.text = "CONFIRM GUARD" if battle_controller.is_overwatch_mode_active else "Guard"
 	if interact_button:
@@ -273,13 +279,14 @@ func _update_button_states() -> void:
 		if unit.tactical_state and unit.tactical_state.is_overwatching:
 			tactical_state_label.text = "GUARD" + (" · " + condition_text if not condition_text.is_empty() else "")
 		elif unit.tactical_state and unit.tactical_state.is_shielding:
-			tactical_state_label.text = "SHIELD %.0f°,%.0f°" % [unit.tactical_state.shield_facing.x, unit.tactical_state.shield_facing.y] + (" · " + condition_text if not condition_text.is_empty() else "")
+			var shield_text := "SHIELD %.0f° FRONT" % unit.shield_capability.protected_arc_degrees if unit.shield_capability else "SHIELD (unavailable)"
+			tactical_state_label.text = shield_text + (" · " + condition_text if not condition_text.is_empty() else "")
 		else:
 			var aim_text := "AIMED +%d" % CombatRules.cover_tuning.aim_accuracy_bonus if unit.tactical_state and unit.tactical_state.is_aiming else ""
 			tactical_state_label.text = " · ".join([aim_text, condition_text].filter(func(value: String): return not value.is_empty()))
 	if end_unit_button:
 		end_unit_button.disabled = not wait_query.is_legal()
-		end_unit_button.tooltip_text = "" if wait_query.is_legal() else wait_query.reason()
+		end_unit_button.tooltip_text = "End this unit's activation. Keeps active Shield; cancels Aim." if wait_query.is_legal() else wait_query.reason()
 
 func _disable_all_buttons() -> void:
 	if move_button: move_button.disabled = true

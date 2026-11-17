@@ -19,6 +19,9 @@ var path_cells: Array[Vector3i] = []
 var standing_points: Array[Array] = []
 var presentation_path := PackedVector3Array()
 var visual_segments: Array[StringName] = []
+## Presentation-only explanations; no new replay state or random draws.
+var guard_checks: Dictionary = {}
+var defense_notes := PackedStringArray()
 var reaction_events: Array[OverwatchReactionEvent] = []
 var condition_events: Array[Dictionary] = []
 var movement_interrupted := false

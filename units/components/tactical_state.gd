@@ -2,11 +2,13 @@ class_name TacticalState
 extends Node
 
 signal changed
+## Presentation notice; expiry rules and authoritative state remain here.
+signal stances_expired(names: PackedStringArray)
 
 var is_aiming := false
 var is_shielding := false
 var is_overwatching := false
-## Normalized X/Z grid direction selected when Shield Stance commits.
+## Normalized world X/Z direction between supported standing points selected when Shield Stance commits.
 var shield_facing := Vector2.ZERO
 var activation_round := -1
 var activation_phase := -1
@@ -19,9 +21,14 @@ func begin_activation(round_number: int, phase: int) -> bool:
 		return false
 	activation_round = round_number
 	activation_phase = phase
+	var expired := PackedStringArray()
+	if is_aiming: expired.append("Aim")
+	if is_shielding: expired.append("Shield")
+	if is_overwatching: expired.append("Guard (unused)")
 	var changed_state := clear_aim()
 	changed_state = clear_shield() or changed_state
 	changed_state = clear_overwatch() or changed_state
+	if not expired.is_empty(): stances_expired.emit(expired)
 	return changed_state
 
 

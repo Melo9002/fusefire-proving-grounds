@@ -211,6 +211,10 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.max_supply_points = actor.stats.max_supply_points
 	result.supply_points_cost = ATTACK_SUPPLY_COST if uses_supply else 0
 	result.target_hp_before = target.stats.current_hp
+	var target_was_guarding := target.tactical_state != null and target.tactical_state.is_overwatching
+	if result.aim_applied: result.defense_notes.append("%s: Aim +%d consumed by Attack" % [actor.tactical_id, aim_bonus])
+	if not evaluation.shield_reason.is_empty():
+		result.defense_notes.append("%s: %s%s" % [target.tactical_id, evaluation.shield_reason, " — protection applied" if evaluation.shield_applied else " — no protection"])
 	result.battle_result_before = int(_turn_manager.battle_result)
 	result.target_position = target.global_position
 	result.objective_state_before = _capture_objectives()
@@ -231,7 +235,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		if result.damage > 0 and not target.stats.is_defeated and conditions_enabled and actor.attack_condition:
 			var condition_event := _apply_condition(target, actor.attack_condition, actor.tactical_id, &"attack")
 			if condition_event.get("applied", false): result.condition_events.append(condition_event)
-	_resolve_attack_retaliation(actor, target, result)
+	_resolve_attack_retaliation(actor, target, result, target_was_guarding)
 	if _objective_manager:
 		_objective_manager.evaluate_outcome_after_action_commit()
 	result.actor_ap_after = actor.stats.current_ap
@@ -310,7 +314,7 @@ func query_shield(actor_id: StringName, threat_id: StringName = &"") -> ShieldQu
 		if is_instance_valid(threat):
 			var actor_cell := _grid_manager.get_unit_grid(actor)
 			var threat_cell := _grid_manager.get_unit_grid(threat)
-			query.facing = Vector2(float(threat_cell.x - actor_cell.x), float(threat_cell.z - actor_cell.z)).normalized()
+			query.facing = CombatRules.shield_direction(actor_cell, threat_cell, _grid_manager)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
 		query.validation = service_check
@@ -585,6 +589,8 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	result.presentation_path = query.presentation_path
 	result.visual_segments = query.visual_segments
 	result.actor_ap_before = actor.stats.current_ap
+	var aimed_before := actor.tactical_state != null and actor.tactical_state.is_aiming
+	var shielded_before := actor.tactical_state != null and actor.tactical_state.is_shielding
 	result.objective_state_before = _capture_objectives()
 	actor.stats.consume_ap(result.cost.ap)
 	_resolve_overwatch_reactions(actor, result)
@@ -599,6 +605,8 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 	_cancel_aim(actor)
 	_cancel_shield(actor)
 	_cancel_overwatch(actor)
+	if aimed_before: result.defense_notes.append("%s: Aim ended by Move" % actor.tactical_id)
+	if shielded_before: result.defense_notes.append("%s: Shield ended after Move; it applied to eligible in-route reactions" % actor.tactical_id)
 	result.actor_ap_after = actor.stats.current_ap
 	state_revision += 1
 	result.committed_revision = state_revision
@@ -759,7 +767,9 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 		actor.stats.consume_ap(ATTACK_AP_COST)
 		actor.stats.is_defending = true
 	_cancel_aim(actor)
-	_cancel_shield(actor)
+	# Ending an activation is the intended way to hold Shield into enemy turns.
+	if request.kind != &"wait": _cancel_shield(actor)
+	result.shield_retained = request.kind == &"wait" and actor.tactical_state != null and actor.tactical_state.is_shielding
 	_cancel_overwatch(actor)
 	result.actor_ap_after = actor.stats.current_ap
 	result.defending_after = actor.stats.is_defending
@@ -953,8 +963,8 @@ func _validate_shield(actor: TacticalUnit, threat: TacticalUnit) -> ActionValida
 		return ActionValidationResult.reject(&"target_missing", "Choose a living hostile to face", state_revision)
 	if not FactionRules.are_hostile(actor.faction, threat.faction):
 		return ActionValidationResult.reject(&"target_not_hostile", "Shield Stance must face a hostile threat", state_revision)
-	if _grid_manager.get_unit_grid(actor) == _grid_manager.get_unit_grid(threat):
-		return ActionValidationResult.reject(&"invalid_direction", "Shield direction could not be determined", state_revision)
+	if CombatRules.shield_direction(_grid_manager.get_unit_grid(actor), _grid_manager.get_unit_grid(threat), _grid_manager).is_zero_approx():
+		return ActionValidationResult.reject(&"invalid_direction", "Choose a threat with a horizontal direction to face", state_revision)
 	return ActionValidationResult.allow(state_revision)
 
 func _validate_shield_actor(actor: TacticalUnit) -> ActionValidationResult:
@@ -1033,11 +1043,14 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			continue
 		for watcher_id in watcher_ids:
 			var watcher := actor_registry.resolve(watcher_id)
-			if not _watcher_can_react(watcher, mover):
+			if not is_instance_valid(watcher) or not watcher.tactical_state or not watcher.tactical_state.is_overwatching or not FactionRules.are_hostile(watcher.faction, mover.faction):
 				continue
-			var evaluation := CombatRules.evaluate_attack_at_cell(watcher, mover, checkpoint, _grid_manager, mover.get_world_3d(), CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
-			if not evaluation.is_legal:
+			var opportunity := query_guard_reaction(watcher, mover, checkpoint)
+			if not opportunity.can_fire:
+				_record_guard_skip(result, watcher, mover, checkpoint, "movement checkpoints", opportunity.reason)
 				continue
+			result.guard_checks.erase(watcher.tactical_id)
+			var evaluation: CombatRules.AttackEvaluation = opportunity.evaluation
 			var event := OverwatchReactionEvent.new()
 			event.watcher_id = watcher.tactical_id
 			event.checkpoint_cell = checkpoint
@@ -1119,12 +1132,14 @@ func _on_tactical_beat_ended(beat_number: int) -> void:
 			last_beat_events.append(event)
 			if actor.stats.is_defeated: break
 
-func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, result: AttackActionResult) -> void:
-	if not overwatch_enabled or not _watcher_can_react(watcher, attacker):
+func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, result: AttackActionResult, was_guarding := false) -> void:
+	if not was_guarding: return
+	var checkpoint := _grid_manager.get_unit_grid(attacker)
+	var opportunity := query_guard_reaction(watcher, attacker, checkpoint)
+	if not opportunity.can_fire:
+		_record_guard_skip(result, watcher, attacker, checkpoint, "retaliation after being attacked", opportunity.reason)
 		return
-	var evaluation := CombatRules.evaluate_attack(watcher, attacker, _grid_manager, watcher.get_world_3d(), CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
-	if not evaluation.is_legal:
-		return
+	var evaluation: CombatRules.AttackEvaluation = opportunity.evaluation
 	var event := OverwatchReactionEvent.new()
 	event.watcher_id = watcher.tactical_id
 	event.checkpoint_cell = _grid_manager.get_unit_grid(attacker)
@@ -1150,11 +1165,27 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	event.target_defeated = attacker.stats.is_defeated
 	result.reaction_events.append(event)
 
-func _watcher_can_react(watcher: TacticalUnit, mover: TacticalUnit) -> bool:
-	return is_instance_valid(watcher) and watcher != mover and watcher.stats and not watcher.stats.is_defeated \
-		and watcher.tactical_state and watcher.tactical_state.is_overwatching \
-		and watcher.stats.has_supply_points(OVERWATCH_SUPPLY_COST) \
-		and FactionRules.are_hostile(watcher.faction, mover.faction)
+## Read-only: reactions ignore the watcher's spent AP and active phase, but use
+## the ordinary supported-point range/LOS, ammo and carrying restrictions.
+func query_guard_reaction(watcher: TacticalUnit, target: TacticalUnit, target_cell := Vector3i(-1, -1, -1)) -> Dictionary:
+	var reason := ""
+	if not overwatch_enabled: reason = "Guard is unavailable"
+	elif not is_instance_valid(watcher) or not watcher.stats: reason = "Watcher unavailable"
+	elif watcher.stats.is_defeated: reason = "Watcher defeated before reacting"
+	elif not watcher.tactical_state or not watcher.tactical_state.is_overwatching: reason = "No Guard reaction reserved"
+	elif not is_instance_valid(target) or not target.stats: reason = "Target unavailable"
+	elif target.stats.is_defeated: reason = "Target defeated before reacting"
+	elif not FactionRules.are_hostile(watcher.faction, target.faction): reason = "Not hostile"
+	elif not watcher.stats.has_supply_points(OVERWATCH_SUPPLY_COST): reason = "Not enough SP for a reaction"
+	elif not is_instance_valid(_grid_manager) or not _grid_manager.map_data: reason = "Battlefield unavailable"
+	if not reason.is_empty(): return {"can_fire": false, "reason": reason}
+	if target_cell == Vector3i(-1, -1, -1): target_cell = _grid_manager.get_unit_grid(target)
+	var evaluation := CombatRules.evaluate_attack_at_cell(watcher, target, target_cell, _grid_manager, null, CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
+	return {"can_fire": evaluation.is_legal, "reason": evaluation.reason, "evaluation": evaluation}
+
+func _record_guard_skip(result, watcher: TacticalUnit, target: TacticalUnit, checkpoint: Vector3i, trigger: String, reason: String) -> void:
+	# One latest checked reason per watcher, not a log entry for every path cell.
+	result.guard_checks[watcher.tactical_id] = {"target": target.tactical_id, "checkpoint": checkpoint, "trigger": trigger, "reason": reason, "reserved": watcher.tactical_state != null and watcher.tactical_state.is_overwatching and not watcher.stats.is_defeated}
 
 func _code_for_reason(reason: String) -> StringName:
 	match reason:

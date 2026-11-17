@@ -11,7 +11,7 @@ static func shot(query: AttackQueryResult) -> String:
 		return heading
 	var cover_names := ["none", "low", "full"]
 	var shot := query.evaluation
-	var damage_note := " · Shield ×%.2f" % query.shield_damage_multiplier if query.shield_applied else ""
+	var damage_note := " · Shield ×%.2f" % query.shield_damage_multiplier if query.shield_applied else " · " + shot.shield_reason if not shot.shield_reason.is_empty() else ""
 	return heading + "%d%% hit · %d AP · %d SP\nDamage on hit: %d%s · cover: %s · %s\nBase %d · Protection -%d (cover %d / exposure %d; strongest only)\nRange penalty %.1f · Height %+.1f · Aim +%d · Shield %+d\nRaw %.2f → %d%% (limits %d–%d; rounded)" % [query.hit_chance, query.cost.ap, query.supply_points_cost, query.damage_on_hit, damage_note, cover_names[shot.cover_type], query.obstruction, shot.base_accuracy, shot.protection_penalty, shot.cover_penalty, shot.obstruction_penalty, shot.range_penalty, shot.height_modifier, query.aim_bonus, shot.shield_accuracy_modifier, shot.raw_chance, query.hit_chance, shot.minimum_hit_chance, shot.maximum_hit_chance]
 
 static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array[TacticalUnit], grid: GridManager, use_supply := true, use_shield := true) -> String:
@@ -40,11 +40,23 @@ static func committed(result) -> PackedStringArray:
 	var lines := PackedStringArray()
 	if result is AttackActionResult:
 		lines.append(_shot_result(result.request.actor_id, result.request.target_id, result.did_hit, result.damage, result.target_defeated))
+	elif result is AimActionResult:
+		lines.append("%s: Aim +%d — next Attack; canceled by Move, Reload or stance changes" % [result.request.actor_id, result.accuracy_bonus])
+	elif result is ShieldActionResult:
+		lines.append("%s: Shield toward %s — %.0f° front, %+d accuracy, ×%.2f damage" % [result.request.actor_id, result.request.target_id, result.protected_arc_degrees, result.accuracy_modifier, result.damage_multiplier])
+	elif result is SimpleActionResult and result.shield_retained:
+		lines.append("%s: skipped remaining AP; Shield stays active until next activation" % result.request.actor_id)
 	elif result is OverwatchActionResult:
 		lines.append("%s entered Guard — one reaction reserved" % result.request.actor_id)
 	if result is AttackActionResult or result is MoveActionResult:
+		lines.append_array(result.defense_notes)
+		var watcher_ids: Array = result.guard_checks.keys()
+		watcher_ids.sort()
+		for watcher_id in watcher_ids:
+			var skipped: Dictionary = result.guard_checks[watcher_id]
+			lines.append("Guard: %s did not fire at %s — %s (last checked: %s, %s). %s" % [watcher_id, skipped.target, skipped.reason, skipped.trigger, skipped.checkpoint, "Reaction still reserved." if skipped.reserved else "No reaction remains."])
 		for event: OverwatchReactionEvent in result.reaction_events:
-			lines.append("Guard: " + _shot_result(event.watcher_id, result.request.actor_id, event.did_hit, event.damage, event.target_defeated))
+			lines.append("Guard: " + _shot_result(event.watcher_id, result.request.actor_id, event.did_hit, event.damage, event.target_defeated) + " · %s · %d%% hit · 1 SP; reaction spent" % ["movement at %s" % event.checkpoint_cell if event.checkpoint_index > 0 else "retaliation after being attacked", event.hit_chance])
 	return lines
 
 static func _shot_result(attacker: StringName, target: StringName, hit: bool, damage: int, defeated: bool) -> String:

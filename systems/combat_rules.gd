@@ -25,6 +25,7 @@ class AttackEvaluation:
 	var base_accuracy := 0
 	var minimum_hit_chance := 0
 	var maximum_hit_chance := 100
+	var shield_reason := ""
 	var shield_applied := false
 	var shield_accuracy_modifier := 0
 	var shield_damage_multiplier := 1.0
@@ -116,7 +117,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var cover_penalty: int = cover_tuning.full_cover_penalty if cover == MapCellData.CoverType.FULL else cover_tuning.low_cover_penalty if cover == MapCellData.CoverType.LOW else 0
 	var obstruction_penalties := [50, 50, 40, 25, 10, 0]
 	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
-	var shield := get_shield_protection_at_cells(attacker_cell, target, target_cell) if allow_shield else {}
+	var shield := get_shield_protection_at_cells(attacker_cell, target, target_cell, grid) if allow_shield else {}
 	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
 	var distance_fraction := distance / float(attacker.attack_range)
 	var range_penalty: float = cover_tuning.range_penalty_for(distance_fraction)
@@ -127,6 +128,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var chance := floori(clampf(raw_chance, cover_tuning.minimum_hit_chance, cover_tuning.maximum_hit_chance) + 0.5 + 0.0000001)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+	evaluation.shield_reason = String(shield.get("reason", ""))
 	evaluation.cover_cell = cover_cell
 	evaluation.cover_penalty = cover_penalty
 	evaluation.obstruction_penalty = obstruction_penalty
@@ -142,26 +144,21 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	evaluation.maximum_hit_chance = cover_tuning.maximum_hit_chance
 	return evaluation
 
-static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
-	if not is_instance_valid(attacker) or not is_instance_valid(target) or not target.tactical_state \
-		or not target.tactical_state.is_shielding or not target.shield_capability:
-		return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
-	var attacker_cell := grid.get_unit_grid(attacker)
-	var target_cell := grid.get_unit_grid(target)
-	var incoming := Vector2(float(attacker_cell.x - target_cell.x), float(attacker_cell.z - target_cell.z))
-	var applied := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
-	return {
-		"applied": applied,
-		"accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0,
-		"damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0,
-	}
+## Both committed facing and incoming direction use supported positions, not animation.
+static func shield_direction(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> Vector2:
+	var delta := get_support_position(to_cell, grid) - get_support_position(from_cell, grid)
+	return Vector2(delta.x, delta.z).normalized()
 
-static func get_shield_protection_at_cells(attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i) -> Dictionary:
+static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
+	if not is_instance_valid(attacker) or not is_instance_valid(target): return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
+	return get_shield_protection_at_cells(grid.get_unit_grid(attacker), target, grid.get_unit_grid(target), grid)
+
+static func get_shield_protection_at_cells(attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Dictionary:
 	if not is_instance_valid(target) or not target.tactical_state or not target.tactical_state.is_shielding or not target.shield_capability:
 		return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
-	var incoming := Vector2(float(attacker_cell.x - target_cell.x), float(attacker_cell.z - target_cell.z))
+	var incoming := shield_direction(target_cell, attacker_cell, grid)
 	var applied := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
-	return {"applied": applied, "accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0, "damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0}
+	return {"applied": applied, "accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0, "damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0, "reason": "Inside Shield arc" if applied else "Outside Shield arc"}
 
 ## The boundary is inclusive. An attacker exactly half the arc away from the
 ## committed facing receives protection; epsilon absorbs floating-point noise.

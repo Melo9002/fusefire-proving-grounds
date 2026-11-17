@@ -41,6 +41,7 @@ func _case(id: StringName) -> void:
 	var completed := level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING
 	check(completed and recording.is_playable(), "%s seed 16 reaches a recorded result within the bounded playthrough" % id)
 	check(recording.actions.any(func(action): return action.kind == "move") and recording.actions.any(func(action): return action.kind == "attack"), "%s exercises real movement and shooting" % id)
+	var expected_combat_log := level.battle_controller.combat_log.duplicate()
 	var manifest := level.active_generated_map.content_manifest.duplicate(true)
 	var path := "res://.godot/%s-content-test.replay.json" % id
 	check(recording.save_json(path) == OK, "Save the complete new-site recording")
@@ -63,6 +64,7 @@ func _case(id: StringName) -> void:
 				await process_frame
 			check(player.playback_complete and player.playback_succeeded and player.verified_actions == loaded.actions.size(), "%s verifies every saved action: %s" % [id, player.last_divergence])
 			check(replay.turn_manager.battle_result == loaded.expected_result and completed, "%s replay reaches the same completed result" % id)
+			check(replay.battle_controller.combat_log == expected_combat_log, "%s replay regenerates the same recent combat and defensive-action explanations" % id)
 		replay.queue_free()
 		await process_frame
 		await process_frame

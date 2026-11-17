@@ -256,13 +256,23 @@ func bind_objective_manager(manager: ObjectiveManager) -> void:
 func _ensure_tactical_id(unit: TacticalUnit) -> void:
 	if unit.tactical_id.is_empty():
 		unit.tactical_id = StringName(unit.name)
+	if unit.tactical_state:
+		var callback := _on_stances_expired.bind(unit.tactical_id)
+		if not unit.tactical_state.stances_expired.is_connected(callback):
+			unit.tactical_state.stances_expired.connect(callback)
 
 func _on_action_service_busy_changed(is_busy: bool) -> void:
 	action_state_changed.emit(is_busy)
 
 func _on_action_committed(result) -> void:
 	_refresh_overwatch_range()
-	for entry in TacticalFeedbackText.committed(result):
+	_append_combat_entries(TacticalFeedbackText.committed(result))
+
+func _on_stances_expired(names: PackedStringArray, actor_id: StringName) -> void:
+	_append_combat_entries(PackedStringArray(["%s: %s expired at next activation" % [actor_id, ", ".join(names)]]))
+
+func _append_combat_entries(entries: PackedStringArray) -> void:
+	for entry in entries:
 		combat_log.append(entry)
 	while combat_log.size() > 5:
 		combat_log.remove_at(0)
