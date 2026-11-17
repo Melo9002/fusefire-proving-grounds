@@ -92,8 +92,8 @@ func _on_turn_phase_changed(new_phase: TurnManager.TurnPhase) -> void:
 
 func _on_end_turn_pressed() -> void:
 	print_rich("[color=cyan][UI][/color] End Turn button pressed!")
-	if turn_manager:
-		turn_manager.end_current_turn()
+	if battle_controller:
+		await battle_controller.confirm_player_end_turn()
 
 func _on_debug_enemy_control_changed(_enabled: bool) -> void:
 	_on_turn_phase_changed(turn_manager.current_phase)

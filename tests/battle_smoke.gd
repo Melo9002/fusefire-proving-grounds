@@ -11,6 +11,9 @@ func check(condition: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
+	# This smoke protects one-click movement independently of personal preferences.
+	BattleUXSettings.loaded = true
+	BattleUXSettings.confirm_movement = false
 	var level = load("res://levels/prototype_map/prototype_map.tscn").instantiate()
 	root.add_child(level)
 	await create_timer(0.15).timeout

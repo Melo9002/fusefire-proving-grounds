@@ -41,6 +41,9 @@ func get_camera_height() -> float:
 
 var tactical_unit: TacticalUnit
 var presentation_grid: GridManager
+## Render-only destination context. Normal units leave this unset.
+var preview_cell := Vector3i(-1, -1, -1)
+var preview_carrying := false
 ## Read-only world-space hints for hybrid pose fitting. Never applied as a root offset.
 var last_cover_contact: Dictionary = {}
 var _segment_state: StringName = &"move"
@@ -67,7 +70,7 @@ func present_boarding() -> void:
 		tween.tween_property(_passenger, "scale", Vector3.ONE * 0.01, 0.55)
 
 func _carrying() -> bool:
-	return is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit()
+	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit())
 const POSE_CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 var _return_generation := 0
@@ -154,8 +157,9 @@ func present_movement_end() -> void:
 		present_idle()
 
 func _cover_context() -> Dictionary:
-	if is_instance_valid(presentation_grid) and is_instance_valid(tactical_unit):
-		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, tactical_unit.grid_position, global_basis.z)
+	var cell := preview_cell if preview_cell != Vector3i(-1, -1, -1) else tactical_unit.grid_position if is_instance_valid(tactical_unit) else Vector3i(-1, -1, -1)
+	if is_instance_valid(presentation_grid) and cell != Vector3i(-1, -1, -1):
+		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, cell, global_basis.z)
 	else:
 		last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	return last_cover_contact

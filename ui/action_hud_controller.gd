@@ -21,18 +21,30 @@ var _tracked_tactical_state: TacticalState
 var _tracked_conditions: ConditionComponent
 var _preview_label: Label
 var _combat_log_label: Label
+var cancel_move_button: Button
 
 func _ready() -> void:
 	if not battle_controller:
 		push_error("ActionHUDController: Missing BattleController reference!")
 		return
-	_preview_label = _make_feedback_label("TacticalPreview", Vector2(222, 94), 520)
+	cancel_move_button = Button.new()
+	cancel_move_button.name = "CancelMoveButton"
+	cancel_move_button.text = "CANCEL MOVE"
+	cancel_move_button.position = Vector2(20, 158)
+	cancel_move_button.custom_minimum_size = Vector2(170, 48)
+	cancel_move_button.add_theme_font_size_override("font_size", 18)
+	cancel_move_button.hide()
+	add_child(cancel_move_button)
+	cancel_move_button.pressed.connect(func(): battle_controller.is_move_mode_active = false)
+	battle_controller.move_mode_toggled.connect(func(active: bool): cancel_move_button.visible = active)
+	_preview_label = _make_feedback_label("TacticalPreview", Vector2(410, 94), 520)
 	_combat_log_label = _make_feedback_label("CombatLog", Vector2(20, 260), 370)
 	# The action buttons hide during AI turns; their combat feedback must remain visible.
 	_combat_log_label.reparent.call_deferred(get_parent(), false)
 	battle_controller.tactical_preview_changed.connect(func(text: String):
 		_preview_label.text = text
 		_preview_label.visible = not text.is_empty())
+	battle_controller.tactical_preview_tint_changed.connect(func(color: Color): _preview_label.add_theme_color_override("font_color", color))
 	battle_controller.combat_log_changed.connect(func(text: String):
 		_combat_log_label.text = "RECENT COMBAT\n" + text
 		_combat_log_label.visible = not text.is_empty())
@@ -131,7 +143,7 @@ func _on_reload_pressed() -> void:
 func _on_aim_pressed() -> void:
 	var active_unit := battle_controller.tactical_unit
 	if is_instance_valid(active_unit):
-		await battle_controller.try_aim(active_unit)
+		await battle_controller.confirm_player_action(&"aim", active_unit)
 
 func _on_shield_pressed() -> void:
 	battle_controller.toggle_shield_mode()
@@ -159,7 +171,7 @@ func _on_end_unit_pressed() -> void:
 	var active_unit = battle_controller.tactical_unit
 	if not active_unit:
 		return
-	await battle_controller.try_end_unit_turn(active_unit, "Skipped manually by the player.")
+	await battle_controller.confirm_player_action(&"wait", active_unit)
 
 func _on_action_state_changed(_is_busy: bool) -> void:
 	_update_button_states()

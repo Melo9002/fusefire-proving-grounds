@@ -11,6 +11,7 @@ signal shield_mode_toggled(is_active: bool)
 signal overwatch_mode_toggled(is_active: bool)
 signal attack_preview_changed(text: String)
 signal tactical_preview_changed(text: String)
+signal tactical_preview_tint_changed(color: Color)
 signal combat_log_changed(text: String)
 signal attack_resolved(attacker: TacticalUnit, target: TacticalUnit, did_hit: bool, hit_chance: int)
 signal action_state_changed(is_busy: bool)
@@ -42,6 +43,7 @@ var current_movement_zone: Array[Vector3i] = []
 var current_attack_zone: Array[Vector3i] = []
 var _last_attack_preview := ""
 var _last_tactical_preview := ""
+var _last_tactical_preview_tint := Color.WHITE
 var _movement_feedback_key := ""
 var combat_log := PackedStringArray()
 var debug_enemy_control: bool = false
@@ -65,6 +67,8 @@ var overwatch_enabled := true
 var conditions_enabled := true
 var action_camera_director: Node
 var action_service: TacticalActionService
+var action_confirmation: BattleActionConfirmation
+var movement_ghost: MovementGhost
 var action_presenter: TacticalActionPresenter
 var _objective_manager: ObjectiveManager
 var is_action_in_progress: bool:
@@ -76,6 +80,7 @@ var is_move_mode_active: bool = false:
 			is_move_mode_active = value
 			move_mode_toggled.emit(is_move_mode_active)
 			if not is_move_mode_active:
+				_clear_destination_preview()
 				path_visualizer.clear_path()
 				path_visualizer.clear_range_zone()
 				cover_visualizer.clear()
@@ -410,6 +415,7 @@ func toggle_overwatch_mode() -> void:
 func _process(_delta: float) -> void:
 	if not turn_manager or not is_current_phase_manually_controlled():
 		_set_tactical_preview("")
+		_clear_destination_preview()
 		if shot_trajectory_visualizer: shot_trajectory_visualizer.clear()
 		if path_visualizer: path_visualizer.clear_path()
 		return
@@ -426,6 +432,8 @@ func _process(_delta: float) -> void:
 	else:
 		_update_movement_preview(floor_hit)
 
+	if shot_trajectory_visualizer and (not is_move_mode_active or _movement_feedback_key.is_empty()):
+		shot_trajectory_visualizer.clear_destination_options()
 	_update_attack_preview()
 
 func _update_movement_preview(floor_hit: Dictionary) -> void:
@@ -440,13 +448,28 @@ func _update_movement_preview(floor_hit: Dictionary) -> void:
 					_movement_feedback_key = feedback_key
 					var opponents: Array[TacticalUnit] = []
 					opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
-					_set_tactical_preview(TacticalFeedbackText.movement(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled))
+					var options := TacticalFeedbackText.movement_options(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
+					_set_tactical_preview(TacticalFeedbackText.movement_description(query, tactical_unit, options, grid_manager, supply_points_enabled))
+					if shot_trajectory_visualizer: shot_trajectory_visualizer.draw_destination_options(tactical_unit, hover_grid, options)
+					if not is_instance_valid(movement_ghost):
+						movement_ghost = MovementGhost.new()
+						add_child(movement_ghost)
+					movement_ghost.show_destination(tactical_unit, hover_grid, grid_manager)
 				return
 	path_visualizer.clear_path()
+	_clear_destination_preview()
 	_movement_feedback_key = ""
 	_set_tactical_preview("")
 
-func _set_tactical_preview(text: String) -> void:
+func _clear_destination_preview() -> void:
+	_movement_feedback_key = ""
+	if is_instance_valid(movement_ghost): movement_ghost.clear()
+	if is_instance_valid(shot_trajectory_visualizer): shot_trajectory_visualizer.clear_destination_options()
+
+func _set_tactical_preview(text: String, tint := Color.WHITE) -> void:
+	if tint != _last_tactical_preview_tint:
+		_last_tactical_preview_tint = tint
+		tactical_preview_tint_changed.emit(tint)
 	if text != _last_tactical_preview:
 		_last_tactical_preview = text
 		tactical_preview_changed.emit(text)
@@ -460,7 +483,7 @@ func _update_attack_preview() -> void:
 		var hovered = mouse_raycaster.get_unit_under_mouse()
 		if is_instance_valid(hovered) and FactionRules.are_hostile(tactical_unit.faction, hovered.faction):
 			var query := query_attack(tactical_unit, hovered)
-			_set_tactical_preview(TacticalFeedbackText.shot(query))
+			_set_tactical_preview(TacticalFeedbackText.shot(query), TacticalFeedbackText.chance_color(query.hit_chance, query.is_legal()))
 			feedback_shown = true
 			preview = "%d%% HIT" % query.hit_chance if query.is_legal() else query.reason.to_upper()
 			if query.is_legal() and query.obstruction != "Clear":
@@ -470,7 +493,8 @@ func _update_attack_preview() -> void:
 					CombatRules.get_shot_origin(tactical_unit, grid_manager),
 					query.aim_point,
 					query.evaluation,
-					true
+					true,
+					query.is_legal()
 				)
 				trajectory_drawn = true
 	if not trajectory_drawn and shot_trajectory_visualizer:
@@ -486,11 +510,11 @@ func _on_unit_clicked(unit: TacticalUnit) -> void:
 		return
 	if is_attack_mode_active and is_instance_valid(tactical_unit) \
 		and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
-		await try_attack(tactical_unit, unit)
+		await confirm_player_action(&"attack", tactical_unit, unit)
 		return
 	if is_shield_mode_active and is_instance_valid(tactical_unit) \
 		and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
-		await try_shield(tactical_unit, unit)
+		await confirm_player_action(&"shield", tactical_unit, unit)
 		return
 
 	if not debug_player_ai and turn_manager.select_player_unit(unit):
@@ -509,7 +533,7 @@ func _on_floor_clicked(raw_position: Vector3) -> void:
 	if not query_move(tactical_unit, clicked_grid).is_legal():
 		return
 
-	await try_move(tactical_unit, clicked_grid)
+	await confirm_player_action(&"move", tactical_unit, null, clicked_grid)
 
 func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 	var is_player_control = is_current_phase_manually_controlled()
@@ -726,6 +750,82 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 		record["strategic_intent"] = commander.get_strategic_intent_label()
 	record.merge(context, true)
 	ai_decision_recorded.emit(record)
+
+## UI-only entry. AI/replay keep submitting through the ordinary action service.
+func confirm_player_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null, destination := Vector3i(-1, -1, -1)) -> void:
+	if not is_current_phase_manually_controlled() or is_action_in_progress or get_tree().paused: return
+	if not is_instance_valid(actor): return
+	var text := ""
+	match kind:
+		&"attack":
+			var query := query_attack(actor, target)
+			if not query.is_legal(): return
+			text = TacticalFeedbackText.shot(query)
+		&"aim":
+			var query := query_aim(actor)
+			if not query.is_legal(): return
+			text = "%s: spend %d AP now for +%d accuracy on the next Attack. No damage bonus.\nMove, Reload, Skip or incompatible stance changes cancel Aim. Expires next activation.\nReplaces active Shield or Guard." % [actor.tactical_id, query.cost.ap, query.accuracy_bonus]
+		&"shield":
+			var query := query_shield(actor, target)
+			if not query.is_legal(): return
+			text = "%s: spend %d AP to face %s.\nFixed %.0f° front arc; %+d incoming accuracy; ×%.2f hit damage.\nAim is canceled. Skip keeps Shield; Move ends it after route reactions. Expires next activation." % [actor.tactical_id, query.cost.ap, target.tactical_id, query.protected_arc_degrees, query.accuracy_modifier, query.damage_multiplier]
+		&"wait":
+			if not query_simple(&"wait", actor).is_legal(): return
+			text = "%s: skip %d remaining AP. Active Shield is kept; Aim is canceled." % [actor.tactical_id, actor.stats.current_ap]
+		&"move":
+			var query := query_move(actor, destination)
+			if not query.is_legal(): return
+			# A click may arrive before the next hover frame. Freeze the chosen preview.
+			_update_movement_preview({"position": grid_manager.grid_to_world(destination)})
+			var opponents: Array[TacticalUnit] = []
+			opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
+			text = TacticalFeedbackText.movement(query, actor, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
+		_: return
+	var revision := action_service.state_revision
+	# Capture stable IDs, not nodes that may be removed while the dialog is open.
+	var actor_id := actor.tactical_id
+	var target_id := target.tactical_id if is_instance_valid(target) else &""
+	var commit := func():
+		if not is_inside_tree() or is_queued_for_deletion(): return
+		var current_actor := action_service.actor_registry.resolve(actor_id)
+		var current_target := action_service.actor_registry.resolve(target_id) if not target_id.is_empty() else null
+		if action_service.state_revision != revision or not is_instance_valid(current_actor) or turn_manager.active_unit != current_actor:
+			_set_tactical_preview("Battle state changed. Review the action again.")
+			return
+		if kind in [&"attack", &"shield"] and not is_instance_valid(current_target):
+			_set_tactical_preview("Target is no longer available. Review the action again.")
+			return
+		match kind:
+			&"attack": await try_attack(current_actor, current_target)
+			&"aim": await try_aim(current_actor)
+			&"shield": await try_shield(current_actor, current_target)
+			&"wait": await try_end_unit_turn(current_actor, "Skipped manually by the player.")
+			&"move": await try_move(current_actor, destination)
+	await _confirmation_dialog().request("Confirm " + ("Skip" if kind == &"wait" else String(kind).capitalize()), text, commit, kind == &"move")
+
+func _confirmation_dialog() -> BattleActionConfirmation:
+	if not is_instance_valid(action_confirmation):
+		action_confirmation = BattleActionConfirmation.new()
+		action_confirmation.name = "ActionConfirmation"
+		add_child(action_confirmation)
+	return action_confirmation
+
+func confirm_player_end_turn() -> void:
+	if not is_current_phase_manually_controlled() or is_action_in_progress or get_tree().paused: return
+	var remaining := 0
+	var roster: Array[TacticalUnit] = turn_manager.enemy_units if debug_enemy_control and turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN else turn_manager.player_units
+	for actor in roster:
+		if is_instance_valid(actor) and actor.stats and not actor.stats.is_defeated: remaining += actor.stats.current_ap
+	if remaining == 0:
+		turn_manager.end_current_turn()
+		return
+	var revision := action_service.state_revision
+	var phase := turn_manager.current_phase
+	var round_number := turn_manager.current_round
+	var commit := func():
+		if is_inside_tree() and not is_queued_for_deletion() and action_service.state_revision == revision and turn_manager.current_phase == phase and turn_manager.current_round == round_number and not is_action_in_progress:
+			turn_manager.end_current_turn()
+	await _confirmation_dialog().request("End turn?", "%d AP remain across your units. End this phase without using them?" % remaining, commit)
 
 func try_attack(attacker: TacticalUnit, target: TacticalUnit) -> bool:
 	if not is_instance_valid(action_service):

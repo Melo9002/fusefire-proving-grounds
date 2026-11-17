@@ -7,6 +7,8 @@ const ActionCameraDirectorData := preload("res://presentation/camera/action_came
 @export var debug_tools: DebugTools
 var is_open := false
 var action_camera_option: OptionButton
+var confirmations_option: CheckButton
+var movement_confirmation_option: CheckButton
 var _replay_was_paused := false
 
 func _ready() -> void:
@@ -18,6 +20,8 @@ func _ready() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.pressed or event.echo or event.keycode != KEY_ESCAPE:
 		return
+	var controller := get_node_or_null("../../../Systems/BattleController") as BattleController
+	if controller and is_instance_valid(controller.action_confirmation) and controller.action_confirmation.visible: return
 	if debug_tools and debug_tools.panel_open:
 		debug_tools.set_panel_open(false)
 	set_open(not is_open)
@@ -99,6 +103,29 @@ func _build_interface() -> void:
 		camera_label.hide()
 		action_camera_option.hide()
 	_bind_action_camera_option.call_deferred()
+
+	BattleUXSettings.load_preferences()
+	confirmations_option = CheckButton.new()
+	confirmations_option.name = "ConfirmationsOption"
+	confirmations_option.text = "Confirm important actions"
+	confirmations_option.button_pressed = BattleUXSettings.confirm_actions
+	confirmations_option.tooltip_text = "Confirm shots, Aim, Shield, Skip and ending a turn with unused AP. Guard keeps its existing preview/confirm step."
+	confirmations_option.toggled.connect(func(enabled: bool):
+		BattleUXSettings.confirm_actions = enabled
+		if BattleUXSettings.save_preferences() != OK: push_warning("Could not save action confirmation preference; it still applies this session."))
+	options.add_child(confirmations_option)
+	movement_confirmation_option = CheckButton.new()
+	movement_confirmation_option.name = "MovementConfirmationOption"
+	movement_confirmation_option.text = "Confirm movement (two clicks)"
+	movement_confirmation_option.button_pressed = BattleUXSettings.confirm_movement
+	movement_confirmation_option.tooltip_text = "Off: hover the ghost, click once to move. On: review the chosen destination, then Confirm or Cancel."
+	movement_confirmation_option.toggled.connect(func(enabled: bool):
+		BattleUXSettings.confirm_movement = enabled
+		if BattleUXSettings.save_preferences() != OK: push_warning("Could not save movement confirmation preference; it still applies this session."))
+	options.add_child(movement_confirmation_option)
+	if battle_level and battle_level.battle_controller.replay_mode:
+		confirmations_option.hide()
+		movement_confirmation_option.hide()
 
 	var resume := Button.new()
 	resume.name = "ResumeButton"

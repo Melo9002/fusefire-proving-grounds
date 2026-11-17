@@ -7,6 +7,8 @@ extends Node3D
 
 var mesh_instance: MeshInstance3D
 var blocker_marker: MeshInstance3D
+var destination_lines: Array[ShotTrajectoryVisualizer] = []
+
 var last_origin := Vector3.ZERO
 var last_destination := Vector3.ZERO
 var last_reason := ""
@@ -20,7 +22,7 @@ func _ready() -> void:
 	blocker_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(blocker_marker)
 
-func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRules.AttackEvaluation, targeting := false) -> void:
+func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRules.AttackEvaluation, targeting := false, action_available := true) -> void:
 	last_origin = origin
 	last_destination = destination
 	last_reason = evaluation.reason
@@ -38,7 +40,7 @@ func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRu
 	mesh_instance.mesh = cylinder
 	mesh_instance.position = (origin + destination) * 0.5
 	mesh_instance.quaternion = Quaternion(Vector3.UP, direction.normalized())
-	mesh_instance.material_override = _make_material(_get_color(evaluation))
+	mesh_instance.material_override = _make_material(_get_color(evaluation, action_available))
 	_draw_blocker(evaluation)
 
 func clear() -> void:
@@ -49,17 +51,30 @@ func clear() -> void:
 	last_reason = ""
 	last_blocking_cell = null
 
+func draw_destination_options(actor: TacticalUnit, destination: Vector3i, options: Array[Dictionary]) -> void:
+	clear_destination_options()
+	var origin := CombatRules.get_support_position(destination, grid_manager) + Vector3.UP * actor.standing_height
+	for option in options:
+		var line := ShotTrajectoryVisualizer.new()
+		line.grid_manager = grid_manager
+		add_child(line)
+		destination_lines.append(line)
+		var evaluation: CombatRules.AttackEvaluation = option.outgoing
+		line.draw_trajectory(origin, evaluation.aim_point, evaluation, true, option.unavailable.is_empty())
+
+func clear_destination_options() -> void:
+	for line in destination_lines: line.free()
+	destination_lines.clear()
+
 func set_debug_enabled(enabled: bool) -> void:
 	debug_enabled = enabled
 	if not enabled:
 		clear()
 
-func _get_color(evaluation: CombatRules.AttackEvaluation) -> Color:
-	if not evaluation.is_legal:
-		return Color(1.0, 0.15, 0.1, 0.65)
-	if evaluation.cover_type != MapCellData.CoverType.NONE or evaluation.obstruction != "Clear":
-		return Color(1.0, 0.72, 0.1, 0.65)
-	return Color(0.2, 1.0, 0.45, 0.65)
+func _get_color(evaluation: CombatRules.AttackEvaluation, action_available := true) -> Color:
+	var color := TacticalFeedbackText.chance_color(evaluation.hit_chance, evaluation.is_legal and action_available)
+	color.a = 0.75
+	return color
 
 func _draw_blocker(evaluation: CombatRules.AttackEvaluation) -> void:
 	blocker_marker.mesh = null
