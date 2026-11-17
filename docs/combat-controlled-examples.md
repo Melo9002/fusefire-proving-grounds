@@ -10,6 +10,8 @@ From Match Setup choose **Open Parcel Editor**, select **Tactical Test Range**, 
 
 For scene editing open `art/environments/authored/parcels/tactical_test_range.tscn` in Godot. Existing ramps, stairs, galleries and mission stations remain in that scene. Its ordinary child scene, `art/environments/authored/components/combat_examples.tscn`, contains the added stations. Edit that scene directly, or open its instance from the range. No boundary-draft export or new registration step is required.
 
+Visible ramps, stairs and landings can be clicked in Move mode while **Ground** is selected. The view controls inspect/cut away floors; they do not limit how high you can move. Use **Alt + wheel** to choose between stacked surfaces under the cursor. Hidden cutaway roofs do not intercept ordinary ground clicks.
+
 Gold ground labels identify stations; **S** and **T** mark shooter and target positions. They are reference marks, not spawning commands or interactive buttons. The table uses parcel-local `(x, y, z)` coordinates, which match grid coordinates in the registered 32×32 range. World coordinates are centered by the existing parcel transform. Some markers are ray probes above the floor, not places to stand a unit.
 
 ## Stations and expected geometry

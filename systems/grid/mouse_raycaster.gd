@@ -13,6 +13,7 @@ var _left_press_position := Vector2.ZERO
 var _left_dragged := false
 var _surface_index := 0
 var _surface_cells: Array[Vector3i] = []
+var _surface_visibility: Array[bool] = []
 var _preferred_floor_height := INF
 var _floor_hint: Label
 var _level_panel: PanelContainer
@@ -63,6 +64,7 @@ func _inspect_level(height: float) -> void:
 		point = roof.to_global(roof.interior_bounds.get_center())
 	point.y = height
 	rig.inspect_floor(point)
+	rig._update_camera_occlusion(0.0)
 	_update_level_panel()
 
 func _update_level_panel() -> void:
@@ -156,30 +158,28 @@ func get_floor_raycast_result(screen_position := Vector2.INF) -> Dictionary:
 	var cells: Array[Vector3i] = []
 	for candidate in candidates:
 		cells.append(candidate.grid_position)
+	var visibility: Array[bool] = []
+	for candidate in candidates:
+		var collider := candidate.get("collider") as Node3D
+		visibility.append(not collider or collider.is_visible_in_tree())
 	var rig := camera.get_parent() as TacticalCamera if camera else null
-	var height := INF
-	if rig and _available_levels().size() > 1:
-		height = rig.inspected_floor_height()
-	if cells != _surface_cells or height != _preferred_floor_height:
+	# Only a real hidden layer constrains unit picking. The displayed floor
+	# must not turn a visible staircase or landing into an inaccessible surface.
+	var height := rig.inspected_floor_height() if rig and visibility.has(false) and _available_levels().size() > 1 else INF
+	if cells != _surface_cells or visibility != _surface_visibility or height != _preferred_floor_height:
 		_surface_index = 0
 		_surface_cells = cells
+		_surface_visibility = visibility
 		_preferred_floor_height = height
-		# Opt-in layered warehouse presentation: avoid ordering a rooftop Move
-		# when its hidden collider lies above the inspected interior floor.
-		if is_finite(height):
-			var nearest := INF
-			for index in candidates.size():
-				var distance: float = absf(candidates[index].position.y - height)
-				if distance < nearest:
-					nearest = distance
-					_surface_index = index
-	if candidates.is_empty():
-		return {}
+		# Ordinary clicks follow the first visible legal surface along the ray.
+		# Keep hidden colliders in the raw list for explicit Alt-wheel cycling.
+		for index in candidates.size():
+			if visibility[index]:
+				_surface_index = index
+				break
+	if candidates.is_empty(): return {}
 	_surface_index = clampi(_surface_index, 0, candidates.size() - 1)
-	# Inspection is a ceiling, not permission to select whichever higher surface
-	# happens to be nearest. Retain all candidates for explicit floor cycling.
-	if is_finite(height) and candidates[_surface_index].position.y > height + 0.1:
-		return {}
+	if not visibility[_surface_index]: return {}
 	return candidates[_surface_index]
 
 func cycle_surface(direction: int, screen_position := Vector2.INF) -> void:
@@ -189,6 +189,7 @@ func cycle_surface(direction: int, screen_position := Vector2.INF) -> void:
 		var rig := camera.get_parent() as TacticalCamera if camera else null
 		if rig and _available_levels().size() > 1:
 			rig.inspect_floor(grid_manager.get_cell_data(_surface_cells[_surface_index]).world_position)
+			rig._update_camera_occlusion(0.0)
 
 func get_floor_candidates(screen_position: Vector2) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
