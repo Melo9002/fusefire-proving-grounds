@@ -11,17 +11,18 @@ func check(ok: bool, message: String) -> void:
 
 func _run() -> void:
 	Engine.time_scale = 12
-	for id in [BattlefieldCatalog.FREIGHT_YARD, BattlefieldCatalog.FLEET_STATION]:
-		await _case(id)
+	for id in BattlefieldCatalog.PLAYABLE:
+		for seed_value in [16, 17]:
+			await _case(id, seed_value)
 	Engine.time_scale = 1
 	print("Current content playthrough: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
-func _case(id: StringName) -> void:
+func _case(id: StringName, seed_value: int) -> void:
 	var config := BattleConfiguration.new()
 	config.generated_map = true
 	config.select_battlefield(id)
-	config.battle_seed = 16
+	config.battle_seed = seed_value
 	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 2)
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 	level.configure_battle(config)
@@ -39,15 +40,15 @@ func _case(id: StringName) -> void:
 	await process_frame
 	var recording: BattleReplayRecording = level._replay_recorder.recording
 	var completed := level.turn_manager.battle_result != TurnManager.BattleResult.ONGOING
-	check(completed and recording.is_playable(), "%s seed 16 reaches a recorded result within the bounded playthrough" % id)
+	check(completed and recording.is_playable(), "%s seed %d reaches a recorded result within the bounded playthrough" % [id, seed_value])
 	check(recording.actions.any(func(action): return action.kind == "move") and recording.actions.any(func(action): return action.kind == "attack"), "%s exercises real movement and shooting" % id)
 	var expected_combat_log := level.battle_controller.combat_log.duplicate()
 	var manifest := level.active_generated_map.content_manifest.duplicate(true)
-	var path := "res://.godot/%s-content-test.replay.json" % id
+	var path := "res://.godot/%s-%d-%d-content-test.replay.json" % [id, seed_value, OS.get_process_id()]
 	check(recording.save_json(path) == OK, "Save the complete new-site recording")
 	var loaded := BattleReplayRecording.load_json(path)
 	check(loaded.is_playable() and loaded.configuration.content_manifest == manifest, "The saved file retains exact site and population choices")
-	print("[ContentPlaythrough] %s seed 16: %d actions, round %d, %s" % [id, loaded.actions.size(), level.turn_manager.current_round, TurnManager.BattleResult.keys()[loaded.expected_result]])
+	print("[ContentPlaythrough] %s seed %d: %d actions, round %d, %s" % [id, seed_value, loaded.actions.size(), level.turn_manager.current_round, TurnManager.BattleResult.keys()[loaded.expected_result]])
 	level.queue_free()
 	await process_frame
 	await process_frame

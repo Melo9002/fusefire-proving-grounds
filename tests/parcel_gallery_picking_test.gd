@@ -46,10 +46,26 @@ func _run() -> void:
 				var ground_position := Vector3i(expected.x, 0, expected.z)
 				var ground := grid.get_cell_data(ground_position)
 				var ground_hit := raycaster.get_floor_raycast_result(screen_point)
+				# Since the visible-ascent UX fix, Ground browsing does not hide a
+				# real visible gallery or impose a click-height ceiling. Explicit
+				# Alt-wheel selection still reaches legal ground underneath it.
+				var deck := hit.get("collider") as Node3D
+				var visible_deck := deck != null and deck.is_visible_in_tree()
+				if visible_deck:
+					_check(ground_hit.get("grid_position") == expected, "%s keeps its visible deck selectable from Ground view" % test_case[0])
 				if ground and ground.walkable and ground.can_stop:
-					_check(ground_hit.get("grid_position") == ground_position, "%s can also pick ground below %s: %s" % [test_case[0], expected, ground_hit])
+					if visible_deck:
+						var candidates := raycaster.get_floor_candidates(screen_point)
+						_check(candidates.any(func(candidate): return candidate.grid_position == ground_position), "Legal ground remains a real floor candidate")
+						for step in candidates.size():
+							if ground_hit.get("grid_position") == ground_position: break
+							raycaster.cycle_surface(1, screen_point)
+							ground_hit = raycaster.get_floor_raycast_result(screen_point)
+					_check(ground_hit.get("grid_position") == ground_position, "%s can explicitly pick ground below %s: %s" % [test_case[0], expected, ground_hit])
 				else:
-					_check(ground_hit.is_empty(), "%s leaves blocked ground under %s unpickable" % [test_case[0], expected])
+					_check(not raycaster.get_floor_candidates(screen_point).any(func(candidate): return candidate.grid_position == ground_position), "%s excludes blocked ground under %s" % [test_case[0], expected])
+					if not visible_deck:
+						_check(ground_hit.is_empty(), "%s leaves hidden-deck/blocked-ground columns unpickable" % test_case[0])
 				if test_case[0] == Catalog.TACTICAL_TEST_RANGE and expected == Vector3i(12, 3, 5) and hit.get("grid_position") == expected:
 					var actor := level.turn_manager.active_unit
 					var ladder_bottom := Vector3i(12, 0, 4)

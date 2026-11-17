@@ -4,7 +4,7 @@ Project Ironclad is FuseFire's lightweight regression-testing practice. Its purp
 
 ## Current infrastructure
 
-The repository contains ordinary automated GDScript checks plus explicit-only rendered and extended diagnostics under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. Godot's process exit code is therefore the authoritative suite result.
+The repository contains ordinary automated GDScript checks plus explicit-only rendered and extended diagnostics under `tests/`. Most extend `SceneTree`, exercise real project classes or scenes, print a concise result, and terminate with `quit(0)` or `quit(1)`. A nonzero Godot process exit is always a failure. The runner also rejects script/parser errors after a zero exit: Godot can otherwise finish a script despite an unhandled runtime error.
 
 | Area | Existing coverage |
 | --- | --- |
@@ -36,7 +36,7 @@ Available subsystem names are `combat`, `movement`, `ai`, `replay`, `generation`
 
 The smoke tier runs the project scan and ten representative critical regressions. Subsystem tiers select existing tests by stable filename conventions. Full discovers every top-level test except the explicit-only visual and extended lists in the runner. This keeps new ordinary tests in broad verification without maintaining a second exhaustive manifest.
 
-Each run prints suite-level pass/fail/skip totals and elapsed time. Detailed stdout, stderr, and Godot engine logs are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. The runner supplies a writable isolated test-output directory for tests that serialize reports. A missing executable, missing required script, or nonzero Godot result produces a nonzero runner result.
+Each run prints suite-level pass/fail/skip totals and elapsed time. Detailed stdout, stderr, and Godot engine logs are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. The runner supplies a writable isolated test-output directory for tests that serialize reports. Unexpected `SCRIPT ERROR:`, `Parse Error:` and `Compile Error:` output fails the entry even when the process exits zero. `-ProbeFailureHandling` deliberately adds both a nonzero-exit probe and a zero-exit script-error probe; that diagnostic run must report two failures. Application-level negative-test diagnostics are not blanket-rejected. A missing executable, missing required script, or nonzero Godot result produces a nonzero runner result.
 
 Direct commands remain supported for a single script:
 

@@ -45,4 +45,4 @@ These are prerequisites for enabling that single object, not a new asset-authori
 - Ironclad smoke: **11 passed, 0 failed, 0 skipped** (51.52 seconds).
 - Godot reported the existing root-certificate environment error; inspected logs contained no script errors.
 
-No rendered destruction test or full AI/replay suite was run. No production scene, attack or replay format was changed. The proof establishes reconstruction behavior, not safe live mutation. Next is milestone step 11, deliberate reliability tuning, followed by step 12’s real-map closure checks.
+No rendered destruction test or full AI/replay suite was run. No production scene, attack or replay format was changed. The proof establishes reconstruction behavior, not safe live mutation. The subsequent [reliability baseline](combat-reliability.md) and [prototype closure report](quality/combat-closure-2026-11-17.md) now record steps 11–12. Destruction remains deferred.

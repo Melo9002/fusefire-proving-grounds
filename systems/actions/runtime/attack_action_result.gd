@@ -44,7 +44,9 @@ var presentation_suppressed := false
 var presentation_error := ""
 
 static func roll_hits(roll_value: float, chance: int) -> bool:
-	return roll_value < float(clampi(chance, 0, 100))
+	# Godot randf() includes 1.0, so its scaled roll can equal 100.
+	# Still consume the usual draw; only the guaranteed result is special.
+	return chance >= 100 or roll_value < float(clampi(chance, 0, 100))
 
 func to_replay_record() -> Dictionary:
 	return {

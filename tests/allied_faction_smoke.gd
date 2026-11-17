@@ -78,6 +78,9 @@ func _check_extracted_player_advances_after_barrier() -> void:
 	var ally := TacticalUnit.new()
 	player.stats = UnitStats.new()
 	ally.stats = UnitStats.new()
+	# These are Nodes, so the fixture must own them just like an authored unit.
+	player.add_child(player.stats)
+	ally.add_child(ally.stats)
 	player.show_world_hud = false
 	ally.show_world_hud = false
 	player.tactical_id = &"PlayerUnit1"

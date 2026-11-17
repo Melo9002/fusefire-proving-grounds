@@ -2,7 +2,7 @@
 
 **Play it directly:** Match Setup → Battlefield → **Tactical Test Range — Test map**. This launches the same authored range and map ID used below, with the ordinary mission, roster, seed and replay flow. Population starts off to keep the controlled examples clear.
 
-Milestone 04 step 3, extended by the step-4 raised-beam regression on 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It uses the current shared combat formula: physical cover, the range plateau/falloff and continuous height accuracy have shipped. Step 7 also ships +35 Aim and editable fixed hit damage; chance colors remain pending. Passing a geometry check alone is not proof of balanced encounters.
+Milestone 04 step 3, extended by the step-4 raised-beam regression on 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It uses the current shared combat formula: physical cover, the range plateau/falloff and continuous height accuracy have shipped. Step 7 also ships +35 Aim and editable fixed hit damage; chance colors and optional confirmations shipped in step 9. Passing a geometry check alone is not proof of balanced encounters.
 
 ## Open and edit
 

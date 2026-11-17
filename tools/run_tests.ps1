@@ -114,6 +114,7 @@ foreach ($name in $selectedNames) {
 }
 if ($ProbeFailureHandling) {
     $entries += [pscustomobject]@{ Name = "intentional_failure_probe"; Script = "res://tools/quality/ironclad_failure_probe.gd"; Kind = "probe" }
+    $entries += [pscustomobject]@{ Name = "zero_exit_script_error_probe"; Script = "res://tools/quality/ironclad_script_error_probe.gd"; Kind = "probe" }
 }
 $suiteLabel = $Tier
 if (-not [string]::IsNullOrWhiteSpace($Subsystem)) {
@@ -209,6 +210,13 @@ try {
 			$output += "Godot process completed without reporting an exit code. Treating the result as a runner failure."
 			$exitCode = 1
 		}
+        # Godot can emit an unhandled script error and still exit zero.
+        # Preserve expected application-level negative-test diagnostics, but
+        # never accept unexpected parser/runtime script failures as PASS.
+        if ($exitCode -eq 0 -and ($output -match 'SCRIPT ERROR:|Parse Error:|Compile Error:')) {
+            $output += "Runner rejected a zero exit after a script/parser error."
+            $exitCode = 1
+        }
         $watch.Stop()
         $output | Set-Content -LiteralPath $logPath
         if ($exitCode -eq 0) {
