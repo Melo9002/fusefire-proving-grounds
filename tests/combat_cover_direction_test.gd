@@ -92,14 +92,14 @@ func _check_surface_cover() -> void:
 		_surface_reset(turn, 1.3)
 		grid.get_cell_data(actor.grid_position).world_position.y = 2.2
 		var full := _shot()
-		check(full.is_legal and full.cover_type == MapCellData.CoverType.FULL and full.cover_penalty == 40 and full.obstruction_penalty == 10 and full.protection_penalty == 40 and full.hit_chance == 60, "Short full-cover face leaves both shoulders visible and uses max(40,10); turn %d: legal=%s reason=%s cover=%d coverpen=%d exposure=%d chance=%d" % [turn, full.is_legal, full.reason, full.cover_type, full.cover_penalty, full.obstruction_penalty, full.hit_chance])
+		check(full.is_legal and full.cover_type == MapCellData.CoverType.FULL and full.cover_penalty == 40 and full.obstruction_penalty == 10 and full.protection_penalty == 40 and is_equal_approx(full.height_modifier, 11.0) and full.hit_chance == 71, "Short full-cover face leaves both shoulders visible and uses max(40,10); turn %d: legal=%s reason=%s cover=%d coverpen=%d exposure=%d chance=%d" % [turn, full.is_legal, full.reason, full.cover_type, full.cover_penalty, full.obstruction_penalty, full.hit_chance])
 		_surface_reset(turn, 1.3, 1.4)
 		grid.get_cell_data(actor.grid_position).world_position.y = 2.2
 		var wide := _shot()
-		check(wide.is_legal and wide.cover_type == MapCellData.CoverType.FULL and wide.cover_penalty == 40 and wide.obstruction_penalty == 40 and wide.protection_penalty == 40 and wide.hit_chance == 60, "A wider full face hides shoulders and uses max(40,40), never 80; turn %d" % turn)
+		check(wide.is_legal and wide.cover_type == MapCellData.CoverType.FULL and wide.cover_penalty == 40 and wide.obstruction_penalty == 40 and wide.protection_penalty == 40 and is_equal_approx(wide.height_modifier, 11.0) and wide.hit_chance == 71, "A wider full face hides shoulders and uses max(40,40), never 80; turn %d" % turn)
 		_surface_reset(turn, 0.8)
 		grid.get_cell_data(actor.grid_position).world_position.y = 4
-		check(_shot().cover_type == MapCellData.CoverType.LOW and _shot().hit_chance == 80, "Elevation alone cannot remove protection while the actual lower ray still hits; turn %d" % turn)
+		check(_shot().cover_type == MapCellData.CoverType.LOW and _shot().cover_penalty == 20 and _shot().height_modifier == 20 and _shot().range_penalty > 1 and _shot().range_penalty < 2 and _shot().hit_chance == 99, "Elevation accuracy offsets low protection, while increased 3D range still applies without removing the intersecting cover; turn %d" % turn)
 		grid.get_cell_data(actor.grid_position).world_position.y = 5
 		var elevated := _shot()
 		check(elevated.cover_type == MapCellData.CoverType.NONE and elevated.hit_chance == 100, "A physically clear elevated ray removes own-cell low protection; turn %d: %s chance=%d" % [turn, elevated.reason, elevated.hit_chance])
@@ -140,7 +140,7 @@ func _run() -> void:
 		_solid(CENTER + _rot(Vector3i.LEFT, turn), 1.3, MapCellData.CoverType.FULL)
 		grid.get_cell_data(actor.grid_position).world_position.y = 1.2
 		var full := _shot()
-		check(full.is_legal and full.cover_type == MapCellData.CoverType.FULL and is_equal_approx(full.visibility_fraction, 0.4) and full.hit_chance == 60, "Full cover and two visible samples produce max(40,40), not 80; turn %d" % turn)
+		check(full.is_legal and full.cover_type == MapCellData.CoverType.FULL and is_equal_approx(full.visibility_fraction, 0.4) and full.protection_penalty == 40 and is_equal_approx(full.height_modifier, 6.0) and full.hit_chance == 66, "Full cover and two visible samples produce max(40,40), not 80; turn %d" % turn)
 	_reset()
 	_place(actor, CENTER + Vector3i(-4, 0, -4))
 	var west := _solid(CENTER + Vector3i.LEFT, 1.3, MapCellData.CoverType.FULL)
@@ -207,7 +207,7 @@ func _run() -> void:
 	var tuned := _shot()
 	check(tuned.hit_chance == 75, "Editing the shared low-cover value updates evaluation without changing its geometry; chance=%d cover=%d exposure=%d tuning=%d shared=%d" % [tuned.hit_chance, tuned.cover_penalty, tuned.obstruction_penalty, tuning.low_cover_penalty, CombatRules.cover_tuning.low_cover_penalty])
 	tuning.low_cover_penalty = 100
-	check(_shot().reason == "Invalid cover tuning" and CombatRules.evaluate_attack_from_cell(actor, actor.grid_position, target, grid, level.get_world_3d()).reason == "Invalid cover tuning", "Invalid tuning rejects normal and predicted shots consistently")
+	check(_shot().reason == "Invalid combat tuning" and CombatRules.evaluate_attack_from_cell(actor, actor.grid_position, target, grid, level.get_world_3d()).reason == "Invalid combat tuning", "Invalid tuning rejects normal and predicted shots consistently")
 	tuning.low_cover_penalty = original_low
 	level.queue_free()
 	await process_frame

@@ -16,6 +16,12 @@ class AttackEvaluation:
 	var cover_penalty := 0
 	var obstruction_penalty := 0
 	var protection_penalty := 0
+	var distance_tiles := 0.0
+	var range_fraction := 0.0
+	var range_penalty := 0.0
+	var height_modifier := 0.0
+	var accuracy_bonus := 0
+	var raw_chance := 0.0
 	var shield_applied := false
 	var shield_accuracy_modifier := 0
 	var shield_damage_multiplier := 1.0
@@ -80,7 +86,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	if not cover_tuning.is_valid():
-		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid cover tuning")
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid combat tuning")
 	if not grid.map_data.has_cell(attacker_cell) or not grid.map_data.has_cell(target_cell):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Outside battlefield", target.global_position)
 	var default_aim := _shot_destination_at(target, target_cell, grid)
@@ -90,7 +96,10 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Unit defeated", default_aim)
 	if not FactionRules.are_hostile(attacker.faction, target.faction):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Not hostile", default_aim)
-	if attack_distance(attacker_cell, target_cell, grid) > attacker.attack_range:
+	if attacker.attack_range <= 0 or not is_finite(grid.cell_size) or grid.cell_size <= 0:
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid attack range or tile size", default_aim)
+	var distance := attack_distance(attacker_cell, target_cell, grid)
+	if distance > attacker.attack_range:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
 	var visibility := _evaluate_target_visibility_cells(attacker, attacker_cell, target, target_cell, grid)
 	if visibility.visible_count == 0:
@@ -106,13 +115,25 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var obstruction_penalty: int = obstruction_penalties[visibility.visible_count]
 	var shield := get_shield_protection_at_cells(attacker_cell, target, target_cell) if allow_shield else {}
 	var shield_accuracy := int(shield.get("accuracy_modifier", 0))
-	var chance := clampi(100 - maxi(cover_penalty, obstruction_penalty) + accuracy_bonus + shield_accuracy, 5, 100)
+	var distance_fraction := distance / float(attacker.attack_range)
+	var range_penalty: float = cover_tuning.range_penalty_for(distance_fraction)
+	var height_delta := (get_support_position(attacker_cell, grid).y - target_ground.y) / grid.cell_size
+	var height_modifier: float = cover_tuning.height_modifier_for(height_delta)
+	var raw_chance := 100.0 - range_penalty - maxi(cover_penalty, obstruction_penalty) + height_modifier + accuracy_bonus + shield_accuracy
+	# Round only once; epsilon absorbs arithmetic noise at exact half-points.
+	var chance := floori(clampf(raw_chance, 5.0, 100.0) + 0.5 + 0.0000001)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
 	evaluation.cover_cell = cover_cell
 	evaluation.cover_penalty = cover_penalty
 	evaluation.obstruction_penalty = obstruction_penalty
 	evaluation.protection_penalty = maxi(cover_penalty, obstruction_penalty)
+	evaluation.distance_tiles = distance
+	evaluation.range_fraction = distance_fraction
+	evaluation.range_penalty = range_penalty
+	evaluation.height_modifier = height_modifier
+	evaluation.accuracy_bonus = accuracy_bonus
+	evaluation.raw_chance = raw_chance
 	return evaluation
 
 static func get_shield_protection(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager) -> Dictionary:
@@ -150,7 +171,10 @@ static func can_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridM
 	return evaluate_attack(attacker, target, grid, world).is_legal
 
 static func attack_distance(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> float:
-	return get_support_position(from_cell, grid).distance_to(get_support_position(to_cell, grid)) / grid.cell_size
+	if not is_finite(grid.cell_size) or grid.cell_size <= 0: return INF
+	var from := get_support_position(from_cell, grid)
+	var to := get_support_position(to_cell, grid)
+	return from.distance_to(to) / grid.cell_size if from.is_finite() and to.is_finite() else INF
 
 static func can_reach_adjacent(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> bool:
 	var delta := to_cell - from_cell

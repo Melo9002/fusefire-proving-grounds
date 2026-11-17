@@ -1,5 +1,7 @@
 # Cover and flanking — milestone 04 step 5
 
+Historical step-5 evidence. The [step-6 height/range report](combat-height-range-2026-11-16.md) supersedes height-neutral numerical examples and replay tuning identities; directional protection and max(cover, exposure) remain unchanged.
+
 2026-11-16. Implements the cover portion of the [intended combat rules](../combat-2-rules.md), using existing geometry and the [editable range](../combat-controlled-examples.md). This intentionally changes cover behavior and odds. It does not implement range falloff, an explicit height accuracy bonus, the proposed +35 Aim, new damage or criticals.
 
 ## Current contract

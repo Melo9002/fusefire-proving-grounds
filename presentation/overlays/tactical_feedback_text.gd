@@ -10,7 +10,7 @@ static func shot(query: AttackQueryResult) -> String:
 			heading += " at cell %s (highlighted)" % query.evaluation.blocking_cell.grid_position
 		return heading
 	var cover_names := ["none", "low", "full"]
-	return heading + "%d%% hit · %d AP · %d SP\nDamage on hit: %d · cover: %s · %s" % [query.hit_chance, query.cost.ap, query.supply_points_cost, query.damage_on_hit, cover_names[query.evaluation.cover_type], query.obstruction]
+	return heading + "%d%% hit · %d AP · %d SP\nDamage on hit: %d · cover: %s · %s\nRange penalty %.1f · Height %+.1f" % [query.hit_chance, query.cost.ap, query.supply_points_cost, query.damage_on_hit, cover_names[query.evaluation.cover_type], query.obstruction, query.evaluation.range_penalty, query.evaluation.height_modifier]
 
 static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array[TacticalUnit], grid: GridManager, use_supply := true, use_shield := true) -> String:
 	var lines := PackedStringArray(["Move: %d AP · %d AP remaining · route cost %.1f" % [query.cost.ap, query.actor_ap_after, query.path_cost]])

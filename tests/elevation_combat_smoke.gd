@@ -52,7 +52,7 @@ func _run() -> void:
 	place(attacker, Vector3i(9, 0, 6), grid)
 	place(target, target_above_low_cover, grid)
 	var elevated_cover = battle.evaluate_attack(attacker, target)
-	check(elevated_cover.is_legal and elevated_cover.hit_chance == 100, "Ground-level low cover does not protect an elevated target")
+	check(elevated_cover.is_legal and elevated_cover.cover_type == MapCellData.CoverType.NONE and elevated_cover.height_modifier == -10 and elevated_cover.hit_chance == 90, "Ground cover does not protect the elevated target, but the shooter still has a low-ground penalty")
 
 	level.queue_free()
 	await process_frame

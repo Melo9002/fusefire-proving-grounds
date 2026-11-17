@@ -14,7 +14,7 @@ There are **three curated 40 × 40 sites**, all using the same Generation 2 pipe
 
 New parking bays can spawn sedans, SUVs, taxis, **ambulances and vans**. Older authored bays retain their original vehicle set. These vehicles use the existing obstacle, sight and cover rules.
 
-For controlled mechanics checks, open **Tactical Test Range** in the Parcel Editor and use **Test battle**. It is an editable fixture using the same pipeline, outside the three normal site choices. See the [combat example stations and commands](combat-controlled-examples.md).
+For controlled mechanics checks or a normal match on the existing range, choose **Tactical Test Range — Test map** in Match Setup. You can also open **Tactical Test Range** in the Parcel Editor and use **Test battle**. Both use the same authored range and generation path; no map was duplicated. The three curated sites remain the normal content-release set. See the [combat example stations and commands](combat-controlled-examples.md).
 
 | Part | Authored or procedural? |
 | --- | --- |

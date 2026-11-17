@@ -148,6 +148,10 @@ func _continue_after_active_unit_removed(was_player: bool, was_ally: bool, was_e
 			# before phase continuation. Replay verifies that committed fingerprint
 			# immediately after submit returns.
 			await get_tree().process_frame
+			# Another removal may have queued the same continuation. Its first
+			# phase end can activate an ally while this one is suspended.
+			if not is_inside_tree() or battle_result != BattleResult.ONGOING \
+			or current_phase != TurnPhase.PLAYER_TURN or is_instance_valid(active_unit) or not player_units.is_empty(): return
 			end_current_turn()
 			return
 		player_actions_exhausted.emit()

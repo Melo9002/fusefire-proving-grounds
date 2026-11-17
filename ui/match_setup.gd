@@ -54,7 +54,7 @@ func _ready() -> void:
 	_build_roster_editor()
 	_seed_rng.randomize()
 	_prepare_new_seed()
-	for id: StringName in BattlefieldCatalogData.PLAYABLE:
+	for id: StringName in BattlefieldCatalogData.SELECTABLE:
 		_add_battlefield_option(id)
 	map_size_option.select(0)
 	_refresh_generation_controls()
@@ -90,7 +90,8 @@ func _build_authoring_tools() -> void:
 func _add_battlefield_option(id: StringName) -> void:
 	var definition := BattlefieldCatalogData.definition(id)
 	var battlefield_size: Vector2i = definition.fixed_size
-	map_size_option.add_item("%s (%d × %d)" % [definition.label, battlefield_size.x, battlefield_size.y])
+	var display_label: String = definition.label + (" — Test map" if id == BattlefieldCatalogData.TACTICAL_TEST_RANGE else "")
+	map_size_option.add_item("%s (%d × %d)" % [display_label, battlefield_size.x, battlefield_size.y])
 	map_size_option.set_item_metadata(map_size_option.item_count - 1, id)
 
 func _selected_battlefield_id() -> StringName:
@@ -503,7 +504,7 @@ func _open_replay_file(path: String) -> void:
 	var recording := BattleReplayRecording.load_json(path)
 	var issue := recording.validation_message()
 	if issue.is_empty() and (not bool(recording.configuration.get("generated_map", false)) \
-	or StringName(recording.configuration.get("battlefield_id", "")) not in BattlefieldCatalogData.PLAYABLE):
+	or StringName(recording.configuration.get("battlefield_id", "")) not in BattlefieldCatalogData.SELECTABLE):
 		issue = "This recording uses a retired battlefield."
 	if not issue.is_empty():
 		if not _replay_error:

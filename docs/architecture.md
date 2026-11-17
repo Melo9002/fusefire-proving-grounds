@@ -1,6 +1,6 @@
 # The current code map
 
-Start a normal game in `ui/match_setup.tscn`. The three normal sites—Service Depot, Freight Yard and Fleet Station—share Generation 2.
+Start a game in `ui/match_setup.tscn`. The three normal sites—Service Depot, Freight Yard and Fleet Station—share Generation 2. Match Setup also exposes the existing Tactical Test Range as a test map; it uses the same range scene and ID as the mechanics checks, without a content copy.
 
 ```text
 Match Setup (seed + mission + population on/off)

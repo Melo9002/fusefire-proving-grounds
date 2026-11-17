@@ -918,8 +918,8 @@ func _get_movement_urgency_bonus() -> float:
 		return 0.0
 	if unit.is_carrying_unit() or (unit.mission_actor and unit.mission_actor.is_vip()):
 		return 0.0
-	if unit.stats and unit.stats.current_hp <= 25:
-		return 0.0
+	# Wounded combatants retain the normal early caution, but repeated idle
+	# turns must still recover. A permanent HP veto can deadlock both sides.
 	return minf(URGENCY_MAX_SCORE, float(_consecutive_low_value_actions - URGENCY_START_ACTIONS + 1) * URGENCY_PER_ACTION)
 
 func _route_cost(path: PackedVector3Array) -> float:

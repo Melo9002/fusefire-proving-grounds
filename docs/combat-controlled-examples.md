@@ -1,6 +1,8 @@
 # Controlled combat examples
 
-Milestone 04 step 3, extended by the step-4 raised-beam regression on 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It still uses today's combat formula. In particular, a passing geometry check does not mean the new cover penalties, accuracy plateau, chance colors or continuous height bonus have shipped.
+**Play it directly:** Match Setup → Battlefield → **Tactical Test Range — Test map**. This launches the same authored range and map ID used below, with the ordinary mission, roster, seed and replay flow. Population starts off to keep the controlled examples clear.
+
+Milestone 04 step 3, extended by the step-4 raised-beam regression on 2026-11-16. The existing **Tactical Test Range** now contains repeatable geometry examples for the [intended rules](combat-2-rules.md). It uses the current shared combat formula: physical cover, the range plateau/falloff and continuous height accuracy have shipped. The proposed +35 Aim and chance colors remain pending. Passing a geometry check alone is not proof of balanced encounters.
 
 ## Open and edit
 
@@ -51,4 +53,4 @@ It saves overview, doorway/crate, doorway-front, truck/corner and raised-beam vi
 - Headless editor scan passed. The step-3 rendered run passed **101 checks**, including four saved captures. See the [step-4 report](quality/combat-geometry-los-2026-11-16.md) for current verification. Graphics captures were inspected; those checks establish presentation of these examples, not full playability, camera coverage or future balance correctness.
 - Some verification processes reported the existing Windows root-certificate-store error. The first immediate-free test teardown also reported resource leaks; queued teardown with two frames completed cleanly in the final headless run. No claim of a full-project leak audit is made.
 
-Steps 4 and 5 are now complete for the demonstrated geometry and cover mismatches. See the [cover/flanking checks and rendered comparisons](quality/combat-cover-flanking-2026-11-16.md). Next: step 6, height and range, using these fixtures. Add future-rule assertions alongside their implementation; do not rewrite today's balance tests as if the intended numbers were already running.
+Steps 4 and 5 are now complete for the demonstrated geometry and cover mismatches. See the [cover/flanking checks and rendered comparisons](quality/combat-cover-flanking-2026-11-16.md). Step 6 now tests actual ramp/stair/deck heights and fractional-height/range cases; see [height/range verification](quality/combat-height-range-2026-11-16.md). Add future-rule assertions alongside their implementation; do not rewrite today's balance tests as if the intended numbers were already running.

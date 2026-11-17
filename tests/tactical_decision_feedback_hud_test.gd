@@ -58,9 +58,9 @@ func _run() -> void:
 	blocker.authored_shot_bounds = AABB()
 	grid.map_data.rebuild_los_index()
 	var clear := battle.query_attack(actor, enemy)
-	check(clear.is_legal() and TacticalFeedbackText.shot(clear).contains("%d%% hit" % clear.hit_chance), "Shootable feedback reports the authoritative chance")
+	check(clear.is_legal() and TacticalFeedbackText.shot(clear).contains("%d%% hit" % clear.hit_chance) and TacticalFeedbackText.shot(clear).contains("Range penalty") and TacticalFeedbackText.shot(clear).contains("Height"), "Shootable feedback reports authoritative chance and range/height contributions")
 	var old_range := actor.attack_range
-	actor.attack_range = 0
+	actor.attack_range = 1 # Valid range shorter than this two-cell shot.
 	check(TacticalFeedbackText.shot(battle.query_attack(actor, enemy)).contains("Out of range"), "Range and obstruction failures remain distinct")
 	actor.attack_range = old_range
 

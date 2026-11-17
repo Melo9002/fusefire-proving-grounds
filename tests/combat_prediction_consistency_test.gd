@@ -40,7 +40,7 @@ func _run() -> void:
 	_reset(Vector3i(1, 0, 5), Vector3i(9, 2, 5))
 	_solid(Vector3i(5, 0, 5), 2, MapCellData.CoverType.FULL)
 	var shot := battle.query_attack(actor, enemy)
-	check(shot.is_legal() and shot.hit_chance == 50 and is_equal_approx(shot.visibility_fraction, 0.2), "Raised target has one visible sample and unchanged 50 percent chance")
+	check(shot.is_legal() and shot.hit_chance == 40 and is_equal_approx(shot.visibility_fraction, 0.2) and shot.evaluation.height_modifier == -10, "Raised target keeps one visible sample: 50 exposure plus 10 low-ground penalty gives 40 percent")
 	check(battle._legal_shot_cells(actor).has(enemy.grid_position), "Painted attack/Guard range includes a genuinely shootable raised target")
 	var score := AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, false, hostiles, grid, policy, null)
 	check(score.firing > 0, "AI destination scoring recognizes the same raised firing opportunity")

@@ -72,7 +72,7 @@ func _run() -> void:
 	var unsupported := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	unsupported.schema_version = 999
 	check(unsupported.validation_message().contains("Unsupported replay schema"), "Unsupported schemas fail with an actionable error")
-	for incompatible_version in ["prototype-1.5-action-pipeline", "unknown-future-simulation", ""]:
+	for incompatible_version in ["prototype-1.5-action-pipeline", "prototype-1.5-surface-placement-7", "unknown-future-simulation", ""]:
 		var incompatible := recording.to_dictionary()
 		incompatible.simulation_version = incompatible_version
 		check(BattleReplayRecording.from_dictionary(incompatible).validation_message().contains("Incompatible replay simulation"), "Old, unknown and missing simulation identities reject before playback")
@@ -81,10 +81,18 @@ func _run() -> void:
 	check(BattleReplayRecording.from_dictionary(missing_simulation).validation_message().contains("Incompatible replay simulation"), "Absent simulation identity cannot silently select today's shot rules")
 	var stale_cover := recording.to_dictionary()
 	stale_cover.cover_tuning_signature = "cover-1:50:50"
-	check(BattleReplayRecording.from_dictionary(stale_cover).validation_message().contains("Incompatible replay cover tuning"), "Changed cover tuning rejects before playback")
+	check(BattleReplayRecording.from_dictionary(stale_cover).validation_message().contains("Incompatible replay combat tuning"), "Changed cover tuning rejects before playback")
 	var missing_cover := recording.to_dictionary()
 	missing_cover.erase("cover_tuning_signature")
-	check(BattleReplayRecording.from_dictionary(missing_cover).validation_message().contains("Incompatible replay cover tuning"), "Missing cover tuning identity cannot silently select today's penalties")
+	check(BattleReplayRecording.from_dictionary(missing_cover).validation_message().contains("Incompatible replay combat tuning"), "Missing cover tuning identity cannot silently select today's penalties")
+
+	# The retained wire field now fingerprints every scalar used by step 6.
+	var tuning = CombatRules.cover_tuning
+	for key in ["safe_range_fraction", "range_penalty_at_limit", "range_exponent", "height_accuracy_per_tile", "height_accuracy_cap"]:
+		var original: Variant = tuning.get(key)
+		tuning.set(key, original + 0.01)
+		check(BattleReplayRecording.from_dictionary(recording.to_dictionary()).validation_message().contains("Incompatible replay combat tuning"), "Changed %s rejects before playback" % key)
+		tuning.set(key, original)
 
 	var broken_recording := BattleReplayRecording.from_dictionary(recording.to_dictionary())
 	broken_recording.actions[0].erase("committed_revision")

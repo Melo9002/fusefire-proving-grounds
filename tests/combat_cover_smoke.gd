@@ -128,7 +128,7 @@ func _run() -> void:
 	place(attacker, Vector3i(14, 0, 11), grid)
 	place(target, Vector3i(18, 0, 11), grid)
 	var wall_edge = battle.evaluate_attack(attacker, target)
-	check(wall_edge.is_legal and wall_edge.hit_chance == 100, "A shot past the wall edge remains legal")
+	check(wall_edge.is_legal and wall_edge.hit_chance == 98 and wall_edge.cover_type == MapCellData.CoverType.NONE and wall_edge.visibility_fraction == 1.0, "A shot past the wall edge remains legal")
 	trajectory.clear()
 	check(trajectory.mesh_instance.mesh == null, "Debug trajectory can be cleared with attack mode")
 	check(trajectory.blocker_marker.mesh == null and trajectory.last_blocking_cell == null, "Clearing the shot also clears its blocker highlight")

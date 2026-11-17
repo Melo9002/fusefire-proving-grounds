@@ -95,7 +95,7 @@ func _test_capability_action_and_combat() -> void:
 	var original_height := grid.get_cell_data(far_threat).world_position.y
 	grid.get_cell_data(far_threat).world_position.y = 1.2
 	var combined_full := service.query_attack(threat.tactical_id, actor.tactical_id)
-	check(combined_full.shield_applied and combined_full.cover_type == MapCellData.CoverType.FULL and combined_full.hit_chance == 40, "Physical full cover, partial exposure and Shield combine to 40 percent")
+	check(combined_full.shield_applied and combined_full.cover_type == MapCellData.CoverType.FULL and combined_full.hit_chance == 46 and is_equal_approx(combined_full.evaluation.height_modifier, 6.0), "Full cover/exposure and Shield combine with +6 height accuracy to 46 percent")
 	grid.get_cell_data(far_threat).world_position.y = original_height
 	cover_data.cover_type = previous_cover
 	cover_data.cover_height = previous_height

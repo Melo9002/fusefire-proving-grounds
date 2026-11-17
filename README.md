@@ -4,7 +4,7 @@ A Godot 4.7.2 tactical combat prototype.
 
 ## Play
 
-Open `project.godot` and press **F5**. Match Setup offers **Service Depot**, the current Generation 2.0 example.
+Open `project.godot` and press **F5**. Match Setup offers **Service Depot**, **Freight Yard**, **Fleet Station**, and **Tactical Test Range — Test map**, all using Generation 2.0. The range is the existing mechanics scene with ramps, stairs, stacked floors and combat examples; it is not a duplicated map.
 
 - The seed chooses between two authored site layouts, compatible loading parcels and movable objects.
 - **Vary cars / containers** controls movable tactical population. Off keeps the site and buildings.

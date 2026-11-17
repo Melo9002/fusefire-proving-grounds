@@ -1,7 +1,7 @@
 class_name BattlefieldCatalog
 extends RefCounted
-## The three normal sites share Generation 2. Other supported IDs are internal
-## mechanics fixtures. Retired identities reject explicitly. Legacy boolean
+## The three normal sites and the selectable authored test range share Generation 2.
+## Other supported IDs are internal mechanics fixtures. Retired identities reject explicitly. Legacy boolean
 ## fields are translated at compatibility inputs; current code uses one ID.
 
 const GENERATED_COVER := &"generated_cover"
@@ -32,8 +32,10 @@ const DEFINITIONS := {
 	INDUSTRIAL_WAREHOUSE: {"label": "Special — Industrial Warehouse", "source_kind": "generated_industrial_warehouse", "fixed_size": Vector2i(40, 30)},
 }
 
-# Internal battle fixtures retain their explicit IDs for the mechanics tests.
+# Curated-site release/mission matrices keep their existing scope. The menu
+# additionally exposes the same authored range; no scene/content copy is made.
 const PLAYABLE := [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION]
+const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE]
 
 static func uses_population(id: StringName) -> bool:
 	return id in [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]

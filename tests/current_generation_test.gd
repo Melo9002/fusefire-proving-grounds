@@ -30,11 +30,32 @@ func _run() -> void:
 	var menu = load("res://ui/match_setup.tscn").instantiate()
 	root.add_child(menu)
 	await process_frame
-	check(menu.map_size_option.item_count == 3 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Real setup exposes the curated sites and defaults to Service Depot")
+	check(menu.map_size_option.item_count == 4 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Real setup exposes the three curated sites plus existing range and defaults to Service Depot")
 	var selected: BattleConfiguration = menu._build_battle_configuration()
 	check(selected.content_manifest.population_enabled and menu.population_toggle.visible, "Population is explicit and enabled by default")
 	menu.population_toggle.button_pressed = false
 	check(not menu._build_battle_configuration().content_manifest.population_enabled, "Same pipeline supports population-off")
+	var range_index := -1
+	var range_count := 0
+	for index in menu.map_size_option.item_count:
+		if menu.map_size_option.get_item_metadata(index) == Catalog.TACTICAL_TEST_RANGE:
+			range_index = index
+			range_count += 1
+	check(range_count == 1 and range_index >= 0, "The existing range appears exactly once in Match Setup")
+	if range_index >= 0:
+		menu.map_size_option.select(range_index)
+		menu.map_size_option.item_selected.emit(range_index)
+		var range_config: BattleConfiguration = menu._build_battle_configuration()
+		check(range_config.battlefield_id == Catalog.TACTICAL_TEST_RANGE and range_config.map_size == Vector2i(32, 32), "Selecting the range builds its existing identity and dimensions")
+		check(menu.map_size_option.get_item_text(range_index).contains("Test map") and not range_config.content_manifest.population_enabled, "The range is labeled as a test map and starts with its authored examples unobscured")
+		check(range_config.battlefield_id in Catalog.SELECTABLE, "The same selection list also permits range replay opening")
+		var range_level := BattleScene.instantiate() as BattleLevel
+		range_level.configure_battle(range_config)
+		root.add_child(range_level)
+		check(range_level.battle_initialization_succeeded and range_level.active_generated_map.source_kind == Layout.RANGE_SOURCE, "The menu configuration starts the original range through current Generation 2")
+		check(range_level._replay_configuration.battlefield_id == Catalog.TACTICAL_TEST_RANGE, "Range recordings retain the same identity, not a duplicated map")
+		range_level.queue_free()
+		await process_frame
 	menu.free()
 	var plots := {}
 	var variants := {}

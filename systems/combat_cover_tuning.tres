@@ -6,3 +6,8 @@
 script = ExtResource("tuning")
 low_cover_penalty = 20
 full_cover_penalty = 40
+safe_range_fraction = 0.6
+range_penalty_at_limit = 70.0
+range_exponent = 2.0
+height_accuracy_per_tile = 5.0
+height_accuracy_cap = 20.0
