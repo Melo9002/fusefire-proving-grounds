@@ -14,6 +14,55 @@ static func affordable_attack_shots(unit: TacticalUnit, attack_query: AttackQuer
 		count = mini(count, unit.stats.current_supply_points / maxi(1, attack_query.supply_points_cost))
 	return maxi(1, count)
 
+## How many attacks `ap` action points and the given supply can pay for, within the planning horizon.
+static func shots_with(ap: int, supply: int, attack_ap: int, attack_supply: int, uses_supply: bool, max_plan_ap: int) -> int:
+	var count := mini(ap, max_plan_ap) / maxi(1, attack_ap)
+	if uses_supply:
+		count = mini(count, supply / maxi(1, attack_supply))
+	return maxi(0, count)
+
+## The best shot sequence the unit could fire from `cell` (its own cell, or a hypothetical one after a
+## move) at any of `hostiles`: `shots` attacks at the authoritative chance and damage the combat rules give
+## for that standing cell, valued as HP-capped expected damage plus kill value. Ties go to the lower
+## tactical ID, so the result never depends on iteration luck. Returns {value, target, chance, damage, shots}
+## with value 0.0 and a null target when no hostile can be shot from there.
+static func best_attack_from(unit: TacticalUnit, cell: Vector3i, hostiles: Array[TacticalUnit], battle: BattleController, shots: int, kill_bonus: float, accuracy_bonus := 0) -> Dictionary:
+	var best := {"value": 0.0, "target": null, "chance": 0, "damage": 0, "shots": shots}
+	if shots < 1:
+		return best
+	for hostile in hostiles:
+		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
+			continue
+		var evaluation := CombatRules.evaluate_attack_from_cell(unit, cell, hostile, battle.grid_manager, unit.get_world_3d(), accuracy_bonus, battle.shield_enabled)
+		if not evaluation.is_legal:
+			continue
+		var damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
+		var chances: Array[int] = []
+		for shot in shots:
+			chances.append(evaluation.hit_chance)
+		var value := AITargetScorer.shot_sequence_value(chances, damage, hostile.stats.current_hp, kill_bonus)
+		var better := value > float(best.value) + 0.0001
+		var tied := absf(value - float(best.value)) <= 0.0001 and best.target != null and String(hostile.tactical_id) < String(best.target.tactical_id)
+		if better or tied:
+			best = {"value": value, "target": hostile, "chance": evaluation.hit_chance, "damage": damage, "shots": shots}
+	return best
+
+## The plan "move to `destination`, then fire `shots` times", valued from a best_attack_from result.
+static func move_then_attack(destination: Vector3i, shot: Dictionary, move_ap: int, attack_ap: int, attack_supply: int) -> AIActionPlan:
+	var plan := AIActionPlan.new()
+	plan.steps.append(AIActionPlan.MOVE)
+	for index in int(shot.shots):
+		plan.steps.append(AIActionPlan.ATTACK)
+	plan.destination = destination
+	plan.shots = int(shot.shots)
+	plan.ap_cost = move_ap + plan.shots * attack_ap
+	plan.supply_cost = plan.shots * attack_supply
+	plan.value = float(shot.value)
+	var target: TacticalUnit = shot.target
+	plan.target_id = target.tactical_id if is_instance_valid(target) else &""
+	plan.summary = "Move to %s, then %d shot(s) at %s (%d%% each)" % [destination, plan.shots, String(plan.target_id), int(shot.chance)]
+	return plan
+
 ## Direct shots versus Aim followed by shots, over at most `max_plan_ap` action points. Aim affects only
 ## the first shot. Returns {} when the comparison does not apply (Aim not legal, no shot, a certain
 ## hit, too few AP or ammo for Aim plus a shot). Otherwise:

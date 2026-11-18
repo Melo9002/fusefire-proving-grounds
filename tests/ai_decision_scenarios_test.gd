@@ -44,6 +44,11 @@ func _run() -> void:
 	await _blocked_corridor()
 	await _open_corridor()
 	await _flat_map_approach()
+	await _reposition_for_a_better_shot()
+	await _good_shot_is_kept()
+	await _reposition_needs_ap_to_fire()
+	await _reposition_is_deterministic()
+	await _easy_does_not_reposition()
 	await _extraction_in_zone()
 	await _extraction_en_route()
 	await _rescue_pickup()
@@ -193,6 +198,85 @@ func _flat_map_approach() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S6c")
 	check(r.end.x > 3 and "move" in r.committed, "S6c: on a flat map the unit advances toward a distant hostile (end %s, committed %s)" % [r.end, r.committed])
+	await f.dispose(self)
+
+## S9 Move then Attack. A poor shot at the edge of range, and one move reaches a cell with a far better
+## shot. Reasonable: reposition once, then fire from the better cell. Not asserted: which tile.
+func _poor_shot_setup(ap := 3) -> Array:
+	var f = await _duel(1)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var enemy: TacticalUnit = f.turns.enemy_units[0]
+	f.place(actor, Vector3i(3, 0, 12)); f.place(enemy, Vector3i(13, 0, 12))
+	f.ready_actor(actor, ap, 4)
+	return [f, actor, enemy]
+
+func _reposition_for_a_better_shot() -> void:
+	var setup: Array = await _poor_shot_setup()
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	var enemy: TacticalUnit = setup[2]
+	var before: AttackQueryResult = f.battle.query_attack(actor, enemy)
+	check(before.is_legal(), "S9 setup: the edge-of-range shot is legal")
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S9")
+	check(r.committed.size() >= 2 and r.committed[0] == "move", "S9: a clearly better shot one move away is taken first (committed %s)" % str(r.committed))
+	var reasons := ""
+	for decision in r.decisions: reasons += String(decision.reason) + " | "
+	check(reasons.contains("Repositioned"), "S9: the move says why (%s)" % reasons.substr(0, 200))
+	check("attack" in r.committed, "S9: the unit fires after repositioning")
+	check(r.committed.filter(func(action: String) -> bool: return action == "move").size() <= 1, "S9: it repositions at most once")
+	if is_instance_valid(enemy) and enemy.stats.current_hp < enemy.stats.max_hp or r.end != r.start:
+		var after: AttackQueryResult = f.battle.query_attack(actor, enemy) if is_instance_valid(enemy) else null
+		if after != null and after.is_legal():
+			check(after.hit_chance > before.hit_chance, "S9: the new cell's shot is better (%d%% to %d%%)" % [before.hit_chance, after.hit_chance])
+	await f.dispose(self)
+
+## S9b A good shot stays where it is: no move is worth the AP.
+func _good_shot_is_kept() -> void:
+	var f = await _duel(1)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var enemy: TacticalUnit = f.turns.enemy_units[0]
+	f.place(actor, Vector3i(3, 0, 12)); f.place(enemy, Vector3i(8, 0, 12))
+	f.ready_actor(actor)
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S9b")
+	check(not r.committed.is_empty() and r.committed[0] != "move", "S9b: a good shot is not abandoned for a move (committed %s)" % str(r.committed))
+	check("attack" in r.committed, "S9b: the unit shoots")
+	await f.dispose(self)
+
+## S9c A reposition must leave AP to fire: with one AP the unit shoots from where it stands.
+func _reposition_needs_ap_to_fire() -> void:
+	var setup: Array = await _poor_shot_setup(1)
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S9c")
+	check(not ("move" in r.committed and r.committed.find("move") < r.committed.find("attack")), "S9c: with one AP it never moves first (committed %s)" % str(r.committed))
+	check(r.ap_spent <= 1, "S9c: it stays within its single AP (%d)" % r.ap_spent)
+	await f.dispose(self)
+
+## S9d The plan uses no random draws: the same setup gives the same decision.
+func _reposition_is_deterministic() -> void:
+	var first: Array = await _poor_shot_setup()
+	var rf: Dictionary = await first[0].activate(first[1], self)
+	var committed_first: Array = rf.committed
+	var end_first: Vector3i = rf.end
+	await first[0].dispose(self)
+	var second: Array = await _poor_shot_setup()
+	var rs: Dictionary = await second[0].activate(second[1], self)
+	check(rs.committed == committed_first and rs.end == end_first, "S9d: the same setup gives the same plan (%s vs %s)" % [str(committed_first), str(rs.committed)])
+	await second[0].dispose(self)
+
+## S9e Easy keeps shooting from where it stands: repositioning is not part of that tier yet.
+func _easy_does_not_reposition() -> void:
+	var f := Fixture.new()
+	await f.setup(self, 1, 1, 0, null, AIDifficultyPolicy.Tier.EASY)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	f.place(actor, Vector3i(3, 0, 12)); f.place(f.turns.enemy_units[0], Vector3i(13, 0, 12))
+	f.ready_actor(actor)
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S9e")
+	check(not r.committed.is_empty() and r.committed[0] != "move", "S9e: Easy does not reposition for a better shot (committed %s)" % str(r.committed))
 	await f.dispose(self)
 
 func _extract_fixture():

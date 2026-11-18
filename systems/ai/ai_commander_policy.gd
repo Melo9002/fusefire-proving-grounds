@@ -92,6 +92,7 @@ func compose(difficulty: AIDifficultyPolicy) -> AIDifficultyPolicy:
 	composed.target_mission_weight = difficulty.target_mission_weight
 	composed.lapse_chance = difficulty.lapse_chance
 	composed.lapse_score_margin = difficulty.lapse_score_margin
+	composed.plans_repositioning = difficulty.plans_repositioning
 	return composed
 
 func composition_snapshot(difficulty: AIDifficultyPolicy, composed: AIDifficultyPolicy) -> Dictionary:

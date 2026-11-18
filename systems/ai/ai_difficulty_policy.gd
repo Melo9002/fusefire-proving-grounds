@@ -22,6 +22,9 @@ var target_threat_weight := 1.0
 var target_mission_weight := 1.0
 var lapse_chance := 0.08
 var lapse_score_margin := 12.0
+## Whether a unit with a legal shot also weighs "move, then fire" against shooting from where it
+## stands. Easy keeps the older shoot-if-you-can behavior; difficulty tuning is milestone 05 step 10.
+var plans_repositioning := true
 
 static func get_label(selected_tier: Tier) -> String:
 	match selected_tier:
@@ -38,6 +41,7 @@ static func create(selected_tier: Tier) -> AIDifficultyPolicy:
 		Tier.EASY:
 			policy.lapse_chance = 0.22
 			policy.lapse_score_margin = 15.0
+			policy.plans_repositioning = false
 			policy.wounded_target_weight = 0.35
 			policy.finishing_bonus_weight = 0.25
 			policy.focus_penalty_weight = 0.25

@@ -17,9 +17,21 @@ func check(ok: bool, message: String) -> void:
 
 func _run() -> void:
 	_plan_record()
+	_policy_switch_survives_composition()
 	await _aim_comparison()
 	print("AI plan evaluator: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
+
+## The controller reads a composed policy (difficulty plus commander). Every field it consumes must
+## survive composition, or a tier's setting is silently lost.
+func _policy_switch_survives_composition() -> void:
+	check(AIDifficultyPolicy.create(AIDifficultyPolicy.Tier.NORMAL).plans_repositioning and AIDifficultyPolicy.create(AIDifficultyPolicy.Tier.HARD).plans_repositioning, "Normal and Hard plan repositioning")
+	check(not AIDifficultyPolicy.create(AIDifficultyPolicy.Tier.EASY).plans_repositioning, "Easy does not")
+	for tier in [AIDifficultyPolicy.Tier.EASY, AIDifficultyPolicy.Tier.NORMAL, AIDifficultyPolicy.Tier.HARD]:
+		for profile in [AICommanderPolicy.Profile.DEFAULT, AICommanderPolicy.Profile.CAUTIOUS, AICommanderPolicy.Profile.AGGRESSIVE]:
+			var base := AIDifficultyPolicy.create(tier)
+			var composed := AICommanderPolicy.create(profile).compose(base)
+			check(composed.plans_repositioning == base.plans_repositioning, "Composition keeps the repositioning switch (%s, %s)" % [AIDifficultyPolicy.get_label(tier), AICommanderPolicy.get_label(profile)])
 
 func _plan_record() -> void:
 	var plan := AIActionPlan.new()

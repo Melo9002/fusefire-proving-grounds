@@ -14,6 +14,12 @@ const ACTION_PRESENTATION_DELAY_SECONDS := 0.25
 const MOVEMENT_SCORING_SLICE_USEC := 5000
 const RECENT_MOVE_HISTORY_LIMIT := 4
 const MAX_ATTACK_PLAN_AP := 3
+## Move then Attack: a reposition must be worth clearly more than shooting from where the unit stands,
+## by this fraction of that value and at least this much, so two similar cells never cause dithering.
+const REPOSITION_MIN_GAIN_FRACTION := 0.25
+const REPOSITION_MIN_GAIN := 3.0
+## At most this many cells with the best shots are checked for safety.
+const REPOSITION_CANDIDATE_LIMIT := 12
 const ESCORT_REJOIN_DISTANCE := 5
 const ESCORT_APPROACH_RANGE := 4
 const ESCORT_POSITION_MIN_DISTANCE := 2.0
@@ -198,6 +204,24 @@ func _run_activation() -> bool:
 			_wait_for_next_turn(_movement_wait_reason("Carrier cannot advance toward extraction."), "Move")
 			break
 		var attack_target = _find_attack_target()
+		# Move then Attack: a legal shot is not always the best use of the turn. If one move reaches a
+		# cell whose shots are clearly worth more, and the unit can still fire afterwards, move first.
+		if attack_target != null and not has_moved and _reposition_allowed():
+			var reposition := await _best_reposition_plan(attack_target)
+			if not _battle_is_live(): return false
+			if reposition != null:
+				var start_cell := battle_controller.grid_manager.get_unit_grid(unit)
+				if await battle_controller.try_move(unit, reposition.destination):
+					has_moved = true
+					_recent_move_origins.append(start_cell)
+					if _recent_move_origins.size() > RECENT_MOVE_HISTORY_LIMIT: _recent_move_origins.pop_front()
+					_last_move_destination = reposition.destination
+					_reserve_destination(reposition.destination, 0.0)
+					# This decision is explained by the plan, not by an earlier movement heatmap.
+					_last_position_candidates.clear()
+					_last_position_scores = reposition.summary
+					_record_ai_decision("Move", str(reposition.destination), "Repositioned for a better shot: %s." % reposition.summary, "Attack, Aim, Wait")
+					continue
 		var aimed := attack_target != null and await _try_aim_for_attack(attack_target)
 		if not _battle_is_live(): return false
 		if aimed:
@@ -388,6 +412,74 @@ func _try_emergency_seal() -> bool:
 		return false
 	var query := battle_controller.query_simple(&"emergency_seal", unit)
 	return query.is_legal() and await battle_controller.try_emergency_seal(unit)
+
+## Repositioning is a combat choice for a free unit: not a carrier or VIP, and not an escort bound to a
+## rescue carrier's corridor.
+func _reposition_allowed() -> bool:
+	if not is_instance_valid(unit) or not unit.stats or unit.is_carrying_unit() or not _ensure_policy().plans_repositioning:
+		return false
+	if unit.mission_actor and unit.mission_actor.is_vip():
+		return false
+	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+	return carrier == null
+
+## The best "move, then fire" plan for the chosen target's turn, or null when shooting from here is
+## good enough. Both sides are valued the same way (AIPlanEvaluator.best_attack_from): the sequence
+## of shots the unit can afford, at the authoritative chance and damage for that standing cell. A move
+## costs its real AP, so the unit must still be able to fire afterwards. Candidates are bounded and
+## the destination must pass the same exposure check as any other advance.
+func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
+	var move_query := battle_controller.query_move(unit)
+	if not move_query.is_legal():
+		return null
+	var attack_query := battle_controller.query_attack(unit, target)
+	var attack_ap := maxi(1, attack_query.cost.ap)
+	var supply_cost := maxi(0, attack_query.supply_points_cost)
+	var move_ap := move_query.cost.ap
+	if unit.stats.current_ap - move_ap < attack_ap:
+		return null
+	var uses_supply := battle_controller.supply_points_enabled
+	var moved_shots := AIPlanEvaluator.shots_with(unit.stats.current_ap - move_ap, unit.stats.current_supply_points, attack_ap, supply_cost, uses_supply, MAX_ATTACK_PLAN_AP)
+	if moved_shots < 1:
+		return null
+	var grid := battle_controller.grid_manager
+	var start := grid.get_unit_grid(unit)
+	var hostiles := _get_hostile_units()
+	var kill_bonus := 20.0 * _ensure_policy().finishing_bonus_weight
+	var aim_bonus: int = CombatRules.cover_tuning.aim_accuracy_bonus if battle_controller.aim_enabled and unit.tactical_state and unit.tactical_state.is_aiming else 0
+	var now_shots := AIPlanEvaluator.shots_with(unit.stats.current_ap, unit.stats.current_supply_points, attack_ap, supply_cost, uses_supply, MAX_ATTACK_PLAN_AP)
+	var now := AIPlanEvaluator.best_attack_from(unit, start, hostiles, battle_controller, now_shots, kill_bonus, aim_bonus)
+	var required: float = float(now.value) + maxf(REPOSITION_MIN_GAIN, float(now.value) * REPOSITION_MIN_GAIN_FRACTION)
+	var snapshot := AIPlanningSnapshot.capture(battle_controller)
+	var scored: Array[Dictionary] = []
+	var slice_start := Time.get_ticks_usec()
+	for cell in move_query.legal_destination_cells:
+		if Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
+			await get_tree().process_frame
+			if not is_inside_tree() or not _should_control_unit() or snapshot.is_stale(battle_controller):
+				return null
+			slice_start = Time.get_ticks_usec()
+		if cell == start or (_squad_context and not _squad_context.block_reason(unit, cell).is_empty()):
+			continue
+		var shot := AIPlanEvaluator.best_attack_from(unit, cell, hostiles, battle_controller, moved_shots, kill_bonus)
+		if shot.target != null and float(shot.value) >= required:
+			scored.append({"cell": cell, "shot": shot})
+	if scored.is_empty():
+		return null
+	# Best shots first; equal shots go to the lower cell so the choice never depends on iteration order.
+	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if not is_equal_approx(float(a.shot.value), float(b.shot.value)):
+			return float(a.shot.value) > float(b.shot.value)
+		return _cell_less(a.cell, b.cell))
+	var current_exposure := _advance_exposure(start)
+	for entry in scored.slice(0, REPOSITION_CANDIDATE_LIMIT):
+		if snapshot.is_stale(battle_controller):
+			return null
+		if _is_safe_advance_cell(entry.cell, current_exposure):
+			var plan := AIPlanEvaluator.move_then_attack(entry.cell, entry.shot, move_ap, attack_ap, supply_cost)
+			plan.summary += "; shooting from here is worth %.1f, from there %.1f" % [float(now.value), plan.value]
+			return plan
+	return null
 
 func _try_aim_for_attack(target: TacticalUnit) -> bool:
 	if not is_instance_valid(unit) or not is_instance_valid(target) or not unit.stats:
