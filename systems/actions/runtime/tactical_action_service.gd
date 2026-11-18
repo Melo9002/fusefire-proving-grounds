@@ -231,6 +231,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	if result.aim_applied:
 		actor.tactical_state.clear_aim()
 	_cancel_overwatch(actor)
+	_note_shield_attack(target, evaluation)
 	result.aiming_after = actor.tactical_state.is_aiming if actor.tactical_state else false
 	if result.did_hit:
 		target.defer_stat_presentation = true
@@ -1032,6 +1033,14 @@ func _aim_bonus(actor: TacticalUnit) -> int:
 func _cancel_aim(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_aim() if is_instance_valid(actor) and actor.tactical_state else false
 
+## An attack the shield covered uses up one of its limited attacks. Shields without a capacity limit
+## keep no count, so their recorded state is unchanged.
+func _note_shield_attack(target: TacticalUnit, evaluation: CombatRules.AttackEvaluation) -> void:
+	if not shield_enabled or evaluation == null or not evaluation.shield_applied or not is_instance_valid(target):
+		return
+	if target.shield_capability and target.shield_capability.max_attacks_covered > 0 and target.tactical_state:
+		target.tactical_state.note_shield_attack()
+
 func _cancel_shield(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_shield() if shield_enabled and is_instance_valid(actor) and actor.tactical_state else false
 
@@ -1086,6 +1095,7 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			event.target_hp_before = mover.stats.current_hp
 			watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
 			watcher.tactical_state.clear_overwatch()
+			_note_shield_attack(mover, evaluation)
 			if event.did_hit:
 				var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
 				mover.defer_stat_presentation = true
@@ -1174,6 +1184,7 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	event.target_hp_before = attacker.stats.current_hp
 	watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
 	watcher.tactical_state.clear_overwatch()
+	_note_shield_attack(attacker, evaluation)
 	if event.did_hit:
 		var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
 		attacker.defer_stat_presentation = true

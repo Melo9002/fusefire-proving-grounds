@@ -162,8 +162,12 @@ static func get_shield_protection_at_cells(attacker_cell: Vector3i, target: Tact
 	if not is_instance_valid(target) or not target.tactical_state or not target.tactical_state.is_shielding or not target.shield_capability:
 		return {"applied": false, "accuracy_modifier": 0, "damage_multiplier": 1.0}
 	var incoming := shield_direction(target_cell, attacker_cell, grid)
-	var applied := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
-	return {"applied": applied, "accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0, "damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0, "reason": "Inside Shield arc" if applied else "Outside Shield arc"}
+	var in_arc := is_within_protected_arc(target.tactical_state.shield_facing, incoming, target.shield_capability.protected_arc_degrees)
+	var has_capacity := target.shield_capability.has_capacity(target.tactical_state.shield_attacks_covered)
+	var applied := in_arc and has_capacity
+	var reason := "Outside Shield arc"
+	if in_arc: reason = "Inside Shield arc" if has_capacity else "Shield overwhelmed (%d attacks already covered)" % target.tactical_state.shield_attacks_covered
+	return {"applied": applied, "accuracy_modifier": target.shield_capability.accuracy_modifier if applied else 0, "damage_multiplier": target.shield_capability.damage_multiplier if applied else 1.0, "reason": reason}
 
 ## The boundary is inclusive. An attacker exactly half the arc away from the
 ## committed facing receives protection; epsilon absorbs floating-point noise.

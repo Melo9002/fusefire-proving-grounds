@@ -1,6 +1,6 @@
 # MIRA unit classes: first shielded unit and future ideas — 2026-11-18
 
-Status: **design notes, nothing implemented.** Every number below is a starting proposal to be tuned against the baseline. Written from a brainstorm with the project owner; the lines marked "owner" are their direction. Units are MIRA robots, so a body-mounted arm or heavy plating is in fiction.
+Status: **the first Bulwark is implemented** (see "What shipped" at the end); the rest is design notes. Every number is a starting proposal to be tuned against the baseline. Written from a brainstorm with the project owner; the lines marked "owner" are their direction. Units are MIRA robots, so a body-mounted arm or heavy plating is in fiction.
 
 ## The idea in one paragraph
 
@@ -83,3 +83,14 @@ Always when combat numbers change:
 - Capacity per round (resets next activation) or per stance use? Proposed: per round.
 - Should the damage multiplier stay at all, or should the shield be only "harder to hit" plus capacity?
 - Exact movement and range numbers: confirm against the real baseline values before fixing them.
+
+## What shipped (first Bulwark)
+
+- **Archetype `bulwark`** (`units/archetypes/bulwark.tres`): speed 3, attack range 6 (the battle default is 10), 3 AP, 100 HP, yellow stripe. It is added at the end of the catalog, so it appears last in the match-setup roster. The older `shieldbearer` stays as the lab preset with the original 120° Shield.
+- **Shield `bulwark_shield.tres`**: 360° arc (omnidirectional), accuracy modifier −20, damage multiplier 0.7, 1 AP, no attacking or reloading while it is up, and a **capacity of 2 covered attacks** per stance.
+- **Capacity rule** (`ShieldCapability.max_attacks_covered`, 0 = unlimited): every attack the shield covers (a shot, a Guard reaction or a retaliation) counts; once the count reaches the capacity, later attacks get no protection and the attack preview says "Shield overwhelmed". The count lives in `TacticalState.shield_attacks_covered`, resets when the stance is made or ends (next activation), is part of the replay fingerprint only when it is above zero, and joins the shield signature only when the capacity is set. The original Shield is therefore unchanged: same behaviour, same signature, same fingerprint.
+- **AI**: the Shield plan values only as many attackers as the capacity covers (the most valuable first); with a 360° arc all attackers are in the arc, so the facing choice no longer matters.
+- **HUD**: the state label reads `SHIELD ALL-ROUND n/2` (attacks still covered); the Shield tooltip says the arm tracks every attacker and states the capacity.
+- **Stripe**: a thin band on the chest bone (`UnitVisualAdapter.set_class_marker`), colour from the archetype's `marker_color` (alpha 0 = none). Presentation only. Rendered review: `tests/class_marker_capture.gd` (explicit-only). The band is round, a little wide for the torso in side view, and an obvious placeholder for a proper paint job.
+- **Tests**: `tests/bulwark_shield_test.gd` (archetype numbers, signature compatibility, omnidirectional cover, capacity in a real battle, fingerprint, AI valuation with a capacity, the stripe); `tests/tactical_archetype_lab_test.gd` updated for the sixth archetype (an intended catalog change; its shield-less rule now exempts the Bulwark too).
+- **Not done**: no simulation version bump (existing content, replays and fingerprints are unchanged; a recording that uses the Bulwark records its shield signature), no baseline with Bulwarks in it, no balance numbers beyond the proposals above, no shield-arm animation.

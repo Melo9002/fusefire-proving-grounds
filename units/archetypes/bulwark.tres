@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TacticalArchetype" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://units/archetypes/tactical_archetype.gd" id="1"]
+[ext_resource type="Resource" path="res://units/capabilities/bulwark_shield.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+archetype_id = &"bulwark"
+display_name = "Bulwark"
+description = "Heavy shield arm that covers every direction, but only two attacks per stance. Slow, short-ranged, yellow stripe."
+base_ap = 3
+movement_range = 3
+attack_range = 6
+shield_capability = ExtResource("2")
+marker_color = Color(1, 0.82, 0.1, 1)

@@ -10,6 +10,8 @@ var is_shielding := false
 var is_overwatching := false
 ## Normalized world X/Z direction between supported standing points selected when Shield Stance commits.
 var shield_facing := Vector2.ZERO
+## Attacks the shield has covered in this stance; only counted for a capability with a capacity limit.
+var shield_attacks_covered := 0
 var activation_round := -1
 var activation_phase := -1
 
@@ -52,14 +54,21 @@ func establish_shield(facing: Vector2) -> bool:
 		return false
 	is_shielding = true
 	shield_facing = facing.normalized()
+	shield_attacks_covered = 0
 	changed.emit()
 	return true
+
+## Records one attack the shield covered; the count is part of the replayed state.
+func note_shield_attack() -> void:
+	shield_attacks_covered += 1
+	changed.emit()
 
 func clear_shield() -> bool:
 	if not is_shielding and shield_facing.is_zero_approx():
 		return false
 	is_shielding = false
 	shield_facing = Vector2.ZERO
+	shield_attacks_covered = 0
 	changed.emit()
 	return true
 
@@ -83,6 +92,7 @@ func reset() -> void:
 	is_shielding = false
 	is_overwatching = false
 	shield_facing = Vector2.ZERO
+	shield_attacks_covered = 0
 	activation_round = -1
 	activation_phase = -1
 	changed.emit()

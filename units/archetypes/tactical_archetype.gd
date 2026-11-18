@@ -21,6 +21,11 @@ extends Resource
 @export_range(0, 30, 1) var movement_range := 0
 @export_range(0, 30, 1) var attack_range := 0
 
+@export_group("Appearance")
+## A stripe painted on the model so the class reads at a glance. Transparent (alpha 0) means none.
+## Presentation only: it never affects the tactical rules.
+@export var marker_color := Color(0.0, 0.0, 0.0, 0.0)
+
 @export_group("Capabilities")
 ## Missing capability means this archetype cannot enter Shield Stance.
 @export var shield_capability: ShieldCapability

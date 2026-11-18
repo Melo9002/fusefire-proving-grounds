@@ -260,6 +260,12 @@ func _update_button_states() -> void:
 			if not unit.shield_capability.reload_allowed: restrictions.append("Reload")
 		var restriction_text := " and ".join(restrictions) + " blocked while active." if not restrictions.is_empty() else "Shield does not restrict Attack or Reload."
 		shield_button.tooltip_text = "Costs %d AP; choose a hostile to face. Protects a %.0f° front arc: %+d incoming accuracy, ×%.2f damage.\nNo protection from outside the arc. Facing stays fixed; it does not track the target.\n%s Aim cancels Shield; Guard is unavailable.\nMove keeps protection during the route, then cancels it. Skip keeps Shield active. Other incompatible actions cancel it. Expires at the next activation." % [shield_query.cost.ap, shield_query.protected_arc_degrees, shield_query.accuracy_modifier, shield_query.damage_multiplier, restriction_text]
+		if unit.shield_capability and unit.shield_capability.protected_arc_degrees >= 360.0:
+			shield_button.tooltip_text += "
+		The shield arm tracks every attacker: protection from every direction, no facing."
+		if unit.shield_capability and unit.shield_capability.max_attacks_covered > 0:
+			shield_button.tooltip_text += "
+		Covers only %d attacks per stance; after that, further attacks get no protection." % unit.shield_capability.max_attacks_covered
 		if not shield_query.is_legal(): shield_button.tooltip_text += "\nUnavailable: " + shield_query.reason()
 		if not battle_controller.is_shield_mode_active: shield_button.text = "Shield (%d AP)" % shield_query.cost.ap
 	if overwatch_button:
@@ -292,6 +298,10 @@ func _update_button_states() -> void:
 			tactical_state_label.text = "GUARD" + (" · " + condition_text if not condition_text.is_empty() else "")
 		elif unit.tactical_state and unit.tactical_state.is_shielding:
 			var shield_text := "SHIELD %.0f° FRONT" % unit.shield_capability.protected_arc_degrees if unit.shield_capability else "SHIELD (unavailable)"
+			if unit.shield_capability and unit.shield_capability.protected_arc_degrees >= 360.0:
+				shield_text = "SHIELD ALL-ROUND"
+			if unit.shield_capability and unit.shield_capability.max_attacks_covered > 0:
+				shield_text += " %d/%d" % [maxi(0, unit.shield_capability.max_attacks_covered - unit.tactical_state.shield_attacks_covered), unit.shield_capability.max_attacks_covered]
 			tactical_state_label.text = shield_text + (" · " + condition_text if not condition_text.is_empty() else "")
 		else:
 			var aim_text := "AIMED +%d" % CombatRules.cover_tuning.aim_accuracy_bonus if unit.tactical_state and unit.tactical_state.is_aiming else ""

@@ -23,12 +23,14 @@ func _run() -> void:
 
 func _test_catalog_and_independent_state() -> void:
 	check(TacticalArchetypeCatalog.validate_catalog().is_empty(), "Archetype catalog definitions are valid and unique")
-	check(TacticalArchetypeCatalog.all().size() == 5, "Laboratory exposes five initial archetypes")
+	check(TacticalArchetypeCatalog.all().size() == 6, "Laboratory exposes the five initial archetypes plus the Bulwark")
 	var shield := TacticalArchetypeCatalog.get_definition(&"shieldbearer")
 	check(shield != null and shield.shield_capability != null, "Shieldbearer declares shield capability")
+	var bulwark := TacticalArchetypeCatalog.get_definition(&"bulwark")
+	check(bulwark != null and bulwark.shield_capability != null, "Bulwark declares shield capability")
 	for definition in TacticalArchetypeCatalog.all():
 		check(definition.base_ap == 3 and definition.configured_base_ap() == 3, "%s declares the three-AP MIRA baseline" % definition.display_name)
-		if definition.archetype_id != &"shieldbearer":
+		if definition.archetype_id not in [&"shieldbearer", &"bulwark"]:
 			check(definition.shield_capability == null, "%s does not advertise a shield" % definition.display_name)
 
 	var first := load("res://units/tactical_unit.tscn").instantiate() as TacticalUnit

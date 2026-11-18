@@ -92,6 +92,7 @@ func _ready() -> void:
 	_build_arm_ik()
 	_build_animation_controller()
 	_build_team_accent()
+	_apply_class_marker()
 	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
@@ -104,6 +105,62 @@ func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit
 	if is_node_ready():
 		_apply_team_accent()
+		_apply_class_marker()
+
+## Chest band: a thin ring around the torso, riding the chest bone so it follows every pose.
+const CLASS_MARKER_NAME := "ClassMarkerStripe"
+const CLASS_MARKER_RADIUS := 0.165
+const CLASS_MARKER_HEIGHT := 0.06
+## Squeezes the round band to the torso's oval: narrower side to side, a little shallower front to back.
+const CLASS_MARKER_FIT := Vector3(1.0, 1.0, 0.95)
+
+## Paints (or removes) the class stripe from the unit's archetype. Presentation only.
+func _apply_class_marker() -> void:
+	var color := Color(0.0, 0.0, 0.0, 0.0)
+	if is_instance_valid(tactical_unit):
+		var definition := TacticalArchetypeCatalog.get_definition(tactical_unit.archetype_id)
+		if definition:
+			color = definition.marker_color
+	set_class_marker(color)
+
+func set_class_marker(color: Color) -> void:
+	if not is_instance_valid(skeleton):
+		return
+	var existing := skeleton.get_node_or_null(CLASS_MARKER_NAME)
+	if existing:
+		existing.queue_free()
+	if color.a <= 0.0:
+		return
+	var bone_name := &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
+	if skeleton.find_bone(bone_name) < 0:
+		return
+	var attachment := BoneAttachment3D.new()
+	attachment.name = CLASS_MARKER_NAME
+	attachment.bone_name = bone_name
+	skeleton.add_child(attachment)
+	var band := MeshInstance3D.new()
+	var tube := CylinderMesh.new()
+	tube.top_radius = CLASS_MARKER_RADIUS
+	tube.bottom_radius = CLASS_MARKER_RADIUS
+	tube.height = CLASS_MARKER_HEIGHT
+	tube.cap_top = false
+	tube.cap_bottom = false
+	band.mesh = tube
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 0.6
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	band.material_override = material
+	band.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	attachment.add_child(band)
+	# The skeleton sits under a scaled model: counter that scale so the band keeps its size in metres.
+	# The chest bone's own axes are not "up", so once the pose has settled, stand the band upright and at
+	# true size in the character's frame. It still rides the bone through every later pose.
+	await get_tree().process_frame
+	if is_instance_valid(band) and band.is_inside_tree() and is_inside_tree():
+		band.global_basis = character_root.global_basis * Basis.from_scale(CLASS_MARKER_FIT)
 
 func _build_team_accent() -> void:
 	_team_accent = MeshInstance3D.new()

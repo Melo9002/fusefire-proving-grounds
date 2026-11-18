@@ -94,11 +94,19 @@ static func best_shield_plan(unit: TacticalUnit, hostiles: Array[TacticalUnit], 
 	for facing_threat in threats:
 		var prevented := 0.0
 		var covered := 0
+		var values: Array[float] = []
 		for threat in threats:
 			if not CombatRules.is_within_protected_arc(facing_threat.direction, threat.direction, capability.protected_arc_degrees):
 				continue
 			var shielded_chance := CombatRules.chance_for_raw(float(threat.raw) + float(capability.accuracy_modifier))
-			prevented += float(threat.chance) / 100.0 * float(full_damage) - float(shielded_chance) / 100.0 * float(shielded_damage)
+			values.append(float(threat.chance) / 100.0 * float(full_damage) - float(shielded_chance) / 100.0 * float(shielded_damage))
+		# A shield with a capacity covers only that many attacks: the most valuable ones count.
+		values.sort()
+		values.reverse()
+		for value in values:
+			if not capability.has_capacity(covered):
+				break
+			prevented += value
 			covered += 1
 		var hostile: TacticalUnit = facing_threat.hostile
 		var better := best == null or prevented > best.value + 0.0001

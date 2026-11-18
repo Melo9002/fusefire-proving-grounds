@@ -81,6 +81,9 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 				int(unit.stats.is_defending) if unit.stats else 0,
 				carried_id,
 			])
+		# Only a limited shield has a count, so units without one leave the fingerprint unchanged.
+		if include_shield and unit.tactical_state and unit.tactical_state.shield_attacks_covered > 0:
+			parts.append("shield_covered=%s,%d" % [_unit_id(unit), unit.tactical_state.shield_attacks_covered])
 		if include_conditions and unit.conditions:
 			for condition in unit.conditions.snapshot():
 				parts.append("condition=%s,%s,%d,%d,%s" % [_unit_id(unit), condition.condition_id, condition.remaining_beats, condition.applied_beat, condition.source_id])
