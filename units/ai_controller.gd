@@ -980,7 +980,8 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
 	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
-	var profile_choice := AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label())
+	var movement_context := AIMovementContext.build(unit, _get_friendly_units(), hostiles, battle_controller.grid_manager)
+	var profile_choice := AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label(), _movement_situation(movement_context, hostiles, carrier))
 	var movement_layers: Array = profile_choice.layers
 	_last_movement_profile = String(profile_choice.reason)
 	var route_cells: Array[Vector3i] = []
@@ -993,7 +994,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var field_start := Time.get_ticks_usec() if profiling else 0
 	var goal_costs := battle_controller.pathfinder.planning_costs_to_goal(route_end, reachable, battle_controller.grid_manager, unit) if use_goal_field else {}
 	if profiling: route_usec += Time.get_ticks_usec() - field_start
-	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, movement_layers, hostiles, battle_controller.grid_manager, _policy, null)
+	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, movement_layers, hostiles, battle_controller.grid_manager, _policy, null, movement_context)
 	_last_urgency_bonus = _get_movement_urgency_bonus()
 	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
 	# Once repeated waits reach maximum urgency, the corridor may no longer veto
@@ -1057,7 +1058,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			else initial_cost - remaining_cost
 		)
 		var score_start := Time.get_ticks_usec() if profiling else 0
-		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, movement_layers, hostiles, battle_controller.grid_manager, _policy, _squad_context)
+		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, movement_layers, hostiles, battle_controller.grid_manager, _policy, _squad_context, movement_context)
 		if profiling: score_usec += Time.get_ticks_usec() - score_start
 		if not is_finite(float(scored.total)):
 			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, scored.summary))
@@ -1078,7 +1079,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_route_score = score
 			best_route_summary = scored.summary
 		var candidate_components := {}
-		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
+		for component in ["progress", "cover", "exposure", "firing", "danger", "squad", "flank", "cohesion"]:
 			if scored.has(component):
 				candidate_components[component] = scored[component]
 		var candidate_record := AIPositionCandidate.considered(candidate, score, scored.summary, candidate_components)
@@ -1148,6 +1149,40 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		return true
 	_movement_preview_pending_completion = false
 	return false
+
+## The facts the movement-profile stance rules read, from the shared queries (see AIMovementProfiles.select).
+func _movement_situation(context: AIMovementContext, hostiles: Array[TacticalUnit], carrier: TacticalUnit) -> Dictionary:
+	var grid := battle_controller.grid_manager
+	var my_cell := grid.get_unit_grid(unit)
+	var threats := 0
+	var wounded_target := false
+	for hostile in hostiles:
+		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
+			continue
+		var distance := CombatRules.attack_distance(my_cell, grid.get_unit_grid(hostile), grid)
+		if distance <= hostile.attack_range and CombatRules.evaluate_attack(hostile, unit, grid, hostile.get_world_3d()).is_legal:
+			threats += 1
+		if float(hostile.stats.current_hp) <= float(hostile.stats.max_hp) * AIMovementProfiles.WOUNDED_FRACTION and distance <= float(unit.attack_range + unit.stats.speed):
+			wounded_target = true
+	var nearby_allies := 0
+	var wounded_ally := false
+	for ally in context.allies:
+		var ally_distance := CombatRules.attack_distance(my_cell, grid.get_unit_grid(ally), grid)
+		if ally_distance <= AIMovementContext.COHESION_RANGE:
+			nearby_allies += 1
+		if ally_distance <= 10.0 and float(ally.stats.current_hp) <= float(ally.stats.max_hp) * AIMovementProfiles.WOUNDED_ALLY_FRACTION:
+			wounded_ally = true
+	return {
+		"hp_fraction": float(unit.stats.current_hp) / float(maxi(1, unit.stats.max_hp)),
+		"out_of_ammo": battle_controller.supply_points_enabled and unit.stats.current_supply_points <= 0,
+		"threats": threats,
+		"nearby_allies": nearby_allies,
+		"wounded_target": wounded_target,
+		"escorting": carrier != null and carrier != unit,
+		"flank_possible": is_instance_valid(context.focus_target),
+		"wounded_ally": wounded_ally,
+		"support_unit": unit.archetype_id == &"support",
+	}
 
 ## The movement profile layers for a position score outside the main route planner (escort, carrier-route
 ## and survival scoring): the carrier layer still applies to a unit carrying someone.

@@ -11,7 +11,8 @@ static func evaluate(
 	hostiles: Array[TacticalUnit],
 	grid: GridManager,
 	policy: AIDifficultyPolicy,
-	squad: SquadContext
+	squad: SquadContext,
+	movement: AIMovementContext = null
 ) -> Dictionary:
 	# A commitment an ally holds is a hard veto with a named owner; only crowding is a soft score.
 	var blocked := squad.block_reason(unit, candidate) if squad else ""
@@ -74,14 +75,31 @@ static func evaluate(
 		danger *= layer.danger
 		crowding_multiplier *= layer.crowding
 	var squad_score := squad_adjustment * policy.crowding_penalty_weight * crowding_multiplier
-	var total := progress + cover + exposure + firing + danger + squad_score
+	# Terms that need to know the unit's surroundings (flanking, staying with allies); zero unless a layer
+	# asks for them and the context is available.
+	var flank := 0.0
+	var cohesion := 0.0
+	if movement != null:
+		var flank_weight := 0.0
+		var cohesion_weight := 0.0
+		for layer: AIMovementProfile in layers:
+			flank_weight += layer.flank_weight
+			cohesion_weight += layer.ally_cohesion_weight
+		flank = movement.flank_term(unit, candidate, flank_weight, grid)
+		cohesion = movement.cohesion_term(candidate, cohesion_weight, grid)
+	var total := progress + cover + exposure + firing + danger + squad_score + flank + cohesion
+	var summary := "progress %+.0f, cover %+.0f, exposure %+.0f, firing %+.0f, danger %+.0f, squad %+.0f" % [progress, cover, exposure, firing, danger, squad_score]
+	if flank != 0.0 or cohesion != 0.0:
+		summary += ", flank %+.0f, cohesion %+.0f" % [flank, cohesion]
 	return {
 		"total": total,
+		"flank": flank,
+		"cohesion": cohesion,
 		"progress": progress,
 		"cover": cover,
 		"exposure": exposure,
 		"firing": firing,
 		"danger": danger,
 		"squad": squad_score,
-		"summary": "progress %+.0f, cover %+.0f, exposure %+.0f, firing %+.0f, danger %+.0f, squad %+.0f" % [progress, cover, exposure, firing, danger, squad_score],
+		"summary": summary,
 	}

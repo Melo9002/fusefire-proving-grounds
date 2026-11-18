@@ -65,7 +65,7 @@ func _decision_record() -> void:
 	record.commander_policy_id = "default"
 	record.strategic_intent = "Balanced engagement"
 	var full := record.to_dictionary()
-	for key in ["actor", "decision_id", "state_revision", "stage", "action", "subject", "reason", "alternatives", "mission_goal", "squad_adjustments", "position_scores", "target_scores", "position_candidates", "target_candidates", "difficulty", "commander_policy", "commander_policy_id", "strategic_intent"]:
+	for key in ["actor", "decision_id", "state_revision", "stage", "action", "subject", "reason", "alternatives", "mission_goal", "squad_adjustments", "movement_profile", "position_scores", "target_scores", "position_candidates", "target_candidates", "difficulty", "commander_policy", "commander_policy_id", "strategic_intent"]:
 		check(full.has(key), "Decision record publishes %s" % key)
 	for key in ["commander_composition", "attack_plan", "grid_position", "remaining_ap", "recent_move_origins", "consecutive_low_value_actions", "hold_score", "move_acceptance_threshold", "urgency_bonus", "route_corridor"]:
 		check(full.has(key), "Decision context publishes %s" % key)

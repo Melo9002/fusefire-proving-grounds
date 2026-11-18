@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"support"
+display_name = "Support"
+description = "A friend is hurt, or this is a support unit: stays near allies, takes cover and covers them rather than leading."
+cover = 1.25
+exposure = 1.1
+firing = 0.85
+danger = 1.2
+ally_cohesion_weight = 8.0

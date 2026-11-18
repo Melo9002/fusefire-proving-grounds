@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"defensive"
+display_name = "Defensive"
+description = "Hurt, out of ammo or outmatched: prefers cover and distance, closes in slowly, and gives up firing lanes it cannot afford."
+route_progress = 0.8
+goal_progress = 0.8
+cover = 1.4
+exposure = 1.4
+firing = 0.8
+danger = 1.4

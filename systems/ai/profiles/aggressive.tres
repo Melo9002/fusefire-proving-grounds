@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"aggressive"
+display_name = "Aggressive"
+description = "Healthy with an advantage or a wounded target in reach: presses forward, values firing lanes and accepts more exposure."
+route_progress = 1.15
+goal_progress = 1.15
+cover = 0.85
+exposure = 0.8
+firing = 1.3
+danger = 0.85

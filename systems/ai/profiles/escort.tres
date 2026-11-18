@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"escort"
+display_name = "Escort"
+description = "Guarding a carrier or VIP: stays close to friends and takes a little more care with cover and danger."
+cover = 1.2
+exposure = 1.2
+danger = 1.2
+ally_cohesion_weight = 6.0

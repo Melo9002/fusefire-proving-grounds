@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"flanking"
+display_name = "Flanking"
+description = "An ally already has the target: take a firing position from a different bearing, ideally where the target has less cover."
+exposure = 0.9
+firing = 1.1
+flank_weight = 10.0

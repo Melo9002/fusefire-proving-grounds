@@ -88,6 +88,7 @@ func _check_automatic_battle() -> void:
 	check(debug_tools._latest_ai_decision.get("strategic_intent", "") == "Balanced engagement", "AI explanations expose strategic intent")
 	check(debug_tools._latest_ai_decision.has("commander_composition"), "AI explanations expose difficulty, commander, and final policy values")
 	check(debug_tools._ai_decision_label.text.contains("Doctrine:"), "F3 renders the active doctrine composition")
+	check(debug_tools._latest_ai_decision.has("movement_profile") and debug_tools._ai_decision_label.text.contains("Movement profile:"), "F3 renders which movement profile shaped the decision")
 
 	level.queue_free()
 	await process_frame
