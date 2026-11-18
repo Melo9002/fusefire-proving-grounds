@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"objective_route"
+display_name = "Objective route"
+description = "Marching to a mission goal: progress counts double, firing lanes are ignored, and safe travel is worth more than a detour to a shot."
+route_progress = 2.0
+cover = 1.25
+exposure = 1.5
+firing = 0.0

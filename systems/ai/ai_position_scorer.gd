@@ -7,7 +7,7 @@ static func evaluate(
 	start: Vector3i,
 	goal: Vector3i,
 	route_progress: float,
-	objective_route: bool,
+	layers: Array,
 	hostiles: Array[TacticalUnit],
 	grid: GridManager,
 	policy: AIDifficultyPolicy,
@@ -18,9 +18,16 @@ static func evaluate(
 	if not blocked.is_empty():
 		return {"total": -INF, "summary": blocked}
 	var squad_adjustment := squad.crowding_adjustment(unit, candidate) if squad else 0.0
-	var progress := float(route_progress) * (8.0 if objective_route else 4.0) * policy.movement_progress_weight
+	# Situational profile layers (AIMovementProfile) multiply the terms in order, after difficulty and
+	# commander have set the weights. No layer: unchanged.
+	var route_multiplier := 4.0
+	var goal_multiplier := 1.5
+	for layer: AIMovementProfile in layers:
+		route_multiplier *= layer.route_progress
+		goal_multiplier *= layer.goal_progress
+	var progress := float(route_progress) * route_multiplier * policy.movement_progress_weight
 	if goal.x >= 0:
-		progress += (start.distance_to(goal) - candidate.distance_to(goal)) * 1.5 * policy.movement_progress_weight
+		progress += (start.distance_to(goal) - candidate.distance_to(goal)) * goal_multiplier * policy.movement_progress_weight
 	var cover := 0.0
 	var exposure := 0.0
 	var firing := 0.0
@@ -59,17 +66,14 @@ static func evaluate(
 	exposure *= policy.position_exposure_weight
 	firing *= policy.position_firing_weight
 	danger *= policy.position_danger_weight
-	# Objective routes reward safe travel, not detours to acquire firing lanes.
-	if objective_route:
-		firing = 0.0
-		exposure *= 1.5
-		cover *= 1.25
-	# A carrier cannot return fire: preserving the passenger outweighs speed.
-	if unit.is_carrying_unit():
-		exposure *= 2.5
-		danger *= 2.0
-		cover *= 1.5
-	var squad_score := squad_adjustment * policy.crowding_penalty_weight
+	var crowding_multiplier := 1.0
+	for layer: AIMovementProfile in layers:
+		cover *= layer.cover
+		exposure *= layer.exposure
+		firing *= layer.firing
+		danger *= layer.danger
+		crowding_multiplier *= layer.crowding
+	var squad_score := squad_adjustment * policy.crowding_penalty_weight * crowding_multiplier
 	var total := progress + cover + exposure + firing + danger + squad_score
 	return {
 		"total": total,

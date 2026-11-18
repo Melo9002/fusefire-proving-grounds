@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"default"
+display_name = "Default"
+description = "No situational change: the unit's own difficulty and commander weights decide."

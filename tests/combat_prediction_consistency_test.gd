@@ -42,7 +42,7 @@ func _run() -> void:
 	var shot := battle.query_attack(actor, enemy)
 	check(shot.is_legal() and shot.hit_chance == 40 and is_equal_approx(shot.visibility_fraction, 0.2) and shot.evaluation.height_modifier == -10, "Raised target keeps one visible sample: 50 exposure plus 10 low-ground penalty gives 40 percent")
 	check(battle._legal_shot_cells(actor).has(enemy.grid_position), "Painted attack/Guard range includes a genuinely shootable raised target")
-	var score := AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, false, hostiles, grid, policy, null)
+	var score := AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, [], hostiles, grid, policy, null)
 	check(score.firing > 0, "AI destination scoring recognizes the same raised firing opportunity")
 	enemy.standing_height = 0.5
 	check(not battle.query_attack(actor, enemy).is_legal() and not battle._legal_shot_cells(actor).has(enemy.grid_position), "Occupied-cell range uses the actual target's body height")
@@ -51,12 +51,12 @@ func _run() -> void:
 	_solid(Vector3i(2, 0, 5), 1.15, MapCellData.CoverType.LOW)
 	check(not battle.query_attack(actor, enemy).is_legal(), "Low barrier near the shooter blocks all samples")
 	check(not battle._legal_shot_cells(actor).has(enemy.grid_position), "Painted range excludes the blocked low-barrier lane")
-	score = AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, false, hostiles, grid, policy, null)
+	score = AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, [], hostiles, grid, policy, null)
 	check(is_zero_approx(score.firing), "AI does not reward a blocked low-barrier firing lane")
 	_reset(Vector3i(1, 0, 5), Vector3i(9, 0, 5))
 	_solid(Vector3i(8, 0, 5), 1.15, MapCellData.CoverType.LOW)
 	check(not CombatRules.evaluate_attack(enemy, actor, grid, actor.get_world_3d()).is_legal, "Reverse low barrier blocks the incoming threat")
-	score = AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, false, hostiles, grid, policy, null)
+	score = AIPositionScorer.evaluate(actor, actor.grid_position, actor.grid_position, Vector3i(-1, -1, -1), 0, [], hostiles, grid, policy, null)
 	check(is_zero_approx(score.exposure), "AI exposure uses body samples for incoming shots too")
 	var advisor := AIController.new()
 	advisor.unit = actor

@@ -152,10 +152,10 @@ func _squad_commitments_are_vetoes_and_crowding_is_soft() -> void:
 	var policy: AIDifficultyPolicy = ai._policy
 	var hostiles: Array[TacticalUnit] = [enemy]
 	var start := Vector3i(5, 0, 10)
-	var blocked_score: Dictionary = AIPositionScorer.evaluate(actor, held, start, Vector3i(-1, -1, -1), 50.0, true, hostiles, f.grid, policy, context)
+	var blocked_score: Dictionary = AIPositionScorer.evaluate(actor, held, start, Vector3i(-1, -1, -1), 50.0, [AIMovementProfiles.OBJECTIVE_ROUTE], hostiles, f.grid, policy, context)
 	check(is_inf(float(blocked_score.total)) and float(blocked_score.total) < 0.0, "No score can make a held destination attractive (total %s)" % str(blocked_score.total))
 	check(String(blocked_score.summary).contains(ally_id), "The rejection names the owner (%s)" % blocked_score.summary)
-	var soft_score: Dictionary = AIPositionScorer.evaluate(actor, beside, start, Vector3i(-1, -1, -1), 50.0, true, hostiles, f.grid, policy, context)
+	var soft_score: Dictionary = AIPositionScorer.evaluate(actor, beside, start, Vector3i(-1, -1, -1), 50.0, [AIMovementProfiles.OBJECTIVE_ROUTE], hostiles, f.grid, policy, context)
 	check(is_finite(float(soft_score.total)) and float(soft_score.squad) < 0.0, "Crowding lowers a score without removing the option (squad %s)" % str(soft_score.squad))
 	context.reserve_corridor(ally, {elsewhere: true})
 	check(context.block_reason(actor, elsewhere).begins_with("Corridor reserved by ") and context.block_reason(actor, elsewhere).contains(ally_id), "A carrier corridor is forbidden to others and names its owner (%s)" % context.block_reason(actor, elsewhere))

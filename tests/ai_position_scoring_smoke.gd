@@ -41,19 +41,19 @@ func _run() -> void:
 	check(open_cell.x >= 0, "Found a tile with both incoming exposure and a firing opportunity")
 	check(adjacent_cell.x >= 0, "Found a dangerous tile near the enemy")
 	if open_cell.x >= 0:
-		var normal_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context)
-		var easy_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, easy, context)
-		var hard_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, hard, context)
+		var normal_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [], hostiles, grid, normal, context)
+		var easy_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [], hostiles, grid, easy, context)
+		var hard_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [], hostiles, grid, hard, context)
 		check(normal_score.exposure < 0.0 and normal_score.firing > 0.0, "Position score includes exposure and firing opportunity")
 		player.carried_unit = ally
-		var carrier_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context)
+		var carrier_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [AIMovementProfiles.CARRIER], hostiles, grid, normal, context)
 		check(carrier_score.firing == 0.0 and carrier_score.exposure < normal_score.exposure * 2.0, "Carrier avoids exposed firing positions more strongly than combat units")
 		player.carried_unit = null
-		var objective_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, true, hostiles, grid, normal, context)
+		var objective_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [AIMovementProfiles.OBJECTIVE_ROUTE], hostiles, grid, normal, context)
 		check(objective_score.firing == 0.0 and objective_score.exposure < normal_score.exposure, "Objective travel favors protection over acquiring a firing lane")
 		check(easy_score.exposure > normal_score.exposure and hard_score.exposure < normal_score.exposure, "Difficulty weights incoming exposure")
 		check(easy_score.firing < normal_score.firing and hard_score.firing > normal_score.firing, "Difficulty weights firing opportunities")
-		var more_progress := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 3, false, hostiles, grid, normal, context)
+		var more_progress := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 3, [], hostiles, grid, normal, context)
 		check(more_progress.progress > normal_score.progress, "Route progress increases position value")
 		var delta := hostile_cell - open_cell
 		var cover_cell := open_cell + (Vector3i(signi(delta.x), 0, 0) if absi(delta.x) >= absi(delta.z) else Vector3i(0, 0, signi(delta.z)))
@@ -73,7 +73,7 @@ func _run() -> void:
 			cover_data.walkable = true
 			cover_data.can_stop = false
 			check(CombatRules.get_directional_cover(hostile_cell, open_cell, grid, enemy.standing_height, player.standing_height) == MapCellData.CoverType.LOW, "AI comparison contains a real surface protecting the candidate")
-			var covered_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context)
+			var covered_score := AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [], hostiles, grid, normal, context)
 			check(covered_score.cover > normal_score.cover, "Directional cover increases position value")
 			cover_data.cover_type = original_cover
 			cover_data.cover_height = original_height
@@ -82,9 +82,9 @@ func _run() -> void:
 			cover_data.walkable = original_walkable
 			cover_data.can_stop = original_stop
 		context.reserve_destination(ally, open_cell)
-		check(AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, false, hostiles, grid, normal, context).total == -INF, "Teammate reservation rejects the exact destination")
+		check(AIPositionScorer.evaluate(player, open_cell, start, hostile_cell, 2, [], hostiles, grid, normal, context).total == -INF, "Teammate reservation rejects the exact destination")
 	if adjacent_cell.x >= 0:
-		var danger_score := AIPositionScorer.evaluate(player, adjacent_cell, start, hostile_cell, 0, false, hostiles, grid, normal, null)
+		var danger_score := AIPositionScorer.evaluate(player, adjacent_cell, start, hostile_cell, 0, [], hostiles, grid, normal, null)
 		check(danger_score.danger < 0.0, "Close enemy positions receive a danger penalty")
 	level.queue_free()
 	await process_frame

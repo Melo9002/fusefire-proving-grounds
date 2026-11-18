@@ -43,8 +43,8 @@ func _check_legal_position_tradeoffs() -> void:
 	for cell in query.legal_destination_cells:
 		if cell == start: continue
 		var progress := start.distance_to(goal) - cell.distance_to(goal)
-		var ordinary := AIPositionScorer.evaluate(actor, cell, start, goal, progress, false, hostiles, grid, base, context)
-		var protected := AIPositionScorer.evaluate(actor, cell, start, goal, progress, false, hostiles, grid, cautious, context)
+		var ordinary := AIPositionScorer.evaluate(actor, cell, start, goal, progress, [], hostiles, grid, base, context)
+		var protected := AIPositionScorer.evaluate(actor, cell, start, goal, progress, [], hostiles, grid, cautious, context)
 		candidates.append({"cell": cell, "default": ordinary, "cautious": protected})
 	check(not candidates.is_empty(), "Comparison found scored legal movement candidates")
 	if candidates.is_empty():

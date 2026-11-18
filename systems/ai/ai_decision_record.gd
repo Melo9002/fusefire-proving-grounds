@@ -21,6 +21,8 @@ var alternatives := ""
 var mission_goal := "None"
 var squad_adjustments := "None"
 var position_scores := "None"
+## Which movement profile layers shaped the position scores, and why ("None" for decisions without movement).
+var movement_profile := "None"
 var target_scores := "None"
 var position_candidates: Array[AIPositionCandidate] = []
 var target_candidates: Array[AITargetCandidate] = []
@@ -47,6 +49,7 @@ func to_dictionary() -> Dictionary:
 		"mission_goal": mission_goal,
 		"squad_adjustments": squad_adjustments,
 		"position_scores": position_scores,
+		"movement_profile": movement_profile,
 		"target_scores": target_scores,
 		"position_candidates": position_candidates.map(func(candidate: AIPositionCandidate) -> Dictionary: return candidate.to_dictionary()),
 		"target_candidates": target_candidates.map(func(candidate: AITargetCandidate) -> Dictionary: return candidate.to_dictionary()),

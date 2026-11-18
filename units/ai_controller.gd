@@ -52,6 +52,9 @@ var _difficulty_policy: AIDifficultyPolicy
 var _commander_policy: AICommanderPolicy
 var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
+var _last_movement_profile := "None"
+## Layer choices by (objective route, carrying) for the current activation step, so scoring loops do not rebuild them.
+var _movement_layer_cache := {}
 var _last_position_candidates: Array[AIPositionCandidate] = []
 var _last_target_candidates: Array[AITargetCandidate] = []
 ## Why the last approach could not even start: a named blocker on the way, or no route at all.
@@ -120,6 +123,8 @@ func _on_active_unit_changed(new_active_unit: TacticalUnit) -> void:
 		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier))
 	_squad_notes.clear()
 	_last_position_scores = "None"
+	_last_movement_profile = "None"
+	_movement_layer_cache.clear()
 	_last_position_candidates.clear()
 	_last_target_candidates.clear()
 	_last_hold_score = NAN
@@ -703,7 +708,7 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 		if candidate.distance_to(carrier.grid_position) > 6.0:
 			if not remains_on_route:
 				continue
-		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
+		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, _movement_layers(false), hostiles, grid, _policy, _squad_context)
 		var score: float = scored.total - candidate.distance_to(carrier.grid_position)
 		var summary := "%s; %s" % [scored.summary, "bottleneck advance" if remains_on_route else "route clearance"]
 		_last_position_candidates.append(AIPositionCandidate.considered(candidate, score, summary))
@@ -746,7 +751,7 @@ func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 		var carrier_distance := candidate.distance_to(carrier.grid_position)
 		if carrier_distance < ESCORT_POSITION_MIN_DISTANCE or carrier_distance > ESCORT_POSITION_MAX_DISTANCE:
 			continue
-		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
+		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, _movement_layers(false), hostiles, grid, _policy, _squad_context)
 		var spacing_penalty := absf(carrier_distance - ESCORT_POSITION_IDEAL_DISTANCE) * ESCORT_POSITION_DISTANCE_WEIGHT
 		var score: float = scored.total - spacing_penalty
 		var candidate_record := AIPositionCandidate.considered(candidate, score, "%s; escort spacing %+.0f" % [scored.summary, -spacing_penalty])
@@ -975,6 +980,9 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
 	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
+	var profile_choice := AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label())
+	var movement_layers: Array = profile_choice.layers
+	_last_movement_profile = String(profile_choice.reason)
 	var route_cells: Array[Vector3i] = []
 	for point in path:
 		route_cells.append(battle_controller.world_to_grid(point))
@@ -985,7 +993,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var field_start := Time.get_ticks_usec() if profiling else 0
 	var goal_costs := battle_controller.pathfinder.planning_costs_to_goal(route_end, reachable, battle_controller.grid_manager, unit) if use_goal_field else {}
 	if profiling: route_usec += Time.get_ticks_usec() - field_start
-	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, objective_route, hostiles, battle_controller.grid_manager, _policy, null)
+	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, movement_layers, hostiles, battle_controller.grid_manager, _policy, null)
 	_last_urgency_bonus = _get_movement_urgency_bonus()
 	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
 	# Once repeated waits reach maximum urgency, the corridor may no longer veto
@@ -1049,7 +1057,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			else initial_cost - remaining_cost
 		)
 		var score_start := Time.get_ticks_usec() if profiling else 0
-		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, objective_route, hostiles, battle_controller.grid_manager, _policy, _squad_context)
+		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, movement_layers, hostiles, battle_controller.grid_manager, _policy, _squad_context)
 		if profiling: score_usec += Time.get_ticks_usec() - score_start
 		if not is_finite(float(scored.total)):
 			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, scored.summary))
@@ -1141,6 +1149,14 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	_movement_preview_pending_completion = false
 	return false
 
+## The movement profile layers for a position score outside the main route planner (escort, carrier-route
+## and survival scoring): the carrier layer still applies to a unit carrying someone.
+func _movement_layers(objective_route: bool) -> Array:
+	var key := "%s|%s" % [objective_route, unit.is_carrying_unit()]
+	if not _movement_layer_cache.has(key):
+		_movement_layer_cache[key] = AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label()).layers
+	return _movement_layer_cache[key]
+
 func _get_movement_urgency_bonus() -> float:
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	if carrier and carrier != unit and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT:
@@ -1200,7 +1216,7 @@ func _best_survival_position() -> Vector3i:
 
 func _survival_position_score(candidate: Vector3i, start: Vector3i) -> float:
 	var grid := battle_controller.grid_manager
-	var scored := AIPositionScorer.evaluate(unit, candidate, start, Vector3i(-1, -1, -1), 0, false, _get_hostile_units(), grid, _policy, _squad_context)
+	var scored := AIPositionScorer.evaluate(unit, candidate, start, Vector3i(-1, -1, -1), 0, _movement_layers(false), _get_hostile_units(), grid, _policy, _squad_context)
 	var score: float = scored.total - 0.15 * start.distance_to(candidate)
 	var nearest_hostile := INF
 	for hostile in _get_hostile_units():
@@ -1318,6 +1334,7 @@ func _build_decision_record(action: String, subject: String, reason: String, alt
 	record.mission_goal = current_mission_intent.get_debug_label()
 	record.squad_adjustments = "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
 	record.position_scores = _last_position_scores
+	record.movement_profile = _last_movement_profile
 	record.position_candidates = _last_position_candidates
 	record.target_candidates = _last_target_candidates
 	record.context = _decision_context()

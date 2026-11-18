@@ -47,9 +47,9 @@ func _check_legal_position_tradeoffs_and_risk_limit() -> void:
 	for cell in query.legal_destination_cells:
 		if cell == start: continue
 		var progress := start.distance_to(goal) - cell.distance_to(goal)
-		var ordinary := AIPositionScorer.evaluate(actor, cell, start, goal, progress, false, hostiles, grid, base, context)
-		var protected := AIPositionScorer.evaluate(actor, cell, start, goal, progress, false, hostiles, grid, cautious, context)
-		var pressing := AIPositionScorer.evaluate(actor, cell, start, goal, progress, false, hostiles, grid, aggressive, context)
+		var ordinary := AIPositionScorer.evaluate(actor, cell, start, goal, progress, [], hostiles, grid, base, context)
+		var protected := AIPositionScorer.evaluate(actor, cell, start, goal, progress, [], hostiles, grid, cautious, context)
+		var pressing := AIPositionScorer.evaluate(actor, cell, start, goal, progress, [], hostiles, grid, aggressive, context)
 		candidates.append({"cell": cell, "default": ordinary, "cautious": protected, "aggressive": pressing})
 	check(not candidates.is_empty(), "Aggressive comparison found scored legal candidates")
 	if candidates.is_empty():

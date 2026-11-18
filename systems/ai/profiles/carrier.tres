@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AIMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/ai/ai_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"carrier"
+display_name = "Carrier"
+description = "Carrying a casualty: it cannot return fire, so the passenger's safety outweighs speed."
+cover = 1.5
+exposure = 2.5
+danger = 2.0
