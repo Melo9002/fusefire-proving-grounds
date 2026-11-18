@@ -26,6 +26,17 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
 var crouch_modifier: CoverCrouchModifier
+var grip_modifier: HandGripModifier
+## Forward lean into the rifle while aiming, degrees. Brings the shoulders, and so the support hand,
+## toward the front handle.
+const AIM_LEAN_DEGREES := 5.0
+## Support-side shoulder reach while the rifle is up, degrees.
+const SUPPORT_REACH_DEGREES := 14.0
+## Finger closure on the rifle: around the front handle, and on the pistol grip.
+const SUPPORT_GRIP_CURL := 0.8
+const TRIGGER_HAND_CURL := 0.75
+var trigger_pull := 0.0
+var _trigger_tween: Tween
 const COVER_READY_MUZZLE_UP_DEGREES := 20.0
 var _standing_shoulder := Vector3.ZERO
 var _standing_shoulder_known := false
@@ -59,8 +70,11 @@ var stock_marker: Marker3D
 var shoulder_marker: Marker3D
 var sight_marker: Marker3D
 var support_ik_target: Marker3D
-## Fine adjustment for where the support hand meets the rifle fore-end.
-@export var support_hand_adjustment := Vector3.ZERO
+## Fine adjustment for where the support hand meets the rifle, in the weapon's frame (+z toward the
+## muzzle). The AUG model's own marker sits on the hand guard; this moves the palm onto its vertical
+## front handle (found from the mesh: the handle spans z 0.16-0.24 and hangs to y -0.07). The arm is
+## already near full reach, so extra forward offset does not move the hand any further.
+@export var support_hand_adjustment := Vector3(-0.02, -0.055, 0.0)
 @export_group("Arm IK")
 ## Elbow guide positions in Character-local metres.
 @export var right_elbow_ready := Vector3(-0.26, 0.93, -0.04)
@@ -181,10 +195,25 @@ func _build_animation_controller() -> void:
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
 	_build_crouch_modifier()
+	_build_grip_modifier()
 
 
 ## Procedural crouch layer: runs after the animation and before the arm IK, so the arms and
 ## the weapon follow the lowered body.
+func _build_grip_modifier() -> void:
+	var prefix := "mixamorig_" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else ""
+	if prefix.is_empty():
+		return
+	grip_modifier = HandGripModifier.new()
+	grip_modifier.name = "HandGrip"
+	if not grip_modifier.setup(skeleton, prefix):
+		grip_modifier = null
+		return
+	skeleton.add_child(grip_modifier)
+	if is_instance_valid(arm_ik):
+		skeleton.move_child(grip_modifier, arm_ik.get_index())
+
+
 func _build_crouch_modifier() -> void:
 	var mixamo := skeleton.find_bone(&"mixamorig_Hips") >= 0
 	var bones := {
@@ -197,6 +226,8 @@ func _build_crouch_modifier() -> void:
 		"right_foot": &"mixamorig_RightFoot" if mixamo else &"J_Bip_R_Foot",
 		"spine": [&"mixamorig_Spine", &"mixamorig_Spine1"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest"],
 		"head_top": &"mixamorig_HeadTop_End" if mixamo else &"J_Bip_C_Head",
+		"support_clavicle": &"mixamorig_LeftShoulder" if mixamo else &"J_Bip_L_Shoulder",
+		"support_arm": &"mixamorig_LeftArm" if mixamo else &"J_Bip_L_UpperArm",
 	}
 	crouch_modifier = CoverCrouchModifier.new()
 	crouch_modifier.name = "CoverCrouch"
@@ -261,6 +292,12 @@ func _update_weapon_pose() -> void:
 	if not _standing_shoulder_known:
 		_standing_shoulder = shoulder_marker.position
 		_standing_shoulder_known = true
+	if crouch_modifier != null:
+		crouch_modifier.aim_lean_degrees = AIM_LEAN_DEGREES * weapon_blend()
+		crouch_modifier.support_reach_degrees = SUPPORT_REACH_DEGREES * weapon_blend()
+	if grip_modifier != null:
+		grip_modifier.curl = [SUPPORT_GRIP_CURL, TRIGGER_HAND_CURL]
+		grip_modifier.trigger_pull = trigger_pull
 	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
 	ready_grip += body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, weapon_blend()) + Vector3(0, 0, -recoil * 0.08)
@@ -279,6 +316,11 @@ func _play_shot_feedback() -> void:
 	if _recoil_tween != null and _recoil_tween.is_valid():
 		_recoil_tween.kill()
 	recoil = 0.065
+	if _trigger_tween != null and _trigger_tween.is_valid():
+		_trigger_tween.kill()
+	trigger_pull = 1.0
+	_trigger_tween = create_tween()
+	_trigger_tween.tween_property(self, "trigger_pull", 0.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_recoil_tween = create_tween()
 	_recoil_tween.tween_property(self, "recoil", 0.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	muzzle_flash.visible = true

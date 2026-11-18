@@ -41,6 +41,12 @@ const KNEEL_TOE_DEGREES := 55.0
 
 ## Requested hip drop in metres. Clamped to max_depth.
 var depth := 0.0
+## Extra forward lean of the torso, degrees, independent of any crouch (aiming leans into the rifle,
+## which also brings the support hand to the front handle).
+var aim_lean_degrees := 0.0
+## The support-side shoulder reaches forward (shoulder-blade protraction), degrees. Lengthens the
+## support arm's reach to the front handle without bending the torso further.
+var support_reach_degrees := 0.0
 ## 0 = crouch, 1 = half-kneel. Blends the two.
 var kneel := 0.0
 ## Which leg goes down in the kneel: 0 = left, 1 = right (right-handed shooter).
@@ -55,6 +61,7 @@ var _upper: Array[int] = []
 var _lower: Array[int] = []
 var _foot: Array[int] = []
 var _spine: Array[int] = []
+var _support_clavicle := -1
 ## Per bone: the local axis (sign included) whose positive rotation swings the child joint forward.
 var _forward_axis := {}
 var _forward_skeleton := Vector3.BACK
@@ -80,6 +87,7 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 	if _hips < 0 or top < 0 or _upper.has(-1) or _lower.has(-1) or _foot.has(-1) or _spine.has(-1):
 		return false
 	_refresh_scale(target)
+	_support_clavicle = target.find_bone(bones.get("support_clavicle", &""))
 	_forward_skeleton = (target.global_basis.inverse() * forward_world).normalized()
 	var chain: Array[int] = []
 	chain.append_array(_upper)
@@ -93,6 +101,8 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 	for index in _spine.size():
 		var next := _spine[index + 1] if index + 1 < _spine.size() else target.find_bone(bones.head_top)
 		_forward_axis[_spine[index]] = _measure_axis(target, _spine[index], next)
+	if _support_clavicle >= 0:
+		_forward_axis[_support_clavicle] = _measure_axis(target, _support_clavicle, target.find_bone(bones.get("support_arm", &"")))
 	var hip := target.get_bone_global_rest(_upper[0]).origin
 	var knee := target.get_bone_global_rest(_lower[0]).origin
 	var ankle := target.get_bone_global_rest(_foot[0]).origin
@@ -213,7 +223,13 @@ func lean_degrees(for_depth: float) -> float:
 
 func _process_modification() -> void:
 	var target := get_skeleton()
-	if target == null or _hips < 0 or (depth <= 0.002 and kneel <= 0.002):
+	if target == null or _hips < 0:
+		return
+	_apply_support_reach(target)
+	if depth <= 0.002 and kneel <= 0.002:
+		# Standing: only the aiming lean.
+		if aim_lean_degrees > 0.05:
+			_apply_lean(target, aim_lean_degrees)
 		return
 	_refresh_scale(target)
 	var applied := clamp_depth(depth)
@@ -248,10 +264,20 @@ func _process_modification() -> void:
 		_set_flexion(target, _upper[side], thigh)
 		_set_flexion(target, _lower[side], -knee)
 		_set_flexion(target, _foot[side], foot)
-	var lean := current_lean_degrees() / _spine.size()
+	_apply_lean(target, current_lean_degrees() + aim_lean_degrees)
+
+func _apply_support_reach(target: Skeleton3D) -> void:
+	if _support_clavicle < 0 or support_reach_degrees <= 0.05:
+		return
+	var rest := target.get_bone_rest(_support_clavicle).basis.get_rotation_quaternion()
+	target.set_bone_pose_rotation(_support_clavicle, rest * Quaternion(_forward_axis[_support_clavicle], deg_to_rad(support_reach_degrees)))
+
+## Leans the spine forward by `degrees` in total, shared between the spine bones.
+func _apply_lean(target: Skeleton3D, degrees: float) -> void:
+	var share := degrees / _spine.size()
 	for bone in _spine:
 		var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
-		target.set_bone_pose_rotation(bone, rest * Quaternion(_forward_axis[bone], deg_to_rad(lean)))
+		target.set_bone_pose_rotation(bone, rest * Quaternion(_forward_axis[bone], deg_to_rad(share)))
 
 ## Replaces the animated flexion with the solved one about the bone's measured forward axis.
 func _set_flexion(target: Skeleton3D, bone: int, degrees: float) -> void:

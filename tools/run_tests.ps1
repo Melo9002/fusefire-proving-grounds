@@ -71,7 +71,9 @@ $visualTests = @(
     "industrial_warehouse_capture.gd",
     "semantic_asset_contact_sheet.gd",
     "semantic_asset_review_capture.gd",
-    "semantic_machine_connection_capture.gd"
+    "semantic_machine_connection_capture.gd",
+    "pose_review_capture.gd",
+    "weapon_closeup_capture.gd"
 )
 $extendedTests = @(
     "ai_baseline_report.gd",
