@@ -9,6 +9,7 @@ const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 var _decision_count := 0
 var _action_outcomes: Array[Dictionary] = []
 var _decision_records: Array[Dictionary] = []
+var _round_samples: Array[Dictionary] = []
 
 func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	var result := AIMatchSimulationResult.new()
@@ -88,18 +89,23 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	_decision_count = 0
 	_decision_records.clear()
 	_action_outcomes.clear()
+	_round_samples.clear()
 	level.battle_controller.ai_decision_recorded.connect(_on_ai_decision)
 	level.battle_controller.ai_action_outcome_recorded.connect(func(record: Dictionary): _action_outcomes.append(record.duplicate(true)))
 	level.battle_controller.set_debug_player_ai(true)
 	var started_at := Time.get_ticks_msec()
 	var last_progress_at := started_at
 	var previous_signature := _state_signature(level)
+	var sampled_round := -1
 	var maximum_rounds := maxi(1, int(config.get("maximum_rounds", 20)))
 	var stall_seconds := maxf(1.0, float(config.get("stall_seconds", 6.0)))
 	var timeout_seconds := maxf(stall_seconds, float(config.get("timeout_seconds", 30.0)))
 	while level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
 		await get_tree().create_timer(0.05).timeout
 		var now := Time.get_ticks_msec()
+		if level.turn_manager.current_round != sampled_round:
+			sampled_round = level.turn_manager.current_round
+			_round_samples.append(_round_sample(level, float(now - started_at) / 1000.0))
 		var signature := _state_signature(level)
 		if signature != previous_signature:
 			previous_signature = signature
@@ -117,6 +123,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	result.decision_count = _decision_count
 	result.decision_records.assign(_decision_records)
 	result.action_outcomes.assign(_action_outcomes)
+	_round_samples.append(_round_sample(level, result.elapsed_seconds))
+	result.round_samples.assign(_round_samples)
 	for outcome in _action_outcomes:
 		if outcome.stage == "committed": result.committed_action_count += 1
 		else: result.rejected_action_count += 1
@@ -172,6 +180,20 @@ func _state_signature(level: BattleLevel) -> String:
 	for state in level.objective_manager.get_objectives():
 		parts.append("%s:%d:%d" % [state.definition.objective_id, state.status, state.progress])
 	return "|".join(parts)
+
+## Passive per-round progress snapshot for baselines; reads state only.
+func _round_sample(level: BattleLevel, elapsed: float) -> Dictionary:
+	var sides := {"player": 0, "ally": 0, "enemy": 0}
+	var alive := {"player": 0, "ally": 0, "enemy": 0}
+	for pair in [["player", level.turn_manager.player_units], ["ally", level.turn_manager.allied_units], ["enemy", level.turn_manager.enemy_units]]:
+		for unit: TacticalUnit in pair[1]:
+			if is_instance_valid(unit) and unit.stats and not unit.stats.is_defeated:
+				sides[pair[0]] += unit.stats.current_hp
+				alive[pair[0]] += 1
+	var objectives: Array[Dictionary] = []
+	for state in level.objective_manager.get_objectives():
+		objectives.append({"id": String(state.definition.objective_id), "status": state.status, "progress": state.progress})
+	return {"round": level.turn_manager.current_round, "elapsed": elapsed, "hp": sides, "alive": alive, "objectives": objectives}
 
 func _dispose_level(level: BattleLevel) -> void:
 	if is_instance_valid(level):

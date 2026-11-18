@@ -18,6 +18,7 @@ var decision_count := 0
 var committed_action_count := 0
 var rejected_action_count := 0
 var action_outcomes: Array[Dictionary] = []
+var round_samples: Array[Dictionary] = []
 var elapsed_seconds := 0.0
 var reason := ""
 var quality: MapQualityReport
@@ -62,6 +63,7 @@ func reproduction_data() -> Dictionary:
 		"committed_action_count": committed_action_count,
 		"rejected_action_count": rejected_action_count,
 		"action_outcomes": action_outcomes,
+		"round_samples": round_samples,
 		"reason": reason,
 		"final_state": final_state,
 		"validation_errors": validation_errors,

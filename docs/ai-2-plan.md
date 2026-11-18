@@ -6,7 +6,7 @@ The current AI already has utility scorers, mission intent, squad reservations, 
 
 Preparation: [F3 battle inspection](debug-inspection.md) now exposes existing unit, action-query, AI, map and runtime information. This helps collect evidence; it does not complete the AI audit, introduce profiles/expiry, or measure planning latency.
 
-Step 1 audit: [ranked findings](quality/ai-audit-2026-11-17.md). Follow-up fixes and explicit shooting-policy changes are documented in [current AI behavior](ai-current-behavior.md) and the [repair verification](quality/ai-repairs-2026-11-17.md). Next is step 2; do not treat the audit as implementation of the later pipeline/profile work.
+Step 1 audit: [ranked findings](quality/ai-audit-2026-11-17.md). Follow-up fixes and explicit shooting-policy changes are documented in [current AI behavior](ai-current-behavior.md) and the [repair verification](quality/ai-repairs-2026-11-17.md). Step 2 baseline: [48-match baseline](quality/ai-baseline-2026-11-18.md). Do not treat the audit or baseline as implementation of the later pipeline/profile work.
 
 ## Ordered tasks
 

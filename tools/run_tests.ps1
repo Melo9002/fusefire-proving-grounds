@@ -74,6 +74,7 @@ $visualTests = @(
     "semantic_machine_connection_capture.gd"
 )
 $extendedTests = @(
+    "ai_baseline_report.gd",
     "ai_match_simulation_smoke.gd",
     "battlefield_stress_smoke.gd",
     "container_maps_smoke.gd",
