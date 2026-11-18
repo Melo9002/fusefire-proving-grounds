@@ -207,6 +207,10 @@ func present_attack(target_world_position: Vector3) -> void:
 		visual_adapter.present_attack(target_world_position)
 	attack_presented.emit(target_world_position)
 
+func present_aim() -> void:
+	if visual_adapter:
+		visual_adapter.present_aim()
+
 func face_world_position(target_world_position: Vector3) -> void:
 	if visual_adapter:
 		visual_adapter.face_world_position(target_world_position)

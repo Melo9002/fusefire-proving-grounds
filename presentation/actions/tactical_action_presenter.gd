@@ -93,6 +93,9 @@ func present_aim(result: AimActionResult) -> void:
 	if result.presentation_suppressed:
 		return
 	print_rich("[color=gold][Aim][/color] %s prepares the next shot (+%d)" % [unit.name, result.accuracy_bonus])
+	# Sights up now; they stay up for as long as the committed Aim lasts.
+	unit.present_aim()
+	await _safe_delay(0.3)
 
 func present_shield(result: ShieldActionResult) -> void:
 	var unit := _actor(result.request.actor_id)

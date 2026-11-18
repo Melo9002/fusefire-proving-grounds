@@ -73,6 +73,16 @@ func _carrying() -> bool:
 	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit())
 const POSE_CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
+## States in which the sights are up.
+const AIM_POSE_STATES: Array[StringName] = [&"aim", &"shoot", &"shoot_left", &"shoot_right"]
+## Quiet states a held Aim may change. A shot, hit, defeat, move or traversal is never interrupted.
+const AIM_SETTLE_STATES: Array[StringName] = [&"aim", &"rifle_idle", &"cover_low", &"cover_high"]
+## After the committed Aim ends, the sights stay up this long so the rifle does not dip while the
+## attack camera moves in before the shot. A shot or any other action takes over sooner.
+const AIM_RELEASE_GRACE := 1.0
+## Presentation-only mirror of the committed Aim: true while the sights should be up.
+var _aim_held := false
+var _aim_release_left := 0.0
 var _return_generation := 0
 var _team_accent: MeshInstance3D
 
@@ -164,6 +174,54 @@ func _cover_context() -> Dictionary:
 		last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	return last_cover_contact
 
+## The Aim action committed: bring the sights up now. The pose then follows the committed
+## is_aiming flag (see _sync_aim_hold), so replays and AI units behave the same.
+func present_aim() -> void:
+	if _carrying(): return
+	_aim_held = true
+	_aim_release_left = AIM_RELEASE_GRACE
+	present_idle()
+
+## Reads committed state only; never writes it.
+func _aim_should_hold() -> bool:
+	return is_instance_valid(tactical_unit) and tactical_unit.tactical_state != null and tactical_unit.tactical_state.is_aiming \
+		and not tactical_unit.is_moving and not _carrying()
+
+func _aim_target(state_name: StringName) -> float:
+	return 1.0 if state_name in AIM_POSE_STATES or _aim_held else 0.0
+
+func _retarget_aim_blend() -> void:
+	if _pose_tween != null and _pose_tween.is_valid():
+		_pose_tween.kill()
+	_pose_tween = create_tween()
+	_pose_tween.tween_property(self, "aim_blend", _aim_target(get_presentation_state()), 0.28)
+
+## Keeps the sights up for as long as the committed Aim lasts: until its attack, an action that
+## cancels it, or the next activation. Never interrupts a shot, hit, defeat, move or traversal.
+func _sync_aim_hold(delta: float) -> void:
+	var state := get_presentation_state()
+	if _aim_should_hold():
+		_aim_release_left = AIM_RELEASE_GRACE
+		if not _aim_held:
+			_aim_held = true
+			if state in AIM_SETTLE_STATES: _settle_aim_pose(state)
+		return
+	if not _aim_held:
+		return
+	_aim_release_left -= delta
+	# Once the unit has moved on to a shot or any other action, the hold is simply over.
+	if _aim_release_left <= 0.0 or state not in AIM_SETTLE_STATES:
+		_aim_held = false
+		if state in AIM_SETTLE_STATES: _settle_aim_pose(state)
+		else: _retarget_aim_blend()
+
+func _settle_aim_pose(state: StringName) -> void:
+	if state in [&"cover_low", &"cover_high"]:
+		# Keep the cover pose; only the weapon comes up or goes down.
+		_retarget_aim_blend()
+	else:
+		present_idle()
+
 func present_idle() -> void:
 	_return_generation += 1
 	if _carrying():
@@ -171,7 +229,7 @@ func present_idle() -> void:
 		return
 	var cover := _cover_context()
 	if cover.type == MapCellData.CoverType.NONE:
-		_play(&"rifle_idle")
+		_play(&"aim" if (_aim_held or _aim_should_hold()) else &"rifle_idle")
 	else:
 		face_world_position(global_position + cover.direction)
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
@@ -216,9 +274,10 @@ func face_world_position(world_position: Vector3) -> void:
 func get_presentation_state() -> StringName:
 	return animation_controller.current_state if is_instance_valid(animation_controller) else &"setup"
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
+	_sync_aim_hold(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
@@ -252,6 +311,6 @@ func _on_animation_state_changed(state_name: StringName) -> void:
 	if _pose_tween != null and _pose_tween.is_valid():
 		_pose_tween.kill()
 	_pose_tween = create_tween()
-	_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot", &"shoot_left", &"shoot_right"] else 0.0, 0.28)
+	_pose_tween.tween_property(self, "aim_blend", _aim_target(state_name), 0.28)
 	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
 		_play_shot_feedback()
