@@ -160,6 +160,10 @@ func _blocked_corridor() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S6")
 	check(r.end.x < 10 and f.grid.get_unit_at(Vector3i(12, 0, 28)) == ally, "S6: the unit does not pass or displace the ally in the corridor")
+	# Issue #42: the reason must say the route is blocked and by whom, not that no destination exists.
+	var wait_reason := String(r.decisions[-1].reason) if not r.decisions.is_empty() else ""
+	check(wait_reason.contains(String(ally.name)) and wait_reason.contains("blocked"), "S6: the wait reason names the blocking ally (%s)" % wait_reason)
+	check(not wait_reason.contains("no reachable legal destination"), "S6: the wait reason no longer claims there is no legal destination (%s)" % wait_reason)
 	await f.dispose(self)
 
 ## S6b the same corridor with the ally gone: progress through it must be possible.

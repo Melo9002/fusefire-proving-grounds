@@ -13,9 +13,11 @@ static func evaluate(
 	policy: AIDifficultyPolicy,
 	squad: SquadContext
 ) -> Dictionary:
-	var squad_adjustment := squad.destination_adjustment(unit, candidate) if squad else 0.0
-	if squad_adjustment <= -1000.0:
-		return {"total": -INF, "summary": "Reserved by ally"}
+	# A commitment an ally holds is a hard veto with a named owner; only crowding is a soft score.
+	var blocked := squad.block_reason(unit, candidate) if squad else ""
+	if not blocked.is_empty():
+		return {"total": -INF, "summary": blocked}
+	var squad_adjustment := squad.crowding_adjustment(unit, candidate) if squad else 0.0
 	var progress := float(route_progress) * (8.0 if objective_route else 4.0) * policy.movement_progress_weight
 	if goal.x >= 0:
 		progress += (start.distance_to(goal) - candidate.distance_to(goal)) * 1.5 * policy.movement_progress_weight

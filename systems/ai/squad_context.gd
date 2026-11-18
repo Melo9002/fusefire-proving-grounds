@@ -1,6 +1,11 @@
 class_name SquadContext
 extends RefCounted
 
+## A cell an ally holds is forbidden outright; a cell merely beside one is only discouraged.
+## Scoring must never outweigh the first kind: see block_reason().
+const HARD_BLOCK := -1000.0
+const CROWDING_PENALTY := -12.0
+
 var round_number := -1
 var reserved_destinations: Dictionary = {}
 var intended_targets: Dictionary[StringName, int] = {}
@@ -55,16 +60,28 @@ func reserve_destination(actor: TacticalUnit, cell: Vector3i) -> void:
 	reserved_destinations[cell] = actor_id
 	_actor_destinations[actor_id] = cell
 
-func destination_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
+## Why `actor` may not use `cell`, or "" when it may. These are genuine commitments (an ally's
+## exact destination, an escort's carrier corridor), not preferences, and name their owner.
+func block_reason(actor: TacticalUnit, cell: Vector3i) -> String:
 	if reserved_corridor.has(cell) and corridor_owner != _actor_id(actor):
-		return -1000.0
+		return "Corridor reserved by %s" % corridor_owner
 	if reserved_destinations.has(cell) and reserved_destinations[cell] != _actor_id(actor):
-		return -1000.0
+		return "Destination reserved by %s" % reserved_destinations[cell]
+	return ""
+
+## The soft crowding preference only: staying out of the immediate neighbourhood of allies' destinations.
+func crowding_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
 	var adjustment := 0.0
 	for reserved_cell in reserved_destinations:
 		if reserved_destinations[reserved_cell] != _actor_id(actor) and cell.distance_to(reserved_cell) <= 1.0:
-			adjustment -= 12.0
+			adjustment += CROWDING_PENALTY
 	return adjustment
+
+## Both together, kept for callers that want one number: a block is HARD_BLOCK, otherwise crowding.
+func destination_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
+	if not block_reason(actor, cell).is_empty():
+		return HARD_BLOCK
+	return crowding_adjustment(actor, cell)
 
 func reserve_corridor(actor: TacticalUnit, cells: Dictionary) -> void:
 	reserved_corridor = cells.duplicate()

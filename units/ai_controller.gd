@@ -44,6 +44,9 @@ var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
 var _last_position_candidates: Array[AIPositionCandidate] = []
 var _last_target_candidates: Array[AITargetCandidate] = []
+## Why the last approach could not even start: a named blocker on the way, or no route at all.
+## Empty when an approach ran and was merely not worth taking. Read by _movement_wait_reason.
+var _route_block_note := ""
 var _committed_carrier_route: Array[Vector3i] = []
 var _last_attack_plan: Dictionary = {}
 var _last_hold_score := NAN
@@ -145,6 +148,7 @@ func _run_activation() -> bool:
 		await _execute_vip_turn()
 		return false
 	var has_moved := false
+	_route_block_note = ""
 	current_mission_intent = _get_ai_mission_intent()
 	# TurnManager may select a zero-AP actor only when a legal free objective
 	# action exists. Give that action one deterministic submission opportunity.
@@ -756,6 +760,7 @@ func _move_toward(target: TacticalUnit, safe_only := false) -> bool:
 func _move_toward_range(target: TacticalUnit, desired_distance: int, safe_only := false) -> bool:
 	var start_cell = battle_controller.grid_manager.get_unit_grid(unit)
 	var target_cell = battle_controller.grid_manager.get_unit_grid(target)
+	_route_block_note = ""
 	var path := PackedVector3Array()
 	var leave_steps := desired_distance
 	if battle_controller.grid_manager.map_data.surface_placement_enabled:
@@ -765,6 +770,9 @@ func _move_toward_range(target: TacticalUnit, desired_distance: int, safe_only :
 	else:
 		path = battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
 	if path.size() <= 1:
+		# An empty route means blocked, not "already there": name what is in the way.
+		if path.is_empty():
+			_route_block_note = _explain_blocked_route(start_cell, target_cell, String(target.name))
 		return false
 
 	# Leave the requested path distance between the mover and an occupied target.
@@ -773,6 +781,27 @@ func _move_toward_range(target: TacticalUnit, desired_distance: int, safe_only :
 	if path.size() <= 1:
 		return false
 	return await _move_along_goal_path(path, start_cell, target_cell, safe_only)
+
+## Says why no usable route to `goal` exists, naming the units standing on the walkable route when
+## they are the cause. Uses the same walkable-route query the planner does, without occupancy.
+func _explain_blocked_route(start: Vector3i, goal: Vector3i, label: String) -> String:
+	if start == goal:
+		return ""
+	var grid := battle_controller.grid_manager
+	var walkable := battle_controller.pathfinder.calculate_3d_path(start, goal)
+	if walkable.size() <= 1:
+		return "no walkable route to %s" % label
+	var blockers: Array[String] = []
+	for index in range(1, walkable.size() - 1):
+		var cell := battle_controller.world_to_grid(walkable[index])
+		var occupant := grid.get_unit_at(cell)
+		if occupant != null and occupant != unit:
+			var entry := "%s at %s" % [occupant.name, cell]
+			if not blockers.has(entry):
+				blockers.append(entry)
+	if not blockers.is_empty():
+		return "route to %s is blocked by %s" % [label, ", ".join(blockers.slice(0, 3))]
+	return "route to %s is closed to this unit (body clearance or occupied approach cells)" % label
 
 func _path_to_target_neighbor(start: Vector3i, target: Vector3i) -> PackedVector3Array:
 	var grid := battle_controller.grid_manager
@@ -797,8 +826,12 @@ func _grid_distance_to(target: TacticalUnit) -> int:
 
 func _move_toward_cell(target_cell: Vector3i, safe_only := false) -> bool:
 	var start_cell := battle_controller.grid_manager.get_unit_grid(unit)
+	_route_block_note = ""
 	var path := battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
-	if path.size() <= 1: return false
+	if path.size() <= 1:
+		if path.is_empty():
+			_route_block_note = _explain_blocked_route(start_cell, target_cell, str(target_cell))
+		return false
 	return await _move_along_goal_path(path, start_cell, target_cell, safe_only)
 
 func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_cell: Vector3i, safe_only: bool) -> bool:
@@ -1189,11 +1222,15 @@ func _movement_wait_reason(prefix: String) -> String:
 	var outside_route := 0
 	var unsafe := 0
 	var below_threshold := 0
+	var reserved: Array[String] = []
 	for candidate in _last_position_candidates:
 		if not candidate.is_rejected():
 			continue
 		var reason := candidate.reason
-		if reason.begins_with("Occupied by "):
+		if reason.begins_with("Corridor reserved by ") or reason.begins_with("Destination reserved by "):
+			var holder := reason.get_slice(" reserved by ", 1)
+			if not reserved.has(holder): reserved.append(holder)
+		elif reason.begins_with("Occupied by "):
 			var blocker := reason.trim_prefix("Occupied by ")
 			if not occupied_by.has(blocker): occupied_by.append(blocker)
 		elif reason == "Outside useful route":
@@ -1203,12 +1240,28 @@ func _movement_wait_reason(prefix: String) -> String:
 		else:
 			below_threshold += 1
 	var details: Array[String] = []
+	if not _route_block_note.is_empty(): details.append(_route_block_note)
 	if not occupied_by.is_empty(): details.append("route blocked by %s" % ", ".join(occupied_by.slice(0, 3)))
+	if not reserved.is_empty(): details.append("cells reserved by %s" % ", ".join(reserved.slice(0, 3)))
 	if outside_route > 0: details.append("%d cells outside route" % outside_route)
 	if unsafe > 0: details.append("%d unsafe cells" % unsafe)
 	if below_threshold > 0: details.append("%d moves below threshold" % below_threshold)
-	if details.is_empty(): details.append("no reachable legal destination")
+	if details.is_empty(): details.append(_no_destination_reason())
 	return "%s %s" % [prefix, "; ".join(details)]
+
+## Query rejections that describe the moment, not the situation: never a reason for a decision.
+const TRANSIENT_QUERY_CODES: Array[StringName] = [&"action_busy", &"paused", &"battle_unavailable", &"stale_revision", &"service_unavailable"]
+
+## The shared Move query's own answer, so the reason matches what the player's UI would be told:
+## either why no move is legal at all, or that legal moves exist but none was worth taking.
+func _no_destination_reason() -> String:
+	var query := battle_controller.query_move(unit)
+	if not query.is_legal():
+		# The engine being busy, paused or mid-revision says nothing about the tactical situation.
+		if query.validation.code in TRANSIENT_QUERY_CODES:
+			return "no destination was worth taking"
+		return "no legal destination (%s)" % query.validation.message
+	return "%d legal destinations, none worth taking" % query.legal_destination_cells.size()
 
 func _decision_context() -> AIDecisionContext:
 	var context := AIDecisionContext.new()
