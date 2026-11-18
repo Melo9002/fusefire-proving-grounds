@@ -29,8 +29,22 @@ const UPPER_COM_FRACTION := 0.6
 const LEAN_DEGREES_PER_METRE := 85.0
 const MAX_LEAN_DEGREES := 40.0
 
+## Half-kneel, for cover lower than a crouch can hide behind: the front foot stays planted, the
+## rear knee goes down. The hips are placed from the leg geometry, so it needs no tuning per body.
+const KNEEL_REAR_THIGH_BACK := deg_to_rad(8.0)
+const KNEEL_REAR_SHIN_BACK := deg_to_rad(80.0)
+const KNEEL_KNEE_HEIGHT := 0.06
+const KNEEL_FRONT_SHIN_LEAN := deg_to_rad(10.0)
+const KNEEL_LEAN_DEGREES := 22.0
+## How far the resting rear foot points its toes down from "flat".
+const KNEEL_TOE_DEGREES := 55.0
+
 ## Requested hip drop in metres. Clamped to max_depth.
 var depth := 0.0
+## 0 = crouch, 1 = half-kneel. Blends the two.
+var kneel := 0.0
+## Which leg goes down in the kneel: 0 = left, 1 = right (right-handed shooter).
+var kneel_leg := 1
 ## Deepest natural crouch for this body, metres. Valid after setup().
 var max_depth := 0.0
 ## Standing head-top height above the ankle-height floor, metres. Valid after setup().
@@ -47,6 +61,10 @@ var _forward_skeleton := Vector3.BACK
 var _upper_length := 0.0
 var _lower_length := 0.0
 var _hip_to_ankle := 0.0
+var _ankle_height := 0.0
+var _kneel_drop := 0.0
+var _kneel_back := 0.0
+var _kneel_front := {}
 var _scale := 1.0
 
 ## `forward_world` is the character's facing direction in world space.
@@ -82,8 +100,27 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 	_lower_length = knee.distance_to(ankle) * _scale
 	_hip_to_ankle = (hip.y - ankle.y) * _scale
 	standing_head_height = (target.get_bone_global_rest(top).origin.y - ankle.y) * _scale
+	_ankle_height = ankle.y * _scale
 	max_depth = _find_max_depth()
+	_solve_kneel()
 	return true
+
+## Half-kneel geometry. The rear knee rests on the ground under the hip, so the hip height follows
+## from the thigh length; the front leg is then solved with its shin leaning slightly forward.
+func _solve_kneel() -> void:
+	var hip_height := _upper_length * cos(KNEEL_REAR_THIGH_BACK) + KNEEL_KNEE_HEIGHT
+	_kneel_drop = _hip_to_ankle + _ankle_height - hip_height
+	var best_error := INF
+	var back := 0.0
+	while back <= 0.8:
+		var pose := _solve(_kneel_drop, back)
+		if pose.ok:
+			var error := absf(pose.shin_lean - KNEEL_FRONT_SHIN_LEAN)
+			if error < best_error:
+				best_error = error
+				_kneel_back = back
+				_kneel_front = pose
+		back += 0.005
 
 func _refresh_scale(target: Skeleton3D) -> void:
 	_scale = target.global_basis.get_scale().y if target.is_inside_tree() else 1.0
@@ -169,34 +206,49 @@ func clamp_depth(requested: float) -> float:
 
 ## Forward lean of the torso for the current depth, degrees.
 func current_lean_degrees() -> float:
-	return lean_degrees(clamp_depth(depth))
+	return lerpf(lean_degrees(clamp_depth(depth)), KNEEL_LEAN_DEGREES, kneel)
 
 func lean_degrees(for_depth: float) -> float:
 	return minf(for_depth * LEAN_DEGREES_PER_METRE, MAX_LEAN_DEGREES)
 
 func _process_modification() -> void:
 	var target := get_skeleton()
-	if target == null or _hips < 0 or depth <= 0.002:
+	if target == null or _hips < 0 or (depth <= 0.002 and kneel <= 0.002):
 		return
 	_refresh_scale(target)
 	var applied := clamp_depth(depth)
-	var back := balanced_back(applied)
-	var pose := _solve(applied, back)
-	if not pose.get("ok", false):
+	var crouch_back := balanced_back(applied)
+	var crouch_pose := _solve(applied, crouch_back)
+	if not crouch_pose.get("ok", false):
 		return
+	var weight := clampf(kneel, 0.0, 1.0)
+	var drop := lerpf(applied, _kneel_drop, weight) if not _kneel_front.is_empty() else applied
+	var back := lerpf(crouch_back, _kneel_back, weight) if not _kneel_front.is_empty() else crouch_back
 	# Absolute hip placement: the baked cover clip's own crouch must not add to this one.
 	var parent := target.get_bone_parent(_hips)
 	var parent_basis := target.get_bone_global_rest(parent).basis if parent >= 0 else Basis.IDENTITY
 	var rest_origin := target.get_bone_rest(_hips).origin
-	var delta_skeleton := Vector3(0.0, -applied, 0.0) / _scale - _forward_skeleton * (back / _scale)
+	var delta_skeleton := Vector3(0.0, -drop, 0.0) / _scale - _forward_skeleton * (back / _scale)
 	target.set_bone_pose_position(_hips, rest_origin + parent_basis.inverse() * delta_skeleton)
-	var thigh_degrees := rad_to_deg(pose.thigh)
-	var knee_degrees := rad_to_deg(pose.knee)
 	for side in 2:
-		_set_flexion(target, _upper[side], thigh_degrees)
-		_set_flexion(target, _lower[side], -knee_degrees)
-		_set_flexion(target, _foot[side], -thigh_degrees + knee_degrees)
-	var lean := lean_degrees(applied) / _spine.size()
+		var thigh := rad_to_deg(crouch_pose.thigh)
+		var knee := rad_to_deg(crouch_pose.knee)
+		var foot := -thigh + knee
+		if weight > 0.0 and not _kneel_front.is_empty():
+			var thigh_k := rad_to_deg(_kneel_front.thigh)
+			var knee_k := rad_to_deg(_kneel_front.knee)
+			var foot_k := -thigh_k + knee_k
+			if side == kneel_leg:
+				thigh_k = -rad_to_deg(KNEEL_REAR_THIGH_BACK)
+				knee_k = rad_to_deg(KNEEL_REAR_SHIN_BACK - KNEEL_REAR_THIGH_BACK)
+				foot_k = -thigh_k + knee_k + KNEEL_TOE_DEGREES
+			thigh = lerpf(thigh, thigh_k, weight)
+			knee = lerpf(knee, knee_k, weight)
+			foot = lerpf(foot, foot_k, weight)
+		_set_flexion(target, _upper[side], thigh)
+		_set_flexion(target, _lower[side], -knee)
+		_set_flexion(target, _foot[side], foot)
+	var lean := current_lean_degrees() / _spine.size()
 	for bone in _spine:
 		var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
 		target.set_bone_pose_rotation(bone, rest * Quaternion(_forward_axis[bone], deg_to_rad(lean)))

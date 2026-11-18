@@ -26,10 +26,7 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
 var crouch_modifier: CoverCrouchModifier
-## The standing carry is already muzzle-down, so the rifle follows only part of the torso's lean
-## and gets no extra tilt: compressed ready, close to the chest.
-const RIFLE_LEAN_SHARE := 0.35
-const CROUCH_LOW_READY_DEGREES := 0.0
+const COVER_READY_MUZZLE_UP_DEGREES := 20.0
 var _standing_shoulder := Vector3.ZERO
 var _standing_shoulder_known := false
 var weapon_attachment: BoneAttachment3D
@@ -82,13 +79,20 @@ var support_ik_target: Marker3D
 var carry_motion_blend := 0.0
 var _carry_phase := 0.0
 
+## How shouldered the rifle is: the aim pose, or a ready hold while behind low cover.
+func weapon_blend() -> float:
+	if crouch_modifier == null:
+		return aim_blend
+	var in_cover := clampf(maxf(crouch_modifier.depth / maxf(crouch_modifier.max_depth, 0.01), crouch_modifier.kneel), 0.0, 1.0)
+	return maxf(aim_blend, in_cover)
+
+
 func _rifle_local_basis() -> Basis:
 	var carry_rotation := Quaternion.from_euler(carry_angles_degrees * (PI / 180.0))
-	var basis := Basis(carry_rotation.slerp(Quaternion.IDENTITY, aim_blend))
-	# A forward-leaning torso carries the low-ready rifle muzzle-down with it.
-	if crouch_modifier != null:
-		var crouch_fraction := clampf(crouch_modifier.depth / maxf(crouch_modifier.max_depth, 0.01), 0.0, 1.0)
-		basis = Basis(Vector3.RIGHT, deg_to_rad(crouch_modifier.current_lean_degrees() * RIFLE_LEAN_SHARE + CROUCH_LOW_READY_DEGREES * crouch_fraction) * (1.0 - aim_blend)) * basis
+	var blend := weapon_blend()
+	var basis := Basis(carry_rotation.slerp(Quaternion.IDENTITY, blend))
+	# Hiding behind cover the rifle is shouldered but not aimed: muzzle slightly up.
+	basis = Basis(Vector3.RIGHT, -deg_to_rad(COVER_READY_MUZZLE_UP_DEGREES) * (blend - aim_blend)) * basis
 	return basis
 
 
@@ -259,9 +263,9 @@ func _update_weapon_pose() -> void:
 		_standing_shoulder_known = true
 	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
 	ready_grip += body_offset
-	right_hand_target.position = ready_grip.lerp(aimed_grip, aim_blend) + Vector3(0, 0, -recoil * 0.08)
-	right_elbow_pole.position = (right_elbow_ready + body_offset).lerp(right_elbow_aim, aim_blend)
-	left_elbow_pole.position = (left_elbow_ready + body_offset).lerp(left_elbow_aim, aim_blend)
+	right_hand_target.position = ready_grip.lerp(aimed_grip, weapon_blend()) + Vector3(0, 0, -recoil * 0.08)
+	right_elbow_pole.position = (right_elbow_ready + body_offset).lerp(right_elbow_aim, weapon_blend())
+	left_elbow_pole.position = (left_elbow_ready + body_offset).lerp(left_elbow_aim, weapon_blend())
 	# Predict the support marker in the current pose before solving either arm.
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):

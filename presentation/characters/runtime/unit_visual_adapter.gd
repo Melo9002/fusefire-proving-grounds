@@ -224,16 +224,23 @@ const EYE_BELOW_HEAD_TOP := 0.12
 const CROUCH_SPEED := 1.1
 const HIDE_YAW_DEGREES := -150.0
 const COVER_TURN_DEGREES_PER_SECOND := 320.0
+const KNEEL_BLEND_RANGE := 0.08
+const KNEEL_SPEED := 2.5
 var _crouch_depth := 0.0
+var _kneel := 0.0
 var _cover_yaw := 0.0
 
-func _cover_crouch_target() -> float:
+## Depth the cover asks for, before the human limit. 0 when not behind low cover.
+func _cover_crouch_request() -> float:
 	if crouch_modifier == null or get_presentation_state() != &"cover_low" or last_cover_contact.get("type", MapCellData.CoverType.NONE) != MapCellData.CoverType.LOW:
 		return 0.0
 	var cover_height: float = last_cover_contact.get("height", 0.0)
 	var hide := crouch_modifier.standing_head_height - (cover_height - COVER_HEAD_CLEARANCE)
 	var peek := crouch_modifier.standing_head_height - EYE_BELOW_HEAD_TOP - (cover_height + COVER_EYE_CLEARANCE)
-	return crouch_modifier.clamp_depth(lerpf(hide, peek, aim_blend))
+	return maxf(lerpf(hide, peek, aim_blend), 0.0)
+
+func _cover_crouch_target() -> float:
+	return crouch_modifier.clamp_depth(_cover_crouch_request()) if crouch_modifier != null else 0.0
 
 func _sync_cover_crouch(delta: float) -> void:
 	if crouch_modifier == null:
@@ -241,6 +248,10 @@ func _sync_cover_crouch(delta: float) -> void:
 	var in_low_cover: bool = get_presentation_state() == &"cover_low" and last_cover_contact.get("type", MapCellData.CoverType.NONE) == MapCellData.CoverType.LOW
 	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), CROUCH_SPEED * delta)
 	crouch_modifier.depth = _crouch_depth
+	# Cover lower than the deepest natural crouch can hide behind: go down on one knee.
+	var kneel_target := clampf((_cover_crouch_request() - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
+	_kneel = move_toward(_kneel, kneel_target, KNEEL_SPEED * delta)
+	crouch_modifier.kneel = _kneel
 	var yaw_target := deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - aim_blend) if in_low_cover else 0.0
 	_cover_yaw = rotate_toward(_cover_yaw, yaw_target, deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
 	character_root.rotation.y = _cover_yaw
