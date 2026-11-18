@@ -43,6 +43,7 @@ func _run() -> void:
 	await _empty_ammo_reloads()
 	await _blocked_corridor()
 	await _open_corridor()
+	await _flat_map_approach()
 	await _extraction_in_zone()
 	await _extraction_en_route()
 	await _rescue_pickup()
@@ -178,6 +179,20 @@ func _open_corridor() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S6b")
 	check(r.end.x > 3, "S6b: with the corridor free the unit advances toward the hostile")
+	await f.dispose(self)
+
+## S6c legacy flat map (no surface placement), open ground, hostile 21 cells away. Reasonable: advance.
+## Issue #44: the approach used to find no path to the occupied target cell and the unit just waited.
+func _flat_map_approach() -> void:
+	var f = await _duel(1)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var enemy: TacticalUnit = f.turns.enemy_units[0]
+	check(not f.grid.map_data.surface_placement_enabled, "S6c setup: the fixture map is the legacy flat map")
+	f.place(actor, Vector3i(3, 0, 12)); f.place(enemy, Vector3i(24, 0, 12))
+	f.ready_actor(actor)
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S6c")
+	check(r.end.x > 3 and "move" in r.committed, "S6c: on a flat map the unit advances toward a distant hostile (end %s, committed %s)" % [r.end, r.committed])
 	await f.dispose(self)
 
 func _extract_fixture():
