@@ -11,14 +11,23 @@ extends SkeletonModifier3D
 ## it from the rest pose and the character's forward direction instead of assuming one.
 
 const MAX_KNEE_FLEXION := deg_to_rad(130.0)
-const MAX_HIP_FLEXION := deg_to_rad(105.0)
+const MAX_HIP_FLEXION := deg_to_rad(95.0)
 ## Shin lean from vertical with the heel down (ankle dorsiflexion limit).
 const MAX_SHIN_LEAN := deg_to_rad(50.0)
-## The hips sit this far behind the ankles per metre of depth (balance over the feet).
-const HIP_BACK_PER_DEPTH := 0.45
+## Balance: the hips move back until the body's centre of mass is this far ahead of the ankles
+## (over the middle of the foot), measured along the facing direction.
+const BALANCE_TARGET_AHEAD := 0.05
+const MAX_HIPS_BACK := 0.30
+## Rough mass shares: head + torso + arms + rifle, thighs, shins, feet.
+const MASS_UPPER := 0.64
+const MASS_THIGHS := 0.20
+const MASS_SHINS := 0.12
+const MASS_FEET := 0.04
+## Where the upper body's centre of mass sits along the hip-to-head line.
+const UPPER_COM_FRACTION := 0.6
 ## Spine forward lean per metre of depth, capped.
-const LEAN_DEGREES_PER_METRE := 60.0
-const MAX_LEAN_DEGREES := 32.0
+const LEAN_DEGREES_PER_METRE := 85.0
+const MAX_LEAN_DEGREES := 40.0
 
 ## Requested hip drop in metres. Clamped to max_depth.
 var depth := 0.0
@@ -120,21 +129,47 @@ func _find_max_depth() -> float:
 	var best := 0.0
 	var drop := 0.0
 	while drop < _hip_to_ankle:
-		if not _within_limits(_solve(drop, drop * HIP_BACK_PER_DEPTH)):
+		if not _within_limits(_solve(drop, balanced_back(drop))):
 			break
 		best = drop
 		drop += 0.005
 	return best
 
+## Where the whole body's centre of mass lies ahead of the ankles (metres, forward positive) for a
+## hip `drop` low, `back` behind the ankles, torso leaning `lean` radians.
+func _com_ahead(drop: float, back: float, lean: float) -> float:
+	var pose := _solve(drop, back)
+	if not pose.ok:
+		return -INF
+	var hip := Vector2(-back, _hip_to_ankle - drop)
+	var knee := hip + Vector2(sin(pose.thigh), -cos(pose.thigh)) * _upper_length
+	var upper_length := (standing_head_height - _hip_to_ankle) * UPPER_COM_FRACTION
+	var upper := hip + Vector2(sin(lean), cos(lean)) * upper_length
+	return (upper.x * MASS_UPPER + (hip.x + knee.x) * 0.5 * MASS_THIGHS + knee.x * 0.5 * MASS_SHINS + 0.06 * MASS_FEET)
+
+## The hip set-back that puts the centre of mass over the feet: a leaning torso needs the hips
+## further back, an upright one less. Found by bisection.
+func balanced_back(drop: float) -> float:
+	var lean := deg_to_rad(lean_degrees(drop))
+	if _com_ahead(drop, 0.0, lean) <= BALANCE_TARGET_AHEAD:
+		return 0.0
+	var low := 0.0
+	var high := MAX_HIPS_BACK
+	for i in 14:
+		var middle := (low + high) * 0.5
+		if _com_ahead(drop, middle, lean) > BALANCE_TARGET_AHEAD:
+			low = middle
+		else:
+			high = middle
+	return high
+
 ## Depth for a requested drop, capped at what a person can do.
 func clamp_depth(requested: float) -> float:
 	return clampf(requested, 0.0, max_depth)
 
-## How far the torso-level carry points (hands, elbows) move with the body, in the character's
-## frame (y up, z forward): down with the hips, back with them, a little forward with the lean.
-func carried_offset() -> Vector3:
-	var applied := clamp_depth(depth)
-	return Vector3(0.0, -applied * 0.9, -applied * HIP_BACK_PER_DEPTH + sin(deg_to_rad(lean_degrees(applied))) * 0.35)
+## Forward lean of the torso for the current depth, degrees.
+func current_lean_degrees() -> float:
+	return lean_degrees(clamp_depth(depth))
 
 func lean_degrees(for_depth: float) -> float:
 	return minf(for_depth * LEAN_DEGREES_PER_METRE, MAX_LEAN_DEGREES)
@@ -145,7 +180,7 @@ func _process_modification() -> void:
 		return
 	_refresh_scale(target)
 	var applied := clamp_depth(depth)
-	var back := applied * HIP_BACK_PER_DEPTH
+	var back := balanced_back(applied)
 	var pose := _solve(applied, back)
 	if not pose.get("ok", false):
 		return

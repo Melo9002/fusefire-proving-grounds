@@ -26,6 +26,12 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
 var crouch_modifier: CoverCrouchModifier
+## The standing carry is already muzzle-down, so the rifle follows only part of the torso's lean
+## and gets no extra tilt: compressed ready, close to the chest.
+const RIFLE_LEAN_SHARE := 0.35
+const CROUCH_LOW_READY_DEGREES := 0.0
+var _standing_shoulder := Vector3.ZERO
+var _standing_shoulder_known := false
 var weapon_attachment: BoneAttachment3D
 var weapon: Node3D
 var support_hand_target: Node3D
@@ -78,7 +84,12 @@ var _carry_phase := 0.0
 
 func _rifle_local_basis() -> Basis:
 	var carry_rotation := Quaternion.from_euler(carry_angles_degrees * (PI / 180.0))
-	return Basis(carry_rotation.slerp(Quaternion.IDENTITY, aim_blend))
+	var basis := Basis(carry_rotation.slerp(Quaternion.IDENTITY, aim_blend))
+	# A forward-leaning torso carries the low-ready rifle muzzle-down with it.
+	if crouch_modifier != null:
+		var crouch_fraction := clampf(crouch_modifier.depth / maxf(crouch_modifier.max_depth, 0.01), 0.0, 1.0)
+		basis = Basis(Vector3.RIGHT, deg_to_rad(crouch_modifier.current_lean_degrees() * RIFLE_LEAN_SHARE + CROUCH_LOW_READY_DEGREES * crouch_fraction) * (1.0 - aim_blend)) * basis
+	return basis
 
 
 func _build_character() -> void:
@@ -241,8 +252,12 @@ func _update_weapon_pose() -> void:
 	ready_grip.y += sin(_carry_phase) * 0.008 * carry_motion_blend
 	# Only a few millimetres of stock compression; avoid the old 6.5 cm slide
 	# through the shoulder. Upper-body animation supplies the visible kick.
-	# While crouched, the low-ready grip and the elbows travel with the lowered body.
-	var body_offset := crouch_modifier.carried_offset() if crouch_modifier != null else Vector3.ZERO
+	# While crouched, the low-ready grip and the elbows travel with the chest: the shoulder moved
+	# from where it stands when upright.
+	if not _standing_shoulder_known:
+		_standing_shoulder = shoulder_marker.position
+		_standing_shoulder_known = true
+	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
 	ready_grip += body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, aim_blend) + Vector3(0, 0, -recoil * 0.08)
 	right_elbow_pole.position = (right_elbow_ready + body_offset).lerp(right_elbow_aim, aim_blend)

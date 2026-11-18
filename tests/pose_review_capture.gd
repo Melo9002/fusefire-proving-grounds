@@ -76,10 +76,12 @@ func _run() -> void:
 		for i in 40: await process_frame
 		await create_timer(1.6).timeout
 		var tiles: Array[Image] = []
-		tiles.append(await _snap(camera, Vector3(0, 1.1, 2.7), look))       # front
-		tiles.append(await _snap(camera, Vector3(2.7, 1.1, 0), look))       # side (character's left)
-		tiles.append(await _snap(camera, Vector3(0, 1.1, -2.7), look))      # back
-		tiles.append(await _snap(camera, Vector3(1.9, 1.35, 1.9), look))    # three-quarter
+		# Views are relative to the character's facing, so a turned body is still seen front/side/back.
+		var facing: Basis = rig.character_root.global_basis
+		tiles.append(await _snap(camera, facing * Vector3(0, 1.1, 2.7), look))       # front
+		tiles.append(await _snap(camera, facing * Vector3(2.7, 1.1, 0), look))       # side (character's left)
+		tiles.append(await _snap(camera, facing * Vector3(0, 1.1, -2.7), look))      # back
+		tiles.append(await _snap(camera, facing * Vector3(1.9, 1.35, 1.9), look))    # three-quarter
 		# From the eye along the sight line: does the character see through the sights?
 		var forward := rig.weapon.global_basis.z.normalized()
 		var eye := head_attachment.global_position + (top_attachment.global_position - head_attachment.global_position) * 0.55 + rig.character_root.global_basis.z * 0.085
