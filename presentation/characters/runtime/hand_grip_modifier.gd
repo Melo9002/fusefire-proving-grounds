@@ -1,6 +1,8 @@
 class_name HandGripModifier
 extends SkeletonModifier3D
-## Closes the fingers around whatever the hands hold, and pulls the trigger finger. Presentation only.
+## Orients the hands on the weapon, closes the fingers around its grips and pulls the trigger
+## finger. Presentation only. Runs after the arm IK, which places the wrists but leaves each hand
+## facing wherever the forearm happens to point.
 ##
 ## The curl axis of every finger joint is measured from the rest pose (the imported rest pose is a
 ## T-pose with the palms down, so "toward the palm" is "down"), so it works whichever local axis
@@ -21,12 +23,35 @@ var trigger_pull := 0.0
 ## Whether the right hand's index finger rests on the trigger (a pistol grip) instead of wrapping.
 var right_trigger_finger := true
 
+## The weapon's orientation in skeleton space, and how strongly the hands follow it (0 = animation).
+var weapon_basis := Basis.IDENTITY
+var orient_weight := 0.0
+## Direction of the fingers' base and the palm-facing direction for each hand, in the weapon frame.
+var hand_forward := Vector3(0.0, -0.5, 0.866)
+var palm_normals := [Vector3.LEFT, Vector3.RIGHT]
+## Wrist to middle-finger knuckle, metres (half of it reaches the palm centre).
+var palm_length := 0.09
+
 var _fingers := [[], []]
 var _axes := {}
+var _hands := [-1, -1]
+var _hand_parents := [-1, -1]
+var _hand_rest_basis := [Basis.IDENTITY, Basis.IDENTITY]
+var _finger_rest_direction := [Vector3.RIGHT, Vector3.LEFT]
 
 func setup(target: Skeleton3D, prefix: String) -> bool:
+	var scale_y := target.global_basis.get_scale().y if target.is_inside_tree() else 1.0
 	for hand in 2:
 		var side := "Left" if hand == 0 else "Right"
+		_hands[hand] = target.find_bone("%s%sHand" % [prefix, side])
+		var middle := target.find_bone("%s%sHandMiddle1" % [prefix, side])
+		if _hands[hand] < 0 or middle < 0:
+			return false
+		_hand_parents[hand] = target.get_bone_parent(_hands[hand])
+		_hand_rest_basis[hand] = target.get_bone_global_rest(_hands[hand]).basis.orthonormalized()
+		var along: Vector3 = target.get_bone_global_rest(middle).origin - target.get_bone_global_rest(_hands[hand]).origin
+		_finger_rest_direction[hand] = along.normalized()
+		palm_length = along.length() * scale_y
 		for finger in ["Thumb", "Index", "Middle", "Ring", "Pinky"]:
 			var joints: Array[int] = []
 			for joint in [1, 2, 3, 4]:
@@ -52,10 +77,32 @@ func _curl_axis(target: Skeleton3D, bone: int, child: int) -> Vector3:
 			best = axis * signf(score)
 	return best
 
+## An orthonormal frame from a long axis and a palm normal.
+static func _frame(forward: Vector3, normal: Vector3) -> Basis:
+	var x := forward.normalized()
+	var z := x.cross(normal).normalized()
+	return Basis(x, z.cross(x), z)
+
+## Turns each hand so its fingers point along `hand_forward` and its palm faces `palm_normals`,
+## both given in the weapon frame. The rest pose is a T-pose with the palms down.
+func _orient_hands(target: Skeleton3D) -> void:
+	if orient_weight <= 0.001:
+		return
+	for hand in 2:
+		var forward := (weapon_basis * hand_forward).normalized()
+		var normal: Vector3 = (weapon_basis * (palm_normals[hand] as Vector3)).normalized()
+		var rotation := _frame(forward, normal) * _frame(_finger_rest_direction[hand], Vector3.DOWN).inverse()
+		var desired: Basis = rotation * _hand_rest_basis[hand]
+		var parent_basis := target.get_bone_global_pose(_hand_parents[hand]).basis.orthonormalized()
+		var local := (parent_basis.inverse() * desired).orthonormalized().get_rotation_quaternion()
+		var current := target.get_bone_pose_rotation(_hands[hand])
+		target.set_bone_pose_rotation(_hands[hand], current.slerp(local, clampf(orient_weight, 0.0, 1.0)))
+
 func _process_modification() -> void:
 	var target := get_skeleton()
 	if target == null or _fingers[0].is_empty():
 		return
+	_orient_hands(target)
 	for hand in 2:
 		for finger in 5:
 			var amount: float = curl[hand]

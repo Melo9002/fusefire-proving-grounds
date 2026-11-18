@@ -34,10 +34,6 @@ func _run() -> void:
 	stage.add_child(camera)
 	camera.make_current()
 	for i in 20: await process_frame
-	var user_args := OS.get_cmdline_user_args()
-	if user_args.size() > 1:
-		var parts := user_args[1].split(",")
-		rig.support_hand_adjustment = Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
 	_marker(rig.support_hand_target, Color(0.1, 1.0, 0.2))
 	_marker(rig.sight_marker, Color(0.2, 0.4, 1.0))
 	_marker(rig.muzzle_socket, Color(1.0, 0.2, 0.2))

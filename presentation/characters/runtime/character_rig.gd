@@ -60,21 +60,21 @@ const SIGHT_OFFSET := Vector3(0.0, 0.13, -0.10)
 ## Optional authored clips. When empty, the controller builds the tested prototype fallbacks.
 @export var clip_library: AnimationLibrary
 @export_group("Weapon Contact")
-## Metres in weapon-local coordinates; moves the rifle relative to the firing wrist.
-@export var grip_offset := GRIP_OFFSET
-@export var sight_offset := SIGHT_OFFSET
-# Editable contact points, in rifle-local and right-upper-arm-local metres.
-@export var stock_contact_offset := Vector3(0.0, 0.065, -0.28)
-@export var shoulder_contact_offset := Vector3(0.035, 0.015, 0.055)
+## Where the weapon is held: scale, stock, grips and hand posture. See WeaponHandlingProfile.
+@export var handling: WeaponHandlingProfile = WeaponHandlingProfile.new()
+## Right-upper-arm-local metres: where the butt plate rests relative to the shoulder joint. A little
+## in front of the joint, so the stock sits in the pocket instead of passing through the shoulder.
+@export var shoulder_contact_offset := Vector3(0.035, 0.015, 0.02)
+## Derived from `handling` and the hand size (see _place_hands_on_weapon): the weapon origin relative
+## to the firing wrist, the stock point and the support wrist, all in character metres.
+var grip_offset := Vector3.ZERO
+var stock_contact_offset := Vector3.ZERO
+var sight_offset := SIGHT_OFFSET
+var support_wrist := Vector3.ZERO
 var stock_marker: Marker3D
 var shoulder_marker: Marker3D
 var sight_marker: Marker3D
 var support_ik_target: Marker3D
-## Fine adjustment for where the support hand meets the rifle, in the weapon's frame (+z toward the
-## muzzle). The AUG model's own marker sits on the hand guard; this moves the palm onto its vertical
-## front handle (found from the mesh: the handle spans z 0.16-0.24 and hangs to y -0.07). The arm is
-## already near full reach, so extra forward offset does not move the hand any further.
-@export var support_hand_adjustment := Vector3(-0.02, -0.055, 0.0)
 @export_group("Arm IK")
 ## Elbow guide positions in Character-local metres.
 @export var right_elbow_ready := Vector3(-0.26, 0.93, -0.04)
@@ -129,6 +129,8 @@ func _build_weapon_attachment() -> void:
 	assert(weapon_scene != null, "Weapon scene is required")
 	weapon = weapon_scene.instantiate() as Node3D
 	weapon.name = "AUG"
+	weapon.scale = Vector3.ONE * handling.scale
+	_place_hands_on_weapon()
 	# The source WeaponOrigin is centered on the firing-hand grip. This small
 	# offset nests it into the palm while its +Z axis remains the firing axis.
 	weapon.position = grip_offset
@@ -139,11 +141,11 @@ func _build_weapon_attachment() -> void:
 	assert(muzzle_socket != null, "AUG must expose MuzzleSocket")
 	sight_marker = Marker3D.new()
 	sight_marker.name = "SightReference"
-	sight_marker.position = sight_offset
+	sight_marker.position = handling.sight
 	weapon.add_child(sight_marker)
 	stock_marker = Marker3D.new()
 	stock_marker.name = "ButtstockContact"
-	stock_marker.position = stock_contact_offset
+	stock_marker.position = handling.stock_rear
 	weapon.add_child(stock_marker)
 	shoulder_marker = Marker3D.new()
 	shoulder_marker.name = "ShoulderContact"
@@ -210,8 +212,22 @@ func _build_grip_modifier() -> void:
 		grip_modifier = null
 		return
 	skeleton.add_child(grip_modifier)
-	if is_instance_valid(arm_ik):
-		skeleton.move_child(grip_modifier, arm_ik.get_index())
+	_place_hands_on_weapon()
+
+
+## Derives the weapon placement from the handling profile and the real hand size: the palm centre
+## lies half a palm length ahead of the wrist along the hand's forward direction, so each wrist is
+## put that far behind its grip.
+func _place_hands_on_weapon() -> void:
+	var scale_value := handling.scale
+	var palm := grip_modifier.palm_length if grip_modifier != null else 0.09
+	var half_palm := handling.hand_forward() * palm * 0.5
+	var firing_wrist := handling.firing_palm() * scale_value - half_palm
+	grip_offset = -firing_wrist
+	support_wrist = handling.support_palm() * scale_value - half_palm
+	stock_contact_offset = handling.stock_rear * scale_value
+	if grip_modifier != null:
+		grip_modifier.hand_forward = handling.hand_forward()
 
 
 func _build_crouch_modifier() -> void:
@@ -262,7 +278,8 @@ func _align_weapon_to_aim() -> void:
 		or not is_instance_valid(weapon) or not weapon.is_inside_tree():
 		return
 	var desired_global_basis := character_root.global_basis * _rifle_local_basis()
-	weapon.basis = weapon_attachment.global_basis.inverse() * desired_global_basis
+	# The basis is rewritten every frame, so the presentation scale must be re-applied with it.
+	weapon.basis = (weapon_attachment.global_basis.inverse() * desired_global_basis) * Basis.from_scale(Vector3.ONE * handling.scale)
 	weapon.position = weapon_attachment.global_basis.inverse() * (desired_global_basis * grip_offset)
 
 
@@ -274,7 +291,7 @@ func _update_weapon_pose() -> void:
 	var shoulder_index := skeleton.find_bone(right_arm_bones[0])
 	var shoulder_world := skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin
 	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
-	stock_marker.position = stock_contact_offset
+	stock_marker.position = handling.stock_rear
 	var aimed_grip := shoulder_marker.position - stock_contact_offset - grip_offset
 	var moving := false
 	# Non-tool animation controllers intentionally do not expose runtime state
@@ -296,7 +313,10 @@ func _update_weapon_pose() -> void:
 		crouch_modifier.aim_lean_degrees = AIM_LEAN_DEGREES * weapon_blend()
 		crouch_modifier.support_reach_degrees = SUPPORT_REACH_DEGREES * weapon_blend()
 	if grip_modifier != null:
-		grip_modifier.curl = [SUPPORT_GRIP_CURL, TRIGGER_HAND_CURL]
+		var holding: bool = not (is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"boarding", &"carry_idle", &"carry_move"])
+		grip_modifier.curl = [SUPPORT_GRIP_CURL if holding else 0.0, TRIGGER_HAND_CURL if holding else 0.0]
+		grip_modifier.orient_weight = 1.0 if holding else 0.0
+		grip_modifier.weapon_basis = skeleton.global_basis.orthonormalized().inverse() * weapon.global_basis.orthonormalized()
 		grip_modifier.trigger_pull = trigger_pull
 	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
 	ready_grip += body_offset
@@ -306,8 +326,7 @@ func _update_weapon_pose() -> void:
 	# Predict the support marker in the current pose before solving either arm.
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):
-		var support_offset := weapon.to_local(support_hand_target.global_position)
-		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_offset + support_hand_adjustment)
+		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_wrist)
 
 
 func _play_shot_feedback() -> void:
