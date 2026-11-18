@@ -27,6 +27,21 @@ static func resolve_or_generic(archetype_id: StringName, report_invalid := true)
 		push_warning("[TacticalArchetypeCatalog] Unknown archetype '%s'; using Generic." % archetype_id)
 	return get_definition(GENERIC_ID)
 
+## Identity of the Shield settings of the given archetypes (the distinct ones, in a fixed order). An
+## archetype that no longer exists, or lost its Shield, changes the identity instead of being ignored.
+static func shield_signature(archetype_ids: Array) -> String:
+	var distinct: Array[String] = []
+	for id in archetype_ids:
+		var text := String(id)
+		if not distinct.has(text): distinct.append(text)
+	distinct.sort()
+	var parts: Array[String] = []
+	for text in distinct:
+		var definition := get_definition(StringName(text))
+		var capability: ShieldCapability = definition.shield_capability if definition else null
+		parts.append("%s=%s" % [text, "missing" if definition == null else (capability.signature() if capability else "none")])
+	return "shield-set-1:" + "|".join(parts).sha256_text()
+
 static func normalize_ids(values: Array[StringName], count: int) -> Array[StringName]:
 	var normalized: Array[StringName] = []
 	for index in maxi(0, count):

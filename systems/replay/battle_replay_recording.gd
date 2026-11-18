@@ -10,6 +10,9 @@ const SIMULATION_VERSION := "prototype-1.5-guaranteed-hit-11"
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
 var cover_tuning_signature: String = CombatRules.cover_tuning.signature()
+## Identity of the Shield settings of the battle's archetypes, recorded only when Shield is enabled.
+## Empty on recordings made before this field existed: those are not checked, as before.
+var shield_capability_signature := ""
 var configuration: Dictionary = {}
 ## Read old document fields only to reject retired recordings explicitly.
 ## Retained fixture identities still require the current simulation/tuning contract.
@@ -38,6 +41,8 @@ func validation_message() -> String:
 	if cover_tuning_signature != CombatRules.cover_tuning.signature():
 		return "Incompatible replay combat tuning; the saved accuracy/damage/cover/range/height values differ from this build. Start a new recording."
 	if configuration.is_empty(): return "Replay has no battle_configuration"
+	var shield_issue := shield_identity_message()
+	if not shield_issue.is_empty(): return shield_issue
 	if int(configuration.get("battlefield_preset", 0)) != 0 or not battlefield_document.is_empty():
 		return "Archived experimental generator presets/layouts are quarantined; current Generation 2 uses named battlefields"
 	var battlefield_id := StringName(configuration.get("battlefield_id", &""))
@@ -59,11 +64,35 @@ func validation_message() -> String:
 				if not _coordinate(point, 3): return "Surface Move contains invalid standing coordinates"
 	return ""
 
+## Every archetype that takes part in the recorded battle, from its saved configuration.
+static func participating_archetypes(battle_configuration: Dictionary) -> Array:
+	var ids: Array = []
+	for key in ["player_archetypes", "enemy_archetypes", "ally_archetypes"]:
+		var listed: Variant = battle_configuration.get(key, [])
+		if listed is Array:
+			ids.append_array(listed)
+	return ids
+
+## The Shield settings the recording was made with, for a configuration; empty when Shield is off.
+static func shield_signature_for(battle_configuration: Dictionary) -> String:
+	if not bool(battle_configuration.get("shield_enabled", false)):
+		return ""
+	return TacticalArchetypeCatalog.shield_signature(participating_archetypes(battle_configuration))
+
+## A recording whose Shield settings differ from this build is refused before any action plays.
+func shield_identity_message() -> String:
+	if shield_capability_signature.is_empty() or not bool(configuration.get("shield_enabled", false)):
+		return ""
+	if shield_capability_signature != shield_signature_for(configuration):
+		return "Incompatible replay Shield settings; this recording's archetypes use different Shield AP cost, arc, accuracy, damage or action permissions than this build. Start a new recording."
+	return ""
+
 func to_dictionary() -> Dictionary:
 	return {
 		"schema_version": schema_version,
 		"simulation_version": simulation_version,
 		"cover_tuning_signature": cover_tuning_signature,
+		"shield_capability_signature": shield_capability_signature,
 		"battle_configuration": _configuration_to_data(configuration),
 		"battlefield_layout_document": battlefield_document.duplicate(true),
 		"battlefield_layout_signature": battlefield_document_signature,
@@ -78,6 +107,7 @@ static func from_dictionary(data: Dictionary) -> BattleReplayRecording:
 	replay.schema_version = int(data.get("schema_version", -1))
 	replay.simulation_version = String(data.get("simulation_version", "prototype-1" if replay.schema_version == LEGACY_SCHEMA_VERSION else "unknown"))
 	replay.cover_tuning_signature = String(data.get("cover_tuning_signature", ""))
+	replay.shield_capability_signature = String(data.get("shield_capability_signature", ""))
 	replay.configuration = _configuration_from_data(data.get("battle_configuration", data.get("configuration", {})))
 	var encoded_document = data.get("battlefield_layout_document", {})
 	if encoded_document is Dictionary: replay.battlefield_document = encoded_document.duplicate(true)

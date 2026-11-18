@@ -11,6 +11,12 @@ extends Resource
 @export var attacks_allowed := false
 @export var reload_allowed := false
 
+## Stable identity of every replay-relevant value, at full precision, so a recording can tell that
+## the Shield was retuned after it was made. Edits to any field change the signature.
+func signature() -> String:
+	var values := [stance_ap_cost, protected_arc_degrees, damage_multiplier, accuracy_modifier, attacks_allowed, reload_allowed]
+	return "shield-1:" + JSON.stringify(values, "", true, true).sha256_text()
+
 func validation_message() -> String:
 	if protected_arc_degrees <= 0.0 or protected_arc_degrees > 360.0:
 		return "Shield protected arc must be greater than 0 and at most 360 degrees"
