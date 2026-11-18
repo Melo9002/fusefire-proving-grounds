@@ -6,6 +6,7 @@ Milestone 05 step 3. Starting commit: `e78f1d5`. These are fixed setups with the
 
 - **Fixture** (`tests/support/ai_scenario_fixture.gd`): builds the real battle scene, places units on exact cells, adds real cover or walls, lists the legal options from the same queries the player and AI use (`query_attack`, `query_move`), and runs a real AI activation through the authoritative action service. Placing a unit on a solid or occupied cell is an error, so a broken setup cannot pass silently.
 - **Two maps.** Target and ammo scenarios use the flat fixture map, reset to open ground so the only cover is what the scenario adds. Movement scenarios use the **Tactical Test Range**, because the AI's route-to-hostile movement only runs on surface-placement maps like the current sites (see limits).
+- **One activation.** The fixture sets `debug_player_ai` directly rather than through its setter: the setter makes every AI controller start its own activation, which would run alongside the one under test.
 - **HARD difficulty.** It has no seeded lapses, so preference scenarios are deterministic. Legality rules do not depend on the tier. The scenarios gave identical traces on repeated runs.
 - **Assertions.** Every decision must obey hard rules: no rejected action, AP within budget, ammo not negative, a legal cell it alone occupies, and an explanation. Preferences are properties ("the chosen target is no worse than the best legal expected damage"), never one exact tile. Behavior the AI does not have yet is documented below instead of being asserted.
 
@@ -20,9 +21,9 @@ Milestone 05 step 3. Starting commit: `e78f1d5`. These are fixed setups with the
 | S4 | Height | Two targets at equal 3D distance, one standing one level lower (height modifier +5). | No worse than the best legal expected damage. | **Asserted** (property check). |
 | S5 | Ammo | No Supply Points, a clear shot, 2 AP; no attack is legal. | Reload first, then shoot. | Reload, then Attack. **Asserted.** |
 | S6 | Crowded corridor | One-cell corridor with an ally standing in it, hostile beyond. No path exists. | Hold or reposition legally, with a reason. | Holds 7 cells from the corridor mouth and waits ("no reachable legal destination"). Legality asserted; see observation 1. |
-| S6b | Free corridor | The same corridor with the ally gone. | Advance toward the hostile. | Moves one step (5 cells) to just before the corridor mouth, then waits with 2 AP unspent. Progress asserted; see observation 2. |
+| S6b | Free corridor | The same corridor with the ally gone. | Advance toward the hostile. | Three moves, through the corridor, using all 3 AP. **Asserted** (progress). |
 | S7 | Extraction | Standing in the exit zone with AP. | Extract. | Extracts. **Asserted.** |
-| S7b | Extraction en route | Exit zone 9 cells away, no hostile in range. | Move closer; do not wander. | Moves once, then waits with 2 AP unspent about 5 cells from the exit. Progress asserted; see observation 2. |
+| S7b | Extraction en route | Exit zone 9 cells away, no hostile in range. | Move closer; do not wander. | Three moves, then Extract, in one activation. **Asserted** (progress). |
 | S8 | Rescue | Carrier next to the casualty, exit nearby, hostile far away. | Pick up, then stop shooting and head for the exit. | Rescue, two moves, Extract in one activation. **Asserted.** |
 
 Existing tests retained and still relevant to these decisions: `ai_target_scoring_smoke`, `ai_position_scoring_smoke`, `ai_attack_plan_test` (Aim vs shooting), `ai_wounded_recovery_test`, `rescue_carrier_support_smoke`, `protect_rescue_ai_smoke`, `objective_ai_navigation_smoke`, `ai_second_advance_smoke`, `survive_ai_smoke`, `ai_carrier_reservation_test`.
@@ -30,7 +31,7 @@ Existing tests retained and still relevant to these decisions: `ai_target_scorin
 ## Observations (not asserted as passes)
 
 1. **The Wait reason is wrong when a blocked path is the cause.** In S6 the unit holds with "no reachable legal destination", yet legal destinations exist: the path to the hostile is blocked by the ally. The reason never names the blocker, and the unit does not move up to the corridor mouth to be ready.
-2. **A unit en route can leave AP unspent.** In S6b and S7b the unit makes one move and then waits with 2 AP left while the exit or corridor is still ahead ("N cells outside route; 2 moves below threshold"). The baseline shows the same pattern in Extract matches (about 9 waits per match). It may be deliberate caution about a second advance, but it costs rounds.
+2. **Correction (2026-11-18, later).** An earlier version of this document, and issue #43, reported that a unit en route to an exit or corridor leaves AP unspent after one move. That was an artifact of the scenario fixture, which started a second background activation alongside the one it was observing. With the fixture fixed, S6b and S7b use all their AP. The baseline's wait counts are real data but are not evidence of lost AP. #43 was closed as not reproduced.
 3. **No Move-then-Attack comparison yet** (S1b). Fine in the cases seen; it matters when AP is short or a frontal shot is poor. This is step 6.
 4. **Flat legacy maps never run route-to-hostile movement.** Without surface placement the AI looks for a path to the hostile's own, occupied cell and finds none, so it waits even on open ground. Current content is unaffected, but fixtures created with `generated_map = false` cannot test approach behavior.
 

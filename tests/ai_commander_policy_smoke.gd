@@ -98,7 +98,12 @@ func _check_team_ownership_and_diagnostics() -> void:
 	check(level.player_commander == AICommanderPolicy.Profile.CAUTIOUS and level.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "Battle startup retains both readable commander profiles")
 	var records: Array[Dictionary] = []
 	battle.ai_decision_recorded.connect(func(value: Dictionary): records.append(value))
-	battle.record_ai_decision(enemy, "Wait", enemy.name, "Fixture decision", "None")
+	var fixture_decision := AIDecisionRecord.new()
+	fixture_decision.action = "Wait"
+	fixture_decision.subject = enemy.name
+	fixture_decision.reason = "Fixture decision"
+	fixture_decision.alternatives = "None"
+	battle.record_ai_decision(enemy, fixture_decision)
 	var record: Dictionary = records[0] if not records.is_empty() else {}
 	check(record.get("commander_policy_id", "") == "default", "Decision diagnostics include the stable commander policy ID")
 	check(record.get("strategic_intent", "") == "Balanced engagement", "Decision diagnostics include strategic intent")

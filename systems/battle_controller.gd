@@ -761,37 +761,24 @@ func configure_commander_profiles(player_team: AICommanderPolicy.Profile, enemy_
 func _ai_team_id(unit: TacticalUnit) -> int:
 	return 0 if unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] else 1
 
-func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = [], context: Dictionary = {}) -> int:
+## Publishes one AI decision. The caller supplies the decision facts; the battle adds what
+## it owns (id, state revision, difficulty, commander) and emits the established trace shape.
+func record_ai_decision(actor: TacticalUnit, record: AIDecisionRecord) -> int:
 	_ai_decision_sequence += 1
-	var actor_name := "Unknown"
-	if is_instance_valid(actor):
-		actor_name = String(actor.name)
-	var record := {
-		"actor": actor_name,
-		"decision_id": _ai_decision_sequence,
-		"state_revision": action_service.state_revision,
-		"stage": "explanation",
-		"action": action,
-		"subject": subject,
-		"reason": reason,
-		"alternatives": alternatives,
-		"mission_goal": mission_goal,
-		"squad_adjustments": squad_adjustments,
-		"position_scores": position_scores,
-		"target_scores": target_scores,
-		"position_candidates": position_candidates.duplicate(true),
-		"target_candidates": target_candidates.duplicate(true),
-		"difficulty": AIDifficultyPolicy.get_label(ai_difficulty),
-	}
-	if is_instance_valid(actor):
+	var actor_valid := is_instance_valid(actor)
+	record.actor = String(actor.name) if actor_valid else "Unknown"
+	record.decision_id = _ai_decision_sequence
+	record.state_revision = action_service.state_revision
+	record.difficulty = AIDifficultyPolicy.get_label(ai_difficulty)
+	if actor_valid:
 		var commander := get_commander_policy(actor)
-		record["commander_policy"] = AICommanderPolicy.get_label(commander.profile)
-		record["commander_policy_id"] = String(commander.get_policy_id())
-		record["strategic_intent"] = commander.get_strategic_intent_label()
-	record.merge(context, true)
-	if record.stage == "selected" and is_instance_valid(actor) and action == "Move":
+		record.has_commander = true
+		record.commander_policy = AICommanderPolicy.get_label(commander.profile)
+		record.commander_policy_id = String(commander.get_policy_id())
+		record.strategic_intent = commander.get_strategic_intent_label()
+	if actor_valid and record.is_selected_move():
 		_pending_ai_moves[actor.tactical_id] = _ai_decision_sequence
-	ai_decision_recorded.emit(record)
+	ai_decision_recorded.emit(record.to_dictionary())
 	return _ai_decision_sequence
 
 ## UI-only entry. AI/replay keep submitting through the ordinary action service.

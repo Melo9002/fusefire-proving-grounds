@@ -42,8 +42,8 @@ var _difficulty_policy: AIDifficultyPolicy
 var _commander_policy: AICommanderPolicy
 var _decision_rng := RandomNumberGenerator.new()
 var _last_position_scores := "None"
-var _last_position_candidates: Array[Dictionary] = []
-var _last_target_candidates: Array[Dictionary] = []
+var _last_position_candidates: Array[AIPositionCandidate] = []
+var _last_target_candidates: Array[AITargetCandidate] = []
 var _committed_carrier_route: Array[Vector3i] = []
 var _last_attack_plan: Dictionary = {}
 var _last_hold_score := NAN
@@ -292,6 +292,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 				return MissionStepResult.INTERACTED
 		var approach := _nearest_terminal_approach_cell(terminal)
 		if approach.x >= 0 and await _move_toward_cell(approach, has_moved):
+			if not _dependencies_alive(): return MissionStepResult.NONE
 			_record_ai_decision("Move", str(_last_move_destination), "Approached the required mission terminal.", "Attack, Interact, Wait")
 			# Terminal interactions are free and intentionally remain available at
 			# zero AP. Complete the objective now rather than relying on another loop.
@@ -583,7 +584,7 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
 		var score: float = scored.total - candidate.distance_to(carrier.grid_position)
 		var summary := "%s; %s" % [scored.summary, "bottleneck advance" if remains_on_route else "route clearance"]
-		_last_position_candidates.append({"cell": candidate, "score": score, "status": "considered", "summary": summary})
+		_last_position_candidates.append(AIPositionCandidate.considered(candidate, score, summary))
 		if remains_on_route and score > fallback_score:
 			fallback_score = score
 			fallback = candidate
@@ -594,7 +595,7 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 		best = fallback
 		best_score = fallback_score
 	for candidate_record in _last_position_candidates:
-		candidate_record["chosen"] = candidate_record.cell == best
+		candidate_record.mark_chosen(candidate_record.cell == best)
 	if best.x < 0:
 		return false
 	_publish_movement_preview(best, "Carrier route clearance %.1f" % best_score)
@@ -626,13 +627,13 @@ func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, false, hostiles, grid, _policy, _squad_context)
 		var spacing_penalty := absf(carrier_distance - ESCORT_POSITION_IDEAL_DISTANCE) * ESCORT_POSITION_DISTANCE_WEIGHT
 		var score: float = scored.total - spacing_penalty
-		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": "%s; escort spacing %+.0f" % [scored.summary, -spacing_penalty]}
+		var candidate_record := AIPositionCandidate.considered(candidate, score, "%s; escort spacing %+.0f" % [scored.summary, -spacing_penalty])
 		_last_position_candidates.append(candidate_record)
 		if score > best_score:
 			best_score = score
 			best = candidate
 	for candidate_record in _last_position_candidates:
-		candidate_record["chosen"] = candidate_record.cell == best
+		candidate_record.mark_chosen(candidate_record.cell == best)
 	if best.x < 0:
 		return false
 	_publish_movement_preview(best, "Escort position %.1f" % best_score)
@@ -660,6 +661,11 @@ func _on_debug_player_ai_changed(enabled: bool) -> void:
 func _battle_is_live() -> bool:
 	# Awaited decisions may resume after their owning scene has been removed.
 	if not is_inside_tree() or is_queued_for_deletion(): return false
+	return _dependencies_alive()
+
+## The battle side still exists. Unlike _battle_is_live this does not require the controller
+## itself to be in the tree: helpers are also used as adapters outside it (tests, tools).
+func _dependencies_alive() -> bool:
 	for dependency in [unit, turn_manager, battle_controller]:
 		if not is_instance_valid(dependency) or not dependency.is_inside_tree() or dependency.is_queued_for_deletion(): return false
 	return true
@@ -823,8 +829,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		route_cells.append(battle_controller.world_to_grid(point))
 	var route_end := route_cells.back() as Vector3i
 	var initial_cost := _route_cost(path)
-	var planning_revision := battle_controller.action_service.state_revision
-	var planning_occupancy := battle_controller.grid_manager.occupancy_map.duplicate()
+	var planning := AIPlanningSnapshot.capture(battle_controller)
 	var use_goal_field := battle_controller.grid_manager.map_data.surface_placement_enabled and battle_controller.grid_manager.map_data.traversal_links.is_empty()
 	var field_start := Time.get_ticks_usec() if profiling else 0
 	var goal_costs := battle_controller.pathfinder.planning_costs_to_goal(route_end, reachable, battle_controller.grid_manager, unit) if use_goal_field else {}
@@ -852,7 +857,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 				await get_tree().process_frame
 			if not is_inside_tree() or not _should_control_unit():
 				return false
-			if battle_controller.action_service.state_revision != planning_revision or battle_controller.grid_manager.occupancy_map != planning_occupancy:
+			if planning.is_stale(battle_controller):
 				return false
 			if route_checks.size() > 16384: route_checks.clear()
 			slice_start = Time.get_ticks_usec()
@@ -862,7 +867,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		var safe := not safe_only or _is_safe_advance_cell(candidate, current_exposure)
 		if profiling: safety_usec += Time.get_ticks_usec() - safety_start
 		if not safe:
-			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Unsafe second advance"})
+			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, "Unsafe second advance"))
 			continue
 		var route_index := -1
 		var route_distance := INF
@@ -873,7 +878,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 				route_distance = distance
 				route_index = index
 		if route_index < 0 and not allow_route_detour:
-			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": "Outside useful route"})
+			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, "Outside useful route"))
 			continue
 		var route_start := Time.get_ticks_usec() if profiling else 0
 		var remaining_cost: float = goal_costs.get(candidate, INF)
@@ -896,7 +901,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, objective_route, hostiles, battle_controller.grid_manager, _policy, _squad_context)
 		if profiling: score_usec += Time.get_ticks_usec() - score_start
 		if not is_finite(float(scored.total)):
-			_last_position_candidates.append({"cell": candidate, "status": "rejected", "reason": scored.summary})
+			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, scored.summary))
 			continue
 		var revisit_penalty := 0.0
 		for index in _recent_move_origins.size():
@@ -913,18 +918,18 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_route_candidate = candidate
 			best_route_score = score
 			best_route_summary = scored.summary
-		var candidate_record := {"cell": candidate, "score": score, "status": "considered", "summary": scored.summary}
+		var candidate_components := {}
 		for component in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 			if scored.has(component):
-				candidate_record[component] = scored[component]
+				candidate_components[component] = scored[component]
+		var candidate_record := AIPositionCandidate.considered(candidate, score, scored.summary, candidate_components)
 		# A carrier must be allowed to take the least-bad valid route step. Stairs,
 		# platforms, and congestion can require a locally negative detour even while
 		# the complete path still leads toward extraction.
 		if score > _last_move_threshold or unit.is_carrying_unit():
 			options.append({"cell": candidate, "score": score, "scored": scored})
 		else:
-			candidate_record.status = "rejected"
-			candidate_record.reason = scored.summary
+			candidate_record.reject(scored.summary)
 		_last_position_candidates.append(candidate_record)
 		if score > best_score:
 			best_candidate = candidate
@@ -972,7 +977,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_adjustment = _squad_context.destination_adjustment(unit, best_candidate) if _squad_context else 0.0
 			best_summary = "%s; %s lapse: near-best tile %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
 	for candidate_record in _last_position_candidates:
-		candidate_record["chosen"] = candidate_record.get("cell", Vector3i(-1, -1, -1)) == best_candidate
+		candidate_record.mark_chosen(candidate_record.cell == best_candidate)
 	if best_candidate.x >= 0:
 		_publish_movement_preview(best_candidate, best_summary)
 	if best_candidate.x >= 0 and await battle_controller.try_move(unit, best_candidate):
@@ -1090,10 +1095,11 @@ func _find_attack_target() -> TacticalUnit:
 		if attack_query.is_legal():
 			var scored := AITargetScorer.evaluate(unit, candidate, friendlies, current_mission_intent, _objective_manager, battle_controller.grid_manager, _policy, _squad_context, attack_query)
 			var score: float = scored.total
-			var target_record := {"target": String(candidate.name), "cell": candidate.grid_position, "score": score, "status": "considered", "summary": scored.summary, "hit_chance": attack_query.hit_chance, "expected_damage": attack_query.expected_damage}
+			var target_components := {}
 			for component in ["vulnerability", "focus", "vip", "threat", "mission", "focus_count", "damage_value", "damage_on_hit"]:
-				target_record[component] = scored[component]
-			_last_target_candidates.append(target_record)
+				target_components[component] = scored[component]
+			_last_target_candidates.append(AITargetCandidate.considered(String(candidate.name), candidate.grid_position, score, scored.summary,
+				attack_query.hit_chance, attack_query.expected_damage, target_components))
 			options.append({"target": candidate, "score": score, "scored": scored})
 			if score > best_score:
 				best_target = candidate
@@ -1101,7 +1107,7 @@ func _find_attack_target() -> TacticalUnit:
 				_pending_target_note = "Target focus: %+.0f (%d allies engaged)" % [scored.focus, scored.focus_count]
 				_pending_target_scores = scored.summary
 		else:
-			_last_target_candidates.append({"target": String(candidate.name), "cell": candidate.grid_position, "status": "rejected", "reason": attack_query.reason, "code": String(attack_query.validation.code)})
+			_last_target_candidates.append(AITargetCandidate.rejected(String(candidate.name), candidate.grid_position, attack_query.reason, String(attack_query.validation.code)))
 	if options.size() > 1:
 		options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 		var scores: Array[float] = [options[0].score]
@@ -1118,7 +1124,7 @@ func _find_attack_target() -> TacticalUnit:
 			_pending_target_note = "Target focus: %+.0f (%d allies engaged)" % [selected.scored.focus, selected.scored.focus_count]
 			_pending_target_scores = "%s; %s lapse: near-best target %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
 	for target_record in _last_target_candidates:
-		target_record["chosen"] = is_instance_valid(best_target) and target_record.get("target", "") == String(best_target.name)
+		target_record.mark_chosen(is_instance_valid(best_target) and target_record.target == String(best_target.name))
 	return best_target
 
 func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
@@ -1131,6 +1137,8 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 		_squad_notes.append("Destination reserved for later allies")
 
 func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
+	# Work resumed after the battle, scene or unit went away is discarded, as in the main loop.
+	if not _dependencies_alive(): return
 	if action == "Wait":
 		_consecutive_low_value_actions += 1
 	elif action in ["Move", "Attack", "Rescue", "Extract", "Interact", "Support"]:
@@ -1143,19 +1151,36 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 	if action == "Move" and _movement_preview_pending_completion:
 		_movement_preview_pending_completion = false
 		return
-	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
-	var context := _decision_context()
-	battle_controller.record_ai_decision(unit, action, subject, reason, alternatives, current_mission_intent.get_debug_label(), notes, _last_position_scores, _pending_target_scores if action == "Attack" else "None", _last_position_candidates, _last_target_candidates, context)
+	var record := _build_decision_record(action, subject, reason, alternatives)
+	record.target_scores = _pending_target_scores if action == "Attack" else "None"
+	battle_controller.record_ai_decision(unit, record)
+
+## The facts of one decision as the controller knows them. BattleController adds the
+## fields it owns (decision id, state revision, difficulty, commander) when it publishes.
+func _build_decision_record(action: String, subject: String, reason: String, alternatives: String) -> AIDecisionRecord:
+	var record := AIDecisionRecord.new()
+	record.action = action
+	record.subject = subject
+	record.reason = reason
+	record.alternatives = alternatives
+	record.mission_goal = current_mission_intent.get_debug_label()
+	record.squad_adjustments = "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
+	record.position_scores = _last_position_scores
+	record.position_candidates = _last_position_candidates
+	record.target_candidates = _last_target_candidates
+	record.context = _decision_context()
+	return record
 
 func _publish_movement_preview(destination: Vector3i, summary: String) -> void:
+	if not _dependencies_alive(): return
 	_last_position_scores = summary
 	_movement_preview_pending_completion = true
-	var notes := "None" if _squad_notes.is_empty() else "; ".join(_squad_notes)
-	var selected_context := _decision_context()
-	selected_context.stage = "selected"
-	battle_controller.record_ai_decision(unit, "Move", str(destination), "Selected destination; movement is beginning.", "Attack, Wait", current_mission_intent.get_debug_label(), notes, _last_position_scores, "None", _last_position_candidates, _last_target_candidates, selected_context)
+	var record := _build_decision_record("Move", str(destination), "Selected destination; movement is beginning.", "Attack, Wait")
+	record.stage = AIDecisionRecord.STAGE_SELECTED
+	battle_controller.record_ai_decision(unit, record)
 
 func _wait_for_next_turn(reason: String, alternatives: String) -> bool:
+	if not _dependencies_alive(): return false
 	_record_ai_decision("Wait", unit.name, reason, alternatives)
 	return await battle_controller.try_end_unit_turn(unit, reason)
 
@@ -1165,9 +1190,9 @@ func _movement_wait_reason(prefix: String) -> String:
 	var unsafe := 0
 	var below_threshold := 0
 	for candidate in _last_position_candidates:
-		if candidate.get("status", "") != "rejected":
+		if not candidate.is_rejected():
 			continue
-		var reason := String(candidate.get("reason", ""))
+		var reason := candidate.reason
 		if reason.begins_with("Occupied by "):
 			var blocker := reason.trim_prefix("Occupied by ")
 			if not occupied_by.has(blocker): occupied_by.append(blocker)
@@ -1185,22 +1210,20 @@ func _movement_wait_reason(prefix: String) -> String:
 	if details.is_empty(): details.append("no reachable legal destination")
 	return "%s %s" % [prefix, "; ".join(details)]
 
-func _decision_context() -> Dictionary:
-	var composition := {}
+func _decision_context() -> AIDecisionContext:
+	var context := AIDecisionContext.new()
 	if _commander_policy != null and _difficulty_policy != null and _policy != null:
-		composition = _commander_policy.composition_snapshot(_difficulty_policy, _policy)
-	return {
-		"commander_composition": composition,
-		"attack_plan": _last_attack_plan.duplicate(),
-		"grid_position": unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1),
-		"remaining_ap": unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1,
-		"recent_move_origins": _recent_move_origins.duplicate(),
-		"consecutive_low_value_actions": _consecutive_low_value_actions,
-		"hold_score": _optional_score(_last_hold_score),
-		"move_acceptance_threshold": _optional_score(_last_move_threshold),
-		"urgency_bonus": _last_urgency_bonus,
-		"route_corridor": _last_route_corridor,
-	}
+		context.commander_composition = _commander_policy.composition_snapshot(_difficulty_policy, _policy)
+	context.attack_plan = _last_attack_plan.duplicate()
+	context.grid_position = unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1)
+	context.remaining_ap = unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1
+	context.recent_move_origins = _recent_move_origins.duplicate()
+	context.consecutive_low_value_actions = _consecutive_low_value_actions
+	context.hold_score = _optional_score(_last_hold_score)
+	context.move_acceptance_threshold = _optional_score(_last_move_threshold)
+	context.urgency_bonus = _last_urgency_bonus
+	context.route_corridor = _last_route_corridor
+	return context
 
 func _optional_score(value: float) -> Variant:
 	if is_nan(value):

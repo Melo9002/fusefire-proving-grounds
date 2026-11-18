@@ -178,9 +178,45 @@ func choose_target(unit: TacticalUnit) -> TacticalUnit:
 	return ai._find_attack_target()
 
 
+## One real movement plan toward a hostile (the AI's own planning and commit path) without
+## ending the unit's turn, so a test can follow it with another decision in the same battle.
+func plan_move_toward(unit: TacticalUnit, target: TacticalUnit, host: SceneTree) -> Dictionary:
+	await settle(host, unit)
+	decisions.clear()
+	outcomes.clear()
+	var ai := ai_of(unit)
+	act_as(unit)
+	# Assign the flag directly: the setter makes every AI controller start its own activation.
+	if unit.faction == TacticalUnit.Faction.PLAYER: battle.debug_player_ai = true
+	ai._ensure_policy()
+	ai._squad_context = battle.get_squad_context(unit)
+	ai.current_mission_intent = ai._get_ai_mission_intent()
+	var moved: bool = await ai._move_toward(target)
+	await settle(host, unit)
+	return {
+		"moved": moved, "end": grid.get_unit_grid(unit),
+		"decisions": decisions.duplicate(true), "outcomes": outcomes.duplicate(true),
+		"committed": outcomes.filter(func(o): return o.stage == "committed").map(func(o): return String(o.action)),
+	}
+
 ## Runs the real activation (every AP the unit can spend) and returns what it did.
 ## Everything committed goes through the authoritative action service.
+## Presentation (movement, shots) can outlive the committed action when rendered. Wait for the
+## battle to go idle so the next setup starts from a quiet scene, as headless runs already do.
+func settle(host: SceneTree, unit = null, seconds := 6.0) -> void:
+	var frames := ceili(seconds / 0.05)
+	for frame in frames:
+		var moving: bool = unit != null and is_instance_valid(unit) and not unit.is_queued_for_deletion() and unit.is_moving
+		if not is_instance_valid(battle) or (not battle.action_service.is_busy and not battle.is_action_in_progress and not moving):
+			return
+		await host.create_timer(0.05).timeout
+
 func activate(unit: TacticalUnit, host: SceneTree) -> Dictionary:
+	await settle(host, unit)
+	# A previous activation ends its turn; the turn manager finishes that with deferred calls.
+	# Let them land before taking control, or they can change the active unit mid-decision.
+	await host.process_frame
+	await host.process_frame
 	decisions.clear()
 	outcomes.clear()
 	var ai := ai_of(unit)
@@ -188,8 +224,10 @@ func activate(unit: TacticalUnit, host: SceneTree) -> Dictionary:
 	var start := grid.get_unit_grid(unit)
 	var ap_before := unit.stats.current_ap
 	act_as(unit)
-	if unit.faction == TacticalUnit.Faction.PLAYER: battle.set_debug_player_ai(true)
+	# Assign the flag directly: the setter makes every AI controller start its own activation.
+	if unit.faction == TacticalUnit.Faction.PLAYER: battle.debug_player_ai = true
 	await ai._run_activation()
+	await settle(host, unit)
 	# A unit that extracted is removed from the battle; report that instead of reading a freed node.
 	var present := is_instance_valid(unit) and not unit.is_queued_for_deletion()
 	return {
