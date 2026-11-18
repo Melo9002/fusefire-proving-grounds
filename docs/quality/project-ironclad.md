@@ -103,7 +103,7 @@ Run long scripts directly when their subsystem changes. Run capture scripts with
 
 ## Current limitations
 
-- No CI execution or hosted artifact retention.
+- CI runs only the smoke tier (see GitHub smoke automation below). The full subsystem tiers and the explicit-only batches are not run on GitHub, and artifacts are retained only for failed smoke runs.
 - No screenshot comparison, performance budget, coverage percentage, or flaky-test history.
 - Suite classification is filename-based and intentionally lightweight.
 - Individual GDScript tests report their own internal checks differently, so Ironclad reports honest suite counts rather than inventing assertion totals.
@@ -117,7 +117,7 @@ Retired map-specific suites are preserved in the outside-project quarantine reco
 
 `.github/workflows/ironclad-smoke.yml` runs the existing smoke tier on pushes and pull requests targeting `main`. The Windows job downloads the official Godot 4.7.2 stable archive from `godotengine/godot-builds`, verifies its pinned SHA-256, and passes the extracted executable directly to this runner. It has read-only repository permissions and uploads only `artifacts/test-results/` when the job fails.
 
-This workflow has been validated locally for structure, paths, engine version and runner behavior. Its first GitHub-hosted execution still requires a future push or pull request.
+The workflow runs on GitHub-hosted runners on each push to `main`; the runs checked on 2026-11-18 all passed. Pull-request runs were not checked. It exercises only the smoke tier, so passing it does not replace the subsystem suites for a shared or risky change.
 
 
 ## Audit follow-up coverage — 2026-11-15
