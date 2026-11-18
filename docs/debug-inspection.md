@@ -12,6 +12,19 @@ Hover a destination in battle, then press **F3**. The battle pauses and the pane
 | Diagnostics | Existing map, zones, links, trajectory, AI explanation and scoring overlays. |
 | Control / Mission | Existing developer commands, separate from read-only inspection. These can change the battle. |
 
+## Decision visualization
+
+Read-only tools for following what the AI decided and why. They show the decision records as made; nothing is recomputed, no AP is spent, no combat RNG is consumed and no squad context is created.
+
+| Tool | Where | What it shows |
+| --- | --- | --- |
+| **Timeline** | Timeline tab | The last 80 AI decisions, newest first, tagged `[committed]` or `[rejected]` once the action service has answered. Selecting one turns the scoring overlay on, redraws that decision's heatmap and arrows, and shows its details: goal, reason, alternatives, outcome, the best moves with a score-component bar for each (progress, cover, exposure, firing, danger, squad; one shared scale, `#` helps and `-` hurts), the rejected moves grouped by reason, and the targets with chance and expected damage. |
+| **Route arrow** | 3D view, scoring overlay | An arrow from the acting unit to its chosen destination for Move decisions. |
+| **Target lines** | 3D view, scoring overlay | A line to every target the unit considered: thick and bright for the chosen one, colored by score for the others. Rejected targets appear only if rejected cells are shown. |
+| **Squad reservations** | Diagnostics, "Show squad reservations" | Cyan squares for reserved destinations (labelled with the owner), green for the carrier's reserved corridor, magenta diamonds under the targets squads committed to. Both teams are shown. |
+
+An Attack decision does not choose a tile, so its heatmap and movement list are hidden (the record still carries the last movement plan's candidates; the details label them as such).
+
 Shots and destination feedback use the same queries/text as gameplay. Capture runs **before** F3 pauses the tree; otherwise legal actions would misleadingly report that the battle is paused. Already-paused inspection reports action snapshots unavailable. Target inspection is bounded to the first eight hostile actor IDs in sorted order; the full manifest remains in map/replay data.
 
 A changed action revision or a developer mission command marks the snapshot **STALE**. Close and reopen F3 to refresh it. Opening/browsing the inspection does not spend AP, commit actions, consume combat RNG or create squad contexts. Closing the panel releases only a pause it owns; removing an open panel also releases that pause.

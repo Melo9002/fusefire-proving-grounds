@@ -5,6 +5,8 @@ const DebugMapInspectorData := preload("res://presentation/overlays/debug_map_in
 const DebugMissionControllerData := preload("res://systems/debug_mission_controller.gd")
 const DebugInspection := preload("res://ui/debug_inspection_snapshot.gd")
 const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_overlay.gd")
+const AIReservationOverlayData := preload("res://presentation/overlays/ai_reservation_overlay.gd")
+const DECISION_HISTORY_LIMIT := 80
 
 @export_group("Debug Availability")
 @export var debug_tools_enabled: bool = true
@@ -46,6 +48,13 @@ var _inspected_destination := Vector3i(-1, -1, -1)
 var _show_ai_decisions: bool = false
 var _latest_ai_decision: Dictionary = {}
 var _latest_ai_outcome: Dictionary = {}
+var _ai_reservation_overlay: Node3D
+var _ai_reservation_toggle: CheckButton
+## Recent decisions, oldest first, and their authoritative outcomes by decision id.
+var _decision_history: Array[Dictionary] = []
+var _decision_outcomes: Dictionary = {}
+var _timeline_list: ItemList
+var _timeline_details: RichTextLabel
 var _inspection_snapshot: Dictionary = {}
 var _inspection_labels: Dictionary = {}
 var _inspection_status: Label
@@ -64,6 +73,7 @@ func _ready() -> void:
 	_build_interface()
 	_build_map_inspector()
 	_build_ai_scoring_overlay()
+	_build_ai_reservation_overlay()
 	_build_mission_controller()
 	battle_controller.ai_decision_recorded.connect(_on_ai_decision_recorded)
 	battle_controller.ai_action_outcome_recorded.connect(_on_ai_action_outcome)
@@ -255,7 +265,7 @@ func _build_interface() -> void:
 	tabs.custom_minimum_size = Vector2(0, 0)
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tabs.use_hidden_tabs_for_min_size = false
-	for section in ["Unit", "Tactical", "AI", "Map", "Runtime"]:
+	for section in ["Unit", "Tactical", "AI", "Timeline", "Map", "Runtime"]:
 		_build_inspection_section(tabs, section)
 	content.add_child(tabs)
 	var diagnostics_scroll := ScrollContainer.new()
@@ -324,6 +334,12 @@ func _build_interface() -> void:
 	_ai_scoring_toggle.tooltip_text = "Shows a movement-score heatmap, considered targets, and the chosen plan. Rejected reasons remain in the details panel."
 	_ai_scoring_toggle.toggled.connect(_set_ai_scoring_visible)
 	diagnostics.add_child(_ai_scoring_toggle)
+
+	_ai_reservation_toggle = CheckButton.new()
+	_ai_reservation_toggle.text = "Show squad reservations"
+	_ai_reservation_toggle.tooltip_text = "Cyan: reserved destinations (with owner). Green: the carrier's reserved corridor. Magenta: targets squads have committed to."
+	_ai_reservation_toggle.toggled.connect(_set_ai_reservations_visible)
+	diagnostics.add_child(_ai_reservation_toggle)
 
 	_manual_enemy_toggle = CheckButton.new()
 	_manual_enemy_toggle.text = "Manual enemy control"
@@ -450,7 +466,8 @@ func _set_ai_scoring_visible(enabled: bool) -> void:
 func _update_ai_scoring_details(record: Dictionary) -> void:
 	if not _ai_scoring_label:
 		return
-	var positions: Array = record.get("position_candidates", [])
+	# An attack chooses no tile; its record still carries the last movement plan, which would mislead here.
+	var positions: Array = record.get("position_candidates", []) if String(record.get("action", "")) != "Attack" else []
 	var targets: Array = record.get("target_candidates", [])
 	var legal_positions: Array = positions.filter(func(candidate: Dictionary): return candidate.get("status", "") != "rejected")
 	legal_positions.sort_custom(func(a: Dictionary, b: Dictionary): return float(a.get("score", -INF)) > float(b.get("score", -INF)))
@@ -589,6 +606,11 @@ func _update_map_inspection() -> void:
 
 func _on_ai_decision_recorded(record: Dictionary) -> void:
 	_latest_ai_decision = record
+	_decision_history.append(record)
+	if _decision_history.size() > DECISION_HISTORY_LIMIT:
+		_decision_outcomes.erase(_decision_history.pop_front().get("decision_id", 0))
+	_refresh_timeline()
+	_refresh_reservations()
 	if _ai_scoring_overlay:
 		_ai_scoring_overlay.display(record)
 	if _ai_scoring_toggle and _ai_scoring_toggle.button_pressed:
@@ -670,6 +692,17 @@ func _build_inspection_section(tabs: TabContainer, section: String) -> void:
 		_manifest_toggle.text = "Show technical manifest (recorded parcel/population choices)"
 		_manifest_toggle.toggled.connect(func(_enabled: bool): _show_map_snapshot())
 		column.add_child(_manifest_toggle)
+	if section == "Timeline":
+		var hint := Label.new()
+		hint.text = "Recent AI decisions, newest first. Select one to redraw its heatmap, route arrow and target lines."
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(hint)
+		_timeline_list = ItemList.new()
+		_timeline_list.name = "DecisionTimeline"
+		_timeline_list.custom_minimum_size = Vector2(0, 130)
+		_timeline_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_timeline_list.item_selected.connect(_select_timeline_entry)
+		column.add_child(_timeline_list)
 	var details := RichTextLabel.new()
 	details.name = "InspectionText"
 	details.selection_enabled = true
@@ -677,6 +710,13 @@ func _build_inspection_section(tabs: TabContainer, section: String) -> void:
 	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details.custom_minimum_size = Vector2(0, 220)
 	details.bbcode_enabled = false
+	if section == "Timeline":
+		details.custom_minimum_size = Vector2(0, 150)
+		var mono := SystemFont.new()
+		mono.font_names = PackedStringArray(["Consolas", "Courier New", "monospace"])
+		details.add_theme_font_override("normal_font", mono)
+		details.add_theme_font_size_override("normal_font_size", 13)
+		_timeline_details = details
 	column.add_child(details)
 	_inspection_labels[section] = details
 
@@ -723,6 +763,9 @@ func _exit_tree() -> void:
 
 func _on_ai_action_outcome(record: Dictionary) -> void:
 	_latest_ai_outcome = record.duplicate(true)
+	if int(record.get("decision_id", 0)) > 0:
+		_decision_outcomes[int(record.decision_id)] = _latest_ai_outcome
+		_refresh_timeline()
 	if int(record.get("decision_id", 0)) > 0 and record.get("decision_id") == _latest_ai_decision.get("decision_id"):
 		_ai_decision_label.text += "\nOutcome: " + _format_ai_outcome()
 
@@ -735,3 +778,136 @@ func _format_ai_outcome() -> String:
 	else:
 		text += "\n" + String(record.get("reason", "Rejected"))
 	return text
+
+# ---- Decision timeline, squad reservations and score bars (read-only visualization) ----
+
+func _build_ai_reservation_overlay() -> void:
+	if not presentation_root:
+		return
+	_ai_reservation_overlay = AIReservationOverlayData.new()
+	_ai_reservation_overlay.name = "AIReservationOverlay"
+	_ai_reservation_overlay.grid_manager = grid_manager
+	presentation_root.add_child.call_deferred(_ai_reservation_overlay)
+
+func _set_ai_reservations_visible(enabled: bool) -> void:
+	if _ai_reservation_overlay:
+		_ai_reservation_overlay.set_overlay_enabled(enabled)
+	_refresh_reservations()
+
+## Both teams' current claims, read from existing contexts. Never creates or resets one.
+func _collect_reservations() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	if not battle_controller or not turn_manager:
+		return entries
+	for roster in [turn_manager.player_units, turn_manager.enemy_units]:
+		var representative: TacticalUnit = null
+		for candidate in roster:
+			if is_instance_valid(candidate):
+				representative = candidate
+				break
+		var context: SquadContext = battle_controller.peek_squad_context(representative) if representative else null
+		if context == null:
+			continue
+		for cell in context.reserved_destinations:
+			entries.append({"cell": cell, "kind": "destination", "owner": String(context.reserved_destinations[cell])})
+		for cell in context.reserved_corridor:
+			entries.append({"cell": cell, "kind": "corridor", "owner": String(context.corridor_owner)})
+		for target_id in context.intended_targets:
+			if int(context.intended_targets[target_id]) <= 0:
+				continue
+			var target := battle_controller.action_service.actor_registry.resolve(target_id)
+			if is_instance_valid(target):
+				entries.append({"cell": target.grid_position, "kind": "target", "owner": String(target_id)})
+	return entries
+
+func _refresh_reservations() -> void:
+	if _ai_reservation_overlay and _ai_reservation_overlay.overlay_enabled:
+		_ai_reservation_overlay.show_entries(_collect_reservations())
+
+func _timeline_entry_text(record: Dictionary) -> String:
+	var outcome: Dictionary = _decision_outcomes.get(int(record.get("decision_id", 0)), {})
+	var tag := ""
+	if not outcome.is_empty():
+		tag = "  [%s]" % String(outcome.get("stage", ""))
+	return "#%s  %s · %s %s%s" % [record.get("decision_id", "?"), record.get("actor", "?"), record.get("action", "?"), record.get("subject", ""), tag]
+
+func _refresh_timeline() -> void:
+	if _timeline_list == null:
+		return
+	_timeline_list.clear()
+	for index in range(_decision_history.size() - 1, -1, -1):
+		var record := _decision_history[index]
+		var item := _timeline_list.add_item(_timeline_entry_text(record))
+		_timeline_list.set_item_metadata(item, index)
+		if record.get("stage", "") == "selected":
+			_timeline_list.set_item_custom_fg_color(item, Color(1.0, 0.82, 0.35))
+
+func _select_timeline_entry(item: int) -> void:
+	var index: int = _timeline_list.get_item_metadata(item)
+	if index < 0 or index >= _decision_history.size():
+		return
+	var record := _decision_history[index]
+	if _ai_scoring_toggle and not _ai_scoring_toggle.button_pressed:
+		_ai_scoring_toggle.button_pressed = true
+	if _ai_scoring_overlay:
+		_ai_scoring_overlay.display(record)
+	_update_ai_scoring_details(record)
+	_timeline_details.text = _format_decision_detail(record)
+
+## "#####." style bars: filled cells scale with the component's size, "-" marks a penalty.
+static func score_bar(value: float, scale_value: float, width := 8) -> String:
+	var filled := clampi(roundi(absf(value) / maxf(scale_value, 0.001) * float(width)), 0, width)
+	if filled == 0 and absf(value) >= 0.5:
+		filled = 1
+	return "[" + ((("#" if value >= 0.0 else "-").repeat(filled)).rpad(width, ".")) + "]"
+
+func _format_decision_detail(record: Dictionary) -> String:
+	var lines: Array[String] = [
+		"%s  #%s  %s %s  (%s, revision %s)" % [record.get("actor", "?"), record.get("decision_id", "?"), record.get("action", "?"), record.get("subject", ""), record.get("stage", "explanation"), record.get("state_revision", "?")],
+		"Goal: %s | Commander: %s | %s" % [record.get("mission_goal", "None"), record.get("commander_policy", "-"), record.get("difficulty", "-")],
+		"Reason: %s" % record.get("reason", ""),
+		"Alternatives: %s" % record.get("alternatives", ""),
+	]
+	var outcome: Dictionary = _decision_outcomes.get(int(record.get("decision_id", 0)), {})
+	if not outcome.is_empty():
+		lines.append("Outcome: %s" % ("committed (transaction %s)" % outcome.get("transaction_id", "?") if outcome.get("stage") == "committed" else "REJECTED — %s" % outcome.get("reason", "")))
+	var positions: Array = record.get("position_candidates", [])
+	var scored: Array = positions.filter(func(c: Dictionary) -> bool: return c.get("status", "") != "rejected" and c.has("score"))
+	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.score) > float(b.score))
+	if not scored.is_empty():
+		var scale_value := 1.0
+		for candidate in scored.slice(0, 6):
+			for key in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
+				scale_value = maxf(scale_value, absf(float(candidate.get(key, 0.0))))
+		lines.append("")
+		lines.append("MOVES  (bars share one scale; # helps, - hurts)" if String(record.get("action", "")) != "Attack" else "LAST MOVEMENT PLAN  (from earlier this activation; an attack chooses no tile)")
+		for candidate in scored.slice(0, 6):
+			lines.append("%s %+.1f%s" % [candidate.cell, float(candidate.score), "  <- CHOSEN" if candidate.get("chosen", false) else ""])
+			var parts: Array[String] = []
+			for key in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
+				if candidate.has(key):
+					parts.append("%s %+.0f %s" % [key, float(candidate[key]), score_bar(float(candidate[key]), scale_value, 6)])
+			if not parts.is_empty(): lines.append("   " + "   ".join(parts))
+	var reasons := {}
+	for candidate in positions:
+		if candidate.get("status", "") == "rejected":
+			var why := String(candidate.get("reason", "No score"))
+			if why.length() > 60: why = why.substr(0, 60) + "…"
+			reasons[why] = int(reasons.get(why, 0)) + 1
+	if not reasons.is_empty():
+		lines.append("")
+		lines.append("REJECTED MOVES")
+		for why in reasons:
+			lines.append("%4d × %s" % [reasons[why], why])
+	var targets: Array = record.get("target_candidates", [])
+	if not targets.is_empty():
+		lines.append("")
+		lines.append("TARGETS")
+		for candidate in targets:
+			if candidate.get("status", "") == "rejected":
+				lines.append("%s REJECTED — %s" % [candidate.get("target", "?"), candidate.get("reason", "")])
+			else:
+				lines.append("%s %+.1f%s | %s%% x %s dmg = %.1f | %s" % [candidate.get("target", "?"), float(candidate.score), "  <- CHOSEN" if candidate.get("chosen", false) else "", candidate.get("hit_chance", "?"), candidate.get("damage_on_hit", "?"), float(candidate.get("expected_damage", 0.0)), candidate.get("summary", "")])
+	lines.append("")
+	lines.append("Squad: %s" % record.get("squad_adjustments", "None"))
+	return "\n".join(lines)
