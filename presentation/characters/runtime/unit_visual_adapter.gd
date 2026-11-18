@@ -215,6 +215,36 @@ func _sync_aim_hold(delta: float) -> void:
 		if state in AIM_SETTLE_STATES: _settle_aim_pose(state)
 		else: _retarget_aim_blend()
 
+## Low cover: crouch only as deep as the cover is tall (never beyond what a person can), turned
+## with the back to the wall while hiding, and facing the wall, eyes just over the top, to aim.
+## Presentation only.
+const COVER_HEAD_CLEARANCE := 0.05
+const COVER_EYE_CLEARANCE := 0.05
+const EYE_BELOW_HEAD_TOP := 0.12
+const CROUCH_SPEED := 1.1
+const HIDE_YAW_DEGREES := -150.0
+const COVER_TURN_DEGREES_PER_SECOND := 320.0
+var _crouch_depth := 0.0
+var _cover_yaw := 0.0
+
+func _cover_crouch_target() -> float:
+	if crouch_modifier == null or get_presentation_state() != &"cover_low" or last_cover_contact.get("type", MapCellData.CoverType.NONE) != MapCellData.CoverType.LOW:
+		return 0.0
+	var cover_height: float = last_cover_contact.get("height", 0.0)
+	var hide := crouch_modifier.standing_head_height - (cover_height - COVER_HEAD_CLEARANCE)
+	var peek := crouch_modifier.standing_head_height - EYE_BELOW_HEAD_TOP - (cover_height + COVER_EYE_CLEARANCE)
+	return crouch_modifier.clamp_depth(lerpf(hide, peek, aim_blend))
+
+func _sync_cover_crouch(delta: float) -> void:
+	if crouch_modifier == null:
+		return
+	var in_low_cover: bool = get_presentation_state() == &"cover_low" and last_cover_contact.get("type", MapCellData.CoverType.NONE) == MapCellData.CoverType.LOW
+	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), CROUCH_SPEED * delta)
+	crouch_modifier.depth = _crouch_depth
+	var yaw_target := deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - aim_blend) if in_low_cover else 0.0
+	_cover_yaw = rotate_toward(_cover_yaw, yaw_target, deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
+	character_root.rotation.y = _cover_yaw
+
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
 		# Keep the cover pose; only the weapon comes up or goes down.
@@ -278,6 +308,7 @@ func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
 	_sync_aim_hold(delta)
+	_sync_cover_crouch(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 

@@ -25,6 +25,7 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
+var crouch_modifier: CoverCrouchModifier
 var weapon_attachment: BoneAttachment3D
 var weapon: Node3D
 var support_hand_target: Node3D
@@ -164,6 +165,32 @@ func _build_animation_controller() -> void:
 	animation_controller.clip_library = clip_library
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
+	_build_crouch_modifier()
+
+
+## Procedural crouch layer: runs after the animation and before the arm IK, so the arms and
+## the weapon follow the lowered body.
+func _build_crouch_modifier() -> void:
+	var mixamo := skeleton.find_bone(&"mixamorig_Hips") >= 0
+	var bones := {
+		"hips": &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips",
+		"left_upper": &"mixamorig_LeftUpLeg" if mixamo else &"J_Bip_L_UpperLeg",
+		"left_lower": &"mixamorig_LeftLeg" if mixamo else &"J_Bip_L_LowerLeg",
+		"left_foot": &"mixamorig_LeftFoot" if mixamo else &"J_Bip_L_Foot",
+		"right_upper": &"mixamorig_RightUpLeg" if mixamo else &"J_Bip_R_UpperLeg",
+		"right_lower": &"mixamorig_RightLeg" if mixamo else &"J_Bip_R_LowerLeg",
+		"right_foot": &"mixamorig_RightFoot" if mixamo else &"J_Bip_R_Foot",
+		"spine": [&"mixamorig_Spine", &"mixamorig_Spine1"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest"],
+		"head_top": &"mixamorig_HeadTop_End" if mixamo else &"J_Bip_C_Head",
+	}
+	crouch_modifier = CoverCrouchModifier.new()
+	crouch_modifier.name = "CoverCrouch"
+	if not crouch_modifier.setup(skeleton, bones, character_root.global_basis.z):
+		crouch_modifier = null
+		return
+	skeleton.add_child(crouch_modifier)
+	if is_instance_valid(arm_ik):
+		skeleton.move_child(crouch_modifier, arm_ik.get_index())
 
 
 func _configure_chain(
@@ -214,9 +241,12 @@ func _update_weapon_pose() -> void:
 	ready_grip.y += sin(_carry_phase) * 0.008 * carry_motion_blend
 	# Only a few millimetres of stock compression; avoid the old 6.5 cm slide
 	# through the shoulder. Upper-body animation supplies the visible kick.
+	# While crouched, the low-ready grip and the elbows travel with the lowered body.
+	var body_offset := crouch_modifier.carried_offset() if crouch_modifier != null else Vector3.ZERO
+	ready_grip += body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, aim_blend) + Vector3(0, 0, -recoil * 0.08)
-	right_elbow_pole.position = right_elbow_ready.lerp(right_elbow_aim, aim_blend)
-	left_elbow_pole.position = left_elbow_ready.lerp(left_elbow_aim, aim_blend)
+	right_elbow_pole.position = (right_elbow_ready + body_offset).lerp(right_elbow_aim, aim_blend)
+	left_elbow_pole.position = (left_elbow_ready + body_offset).lerp(left_elbow_aim, aim_blend)
 	# Predict the support marker in the current pose before solving either arm.
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):

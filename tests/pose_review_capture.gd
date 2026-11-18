@@ -3,6 +3,7 @@ extends SceneTree
 ## front, side, back, three-quarter, and the view from the eye along the sight line.
 ##   godot_console --path . --script res://tests/pose_review_capture.gd -- <directory> <tag> [state,state,...]
 ## Fixed cameras make before/after comparisons honest. Output: <directory>/<tag>-<state>.png
+## A state may carry a low-cover height and an aim flag: cover_low@0.9 (hiding), cover_low@0.9+aim.
 const DEFAULT_STATES := "rifle_idle,aim,shoot,cover_low,cover_high"
 const TILE := Vector2i(320, 440)
 
@@ -61,10 +62,19 @@ func _run() -> void:
 	for i in 20: await process_frame
 	DirAccess.make_dir_recursive_absolute(directory)
 	var look := Vector3(0, 0.9, 0)
-	for state in states:
+	for entry in states:
+		var state := entry.split("@")[0]
+		rig._aim_held = entry.ends_with("+aim")
+		rig._aim_release_left = 1000000.0
+		if "@" in entry:
+			var cover_height := float(entry.split("@")[1].split("+")[0])
+			rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": cover_height, "direction": Vector3.FORWARD}
+		else:
+			rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 		rig.animation_controller.play(StringName(state))
+		rig._retarget_aim_blend()
 		for i in 40: await process_frame
-		await create_timer(0.8).timeout
+		await create_timer(1.6).timeout
 		var tiles: Array[Image] = []
 		tiles.append(await _snap(camera, Vector3(0, 1.1, 2.7), look))       # front
 		tiles.append(await _snap(camera, Vector3(2.7, 1.1, 0), look))       # side (character's left)
@@ -79,6 +89,6 @@ func _run() -> void:
 		var sheet := Image.create(TILE.x * tiles.size(), TILE.y, false, Image.FORMAT_RGB8)
 		for index in tiles.size():
 			sheet.blit_rect(tiles[index], Rect2i(Vector2i.ZERO, TILE), Vector2i(index * TILE.x, 0))
-		sheet.save_png(directory.path_join("%s-%s.png" % [tag, state]))
-		print("REVIEW saved ", state)
+		sheet.save_png(directory.path_join("%s-%s.png" % [tag, entry.replace("@", "_").replace("+", "_")]))
+		print("REVIEW saved ", entry)
 	quit(0)

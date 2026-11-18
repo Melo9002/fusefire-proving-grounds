@@ -31,6 +31,7 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 				best_score = score
 				result = contact
 				result.type = MapCellData.CoverType.FULL if part.end.y - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
+				result.height = part.end.y - ground.world_position.y
 				result.stand_position = ground.world_position
 	# Round assets: pose against the real curved wall, not the tile-sized stand-in.
 	if grid.map_data.surface_placement_enabled:
@@ -41,6 +42,7 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 				best_score = wall_score
 				result = wall.duplicate()
 				result.type = MapCellData.CoverType.FULL if entry.top - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
+				result.height = entry.top - ground.world_position.y
 				result.stand_position = ground.world_position
 	return result
 

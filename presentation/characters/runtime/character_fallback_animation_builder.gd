@@ -83,7 +83,7 @@ func _make_tactical_pose(pose: StringName) -> Animation:
 		var a := thigh * (0.35 if alternating and side == "R" else 1.0)
 		var b := thigh * (0.35 if alternating and side == "L" else 1.0)
 		# Mirrored hip abduction: a deep crouch needs the knees apart, not pinched under the hips.
-		var spread := (SPREAD_SIGN if side == "L" else -SPREAD_SIGN) * (7.0 if pose == &"cover_low" else 0.0)
+		var spread := (SPREAD_SIGN if side == "L" else -SPREAD_SIGN) * 0.0
 		_add_rotation(animation, upper, times, [_rotation(a, 0, spread), _rotation(b, 0, spread), Quaternion.IDENTITY if landing else _rotation(a, 0, spread)])
 		_add_rotation(animation, lower, times, [_rotation(knee, 0, 0), _rotation(knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(knee, 0, 0)])
 		_add_rotation(animation, foot, times, [_rotation(-a - knee, 0, 0), _rotation(-b - knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(-a - knee, 0, 0)])
