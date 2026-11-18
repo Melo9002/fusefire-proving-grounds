@@ -15,6 +15,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [Issue sweep](issue-sweep-2026-11-18.md) | The small issues settled in one pass: #2, #3, #16, #21, #31, #44, with evidence and what was left alone. |
 | [AI step 6 results](ai-step6-results-2026-11-18.md) | What shipped (typed plans, kill-probability finishing, Move then Attack), the baseline effect, shot-quality measurements and the limits. |
 | [AI step 6 design](ai-step6-design-2026-11-18.md) | Audit and design for scoring the actual proposed action: what is already done, the gaps, and the slices. |
+| [Unit classes brainstorm](unit-classes-brainstorm-2026-11-18.md) | Design notes (not implemented): the omnidirectional Bulwark, its weaknesses, the first-unit model and future class ideas. |
 | [AI hard constraints, step 5](ai-constraints-2026-11-18.md) | Where legality is enforced, named blockers and shared-query reasons, explicit squad vetoes, and the 48-match proof. |
 
 ## Project documents these build on
