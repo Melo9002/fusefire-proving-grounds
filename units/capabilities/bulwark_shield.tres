@@ -6,8 +6,8 @@
 script = ExtResource("1")
 stance_ap_cost = 1
 protected_arc_degrees = 360.0
-damage_multiplier = 0.7
-accuracy_modifier = -20
+damage_multiplier = 0.5
+accuracy_modifier = -30
 attacks_allowed = false
 reload_allowed = false
 max_attacks_covered = 2

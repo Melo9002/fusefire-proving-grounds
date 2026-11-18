@@ -51,6 +51,8 @@ func _run() -> void:
 	await _easy_does_not_reposition()
 	await _shield_when_stuck_under_fire()
 	await _no_shield_without_a_threat()
+	await _shield_over_last_shot()
+	await _shot_over_shield_for_a_kill()
 	await _extraction_in_zone()
 	await _extraction_en_route()
 	await _rescue_pickup()
@@ -319,6 +321,46 @@ func _no_shield_without_a_threat() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S10b")
 	check(not ("shield" in r.committed) and not actor.tactical_state.is_shielding, "S10b: with no shooter in range the unit does not Shield (committed %s)" % str(r.committed))
+	await f.dispose(self)
+
+func _bulwark_in_the_open(enemy_count: int, ap: int) -> Array:
+	var f := Fixture.new()
+	await f.setup(self, 1, enemy_count, 0, null, AIDifficultyPolicy.Tier.HARD)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	f.place(actor, Vector3i(10, 0, 12))
+	var cells: Array[Vector3i] = [Vector3i(18, 0, 12), Vector3i(18, 0, 14), Vector3i(18, 0, 10)]
+	for index in enemy_count:
+		var enemy: TacticalUnit = f.turns.enemy_units[index]
+		f.place(enemy, cells[index])
+		enemy.attack_range = 10
+	actor.shield_capability = load("res://units/capabilities/bulwark_shield.tres")
+	f.ready_actor(actor, ap)
+	return [f, actor]
+
+## S10c The last AP: three attackers can shoot a Bulwark and the stance prevents more than one more shot
+## would deal. It shoots with its earlier AP, then holds the stance with the last one ("attack, Shield").
+func _shield_over_last_shot() -> void:
+	var setup: Array = await _bulwark_in_the_open(3, 2)
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S10c")
+	check(r.committed == ["attack", "shield"], "S10c: shoots first, holds the stance with the last AP (committed %s)" % str(r.committed))
+	var reasons := ""
+	for decision in r.decisions: reasons += String(decision.reason) + " | "
+	check(reasons.contains("last shot"), "S10c: the decision says it chose the stance over the last shot (%s)" % reasons.substr(0, 260))
+	check(actor.tactical_state.is_shielding, "S10c: the stance is active")
+	await f.dispose(self)
+
+## S10d The same unit against one nearly dead target: the last shot is worth more than the stance, so it fires.
+func _shot_over_shield_for_a_kill() -> void:
+	var setup: Array = await _bulwark_in_the_open(1, 2)
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	f.turns.enemy_units[0].stats.current_hp = 10
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S10d")
+	check(not ("shield" in r.committed) and "attack" in r.committed and not actor.tactical_state.is_shielding, "S10d: a finishing shot (aimed or not) is not given up for the stance (committed %s)" % str(r.committed))
 	await f.dispose(self)
 
 func _extract_fixture():

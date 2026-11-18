@@ -87,7 +87,7 @@ Always when combat numbers change:
 ## What shipped (first Bulwark)
 
 - **Archetype `bulwark`** (`units/archetypes/bulwark.tres`): speed 4 (baseline 5), attack range 8 (battle default 10), 3 AP, 110 HP, yellow stripe (tuned by AI-versus-AI trials, below). It is added at the end of the catalog, so it appears last in the match-setup roster. The older `shieldbearer` stays as the lab preset with the original 120° Shield.
-- **Shield `bulwark_shield.tres`**: 360° arc (omnidirectional), accuracy modifier −20, damage multiplier 0.7, 1 AP, no attacking or reloading while it is up, and a **capacity of 2 covered attacks** per stance.
+- **Shield `bulwark_shield.tres`**: 360° arc (omnidirectional), accuracy modifier −30, damage multiplier 0.5, 1 AP (strengthened after the Shield trial below), no attacking or reloading while it is up, and a **capacity of 2 covered attacks** per stance.
 - **Capacity rule** (`ShieldCapability.max_attacks_covered`, 0 = unlimited): every attack the shield covers (a shot, a Guard reaction or a retaliation) counts; once the count reaches the capacity, later attacks get no protection and the attack preview says "Shield overwhelmed". The count lives in `TacticalState.shield_attacks_covered`, resets when the stance is made or ends (next activation), is part of the replay fingerprint only when it is above zero, and joins the shield signature only when the capacity is set. The original Shield is therefore unchanged: same behaviour, same signature, same fingerprint.
 - **AI**: the Shield plan values only as many attackers as the capacity covers (the most valuable first); with a 360° arc all attackers are in the arc, so the facing choice no longer matters.
 - **HUD**: the state label reads `SHIELD ALL-ROUND n/2` (attacks still covered); the Shield tooltip says the arm tracks every attacker and states the capacity.
@@ -133,3 +133,20 @@ Reading, with limits:
 - 16 matches per row: a result has roughly a plus or minus 12 point margin. These rows rank candidates; they do not prove balance. One map, one mode, one difficulty, and the same AI plays both sides.
 - **The AI never kites and rarely uses Shield.** Across all the Bulwark and Skirmisher matches it took the stance only a handful of times, and a replay run of 16 class matches saw no covered attack. So the Bulwark numbers above are mostly the balance of a slow, short-ranged unit with extra HP, and the Skirmisher gets almost nothing from its speed. That is why the adopted Skirmisher has *more* HP than a baseline unit (110): the AI cannot use mobility, so the numbers compensate. Revisit both once the AI understands mobility (milestone 05 step 7, movement profiles) and when to shield.
 - The adopted Skirmisher is still below even in one place: as players it won 2 of 8, as enemies 5 of 8.
+
+## The AI and the Shield (2026-11-18)
+
+**Why the AI almost never shielded.** The Shield branch sat after shooting and advancing, so a unit with a target never reached it. Fixing that alone changed nothing, because the AI now *compares* the plans and the numbers lose: with accuracy −20 and damage x0.7 the stance prevents about 8 HP per attacker, so even two covered attackers (about 17) are worth less than one good shot. The AI was right; the shield was weak.
+
+**What changed in the AI** (`AIController._shield_instead_of_final_shot`): with only the stance's AP left and a legal shot, it compares the shot (HP-capped expected damage plus kill value) with the stance (expected prevented damage) and holds the stance only if it wins by a factor of 1.25 (`SHIELD_OVER_SHOT_MARGIN`). Earlier AP are still spent shooting, so the usual result is "attack, Shield". Scenarios S10c (three attackers: shoots, then holds the stance, "27.1 prevented against about 20.8 from the last shot") and S10d (a finishing shot is kept) cover it.
+
+**Shield numbers, AI against AI** (same method as above, 16 matches each; Shield decisions counted over all units in those 16 matches):
+
+| Shield (accuracy / damage / capacity) | Class side wins of 16 | Shield decisions |
+| --- | --- | --- |
+| −20 / x0.7 / 2 (before) | 11 | 6 |
+| **−30 / x0.5 / 2 (adopted)** | **9** | **48** |
+| −30 / x0.5 / 3 | 10 | 46 |
+| −40 / x0.4 / 3 | 9 | 60 |
+
+A stronger shield makes the AI use it eight times as often and the Bulwark stays about even. Limits: the AI only counts hostiles that can shoot it from where they stand now (not ones about to move into range), and it does not yet value the shield for protecting allies.

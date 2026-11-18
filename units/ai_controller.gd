@@ -22,6 +22,8 @@ const REPOSITION_MIN_GAIN := 3.0
 const REPOSITION_CANDIDATE_LIMIT := 12
 ## A Shield stance must be expected to prevent at least this much damage to be worth the AP.
 const SHIELD_MIN_PREVENTED := 2.0
+## Holding a Shield stance must beat firing one more shot by this factor before the unit gives the shot up.
+const SHIELD_OVER_SHOT_MARGIN := 1.25
 const ESCORT_REJOIN_DISTANCE := 5
 const ESCORT_APPROACH_RANGE := 4
 const ESCORT_POSITION_MIN_DISTANCE := 2.0
@@ -224,6 +226,14 @@ func _run_activation() -> bool:
 					_last_position_scores = reposition.summary
 					_record_ai_decision("Move", str(reposition.destination), "Repositioned for a better shot: %s." % reposition.summary, "Attack, Aim, Wait")
 					continue
+		# The last action of the activation: one more shot, or hold the stance through the enemy turn?
+		var held_plan := _shield_instead_of_final_shot(attack_target) if attack_target != null else null
+		var held_threat := _hostile_with_id(held_plan.target_id) if held_plan != null else null
+		var held := held_threat != null and await _try_shield_against(held_threat)
+		if not _battle_is_live(): return false
+		if held:
+			_record_ai_decision("Shield", held_threat.name, "Held the stance instead of a last shot: %s." % held_plan.summary, "Attack, Aim, Wait")
+			continue
 		var aimed := attack_target != null and await _try_aim_for_attack(attack_target)
 		if not _battle_is_live(): return false
 		if aimed:
@@ -529,6 +539,26 @@ func _worthwhile_shield_plan() -> AIActionPlan:
 		return null
 	var plan := AIPlanEvaluator.best_shield_plan(unit, _get_hostile_units(), battle_controller)
 	return plan if plan != null and plan.value >= SHIELD_MIN_PREVENTED else null
+
+## With only the stance's AP left and a legal shot available, compares the two plans in the same terms:
+## the shot is worth its HP-capped expected damage (plus the kill value), the stance the expected damage it
+## prevents. Holding the stance wins only by a clear margin, so a unit does not flip between the two.
+## Earlier AP are still spent shooting, which gives "attack, attack, Shield" when that is the better plan.
+func _shield_instead_of_final_shot(target: TacticalUnit) -> AIActionPlan:
+	if not is_instance_valid(unit) or not is_instance_valid(target) or unit.shield_capability == null:
+		return null
+	if unit.stats.current_ap != unit.shield_capability.stance_ap_cost:
+		return null
+	var plan := _worthwhile_shield_plan()
+	if plan == null:
+		return null
+	var aim_bonus: int = CombatRules.cover_tuning.aim_accuracy_bonus if battle_controller.aim_enabled and unit.tactical_state and unit.tactical_state.is_aiming else 0
+	var kill_bonus := 20.0 * _ensure_policy().finishing_bonus_weight
+	var shot := AIPlanEvaluator.best_attack_from(unit, battle_controller.grid_manager.get_unit_grid(unit), [target] as Array[TacticalUnit], battle_controller, 1, kill_bonus, aim_bonus)
+	if plan.value <= float(shot.value) * SHIELD_OVER_SHOT_MARGIN:
+		return null
+	plan.summary += " against about %.1f from the last shot" % float(shot.value)
+	return plan
 
 func _hostile_with_id(tactical_id: StringName) -> TacticalUnit:
 	for hostile in _get_hostile_units():
