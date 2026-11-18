@@ -203,8 +203,19 @@ func _restore_cinematic_visibility(hidden_now: Dictionary) -> void:
 func register_environment_apertures(environment: Node3D) -> void:
 	_environment_apertures.register_environment(environment, map_floor)
 
+## Only the apertures inside this camera's own battle. The group is global, so another battle, an
+## editor preview or an unrelated scene must never be updated or restored from here.
+func _owned_apertures() -> Array[TacticalCameraAperture]:
+	var scope := get_parent()
+	var owned: Array[TacticalCameraAperture] = []
+	for node in get_tree().get_nodes_in_group(TacticalCameraAperture.GROUP):
+		var aperture := node as TacticalCameraAperture
+		if aperture != null and scope != null and scope.is_ancestor_of(aperture):
+			owned.append(aperture)
+	return owned
+
 func _update_local_apertures(delta: float) -> bool:
-	var surfaces := get_tree().get_nodes_in_group(TacticalCameraAperture.GROUP)
+	var surfaces := _owned_apertures()
 	# An inspected floor is a browsing context, not a selected protagonist.
 	var actor := _selected_unit() if not _cinematic_active and not _transitioning and _inspected_floor == Vector3.INF else null
 	if not actor or not actor.is_visible_in_tree() or not actor.stats or actor.stats.is_defeated \

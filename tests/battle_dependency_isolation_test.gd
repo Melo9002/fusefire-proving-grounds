@@ -35,6 +35,7 @@ func _run() -> void:
 	unrelated.queue_free()
 	await process_frame
 	await _check_environment_isolation()
+	await _check_aperture_isolation()
 	print("Battle dependency isolation: %d failure(s)" % failures)
 	quit(1 if failures else 0)
 
@@ -90,4 +91,38 @@ func _check_environment_isolation() -> void:
 	for level in battles:
 		level.queue_free()
 	outside.queue_free()
+	await process_frame
+
+## Issue #2: a battle's camera updates and restores only the apertures inside its own battle.
+func _check_aperture_isolation() -> void:
+	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
+	level.configure(1, 1, true, 8200)
+	root.add_child(level)
+	await create_timer(0.4).timeout
+	var cameras := level.find_children("*", "TacticalCamera", true, false)
+	check(cameras.size() == 1, "The battle has one tactical camera")
+	if cameras.is_empty():
+		level.queue_free()
+		return
+	var camera := cameras[0] as TacticalCamera
+	# An aperture belonging to an unrelated scene (another battle, an editor preview), mid-transition.
+	var elsewhere := Node3D.new()
+	root.add_child(elsewhere)
+	var foreign := TacticalCameraAperture.new()
+	foreign.mesh = BoxMesh.new()
+	elsewhere.add_child(foreign)
+	foreign.strength = 0.75
+	foreign.set_instance_shader_parameter(&"opening", 0.75)
+	# An aperture that does belong to this battle.
+	var own := TacticalCameraAperture.new()
+	own.mesh = BoxMesh.new()
+	level.add_child(own)
+	own.strength = 0.75
+	for frame in 6:
+		camera._update_local_apertures(0.1)
+	check(is_equal_approx(foreign.strength, 0.75), "A camera leaves an unrelated battle's aperture alone (strength %.2f)" % foreign.strength)
+	check(not is_equal_approx(own.strength, 0.75), "The camera still drives its own battle's aperture (strength %.2f)" % own.strength)
+	level.queue_free()
+	elsewhere.queue_free()
+	await process_frame
 	await process_frame
