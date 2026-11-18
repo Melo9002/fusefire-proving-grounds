@@ -458,7 +458,9 @@ func _evaluate_outcome_rules() -> void:
 	if has_required_objective_failed():
 		_turn_manager.finish_battle(TurnManager.BattleResult.DEFEAT)
 		return
-	if mission.mission_id == &"prototype_extract" and extracted_units >= total_units and _all_vip_objectives_complete():
+	# Losing units lowers total_units, so a wiped squad reads 0 >= 0. Victory needs someone actually
+	# out (the same rule can_end_mission_early uses); otherwise the loss falls through to Defeat below.
+	if mission.mission_id == &"prototype_extract" and extracted_units + extracted_vips > 0 and extracted_units >= total_units and _all_vip_objectives_complete():
 		_turn_manager.finish_battle(TurnManager.BattleResult.VICTORY)
 		return
 	if are_required_objectives_complete():
