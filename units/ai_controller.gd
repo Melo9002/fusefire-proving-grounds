@@ -392,33 +392,11 @@ func _try_emergency_seal() -> bool:
 func _try_aim_for_attack(target: TacticalUnit) -> bool:
 	if not is_instance_valid(unit) or not is_instance_valid(target) or not unit.stats:
 		return false
-	var aim_query := battle_controller.query_aim(unit)
-	if not aim_query.is_legal():
+	var comparison := AIPlanEvaluator.compare_aim(unit, target, battle_controller, 20.0 * _ensure_policy().finishing_bonus_weight, MAX_ATTACK_PLAN_AP)
+	if comparison.is_empty():
 		return false
-	var attack_query := battle_controller.query_attack(unit, target)
-	if unit.stats.current_ap < aim_query.cost.ap + attack_query.cost.ap \
-	or not attack_query.is_legal() or attack_query.hit_chance >= 100:
-		return false
-	var planning_ap := mini(unit.stats.current_ap, MAX_ATTACK_PLAN_AP)
-	var direct_count := planning_ap / maxi(1, attack_query.cost.ap)
-	var aimed_count := (planning_ap - aim_query.cost.ap) / maxi(1, attack_query.cost.ap)
-	if battle_controller.supply_points_enabled:
-		var ammo := unit.stats.current_supply_points / maxi(1, attack_query.supply_points_cost)
-		direct_count = mini(direct_count, ammo)
-		aimed_count = mini(aimed_count, ammo)
-	if aimed_count < 1: return false
-	var aimed := CombatRules.evaluate_attack(unit, target, battle_controller.grid_manager,
-		unit.get_world_3d(), aim_query.accuracy_bonus, battle_controller.shield_enabled)
-	var direct_chances: Array[int] = []
-	var aimed_chances: Array[int] = []
-	for shot in direct_count: direct_chances.append(attack_query.hit_chance)
-	for shot in aimed_count: aimed_chances.append(aimed.hit_chance if shot == 0 else attack_query.hit_chance)
-	var kill_bonus := 20.0 * _ensure_policy().finishing_bonus_weight
-	var direct_value := AITargetScorer.shot_sequence_value(direct_chances, attack_query.damage_on_hit, target.stats.current_hp, kill_bonus)
-	var aimed_value := AITargetScorer.shot_sequence_value(aimed_chances, attack_query.damage_on_hit, target.stats.current_hp, kill_bonus)
-	_last_attack_plan = {"target": String(target.tactical_id), "direct_shots": direct_count, "aimed_shots": aimed_count,
-		"direct_value": direct_value, "aimed_value": aimed_value, "choice": "Aim" if aimed_value > direct_value + 0.001 else "Attack"}
-	return aimed_value > direct_value + 0.001 and await battle_controller.try_aim(unit)
+	_last_attack_plan = comparison.trace
+	return comparison.choose_aim and await battle_controller.try_aim(unit)
 
 ## Policy integration is intentionally deferred to 01.11.7. This adapter keeps
 ## AI legality and orientation on the same authoritative path as player input.
