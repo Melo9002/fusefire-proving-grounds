@@ -4,7 +4,8 @@ extends Node
 @export var turn_manager: TurnManager
 @export var battle_controller: BattleController
 @export var outline_color: Color = Color(0.35, 0.9, 1.0, 0.9)
-@export_range(0.0, 0.2, 0.005) var outline_width: float = 0.035
+## Thickness of the selected-unit outline, in model units. A thin rim keeps the character readable.
+@export_range(0.0, 0.2, 0.0025) var outline_width: float = 0.01
 
 var selected_unit: TacticalUnit
 var _outline_material: StandardMaterial3D
