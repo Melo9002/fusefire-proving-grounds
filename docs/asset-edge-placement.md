@@ -44,7 +44,7 @@ The lab therefore indexes the object independently of navigation, using the exis
 | 4 | Compiler **6**, simulation **height-range-8**, Move payload **10**. Points round to **1/10000 tile**. Manifests store a reconstruction signature; moves record XYZ per checkpoint; fingerprints include geometry/profile and within-cell positions. Older simulation recordings reject clearly. Compilers 1–5 preserve historical geometry, including the former compiler-5 opt-in pilot. |
 | 5 | All three examples complete real moves and saved replay. Existing authored cover clips, contact direction and weapon IK follow the committed point. Wall-hand/foot IK and new peek firing origins remain future animation work. |
 
-Standing-point fitting and sweeps use the same conservative enclosing body box: a tight rounded corner may reject even if a more sophisticated solver could pass it. Unsupported rises still reject. Existing authored ladders and ElevationPath ramps/stairs provide checked transitions: rise outside the upper floor, then step onto it; reverse downhill. This preserves authored traversal without inferring arbitrary slopes or climbs from a render mesh. Explicit rounded tanks retain their conservative stepped reservation and cover; their unused enclosing-box corners remain free. Exact curved footprints remain future work.
+Standing-point fitting and sweeps use the same conservative enclosing body box: a tight rounded corner may reject even if a more sophisticated solver could pass it. Unsupported rises still reject. Existing authored ladders and ElevationPath ramps/stairs provide checked transitions: rise outside the upper floor, then step onto it; reverse downhill. This preserves authored traversal without inferring arbitrary slopes or climbs from a render mesh. Explicit rounded tanks retain their conservative stepped reservation and cover; their unused enclosing-box corners remain free. Exact curved footprints are in progress: see [Round assets](#round-assets-cylinder-geometry-in-progress).
 
 A route may bend within an edge to enter a valid gap, but both legs require floor and body clearance. Existing low-cover vaults use checked raised transit points that cannot be selected as standing destinations. Thin low barriers can also supply a checked rise/cross/land route; a ceiling or a tall obstacle prevents that route. Presentation follows these same waypoints, while AP and Guard checkpoints remain tied to logical cells.
 
@@ -99,3 +99,22 @@ godot_console --path . res://art/characters/mira_0/demo/surface_fit_demo.tscn
 | Current maps | Restart the match: supported partly occupied cells participate in all new current-map compilations. |
 
 Verification: [original pilot](quality/surface-placement-2026-11-16.md) and [global rollout](quality/surface-rollout-2026-11-16.md).
+
+## Round assets: cylinder geometry (in progress)
+
+Today a `round_volume` asset (the two tanks in `tank_storage.tscn`) is replaced by whole-tile boxes in a stepped, circle-ish pattern, because every geometry layer assumes axis-aligned boxes. By the compiler's own rule that reserves about 1.2 to 1.3 times the tiles of the real circle, leaves reserved corners up to about a tile outside the wall, and puts cover markers and contacts on tile edges instead of the wall.
+
+**Phase 1 (this change, not integrated yet):** `systems/grid/cylinder_part.gd` is pure geometry for a vertical cylinder that answers the questions the box code asks of an AABB, exactly for a curve:
+
+| Question | Function | Matches the box rule |
+| --- | --- | --- |
+| Where does a shot enter? | `ray_entry` | Same return value; an open probe that only grazes misses, a closed probe counts the graze, a ray that starts inside enters at 0. |
+| Can a body travel along a segment? | `segment_clear` | Same vertical overlap rule; touching allowed; optional absolute rounding tolerance as the box sweep uses. |
+| Where can a body stand in this cell? | `resolve` | Same inputs, outputs and budgets as `SurfacePlacement.resolve`; the closest legal point lies on a margin circle, a cell edge or corner, so those are exactly the candidates tried. |
+| Which way is the wall, and where should the body stand? | `contact` | Same keys as `SurfacePlacement.contact`, with the exact radial normal. |
+
+It never reads or mutates a map, actor or occupancy, and a fit is still not permission to navigate. Tests: `tests/surface_cylinder_test.gd` (67 checks, included in the movement subsystem), including a direct comparison with the box fit.
+
+Measured with the real functions on a ring of cells around a tank (diagram: [cylinder-census-2026-11-18.png](quality/images/cylinder-census-2026-11-18.png)): the box fit leaves 48 of 64 cells around a radius-2 tank usable, the curve 52. It never loses a cell the box keeps, and it recovers the four diagonal corner cells that the box leaves with no legal point inside the tile. Standing points follow the arc instead of sliding out along a box face. The same four tiles are recovered around a radius-3.5 tank.
+
+**Not done yet (later phases):** emitting cylinders from the compiler for round assets (behind a new compiler revision, so recorded replays keep their historical geometry); using them in navigation sweeps, shots, cover and the pose contacts; cover markers on the actual wall; and a decision about the big tank's side pipe (a separate box beside the cylinder is the likely answer). The lying drum is a rectangle seen from above, so the box is nearly right in plan; only its curved profile is approximated.
