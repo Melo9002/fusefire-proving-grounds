@@ -37,7 +37,6 @@ const SUPPORT_GRIP_CURL := 0.8
 const TRIGGER_HAND_CURL := 0.75
 var trigger_pull := 0.0
 var _trigger_tween: Tween
-const COVER_READY_MUZZLE_UP_DEGREES := 20.0
 var _standing_shoulder := Vector3.ZERO
 var _standing_shoulder_known := false
 var weapon_attachment: BoneAttachment3D
@@ -93,21 +92,15 @@ var support_ik_target: Marker3D
 var carry_motion_blend := 0.0
 var _carry_phase := 0.0
 
-## How shouldered the rifle is: the aim pose, or a ready hold while behind low cover.
+## How shouldered the rifle is. The rifle stays in its relaxed carry, in cover or not, and comes up
+## only to aim or shoot. While crouched the carry simply travels with the chest (see body_offset).
 func weapon_blend() -> float:
-	if crouch_modifier == null:
-		return aim_blend
-	var in_cover := clampf(maxf(crouch_modifier.depth / maxf(crouch_modifier.max_depth, 0.01), crouch_modifier.kneel), 0.0, 1.0)
-	return maxf(aim_blend, in_cover)
+	return aim_blend
 
 
 func _rifle_local_basis() -> Basis:
 	var carry_rotation := Quaternion.from_euler(carry_angles_degrees * (PI / 180.0))
-	var blend := weapon_blend()
-	var basis := Basis(carry_rotation.slerp(Quaternion.IDENTITY, blend))
-	# Hiding behind cover the rifle is shouldered but not aimed: muzzle slightly up.
-	basis = Basis(Vector3.RIGHT, -deg_to_rad(COVER_READY_MUZZLE_UP_DEGREES) * (blend - aim_blend)) * basis
-	return basis
+	return Basis(carry_rotation.slerp(Quaternion.IDENTITY, weapon_blend()))
 
 
 func _build_character() -> void:

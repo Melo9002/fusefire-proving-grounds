@@ -217,12 +217,18 @@ func _sync_aim_hold(delta: float) -> void:
 
 ## Low cover: crouch only as deep as the cover is tall (never beyond what a person can), turned
 ## with the back to the wall while hiding, and facing the wall, eyes just over the top, to aim.
-## Presentation only.
+## High cover (standing behind a full wall): a slight wary bend of the knees with the back to the
+## wall, turning side-on to peek along it when aiming. In both, the rifle stays in its relaxed carry
+## until she aims or shoots. Presentation only.
 const COVER_HEAD_CLEARANCE := 0.05
 const COVER_EYE_CLEARANCE := 0.05
 const EYE_BELOW_HEAD_TOP := 0.12
 const CROUCH_SPEED := 1.1
 const HIDE_YAW_DEGREES := -150.0
+## Standing behind full cover: how far the knees bend, and how side-on she turns to peek.
+const HIGH_COVER_CROUCH_DEPTH := 0.12
+const HIGH_COVER_AIM_CROUCH_DEPTH := 0.04
+const HIGH_COVER_AIM_YAW_DEGREES := -90.0
 const COVER_TURN_DEGREES_PER_SECOND := 320.0
 const KNEEL_BLEND_RANGE := 0.08
 const KNEEL_SPEED := 2.5
@@ -230,9 +236,24 @@ var _crouch_depth := 0.0
 var _kneel := 0.0
 var _cover_yaw := 0.0
 
-## Depth the cover asks for, before the human limit. 0 when not behind low cover.
+## Which cover the pose is in right now: LOW or FULL, or NONE when no cover pose applies.
+func _cover_kind() -> MapCellData.CoverType:
+	var type: int = last_cover_contact.get("type", MapCellData.CoverType.NONE)
+	var state := get_presentation_state()
+	if state == &"cover_low" and type == MapCellData.CoverType.LOW:
+		return MapCellData.CoverType.LOW
+	if state == &"cover_high" and type == MapCellData.CoverType.FULL:
+		return MapCellData.CoverType.FULL
+	return MapCellData.CoverType.NONE
+
+## Depth the cover asks for, before the human limit. 0 when not behind cover.
 func _cover_crouch_request() -> float:
-	if crouch_modifier == null or get_presentation_state() != &"cover_low" or last_cover_contact.get("type", MapCellData.CoverType.NONE) != MapCellData.CoverType.LOW:
+	if crouch_modifier == null:
+		return 0.0
+	var kind := _cover_kind()
+	if kind == MapCellData.CoverType.FULL:
+		return lerpf(HIGH_COVER_CROUCH_DEPTH, HIGH_COVER_AIM_CROUCH_DEPTH, aim_blend)
+	if kind != MapCellData.CoverType.LOW:
 		return 0.0
 	var cover_height: float = last_cover_contact.get("height", 0.0)
 	var hide := crouch_modifier.standing_head_height - (cover_height - COVER_HEAD_CLEARANCE)
@@ -245,14 +266,18 @@ func _cover_crouch_target() -> float:
 func _sync_cover_crouch(delta: float) -> void:
 	if crouch_modifier == null:
 		return
-	var in_low_cover: bool = get_presentation_state() == &"cover_low" and last_cover_contact.get("type", MapCellData.CoverType.NONE) == MapCellData.CoverType.LOW
+	var kind := _cover_kind()
 	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), CROUCH_SPEED * delta)
 	crouch_modifier.depth = _crouch_depth
 	# Cover lower than the deepest natural crouch can hide behind: go down on one knee.
 	var kneel_target := clampf((_cover_crouch_request() - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
 	_kneel = move_toward(_kneel, kneel_target, KNEEL_SPEED * delta)
 	crouch_modifier.kneel = _kneel
-	var yaw_target := deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - aim_blend) if in_low_cover else 0.0
+	var yaw_target := 0.0
+	if kind == MapCellData.CoverType.LOW:
+		yaw_target = deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - aim_blend)
+	elif kind == MapCellData.CoverType.FULL:
+		yaw_target = lerpf(deg_to_rad(HIDE_YAW_DEGREES), deg_to_rad(HIGH_COVER_AIM_YAW_DEGREES), aim_blend)
 	_cover_yaw = rotate_toward(_cover_yaw, yaw_target, deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
 	character_root.rotation.y = _cover_yaw
 

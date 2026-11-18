@@ -3,7 +3,8 @@ extends SceneTree
 ## front, side, back, three-quarter, and the view from the eye along the sight line.
 ##   godot_console --path . --script res://tests/pose_review_capture.gd -- <directory> <tag> [state,state,...]
 ## Fixed cameras make before/after comparisons honest. Output: <directory>/<tag>-<state>.png
-## A state may carry a low-cover height and an aim flag: cover_low@0.9 (hiding), cover_low@0.9+aim.
+## A state may carry a cover height and an aim flag: cover_low@0.9 (hiding), cover_low@0.9+aim,
+## cover_high@2.0 (standing behind full cover), cover_high@2.0+aim.
 const DEFAULT_STATES := "rifle_idle,aim,shoot,cover_low,cover_high"
 const TILE := Vector2i(320, 440)
 
@@ -68,7 +69,8 @@ func _run() -> void:
 		rig._aim_release_left = 1000000.0
 		if "@" in entry:
 			var cover_height := float(entry.split("@")[1].split("+")[0])
-			rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": cover_height, "direction": Vector3.FORWARD}
+			var cover_type := MapCellData.CoverType.FULL if state == "cover_high" else MapCellData.CoverType.LOW
+			rig.last_cover_contact = {"type": cover_type, "height": cover_height, "direction": Vector3.FORWARD}
 		else:
 			rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 		rig.animation_controller.play(StringName(state))

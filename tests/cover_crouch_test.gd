@@ -18,8 +18,8 @@ func check(ok: bool, message: String) -> void:
 func _p(bone: StringName) -> Vector3:
 	return (_attachments[bone] as BoneAttachment3D).global_position
 
-func _settle(rig: UnitVisualAdapter, height: float, aiming: bool) -> void:
-	rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": height, "direction": Vector3.FORWARD}
+func _settle(rig: UnitVisualAdapter, height: float, aiming: bool, type := MapCellData.CoverType.LOW) -> void:
+	rig.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
 	rig._aim_held = aiming
 	rig._aim_release_left = 1000000.0
 	rig._retarget_aim_blend()
@@ -73,6 +73,30 @@ func _run() -> void:
 	var hiding_depth := modifier.depth
 	await _settle(rig, 1.1, true)
 	check(modifier.depth <= hiding_depth + 0.001, "Aiming never crouches deeper than hiding (%.3f vs %.3f)" % [modifier.depth, hiding_depth])
+
+	# The rifle stays in its relaxed carry while she hides, and comes up only to aim.
+	await _settle(rig, 0.9, false)
+	check(rig.weapon_blend() < 0.05, "Hiding in low cover the rifle stays relaxed (blend %.2f)" % rig.weapon_blend())
+	await _settle(rig, 0.9, true)
+	check(rig.weapon_blend() > 0.95, "Aiming from low cover brings the rifle up (blend %.2f)" % rig.weapon_blend())
+
+	# Standing behind full cover: a slight wary bend of the knees, back to the wall, rifle relaxed.
+	rig.animation_controller.play(&"cover_high")
+	await _settle(rig, 2.0, false, MapCellData.CoverType.FULL)
+	check(modifier.depth > 0.08 and modifier.depth < 0.2 and modifier.kneel < 0.05, "Behind full cover she bends her knees slightly, without kneeling (depth %.3f, kneel %.2f)" % [modifier.depth, modifier.kneel])
+	check(absf(rad_to_deg(rig._cover_yaw)) > 120.0, "Behind full cover her back is to the wall (turned %.0f degrees)" % absf(rad_to_deg(rig._cover_yaw)))
+	check(rig.weapon_blend() < 0.05, "Behind full cover the rifle stays relaxed (blend %.2f)" % rig.weapon_blend())
+	var high_forward: Vector3 = rig.character_root.global_basis.z
+	var high_knee_ahead := (_p(&"mixamorig_LeftLeg") - _p(&"mixamorig_LeftUpLeg")).dot(high_forward)
+	var high_sideways := absf((_p(&"mixamorig_LeftLeg") - _p(&"mixamorig_LeftUpLeg")).dot(rig.character_root.global_basis.x))
+	check(high_knee_ahead > 0.0 and high_sideways < 0.08, "Behind full cover the knees bend forward, not sideways (ahead %.3f, sideways %.3f)" % [high_knee_ahead, high_sideways])
+	var high_feet := minf(_p(&"mixamorig_LeftFoot").y, _p(&"mixamorig_RightFoot").y)
+	check(absf(high_feet - standing_ankle) < 0.035, "Behind full cover the feet stay on the floor (ankle %.3f, standing %.3f)" % [high_feet, standing_ankle])
+	var hiding_high_depth := modifier.depth
+	await _settle(rig, 2.0, true, MapCellData.CoverType.FULL)
+	check(rig.weapon_blend() > 0.95, "Aiming from behind full cover brings the rifle up")
+	check(absf(rad_to_deg(rig._cover_yaw) + 90.0) < 12.0, "Aiming from behind full cover she turns side-on (turned %.0f degrees)" % rad_to_deg(rig._cover_yaw))
+	check(modifier.depth <= hiding_high_depth + 0.001, "Aiming from full cover never bends deeper than hiding (%.3f vs %.3f)" % [modifier.depth, hiding_high_depth])
 
 	# Out of cover everything returns to standing.
 	rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
