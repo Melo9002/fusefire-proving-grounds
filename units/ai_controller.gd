@@ -1104,7 +1104,8 @@ func _find_attack_target() -> TacticalUnit:
 		if attack_query == null:
 			attack_query = battle_controller.query_attack(unit, candidate)
 		if attack_query.is_legal():
-			var scored := AITargetScorer.evaluate(unit, candidate, friendlies, current_mission_intent, _objective_manager, battle_controller.grid_manager, _policy, _squad_context, attack_query)
+			var affordable := AIPlanEvaluator.affordable_attack_shots(unit, attack_query, battle_controller, MAX_ATTACK_PLAN_AP)
+			var scored := AITargetScorer.evaluate(unit, candidate, friendlies, current_mission_intent, _objective_manager, battle_controller.grid_manager, _policy, _squad_context, attack_query, affordable)
 			var score: float = scored.total
 			var target_components := {}
 			for component in ["vulnerability", "focus", "vip", "threat", "mission", "focus_count", "damage_value", "damage_on_hit"]:

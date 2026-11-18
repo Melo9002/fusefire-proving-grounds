@@ -10,7 +10,8 @@ static func evaluate(
 	grid: GridManager,
 	policy: AIDifficultyPolicy,
 	squad: SquadContext,
-	attack_prediction: AttackQueryResult = null
+	attack_prediction: AttackQueryResult = null,
+	affordable_shots := 1
 ) -> Dictionary:
 	var missing_hp := target.stats.max_hp - target.stats.current_hp
 	var vulnerability := float(missing_hp) * policy.wounded_target_weight
@@ -18,8 +19,14 @@ static func evaluate(
 	var damage: int = attack_prediction.damage_on_hit if attack_prediction else CombatRules.cover_tuning.damage_for_hit(fallback.shield_damage_multiplier)
 	var chance: int = attack_prediction.hit_chance if attack_prediction else fallback.hit_chance
 	var damage_value := minf(target.stats.current_hp, damage) * float(chance) / 100.0 * policy.expected_damage_weight
-	if damage > 0 and target.stats.current_hp <= damage:
-		vulnerability += 20.0 * policy.finishing_bonus_weight
+	# The finishing bonus is the probability that the shots the unit can actually afford kill the target,
+	# not a flat bonus whenever one hit would: a 10% finishing shot is worth a tenth of a certain one, and
+	# a target that two affordable shots very likely kill is worth more than a single shot suggests.
+	var shots: Array[int] = []
+	for shot in maxi(1, affordable_shots):
+		shots.append(chance)
+	var kill_chance := kill_probability(shots, damage, target.stats.current_hp)
+	vulnerability += 20.0 * policy.finishing_bonus_weight * kill_chance
 	var focus_adjustment := squad.target_adjustment(attacker, target) if squad else 0.0
 	var focus := focus_adjustment * policy.focus_penalty_weight
 	var vip := 25.0 * policy.target_vip_weight if target.mission_actor and target.mission_actor.is_vip() else 0.0
@@ -35,10 +42,11 @@ static func evaluate(
 		"threat": threat,
 		"mission": mission,
 		"focus_count": int(-focus_adjustment / 15.0),
+		"kill_chance": kill_chance,
 		# Damage value is HP-capped; a miss still deals zero and does not become a guaranteed finisher.
 		"hit_chance": chance,
 		"expected_damage": float(damage) * float(chance) / 100.0,
-		"summary": "damage %+.1f, vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f" % [damage_value, vulnerability, vip, threat, mission, focus],
+		"summary": "damage %+.1f, vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f, kill %d%%" % [damage_value, vulnerability, vip, threat, mission, focus, roundi(kill_chance * 100.0)],
 	}
 
 static func _threat_score(target: TacticalUnit, friendlies: Array[TacticalUnit], grid: GridManager) -> float:
@@ -95,6 +103,25 @@ static func _nearest_zone_distance(from: Vector3i, zone: Array[Vector3i]) -> flo
 	for cell in zone:
 		nearest = minf(nearest, from.distance_to(cell))
 	return nearest
+
+## Probability that a sequence of shots at the given chances deals at least `hp` damage, `damage` per
+## hit. No random draws: the exact distribution over hits.
+static func kill_probability(chances: Array[int], damage: int, hp: int) -> float:
+	if damage <= 0 or hp <= 0 or chances.is_empty(): return 0.0
+	var probabilities: Array[float] = [1.0]
+	for chance in chances:
+		var next: Array[float] = []
+		next.resize(probabilities.size() + 1)
+		next.fill(0.0)
+		var hit := clampf(float(chance) / 100.0, 0.0, 1.0)
+		for hits in probabilities.size():
+			next[hits] += probabilities[hits] * (1.0 - hit)
+			next[hits + 1] += probabilities[hits] * hit
+		probabilities = next
+	var kill := 0.0
+	for hits in probabilities.size():
+		if hits * damage >= hp: kill += probabilities[hits]
+	return kill
 
 ## Bounded same-target sequence value: HP-capped expected damage plus kill probability.
 ## No random draws, no hypothetical mutation, and Aim applies only to the first shot.

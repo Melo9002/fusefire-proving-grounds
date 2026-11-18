@@ -5,6 +5,15 @@ extends RefCounted
 ## and supply, and HP-capped expected damage with kill probability. Pure reads: nothing is executed,
 ## no combat roll is drawn and no state is changed.
 
+## How many attacks the unit can pay for right now against this query's cost: its real AP (within the
+## planning horizon) and, when supply is in use, its real ammo. At least one, since a target is only
+## scored when a shot is legal.
+static func affordable_attack_shots(unit: TacticalUnit, attack_query: AttackQueryResult, battle: BattleController, max_plan_ap: int) -> int:
+	var count := mini(unit.stats.current_ap, max_plan_ap) / maxi(1, attack_query.cost.ap)
+	if battle.supply_points_enabled:
+		count = mini(count, unit.stats.current_supply_points / maxi(1, attack_query.supply_points_cost))
+	return maxi(1, count)
+
 ## Direct shots versus Aim followed by shots, over at most `max_plan_ap` action points. Aim affects only
 ## the first shot. Returns {} when the comparison does not apply (Aim not legal, no shot, a certain
 ## hit, too few AP or ammo for Aim plus a shot). Otherwise:
