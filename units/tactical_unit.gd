@@ -18,6 +18,9 @@ signal attack_presented(target_world_position: Vector3)
 @export var faction: Faction = Faction.PLAYER
 ## Stable battle-local identity used by actions and replay. Display/node names may change.
 @export var tactical_id: StringName
+## Short name shown to the player (cards, selection, combat messages). Presentation only: actions,
+## replay and the AI use tactical_id. Empty falls back to the node name.
+@export var display_name := ""
 ## Starting preset selected by Match Setup. Mechanics query capabilities, not this ID.
 @export var archetype_id: StringName = &"generic"
 ## Prepared for 01.11.4; grants no defensive benefit by itself.
@@ -64,6 +67,13 @@ func carry_unit(unit: TacticalUnit) -> void:
 	unit.process_mode = Node.PROCESS_MODE_DISABLED
 	if visual_adapter:
 		visual_adapter.present_pickup()
+
+func get_display_name() -> String:
+	return display_name if not display_name.is_empty() else String(name)
+
+## The player-facing name with the stable ID, for logs and debug text: "Alpha (PlayerUnit1)".
+func get_log_name() -> String:
+	return "%s (%s)" % [display_name, name] if not display_name.is_empty() else String(name)
 
 func is_carrying_unit() -> bool:
 	return is_instance_valid(carried_unit)

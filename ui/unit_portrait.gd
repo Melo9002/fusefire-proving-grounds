@@ -5,6 +5,9 @@ enum DisplayState { READY, SELECTED, EXHAUSTED, DEAD }
 
 signal unit_requested(unit: TacticalUnit)
 
+## The callsign: the heading that tells two soldiers apart.
+@export var title_label: Label
+## The role (archetype), beneath it.
 @export var name_label: Label
 @export var hp_label: Label
 @export var ap_label: Label
@@ -20,7 +23,11 @@ func _ready() -> void:
 
 func setup(target: TacticalUnit) -> void:
 	unit = target
-	name_label.text = target.name
+	# The heading is optional: a card built without one (older scenes, tests) still works.
+	if title_label:
+		title_label.text = target.get_display_name().to_upper()
+	if name_label:
+		name_label.text = TacticalArchetypeCatalog.resolve_or_generic(target.archetype_id, false).display_name
 	target.stats.hp_changed.connect(_on_hp_changed)
 	target.stats.ap_changed.connect(_on_ap_changed)
 	target.defeated.connect(_on_unit_defeated)

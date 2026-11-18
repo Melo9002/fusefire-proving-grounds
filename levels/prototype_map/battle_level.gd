@@ -352,6 +352,7 @@ func _spawn_rescue_target() -> bool:
 	var unit := unit_scene.instantiate() as TacticalUnit
 	unit.name = "RescueTarget"
 	unit.tactical_id = &"RescueTarget"
+	unit.display_name = "Rescue target"
 	unit.faction = TacticalUnit.Faction.NEUTRAL
 	unit.mission_actor.mission_id = &"RescueTarget"
 	unit.mission_actor.kind = MissionActor.Kind.RESCUABLE
@@ -372,7 +373,7 @@ func _spawn_team(count: int, zone: SpawnZone, parent: Node3D, _add_ai: bool) -> 
 		return
 
 	for index in count:
-		var unit := _create_unit("%sUnit%d" % [_faction_name(zone.faction), index + 1], zone.faction, parent, _archetype_for_slot(zone.faction, index))
+		var unit := _create_unit("%sUnit%d" % [_faction_name(zone.faction), index + 1], zone.faction, parent, _archetype_for_slot(zone.faction, index), index)
 		unit.global_transform = spawn_transforms[index]
 		_register_team_unit(unit)
 
@@ -382,14 +383,16 @@ func _spawn_generated_team(count: int, faction: TacticalUnit.Faction, parent: No
 		push_error("Generated map has insufficient faction %s spawns" % faction)
 		return
 	for index in count:
-		var unit := _create_unit("%sUnit%d" % [_faction_name(faction), index + 1], faction, parent, _archetype_for_slot(faction, index))
+		var unit := _create_unit("%sUnit%d" % [_faction_name(faction), index + 1], faction, parent, _archetype_for_slot(faction, index), index)
 		unit.global_position = map_data.get_cell(spawn_cells[index]).world_position + Vector3.UP * unit.standing_height
 		_register_team_unit(unit)
 
-func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node3D, archetype_id: StringName = TacticalArchetypeCatalog.GENERIC_ID) -> TacticalUnit:
+func _create_unit(unit_name: String, faction: TacticalUnit.Faction, parent: Node3D, archetype_id: StringName = TacticalArchetypeCatalog.GENERIC_ID, slot := -1) -> TacticalUnit:
 	var unit = unit_scene.instantiate() as TacticalUnit
 	unit.name = unit_name
 	unit.tactical_id = StringName(unit_name)
+	if slot >= 0:
+		unit.display_name = UnitCallsign.for_slot(faction, slot)
 	unit.faction = faction
 	unit.attack_range = test_battle_attack_range
 	TacticalArchetypeCatalog.resolve_or_generic(archetype_id).apply_starting_configuration(unit)

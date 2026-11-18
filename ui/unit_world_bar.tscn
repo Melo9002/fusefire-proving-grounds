@@ -2,13 +2,14 @@
 
 [ext_resource type="Script" uid="uid://4pf4b4gp1p6t" path="res://ui/unit_world_bar.gd" id="1_oug2r"]
 
-[node name="UnitWorldBar" type="Control" unique_id=241115286 node_paths=PackedStringArray("hp_bar", "ap_label", "carry_label", "tactical_state_label", "extract_button")]
+[node name="UnitWorldBar" type="Control" unique_id=241115286 node_paths=PackedStringArray("name_label", "hp_bar", "ap_label", "carry_label", "tactical_state_label", "extract_button")]
 z_index = -10
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_oug2r")
+name_label = NodePath("VBoxContainer/NameLabel")
 hp_bar = NodePath("VBoxContainer/HPBar")
 ap_label = NodePath("VBoxContainer/APLabel")
 carry_label = NodePath("VBoxContainer/CarryLabel")
@@ -19,6 +20,12 @@ extract_button = NodePath("VBoxContainer/ExtractButton")
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+
+[node name="NameLabel" type="Label" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "ALPHA"
 
 [node name="APLabel" type="Label" parent="VBoxContainer" unique_id=688568101]
 layout_mode = 2

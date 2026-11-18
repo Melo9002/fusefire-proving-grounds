@@ -528,7 +528,7 @@ func _refresh_mission_controls() -> void:
 		_objective_option.disabled = false
 	_actor_option.clear()
 	for actor in _mission_controller.get_actors():
-		_actor_option.add_item("%s — %s" % [actor.name, TacticalUnit.Faction.keys()[actor.faction]])
+		_actor_option.add_item("%s — %s" % [actor.get_log_name(), TacticalUnit.Faction.keys()[actor.faction]])
 		_actor_option.set_item_metadata(_actor_option.item_count - 1, actor.get_instance_id())
 	if _actor_option.item_count == 0:
 		_actor_option.add_item("No available actors")
@@ -661,7 +661,7 @@ func _update_overlay() -> void:
 	]
 	var active := turn_manager.active_unit
 	if is_instance_valid(active) and active.stats:
-		lines.append("Active: %s  |  %s" % [active.name, TacticalUnit.Faction.keys()[active.faction]])
+		lines.append("Active: %s  |  %s" % [active.get_log_name(), TacticalUnit.Faction.keys()[active.faction]])
 		lines.append("Mission: %s  |  %s%s" % [
 			active.get_mission_id(),
 			MissionActor.Kind.keys()[active.get_mission_actor_kind()],

@@ -2,6 +2,8 @@ class_name UnitWorldBar
 extends Control
 
 @export_group("UI References")
+## The unit's callsign above its bars, so the selected unit is named on the battlefield.
+@export var name_label: Label
 @export var hp_bar: ProgressBar
 @export var ap_label: Label
 @export var carry_label: Label
@@ -37,6 +39,9 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 		_objective_manager.objective_failed.connect(_on_objective_changed)
 
 	_apply_faction_style(faction)
+	if name_label and unit is TacticalUnit:
+		name_label.text = (unit as TacticalUnit).get_display_name()
+		name_label.visible = true
 
 	if _stats:
 		if not _stats.hp_changed.is_connected(_on_hp_changed):

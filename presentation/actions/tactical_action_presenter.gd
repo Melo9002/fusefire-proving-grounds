@@ -80,7 +80,7 @@ func present_reload(result: ReloadActionResult) -> void:
 	if _camera_available():
 		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
 		camera_presented = await action_camera_director.present(unit, &"reload", unit.global_position + facing * 3.0, result.actor_ap_after)
-	print_rich("[color=light_blue][Reload][/color] %s restores %d SP (%d/%d)" % [unit.name, result.supply_points_restored, result.supply_points_after, result.max_supply_points])
+	print_rich("[color=light_blue][Reload][/color] %s restores %d SP (%d/%d)" % [unit.get_log_name(), result.supply_points_restored, result.supply_points_after, result.max_supply_points])
 	if camera_presented:
 		await _safe_delay(0.25)
 		await _finish_camera(true)
@@ -92,7 +92,7 @@ func present_aim(result: AimActionResult) -> void:
 		return
 	if result.presentation_suppressed:
 		return
-	print_rich("[color=gold][Aim][/color] %s prepares the next shot (+%d)" % [unit.name, result.accuracy_bonus])
+	print_rich("[color=gold][Aim][/color] %s prepares the next shot (+%d)" % [unit.get_log_name(), result.accuracy_bonus])
 	# Sights up now; they stay up for as long as the committed Aim lasts.
 	unit.present_aim()
 	await _safe_delay(0.3)
@@ -109,7 +109,7 @@ func present_shield(result: ShieldActionResult) -> void:
 		unit.face_world_position(threat.global_position)
 	# Shield-specific animation is deferred. Authoritative state remains visible
 	# in the HUD and combat diagnostics while the normal idle pose is safe.
-	print_rich("[color=cyan][Shield][/color] %s protects a %.0f degree arc" % [unit.name, result.protected_arc_degrees])
+	print_rich("[color=cyan][Shield][/color] %s protects a %.0f degree arc" % [unit.get_log_name(), result.protected_arc_degrees])
 	await _safe_delay(0.2)
 
 func present_overwatch(result: OverwatchActionResult) -> void:
@@ -118,7 +118,7 @@ func present_overwatch(result: OverwatchActionResult) -> void:
 		result.presentation_error = "Guard presenter could not find actor '%s'" % result.request.actor_id
 		return
 	if result.presentation_suppressed: return
-	print_rich("[color=orange][Guard][/color] %s reserves a reaction shot (%d SP ready)" % [unit.name, result.supply_points_before])
+	print_rich("[color=orange][Guard][/color] %s reserves a reaction shot (%d SP ready)" % [unit.get_log_name(), result.supply_points_before])
 	await _safe_delay(0.2)
 
 func present_move(result: MoveActionResult) -> void:
@@ -183,11 +183,11 @@ func present_simple(result: SimpleActionResult) -> void:
 		return
 	if result.presentation_suppressed: return
 	if result.request.kind == &"emergency_seal":
-		print_rich("[color=sky_blue][Emergency Seal][/color] %s seals the leak (%d charge(s) remain)" % [unit.name, result.charges_after])
+		print_rich("[color=sky_blue][Emergency Seal][/color] %s seals the leak (%d charge(s) remain)" % [unit.get_log_name(), result.charges_after])
 		await _safe_delay(0.2)
 		return
 	if result.request.kind == &"wait":
-		print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.name, result.request.details.get("reason", "No useful action available.")])
+		print_rich("[color=slate_gray][WaitAction][/color] %s ends activation — %s" % [unit.get_log_name(), result.request.details.get("reason", "No useful action available.")])
 		return
 	var camera_presented := false
 	if _camera_available():
