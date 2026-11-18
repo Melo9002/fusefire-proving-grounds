@@ -22,6 +22,8 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 		if bounds.is_empty():
 			bounds.append(neighbor.authored_shot_bounds if neighbor.authored_shot_bounds.has_volume() else AABB(neighbor.world_position - Vector3(grid.cell_size * 0.5, 0, grid.cell_size * 0.5), Vector3(grid.cell_size, neighbor.cover_height, grid.cell_size)))
 		for part in bounds:
+			# A tile-sized stand-in for a round asset: the real wall is handled below.
+			if grid.map_data.presentation_stand_ins.has(part): continue
 			var contact := SurfaceFit.contact(ground.world_position, part, grid.cell_size * 0.28, grid.cell_size * 1.8, grid.cell_size * 0.04)
 			if not contact.found or contact.distance > grid.cell_size * 0.85: continue
 			var score: float = contact.direction.dot(facing.normalized()) * 2 - contact.distance / grid.cell_size
@@ -29,6 +31,16 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 				best_score = score
 				result = contact
 				result.type = MapCellData.CoverType.FULL if part.end.y - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
+				result.stand_position = ground.world_position
+	# Round assets: pose against the real curved wall, not the tile-sized stand-in.
+	if grid.map_data.surface_placement_enabled:
+		for entry in SurfaceNavigation.presentation_contacts(grid.map_data, ground.world_position, grid.cell_size * SurfaceNavigation.ROUND_REACH_UNITS):
+			var wall: Dictionary = entry.contact
+			var wall_score: float = wall.direction.dot(facing.normalized()) * 2 - wall.distance / grid.cell_size
+			if wall_score > best_score:
+				best_score = wall_score
+				result = wall.duplicate()
+				result.type = MapCellData.CoverType.FULL if entry.top - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
 				result.stand_position = ground.world_position
 	return result
 

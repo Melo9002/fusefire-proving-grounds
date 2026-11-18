@@ -38,6 +38,9 @@ transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0.35)
 position = Vector3(0, 2.404015, 0)
 metadata/solid_size = Vector3(7.54208, 4.80803, 8.24208)
 metadata/round_volume = true
+metadata/presentation_shape = &"cylinder"
+metadata/presentation_radius = 3.77104
+metadata/presentation_center = Vector2(0, 0.35)
 
 [node name="TankWest" type="Node3D" parent="."]
 position = Vector3(2.5, 0, 12)
@@ -50,6 +53,7 @@ transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
 position = Vector3(0, 1.038239, 0)
 metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
 metadata/round_volume = true
+metadata/presentation_shape = &"box"
 
 [node name="ContainerEast" type="Node3D" parent="."]
 position = Vector3(13, 0, 12)

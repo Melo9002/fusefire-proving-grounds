@@ -238,6 +238,25 @@ static func _unit_segment_clear(grid: GridManager, from: Vector3, to: Vector3, i
 		if p.distance_squared_to(nearest) < gap * gap * 0.999999: return false
 	return true
 
+## How far from a standing point the real wall of a round asset still counts as a contact,
+## in tiles. Round assets reserve whole tiles that still grant tactical cover, and a free tile beside a
+## reserved diagonal corner can be about 1.7 tiles from the real wall, so the reach must match.
+const ROUND_REACH_UNITS := 1.75
+
+## Presentation-only contacts with the real wall of round assets (MapData.presentation_*).
+## Cover markers and pose contacts use these; tactics (cover, shots, standing points) never do.
+static func presentation_contacts(data: MapData, point: Vector3, reach: float) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for part in data.presentation_cylinders:
+		var contact := part.contact(point, data.body_radius, data.body_height, data.body_clearance)
+		if contact.found and contact.distance <= reach:
+			result.append({"contact": contact, "top": part.top(), "cylinder": part})
+	for bounds in data.presentation_boxes:
+		var contact := Fit.contact(point, bounds, data.body_radius, data.body_height, data.body_clearance)
+		if contact.found and contact.distance <= reach:
+			result.append({"contact": contact, "top": bounds.end.y})
+	return result
+
 ## Actual nearby contacts, including the actor's own cell and diagonal parts.
 static func cover_surfaces(data: MapData, point: Vector3) -> Array[MapCellData]:
 	var result: Array[MapCellData] = []

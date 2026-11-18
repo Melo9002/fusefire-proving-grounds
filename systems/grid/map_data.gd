@@ -15,6 +15,13 @@ var shot_obstacles: Array[MapCellData] = []
 var shot_columns: Dictionary = {}
 ## Presentation-query invalidation; not simulation state or replay evidence.
 var los_revision := 0
+## Presentation-only shapes for round assets, in world units. Tactics never read these: the
+## reserved tiles, cover, shots and standing points are unchanged. Cover markers and pose
+## contacts use them so they follow the real wall instead of the tile-sized stand-ins below.
+var presentation_cylinders: Array[CylinderPart] = []
+var presentation_boxes: Array[AABB] = []
+## The tile-sized boxes the compiler reserved in place of a round asset. Presentation skips them.
+var presentation_stand_ins: Dictionary = {}
 ## Current compilation uses one deterministic point per supported cell.
 var surface_placement_enabled := false
 var surface_points_resolved := false
@@ -155,6 +162,9 @@ func get_inspectable_elevation_levels() -> Array[int]:
 
 func clear() -> void:
 	los_revision += 1
+	presentation_cylinders.clear()
+	presentation_boxes.clear()
+	presentation_stand_ins.clear()
 	surface_placement_enabled = false
 	surface_points_resolved = false
 	movement_parts.clear()

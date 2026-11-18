@@ -100,6 +100,20 @@ godot_console --path . res://art/characters/mira_0/demo/surface_fit_demo.tscn
 
 Verification: [original pilot](quality/surface-placement-2026-11-16.md) and [global rollout](quality/surface-rollout-2026-11-16.md).
 
+## Round assets: how they look (presentation)
+
+Round assets stay tactically what they were: whole reserved tiles, the same cover, shots, standing points and replay evidence (hashed on 18 compiled maps before and after: identical). Only what the player sees changed. Cover markers and pose contacts used to be built from the nearest point of the tile-sized stand-in boxes, so they were axis-aligned, floated up to about a tile from the wall and zigzagged. They now follow the real wall.
+
+![Round cover before and after](quality/images/round-cover-before-after-2026-11-18.png)
+
+- **Data:** the compiler records the real shape of each round asset for presentation only (`MapData.presentation_cylinders`, `presentation_boxes`, `presentation_stand_ins`). Nothing in tactics reads it. Authoring hints on a round volume: `presentation_shape` (`cylinder` by default, or `box` for a lying drum, which is a rectangle from above), `presentation_radius` and `presentation_center` (local units). The large tank in `tank_storage.tscn` has the measured body radius 3.771 and axis offset 0.35, because its tactical box is bigger than the tank (the side pipe).
+- **Cover markers** (`CoverVisualizer`): a band hugging the curved wall, long enough that neighboring tiles join into one line, with an outward tick per tile (the same "line with ticks" read as flat walls), lifted slightly off the wall so it separates from the base shadow. Drum markers follow its real faces.
+- **Pose contacts** (`TacticalPoseContext.cover_at`): the contact direction is the exact radial direction to the wall (0.03 degrees worst error on the Depot tank, where axis-aligned box faces were up to 45).
+- **Reach:** a free tile beside a reserved diagonal corner can be about 1.7 tiles from the real wall while the stand-in still grants cover, so presentation contacts reach `SurfaceNavigation.ROUND_REACH_UNITS = 1.75` tiles.
+- Test: `tests/cover_round_presentation_test.gd` (13 checks, on the real Service Depot). Capture with `-- capture <directory>` on a machine with a display.
+
+Not changed: the pose still crouches at the tile, not against the wall (that gap is up to about a tile for diagonal tiles because the tiles are reserved), and the old unreachable gap of unused ground beside round walls remains. Closing it would be a tactical change (the cylinder fit below), not a presentation one.
+
 ## Round assets: cylinder geometry (in progress)
 
 Today a `round_volume` asset (the two tanks in `tank_storage.tscn`) is replaced by whole-tile boxes in a stepped, circle-ish pattern, because every geometry layer assumes axis-aligned boxes. By the compiler's own rule that reserves about 1.2 to 1.3 times the tiles of the real circle, leaves reserved corners up to about a tile outside the wall, and puts cover markers and contacts on tile edges instead of the wall.

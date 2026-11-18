@@ -72,7 +72,7 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 		# The pilot consumes existing part boxes automatically; ordinary assets
 		# do not need a new per-asset flag to participate.
 		var use_precise_bounds := precise_shot_bounds and (data.surface_placement_enabled or bool(node.get_meta("precise_shot_bounds", false)))
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4)
+		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node))
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -109,11 +109,34 @@ static func _local_cell_to_grid(transform: Transform3D, local: Vector3i, data: M
 	var world := transform * Vector3(local)
 	return Vector3i(roundi(world.x / unit + data.map_size.x * 0.5 - 0.5), roundi(world.y / unit), roundi(world.z / unit + data.map_size.y * 0.5 - 0.5))
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false) -> void:
+## Optional presentation hints on a round asset. The tactical volume stays a conservative box;
+## these say what the visible wall really is. Presentation only: tactics never read them.
+##   presentation_shape  &"cylinder" (default for a round volume) or &"box" (e.g. a lying drum)
+##   presentation_radius body radius in the volume's local units (default: half the smaller footprint side)
+##   presentation_center x/z offset of the axis from the volume's origin, in local units
+static func _presentation_of(node: Node) -> Dictionary:
+	if not node.get_meta("round_volume", false): return {}
+	var center: Vector2 = node.get_meta("presentation_center", Vector2.ZERO)
+	return {"shape": StringName(node.get_meta("presentation_shape", &"cylinder")), "radius": float(node.get_meta("presentation_radius", 0.0)), "center": center}
+
+## Records the real shape of a round asset for cover markers and pose contacts only.
+static func _register_presentation(data: MapData, transform: Transform3D, dimensions: Vector3, bounds: AABB, presentation: Dictionary) -> void:
+	if presentation.is_empty(): return
+	if presentation.shape == &"box":
+		data.presentation_boxes.append(bounds)
+		return
+	var scale := transform.basis.x.length()
+	var radius: float = presentation.radius if presentation.radius > 0.0 else minf(dimensions.x, dimensions.z) * 0.5
+	var axis := transform * Vector3(presentation.center.x, 0.0, presentation.center.y)
+	var part := CylinderPart.create(Vector3(axis.x, bounds.position.y, axis.z), radius * scale, bounds.size.y)
+	if part.is_valid(): data.presentation_cylinders.append(part)
+
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false, presentation := {}) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var world_units := data.surface_placement_enabled
 	var coordinate_unit := unit if world_units else 1.0
 	var shot_bounds := bounds if world_units else AABB(bounds.position * unit, bounds.size * unit)
+	if world_units and round_volume: _register_presentation(data, transform, dimensions, bounds, presentation)
 	if data.surface_placement_enabled and not round_volume and not data.movement_parts.has(shot_bounds): data.movement_parts.append(shot_bounds)
 	var lower := Vector2i(floori(bounds.position.x / coordinate_unit + data.map_size.x * 0.5), floori(bounds.position.z / coordinate_unit + data.map_size.y * 0.5))
 	var upper := Vector2i(ceili(bounds.end.x / coordinate_unit + data.map_size.x * 0.5), ceili(bounds.end.z / coordinate_unit + data.map_size.y * 0.5))
@@ -158,6 +181,7 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 					# its empty corners with the entire enclosing rectangle.
 					var coarse := AABB(Vector3(cell.support_center.x - unit * 0.5, shot_bounds.position.y, cell.support_center.z - unit * 0.5), Vector3(unit, shot_bounds.size.y, unit))
 					if not data.movement_parts.has(coarse): data.movement_parts.append(coarse)
+					data.presentation_stand_ins[coarse] = true
 					cell.authored_shot_bounds = coarse
 				if cell.walkable:
 					cell.movement_cost = maxi(cell.movement_cost, movement_cost)
