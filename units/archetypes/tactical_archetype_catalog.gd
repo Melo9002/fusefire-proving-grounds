@@ -9,6 +9,7 @@ const DEFINITIONS: Array[TacticalArchetype] = [
 	preload("res://units/archetypes/sentinel.tres"),
 	preload("res://units/archetypes/support.tres"),
 	preload("res://units/archetypes/bulwark.tres"),
+	preload("res://units/archetypes/skirmisher.tres"),
 ]
 
 static func all() -> Array[TacticalArchetype]:

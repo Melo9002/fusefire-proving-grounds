@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TacticalArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://units/archetypes/tactical_archetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+archetype_id = &"skirmisher"
+display_name = "Skirmisher"
+description = "Fast and light with a small-caliber pistol: short range and weak hits, but it closes quickly. Red stripe."
+base_ap = 3
+max_hp = 110
+movement_range = 7
+attack_range = 9
+weapon_damage_multiplier = 0.8
+marker_color = Color(0.9, 0.1, 0.08, 1)

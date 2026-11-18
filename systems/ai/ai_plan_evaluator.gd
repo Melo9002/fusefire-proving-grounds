@@ -36,7 +36,7 @@ static func best_attack_from(unit: TacticalUnit, cell: Vector3i, hostiles: Array
 		var evaluation := CombatRules.evaluate_attack_from_cell(unit, cell, hostile, battle.grid_manager, unit.get_world_3d(), accuracy_bonus, battle.shield_enabled)
 		if not evaluation.is_legal:
 			continue
-		var damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
+		var damage := CombatRules.damage_of(evaluation)
 		var chances: Array[int] = []
 		for shot in shots:
 			chances.append(evaluation.hit_chance)
@@ -84,12 +84,13 @@ static func best_shield_plan(unit: TacticalUnit, hostiles: Array[TacticalUnit], 
 		var incoming := CombatRules.evaluate_attack(hostile, unit, grid, hostile.get_world_3d(), 0, false)
 		if not incoming.is_legal:
 			continue
+		# Each attacker's own weapon sets its damage; the unshielded evaluation carries just that multiplier.
 		threats.append({"hostile": hostile, "chance": incoming.hit_chance, "raw": incoming.raw_chance,
+			"full": mini(CombatRules.cover_tuning.damage_for_hit(incoming.damage_multiplier), unit.stats.current_hp),
+			"shielded": mini(CombatRules.cover_tuning.damage_for_hit(incoming.damage_multiplier * capability.damage_multiplier), unit.stats.current_hp),
 			"direction": CombatRules.shield_direction(my_cell, grid.get_unit_grid(hostile), grid)})
 	if threats.is_empty():
 		return null
-	var full_damage := mini(CombatRules.cover_tuning.damage_for_hit(1.0), unit.stats.current_hp)
-	var shielded_damage := mini(CombatRules.cover_tuning.damage_for_hit(capability.damage_multiplier), unit.stats.current_hp)
 	var best: AIActionPlan = null
 	for facing_threat in threats:
 		var prevented := 0.0
@@ -99,7 +100,7 @@ static func best_shield_plan(unit: TacticalUnit, hostiles: Array[TacticalUnit], 
 			if not CombatRules.is_within_protected_arc(facing_threat.direction, threat.direction, capability.protected_arc_degrees):
 				continue
 			var shielded_chance := CombatRules.chance_for_raw(float(threat.raw) + float(capability.accuracy_modifier))
-			values.append(float(threat.chance) / 100.0 * float(full_damage) - float(shielded_chance) / 100.0 * float(shielded_damage))
+			values.append(float(threat.chance) / 100.0 * float(threat.full) - float(shielded_chance) / 100.0 * float(threat.shielded))
 		# A shield with a capacity covers only that many attacks: the most valuable ones count.
 		values.sort()
 		values.reverse()

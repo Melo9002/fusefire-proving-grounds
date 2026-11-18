@@ -23,7 +23,7 @@ func _run() -> void:
 
 func _test_catalog_and_independent_state() -> void:
 	check(TacticalArchetypeCatalog.validate_catalog().is_empty(), "Archetype catalog definitions are valid and unique")
-	check(TacticalArchetypeCatalog.all().size() == 6, "Laboratory exposes the five initial archetypes plus the Bulwark")
+	check(TacticalArchetypeCatalog.all().size() == 7, "Laboratory exposes the five initial archetypes plus the Bulwark and the Skirmisher")
 	var shield := TacticalArchetypeCatalog.get_definition(&"shieldbearer")
 	check(shield != null and shield.shield_capability != null, "Shieldbearer declares shield capability")
 	var bulwark := TacticalArchetypeCatalog.get_definition(&"bulwark")

@@ -29,6 +29,8 @@ class AttackEvaluation:
 	var shield_applied := false
 	var shield_accuracy_modifier := 0
 	var shield_damage_multiplier := 1.0
+	## Everything that scales the damage of a hit: the attacker's weapon times the target's shield.
+	var damage_multiplier := 1.0
 
 	func _init(
 		legal: bool,
@@ -54,6 +56,10 @@ class AttackEvaluation:
 		shield_applied = p_shield_applied
 		shield_accuracy_modifier = p_shield_accuracy_modifier
 		shield_damage_multiplier = p_shield_damage_multiplier
+
+## What one hit of this attack deals: the combat tuning's damage scaled by the weapon and the shield.
+static func damage_of(evaluation: AttackEvaluation) -> int:
+	return cover_tuning.damage_for_hit(evaluation.damage_multiplier)
 
 static func evaluate_attack(attacker: TacticalUnit, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
@@ -128,6 +134,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
 	evaluation.shield_reason = String(shield.get("reason", ""))
+	evaluation.damage_multiplier = attacker.weapon_damage_multiplier * evaluation.shield_damage_multiplier
 	evaluation.cover_cell = cover_cell
 	evaluation.cover_penalty = cover_penalty
 	evaluation.obstruction_penalty = obstruction_penalty

@@ -155,7 +155,7 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 		return query
 	query.evaluation = evaluation
 	query.hit_chance = evaluation.hit_chance
-	query.damage_on_hit = CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
+	query.damage_on_hit = CombatRules.damage_of(evaluation)
 	query.minimum_damage = 0
 	query.maximum_damage = query.damage_on_hit
 	query.expected_damage = float(query.damage_on_hit) * float(evaluation.hit_chance) / 100.0
@@ -209,7 +209,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.shield_applied = evaluation.shield_applied
 	result.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
 	result.shield_damage_multiplier = evaluation.shield_damage_multiplier
-	result.damage = CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier) if result.did_hit else 0
+	result.damage = CombatRules.damage_of(evaluation) if result.did_hit else 0
 	result.actor_ap_before = actor.stats.current_ap
 	result.supply_points_before = actor.stats.current_supply_points
 	result.max_supply_points = actor.stats.max_supply_points
@@ -1097,7 +1097,7 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			watcher.tactical_state.clear_overwatch()
 			_note_shield_attack(mover, evaluation)
 			if event.did_hit:
-				var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
+				var requested_damage := CombatRules.damage_of(evaluation)
 				mover.defer_stat_presentation = true
 				mover.stats.take_damage(requested_damage)
 				mover.defer_stat_presentation = false
@@ -1186,7 +1186,7 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	watcher.tactical_state.clear_overwatch()
 	_note_shield_attack(attacker, evaluation)
 	if event.did_hit:
-		var requested_damage := CombatRules.cover_tuning.damage_for_hit(evaluation.shield_damage_multiplier)
+		var requested_damage := CombatRules.damage_of(evaluation)
 		attacker.defer_stat_presentation = true
 		attacker.stats.take_damage(requested_damage)
 		attacker.defer_stat_presentation = false

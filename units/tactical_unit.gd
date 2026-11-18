@@ -14,6 +14,8 @@ signal attack_presented(target_world_position: Vector3)
 @export_range(0.0, 5.0, 0.01, "suffix:m") var standing_height: float = 1.0
 ## Maximum grid distance for the equipped Prototype 1 weapon.
 @export_range(1, 30, 1, "suffix:cells") var attack_range: int = 3
+## Scales the damage of every hit this unit's weapon deals (1.0 = the combat tuning's damage).
+@export_range(0.1, 3.0, 0.05) var weapon_damage_multiplier: float = 1.0
 @export_group("Identity")
 @export var faction: Faction = Faction.PLAYER
 ## Stable battle-local identity used by actions and replay. Display/node names may change.

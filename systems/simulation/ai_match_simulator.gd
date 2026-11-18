@@ -59,6 +59,17 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	battle_config.difficulty = result.difficulty
 	battle_config.player_commander = config.get("player_commander", AICommanderPolicy.Profile.DEFAULT)
 	battle_config.enemy_commander = config.get("enemy_commander", AICommanderPolicy.Profile.DEFAULT)
+	# Optional rosters (archetype IDs per slot). Left out, every unit is Generic as before, and the
+	# recorded configuration is unchanged.
+	if not config.get("player_archetypes", []).is_empty() or not config.get("enemy_archetypes", []).is_empty():
+		var player_roster: Array[StringName] = []
+		var enemy_roster: Array[StringName] = []
+		for id in config.get("player_archetypes", []): player_roster.append(StringName(id))
+		for id in config.get("enemy_archetypes", []): enemy_roster.append(StringName(id))
+		battle_config.player_archetypes = TacticalArchetypeCatalog.normalize_ids(player_roster, player_count)
+		battle_config.enemy_archetypes = TacticalArchetypeCatalog.normalize_ids(enemy_roster, enemy_count)
+		result.configuration["player_archetypes"] = Array(battle_config.player_archetypes).map(func(id): return String(id))
+		result.configuration["enemy_archetypes"] = Array(battle_config.enemy_archetypes).map(func(id): return String(id))
 	battle_config.select_battlefield(BattlefieldCatalog.id_from_configuration(config, BattlefieldCatalog.SERVICE_DEPOT))
 	result.configuration.battlefield_id = String(battle_config.battlefield_id)
 	if config.has("content_manifest"):

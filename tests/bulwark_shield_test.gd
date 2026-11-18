@@ -1,6 +1,6 @@
 extends SceneTree
 ## The Bulwark: an omnidirectional shield arm with a limited capacity, slow and short-ranged, marked by a
-## yellow stripe. Covers the archetype's numbers, the capacity rule (rules, replayed state, AI valuation)
+## class stripe. Covers the archetype's numbers, the capacity rule (rules, replayed state, AI valuation)
 ## and that a shield without a limit behaves exactly as before.
 
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
@@ -86,7 +86,7 @@ func _capacity_in_battle() -> void:
 	_put(level, east, home + Vector3i.RIGHT)
 	_put(level, west, home + Vector3i.LEFT)
 	_put(level, north, home + Vector3i(0, 0, -2))
-	check(actor.stats.speed == 3 and actor.attack_range == 6 and actor.archetype_id == &"bulwark", "The Bulwark spawns slow and short-ranged (speed %d, range %d)" % [actor.stats.speed, actor.attack_range])
+	check(actor.stats.speed == 4 and actor.attack_range == 8 and actor.stats.max_hp == 110 and actor.archetype_id == &"bulwark", "The Bulwark spawns tougher, slower and shorter-ranged than the baseline (speed %d, range %d, HP %d)" % [actor.stats.speed, actor.attack_range, actor.stats.max_hp])
 
 	var open_chance := service.query_attack(west.tactical_id, actor.tactical_id).hit_chance
 	var stance := await service.submit_shield(service.make_shield_request(actor, east, TacticalActionRequest.Source.PLAYER), true)

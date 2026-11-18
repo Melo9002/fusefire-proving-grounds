@@ -45,7 +45,7 @@ static func movement_options(query: MoveQueryResult, actor: TacticalUnit, enemie
 		if enemy.tactical_state and enemy.tactical_state.is_shielding and enemy.shield_capability and not enemy.shield_capability.attacks_allowed: incoming_unavailable = "Shield prevents Attack"
 		elif use_supply and enemy.stats.current_supply_points < TacticalActionService.ATTACK_SUPPLY_COST: incoming_unavailable = "No SP"
 		var cover: int = incoming.cover_type if incoming.is_legal else CombatRules.get_directional_cover(grid.get_unit_grid(enemy), query.target_cell, grid, enemy.standing_height, actor.standing_height)
-		options.append({"enemy": enemy, "incoming": incoming, "outgoing": outgoing, "unavailable": unavailable, "cover": cover, "damage": CombatRules.cover_tuning.damage_for_hit(outgoing.shield_damage_multiplier), "incoming_damage": CombatRules.cover_tuning.damage_for_hit(incoming.shield_damage_multiplier), "incoming_unavailable": incoming_unavailable})
+		options.append({"enemy": enemy, "incoming": incoming, "outgoing": outgoing, "unavailable": unavailable, "cover": cover, "damage": CombatRules.damage_of(outgoing), "incoming_damage": CombatRules.damage_of(incoming), "incoming_unavailable": incoming_unavailable})
 	return options
 
 static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array[TacticalUnit], grid: GridManager, use_supply := true, use_shield := true, use_aim := true) -> String:

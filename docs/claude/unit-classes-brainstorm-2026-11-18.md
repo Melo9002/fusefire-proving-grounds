@@ -86,7 +86,7 @@ Always when combat numbers change:
 
 ## What shipped (first Bulwark)
 
-- **Archetype `bulwark`** (`units/archetypes/bulwark.tres`): speed 3, attack range 6 (the battle default is 10), 3 AP, 100 HP, yellow stripe. It is added at the end of the catalog, so it appears last in the match-setup roster. The older `shieldbearer` stays as the lab preset with the original 120° Shield.
+- **Archetype `bulwark`** (`units/archetypes/bulwark.tres`): speed 4 (baseline 5), attack range 8 (battle default 10), 3 AP, 110 HP, yellow stripe (tuned by AI-versus-AI trials, below). It is added at the end of the catalog, so it appears last in the match-setup roster. The older `shieldbearer` stays as the lab preset with the original 120° Shield.
 - **Shield `bulwark_shield.tres`**: 360° arc (omnidirectional), accuracy modifier −20, damage multiplier 0.7, 1 AP, no attacking or reloading while it is up, and a **capacity of 2 covered attacks** per stance.
 - **Capacity rule** (`ShieldCapability.max_attacks_covered`, 0 = unlimited): every attack the shield covers (a shot, a Guard reaction or a retaliation) counts; once the count reaches the capacity, later attacks get no protection and the attack preview says "Shield overwhelmed". The count lives in `TacticalState.shield_attacks_covered`, resets when the stance is made or ends (next activation), is part of the replay fingerprint only when it is above zero, and joins the shield signature only when the capacity is set. The original Shield is therefore unchanged: same behaviour, same signature, same fingerprint.
 - **AI**: the Shield plan values only as many attackers as the capacity covers (the most valuable first); with a 360° arc all attackers are in the arc, so the facing choice no longer matters.
@@ -94,3 +94,42 @@ Always when combat numbers change:
 - **Stripe**: a thin band on the chest bone (`UnitVisualAdapter.set_class_marker`), colour from the archetype's `marker_color` (alpha 0 = none). Presentation only. Rendered review: `tests/class_marker_capture.gd` (explicit-only). The band is round, a little wide for the torso in side view, and an obvious placeholder for a proper paint job.
 - **Tests**: `tests/bulwark_shield_test.gd` (archetype numbers, signature compatibility, omnidirectional cover, capacity in a real battle, fingerprint, AI valuation with a capacity, the stripe); `tests/tactical_archetype_lab_test.gd` updated for the sixth archetype (an intended catalog change; its shield-less rule now exempts the Bulwark too).
 - **Not done**: no simulation version bump (existing content, replays and fingerprints are unchanged; a recording that uses the Bulwark records its shield signature), no baseline with Bulwarks in it, no balance numbers beyond the proposals above, no shield-arm animation.
+
+## Skirmisher and the weapon damage multiplier
+
+- **Archetype `skirmisher`**: speed 7, attack range 9, 110 HP, weapon damage x0.8 (a 20-damage hit instead of 25), 3 AP, **red stripe**. Last in the match-setup roster, after the Bulwark. No shield.
+- **`weapon_damage_multiplier`** (new, on `TacticalUnit` and `TacticalArchetype`, default 1.0): scales every hit the unit's weapon deals. It is folded into the attack evaluation (`AttackEvaluation.damage_multiplier`, read through `CombatRules.damage_of`), so the preview, the committed hit, Guard reactions, the target scorer and the AI's Shield valuation all use one number. With 1.0 nothing changes for any other unit. The first small-caliber weapon, not yet a weapon type of its own.
+- **Tests**: `tests/combat_skirmisher_weapon_test.gd` (12 checks: preview, committed damage, weapon times shield, the AI prices a shield by each attacker's own weapon); `tests/match_setup_bulwark_test.gd` now covers both classes in the setup menu and in battle; `tests/bulwark_replay_test.gd` records, saves, reloads and replays real AI matches with either class on either side (40 checks).
+
+## Balance trials (AI against AI, 2026-11-18)
+
+Headless matches on `service_depot`, ELIMINATE, Normal, 3 against 3, seeds 16 to 23: 8 with the class as players and 8 as enemies, against all-Generic. `tests/ai_baseline_report.gd` takes `player_archetype=` and `enemy_archetype=`; the simulator accepts rosters and records them only when given. Reference: all-Generic mirror, players win 5 of 8 (the player side has a built-in edge, which is why both sides are played). Target: the class side wins about 8 of 16.
+
+**Correction.** An earlier version of this section said the first tougher Bulwark numbers won "4 of 8". That misread which side had won: it was 6 of 8 on seeds 16 to 19, and 14 of 16 on all eight seeds, so too strong.
+
+| Class | Numbers (speed / range / HP, other) | Class side wins of 16 |
+| --- | --- | --- |
+| Bulwark | 3 / 6 / 100 (first proposal), seeds 16 to 19 | 0 of 8 |
+| Bulwark | 4 / 8 / 130 | 14 |
+| Bulwark | 3 / 8 / 130 | 11 |
+| Bulwark | 4 / 8 / 115 | 10 |
+| Bulwark | **4 / 8 / 110 (adopted)** | **10** |
+| Bulwark | 4 / 7 / 110 | 6 |
+| Bulwark | 4 / 7 / 120 | 6 |
+| Bulwark | 3 / 8 / 120 | 5 |
+| Bulwark | 4 / 8 / 100 | 4 |
+| Skirmisher | 7 / 6 / 90, x0.6 damage (first proposal) | 0 of 16 |
+| Skirmisher | x0.8, 100 HP, range 8 | 0 |
+| Skirmisher | x0.75, 100 HP, range 10 | 1 |
+| Skirmisher | x0.85, 110 HP, range 8 | 1 |
+| Skirmisher | x0.9, 100 HP, range 9 | 1 |
+| Skirmisher | x0.85, 100 HP, range 9 | 1 |
+| Skirmisher | x0.8, 110 HP, range 8, speed 6 | 3 |
+| Skirmisher | **x0.8, 110 HP, range 9, speed 7 (adopted)** | **7** |
+| Skirmisher | x0.9, 110 HP, range 10, speed 6 | 9 |
+| Skirmisher | x1.0, 90 HP, range 8 | 8 |
+
+Reading, with limits:
+- 16 matches per row: a result has roughly a plus or minus 12 point margin. These rows rank candidates; they do not prove balance. One map, one mode, one difficulty, and the same AI plays both sides.
+- **The AI never kites and rarely uses Shield.** Across all the Bulwark and Skirmisher matches it took the stance only a handful of times, and a replay run of 16 class matches saw no covered attack. So the Bulwark numbers above are mostly the balance of a slow, short-ranged unit with extra HP, and the Skirmisher gets almost nothing from its speed. That is why the adopted Skirmisher has *more* HP than a baseline unit (110): the AI cannot use mobility, so the numbers compensate. Revisit both once the AI understands mobility (milestone 05 step 7, movement profiles) and when to shield.
+- The adopted Skirmisher is still below even in one place: as players it won 2 of 8, as enemies 5 of 8.

@@ -16,7 +16,7 @@ static func evaluate(
 	var missing_hp := target.stats.max_hp - target.stats.current_hp
 	var vulnerability := float(missing_hp) * policy.wounded_target_weight
 	var fallback := CombatRules.evaluate_attack(attacker, target, grid, attacker.get_world_3d()) if attack_prediction == null else null
-	var damage: int = attack_prediction.damage_on_hit if attack_prediction else CombatRules.cover_tuning.damage_for_hit(fallback.shield_damage_multiplier)
+	var damage: int = attack_prediction.damage_on_hit if attack_prediction else CombatRules.damage_of(fallback)
 	var chance: int = attack_prediction.hit_chance if attack_prediction else fallback.hit_chance
 	var damage_value := minf(target.stats.current_hp, damage) * float(chance) / 100.0 * policy.expected_damage_weight
 	# The finishing bonus is the probability that the shots the unit can actually afford kill the target,
@@ -57,7 +57,7 @@ static func _threat_score(target: TacticalUnit, friendlies: Array[TacticalUnit],
 		var shot := CombatRules.evaluate_attack(target, friendly, grid, target.get_world_3d())
 		if shot.is_legal:
 			score += 8.0 * float(shot.hit_chance) / 100.0
-			if friendly.stats.current_hp <= CombatRules.cover_tuning.damage_for_hit(shot.shield_damage_multiplier):
+			if friendly.stats.current_hp <= CombatRules.damage_of(shot):
 				score += 4.0
 	return minf(score, 28.0)
 

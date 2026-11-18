@@ -26,12 +26,21 @@ func _initialize() -> void:
 
 func _arguments() -> Dictionary:
 	var result := {"tag": "baseline", "site": "service_depot,freight_yard,fleet_station", "mission": "ALL",
-		"seeds": "16,17", "difficulty": "NORMAL", "players": "3", "enemies": "3", "timeout": "60", "rounds": "30"}
+		"seeds": "16,17", "difficulty": "NORMAL", "players": "3", "enemies": "3", "timeout": "60", "rounds": "30", "player_archetype": "", "enemy_archetype": ""}
 	for argument in OS.get_cmdline_user_args():
 		var parts := String(argument).split("=", true, 1)
 		if parts.size() == 2:
 			result[parts[0]] = parts[1]
 	return result
+
+## A roster of one archetype for every slot, or none (all Generic) when the argument is empty.
+func _roster(archetype: String, count: int) -> Array:
+	var roster := []
+	if archetype.is_empty():
+		return roster
+	for slot in count:
+		roster.append(archetype)
+	return roster
 
 func _run() -> void:
 	var args := _arguments()
@@ -69,6 +78,8 @@ func _run() -> void:
 					"battlefield_id": StringName(site),
 					"map_size": BattlefieldCatalog.map_size(StringName(site), Vector2i(40, 40)),
 					"difficulty": difficulty_index,
+					"player_archetypes": _roster(String(args.player_archetype), int(args.players)),
+					"enemy_archetypes": _roster(String(args.enemy_archetype), int(args.enemies)),
 					"maximum_rounds": int(args.rounds),
 					"stall_seconds": 8.0,
 					"timeout_seconds": float(args.timeout),

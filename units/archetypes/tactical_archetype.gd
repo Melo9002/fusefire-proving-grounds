@@ -20,6 +20,8 @@ extends Resource
 @export_range(1, 99, 1, "suffix:SP") var max_supply_points := 4
 @export_range(0, 30, 1) var movement_range := 0
 @export_range(0, 30, 1) var attack_range := 0
+## Scales the damage of every hit this archetype's weapon deals. 1.0 keeps the combat tuning's damage.
+@export_range(0.1, 3.0, 0.05) var weapon_damage_multiplier := 1.0
 
 @export_group("Appearance")
 ## A stripe painted on the model so the class reads at a glance. Transparent (alpha 0) means none.
@@ -66,3 +68,4 @@ func apply_starting_configuration(unit: TacticalUnit) -> void:
 	unit.stats.current_supply_points = max_supply_points
 	if movement_range > 0: unit.stats.speed = movement_range
 	if attack_range > 0: unit.attack_range = attack_range
+	unit.weapon_damage_multiplier = weapon_damage_multiplier
