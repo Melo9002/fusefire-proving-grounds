@@ -54,14 +54,16 @@ func _make_idle() -> Animation:
 	return animation
 
 
+const SPREAD_SIGN := 1.0
+
 func _make_tactical_pose(pose: StringName) -> Animation:
 	# Blocking poses: knee flexion stays negative on this imported rig.
 	# Root travel is supplied by the tactical path, never by these clips.
 	var landing := pose == &"land"
 	var animation := _new_animation(0.3 if landing else 0.8, not landing)
-	var crouch := 0.10 if pose == &"cover_low" else 0.012
-	var thigh := 30.0 if pose == &"cover_low" else 10.0
-	var knee := -60.0 if pose == &"cover_low" else -20.0
+	var crouch := 0.135 if pose == &"cover_low" else 0.012
+	var thigh := 55.0 if pose == &"cover_low" else 10.0
+	var knee := -105.0 if pose == &"cover_low" else -20.0
 	if pose in [&"vault", &"climb", &"descend", &"land"]:
 		crouch = 0.10
 		thigh = 45.0
@@ -80,7 +82,9 @@ func _make_tactical_pose(pose: StringName) -> Animation:
 		var alternating := pose in [&"climb", &"descend"]
 		var a := thigh * (0.35 if alternating and side == "R" else 1.0)
 		var b := thigh * (0.35 if alternating and side == "L" else 1.0)
-		_add_rotation(animation, upper, times, [_rotation(a, 0, 0), _rotation(b, 0, 0), Quaternion.IDENTITY if landing else _rotation(a, 0, 0)])
+		# Mirrored hip abduction: a deep crouch needs the knees apart, not pinched under the hips.
+		var spread := (SPREAD_SIGN if side == "L" else -SPREAD_SIGN) * (7.0 if pose == &"cover_low" else 0.0)
+		_add_rotation(animation, upper, times, [_rotation(a, 0, spread), _rotation(b, 0, spread), Quaternion.IDENTITY if landing else _rotation(a, 0, spread)])
 		_add_rotation(animation, lower, times, [_rotation(knee, 0, 0), _rotation(knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(knee, 0, 0)])
 		_add_rotation(animation, foot, times, [_rotation(-a - knee, 0, 0), _rotation(-b - knee * 0.8, 0, 0), Quaternion.IDENTITY if landing else _rotation(-a - knee, 0, 0)])
 	_add_rotation(animation, chest, [0.0], [_rotation(-5, 12, -6) if pose == &"cover_high" else _rotation(-8, 0, 0)])
