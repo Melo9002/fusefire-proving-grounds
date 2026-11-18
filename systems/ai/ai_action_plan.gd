@@ -8,6 +8,7 @@ const MOVE := &"move"
 const AIM := &"aim"
 const RELOAD := &"reload"
 const ATTACK := &"attack"
+const SHIELD := &"shield"
 
 var steps: Array[StringName] = []
 var target_id := &""

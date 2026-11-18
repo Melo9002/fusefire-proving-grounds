@@ -63,6 +63,55 @@ static func move_then_attack(destination: Vector3i, shot: Dictionary, move_ap: i
 	plan.summary = "Move to %s, then %d shot(s) at %s (%d%% each)" % [destination, plan.shots, String(plan.target_id), int(shot.chance)]
 	return plan
 
+## The Shield stance, valued as the damage it is expected to prevent. Shield only lowers damage taken: for
+## every hostile that can shoot the unit from inside the protected arc, the hit chance drops by the
+## capability's accuracy modifier and the damage is multiplied by its damage multiplier. Each hostile's
+## unshielded chance and damage come from the combat rules; the shielded ones are derived from the same
+## rules (CombatRules.chance_for_raw, cover_tuning.damage_for_hit). The facing that covers the most
+## expected damage wins, ties to the lower tactical ID. Pure: the unit's own stance is not touched.
+## Returns null when the unit has no Shield, cannot pay for it, or nobody can shoot it. The plan's
+## `target_id` is the hostile the unit would face.
+static func best_shield_plan(unit: TacticalUnit, hostiles: Array[TacticalUnit], battle: BattleController) -> AIActionPlan:
+	var capability := unit.shield_capability
+	if capability == null or not battle.shield_enabled or unit.stats.current_ap < capability.stance_ap_cost:
+		return null
+	var grid := battle.grid_manager
+	var my_cell := grid.get_unit_grid(unit)
+	var threats: Array[Dictionary] = []
+	for hostile in hostiles:
+		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
+			continue
+		var incoming := CombatRules.evaluate_attack(hostile, unit, grid, hostile.get_world_3d(), 0, false)
+		if not incoming.is_legal:
+			continue
+		threats.append({"hostile": hostile, "chance": incoming.hit_chance, "raw": incoming.raw_chance,
+			"direction": CombatRules.shield_direction(my_cell, grid.get_unit_grid(hostile), grid)})
+	if threats.is_empty():
+		return null
+	var full_damage := mini(CombatRules.cover_tuning.damage_for_hit(1.0), unit.stats.current_hp)
+	var shielded_damage := mini(CombatRules.cover_tuning.damage_for_hit(capability.damage_multiplier), unit.stats.current_hp)
+	var best: AIActionPlan = null
+	for facing_threat in threats:
+		var prevented := 0.0
+		var covered := 0
+		for threat in threats:
+			if not CombatRules.is_within_protected_arc(facing_threat.direction, threat.direction, capability.protected_arc_degrees):
+				continue
+			var shielded_chance := CombatRules.chance_for_raw(float(threat.raw) + float(capability.accuracy_modifier))
+			prevented += float(threat.chance) / 100.0 * float(full_damage) - float(shielded_chance) / 100.0 * float(shielded_damage)
+			covered += 1
+		var hostile: TacticalUnit = facing_threat.hostile
+		var better := best == null or prevented > best.value + 0.0001
+		var tied := best != null and absf(prevented - best.value) <= 0.0001 and String(hostile.tactical_id) < String(best.target_id)
+		if better or tied:
+			best = AIActionPlan.new()
+			best.steps.append(AIActionPlan.SHIELD)
+			best.target_id = hostile.tactical_id
+			best.ap_cost = capability.stance_ap_cost
+			best.value = prevented
+			best.summary = "Shield facing %s prevents about %.1f expected damage from %d of %d attacker(s)" % [String(hostile.tactical_id), prevented, covered, threats.size()]
+	return best
+
 ## Direct shots versus Aim followed by shots, over at most `max_plan_ap` action points. Aim affects only
 ## the first shot. Returns {} when the comparison does not apply (Aim not legal, no shot, a certain
 ## hit, too few AP or ammo for Aim plus a shot). Otherwise:

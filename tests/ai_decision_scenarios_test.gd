@@ -49,6 +49,8 @@ func _run() -> void:
 	await _reposition_needs_ap_to_fire()
 	await _reposition_is_deterministic()
 	await _easy_does_not_reposition()
+	await _shield_when_stuck_under_fire()
+	await _no_shield_without_a_threat()
 	await _extraction_in_zone()
 	await _extraction_en_route()
 	await _rescue_pickup()
@@ -277,6 +279,46 @@ func _easy_does_not_reposition() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S9e")
 	check(not r.committed.is_empty() and r.committed[0] != "move", "S9e: Easy does not reposition for a better shot (committed %s)" % str(r.committed))
+	await f.dispose(self)
+
+## S10 A unit with a Shield that cannot act on its turn (the corridor is blocked, the hostile out of its
+## range) but can be shot at faces the threat: the stance prevents expected damage and costs nothing else.
+func _stuck_shield_setup(enemy_range: int) -> Array:
+	var f := Fixture.new()
+	await f.setup(self, 1, 1, 1, null, AIDifficultyPolicy.Tier.HARD, [], true)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var ally: TacticalUnit = f.turns.allied_units[0]
+	var enemy: TacticalUnit = f.turns.enemy_units[0]
+	f.wall_band(10, 14, 28)
+	f.place(actor, Vector3i(3, 0, 28)); f.place(ally, Vector3i(12, 0, 28)); f.place(enemy, Vector3i(28, 0, 28))
+	actor.shield_capability = load("res://units/capabilities/physical_shield.tres")
+	f.ready_actor(actor)
+	enemy.attack_range = enemy_range
+	return [f, actor, enemy]
+
+func _shield_when_stuck_under_fire() -> void:
+	var setup: Array = await _stuck_shield_setup(30)
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	var enemy: TacticalUnit = setup[2]
+	check(CombatRules.evaluate_attack(enemy, actor, f.grid, enemy.get_world_3d()).is_legal and not f.battle.query_attack(actor, enemy).is_legal(), "S10 setup: the hostile can shoot the unit, the unit cannot shoot back")
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S10")
+	check("shield" in r.committed, "S10: with nothing else to do under fire, a worthwhile Shield is taken (committed %s)" % str(r.committed))
+	var reasons := ""
+	for decision in r.decisions: reasons += String(decision.reason) + " | "
+	check(reasons.contains("prevents about"), "S10: the Shield says what it prevents (%s)" % reasons.substr(0, 220))
+	check(actor.tactical_state.is_shielding, "S10: the stance is active")
+	await f.dispose(self)
+
+## S10b The same unit with no one able to shoot it has nothing to shield against.
+func _no_shield_without_a_threat() -> void:
+	var setup: Array = await _stuck_shield_setup(3)
+	var f = setup[0]
+	var actor: TacticalUnit = setup[1]
+	var r: Dictionary = await f.activate(actor, self)
+	hard_rules(f, actor, r, "S10b")
+	check(not ("shield" in r.committed) and not actor.tactical_state.is_shielding, "S10b: with no shooter in range the unit does not Shield (committed %s)" % str(r.committed))
 	await f.dispose(self)
 
 func _extract_fixture():

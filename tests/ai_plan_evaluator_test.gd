@@ -19,6 +19,7 @@ func _run() -> void:
 	_plan_record()
 	_policy_switch_survives_composition()
 	await _aim_comparison()
+	await _shield_plan()
 	print("AI plan evaluator: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
@@ -105,3 +106,56 @@ func _repeat(chance: int, count: int) -> Array[int]:
 	var result: Array[int] = []
 	for i in count: result.append(chance)
 	return result
+
+## Shield only lowers damage taken, so its value is the expected damage it prevents, from the real rules.
+func _shield_plan() -> void:
+	var f := Fixture.new()
+	await f.setup(self, 1, 2, 0, null, AIDifficultyPolicy.Tier.HARD)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var east: TacticalUnit = f.turns.enemy_units[0]
+	var west: TacticalUnit = f.turns.enemy_units[1]
+	actor.shield_capability = load("res://units/capabilities/physical_shield.tres")
+	var capability: ShieldCapability = actor.shield_capability
+	f.place(actor, Vector3i(12, 0, 12)); f.place(east, Vector3i(18, 0, 12)); f.place(west, Vector3i(6, 0, 12))
+	f.ready_actor(actor, 3, 4)
+	east.attack_range = 10
+	west.attack_range = 10
+	var hostiles: Array[TacticalUnit] = [east, west]
+	var tuning = CombatRules.cover_tuning
+	var full := mini(tuning.damage_for_hit(1.0), actor.stats.current_hp)
+	var shielded := mini(tuning.damage_for_hit(capability.damage_multiplier), actor.stats.current_hp)
+	var prevented_by := func(hostile: TacticalUnit) -> float:
+		var e := CombatRules.evaluate_attack(hostile, actor, f.grid, hostile.get_world_3d(), 0, false)
+		return float(e.hit_chance) / 100.0 * float(full) - float(CombatRules.chance_for_raw(e.raw_chance + float(capability.accuracy_modifier))) / 100.0 * float(shielded)
+	check(CombatRules.chance_for_raw(CombatRules.evaluate_attack(east, actor, f.grid, east.get_world_3d(), 0, false).raw_chance) == CombatRules.evaluate_attack(east, actor, f.grid, east.get_world_3d(), 0, false).hit_chance, "The shared chance rule reproduces the combat rules' own chance")
+	var rng_before: Variant = f.battle.action_service.get_combat_rng_state()
+	var plan := AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle)
+	check(plan != null and plan.first_step() == AIActionPlan.SHIELD and plan.ap_cost == capability.stance_ap_cost, "A unit with a Shield and attackers gets a Shield plan at the stance's real AP cost")
+	if plan == null:
+		await f.dispose(self)
+		return
+	# One attacker on each side: the arc covers only the one it faces, so the value is one attacker's prevented damage.
+	check(is_equal_approx(plan.value, prevented_by.call(east)), "Facing one side prevents that attacker's expected damage only (%.2f vs %.2f)" % [plan.value, prevented_by.call(east)])
+	check(plan.value > 0.0, "The Shield is worth something against a shooter who can hit")
+	check(plan.target_id == east.tactical_id, "Equal threats go to the lower tactical ID (%s)" % String(plan.target_id))
+	check(not actor.tactical_state.is_shielding and f.battle.action_service.get_combat_rng_state() == rng_before, "Valuing the plan changes no state and draws no roll")
+	# Both attackers on the same side: one facing covers both.
+	f.place(west, Vector3i(19, 0, 13))
+	var both := AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle)
+	check(both != null and is_equal_approx(both.value, prevented_by.call(east) + prevented_by.call(west)), "One facing that covers both attackers is worth both (%.2f)" % (both.value if both != null else -1.0))
+	check(both != null and both.value > plan.value, "Covering more expected damage ranks higher")
+	# Not worth planning, or impossible.
+	east.attack_range = 3
+	west.attack_range = 3
+	check(AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle) == null, "Nobody who can shoot the unit: no plan")
+	east.attack_range = 10
+	actor.stats.set_available_ap_for_setup(0)
+	check(AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle) == null, "No AP for the stance: no plan")
+	actor.stats.set_available_ap_for_setup(3)
+	actor.shield_capability = null
+	check(AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle) == null, "A unit without a Shield has no plan")
+	actor.shield_capability = capability
+	f.battle.shield_enabled = false
+	check(AIPlanEvaluator.best_shield_plan(actor, hostiles, f.battle) == null, "With Shield disabled in the battle: no plan")
+	f.battle.shield_enabled = true
+	await f.dispose(self)

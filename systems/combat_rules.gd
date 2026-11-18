@@ -124,8 +124,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var height_delta := (get_support_position(attacker_cell, grid).y - target_ground.y) / grid.cell_size
 	var height_modifier: float = cover_tuning.height_modifier_for(height_delta)
 	var raw_chance: float = cover_tuning.base_accuracy - range_penalty - maxi(cover_penalty, obstruction_penalty) + height_modifier + accuracy_bonus + shield_accuracy
-	# Round only once; epsilon absorbs arithmetic noise at exact half-points.
-	var chance := floori(clampf(raw_chance, cover_tuning.minimum_hit_chance, cover_tuning.maximum_hit_chance) + 0.5 + 0.0000001)
+	var chance := chance_for_raw(raw_chance)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
 	evaluation.shield_reason = String(shield.get("reason", ""))
@@ -143,6 +142,12 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	evaluation.minimum_hit_chance = cover_tuning.minimum_hit_chance
 	evaluation.maximum_hit_chance = cover_tuning.maximum_hit_chance
 	return evaluation
+
+## The hit chance for an unclamped total: clamp to the tuning's limits, then round once. Epsilon absorbs
+## arithmetic noise at exact half-points. The one place this rule lives, also used to value hypothetical
+## modifiers such as a Shield stance that is not active yet.
+static func chance_for_raw(raw_chance: float) -> int:
+	return floori(clampf(raw_chance, cover_tuning.minimum_hit_chance, cover_tuning.maximum_hit_chance) + 0.5 + 0.0000001)
 
 ## Both committed facing and incoming direction use supported positions, not animation.
 static func shield_direction(from_cell: Vector3i, to_cell: Vector3i, grid: GridManager) -> Vector2:

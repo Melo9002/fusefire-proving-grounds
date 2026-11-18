@@ -20,6 +20,8 @@ const REPOSITION_MIN_GAIN_FRACTION := 0.25
 const REPOSITION_MIN_GAIN := 3.0
 ## At most this many cells with the best shots are checked for safety.
 const REPOSITION_CANDIDATE_LIMIT := 12
+## A Shield stance must be expected to prevent at least this much damage to be worth the AP.
+const SHIELD_MIN_PREVENTED := 2.0
 const ESCORT_REJOIN_DISTANCE := 5
 const ESCORT_APPROACH_RANGE := 4
 const ESCORT_POSITION_MIN_DISTANCE := 2.0
@@ -279,11 +281,12 @@ func _run_activation() -> bool:
 		if advanced:
 			_record_ai_decision("Move", str(_last_move_destination), "No legal shot; spent remaining AP advancing to a safe tile.", "Attack, Wait")
 			continue
-		var defensive_threat := _most_relevant_defensive_threat()
-		var shielded := unit.stats.current_ap == 1 and defensive_threat != null and await _try_shield_against(defensive_threat)
+		var shield_plan := _worthwhile_shield_plan()
+		var shield_threat := _hostile_with_id(shield_plan.target_id) if shield_plan != null else null
+		var shielded := shield_threat != null and await _try_shield_against(shield_threat)
 		if not _battle_is_live(): return false
 		if shielded:
-			_record_ai_decision("Shield", defensive_threat.name, "Used the final AP to face a credible hostile threat.", "Guard, Wait")
+			_record_ai_decision("Shield", shield_threat.name, "%s." % shield_plan.summary, "Guard, Wait")
 			continue
 		var guarded := await _try_guard_if_useful()
 		if not _battle_is_live(): return false
@@ -517,6 +520,21 @@ func _guard_has_plausible_trigger() -> bool:
 		if CombatRules.attack_distance(actor_cell, hostile_cell, battle_controller.grid_manager) <= unit.attack_range + hostile.stats.speed:
 			return true
 	return false
+
+## The Shield plan, if the stance is worth its AP now. Shield lasts until the unit's next activation and
+## only lowers damage taken, so it is judged by the damage it is expected to prevent. A unit that has
+## just been waiting does not start a defensive loop.
+func _worthwhile_shield_plan() -> AIActionPlan:
+	if not is_instance_valid(unit) or unit.shield_capability == null or _consecutive_low_value_actions > 0:
+		return null
+	var plan := AIPlanEvaluator.best_shield_plan(unit, _get_hostile_units(), battle_controller)
+	return plan if plan != null and plan.value >= SHIELD_MIN_PREVENTED else null
+
+func _hostile_with_id(tactical_id: StringName) -> TacticalUnit:
+	for hostile in _get_hostile_units():
+		if is_instance_valid(hostile) and hostile.tactical_id == tactical_id:
+			return hostile
+	return null
 
 func _most_relevant_defensive_threat() -> TacticalUnit:
 	if not is_instance_valid(unit) or unit.shield_capability == null or _consecutive_low_value_actions > 0:
