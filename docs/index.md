@@ -12,7 +12,8 @@
 - [Replay](replay.md): recording, files and playback.
 - [Simulation](simulation.md): deterministic AI/match diagnostics.
 - [Animation editing](animation-editing-guide.md): character work.
-- [Procedural animation layer](animation-procedural-layer.md): the cover crouch, kneel and weapon-grip approach, how it was measured and checked, its limits and the order of next steps.
+- [Claude's documents](claude/README.md): the AI pipeline, baseline and scenario write-ups and the procedural animation notes, kept apart from Codex's documents.
+- [Procedural animation layer](claude/animation-procedural-layer.md): the cover crouch, kneel and weapon-grip approach, how it was measured and checked, its limits and the order of next steps.
 - [Asset edges and hybrid animation](asset-edge-placement.md): supported standing points, swept clearance, tile-edge cover and the current-map rollout and editable battle/replay example.
 - Dependency notices remain in `dependencies/`.
 

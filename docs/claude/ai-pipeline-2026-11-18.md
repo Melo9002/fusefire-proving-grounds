@@ -1,6 +1,6 @@
 # AI decision pipeline and F3 visualization — verification, 2026-11-18
 
-Milestone 05 step 4. Starting commit: `e3d7893`. The design is in [AI decision pipeline](../ai-decision-pipeline.md); the F3 tools are in [F3 battle inspection](../debug-inspection.md). Evidence level: automated (E2) plus rendered review of four F3 captures (E3). No human playtest.
+Milestone 05 step 4. Starting commit: `e3d7893`. The design is in [AI decision pipeline](ai-decision-pipeline.md); the F3 tools are in [F3 battle inspection](../debug-inspection.md). Evidence level: automated (E2) plus rendered review of four F3 captures (E3). No human playtest.
 
 ## What changed
 

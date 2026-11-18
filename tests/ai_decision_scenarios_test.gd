@@ -4,7 +4,7 @@ extends SceneTree
 ## states what a reasonable decision looks like. Hard rules (legality, resources,
 ## explanation) are asserted for every scenario. Preferences are asserted as properties
 ## ("the chosen target is no worse than the best legal one"), never as one exact tile.
-## Behavior the AI does not have yet is documented in docs/quality/ai-scenarios-2026-11-18.md
+## Behavior the AI does not have yet is documented in docs/claude/ai-scenarios-2026-11-18.md
 ## instead of being asserted here.
 const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
 

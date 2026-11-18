@@ -24,7 +24,7 @@ flowchart TD
 
 ## Inspect and test
 
-How one decision flows from the battle to a committed action, and what each stage owns, is in the [decision pipeline](ai-decision-pipeline.md).
+How one decision flows from the battle to a committed action, and what each stage owns, is in the [decision pipeline](claude/ai-decision-pipeline.md).
 
 Hover a destination and press **F3**. Unit/Tactical show existing authoritative predictions; AI shows the latest explanation plus the latest authoritative outcome. Early movement heatmaps are labeled **selected**. Outcomes separately say **committed** or **rejected**, with transaction/revision data and a linked movement decision ID. Other post-action explanations are labeled explanations; an outcome with decision ID 0 has no preselected movement record. AI simulation records decision count separately from committed/rejected action counts.
 
