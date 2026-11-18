@@ -4,6 +4,7 @@ extends RefCounted
 enum Tier { EASY, NORMAL, HARD }
 
 var tier: Tier = Tier.NORMAL
+var expected_damage_weight := 1.0
 var wounded_target_weight := 1.0
 var finishing_bonus_weight := 1.0
 var focus_penalty_weight := 1.0
@@ -80,8 +81,9 @@ func choose_near_best_index(scores: Array[float], rng: RandomNumberGenerator) ->
 		return 0
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
-func score_target(missing_hp: int, current_hp: int, focus_adjustment: float) -> float:
-	var finisher := 20.0 if current_hp <= 25 else 0.0
+func score_target(missing_hp: int, current_hp: int, focus_adjustment: float, predicted_damage := -1) -> float:
+	var damage: int = CombatRules.cover_tuning.damage_for_hit(1.0) if predicted_damage < 0 else predicted_damage
+	var finisher := 20.0 if damage > 0 and current_hp <= damage else 0.0
 	return missing_hp * wounded_target_weight + finisher * finishing_bonus_weight + focus_adjustment * focus_penalty_weight
 
 func score_path_progress(step_index: int, squad_adjustment: float) -> float:

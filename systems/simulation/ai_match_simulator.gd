@@ -7,6 +7,7 @@ const BattlefieldCatalog := preload("res://systems/generation/battlefield_catalo
 const BATTLE_SCENE := preload("res://levels/prototype_map/prototype_map.tscn")
 
 var _decision_count := 0
+var _action_outcomes: Array[Dictionary] = []
 var _decision_records: Array[Dictionary] = []
 
 func run_match(config: Dictionary) -> AIMatchSimulationResult:
@@ -86,7 +87,9 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		result.elevated_cell_count += int(cell.grid_position.y != 0)
 	_decision_count = 0
 	_decision_records.clear()
+	_action_outcomes.clear()
 	level.battle_controller.ai_decision_recorded.connect(_on_ai_decision)
+	level.battle_controller.ai_action_outcome_recorded.connect(func(record: Dictionary): _action_outcomes.append(record.duplicate(true)))
 	level.battle_controller.set_debug_player_ai(true)
 	var started_at := Time.get_ticks_msec()
 	var last_progress_at := started_at
@@ -101,27 +104,27 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		if signature != previous_signature:
 			previous_signature = signature
 			last_progress_at = now
-		if level.turn_manager.current_round > maximum_rounds:
-			result.status = AIMatchSimulationResult.Status.ROUND_LIMIT
-			result.reason = "Exceeded %d rounds. State: %s" % [maximum_rounds, signature]
-			break
-		if float(now - last_progress_at) / 1000.0 >= stall_seconds:
-			result.status = AIMatchSimulationResult.Status.STALLED
-			result.reason = "No authoritative state change for %.1f seconds. State: %s" % [stall_seconds, signature]
-			break
-		if float(now - started_at) / 1000.0 >= timeout_seconds:
-			result.status = AIMatchSimulationResult.Status.TIMEOUT
-			result.reason = "Exceeded %.1f seconds." % timeout_seconds
+		var stop := classify_stop(level.turn_manager.battle_result, level.turn_manager.current_round,
+			maximum_rounds, float(now - last_progress_at) / 1000.0, stall_seconds,
+			float(now - started_at) / 1000.0, timeout_seconds)
+		if not stop.is_empty():
+			result.status = stop.status
+			result.reason = stop.reason
 			break
 
 	result.elapsed_seconds = float(Time.get_ticks_msec() - started_at) / 1000.0
 	result.rounds = level.turn_manager.current_round
 	result.decision_count = _decision_count
 	result.decision_records.assign(_decision_records)
+	result.action_outcomes.assign(_action_outcomes)
+	for outcome in _action_outcomes:
+		if outcome.stage == "committed": result.committed_action_count += 1
+		else: result.rejected_action_count += 1
 	result.final_state = _state_signature(level)
 	result.battle_result = level.turn_manager.battle_result
 	if result.battle_result != TurnManager.BattleResult.ONGOING:
 		result.status = AIMatchSimulationResult.Status.COMPLETED
+		result.reason = ""
 	print("[AISim] %s" % result.summary())
 	await _dispose_level(level)
 	return result
@@ -175,3 +178,16 @@ func _dispose_level(level: BattleLevel) -> void:
 		level.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+## Terminal state wins over a deadline observed in the same sampling frame.
+static func classify_stop(outcome: TurnManager.BattleResult, round_count: int, round_limit: int,
+	idle_seconds: float, stall_limit: float, elapsed_seconds: float, timeout_limit: float) -> Dictionary:
+	if outcome != TurnManager.BattleResult.ONGOING:
+		return {"status": AIMatchSimulationResult.Status.COMPLETED, "reason": ""}
+	if round_count > round_limit:
+		return {"status": AIMatchSimulationResult.Status.ROUND_LIMIT, "reason": "Exceeded %d rounds." % round_limit}
+	if idle_seconds >= stall_limit:
+		return {"status": AIMatchSimulationResult.Status.STALLED, "reason": "No authoritative state change for %.1f seconds." % stall_limit}
+	if elapsed_seconds >= timeout_limit:
+		return {"status": AIMatchSimulationResult.Status.TIMEOUT, "reason": "Exceeded %.1f seconds." % timeout_limit}
+	return {}

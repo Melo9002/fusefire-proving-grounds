@@ -6,7 +6,7 @@ The current AI already has utility scorers, mission intent, squad reservations, 
 
 Preparation: [F3 battle inspection](debug-inspection.md) now exposes existing unit, action-query, AI, map and runtime information. This helps collect evidence; it does not complete the AI audit, introduce profiles/expiry, or measure planning latency.
 
-Step 1 audit: [current AI behavior and ranked findings](ai-current-behavior.md). The audit preserves runtime behavior and identifies concrete reservation/carrier fixes plus baseline measurement needs. Next is step 2; do not treat the audit as implementation of the later pipeline/profile work.
+Step 1 audit: [ranked findings](quality/ai-audit-2026-11-17.md). Follow-up fixes and explicit shooting-policy changes are documented in [current AI behavior](ai-current-behavior.md) and the [repair verification](quality/ai-repairs-2026-11-17.md). Next is step 2; do not treat the audit as implementation of the later pipeline/profile work.
 
 ## Ordered tasks
 
@@ -35,8 +35,8 @@ Existing simulation results already separate completion, stalls, round limits, t
 
 - [AI controller](../units/ai_controller.gd): activation orchestration, mission steps, carrier/escort behavior, recovery and decision publishing.
 - [MissionIntent](../systems/objectives/mission_intent.gd): existing typed mission intent.
-- [Target scorer](../systems/ai/ai_target_scorer.gd) and [position scorer](../systems/ai/ai_position_scorer.gd): existing utility evaluation. Target chance/expected damage are exposed diagnostically; a fixed 25-HP finishing threshold still exists. Movement profiles currently emerge from weights and conditional branches.
-- [SquadContext](../systems/ai/squad_context.gd): destination, target, objective and corridor commitments. Current bookkeeping uses node names and round/unit boundaries; audit identity, expiry and interrupted ownership before changing it.
+- [Target scorer](../systems/ai/ai_target_scorer.gd) and [position scorer](../systems/ai/ai_position_scorer.gd): existing utility evaluation. Target chance and HP-capped expected damage now contribute to scoring; finishing priority uses actual on-hit damage. Aim has a bounded same-target comparison. Broader action-relative plans and named movement profiles remain later work.
+- [SquadContext](../systems/ai/squad_context.gd): destination, target, objective and corridor commitments. Bookkeeping now uses tactical IDs, replacement cleanup and live-roster pruning, bounded by round/unit boundaries. Review finer expiry and changing routes/roles with the planned scenarios.
 - [Difficulty policy](../systems/ai/ai_difficulty_policy.gd) and [commander policy](../systems/ai/ai_commander_policy.gd): existing quality/lapse settings and Default/Cautious/Aggressive preferences.
 - [F3 debug menu](../ui/debug_tools.gd): decision explanations, scoring views and current overlays.
 - [AI simulator entry](../tests/ai_match_simulation_smoke.gd), [result records](../systems/simulation/ai_match_simulation_result.gd) and existing AI/squad regression tests.

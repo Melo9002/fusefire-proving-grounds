@@ -45,6 +45,7 @@ var _ai_scoring_label: Label
 var _inspected_destination := Vector3i(-1, -1, -1)
 var _show_ai_decisions: bool = false
 var _latest_ai_decision: Dictionary = {}
+var _latest_ai_outcome: Dictionary = {}
 var _inspection_snapshot: Dictionary = {}
 var _inspection_labels: Dictionary = {}
 var _inspection_status: Label
@@ -65,6 +66,7 @@ func _ready() -> void:
 	_build_ai_scoring_overlay()
 	_build_mission_controller()
 	battle_controller.ai_decision_recorded.connect(_on_ai_decision_recorded)
+	battle_controller.ai_action_outcome_recorded.connect(_on_ai_action_outcome)
 	visible = debug_tools_enabled and not battle_controller.replay_mode
 	_set_shot_trajectories_visible(false)
 	if debug_tools_enabled:
@@ -608,6 +610,7 @@ func _on_ai_decision_recorded(record: Dictionary) -> void:
 		record.get("reason", ""),
 		record.get("alternatives", ""),
 	]
+	_ai_decision_label.text += "\nTrace stage: %s · decision %s · revision %s" % [record.get("stage", "explanation"), record.get("decision_id", "?"), record.get("state_revision", "?")]
 	_ai_decision_label.visible = _show_ai_decisions
 
 func _commander_composition_summary(composition: Dictionary) -> String:
@@ -696,6 +699,7 @@ func _capture_inspection() -> void:
 	_show_map_snapshot()
 	if not _latest_ai_decision.is_empty(): _update_ai_scoring_details(_latest_ai_decision)
 	_inspection_labels["AI"].text = ("Latest recorded decision (historical):\n" + _ai_decision_label.text + "\n\n" + _ai_scoring_label.text if not _latest_ai_decision.is_empty() else "No AI decision recorded in this battle yet.") + "\n\n" + _inspection_snapshot.squad
+	_inspection_labels["AI"].text = "Latest authoritative AI outcome:\n" + _format_ai_outcome() + "\n\n" + _inspection_labels["AI"].text
 	_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
 	_update_inspection_status()
 
@@ -716,3 +720,18 @@ func _exit_tree() -> void:
 	if _paused_by_debug_tools and is_inside_tree():
 		get_tree().paused = false
 	_paused_by_debug_tools = false
+
+func _on_ai_action_outcome(record: Dictionary) -> void:
+	_latest_ai_outcome = record.duplicate(true)
+	if int(record.get("decision_id", 0)) > 0 and record.get("decision_id") == _latest_ai_decision.get("decision_id"):
+		_ai_decision_label.text += "\nOutcome: " + _format_ai_outcome()
+
+func _format_ai_outcome() -> String:
+	if _latest_ai_outcome.is_empty(): return "None recorded yet"
+	var record := _latest_ai_outcome
+	var text := "%s · %s · %s\nDecision %s" % [record.actor_id, record.action, String(record.stage).to_upper(), record.get("decision_id", 0)]
+	if record.stage == "committed":
+		text += " · transaction %s · revision %s → %s" % [record.transaction_id, record.base_revision, record.committed_revision]
+	else:
+		text += "\n" + String(record.get("reason", "Rejected"))
+	return text

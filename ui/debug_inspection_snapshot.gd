@@ -30,7 +30,7 @@ Within-cell offset %s" % [cell.world_position, cell.support_center, cell.world_p
 		conditions.sort()
 		lines.append("Conditions: " + (", ".join(conditions) if not conditions.is_empty() else "none"))
 		result.unit = "\n".join(lines)
-		var squad: SquadContext = battle._squad_contexts.get(actor.faction)
+		var squad: SquadContext = battle.peek_squad_context(actor)
 		if squad:
 			result.squad = "Reservations at F3 open · round %d
 Destinations %s
@@ -42,7 +42,10 @@ Current expiry: round/unit boundaries; explicit expiry refinement belongs to mil
 			var inventory := battle.query_attack(actor)
 			var ids: Array = inventory.candidate_results.keys()
 			ids.sort()
-			for target_id in ids.slice(0, 8):
+			for target_id in ids:
+				var target_actor := battle.action_service.actor_registry.resolve(target_id)
+				if not is_instance_valid(target_actor) or not FactionRules.are_hostile(actor.faction, target_actor.faction): continue
+				if result.targets.size() >= 8: break
 				var query: AttackQueryResult = inventory.get_candidate(target_id)
 				var text := TacticalFeedbackText.shot(query)
 				if query.evaluation:

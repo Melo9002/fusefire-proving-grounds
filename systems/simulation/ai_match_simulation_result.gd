@@ -15,6 +15,9 @@ var status := Status.SETUP_FAILED
 var battle_result := TurnManager.BattleResult.ONGOING
 var rounds := 0
 var decision_count := 0
+var committed_action_count := 0
+var rejected_action_count := 0
+var action_outcomes: Array[Dictionary] = []
 var elapsed_seconds := 0.0
 var reason := ""
 var quality: MapQualityReport
@@ -56,6 +59,9 @@ func reproduction_data() -> Dictionary:
 		"battle_result": battle_result_label(),
 		"rounds": rounds,
 		"decision_count": decision_count,
+		"committed_action_count": committed_action_count,
+		"rejected_action_count": rejected_action_count,
+		"action_outcomes": action_outcomes,
 		"reason": reason,
 		"final_state": final_state,
 		"validation_errors": validation_errors,

@@ -21,8 +21,40 @@ func _initialize() -> void:
 	check(context.reserve_objective(first, &"rescue") == 0, "The first objective handler has no duplication penalty")
 	check(context.reserve_objective(second, &"rescue") == 1, "Later units see an existing objective handler")
 
+	context.reserve_destination(first, Vector3i(7, 0, 5))
+	check(not context.reserved_destinations.has(Vector3i(5, 0, 5)), "Replacing a destination releases the superseded tile")
+	context.begin_unit(first)
+	check(context.reserved_destinations.is_empty(), "Next activation leaves no orphan destination")
+	context.begin_unit(first)
+	check(context.reserved_destinations.is_empty(), "Repeated activation cleanup is idempotent")
+
 	context.begin_round(2)
 	check(context.reserved_destinations.is_empty() and context.intended_targets.is_empty() and context.objective_handlers.is_empty(), "Squad intentions reset for a new round")
+	first.tactical_id = &"stable-first"
+	second.tactical_id = &"stable-second"
+	target.tactical_id = &"stable-target"
+	for actor in [first, second, target]:
+		actor.stats = UnitStats.new()
+		actor.add_child(actor.stats)
+	first.grid_position = Vector3i(8, 0, 8)
+	context.reserve_destination(first, Vector3i(8, 0, 8))
+	context.reserve_destination(second, Vector3i(8, 0, 8))
+	check(context.reserved_destinations[Vector3i(8, 0, 8)] == &"stable-first", "Another actor cannot steal an exact reservation")
+	context.reserve_target(first, target)
+	context.reserve_objective(first, &"rescue")
+	context.reserve_objective(first, &"extract")
+	check(not context.objective_handlers[&"rescue"].has(&"stable-first"), "Changing objective releases the previous handler claim")
+	context.reserve_objective(first, &"")
+	check(context.objective_handlers[&"extract"].is_empty(), "No mission intent releases its handler")
+	context.reserve_objective(first, &"extract")
+	context.reserve_corridor(first, {Vector3i(9, 0, 8): true})
+	first.name = "RenamedNode"
+	check(context.destination_adjustment(first, Vector3i(8, 0, 8)) == 0 and context.target_adjustment(first, target) == 0, "Stable tactical identity survives a node rename")
+	context.prune([first, second])
+	check(context.reserved_destinations.has(Vector3i(8, 0, 8)), "Current live destination survives revalidation")
+	check(context.target_adjustment(second, target) == 0, "Removed target releases focus")
+	context.prune([second, target])
+	check(context.reserved_destinations.is_empty() and context.reserved_corridor.is_empty() and context.objective_handlers[&"extract"].is_empty(), "Removed owner releases destination, corridor and objective")
 	first.free()
 	second.free()
 	target.free()

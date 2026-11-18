@@ -19,8 +19,14 @@ signal units_registered(player_units: Array[TacticalUnit])
 signal debug_enemy_control_changed(enabled: bool)
 signal debug_player_ai_changed(enabled: bool)
 signal ai_decision_recorded(record: Dictionary)
+signal ai_action_outcome_recorded(record: Dictionary)
+
 signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
+
+var _ai_decision_sequence := 0
+var _pending_ai_moves: Dictionary = {}
+var _shot_cell_cache: Dictionary = {}
 
 @export var battle_root: Node3D
 @export var tactical_unit: TacticalUnit
@@ -270,6 +276,13 @@ func _on_action_service_busy_changed(is_busy: bool) -> void:
 	action_state_changed.emit(is_busy)
 
 func _on_action_committed(result) -> void:
+	if result.request.source == TacticalActionRequest.Source.AI:
+		var actor_id: StringName = result.request.actor_id
+		ai_action_outcome_recorded.emit({"actor_id": String(actor_id), "action": String(result.request.kind),
+			"stage": "committed", "decision_id": _pending_ai_moves.get(actor_id, 0) if result.request.kind == &"move" else 0,
+			"transaction_id": result.transaction_id, "base_revision": result.base_revision,
+			"committed_revision": result.committed_revision})
+		if result.request.kind == &"move": _pending_ai_moves.erase(actor_id)
 	_refresh_overwatch_range()
 	_append_combat_entries(TacticalFeedbackText.committed(result))
 
@@ -590,6 +603,22 @@ func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
 	if not is_instance_valid(attacker) or not attacker.stats:
 		return cells
 	var attacker_grid = grid_manager.get_unit_grid(attacker)
+	var data := grid_manager.map_data
+	var heights := {}
+	# An empty cell uses the shooter's height, so equal-height occupants do not
+	# change this geometric overlay when they move. Actual attacks still query live state.
+	for occupant in grid_manager.occupancy_map.values():
+		if is_instance_valid(occupant) and occupant.standing_height != attacker.standing_height:
+			heights[occupant.grid_position] = occupant.standing_height
+	var signature: Array = [data.get_instance_id(), data.los_revision, pathfinder._graph_revision,
+		attacker_grid, grid_manager.grid_to_world(attacker_grid), attacker.standing_height, attacker.attack_range,
+		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights]
+	var key := attacker.get_instance_id()
+	var cached: Dictionary = _shot_cell_cache.get(key, {})
+	if cached.get("signature") == signature:
+		cells.assign(cached.cells)
+		return cells
+	if _shot_cell_cache.size() >= 32: _shot_cell_cache.clear()
 	for grid_pos in pathfinder.grid_to_id_map.keys():
 		var point_id = pathfinder.grid_to_id_map[grid_pos]
 		if pathfinder.astar.is_point_disabled(point_id):
@@ -603,6 +632,7 @@ func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
 			cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
 		return a.x < b.x or (a.x == b.x and (a.z < b.z or (a.z == b.z and a.y < b.y))))
+	_shot_cell_cache[key] = {"signature": signature, "cells": cells.duplicate()}
 	return cells
 
 func world_to_grid(pos: Vector3) -> Vector3i:
@@ -703,12 +733,18 @@ func is_current_phase_manually_controlled() -> bool:
 	return (not debug_player_ai and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN) \
 		or (debug_enemy_control and turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN)
 
+func peek_squad_context(unit: TacticalUnit) -> SquadContext:
+	return _squad_contexts.get(_ai_team_id(unit))
+
 func get_squad_context(unit: TacticalUnit) -> SquadContext:
 	var team_id := _ai_team_id(unit)
 	if not _squad_contexts.has(team_id):
 		_squad_contexts[team_id] = SquadContextData.new()
 	var context: SquadContext = _squad_contexts[team_id]
 	context.begin_round(turn_manager.current_round)
+	var actors: Array[TacticalUnit] = []
+	actors.append_array(turn_manager.player_units + turn_manager.allied_units + turn_manager.enemy_units)
+	context.prune(actors)
 	return context
 
 func get_commander_policy(unit: TacticalUnit) -> AICommanderPolicy:
@@ -725,12 +761,16 @@ func configure_commander_profiles(player_team: AICommanderPolicy.Profile, enemy_
 func _ai_team_id(unit: TacticalUnit) -> int:
 	return 0 if unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] else 1
 
-func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = [], context: Dictionary = {}) -> void:
+func record_ai_decision(actor: TacticalUnit, action: String, subject: String, reason: String, alternatives: String, mission_goal := "None", squad_adjustments := "None", position_scores := "None", target_scores := "None", position_candidates: Array[Dictionary] = [], target_candidates: Array[Dictionary] = [], context: Dictionary = {}) -> int:
+	_ai_decision_sequence += 1
 	var actor_name := "Unknown"
 	if is_instance_valid(actor):
 		actor_name = String(actor.name)
 	var record := {
 		"actor": actor_name,
+		"decision_id": _ai_decision_sequence,
+		"state_revision": action_service.state_revision,
+		"stage": "explanation",
 		"action": action,
 		"subject": subject,
 		"reason": reason,
@@ -749,7 +789,10 @@ func record_ai_decision(actor: TacticalUnit, action: String, subject: String, re
 		record["commander_policy_id"] = String(commander.get_policy_id())
 		record["strategic_intent"] = commander.get_strategic_intent_label()
 	record.merge(context, true)
+	if record.stage == "selected" and is_instance_valid(actor) and action == "Move":
+		_pending_ai_moves[actor.tactical_id] = _ai_decision_sequence
 	ai_decision_recorded.emit(record)
+	return _ai_decision_sequence
 
 ## UI-only entry. AI/replay keep submitting through the ordinary action service.
 func confirm_player_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null, destination := Vector3i(-1, -1, -1)) -> void:
@@ -937,7 +980,13 @@ func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	var source := _action_source()
-	var result := await action_service.submit_move(action_service.make_move_request(unit, target_cell, source))
+	var request := action_service.make_move_request(unit, target_cell, source)
+	var result := await action_service.submit_move(request)
+	if result == null and source == TacticalActionRequest.Source.AI:
+		ai_action_outcome_recorded.emit({"actor_id": String(request.actor_id), "action": "move", "stage": "rejected",
+			"decision_id": _pending_ai_moves.get(request.actor_id, 0), "base_revision": request.expected_revision,
+			"state_revision": action_service.state_revision, "reason": action_service.last_rejection.message if action_service.last_rejection else "Move rejected"})
+		_pending_ai_moves.erase(request.actor_id)
 	return result != null
 
 func _build_movement_path(unit: TacticalUnit, path: PackedVector3Array) -> PackedVector3Array:

@@ -6,7 +6,7 @@ Hover a destination in battle, then press **F3**. The battle pauses and the pane
 | --- | --- |
 | Unit | Active actor ID, HP/AP/ammo, stances, carried actor, conditions, resolved standing point, body size and clearance. |
 | Tactical | Choose a hostile actor for the existing authoritative shot explanation: legality, chance/damage, range/height/cover contributions and blocker. The destination hovered before F3 supplies the existing movement/protection/outgoing-shot explanation and resolved route. |
-| AI | Latest recorded AI decision, existing scoring alternatives/rejections, commander/intent and current active faction's squad reservations. This is historical evidence, not a new plan computed by F3. |
+| AI | Latest authoritative AI outcome (committed/rejected) above the historical decision, existing scoring alternatives/rejections, commander/intent and the active team's squad reservations (shared by player/allies). This is historical evidence, not a new plan computed by F3. |
 | Map | Tactical source, seed, cells/occupancy, zones, traversal, geometry mode and validation. The optional technical manifest shows accepted parcel/population choices, capped at 12,000 characters. |
 | Runtime | Simulation version and last-reported engine monitors: frame/physics time, FPS, draw calls, primitives and memory. These update twice a second while open. |
 | Diagnostics | Existing map, zones, links, trajectory, AI explanation and scoring overlays. |
@@ -18,7 +18,9 @@ A changed action revision or a developer mission command marks the snapshot **ST
 
 Runtime monitors reflect the last engine sample, potentially including loading or paused frames. They are **not AI planning measurements**. The snapshot-build time in the header measures this inspection only. Decision latency, explicit commitment expiry and new movement profiles remain milestone 05 work. No combat or AI balance changes are part of this panel update.
 
-## Verification — 2026-11-17
+Current AI repair follow-up: [behavior and trace contracts](ai-current-behavior.md), [verification](quality/ai-repairs-2026-11-17.md).
+
+## Initial verification — 2026-11-17
 
 - UI subsystem: **26 passed, 0 failed, 1 explicit-only capture skipped**. Includes parse, pause/menu, existing debug tools/map/mission commands, camera and HUD checks. Logs: `artifacts/test-results/20261117-205318-subsystem-ui/`.
 - Final focused inspection: **39 checks, 0 failures**, including query agreement, fingerprint/RNG/revision purity, owned mission reference, all eight sections fitting a 720p window, stale-state feedback, pause ownership, removal and replay command rejection.

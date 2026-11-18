@@ -21,6 +21,7 @@ func _run() -> void:
 	config.select_battlefield(BattlefieldCatalog.TACTICAL_TEST_RANGE)
 	config.player_count = 1
 	config.enemy_count = 1
+	config.ally_count = 1
 	config.content_manifest = {"population_enabled": false}
 	level.configure_battle(config)
 	root.add_child(level)
@@ -41,6 +42,13 @@ func _run() -> void:
 	var destination := Vector3i(1, 0, 17)
 	var service := battle.action_service
 	var tools := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
+	var ally := level.turn_manager.allied_units[0]
+	var shared_context := battle.get_squad_context(actor)
+	shared_context.reserve_destination(ally, Vector3i(7, 0, 16))
+	level.turn_manager.active_unit = ally
+	var ally_snapshot := Snapshot.capture(battle, Vector3i(-1, -1, -1), false)
+	check(ally_snapshot.squad.contains("Reservations at F3 open"), "Allied F3 reads the shared player-team context")
+	level.turn_manager.active_unit = actor
 	var rng := service.get_combat_rng_state()
 	var revision := service.state_revision
 	var fingerprint := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)

@@ -14,7 +14,11 @@ static func evaluate(
 ) -> Dictionary:
 	var missing_hp := target.stats.max_hp - target.stats.current_hp
 	var vulnerability := float(missing_hp) * policy.wounded_target_weight
-	if target.stats.current_hp <= 25:
+	var fallback := CombatRules.evaluate_attack(attacker, target, grid, attacker.get_world_3d()) if attack_prediction == null else null
+	var damage: int = attack_prediction.damage_on_hit if attack_prediction else CombatRules.cover_tuning.damage_for_hit(fallback.shield_damage_multiplier)
+	var chance: int = attack_prediction.hit_chance if attack_prediction else fallback.hit_chance
+	var damage_value := minf(target.stats.current_hp, damage) * float(chance) / 100.0 * policy.expected_damage_weight
+	if damage > 0 and target.stats.current_hp <= damage:
 		vulnerability += 20.0 * policy.finishing_bonus_weight
 	var focus_adjustment := squad.target_adjustment(attacker, target) if squad else 0.0
 	var focus := focus_adjustment * policy.focus_penalty_weight
@@ -22,18 +26,19 @@ static func evaluate(
 	var threat := _threat_score(target, friendlies, grid) * policy.target_threat_weight
 	var mission := _mission_score(attacker, target, intent, objectives, grid) * policy.target_mission_weight
 	return {
-		"total": vulnerability + focus + vip + threat + mission,
+		"total": vulnerability + focus + vip + threat + mission + damage_value,
+		"damage_value": damage_value,
+		"damage_on_hit": damage,
 		"vulnerability": vulnerability,
 		"focus": focus,
 		"vip": vip,
 		"threat": threat,
 		"mission": mission,
 		"focus_count": int(-focus_adjustment / 15.0),
-		# Tactical facts remain visible to AI diagnostics without becoming a new
-		# doctrine or silently changing Prototype 1 target preferences.
-		"hit_chance": attack_prediction.hit_chance if attack_prediction != null else 0,
-		"expected_damage": attack_prediction.expected_damage if attack_prediction != null else 0.0,
-		"summary": "vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f" % [vulnerability, vip, threat, mission, focus],
+		# Damage value is HP-capped; a miss still deals zero and does not become a guaranteed finisher.
+		"hit_chance": chance,
+		"expected_damage": float(damage) * float(chance) / 100.0,
+		"summary": "damage %+.1f, vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f" % [damage_value, vulnerability, vip, threat, mission, focus],
 	}
 
 static func _threat_score(target: TacticalUnit, friendlies: Array[TacticalUnit], grid: GridManager) -> float:
@@ -44,7 +49,7 @@ static func _threat_score(target: TacticalUnit, friendlies: Array[TacticalUnit],
 		var shot := CombatRules.evaluate_attack(target, friendly, grid, target.get_world_3d())
 		if shot.is_legal:
 			score += 8.0 * float(shot.hit_chance) / 100.0
-			if friendly.stats.current_hp <= 25:
+			if friendly.stats.current_hp <= CombatRules.cover_tuning.damage_for_hit(shot.shield_damage_multiplier):
 				score += 4.0
 	return minf(score, 28.0)
 
@@ -90,3 +95,22 @@ static func _nearest_zone_distance(from: Vector3i, zone: Array[Vector3i]) -> flo
 	for cell in zone:
 		nearest = minf(nearest, from.distance_to(cell))
 	return nearest
+
+## Bounded same-target sequence value: HP-capped expected damage plus kill probability.
+## No random draws, no hypothetical mutation, and Aim applies only to the first shot.
+static func shot_sequence_value(chances: Array[int], damage: int, hp: int, kill_bonus: float) -> float:
+	if damage <= 0 or hp <= 0: return 0.0
+	var probabilities: Array[float] = [1.0]
+	for chance in chances:
+		var next: Array[float] = []
+		next.resize(probabilities.size() + 1)
+		next.fill(0.0)
+		var hit := clampf(float(chance) / 100.0, 0.0, 1.0)
+		for hits in probabilities.size():
+			next[hits] += probabilities[hits] * (1.0 - hit)
+			next[hits + 1] += probabilities[hits] * hit
+		probabilities = next
+	var value := 0.0
+	for hits in probabilities.size():
+		value += probabilities[hits] * (minf(hp, hits * damage) + (kill_bonus if hits * damage >= hp else 0.0))
+	return value

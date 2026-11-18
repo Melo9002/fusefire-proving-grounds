@@ -116,6 +116,11 @@ func _test_ai_and_hud() -> void:
 	ai.unit = actor
 	ai.turn_manager = level.turn_manager
 	ai.battle_controller = level.battle_controller
+	var ap_before := actor.stats.current_ap
+	check(not await ai.call("_try_aim_for_attack", target), "With AP and ammo for repeated shots, AI prefers attacking over Aim")
+	check(actor.stats.current_ap == ap_before and not actor.tactical_state.is_aiming, "Declining Aim spends nothing")
+	# With one round left, Aim's +35 on the only shot is worth more than an unaimed shot.
+	actor.stats.current_supply_points = 1
 	check(await ai.call("_try_aim_for_attack", target), "AI can submit Aim through the shared authoritative query")
 	check(not await ai.call("_try_aim_for_attack", target), "AI does not Aim repeatedly")
 	var hud := level.get_node("Visualizers/BattleUI/ActionHUDController") as ActionHUDController

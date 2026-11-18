@@ -11,6 +11,10 @@ class MovementGraph extends AStar3D:
 		return 0.0
 
 var astar := MovementGraph.new()
+var _point_cells: Dictionary = {}
+var _graph_revision := 0
+var _edge_radius_revision := -1
+var _max_edge_radius := 0.0
 var grid_to_id_map: Dictionary = {}
 var id_to_grid_map: Dictionary = {}
 var movement_costs: Dictionary = {}
@@ -29,6 +33,8 @@ const DIRECTIONS: Array[Vector3i] = [
 ]
 
 func clear() -> void:
+	_graph_revision += 1
+	_point_cells.clear()
 	surface_map = null
 	live_grid = null
 	defer_surface_edges = false
@@ -51,6 +57,8 @@ func add_walkable_cell(grid_pos: Vector3i, world_pos: Vector3) -> void:
 	id_to_grid_map[id] = grid_pos
 	astar.cells[id] = grid_pos
 	astar.add_point(id, world_pos)
+	_point_cells[world_pos] = grid_pos
+	_graph_revision += 1
 	movement_costs[grid_pos] = 1
 	stoppable_cells[grid_pos] = true
 
@@ -65,6 +73,7 @@ func configure_cell(grid_pos: Vector3i, traversable: bool, can_stop: bool, movem
 	if not grid_to_id_map.has(grid_pos):
 		return
 	var point_id = grid_to_id_map[grid_pos]
+	_graph_revision += 1
 	astar.set_point_disabled(point_id, not traversable)
 	astar.set_point_weight_scale(point_id, maxf(1.0, float(movement_cost)))
 	movement_costs[grid_pos] = maxi(1, movement_cost)
@@ -114,6 +123,7 @@ func connect_cells(from_cell: Vector3i, to_cell: Vector3i, bidirectional: bool =
 	if not grid_to_id_map.has(from_cell) or not grid_to_id_map.has(to_cell):
 		return false
 	if surface_map and not SurfaceNavigation.edge_clear(surface_map, astar.get_point_position(grid_to_id_map[from_cell]), astar.get_point_position(grid_to_id_map[to_cell])): return false
+	_graph_revision += 1
 	astar.connect_points(grid_to_id_map[from_cell], grid_to_id_map[to_cell], bidirectional)
 	return true
 
@@ -135,7 +145,19 @@ func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector
 ## Read-only planning path. Occupied cells remain blocked except for the named
 ## actor's live origin, which is treated as vacated when planning from a future
 ## candidate. This never changes occupancy_map or AStar disabled points.
-func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit = null) -> PackedVector3Array:
+func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit = null, clearance_cache: Variant = null) -> PackedVector3Array:
+	var checks: Dictionary = {} if clearance_cache == null else clearance_cache
+	# A caller can reuse this scratch dictionary across candidates, never across a changed body layout.
+	var data := grid.map_data
+	var signature: Array = [_graph_revision, grid.get_instance_id(), data.get_instance_id(), data.body_radius,
+		data.body_height, data.body_clearance, data.surface_placement_enabled, data.surface_unit, ignored_actor]
+	for occupant in grid.occupancy_map.values():
+		if not is_instance_valid(occupant): continue
+		var cell := data.get_cell(occupant.grid_position)
+		signature.append([occupant, occupant.grid_position, cell.world_position if cell else null])
+	if checks.get("signature") != signature:
+		checks.clear()
+		checks["signature"] = signature
 	var path := PackedVector3Array()
 	if grid.map_data.surface_placement_enabled:
 		# Hypothetical starts must vacate the explicitly named actor's real origin.
@@ -144,15 +166,16 @@ func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, gri
 			path = astar.get_point_path(grid_to_id_map[start_grid], grid_to_id_map[end_grid])
 	else:
 		path = calculate_3d_path(start_grid, end_grid)
-	if not path.is_empty() and _path_respects_hypothetical_occupancy(path, start_grid, grid, ignored_actor):
+	if not path.is_empty() and _path_respects_hypothetical_occupancy(path, start_grid, grid, ignored_actor, checks):
 		return path
-	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor)
+	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor, checks)
 
-func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> bool:
+func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null) -> bool:
+	if checks == null: checks = {}
 	for index in path.size():
 		var point := path[index]
-		if grid.map_data.surface_placement_enabled and not SurfaceNavigation.units_clear(grid, path[maxi(0, index - 1)], point, ignored_actor): return false
-		var cell: Vector3i = id_to_grid_map.get(astar.get_closest_point(point), Vector3i(-1, -1, -1))
+		if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, path[maxi(0, index - 1)], point, ignored_actor, checks): return false
+		var cell: Vector3i = _point_cells.get(point, Vector3i(-1, -1, -1))
 		var occupant := grid.get_unit_at(cell)
 		if is_instance_valid(occupant) and occupant != ignored_actor and cell != start_grid:
 			return false
@@ -161,11 +184,12 @@ func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid:
 ## The normal path is native and fast. This fallback is needed only when live
 ## AStar disabling hides the planning actor's origin or its first route crosses
 ## another occupant. It searches the existing graph without mutating it.
-func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit) -> PackedVector3Array:
+func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null) -> PackedVector3Array:
+	if checks == null: checks = {}
 	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
 		return PackedVector3Array()
 	if not stoppable_cells.get(end_grid, false): return PackedVector3Array()
-	if grid.map_data.surface_placement_enabled and not SurfaceNavigation.units_clear(grid, astar.get_point_position(grid_to_id_map[end_grid]), astar.get_point_position(grid_to_id_map[end_grid]), ignored_actor): return PackedVector3Array()
+	if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, astar.get_point_position(grid_to_id_map[end_grid]), astar.get_point_position(grid_to_id_map[end_grid]), ignored_actor, checks): return PackedVector3Array()
 	var start_id: int = grid_to_id_map[start_grid]
 	var end_id: int = grid_to_id_map[end_grid]
 	var open_ids: Array[int] = [start_id]
@@ -193,7 +217,7 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 				continue
 			if astar.is_point_disabled(neighbor_id) and occupant != ignored_actor:
 				continue
-			if not SurfaceNavigation.units_clear(grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), ignored_actor): continue
+			if not _planning_units_clear(grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), ignored_actor, checks): continue
 			var step := get_step_cost(id_to_grid_map[current_id], neighbor_cell) if grid.map_data.surface_placement_enabled else astar.get_point_position(current_id).distance_to(astar.get_point_position(neighbor_id))
 			var new_cost: float = costs[current_id] + step
 			if new_cost >= float(costs.get(neighbor_id, INF)):
@@ -210,6 +234,11 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 			if neighbor_id not in open_ids:
 				open_ids.append(neighbor_id)
 	return PackedVector3Array()
+
+func _planning_units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit, checks: Dictionary) -> bool:
+	var key := [from, to]
+	if not checks.has(key): checks[key] = SurfaceNavigation.units_clear(grid, from, to, ignored)
+	return checks[key]
 
 func _reconstruct_hypothetical_path(came_from: Dictionary, end_id: int) -> PackedVector3Array:
 	var ids: Array[int] = [end_id]
@@ -266,3 +295,90 @@ func _cell_less(first: Vector3i, second: Vector3i) -> bool:
 	if first.x != second.x: return first.x < second.x
 	if first.y != second.y: return first.y < second.y
 	return first.z < second.z
+
+## One reverse cost field replaces repeated hypothetical route searches on the
+## ordinary bidirectional surface graph. Custom traversal links keep the old path.
+func planning_costs_to_goal(goal: Vector3i, wanted: Array[Vector3i], grid: GridManager, ignored: TacticalUnit) -> Dictionary:
+	if not grid.map_data.surface_placement_enabled or not grid.map_data.traversal_links.is_empty() or not grid_to_id_map.has(goal): return {}
+	var goal_id: int = grid_to_id_map[goal]
+	if astar.is_point_disabled(goal_id) or not stoppable_cells.get(goal, false): return {}
+	var goal_point := astar.get_point_position(goal_id)
+	if not SurfaceNavigation.units_clear(grid, goal_point, goal_point, ignored): return {}
+	if _edge_radius_revision != _graph_revision:
+		_max_edge_radius = 0.0
+		for point_id in id_to_grid_map:
+			var from := astar.get_point_position(point_id)
+			for adjacent in astar.get_point_connections(point_id):
+				var to := astar.get_point_position(adjacent)
+				_max_edge_radius = maxf(_max_edge_radius, Vector2(from.x, from.z).distance_to(Vector2(to.x, to.z)))
+		_edge_radius_revision = _graph_revision
+	var nearby := {}
+	var gap := grid.map_data.body_radius * 2.0 + grid.map_data.body_clearance
+	var broad_radius := _max_edge_radius + gap + 0.0001
+	for occupant in grid.occupancy_map.values():
+		if not is_instance_valid(occupant) or occupant == ignored: continue
+		var body_cell := grid.map_data.get_cell(occupant.grid_position)
+		if body_cell == null: return {}
+		var body := Vector2(body_cell.world_position.x, body_cell.world_position.z)
+		for point_id in id_to_grid_map:
+			var point := astar.get_point_position(point_id)
+			if body.distance_squared_to(Vector2(point.x, point.z)) <= broad_radius * broad_radius: nearby[point_id] = true
+	var costs := {goal_id: 0.0}
+	var result := {}
+	var pending := {}
+	for cell in wanted: pending[cell] = true
+	var heap: Array[Array] = [[0.0, goal_id]]
+	var checks := {}
+	while not heap.is_empty() and not pending.is_empty():
+		var entry := _cost_heap_pop(heap)
+		var cost: float = entry[0]
+		var current: int = entry[1]
+		if cost != costs.get(current, INF): continue
+		var current_cell: Vector3i = id_to_grid_map[current]
+		result[current_cell] = cost
+		pending.erase(current_cell)
+		for neighbor in astar.get_point_connections(current):
+			var cell: Vector3i = id_to_grid_map[neighbor]
+			var occupant := grid.get_unit_at(cell)
+			if is_instance_valid(occupant) and occupant != ignored: continue
+			if astar.is_point_disabled(neighbor) and occupant != ignored: continue
+			# Reverse direction: terrain cost belongs to the original destination.
+			# Triangle inequality: an edge cannot reach a body farther from its
+			# endpoint than the longest edge plus body clearance. Near edges still
+			# use the complete swept test, including vertical traversal geometry.
+			if nearby.has(current) and not _planning_units_clear(grid, astar.get_point_position(neighbor), astar.get_point_position(current), ignored, checks): continue
+			var next_cost := cost + get_step_cost(cell, current_cell)
+			if next_cost >= float(costs.get(neighbor, INF)): continue
+			costs[neighbor] = next_cost
+			_cost_heap_push(heap, [next_cost, neighbor])
+	return result
+
+static func _cost_heap_less(a: Array, b: Array) -> bool:
+	return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1])
+
+static func _cost_heap_push(heap: Array[Array], entry: Array) -> void:
+	heap.append(entry)
+	var i := heap.size() - 1
+	while i > 0:
+		var parent := (i - 1) / 2
+		if not _cost_heap_less(heap[i], heap[parent]): break
+		var value := heap[parent]
+		heap[parent] = heap[i]
+		heap[i] = value
+		i = parent
+
+static func _cost_heap_pop(heap: Array[Array]) -> Array:
+	var first := heap[0]
+	var last: Array = heap.pop_back()
+	if heap.is_empty(): return first
+	heap[0] = last
+	var i := 0
+	while i * 2 + 1 < heap.size():
+		var child := i * 2 + 1
+		if child + 1 < heap.size() and _cost_heap_less(heap[child + 1], heap[child]): child += 1
+		if not _cost_heap_less(heap[child], heap[i]): break
+		var value := heap[i]
+		heap[i] = heap[child]
+		heap[child] = value
+		i = child
+	return first

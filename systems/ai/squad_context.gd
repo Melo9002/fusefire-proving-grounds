@@ -25,7 +25,12 @@ func begin_round(current_round: int) -> void:
 	_actor_objectives.clear()
 
 func begin_unit(actor: TacticalUnit) -> void:
-	var actor_id := StringName(actor.name)
+	release_actor_id(_actor_id(actor))
+
+func release_actor_id(actor_id: StringName) -> void:
+	if corridor_owner == actor_id:
+		reserved_corridor.clear()
+		corridor_owner = &""
 	if _actor_destinations.has(actor_id):
 		reserved_destinations.erase(_actor_destinations[actor_id])
 		_actor_destinations.erase(actor_id)
@@ -41,31 +46,36 @@ func begin_unit(actor: TacticalUnit) -> void:
 		_actor_objectives.erase(actor_id)
 
 func reserve_destination(actor: TacticalUnit, cell: Vector3i) -> void:
-	var actor_id := StringName(actor.name)
+	var actor_id := _actor_id(actor)
+	if reserved_destinations.has(cell) and reserved_destinations[cell] != actor_id: return
+	if _actor_destinations.has(actor_id):
+		var previous: Vector3i = _actor_destinations[actor_id]
+		if reserved_destinations.get(previous) == actor_id:
+			reserved_destinations.erase(previous)
 	reserved_destinations[cell] = actor_id
 	_actor_destinations[actor_id] = cell
 
 func destination_adjustment(actor: TacticalUnit, cell: Vector3i) -> float:
-	if reserved_corridor.has(cell) and corridor_owner != StringName(actor.name):
+	if reserved_corridor.has(cell) and corridor_owner != _actor_id(actor):
 		return -1000.0
-	if reserved_destinations.has(cell) and reserved_destinations[cell] != StringName(actor.name):
+	if reserved_destinations.has(cell) and reserved_destinations[cell] != _actor_id(actor):
 		return -1000.0
 	var adjustment := 0.0
 	for reserved_cell in reserved_destinations:
-		if reserved_destinations[reserved_cell] != StringName(actor.name) and cell.distance_to(reserved_cell) <= 1.0:
+		if reserved_destinations[reserved_cell] != _actor_id(actor) and cell.distance_to(reserved_cell) <= 1.0:
 			adjustment -= 12.0
 	return adjustment
 
 func reserve_corridor(actor: TacticalUnit, cells: Dictionary) -> void:
 	reserved_corridor = cells.duplicate()
-	corridor_owner = StringName(actor.name)
+	corridor_owner = _actor_id(actor)
 
 func is_reserved_for_other(actor: TacticalUnit, cell: Vector3i) -> bool:
-	return reserved_corridor.has(cell) and corridor_owner != StringName(actor.name)
+	return reserved_corridor.has(cell) and corridor_owner != _actor_id(actor)
 
 func reserve_target(actor: TacticalUnit, target: TacticalUnit) -> void:
-	var actor_id := StringName(actor.name)
-	var target_id := StringName(target.name)
+	var actor_id := _actor_id(actor)
+	var target_id := _actor_id(target)
 	if _actor_targets.get(actor_id) == target_id:
 		return
 	if _actor_targets.has(actor_id):
@@ -75,16 +85,19 @@ func reserve_target(actor: TacticalUnit, target: TacticalUnit) -> void:
 	_actor_targets[actor_id] = target_id
 
 func target_adjustment(actor: TacticalUnit, target: TacticalUnit) -> float:
-	var target_id := StringName(target.name)
+	var target_id := _actor_id(target)
 	var focus_count: int = intended_targets.get(target_id, 0)
-	if _actor_targets.get(StringName(actor.name)) == target_id:
+	if _actor_targets.get(_actor_id(actor)) == target_id:
 		focus_count = maxi(0, focus_count - 1)
 	return -15.0 * focus_count
 
 func reserve_objective(actor: TacticalUnit, objective_id: StringName) -> int:
-	if objective_id.is_empty():
-		return 0
-	var actor_id := StringName(actor.name)
+	var actor_id := _actor_id(actor)
+	if _actor_objectives.has(actor_id) and _actor_objectives[actor_id] != objective_id:
+		var previous_handlers: Array = objective_handlers.get(_actor_objectives[actor_id], [])
+		previous_handlers.erase(actor_id)
+		_actor_objectives.erase(actor_id)
+	if objective_id.is_empty(): return 0
 	var handlers: Array = objective_handlers.get(objective_id, [])
 	var existing := handlers.size()
 	if not handlers.has(actor_id):
@@ -92,3 +105,29 @@ func reserve_objective(actor: TacticalUnit, objective_id: StringName) -> int:
 		objective_handlers[objective_id] = handlers
 		_actor_objectives[actor_id] = objective_id
 	return existing
+
+static func _actor_id(actor: TacticalUnit) -> StringName:
+	return actor.tactical_id if not actor.tactical_id.is_empty() else StringName(actor.name)
+
+## Claims last no later than the current round, and disappear when an owner or target leaves.
+func prune(actors: Array[TacticalUnit]) -> void:
+	var alive := {}
+	for actor in actors:
+		if is_instance_valid(actor) and actor.stats and not actor.stats.is_defeated:
+			alive[_actor_id(actor)] = actor
+	for owner: StringName in _actor_destinations.keys():
+		if alive.has(owner) and alive[owner].grid_position != _actor_destinations[owner]:
+			reserved_destinations.erase(_actor_destinations[owner])
+			_actor_destinations.erase(owner)
+	var owners := _actor_destinations.keys() + _actor_targets.keys() + _actor_objectives.keys()
+	if not corridor_owner.is_empty(): owners.append(corridor_owner)
+	for owner: StringName in owners:
+		if not alive.has(owner): release_actor_id(owner)
+	if not corridor_owner.is_empty() and alive.has(corridor_owner) and not alive[corridor_owner].is_carrying_unit():
+		reserved_corridor.clear()
+		corridor_owner = &""
+	for owner: StringName in _actor_targets.keys():
+		var target_id := _actor_targets[owner]
+		if not alive.has(target_id):
+			intended_targets[target_id] = maxi(0, intended_targets.get(target_id, 1) - 1)
+			_actor_targets.erase(owner)

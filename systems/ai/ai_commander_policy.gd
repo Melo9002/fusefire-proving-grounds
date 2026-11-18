@@ -28,6 +28,7 @@ const AGGRESSIVE_MULTIPLIERS := {
 }
 const AGGRESSIVE_SAFE_ADVANCE_DELTA := 0.15
 const COMPOSED_FIELDS: Array[StringName] = [
+	&"expected_damage_weight",
 	&"wounded_target_weight", &"finishing_bonus_weight", &"movement_progress_weight",
 	&"crowding_penalty_weight", &"survival_separation_weight", &"position_cover_weight",
 	&"position_exposure_weight", &"position_firing_weight", &"position_danger_weight",
@@ -72,6 +73,7 @@ func get_strategic_intent_label() -> String:
 func compose(difficulty: AIDifficultyPolicy) -> AIDifficultyPolicy:
 	var composed := AIDifficultyPolicy.new()
 	composed.tier = difficulty.tier
+	composed.expected_damage_weight = difficulty.expected_damage_weight
 	composed.wounded_target_weight = _multiply(&"wounded_target_weight", difficulty.wounded_target_weight)
 	composed.finishing_bonus_weight = _multiply(&"finishing_bonus_weight", difficulty.finishing_bonus_weight)
 	composed.focus_penalty_weight = difficulty.focus_penalty_weight

@@ -29,7 +29,13 @@ func _run() -> void:
 		and second.decision_records.size() == second.decision_count \
 		and _records_include_decision_context(first.decision_records) \
 		and _records_include_decision_context(second.decision_records) \
-		and first.decision_records == second.decision_records
+		and first.decision_records == second.decision_records \
+		and first.action_outcomes == second.action_outcomes \
+		and first.committed_action_count > 0 \
+		and first.committed_action_count == second.committed_action_count \
+		and first.rejected_action_count == second.rejected_action_count \
+		and first.action_outcomes.size() == first.committed_action_count + first.rejected_action_count \
+		and first.final_state == second.final_state
 	print("[AISim] AUTHORED-MAP DETERMINISM — %s" % ("PASSED" if matches else "FAILED"))
 	if not matches:
 		push_error("Repeated match diverged:\n  %s\n  %s" % [first.summary(), second.summary()])

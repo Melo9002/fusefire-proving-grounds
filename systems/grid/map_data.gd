@@ -13,6 +13,8 @@ var los_blocking_cells: Array[MapCellData] = []
 ## Raised parts can obstruct rays without intersecting any standing surface.
 var shot_obstacles: Array[MapCellData] = []
 var shot_columns: Dictionary = {}
+## Presentation-query invalidation; not simulation state or replay evidence.
+var los_revision := 0
 ## Current compilation uses one deterministic point per supported cell.
 var surface_placement_enabled := false
 var surface_points_resolved := false
@@ -40,6 +42,7 @@ var transport_footprints: Dictionary = {}
 var elevation_labels: Dictionary[int, String] = {0: "Ground"}
 
 func add_cell(cell: MapCellData) -> void:
+	los_revision += 1
 	cells[cell.grid_position] = cell
 	var column_key := Vector2i(cell.grid_position.x, cell.grid_position.z)
 	if not columns.has(column_key):
@@ -112,6 +115,7 @@ func get_objective_zone(zone_id: StringName) -> Array[Vector3i]:
 	return result
 
 func rebuild_los_index() -> void:
+	los_revision += 1
 	los_blocking_cells.clear()
 	for cell: MapCellData in cells.values():
 		if cell.blocks_line_of_sight and cell.cover_height > 0.0:
@@ -119,6 +123,7 @@ func rebuild_los_index() -> void:
 	los_blocking_cells.append_array(shot_obstacles)
 
 func add_shot_obstacle(obstacle: MapCellData) -> void:
+	los_revision += 1
 	obstacle.is_shot_only = true
 	shot_obstacles.append(obstacle)
 	var column := Vector2i(obstacle.grid_position.x, obstacle.grid_position.z)
@@ -149,6 +154,7 @@ func get_inspectable_elevation_levels() -> Array[int]:
 	return levels
 
 func clear() -> void:
+	los_revision += 1
 	surface_placement_enabled = false
 	surface_points_resolved = false
 	movement_parts.clear()

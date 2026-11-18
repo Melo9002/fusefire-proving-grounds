@@ -14,6 +14,7 @@ const OVERWATCH_SUPPLY_COST := 1
 
 var actor_registry := TacticalActorRegistry.new()
 var state_revision := 0
+var _profile_busy_start_usec := 0
 var last_transaction_id := 0
 var last_rejection: ActionValidationResult
 var last_result: AttackActionResult
@@ -90,6 +91,9 @@ func register_actor(actor: TacticalUnit) -> bool:
 func _set_busy(value: bool) -> void:
 	if is_busy == value:
 		return
+	if OS.get_cmdline_user_args().has("profile-ai"):
+		if value: _profile_busy_start_usec = Time.get_ticks_usec()
+		else: print("[AIAction] wall_ms=%.3f" % ((Time.get_ticks_usec() - _profile_busy_start_usec) / 1000.0))
 	is_busy = value
 	busy_changed.emit(value)
 
@@ -248,7 +252,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.committed_revision = state_revision
 	last_result = result
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 
 	result.presentation_suppressed = suppress_presentation
 	if _present_attack.is_valid():
@@ -373,7 +379,9 @@ func submit_shield(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_shield.is_valid(): await _present_shield.call(result)
 	result.presentation_completed = true
@@ -433,7 +441,9 @@ func submit_overwatch(request: TacticalActionRequest, suppress_presentation := f
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_overwatch.is_valid(): await _present_overwatch.call(result)
 	result.presentation_completed = true
@@ -475,7 +485,9 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_aim.is_valid(): await _present_aim.call(result)
 	result.presentation_completed = true
@@ -517,7 +529,9 @@ func submit_reload(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_reload.is_valid(): await _present_reload.call(result)
 	result.presentation_completed = true
@@ -618,7 +632,9 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 		_objective_manager.evaluate_outcome_after_action_commit()
 	result.objective_state_after = _capture_objectives()
 	result.carried_actor_id = actor.carried_unit.tactical_id if actor.is_carrying_unit() else &""
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_move.is_valid(): await _present_move.call(result)
 	result.presentation_completed = true
@@ -777,7 +793,9 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_simple.is_valid(): await _present_simple.call(result)
 	result.presentation_completed = true
@@ -837,7 +855,9 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
+	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
 	action_committed.emit(result)
+	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
 	result.presentation_suppressed = suppress_presentation
 	if _present_mission.is_valid(): await _present_mission.call(result, actor, target)
 	result.presentation_completed = true
