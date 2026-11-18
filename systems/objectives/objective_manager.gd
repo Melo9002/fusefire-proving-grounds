@@ -278,6 +278,53 @@ func complete_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 	complete_objective(&"rescue")
 	return true
 
+## A carrier fell. The VIP it carried is put down where it stood (or on the nearest cell that can be
+## stood on), active and visible again, and the Rescue objective reopens so any pursuing unit can
+## carry it again. If there is nowhere to put it, the VIP is lost with its extraction objective.
+## Called by the battle after the carrier has left the grid.
+func release_carried_unit(carrier: TacticalUnit, fall_cell: Vector3i) -> bool:
+	if not is_instance_valid(carrier) or not carrier.is_carrying_unit() or not _grid_manager:
+		return false
+	var passenger := carrier.carried_unit
+	var drop_cell := _nearest_standable_cell(passenger, fall_cell, 3)
+	if drop_cell.x < 0 and not is_instance_valid(passenger):
+		return false
+	if drop_cell.x < 0:
+		carrier.release_carried_unit()
+		for state in get_objectives():
+			if state.definition.kind == MissionObjectiveDefinition.Kind.EXTRACT and state.definition.target_ids.has(passenger.get_mission_id()):
+				fail_objective(state.definition.objective_id)
+		print_rich("[color=red][Objectives][/color] The rescued VIP could not be put down and was lost with its carrier")
+		return false
+	carrier.release_carried_unit()
+	_grid_manager.register_unit(passenger, drop_cell)
+	passenger.global_position = _grid_manager.grid_to_world(drop_cell) + Vector3.UP * passenger.standing_height
+	var rescue := get_objective(&"rescue")
+	if rescue and rescue.is_completed() and rescue.definition.target_ids.has(passenger.get_mission_id()):
+		rescue.status = MissionObjectiveState.Status.ACTIVE
+		rescue.progress = 0
+		objective_progress_changed.emit(rescue)
+		print_rich("[color=medium_purple][Objectives][/color] REOPENED — %s (the carrier fell; the VIP can be carried again)" % rescue.definition.title)
+	mission_report_changed.emit()
+	return true
+
+func _nearest_standable_cell(unit: TacticalUnit, origin: Vector3i, radius: int) -> Vector3i:
+	for ring in range(0, radius + 1):
+		var best := Vector3i(-1, -1, -1)
+		var best_distance := INF
+		for dx in range(-ring, ring + 1):
+			for dz in range(-ring, ring + 1):
+				if maxi(absi(dx), absi(dz)) != ring: continue
+				var candidate := origin + Vector3i(dx, 0, dz)
+				if not _grid_manager.can_unit_occupy_cell(unit, candidate): continue
+				var distance := origin.distance_to(candidate)
+				if distance < best_distance:
+					best_distance = distance
+					best = candidate
+		if best.x >= 0:
+			return best
+	return Vector3i(-1, -1, -1)
+
 func find_mission_actor(target_ids: Array[StringName]) -> TacticalUnit:
 	if not _grid_manager:
 		return null

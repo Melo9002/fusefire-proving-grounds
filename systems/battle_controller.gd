@@ -991,8 +991,12 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 		return
 
 	unit_defeated_in_battle.emit(unit)
-	grid_manager.unregister_unit_at(grid_manager.get_unit_grid(unit))
+	var fall_cell := grid_manager.get_unit_grid(unit)
+	grid_manager.unregister_unit_at(fall_cell)
 	turn_manager.remove_unit(unit)
+	# A carried VIP must not be stranded with its carrier: put it down where the carrier fell.
+	if is_instance_valid(_objective_manager):
+		_objective_manager.release_carried_unit(unit, fall_cell)
 	if tactical_unit == unit:
 		tactical_unit = null
 	is_move_mode_active = false

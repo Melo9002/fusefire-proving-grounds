@@ -11,6 +11,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [AI baseline, step 2](ai-baseline-2026-11-18.md) | The 48-match baseline: metrics, classifications, planning time. |
 | [AI controlled scenarios, step 3](ai-scenarios-2026-11-18.md) | Fixed decision scenarios with legal options and reasoned expectations. |
 | [AI pipeline verification, step 4](ai-pipeline-2026-11-18.md) | Proof that the typed records changed no decision, the tests and the failures found. |
+| [Mission outcome fixes](mission-outcomes-2026-11-18.md) | Issues #39 (Extract wipe), #40 (carrier loss strands the VIP) and #41 (Enemy Evacuation seed 17): causes, rules, proof. |
 | [AI hard constraints, step 5](ai-constraints-2026-11-18.md) | Where legality is enforced, named blockers and shared-query reasons, explicit squad vetoes, and the 48-match proof. |
 
 ## Project documents these build on

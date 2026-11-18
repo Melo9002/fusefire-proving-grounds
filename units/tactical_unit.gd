@@ -68,6 +68,19 @@ func carry_unit(unit: TacticalUnit) -> void:
 func is_carrying_unit() -> bool:
 	return is_instance_valid(carried_unit)
 
+## Puts the passenger down: it becomes visible and active again and this unit moves at its normal
+## speed. Placing it on the grid is the caller's job. Returns the passenger, or null if there was none.
+func release_carried_unit() -> TacticalUnit:
+	var passenger := carried_unit
+	carried_unit = null
+	if _movement_speed_before_carry >= 0 and stats:
+		stats.speed = _movement_speed_before_carry
+	_movement_speed_before_carry = -1
+	if is_instance_valid(passenger):
+		passenger.visible = true
+		passenger.process_mode = Node.PROCESS_MODE_INHERIT
+	return passenger if is_instance_valid(passenger) else null
+
 func get_mission_id() -> StringName:
 	return mission_actor.mission_id if mission_actor else StringName(name)
 
