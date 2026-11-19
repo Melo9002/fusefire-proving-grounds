@@ -232,6 +232,10 @@ func present_attack(target_world_position: Vector3) -> void:
 		visual_adapter.present_attack(target_world_position)
 	attack_presented.emit(target_world_position)
 
+## True while the visual attack is still raising the weapon, before the shot is shown.
+func is_attack_pending() -> bool:
+	return visual_adapter != null and is_instance_valid(visual_adapter) and visual_adapter.is_attack_pending()
+
 func present_aim() -> void:
 	if visual_adapter:
 		visual_adapter.present_aim()

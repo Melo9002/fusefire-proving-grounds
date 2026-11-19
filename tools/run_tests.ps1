@@ -75,7 +75,9 @@ $visualTests = @(
     "pose_review_capture.gd",
     "weapon_closeup_capture.gd",
     "hand_views_capture.gd",
-    "class_marker_capture.gd"
+    "class_marker_capture.gd",
+    "hand_contact_capture.gd",
+    "weapon_readiness_capture.gd"
 )
 $extendedTests = @(
     "ai_baseline_report.gd",

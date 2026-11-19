@@ -3,6 +3,10 @@ extends "res://presentation/characters/runtime/character_rig.gd"
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
+## The shot is shown: muzzle flash and recoil begin together. `timeline` is the attack's record (attack_timeline).
+signal shot_fired(timeline: Dictionary)
+## The attack presentation is over. fired is false when it was cancelled by a higher-priority presentation.
+signal attack_sequence_ended(fired: bool)
 
 const TeamPaletteData := preload("res://presentation/team_presentation_palette.gd")
 
@@ -24,8 +28,6 @@ const TeamPaletteData := preload("res://presentation/team_presentation_palette.g
 @export_range(0.0, 3.0, 0.01, "suffix:s") var pickup_return_seconds := 0.6
 ## Delay before traversal landing returns to locomotion or idle.
 @export_range(0.0, 3.0, 0.01, "suffix:s") var landing_return_seconds := 0.3
-## Delay before a shot returns to the appropriate ready pose.
-@export_range(0.0, 3.0, 0.01, "suffix:s") var shoot_return_seconds := 0.34
 ## Delay before hit reaction returns to the appropriate ready pose.
 @export_range(0.0, 3.0, 0.01, "suffix:s") var hit_return_seconds := 0.58
 @export_group("")
@@ -50,6 +52,7 @@ var _segment_state: StringName = &"move"
 var _passenger: Node3D
 
 func present_pickup() -> void:
+	_cancel_attack_sequence()
 	arm_ik.active = false
 	weapon.reparent(character_root)
 	weapon.position = stowed_weapon_position
@@ -63,6 +66,7 @@ func present_pickup() -> void:
 	_return_to_idle_after(pickup_return_seconds)
 
 func present_boarding() -> void:
+	_cancel_attack_sequence()
 	_return_generation += 1
 	_play(&"boarding")
 	if is_instance_valid(_passenger):
@@ -83,6 +87,18 @@ const AIM_RELEASE_GRACE := 1.0
 ## Presentation-only mirror of the committed Aim: true while the sights should be up.
 var _aim_held := false
 var _aim_release_left := 0.0
+
+## Attack presentation: Raise -> Align -> Fire -> Recover -> Release. The tactical attack is already resolved
+## when this runs; it only stages that outcome. Time is the sum of frame deltas, never wall time, so the
+## sequence depends on what was presented, not on how fast the machine ran.
+enum AttackPhase { NONE, RAISE, ALIGN, FIRE, RECOVER, RELEASE }
+const ATTACK_SOURCE := &"attack"
+var attack_phase := AttackPhase.NONE
+## Record of the latest attack: times (presentation seconds), phases, aim blend and muzzle error at the shot.
+var attack_timeline: Dictionary = {}
+var _presentation_clock := 0.0
+var _attack_shot_state := &"shoot"
+var _recover_left := 0.0
 var _return_generation := 0
 var _team_accent: MeshInstance3D
 
@@ -200,6 +216,7 @@ func _exit_tree() -> void:
 		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
 
 func present_move() -> void:
+	_cancel_attack_sequence()
 	_return_generation += 1
 	_segment_state = &"move"
 	_play(&"carry_move" if _carrying() else &"move")
@@ -245,13 +262,66 @@ func _aim_should_hold() -> bool:
 		and not tactical_unit.is_moving and not _carrying()
 
 func _aim_target(state_name: StringName) -> float:
-	return 1.0 if state_name in AIM_POSE_STATES or _aim_held else 0.0
+	return WeaponReadiness.blend_for(requested_readiness(state_name), handling)
+
+## The level the unit is asking for: the highest of any request (an attack, later a Guard), the aim
+## stance, and a held Aim. A carrier holds nothing.
+func requested_readiness(state_name: StringName = &"") -> WeaponReadiness.Level:
+	if _carrying():
+		return WeaponReadiness.Level.STOWED
+	if state_name == &"":
+		state_name = get_presentation_state()
+	var level := readiness.requested()
+	if state_name in AIM_POSE_STATES or _aim_held:
+		level = WeaponReadiness.Level.AIMED
+	return level
+
+## Sustained readiness: a source (a future Guard, say) asks for a level and holds it until it releases the
+## request. Attacks use the same model. Quiet poses settle to match; shots, hits and movement are not interrupted.
+func request_readiness(source: StringName, level: WeaponReadiness.Level) -> void:
+	readiness.request(source, level)
+	_settle_readiness_pose()
+
+func release_readiness(source: StringName) -> void:
+	readiness.release(source)
+	_settle_readiness_pose()
+
+func _settle_readiness_pose() -> void:
+	var state := get_presentation_state()
+	if attack_phase == AttackPhase.NONE and state in AIM_SETTLE_STATES and not _carrying():
+		_settle_aim_pose(state)
+
+## The level the weapon is actually at (derived from the aim blend it has reached).
+func readiness_level() -> WeaponReadiness.Level:
+	if _carrying():
+		return WeaponReadiness.Level.STOWED
+	return WeaponReadiness.level_for_blend(aim_blend, handling)
+
+## The blend follows its target every frame: up over the profile's raise time, down over its lower time.
+## Nothing needs to retarget it; callers that still do so (see _retarget_aim_blend) change nothing.
+func _advance_readiness(delta: float) -> void:
+	var target := _aim_target(get_presentation_state())
+	var seconds := handling.raise_seconds if target > aim_blend else handling.lower_seconds
+	aim_blend = move_toward(aim_blend, target, delta / maxf(seconds, 0.001))
 
 func _retarget_aim_blend() -> void:
-	if _pose_tween != null and _pose_tween.is_valid():
-		_pose_tween.kill()
-	_pose_tween = create_tween()
-	_pose_tween.tween_property(self, "aim_blend", _aim_target(get_presentation_state()), 0.28)
+	pass
+
+## Angle between the muzzle and the firing direction (the character's forward, which the weapon is
+## rotated onto at full aim). 0 when the weapon is in its firing configuration.
+func weapon_alignment_error_degrees() -> float:
+	if not is_instance_valid(muzzle_socket) or not muzzle_socket.is_inside_tree():
+		return 0.0
+	var muzzle := muzzle_socket.global_basis.z.normalized()
+	var forward := (character_root.global_basis * torso_frame).z.normalized()
+	return rad_to_deg(acos(clampf(muzzle.dot(forward), -1.0, 1.0)))
+
+## The firing configuration is reached: the weapon is within tolerance of the firing pose, and in
+## cover the body has finished turning into its aiming stance.
+func weapon_aligned() -> bool:
+	if weapon_alignment_error_degrees() > handling.alignment_tolerance_degrees:
+		return false
+	return absf(angle_difference(_cover_yaw, _cover_yaw_target(1.0))) <= deg_to_rad(handling.alignment_tolerance_degrees)
 
 ## Keeps the sights up for as long as the committed Aim lasts: until its attack, an action that
 ## cancels it, or the next activation. Never interrupts a shot, hit, defeat, move or traversal.
@@ -297,9 +367,10 @@ var _cover_yaw := 0.0
 func _cover_kind() -> MapCellData.CoverType:
 	var type: int = last_cover_contact.get("type", MapCellData.CoverType.NONE)
 	var state := get_presentation_state()
-	if state == &"cover_low" and type == MapCellData.CoverType.LOW:
+	# A shot fired from cover keeps the cover pose: the shot only changes what the arms and weapon do.
+	if state in [&"cover_low", &"shoot"] and type == MapCellData.CoverType.LOW:
 		return MapCellData.CoverType.LOW
-	if state == &"cover_high" and type == MapCellData.CoverType.FULL:
+	if state in [&"cover_high", &"shoot_left", &"shoot_right"] and type == MapCellData.CoverType.FULL:
 		return MapCellData.CoverType.FULL
 	return MapCellData.CoverType.NONE
 
@@ -330,13 +401,17 @@ func _sync_cover_crouch(delta: float) -> void:
 	var kneel_target := clampf((_cover_crouch_request() - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
 	_kneel = move_toward(_kneel, kneel_target, KNEEL_SPEED * delta)
 	crouch_modifier.kneel = _kneel
-	var yaw_target := 0.0
-	if kind == MapCellData.CoverType.LOW:
-		yaw_target = deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - aim_blend)
-	elif kind == MapCellData.CoverType.FULL:
-		yaw_target = lerpf(deg_to_rad(HIDE_YAW_DEGREES), deg_to_rad(HIGH_COVER_AIM_YAW_DEGREES), aim_blend)
-	_cover_yaw = rotate_toward(_cover_yaw, yaw_target, deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
+	_cover_yaw = rotate_toward(_cover_yaw, _cover_yaw_target(aim_blend), deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
 	character_root.rotation.y = _cover_yaw
+
+## Body yaw the cover pose asks for at a given weapon blend: back to the wall while hiding, turned to aim.
+func _cover_yaw_target(blend: float) -> float:
+	var kind := _cover_kind()
+	if kind == MapCellData.CoverType.LOW:
+		return deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - blend)
+	if kind == MapCellData.CoverType.FULL:
+		return lerpf(deg_to_rad(HIDE_YAW_DEGREES), deg_to_rad(HIGH_COVER_AIM_YAW_DEGREES), blend)
+	return 0.0
 
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
@@ -352,7 +427,7 @@ func present_idle() -> void:
 		return
 	var cover := _cover_context()
 	if cover.type == MapCellData.CoverType.NONE:
-		_play(&"aim" if (_aim_held or _aim_should_hold()) else &"rifle_idle")
+		_play(&"aim" if (_aim_held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED) else &"rifle_idle")
 	else:
 		face_world_position(global_position + cover.direction)
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
@@ -369,6 +444,9 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 	# future movement styles and the workbench; path-following intent is forward.
 	animation_controller.set_locomotion(Vector2(0.0, 1.0), flat.length() / stride_length)
 
+## Stages an attack that is already resolved: raise the weapon to its firing configuration, fire, recover,
+## release. From an already aimed pose there is no raise: the shot is shown at once. A unit that cannot
+## sequence (carrying, no processing) shows the shot immediately, as before.
 func present_attack(target_world_position: Vector3) -> void:
 	var cover := _cover_context()
 	face_world_position(target_world_position)
@@ -376,14 +454,105 @@ func present_attack(target_world_position: Vector3) -> void:
 	if cover.type == MapCellData.CoverType.FULL:
 		# Visual lean only; the combat evaluator has already resolved the shot.
 		shot = &"shoot_left" if global_basis.x.dot(cover.direction) >= 0.0 else &"shoot_right"
-	_play(shot)
-	_return_to_idle_after(shoot_return_seconds)
+	_cancel_attack_sequence()
+	_return_generation += 1
+	_attack_shot_state = shot
+	attack_timeline = {"start": _presentation_clock, "from_state": get_presentation_state(), "from_blend": aim_blend,
+		"phases": [], "forced": false, "fired": false, "shot_state": shot}
+	if _carrying() or not can_process() or not is_instance_valid(muzzle_socket):
+		attack_timeline["forced"] = true
+		_fire_shot()
+		return
+	attack_phase = AttackPhase.RAISE
+	_note_attack_phase(AttackPhase.RAISE)
+	readiness.request(ATTACK_SOURCE, WeaponReadiness.Level.AIMED)
+	if cover.type == MapCellData.CoverType.NONE and get_presentation_state() not in AIM_POSE_STATES:
+		_play(&"aim")
+	_advance_attack(0.0)
+
+## True from the attack request until its shot is shown (or it is cancelled). The action presenter
+## waits on this before showing the target's reaction.
+func is_attack_pending() -> bool:
+	return attack_phase == AttackPhase.RAISE or attack_phase == AttackPhase.ALIGN
+
+func _note_attack_phase(phase: AttackPhase) -> void:
+	var phases: Array = attack_timeline.get("phases", [])
+	phases.append({"phase": phase, "t": _presentation_clock - float(attack_timeline.get("start", 0.0)), "blend": aim_blend,
+		"muzzle_error_degrees": weapon_alignment_error_degrees()})
+
+func _advance_attack(delta: float) -> void:
+	match attack_phase:
+		AttackPhase.RAISE:
+			var waited := _presentation_clock - float(attack_timeline.get("start", 0.0))
+			var aligned := weapon_aligned()
+			if not aligned and waited < handling.max_raise_wait_seconds:
+				return
+			attack_phase = AttackPhase.ALIGN
+			_note_attack_phase(AttackPhase.ALIGN)
+			attack_timeline["forced"] = not aligned
+			_fire_shot()
+		AttackPhase.RECOVER:
+			_recover_left -= delta
+			if _recover_left <= 0.0:
+				_release_attack()
+		AttackPhase.RELEASE:
+			if is_equal_approx(aim_blend, _aim_target(get_presentation_state())):
+				_finish_attack_sequence(true)
+
+## Muzzle flash, recoil and trigger together: the shot state starts them (see _on_animation_state_changed).
+func _fire_shot() -> void:
+	var start := float(attack_timeline.get("start", _presentation_clock))
+	attack_timeline["fired"] = true
+	attack_timeline["fire_t"] = _presentation_clock - start
+	attack_timeline["fire_blend"] = aim_blend
+	attack_timeline["fire_muzzle_error_degrees"] = weapon_alignment_error_degrees()
+	attack_phase = AttackPhase.FIRE
+	_note_attack_phase(AttackPhase.FIRE)
+	_play(_attack_shot_state)
+	attack_phase = AttackPhase.RECOVER
+	_recover_left = handling.shot_recover_seconds
+	_note_attack_phase(AttackPhase.RECOVER)
+	shot_fired.emit(attack_timeline)
+	if _carrying() or not can_process():
+		_release_attack()
+
+## Back to the readiness the unit is otherwise holding: relaxed unless a committed Aim (or another
+## request) keeps the weapon up.
+func _release_attack() -> void:
+	readiness.release(ATTACK_SOURCE)
+	attack_phase = AttackPhase.RELEASE
+	_note_attack_phase(AttackPhase.RELEASE)
+	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
+		_play(&"carry_move" if _segment_state == &"move" and _carrying() else _segment_state)
+	else:
+		present_idle()
+	if is_equal_approx(aim_blend, _aim_target(get_presentation_state())):
+		_finish_attack_sequence(true)
+
+func _finish_attack_sequence(fired: bool) -> void:
+	readiness.release(ATTACK_SOURCE)
+	if attack_phase != AttackPhase.NONE:
+		attack_phase = AttackPhase.NONE
+		attack_timeline["end_t"] = _presentation_clock - float(attack_timeline.get("start", 0.0))
+		attack_sequence_ended.emit(fired)
+
+## A higher-priority or newer presentation took over: drop the attack's readiness request so the weapon
+## goes back to whatever the new state wants, and let anyone waiting on the attack continue.
+func _cancel_attack_sequence() -> void:
+	if attack_phase != AttackPhase.NONE:
+		attack_timeline["cancelled"] = true
+		_finish_attack_sequence(bool(attack_timeline.get("fired", false)))
+	else:
+		readiness.release(ATTACK_SOURCE)
 
 func present_hit() -> void:
+	_cancel_attack_sequence()
 	_play(&"hit")
 	_return_to_idle_after(hit_return_seconds)
 
 func present_defeat() -> void:
+	_cancel_attack_sequence()
+	readiness.clear()
 	_return_generation += 1
 	_play(&"defeat")
 
@@ -400,8 +569,11 @@ func get_presentation_state() -> StringName:
 func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
+	_presentation_clock += delta
 	_sync_aim_hold(delta)
+	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
+	_advance_attack(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
@@ -432,9 +604,5 @@ func _forward_state_change(state_name: StringName) -> void:
 	presentation_state_changed.emit(state_name)
 
 func _on_animation_state_changed(state_name: StringName) -> void:
-	if _pose_tween != null and _pose_tween.is_valid():
-		_pose_tween.kill()
-	_pose_tween = create_tween()
-	_pose_tween.tween_property(self, "aim_blend", _aim_target(state_name), 0.28)
 	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
 		_play_shot_feedback()

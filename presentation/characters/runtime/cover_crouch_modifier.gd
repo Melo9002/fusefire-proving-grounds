@@ -269,8 +269,21 @@ func _process_modification() -> void:
 func _apply_support_reach(target: Skeleton3D) -> void:
 	if _support_clavicle < 0 or support_reach_degrees <= 0.05:
 		return
+	set_support_reach(target, support_reach_degrees)
+
+func has_support_clavicle() -> bool:
+	return _support_clavicle >= 0
+
+func support_clavicle_bone() -> int:
+	return _support_clavicle
+
+## Sets the support-side shoulder protraction to `degrees`: the same rotation about the measured forward axis that
+## `support_reach_degrees` applies. Public so the WeaponPose modifier can add reach for a target that needs it.
+func set_support_reach(target: Skeleton3D, degrees: float) -> void:
+	if _support_clavicle < 0:
+		return
 	var rest := target.get_bone_rest(_support_clavicle).basis.get_rotation_quaternion()
-	target.set_bone_pose_rotation(_support_clavicle, rest * Quaternion(_forward_axis[_support_clavicle], deg_to_rad(support_reach_degrees)))
+	target.set_bone_pose_rotation(_support_clavicle, rest * Quaternion(_forward_axis[_support_clavicle], deg_to_rad(degrees)))
 
 ## Leans the spine forward by `degrees` in total, shared between the spine bones.
 func _apply_lean(target: Skeleton3D, degrees: float) -> void:

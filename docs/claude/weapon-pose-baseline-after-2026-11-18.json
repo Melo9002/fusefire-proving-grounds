@@ -1,0 +1,787 @@
+{
+	"godot": "4.7.2-stable (official)",
+	"hands_at_rest": {
+		"dominant": {
+			"arm_length_m": 0.46988,
+			"rest_palm_vs_down_deg": 10.958
+		},
+		"support": {
+			"arm_length_m": 0.46355,
+			"rest_palm_vs_down_deg": 9.205
+		}
+	},
+	"images": false,
+	"legacy_targets": false,
+	"poses": {
+		"aim": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 72.16955,
+					"elbow_to_pole": 0.26153,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87985,
+					"palm_to_intended": 0.00464,
+					"reach": 0.27798,
+					"reach_fraction": 0.59161,
+					"reach_margin": 0.19189,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 164.99667,
+					"elbow_to_pole": 0.42557,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03313,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.15792,
+					"palm_to_intended": 0.00696,
+					"reach": 0.45961,
+					"reach_fraction": 0.9915,
+					"reach_margin": 0.00394,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 1.0,
+				"crouch_depth": 0.0,
+				"frame": 561,
+				"kneel": 0.0,
+				"protraction_base_deg": 14.0,
+				"protraction_extra_deg": 2.15625,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": false,
+				"protraction_total_deg": 16.15625,
+				"skeleton_scale": 1.60000002384186,
+				"state": "aim",
+				"support_comfort_deficit_mm": 0.0,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"cover_low@0.5": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 56.0405,
+					"elbow_to_pole": 0.13686,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87983,
+					"palm_to_intended": 0.00464,
+					"reach": 0.22258,
+					"reach_fraction": 0.4737,
+					"reach_margin": 0.24729,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 88.60246,
+					"elbow_to_pole": 0.11602,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03313,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.15787,
+					"palm_to_intended": 0.00696,
+					"reach": 0.32494,
+					"reach_fraction": 0.70098,
+					"reach_margin": 0.13861,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 0.0,
+				"crouch_depth": 0.455,
+				"frame": 1390,
+				"kneel": 1.0,
+				"protraction_base_deg": 0.0,
+				"protraction_extra_deg": 0.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": false,
+				"protraction_total_deg": 0.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "cover_low",
+				"support_comfort_deficit_mm": 0.0,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"cover_low@0.5+aim": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 72.16954,
+					"elbow_to_pole": 0.27625,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87985,
+					"palm_to_intended": 0.00464,
+					"reach": 0.27798,
+					"reach_fraction": 0.59161,
+					"reach_margin": 0.19189,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 179.98022,
+					"elbow_to_pole": 0.3972,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07066,
+						0.06929,
+						0.0659,
+						0.05886
+					],
+					"palm_in_weapon_frame": [
+						0.0229,
+						-0.03329,
+						0.15402
+					],
+					"palm_normal_error_deg": 9.15792,
+					"palm_to_intended": 0.00999,
+					"reach": 0.46355,
+					"reach_fraction": 1.0,
+					"reach_margin": 0.0,
+					"thumb_tip_to_grip_centre": 0.07575,
+					"wrist_in_weapon_frame": [
+						0.02427,
+						-0.00075,
+						0.10506
+					],
+					"wrist_to_ik_target": 0.00343
+				}
+			],
+			"meta": {
+				"aim_blend": 1.0,
+				"crouch_depth": 0.455,
+				"frame": 1663,
+				"kneel": 1.0,
+				"protraction_base_deg": 14.0,
+				"protraction_extra_deg": 4.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": true,
+				"protraction_total_deg": 18.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "cover_low",
+				"support_comfort_deficit_mm": 7.36946287945817,
+				"support_deficit_mm": 3.43150997836084,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"cover_low@1.15": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 56.04049,
+					"elbow_to_pole": 0.13686,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87982,
+					"palm_to_intended": 0.00464,
+					"reach": 0.22258,
+					"reach_fraction": 0.4737,
+					"reach_margin": 0.24729,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 90.89354,
+					"elbow_to_pole": 0.12007,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03313,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.15787,
+					"palm_to_intended": 0.00696,
+					"reach": 0.33144,
+					"reach_fraction": 0.715,
+					"reach_margin": 0.13211,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 0.0,
+				"crouch_depth": 0.409318708022217,
+				"frame": 844,
+				"kneel": 0.0,
+				"protraction_base_deg": 0.0,
+				"protraction_extra_deg": 0.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": false,
+				"protraction_total_deg": 0.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "cover_low",
+				"support_comfort_deficit_mm": 0.0,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"cover_low@1.15+aim": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 72.16957,
+					"elbow_to_pole": 0.26095,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87985,
+					"palm_to_intended": 0.00464,
+					"reach": 0.27798,
+					"reach_fraction": 0.59161,
+					"reach_margin": 0.19189,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 174.01912,
+					"elbow_to_pole": 0.36096,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03313,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.1579,
+					"palm_to_intended": 0.00696,
+					"reach": 0.46292,
+					"reach_fraction": 0.99865,
+					"reach_margin": 0.00063,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 1.0,
+				"crouch_depth": 0.189318708022217,
+				"frame": 1117,
+				"kneel": 0.0,
+				"protraction_base_deg": 14.0,
+				"protraction_extra_deg": 4.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": true,
+				"protraction_total_deg": 18.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "cover_low",
+				"support_comfort_deficit_mm": 3.31107202366898,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"rifle_idle": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 56.03659,
+					"elbow_to_pole": 0.13767,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.09377,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87982,
+					"palm_to_intended": 0.00464,
+					"reach": 0.22257,
+					"reach_fraction": 0.47367,
+					"reach_margin": 0.24731,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 94.95125,
+					"elbow_to_pole": 0.14047,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03313,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.15787,
+					"palm_to_intended": 0.00696,
+					"reach": 0.34263,
+					"reach_fraction": 0.73915,
+					"reach_margin": 0.12092,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 0.0,
+				"crouch_depth": 0.0,
+				"frame": 289,
+				"kneel": 0.0,
+				"protraction_base_deg": 0.0,
+				"protraction_extra_deg": 0.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": false,
+				"protraction_total_deg": 0.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "rifle_idle",
+				"support_comfort_deficit_mm": 0.0,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		},
+		"shoot@0.07": {
+			"hands": [
+				{
+					"arm_length": 0.46988,
+					"elbow_angle_deg": 71.4306,
+					"elbow_to_pole": 0.27149,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.08667,
+						0.08051,
+						0.0739,
+						0.06933
+					],
+					"palm_in_weapon_frame": [
+						-0.03279,
+						-0.04714,
+						-0.01612
+					],
+					"palm_normal_error_deg": 10.87985,
+					"palm_to_intended": 0.00464,
+					"reach": 0.27555,
+					"reach_fraction": 0.58643,
+					"reach_margin": 0.19433,
+					"thumb_tip_to_grip_centre": 0.07915,
+					"wrist_in_weapon_frame": [
+						-0.03444,
+						-0.0129,
+						-0.06807
+					],
+					"wrist_to_ik_target": 0.0
+				},
+				{
+					"arm_length": 0.46355,
+					"elbow_angle_deg": 178.86168,
+					"elbow_to_pole": 0.43802,
+					"finger_direction_error_deg": 0.0,
+					"finger_joints_to_grip_centre": [
+						0.07362,
+						0.07191,
+						0.06804,
+						0.06025
+					],
+					"palm_in_weapon_frame": [
+						0.02159,
+						-0.03314,
+						0.15719
+					],
+					"palm_normal_error_deg": 9.15792,
+					"palm_to_intended": 0.00696,
+					"reach": 0.46352,
+					"reach_fraction": 0.99995,
+					"reach_margin": 0.00002,
+					"thumb_tip_to_grip_centre": 0.07839,
+					"wrist_in_weapon_frame": [
+						0.02296,
+						-0.0006,
+						0.10823
+					],
+					"wrist_to_ik_target": 0.0
+				}
+			],
+			"meta": {
+				"aim_blend": 1.0,
+				"crouch_depth": 0.0,
+				"frame": 572,
+				"kneel": 0.0,
+				"protraction_base_deg": 14.0,
+				"protraction_extra_deg": 4.0,
+				"protraction_limit_deg": 18.0,
+				"protraction_limited": true,
+				"protraction_total_deg": 18.0,
+				"skeleton_scale": 1.60000002384186,
+				"state": "shoot",
+				"support_comfort_deficit_mm": 3.91519490078995,
+				"support_deficit_mm": 0.0,
+				"timing": "post-update",
+				"weapon_basis_error_deg": 0.0,
+				"weapon_pose_modifier": true,
+				"weapon_scale": 0.82
+			}
+		}
+	},
+	"setup_issues": [],
+	"transitions": {
+		"aim > rifle_idle": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.99,
+				"palm_displacement_mm_max": 1.06,
+				"palm_normal_error_deg_max": 11.819,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 3.75,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.991,
+				"palm_displacement_mm_max": 0.96,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 6.96,
+				"palm_to_intended_mm_min": 6.71,
+				"reach_fraction_max": 0.992,
+				"reach_margin_mm_min": 3.94,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			}
+		},
+		"aim > shoot@0.0": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 66,
+			"support": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 25.841,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 31.88,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 1.0,
+				"reach_margin_mm_min": 0.0,
+				"wrist_displacement_mm_max": 25.841,
+				"wrist_to_ik_target_mm": 25.84
+			}
+		},
+		"cover_low@0.5 > cover_low@0.5+aim": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.99,
+				"palm_displacement_mm_max": 1.06,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 5.6,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.99,
+				"palm_displacement_mm_max": 3.839,
+				"palm_normal_error_deg_max": 10.107,
+				"palm_to_intended_mm_max": 10.27,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 1.0,
+				"reach_margin_mm_min": 0.0,
+				"wrist_displacement_mm_max": 3.432,
+				"wrist_to_ik_target_mm": 3.43
+			}
+		},
+		"cover_low@0.5+aim > cover_low@0.5": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.991,
+				"palm_displacement_mm_max": 1.06,
+				"palm_normal_error_deg_max": 11.819,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 3.75,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.991,
+				"palm_displacement_mm_max": 4.121,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 9.99,
+				"palm_to_intended_mm_min": 6.71,
+				"reach_fraction_max": 1.0,
+				"reach_margin_mm_min": 0.0,
+				"wrist_displacement_mm_max": 3.432,
+				"wrist_to_ik_target_mm": 3.43
+			}
+		},
+		"rifle_idle > aim": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.991,
+				"palm_displacement_mm_max": 1.06,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 5.6,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.99,
+				"palm_displacement_mm_max": 0.96,
+				"palm_normal_error_deg_max": 10.107,
+				"palm_to_intended_mm_max": 7.34,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 0.992,
+				"reach_margin_mm_min": 3.94,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			}
+		},
+		"rifle_idle > cover_low@0.5": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.0,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.474,
+				"reach_margin_mm_min": 247.29,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 6.96,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 0.738,
+				"reach_margin_mm_min": 121.47,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			}
+		},
+		"rifle_idle > cover_low@1.15": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.0,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.474,
+				"reach_margin_mm_min": 247.29,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 6.96,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 0.738,
+				"reach_margin_mm_min": 121.45,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			}
+		},
+		"shoot@0.0 > aim": {
+			"dominant": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 0.0,
+				"palm_normal_error_deg_max": 10.88,
+				"palm_to_intended_mm_max": 4.64,
+				"palm_to_intended_mm_min": 4.64,
+				"reach_fraction_max": 0.592,
+				"reach_margin_mm_min": 191.89,
+				"wrist_displacement_mm_max": 0.0,
+				"wrist_to_ik_target_mm": 0.0
+			},
+			"frames": 204,
+			"support": {
+				"finger_direction_error_deg_max": 0.02,
+				"palm_displacement_mm_max": 1.888,
+				"palm_normal_error_deg_max": 9.158,
+				"palm_to_intended_mm_max": 8.58,
+				"palm_to_intended_mm_min": 6.96,
+				"reach_fraction_max": 1.0,
+				"reach_margin_mm_min": 0.0,
+				"wrist_displacement_mm_max": 1.888,
+				"wrist_to_ik_target_mm": 1.89
+			}
+		}
+	}
+}

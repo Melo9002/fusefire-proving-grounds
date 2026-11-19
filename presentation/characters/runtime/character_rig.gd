@@ -26,6 +26,15 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
 var crouch_modifier: CoverCrouchModifier
+## Places the weapon's hand targets from the shoulder of the current skeleton pass (see WeaponPoseModifier).
+var weapon_pose_modifier: WeaponPoseModifier
+## False falls back to the legacy path: targets computed in `_process` from the shoulder as the animation leaves it,
+## before the skeleton's modifiers. Kept for the editor preview, for comparison, and as a switch back.
+var weapon_pose_modifier_enabled := true:
+	set(value):
+		weapon_pose_modifier_enabled = value
+		if is_instance_valid(weapon_pose_modifier):
+			weapon_pose_modifier.active = value
 var grip_modifier: HandGripModifier
 ## Forward lean into the rifle while aiming, degrees. Brings the shoulders, and so the support hand,
 ## toward the front handle.
@@ -39,6 +48,8 @@ var trigger_pull := 0.0
 var _trigger_tween: Tween
 var _standing_shoulder := Vector3.ZERO
 var _standing_shoulder_known := false
+## The low-ready grip before any body offset (carry grip plus the walking sway), refreshed each frame.
+var _ready_grip_base := Vector3.ZERO
 var weapon_attachment: BoneAttachment3D
 var weapon: Node3D
 var support_hand_target: Node3D
@@ -48,6 +59,20 @@ var ik_enabled := true
 @onready var animation_controller: Node = get_node_or_null("VerticalSliceController")
 var _shot_feedback_generation := 0
 var aim_blend := 0.0
+## The aimed weapon's orientation as an offset from the character root, in the root's frame: identity while the torso
+## is settled, the chest's turn since it settled while it kicks. Written in the WeaponPose pass (update_torso_frame).
+var torso_frame := Basis.IDENTITY
+var _torso_reference := Basis.IDENTITY
+var _torso_reference_known := false
+var _torso_offset := Quaternion.IDENTITY
+## Animation states in which the chest kicks and the weapon should turn with it: a shot. Hit reactions are left out on
+## purpose: their chest swing is up to ~40 degrees, which would whip the weapon without improving hand contact (measured in
+## tests/unit_visual_torso_weapon_frame_test.gd); they keep the root-frame weapon until hit reactions are designed.
+const TORSO_KICK_STATES: Array[StringName] = [&"shoot", &"shoot_left", &"shoot_right"]
+## After a kick the weapon's offset eases back to the settled frame over about this long, so nothing snaps.
+const TORSO_FRAME_RELEASE_SECONDS := 0.06
+## Requests for weapon readiness by source (see WeaponReadiness). aim_blend follows the highest.
+var readiness := WeaponReadiness.new()
 var recoil := 0.0
 var _pose_tween: Tween
 var _recoil_tween: Tween
@@ -80,9 +105,35 @@ var support_ik_target: Marker3D
 @export var right_elbow_aim := Vector3(-0.42, 1.18, -0.08)
 @export var left_elbow_ready := Vector3(0.27, 0.94, 0.10)
 @export var left_elbow_aim := Vector3(0.38, 1.03, 0.08)
-@export_group("Low Ready")
-@export var carry_angles_degrees := Vector3(35, 40, -8)
-@export var carry_grip_position := Vector3(-0.08, 1.16, 0.15)
+@export_group("Weapon Pose")
+## Most the support shoulder may be protracted in total (base reach plus what a target needs), degrees. The base is
+## SUPPORT_REACH_DEGREES. Conservative: about half of the sternoclavicular joint's ~35 degree protraction-retraction
+## range (StatPearls, Kenhub, GPnotebook). Set per character; see WeaponPoseModifier.
+@export_range(0.0, 45.0, 0.5, "suffix:°") var support_protraction_limit_degrees := 18.0
+## Elbow bend (interior angle, degrees) the support arm is eased toward when its target is nearly out of reach.
+## 180 is a locked elbow.
+@export_range(120.0, 180.0, 1.0, "suffix:°") var support_elbow_comfort_degrees := 165.0
+@export_range(2, 16, 1) var support_solve_iterations := 8
+## Torso-relative weapon frame. While the chest kicks (a shot) the aimed weapon turns with the chest, about the
+## stock, instead of keeping the character root's orientation: the weapon and both shoulders then move as one body and
+## the support hand keeps its grip. Off restores the root-frame weapon (used for before/after comparisons).
+@export var torso_frame_enabled := true
+## Bone whose orientation defines the torso (the chest). Set automatically for known skeletons.
+var torso_bone_name := &""
+## Swivel-preserving elbow guidance (animation improvement 05B). While aiming, each elbow pole is built every pass from
+## the shoulder, the wrist target and the chest's "down", keeping the bend-plane swivel the elbow has in the standing aim
+## (the `right_elbow_aim` / `left_elbow_aim` guides). The guides themselves are fixed in standing character space, which
+## is what lifted and flared the elbows when the body dropped. Off restores the fixed guides (before/after comparisons).
+@export var elbow_guidance_enabled := true
+## How far from the arm's midpoint the guidance places a pole. Only the direction matters to the solver.
+const ELBOW_POLE_DISTANCE := 0.35
+## Below this length (of the chest-down component perpendicular to the arm axis) the reference direction is unstable
+## (arm axis nearly vertical) and the guide pole is kept for that arm.
+const ELBOW_REFERENCE_MIN := 0.2
+var _elbow_swivel: Array[float] = [0.0, 0.0]
+var _elbow_swivel_latched := false
+var _pole_ready: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+var _pole_body_offset := Vector3.ZERO
 @export_group("Rescue Carry")
 ## Positions are in Character-local metres; stowed angles are degrees.
 @export var passenger_position := Vector3(0, 1.38, -0.16)
@@ -99,8 +150,8 @@ func weapon_blend() -> float:
 
 
 func _rifle_local_basis() -> Basis:
-	var carry_rotation := Quaternion.from_euler(carry_angles_degrees * (PI / 180.0))
-	return Basis(carry_rotation.slerp(Quaternion.IDENTITY, weapon_blend()))
+	var carry_rotation := Quaternion.from_euler(handling.lowered_angles_degrees * (PI / 180.0))
+	return Basis(carry_rotation.slerp(torso_frame.get_rotation_quaternion(), weapon_blend()))
 
 
 func _build_character() -> void:
@@ -190,6 +241,7 @@ func _build_animation_controller() -> void:
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
 	_build_crouch_modifier()
+	_build_weapon_pose_modifier()
 	_build_grip_modifier()
 
 
@@ -221,6 +273,20 @@ func _place_hands_on_weapon() -> void:
 	stock_contact_offset = handling.stock_rear * scale_value
 	if grip_modifier != null:
 		grip_modifier.hand_forward = handling.hand_forward()
+
+
+## Runs after the crouch layer and before the arm IK, so the targets are placed from the final procedural shoulder.
+func _build_weapon_pose_modifier() -> void:
+	var modifier := WeaponPoseModifier.new()
+	modifier.name = "WeaponPose"
+	torso_bone_name = &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
+	if not modifier.setup(self):
+		return
+	skeleton.add_child(modifier)
+	if is_instance_valid(arm_ik):
+		skeleton.move_child(modifier, arm_ik.get_index())
+	weapon_pose_modifier = modifier
+	weapon_pose_modifier.active = weapon_pose_modifier_enabled
 
 
 func _build_crouch_modifier() -> void:
@@ -279,13 +345,23 @@ func _align_weapon_to_aim() -> void:
 func _update_weapon_pose() -> void:
 	if not is_instance_valid(skeleton):
 		return
-	# Use the animated shoulder origin (unaffected by the arm IK rotations).
-	# The chest's shot animation therefore carries the rifle through recoil.
+	_update_weapon_pose_inputs()
+	if weapon_pose_modifier_controls_targets():
+		return   # the WeaponPose modifier places the targets in the skeleton pass, from the real shoulder
+	# Legacy path (editor preview, or the modifier switched off): the shoulder as the animation leaves it, which
+	# does not include what the skeleton's modifiers do to it.
 	var shoulder_index := skeleton.find_bone(right_arm_bones[0])
-	var shoulder_world := skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin
-	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
+	apply_weapon_targets(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin)
+
+
+func weapon_pose_modifier_controls_targets() -> bool:
+	return weapon_pose_modifier != null and weapon_pose_modifier_enabled and not Engine.is_editor_hint()
+
+
+## Everything the weapon pose needs that does not depend on where the shoulder is: the carry sway, and what the
+## crouch and grip layers are told about the weapon.
+func _update_weapon_pose_inputs() -> void:
 	stock_marker.position = handling.stock_rear
-	var aimed_grip := shoulder_marker.position - stock_contact_offset - grip_offset
 	var moving := false
 	# Non-tool animation controllers intentionally do not expose runtime state
 	# while this rig is drawing its editor preview.
@@ -293,15 +369,9 @@ func _update_weapon_pose() -> void:
 		moving = animation_controller.current_state in [&"move", &"carry_move"]
 	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, get_process_delta_time() * 5.0)
 	_carry_phase += get_process_delta_time() * TAU * 2.0
-	var ready_grip := carry_grip_position + Vector3(0, 0.035, -0.02) * carry_motion_blend
+	var ready_grip := handling.lowered_grip + Vector3(0, 0.035, -0.02) * carry_motion_blend
 	ready_grip.y += sin(_carry_phase) * 0.008 * carry_motion_blend
-	# Only a few millimetres of stock compression; avoid the old 6.5 cm slide
-	# through the shoulder. Upper-body animation supplies the visible kick.
-	# While crouched, the low-ready grip and the elbows travel with the chest: the shoulder moved
-	# from where it stands when upright.
-	if not _standing_shoulder_known:
-		_standing_shoulder = shoulder_marker.position
-		_standing_shoulder_known = true
+	_ready_grip_base = ready_grip
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = AIM_LEAN_DEGREES * weapon_blend()
 		crouch_modifier.support_reach_degrees = SUPPORT_REACH_DEGREES * weapon_blend()
@@ -311,15 +381,105 @@ func _update_weapon_pose() -> void:
 		grip_modifier.orient_weight = 1.0 if holding else 0.0
 		grip_modifier.weapon_basis = skeleton.global_basis.orthonormalized().inverse() * weapon.global_basis.orthonormalized()
 		grip_modifier.trigger_pull = trigger_pull
+
+
+## The shoulder-dependent half of the weapon pose: the stock pocket, both hand targets and the elbow poles, given
+## the right shoulder's world position. One place for the formulas; the WeaponPose modifier calls it with the
+## shoulder of the current skeleton pass, the legacy path with the animation-only shoulder.
+## `chest_in_root` is the chest bone's orientation in the character-root frame, in THIS skeleton pass. The settled
+## reference follows the chest every pass except while the chest kicks, when it is held: the weapon then turns by the
+## chest's rotation since it settled. Standing, crouching and kneeling all share this; cover yaw and facing turn the
+## root, so they never appear in it.
+func update_torso_frame(chest_in_root: Basis, delta: float) -> void:
+	if not torso_frame_enabled or Engine.is_editor_hint():
+		torso_frame = Basis.IDENTITY
+		_torso_offset = Quaternion.IDENTITY
+		return
+	var chest := chest_in_root.orthonormalized()
+	var kicking: bool = is_instance_valid(animation_controller) and animation_controller.current_state in TORSO_KICK_STATES
+	if not kicking or not _torso_reference_known:
+		_torso_reference = chest
+		_torso_reference_known = true
+	if kicking:
+		_torso_offset = (chest * _torso_reference.inverse()).get_rotation_quaternion()
+	else:
+		var ease_in := 1.0 if delta <= 0.0 else 1.0 - exp(-delta / TORSO_FRAME_RELEASE_SECONDS)
+		_torso_offset = _torso_offset.slerp(Quaternion.IDENTITY, ease_in)
+	torso_frame = Basis(_torso_offset)
+
+
+func apply_weapon_targets(shoulder_world: Vector3) -> void:
+	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
+	var aimed_grip := shoulder_marker.position - torso_frame * (stock_contact_offset + grip_offset)
+	# While crouched, the low-ready grip and the elbows travel with the chest: the shoulder moved
+	# from where it stands when upright.
+	if not _standing_shoulder_known:
+		_standing_shoulder = shoulder_marker.position
+		_standing_shoulder_known = true
 	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
-	ready_grip += body_offset
+	var ready_grip := _ready_grip_base + body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, weapon_blend()) + Vector3(0, 0, -recoil * 0.08)
-	right_elbow_pole.position = (right_elbow_ready + body_offset).lerp(right_elbow_aim, weapon_blend())
-	left_elbow_pole.position = (left_elbow_ready + body_offset).lerp(left_elbow_aim, weapon_blend())
+	_pole_body_offset = body_offset
+	_pole_ready = [right_elbow_ready + body_offset, left_elbow_ready + body_offset]
+	right_elbow_pole.position = _pole_ready[0].lerp(right_elbow_aim, weapon_blend())
+	left_elbow_pole.position = _pole_ready[1].lerp(left_elbow_aim, weapon_blend())
 	# Predict the support marker in the current pose before solving either arm.
 	# Reading the attached weapon here would use last frame's wrist transform.
 	if is_instance_valid(support_ik_target):
 		support_ik_target.position = right_hand_target.position + _rifle_local_basis() * (grip_offset + support_wrist)
+
+
+## Swivel of `elbow` around the shoulder-to-wrist axis, degrees, measured from the chest's down direction projected
+## onto the plane perpendicular to that axis. Returns INF when the reference is unstable.
+static func elbow_swivel_degrees(shoulder: Vector3, elbow: Vector3, wrist: Vector3, down: Vector3) -> float:
+	var axis := (wrist - shoulder).normalized()
+	var reference := down - axis * down.dot(axis)
+	var bend := (elbow - shoulder) - axis * (elbow - shoulder).dot(axis)
+	if reference.length() < ELBOW_REFERENCE_MIN or bend.length() < 0.0001:
+		return INF
+	return rad_to_deg(reference.normalized().signed_angle_to(bend.normalized(), axis))
+
+
+## The elbow poles for this skeleton pass, after the hand targets and the support reach are final. `shoulders` are the
+## world positions of the right and left upper-arm joints, `chest_world` the chest's world orientation (the root frame
+## turned by the chest's change from its rest pose). The pole sits on the side of the shoulder-wrist axis that the
+## standing aim's elbow does, measured from the chest's down, so a lowered or leaning torso carries the bend plane with it.
+## The swivel is read from the guides until the aim has fully raised and then held; relaxed handling is not touched.
+func apply_elbow_guidance(shoulders: Array, chest_world: Basis) -> void:
+	if not elbow_guidance_enabled or Engine.is_editor_hint():
+		return
+	var blend := weapon_blend()
+	if blend <= 0.0:
+		return
+	var poles: Array[Node3D] = [right_elbow_pole, left_elbow_pole]
+	var guides: Array[Vector3] = [right_elbow_aim, left_elbow_aim]
+	var wrists: Array[Vector3] = [right_hand_target.global_position, support_ik_target.global_position]
+	var down := -chest_world.orthonormalized().y
+	var swivels: Array[float] = [_elbow_swivel[0], _elbow_swivel[1]]
+	if not _elbow_swivel_latched:
+		var measured := true
+		for i in 2:
+			var parent := poles[i].get_parent() as Node3D
+			var guide_world := parent.to_global(guides[i] + _pole_body_offset)
+			swivels[i] = elbow_swivel_degrees(shoulders[i], guide_world, wrists[i], down)
+			measured = measured and is_finite(swivels[i])
+		if not measured:
+			return
+		if blend >= 0.99:
+			_elbow_swivel = swivels.duplicate()
+			_elbow_swivel_latched = true
+	for i in 2:
+		var axis_vector: Vector3 = wrists[i] - shoulders[i]
+		if axis_vector.length() < 0.05:
+			continue
+		var axis := axis_vector.normalized()
+		var reference := down - axis * down.dot(axis)
+		if reference.length() < ELBOW_REFERENCE_MIN:
+			continue
+		var direction := reference.normalized().rotated(axis, deg_to_rad(swivels[i]))
+		var aimed_world: Vector3 = (shoulders[i] + wrists[i]) * 0.5 + direction * ELBOW_POLE_DISTANCE
+		var parent := poles[i].get_parent() as Node3D
+		poles[i].position = _pole_ready[i].lerp(parent.to_local(aimed_world), blend)
 
 
 func _play_shot_feedback() -> void:

@@ -13,6 +13,17 @@ var _orbit_dragging := false
 var _demo_passenger: Node3D
 const ORBIT_FOCUS := Vector3(0, 0.85, 0)
 
+# --- Hand-contact diagnostics (workbench only; see presentation/diagnostics/). Nothing here is created
+# until H is pressed, and nothing here changes how the rig poses itself.
+var _diagnostics: HandContactDiagnostics
+## Diagnostic camera views: 0 is the workbench's own camera (orbit and C still work there).
+const DIAGNOSTIC_VIEW_NAMES := ["workbench camera", "full body", "dominant hand close-up", "support hand close-up", "both hands and weapon"]
+var _diagnostic_view := 0
+## Crouch presets drive the existing CoverCrouchModifier the way UnitVisualAdapter does, with its ramp speeds.
+## They exist so crouch, kneel and aim-while-crouched can be inspected here; there is no cover yaw.
+const POSE_PRESET_NAMES := ["standing", "crouch", "half-kneel"]
+var _pose_preset := 0
+
 func _preview_locomotion(direction: Vector2) -> void:
 	preview_turning = false
 	if is_instance_valid(_preview_pivot):
@@ -70,6 +81,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			if is_instance_valid(_preview_pivot):
 				_preview_pivot.rotation.y = 0.0
 		match event.keycode:
+			KEY_H:
+				_toggle_diagnostics()
+			KEY_J:
+				if is_instance_valid(_diagnostics): _diagnostics.set_labels_visible(not _diagnostics.labels_visible)
+				_update_status()
+			KEY_G:
+				_mark_contact_reference()
+			KEY_Z:
+				_cycle_pose_preset()
+			KEY_X:
+				_cycle_diagnostic_view()
 			KEY_R:
 				animation_controller.play(&"pickup")
 			KEY_P:
@@ -150,6 +172,8 @@ func _update_status() -> void:
 	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
 	status_label.text += "\nR: pickup    P: carry idle    M: carry move    E: boarding"
+	var diagnostics_on := is_instance_valid(_diagnostics) and _diagnostics.enabled
+	status_label.text += "\nH: hand diagnostics %s    J: labels    G: mark contact    Z: pose %s    X: view %s" % ["ON" if diagnostics_on else "off", POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
 
 
 func _process(_delta: float) -> void:
@@ -162,6 +186,8 @@ func _process(_delta: float) -> void:
 		var local_travel := _preview_pivot.basis.inverse() * Vector3.FORWARD
 		preview_direction = Vector2(local_travel.x, local_travel.z)
 		animation_controller.set_locomotion(preview_direction, preview_speed / 1.6)
+	_ramp_pose_preset(_delta)
+	_follow_diagnostic_view()
 	_update_weapon_pose()
 
 
@@ -192,3 +218,74 @@ func _update_weapon_pose() -> void:
 	if is_instance_valid(_demo_passenger) and _demo_passenger.visible:
 		return
 	super._update_weapon_pose()
+
+
+## H: switches the hand-contact diagnostics (overlay and readout) on or off. They are created on first use.
+func _toggle_diagnostics() -> void:
+	if not is_instance_valid(_diagnostics):
+		_diagnostics = HandContactDiagnostics.attach(self)
+		if _diagnostics == null:
+			push_warning("Hand-contact diagnostics are unavailable for this rig")
+			return
+	_diagnostics.set_enabled(not _diagnostics.enabled)
+	_update_status()
+
+## G: marks the current hand contact (palms and wrists in the weapon's frame) as the reference for the shift readout.
+func _mark_contact_reference() -> void:
+	if is_instance_valid(_diagnostics) and _diagnostics.enabled:
+		_diagnostics.mark_reference()
+
+## Z: standing, then crouch, then half-kneel. Sets only the public inputs of the existing crouch modifier.
+func _cycle_pose_preset() -> void:
+	_pose_preset = (_pose_preset + 1) % POSE_PRESET_NAMES.size()
+	_update_status()
+
+func _pose_preset_depth() -> float:
+	if crouch_modifier == null:
+		return 0.0
+	match _pose_preset:
+		1: return crouch_modifier.clamp_depth(0.41)   # about the depth for hiding behind 1.15 m cover
+		2: return crouch_modifier.max_depth           # what the adapter asks for behind cover too low to crouch behind
+	return 0.0
+
+func _ramp_pose_preset(delta: float) -> void:
+	if crouch_modifier == null or Engine.is_editor_hint():
+		return
+	crouch_modifier.depth = move_toward(crouch_modifier.depth, _pose_preset_depth(), UnitVisualAdapter.CROUCH_SPEED * delta)
+	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, 1.0 if _pose_preset == 2 else 0.0, UnitVisualAdapter.KNEEL_SPEED * delta)
+
+## X: cycles fixed diagnostic camera views. The close-ups follow the hands as the pose changes.
+func _cycle_diagnostic_view() -> void:
+	_diagnostic_view = (_diagnostic_view + 1) % DIAGNOSTIC_VIEW_NAMES.size()
+	if _diagnostic_view == 0:
+		camera.position = Vector3(2.8, 1.65, 3.55)
+		camera.look_at(Vector3(0.42, 0.72, 0), Vector3.UP)
+		camera.fov = 34.0
+	_update_status()
+
+func _follow_diagnostic_view() -> void:
+	if _diagnostic_view == 0 or not is_instance_valid(camera) or not is_instance_valid(weapon):
+		return
+	var facing := character_root.global_basis.orthonormalized()
+	var firing := weapon.to_global(handling.firing_grip)
+	var support := weapon.to_global(handling.support_grip)
+	var focus := ORBIT_FOCUS
+	var offset := Vector3.ZERO
+	camera.fov = 30.0
+	match _diagnostic_view:
+		1:
+			focus = Vector3(0, 0.82, 0)
+			offset = facing * Vector3(-1.4, 0.55, 2.4)
+		2:
+			focus = firing
+			offset = facing * Vector3(-0.50, 0.14, 0.34)
+			camera.fov = 26.0
+		3:
+			focus = support
+			offset = facing * Vector3(0.50, 0.14, 0.34)
+			camera.fov = 26.0
+		4:
+			focus = (firing + support) * 0.5
+			offset = facing * Vector3(-0.85, 0.30, 0.75)
+	camera.position = focus + offset
+	camera.look_at(focus, Vector3.UP)
