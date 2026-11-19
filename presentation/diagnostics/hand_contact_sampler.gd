@@ -121,6 +121,12 @@ func sample(timing := "manual") -> Dictionary:
 	var crouch_modifier: CoverCrouchModifier = rig.get("crouch_modifier") as CoverCrouchModifier
 	var intended_palms: Array[Vector3] = [weapon.to_global(handling.firing_palm()), weapon.to_global(handling.support_palm())]
 	var grip_centres: Array[Vector3] = [weapon.to_global(handling.firing_grip), weapon.to_global(handling.support_grip)]
+	# Carrying: the hands' intent is the passenger contact (see CharacterRig.apply_carry_targets), not the weapon's grips.
+	var carry: Array = rig.get("carry_contact_report") if rig.get("carry_contact_report") != null else []
+	for hand in 2:
+		if hand < carry.size() and not (carry[hand] as Dictionary).is_empty():
+			intended_palms[hand] = carry[hand].intended_palm
+			grip_centres[hand] = carry[hand].point
 	var skeleton_basis := skeleton.global_basis.orthonormalized()
 	var points := {
 		"stock": weapon.to_global(handling.stock_rear),
@@ -155,6 +161,9 @@ func sample(timing := "manual") -> Dictionary:
 		result["elbow_angle_deg"] = rad_to_deg(acos(clampf(to_shoulder.dot(to_wrist), -1.0, 1.0)))
 		result["intended_palm"] = intended_palms[hand]
 		result["grip_centre"] = grip_centres[hand]
+		var carry_entry: Dictionary = carry[hand] if hand < carry.size() else {}
+		if not carry_entry.is_empty():
+			result["contact"] = String(carry_entry.contact)
 		if bool(data.has_fingers):
 			var fingers: Array = data.fingers
 			var knuckles := (_world(fingers[1][0]) + _world(fingers[2][0]) + _world(fingers[3][0]) + _world(fingers[4][0])) * 0.25
@@ -183,11 +192,15 @@ func sample(timing := "manual") -> Dictionary:
 			result["finger_direction"] = finger_direction
 			result["palm_normal"] = palm_normal
 			var intended_direction := (weapon_basis * handling.hand_forward()).normalized()
+			if not carry_entry.is_empty():
+				intended_direction = carry_entry.intended_finger_direction
 			result["intended_finger_direction"] = intended_direction
 			result["finger_direction_error_deg"] = rad_to_deg(acos(clampf(finger_direction.dot(intended_direction), -1.0, 1.0)))
 			if grip_modifier != null:
 				var palm_index := 1 if hand == DOMINANT else 0   # the grip modifier indexes hands left = 0, right = 1
 				var intended_normal: Vector3 = (weapon_basis * (grip_modifier.palm_normals[palm_index] as Vector3)).normalized()
+				if not carry_entry.is_empty():
+					intended_normal = carry_entry.intended_palm_normal
 				result["intended_palm_normal"] = intended_normal
 				result["palm_normal_error_deg"] = rad_to_deg(acos(clampf(palm_normal.dot(intended_normal), -1.0, 1.0)))
 		hands.append(result)

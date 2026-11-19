@@ -10,7 +10,6 @@ var preview_turning := false
 var _preview_pivot: Node3D
 var _preview_turn_time := 0.0
 var _orbit_dragging := false
-var _demo_passenger: Node3D
 const ORBIT_FOCUS := Vector3(0, 0.85, 0)
 
 # --- Hand-contact diagnostics (workbench only; see presentation/diagnostics/). Nothing here is created
@@ -76,7 +75,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode in [KEY_1, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_V, KEY_B, KEY_N, KEY_L, KEY_R, KEY_P, KEY_M, KEY_E, KEY_SPACE]:
+		if event.keycode in [KEY_1, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_V, KEY_B, KEY_N, KEY_L, KEY_R, KEY_P, KEY_M, KEY_E, KEY_Q, KEY_K, KEY_SPACE]:
 			preview_turning = false
 			if is_instance_valid(_preview_pivot):
 				_preview_pivot.rotation.y = 0.0
@@ -93,12 +92,41 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_X:
 				_cycle_diagnostic_view()
 			KEY_R:
-				animation_controller.play(&"pickup")
+				# Pickup from the floor: the passenger lies a metre in front (the same call the game makes with the rescued actor's place).
+				finish_interaction_now()
+				end_carry()
+				begin_pickup(character_root.global_position + character_root.global_basis.orthonormalized().z * 1.0)
+				_update_status()
+			KEY_Q:
+				# Release: lower the passenger to the floor and let go. The passenger is left lying so it can be looked at.
+				if is_instance_valid(carry_passenger) and not interaction_active():
+					keep_released_passenger = true
+					begin_release()
+				_update_status()
+			KEY_K:
+				# Carrier-death interruption: the tactical layer has put the passenger down, so the visual one is dropped at once.
+				end_carry()
+				animation_controller.play(&"rifle_idle")
+				_update_status()
+			KEY_O:
+				rescue_interaction.paused = not rescue_interaction.paused
+				_update_status()
+			KEY_COMMA, KEY_PERIOD:
+				if interaction_active():
+					rescue_interaction.paused = true
+					rescue_interaction.scrub(rescue_interaction.time + (0.1 if event.keycode == KEY_PERIOD else -0.1))
+				_update_status()
+			KEY_Y:
+				passenger_motion_enabled = not passenger_motion_enabled
+				_update_status()
 			KEY_P:
+				finish_interaction_now()
 				animation_controller.play(&"carry_idle")
 			KEY_M:
+				finish_interaction_now()
 				animation_controller.play(&"carry_move")
 			KEY_E:
+				finish_interaction_now()
 				animation_controller.play(&"boarding")
 			KEY_7:
 				animation_controller.play(&"cover_low")
@@ -171,7 +199,8 @@ func _update_status() -> void:
 	# Keep controls in the demo so individual poses are easy to inspect.
 	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
-	status_label.text += "\nR: pickup    P: carry idle    M: carry move    E: boarding"
+	status_label.text += "\nR: pickup    P: carry idle    M: carry move    E: boarding    Q: release    K: carrier-death drop"
+	status_label.text += "\nO: pause timeline    , / .: scrub 0.1 s    Y: passenger motion %s    Rescue: %s" % ["on" if passenger_motion_enabled else "off", ("%s %.2f/%.2f s %s" % [RescueInteraction.Kind.keys()[rescue_interaction.kind], rescue_interaction.time, rescue_interaction.duration(), rescue_interaction.phase_name()]) if interaction_active() else "-"]
 	var diagnostics_on := is_instance_valid(_diagnostics) and _diagnostics.enabled
 	status_label.text += "\nH: hand diagnostics %s    J: labels    G: mark contact    Z: pose %s    X: view %s" % ["ON" if diagnostics_on else "off", POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
 
@@ -192,30 +221,25 @@ func _process(_delta: float) -> void:
 
 
 func _on_animation_state_changed(state_name: StringName) -> void:
-	var rescue_pose := state_name in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]
-	if rescue_pose and not is_instance_valid(_demo_passenger):
-		_demo_passenger = preload("res://presentation/characters/runtime/rescue_passenger.gd").new()
-		character_root.add_child(_demo_passenger)
-		_demo_passenger.position = passenger_position
-	if is_instance_valid(_demo_passenger):
-		_demo_passenger.visible = rescue_pose
-		arm_ik.active = ik_enabled and not rescue_pose
-		if rescue_pose:
-			weapon.reparent(character_root)
-			weapon.position = stowed_weapon_position
-			weapon.rotation_degrees = stowed_weapon_angles_degrees
-		else:
-			weapon.reparent(weapon_attachment)
+	var rescue_pose := state_name in [&"pickup", &"carry_idle", &"carry_move", &"boarding"] or interaction_active()
+	if rescue_pose:
+		begin_carry()   # the same passenger, contacts, lean and slung weapon the game uses
+	elif is_instance_valid(carry_passenger):
+		end_carry()
+		arm_ik.active = ik_enabled
 	_update_status()
 	super._on_animation_state_changed(state_name)
 
 func _align_weapon_to_aim() -> void:
-	if is_instance_valid(_demo_passenger) and _demo_passenger.visible:
+	if is_instance_valid(carry_passenger):
 		return
 	super._align_weapon_to_aim()
 
 func _update_weapon_pose() -> void:
-	if is_instance_valid(_demo_passenger) and _demo_passenger.visible:
+	if is_instance_valid(carry_passenger):
+		_apply_carry_posture()
+		if interaction_active():
+			_update_status()
 		return
 	super._update_weapon_pose()
 

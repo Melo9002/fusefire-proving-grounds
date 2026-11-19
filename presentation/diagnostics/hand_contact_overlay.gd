@@ -167,6 +167,8 @@ func show_sample(sample: Dictionary) -> void:
 		_marker(key_prefix + "_elbow", data.elbow, COLOR_ELBOW, MARKER_RADIUS * 0.8, "%s elbow" % prefix)
 		_marker(key_prefix + "_pole", data.pole, COLOR_POLE, MARKER_RADIUS * 0.8, "%s pole" % prefix)
 		_marker(key_prefix + "_shoulder", data.shoulder, COLOR_ELBOW, MARKER_RADIUS * 0.6)
+		if data.has("contact"):
+			_marker(key_prefix + "_contact", data.grip_centre, COLOR_WEAPON, MARKER_RADIUS * 1.2, "%s %s" % [prefix, data.contact])
 		_segment(data.ik_target, data.wrist, wrist_color, LINE_RADIUS * 1.4)
 		_segment(data.shoulder, data.elbow, COLOR_ELBOW)
 		_segment(data.elbow, data.wrist, COLOR_ELBOW)

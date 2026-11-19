@@ -42,6 +42,16 @@ extends Resource
 @export_range(0.1, 5.0, 0.05, "suffix:s") var max_raise_wait_seconds := 0.8
 @export_group("")
 
+@export_group("Stowage")
+## Provisional sling stowage: where this weapon hangs on a carrier whose hands are busy (carrying a rescue passenger).
+## Nothing is drawn (no strap) and nothing swings: the weapon is anchored to the carrier's chest (see ChestAnchor) at a fixed
+## place, so it follows the torso. Another weapon, or a different sling, supplies its own values. The offset is the weapon's
+## ORIGIN measured from the carrier's neck bone in the carrier's frame (x left, y up, z forward) in its rest pose, metres;
+## the angles orient the weapon model in that same frame (degrees; (90, 0, 0) hangs it muzzle-down, optic facing forward).
+@export var stowed_offset_from_neck := Vector3(0.0, -0.40, 0.20)
+@export var stowed_angles_degrees := Vector3(90, 0, 0)
+@export_group("")
+
 ## Aim blend from which the weapon counts as aimed: the muzzle's rotation from the firing pose scales
 ## linearly with (1 - blend), so the tolerance is expressed against the lowered carry's own angle.
 func aimed_blend_threshold() -> float:

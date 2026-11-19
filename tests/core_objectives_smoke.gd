@@ -102,11 +102,15 @@ func _check_rescue() -> void:
 	check(not level.battle_controller.query_attack(carrier, enemy).is_legal(), "Carrier is rejected by the shared action query")
 	check(not level.battle_controller.evaluate_attack(carrier, enemy).is_legal, "Carrier cannot preview a legal shot")
 	if carrier.visual_adapter:
-		check(not carrier.visual_adapter.arm_ik.active, "Carrier disables weapon IK")
+		check(carrier.visual_adapter.carry_contacts_active() and carrier.visual_adapter.aim_blend == 0.0, "Carrier hands the arm IK to the carry contacts and no weapon pose is applied")
 		check(carrier.visual_adapter.weapon.get_parent() == carrier.visual_adapter.character_root, "Carrier stows rifle off the hand socket")
 		check(carrier.visual_adapter.character_root.has_node("RescuePassenger"), "Carrier displays a cosmetic passenger")
-		await create_timer(0.65).timeout
-		check(carrier.visual_adapter.get_presentation_state() == &"carry_idle", "Pickup returns to carrying stance")
+		# The pickup is a timed lift (RescueInteraction). The action waits for it when the presentation runs; here (no presentation
+		# barrier) it may still be under way, so bring it to its end and check the stance it settles in.
+		if carrier.visual_adapter.interaction_active():
+			carrier.visual_adapter.rescue_interaction.scrub(carrier.visual_adapter.rescue_interaction.duration() - 0.05)
+			await create_timer(0.4).timeout
+		check(not carrier.visual_adapter.interaction_active() and carrier.visual_adapter.get_presentation_state() == &"carry_idle", "Pickup returns to carrying stance")
 	var exit := level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")[0]
 	var teammate := level.turn_manager.player_units[1]
 	var remaining := level.turn_manager.player_units[2]

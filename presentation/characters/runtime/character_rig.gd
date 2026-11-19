@@ -120,6 +120,10 @@ var support_ik_target: Marker3D
 @export var torso_frame_enabled := true
 ## Bone whose orientation defines the torso (the chest). Set automatically for known skeletons.
 var torso_bone_name := &""
+## Bone the carried passenger is measured from (the base of the neck).
+var neck_bone_name := &""
+var _stow_anchor: ChestAnchor
+var _carry_lean := 0.0
 ## Swivel-preserving elbow guidance (animation improvement 05B). While aiming, each elbow pole is built every pass from
 ## the shoulder, the wrist target and the chest's "down", keeping the bend-plane swivel the elbow has in the standing aim
 ## (the `right_elbow_aim` / `left_elbow_aim` guides). The guides themselves are fixed in standing character space, which
@@ -135,10 +139,60 @@ var _elbow_swivel_latched := false
 var _pole_ready: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var _pole_body_offset := Vector3.ZERO
 @export_group("Rescue Carry")
-## Positions are in Character-local metres; stowed angles are degrees.
-@export var passenger_position := Vector3(0, 1.38, -0.16)
-@export var stowed_weapon_position := Vector3(0.26, 0.8, -0.24)
-@export var stowed_weapon_angles_degrees := Vector3(0, 0, rad_to_deg(-0.65))
+## Positions are in Character-local metres; stowed angles are degrees. `passenger_anchor_from_neck` is where the
+## carried passenger's abdomen rests, measured from the neck bone in the carrier's rest pose, in character space
+@export var passenger_anchor_from_neck := Vector3(0.12, -0.03, -0.10)
+## Turn of the passenger's body about the vertical, degrees: 0 lays it exactly across the shoulders (head to the carrier's
+## right, legs to its left); negative swings the head end back and the legs forward.
+@export var passenger_yaw_degrees := -8.0
+## Overrides for PassivePassengerPose.DEFAULTS (spine fold, leg angles, the arms). Empty uses the defaults.
+@export var passenger_pose_overrides := {}
+## Carry contacts: while carrying, the wrists are placed on the passenger's body (CARRY_CONTACTS) by the WeaponPose modifier,
+## through the same arm IK and elbow guidance the weapon uses. Off keeps the fixed carry clip's arms (the arm IK stays off).
+@export var carry_contacts_enabled := true
+## Elbow bend-plane swivel while carrying, degrees (right arm, left arm), measured as in apply_elbow_guidance: the elbow hangs
+## below the shoulder-wrist line and out to the side. These are the carrying posture's own values (the weapon aim latches its own).
+@export var carry_elbow_swivel_degrees := Vector2(-60.0, 60.0)
+## The pickup/release timeline and the carrier's and passenger's key values for it (see RescueInteraction).
+@export var rescue_interaction: RescueInteraction = RescueInteraction.new()
+@export_subgroup("Passenger secondary motion")
+## Off gives the rigid carry. Amplitude (m), tilt (degrees), response time (s) and swing (degrees) are the limits of the
+## restrained body lag (RescuePassenger._update_motion); all are filters of the carrier's own chest motion.
+@export var passenger_motion_enabled := true
+@export_range(0.0, 0.05, 0.001, "suffix:m") var passenger_motion_amplitude := 0.02
+@export_range(0.0, 5.0, 0.1, "suffix:°") var passenger_motion_tilt_degrees := 1.5
+@export_range(0.0, 0.5, 0.01, "suffix:s") var passenger_motion_response := 0.12
+@export_range(0.0, 10.0, 0.1, "suffix:°") var passenger_motion_swing_degrees := 4.0
+@export_subgroup("")
+## Leave the passenger lying where a release set it down (workbench), instead of freeing it when the release ends.
+var keep_released_passenger := false
+## Emitted when a pickup or release runs out, before the release frees the passenger (RescueInteraction.Kind).
+signal rescue_interaction_finished(kind: int)
+var _interaction_sample := {}
+var _reach_hands: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+var _reach_poles: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+var _reach_curl := 0.0
+var _carry_reach := 1.0
+var _step_vector := Vector3.ZERO
+## The carrier's own place (this node's position) before a pickup or release; the step toward the passenger is made from it
+## and undone to it. The step moves THIS node, not the character root, because the animation controller tweens the root's
+## position back to zero at every state change.
+var _root_rest_position := Vector3.ZERO
+var _weapon_hand_local := Transform3D.IDENTITY
+var _stow_blend := 1.0
+## Which carrier hand holds which passenger contact: [hand, contact]. The right hand takes the wrist and the left the
+## thigh: the passenger's torso, head and arms hang behind the carrier's right shoulder and its legs at the left.
+## The optional third value is the direction (carrier frame) the hand comes from; without it the hand comes from its shoulder's side.
+## The thigh is taken from the front so the hand is not sandwiched between the passenger's leg and the carrier's own hip.
+const CARRY_CONTACTS := [[&"right", &"wrist"], [&"left", &"thigh", Vector3(0.4, 0.0, 1.0)]]
+## Fingers' grip tightness on the contacts (0 open, 1 fist).
+const CARRY_GRIP_CURL := 0.75
+const RESCUE_PASSENGER := preload("res://presentation/characters/runtime/rescue_passenger.gd")
+## The carried passenger while carrying, else null. Created by begin_carry, freed by end_carry.
+var carry_passenger: Node3D
+## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's
+## contact point, the intended palm centre and the intended finger and palm directions (world). Read by diagnostics.
+var carry_contact_report: Array = []
 @export_group("")
 var carry_motion_blend := 0.0
 var _carry_phase := 0.0
@@ -280,6 +334,7 @@ func _build_weapon_pose_modifier() -> void:
 	var modifier := WeaponPoseModifier.new()
 	modifier.name = "WeaponPose"
 	torso_bone_name = &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
+	neck_bone_name = &"mixamorig_Neck" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Neck"
 	if not modifier.setup(self):
 		return
 	skeleton.add_child(modifier)
@@ -445,10 +500,10 @@ static func elbow_swivel_degrees(shoulder: Vector3, elbow: Vector3, wrist: Vecto
 ## turned by the chest's change from its rest pose). The pole sits on the side of the shoulder-wrist axis that the
 ## standing aim's elbow does, measured from the chest's down, so a lowered or leaning torso carries the bend plane with it.
 ## The swivel is read from the guides until the aim has fully raised and then held; relaxed handling is not touched.
-func apply_elbow_guidance(shoulders: Array, chest_world: Basis) -> void:
+func apply_elbow_guidance(shoulders: Array, chest_world: Basis, carrying := false) -> void:
 	if not elbow_guidance_enabled or Engine.is_editor_hint():
 		return
-	var blend := weapon_blend()
+	var blend := 1.0 if carrying else weapon_blend()
 	if blend <= 0.0:
 		return
 	var poles: Array[Node3D] = [right_elbow_pole, left_elbow_pole]
@@ -456,7 +511,9 @@ func apply_elbow_guidance(shoulders: Array, chest_world: Basis) -> void:
 	var wrists: Array[Vector3] = [right_hand_target.global_position, support_ik_target.global_position]
 	var down := -chest_world.orthonormalized().y
 	var swivels: Array[float] = [_elbow_swivel[0], _elbow_swivel[1]]
-	if not _elbow_swivel_latched:
+	if carrying:
+		swivels = [carry_elbow_swivel_degrees.x, carry_elbow_swivel_degrees.y]
+	elif not _elbow_swivel_latched:
 		var measured := true
 		for i in 2:
 			var parent := poles[i].get_parent() as Node3D
@@ -479,7 +536,300 @@ func apply_elbow_guidance(shoulders: Array, chest_world: Basis) -> void:
 		var direction := reference.normalized().rotated(axis, deg_to_rad(swivels[i]))
 		var aimed_world: Vector3 = (shoulders[i] + wrists[i]) * 0.5 + direction * ELBOW_POLE_DISTANCE
 		var parent := poles[i].get_parent() as Node3D
-		poles[i].position = _pole_ready[i].lerp(parent.to_local(aimed_world), blend)
+		if carrying:
+			poles[i].position = parent.to_local(character_root.to_global(_reach_poles[i]).lerp(aimed_world, _carry_reach) if _carry_reach < 1.0 else aimed_world)
+		else:
+			poles[i].position = _pole_ready[i].lerp(parent.to_local(aimed_world), blend)
+
+
+## Where the hands and elbows rest, in the character's frame, when no rifle holds them (right, left): the release lets go to
+## these, and a pickup that has no better record of where they were starts from them.
+const RELAXED_HANDS: Array[Vector3] = [Vector3(-0.22, 0.92, 0.30), Vector3(0.22, 0.92, 0.30)]
+const RELAXED_POLES: Array[Vector3] = [Vector3(-0.50, 0.85, 0.05), Vector3(0.50, 0.85, 0.05)]
+## Nearest the carrier walks into the passenger when setting it down (metres, in front of its root).
+const RELEASE_STEP := 0.45
+
+
+## Starts the STEADY carry presentation at once (no lift): the passenger across the shoulders, the weapon slung and the wrists on
+## the carry contacts. A pickup is `begin_pickup`; this is the loaded state both end in, and what tools and tests start from.
+func begin_carry() -> void:
+	if rescue_interaction.active():
+		return
+	_ensure_passenger(1.0, 1.0)
+	stow_weapon()
+	_stow_blend = 1.0
+	_hands_to_contacts()
+
+
+## The pickup: the passenger lies on the floor at `passenger_world` (where the rescued actor was) and the shared timeline lifts
+## it into the carry while the carrier turns, steps in, kneels, takes hold, rises and steps back. Facing the passenger is the
+## caller's business (the adapter turns the carrier first); the lift is built in the carrier's own frame.
+func begin_pickup(passenger_world: Vector3) -> void:
+	_discard_passenger()
+	var interaction := rescue_interaction
+	interaction.start(RescueInteraction.Kind.PICKUP)
+	_root_rest_position = position
+	var to_passenger := passenger_world - character_root.global_position
+	to_passenger.y = 0.0
+	var gap := to_passenger.length()
+	var local_direction := Vector3.BACK if gap < 0.01 else (character_root.global_basis.orthonormalized().inverse() * to_passenger / gap)
+	local_direction.y = 0.0
+	local_direction = local_direction.normalized() if local_direction.length() > 0.01 else Vector3.BACK
+	_step_vector = local_direction * clampf(gap - interaction.stand_off, 0.0, interaction.max_step)
+	_reach_hands = [character_root.to_local(right_hand_target.global_position), character_root.to_local(support_ik_target.global_position)]
+	_reach_poles = [character_root.to_local(right_elbow_pole.global_position), character_root.to_local(left_elbow_pole.global_position)]
+	_reach_curl = grip_modifier.curl[0] if grip_modifier != null else 0.0
+	_ensure_passenger(0.0, 0.0)
+	carry_passenger.ground_origin = Vector3(passenger_world.x, character_root.global_position.y + interaction.ground_height, passenger_world.z)
+	stow_weapon()
+	_stow_blend = 0.0
+	_hands_to_contacts()
+	carry_passenger.refresh()
+	_interaction_sample = interaction.sample()
+
+
+## The release: the carrier steps in, kneels, lowers the passenger to the floor in front of it, lets go and rises, taking the
+## rifle back. The passenger is freed when it ends (or left lying: `keep_released_passenger`). Needs a carried passenger.
+func begin_release() -> void:
+	if not is_instance_valid(carry_passenger) or rescue_interaction.active():
+		return
+	var interaction := rescue_interaction
+	interaction.start(RescueInteraction.Kind.RELEASE)
+	_root_rest_position = position
+	var step := minf(interaction.max_step, RELEASE_STEP)
+	_step_vector = Vector3(0.0, 0.0, step)
+	_reach_hands = RELAXED_HANDS.duplicate()
+	_reach_poles = RELAXED_POLES.duplicate()
+	_reach_curl = 0.2
+	var forward := character_root.global_basis.orthonormalized().z
+	var ahead := character_root.global_position + forward * (step + interaction.stand_off)
+	carry_passenger.ground_origin = Vector3(ahead.x, character_root.global_position.y + interaction.ground_height, ahead.z)
+	carry_passenger.waypoint_local = interaction.lift_waypoint
+	_interaction_sample = interaction.sample()
+
+
+## True from the start of a pickup or release until it runs out.
+func interaction_active() -> bool:
+	return rescue_interaction.active()
+
+
+## Runs the timeline to its end now: the final state, with no animation in between. For a conflicting presentation (the carrier
+## starts walking, boards, falls) and for tools.
+func finish_interaction_now() -> void:
+	if not rescue_interaction.active():
+		return
+	rescue_interaction.scrub(rescue_interaction.duration())
+	_interaction_sample = rescue_interaction.sample()
+	_complete_interaction()
+
+
+## Ends it: the passenger is freed (or, with `leave_passenger`, left lying where it is), the weapon returns to the hand, and
+## nothing of the carry is left on the arms (the weapon pose writes the targets, poles and grip again on the next update).
+## Also the safe answer to an interrupted rescue (the carrier is hit and the tactical layer puts the passenger down).
+func end_carry(leave_passenger := false) -> void:
+	rescue_interaction.stop()
+	position = _root_rest_position
+	_step_vector = Vector3.ZERO
+	_carry_reach = 1.0
+	_interaction_sample = {}
+	if is_instance_valid(carry_passenger):
+		if leave_passenger:
+			carry_passenger.detach_to(get_parent())
+		else:
+			carry_passenger.get_parent().remove_child(carry_passenger)
+			carry_passenger.free()
+	carry_passenger = null
+	carry_contact_report = []
+	_carry_lean = 0.0
+	if crouch_modifier != null:
+		crouch_modifier.depth = 0.0
+		crouch_modifier.kneel = 0.0
+		crouch_modifier.aim_lean_degrees = 0.0
+	if grip_modifier != null:
+		grip_modifier.contact_weight = [0.0, 0.0]
+		grip_modifier.curl = [0.0, 0.0]
+	unstow_weapon()
+	arm_ik.active = true
+
+
+func carry_contacts_active() -> bool:
+	return carry_contacts_enabled and is_instance_valid(carry_passenger)
+
+
+func _ensure_passenger(lift: float, pose: float) -> void:
+	if is_instance_valid(carry_passenger):
+		return
+	carry_passenger = RESCUE_PASSENGER.new()
+	carry_passenger.name = "RescuePassenger"
+	character_root.add_child(carry_passenger)
+	carry_passenger.carry_yaw_degrees = passenger_yaw_degrees
+	carry_passenger.pose_params = passenger_pose_overrides
+	carry_passenger.carrier_root = character_root
+	carry_passenger.waypoint_local = rescue_interaction.lift_waypoint
+	carry_passenger.lift = lift
+	carry_passenger.pose_blend = pose
+	carry_passenger.build(character_scene, character_scale)
+	carry_passenger.update_presentation(lift, pose, carry_passenger.global_transform, 0.0)
+	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck)
+
+
+func _discard_passenger() -> void:
+	if is_instance_valid(carry_passenger):
+		carry_passenger.get_parent().remove_child(carry_passenger)
+		carry_passenger.free()
+	carry_passenger = null
+
+
+func _hands_to_contacts() -> void:
+	arm_ik.active = carry_contacts_enabled
+	if grip_modifier != null:
+		grip_modifier.orient_weight = 0.0
+		grip_modifier.trigger_pull = 0.0
+
+
+## Forward lean of a carrier's trunk under the load, degrees, through the crouch modifier's measured forward axis (the same
+## `aim_lean_degrees` the rifle uses; the rifle is slung while carrying). Eased in and out over CARRY_LEAN_SECONDS.
+const CARRY_LEAN_DEGREES := 20.0
+const CARRY_LEAN_SECONDS := 0.4
+
+## Once per frame while carrying (before the skeleton's modifiers): advances the interaction, then sets the carrier's body from
+## its sample (bend, kneel, lean, step toward the passenger, base clip, weapon position).
+func _apply_carry_posture() -> void:
+	var delta := get_process_delta_time()
+	if rescue_interaction.active():
+		rescue_interaction.advance(delta)
+	_interaction_sample = rescue_interaction.sample()
+	var sample := _interaction_sample
+	var interacting := rescue_interaction.active()
+	if interacting:
+		if is_instance_valid(animation_controller) and animation_controller.current_state != sample.clip:
+			animation_controller.play(sample.clip)
+		_stow_blend = float(sample.stow)
+		if rescue_interaction.time >= rescue_interaction.duration() - 0.00001:
+			_complete_interaction()
+			interacting = false
+	if crouch_modifier != null:
+		if interacting:
+			_carry_lean = float(sample.carry)
+			crouch_modifier.depth = crouch_modifier.clamp_depth(float(sample.crouch) * rescue_interaction.crouch_depth)
+			crouch_modifier.kneel = float(sample.kneel)
+			crouch_modifier.aim_lean_degrees = CARRY_LEAN_DEGREES * _carry_lean
+			var parent_node := get_parent_node_3d()
+			var parent_basis := parent_node.global_basis.orthonormalized() if parent_node != null else Basis.IDENTITY
+			position = _root_rest_position + parent_basis.inverse() * (character_root.global_basis.orthonormalized() * _step_vector) * float(sample.step)
+		else:
+			var loaded: bool = is_instance_valid(animation_controller) and animation_controller.current_state in [&"carry_idle", &"carry_move"]
+			_carry_lean = move_toward(_carry_lean, 1.0 if loaded else 0.0, delta / CARRY_LEAN_SECONDS)
+			crouch_modifier.aim_lean_degrees = CARRY_LEAN_DEGREES * _carry_lean
+		crouch_modifier.support_reach_degrees = 0.0
+
+
+## The timeline has run out: pickup leaves the steady carry (the sample at its end IS the steady carry), release gives the
+## passenger up. `rescue_interaction_finished` is emitted first, so a listener can show the real actor where it was set down.
+func _complete_interaction() -> void:
+	var kind := rescue_interaction.kind
+	rescue_interaction.stop()
+	position = _root_rest_position
+	_step_vector = Vector3.ZERO
+	_carry_reach = 1.0
+	_interaction_sample = rescue_interaction.sample()
+	if kind == RescueInteraction.Kind.PICKUP and is_instance_valid(carry_passenger):
+		carry_passenger.lift = 1.0   # the steady carry, without waiting for the next skeleton pass to say so
+		carry_passenger.pose_blend = 1.0
+		carry_passenger.refresh()
+	rescue_interaction_finished.emit(kind)
+	if kind == RescueInteraction.Kind.RELEASE:
+		end_carry(keep_released_passenger)
+		if is_instance_valid(animation_controller):
+			animation_controller.play(&"rifle_idle")
+
+
+## Places both wrists on the passenger's contacts for this skeleton pass (called by the WeaponPose modifier, with the carrier's
+## shoulders and the passenger's anchor as they are in this pass). The hand is put on the limb from the shoulder's side, the
+## fingers wrap across it, and the palm faces it; the wrist is the palm centre set back half a palm along the fingers.
+func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
+	var sample := _interaction_sample if not _interaction_sample.is_empty() else rescue_interaction.sample()
+	var reach := float(sample.contact)
+	_carry_reach = reach
+	carry_passenger.motion_enabled = passenger_motion_enabled
+	carry_passenger.motion_amplitude = passenger_motion_amplitude
+	carry_passenger.motion_tilt_degrees = passenger_motion_tilt_degrees
+	carry_passenger.motion_response = passenger_motion_response
+	carry_passenger.motion_swing_degrees = passenger_motion_swing_degrees
+	carry_passenger.update_presentation(float(sample.lift), float(sample.pose), anchor, get_process_delta_time())
+	var hands := {&"right": [right_hand_target, 1, 0], &"left": [support_ik_target, 0, 1]}   # target, grip index, shoulder index
+	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
+	var report: Array = [{}, {}]
+	var weights := [0.0, 0.0]
+	var forwards := [Vector3.FORWARD, Vector3.FORWARD]
+	var normals := [Vector3.DOWN, Vector3.DOWN]
+	for assignment in CARRY_CONTACTS:
+		var info: Array = hands[assignment[0]]
+		var approach := Vector3.ZERO
+		if assignment.size() > 2:
+			# Lying, a hand takes the limb from above; as the passenger comes up it moves round to the carry's own side.
+			var carried_side := character_root.global_basis.orthonormalized() * (assignment[2] as Vector3).normalized()
+			approach = Vector3.UP.lerp(carried_side, clampf(float(sample.lift) * 1.2, 0.0, 1.0)).normalized()
+		var frame: Dictionary = carry_passenger.contact_frame(assignment[1], anchor, shoulders[info[2]], approach)
+		var wrap: Vector3 = (frame.axis as Vector3).cross(frame.side).normalized()
+		var fingers: Vector3 = wrap * (1.0 if assignment[0] == &"left" else -1.0)
+		var normal: Vector3 = -(frame.side as Vector3)
+		var palm: Vector3 = (frame.point as Vector3) + (frame.side as Vector3) * float(frame.radius)
+		var half_palm: float = grip_modifier.palm_length * 0.5 if grip_modifier != null else 0.045
+		var on_contact := palm - fingers * half_palm
+		var side_index := 0 if assignment[0] == &"right" else 1
+		# Before the hands have reached, they are where they were (carried with the body); `reach` brings them onto the contact.
+		(info[0] as Node3D).global_position = character_root.to_global(_reach_hands[side_index]).lerp(on_contact, reach) if reach < 1.0 else on_contact
+		weights[info[1]] = reach
+		forwards[info[1]] = to_skeleton * fingers
+		normals[info[1]] = to_skeleton * normal
+		report[side_index] = {"contact": assignment[1], "point": frame.point, "intended_palm": palm, "intended_finger_direction": fingers, "intended_palm_normal": normal, "reach": reach}
+	carry_contact_report = report
+	if grip_modifier != null:
+		grip_modifier.orient_weight = 0.0
+		grip_modifier.contact_weight = weights
+		grip_modifier.contact_forward = forwards
+		grip_modifier.contact_normal = normals
+		var curl := lerpf(_reach_curl, CARRY_GRIP_CURL, reach)
+		grip_modifier.curl = [curl, curl]
+
+
+## Hangs the weapon on the carrier's chest at the handling profile's stowage place (a provisional sling carry, nothing drawn):
+## it follows the torso from then on. Presentation only; readiness and aim code are not involved while it is stowed.
+func stow_weapon() -> void:
+	if weapon.get_parent() != character_root:
+		_weapon_hand_local = weapon_attachment.global_transform.affine_inverse() * weapon.global_transform
+		weapon.reparent(character_root)
+	_stow_anchor = ChestAnchor.create(skeleton, character_root, torso_bone_name, neck_bone_name, handling.stowed_offset_from_neck, Basis.from_euler(handling.stowed_angles_degrees * (PI / 180.0)))
+	if _stow_anchor == null:
+		return
+	if not skeleton.skeleton_updated.is_connected(_follow_stowed_weapon):
+		skeleton.skeleton_updated.connect(_follow_stowed_weapon)
+	_follow_stowed_weapon()
+
+
+## Takes the weapon off the chest and back to the right hand's socket.
+func unstow_weapon() -> void:
+	_stow_anchor = null
+	weapon.reparent(weapon_attachment)
+
+
+func is_weapon_stowed() -> bool:
+	return _stow_anchor != null
+
+
+func _follow_stowed_weapon() -> void:
+	if _stow_anchor == null or not is_instance_valid(weapon):
+		return
+	var world := _stow_anchor.world_transform()
+	var slung := Transform3D(world.basis.orthonormalized() * Basis.from_scale(Vector3.ONE * handling.scale), world.origin)
+	if _stow_blend >= 0.9999:
+		weapon.global_transform = slung
+		return
+	# Between the hand and the sling (a pickup or release in progress): the rifle travels, it does not jump.
+	var held := weapon_attachment.global_transform * _weapon_hand_local
+	var t := smoothstep(0.0, 1.0, _stow_blend)
+	weapon.global_transform = Transform3D(Basis(held.basis.get_rotation_quaternion().slerp(slung.basis.get_rotation_quaternion(), t)).scaled(slung.basis.get_scale()), held.origin.lerp(slung.origin, t))
 
 
 func _play_shot_feedback() -> void:

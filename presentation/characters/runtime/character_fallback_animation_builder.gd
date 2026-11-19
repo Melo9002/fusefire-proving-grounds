@@ -93,7 +93,7 @@ func _make_tactical_pose(pose: StringName) -> Animation:
 
 func _make_rescue_pose(pose: StringName) -> Animation:
 	var moving := pose == &"carry_move"
-	var animation := _make_move() if moving else _new_animation(0.6, pose == &"carry_idle")
+	var animation := _make_move(true) if moving else _new_animation(0.6, pose == &"carry_idle")
 	if moving:
 		animation.remove_track(animation.find_track(NodePath(".:%s" % chest), Animation.TYPE_ROTATION_3D))
 	var times := [0.0, 0.3, 0.6]
@@ -102,6 +102,10 @@ func _make_rescue_pose(pose: StringName) -> Animation:
 		angles = [-5.0, -35.0, -10.0]
 	elif pose == &"boarding":
 		angles = [-10.0, -30.0, -5.0]
+	if pose == &"carry_idle" or pose == &"carry_move":
+		# Pitching the chest about its own x axis leaned the carrier sideways on this rig. The carry's forward lean comes from
+		# CoverCrouchModifier's measured forward axis instead (UnitVisualAdapter, CARRY_LEAN_DEGREES).
+		angles = [0.0, 0.0, 0.0]
 	if moving:
 		times = [0.0, 0.5, 1.0]
 	_add_rotation(animation, chest, times, [_rotation(angles[0], 0, 0), _rotation(angles[1], 0, 0), _rotation(angles[2], 0, 0)])
@@ -114,8 +118,36 @@ func _make_rescue_pose(pose: StringName) -> Animation:
 	return animation
 
 
-func _make_move() -> Animation:
+## The loaded gait (carry_move): what changes from the unloaded walk, in one place. Presentation only; speed and action costs are
+## the tactical layer's. A narrower, shorter step with the knee lifted less, a smaller bob and a steadier trunk, because the
+## carrier is a capable android under a load, not a tired person: nothing here sags or drags.
+const LOADED_GAIT := {
+	"thigh_swing": 14.0,     # degrees either side of vertical (unloaded 22)
+	"knee_lift": -36.0,      # swing-leg knee flexion at its peak (unloaded -48)
+	"foot_swing": 7.0,       # ankle rock (unloaded 10 and -8)
+	"bob": 0.010,            # hip rise per step, metres (unloaded 0.018)
+	"trunk_sway": Vector3(-1.5, 1.2, 0.6),   # chest rotation at the ends of the cycle, degrees (unloaded -3, 2, 1)
+}
+
+func _make_move(loaded := false) -> Animation:
 	var animation := _new_animation(1.0, true)
+	if loaded:
+		var g := LOADED_GAIT
+		var swing: float = g.thigh_swing
+		var knee: float = g.knee_lift
+		var foot: float = g.foot_swing
+		var bob: float = g.bob
+		var sway: Vector3 = g.trunk_sway
+		_add_position(animation, hips, [0.0, 0.25, 0.5, 0.75, 1.0], [Vector3.ZERO, Vector3(0, bob, 0), Vector3.ZERO, Vector3(0, bob, 0), Vector3.ZERO])
+		_add_rotation(animation, left_upper_leg, [0.0, 0.5, 1.0], [_rotation(-swing, 0, 0), _rotation(swing, 0, 0), _rotation(-swing, 0, 0)])
+		_add_rotation(animation, right_upper_leg, [0.0, 0.5, 1.0], [_rotation(swing, 0, 0), _rotation(-swing, 0, 0), _rotation(swing, 0, 0)])
+		_add_rotation(animation, left_lower_leg, [0.0, 0.25, 0.5, 1.0], [_rotation(-5, 0, 0), _rotation(knee, 0, 0), _rotation(-5, 0, 0), _rotation(-5, 0, 0)])
+		_add_rotation(animation, right_lower_leg, [0.0, 0.5, 0.75, 1.0], [_rotation(-5, 0, 0), _rotation(-5, 0, 0), _rotation(knee, 0, 0), _rotation(-5, 0, 0)])
+		_add_rotation(animation, left_foot, [0.0, 0.5, 1.0], [_rotation(-foot, 0, 0), _rotation(foot, 0, 0), _rotation(-foot, 0, 0)])
+		_add_rotation(animation, right_foot, [0.0, 0.5, 1.0], [_rotation(foot, 0, 0), _rotation(-foot, 0, 0), _rotation(foot, 0, 0)])
+		_add_rotation(animation, chest, [0.0, 0.5, 1.0], [_rotation(sway.x, -sway.y, sway.z), _rotation(sway.x, sway.y, -sway.z), _rotation(sway.x, -sway.y, sway.z)])
+		_add_grip(animation)
+		return animation
 	_add_position(animation, hips, [0.0, 0.25, 0.5, 0.75, 1.0], [Vector3.ZERO, Vector3(0, 0.018, 0), Vector3.ZERO, Vector3(0, 0.018, 0), Vector3.ZERO])
 	# Swing the bent leg forward along the rig's +Z facing direction.
 	_add_rotation(animation, left_upper_leg, [0.0, 0.5, 1.0], [_rotation(-22, 0, 0), _rotation(22, 0, 0), _rotation(-22, 0, 0)])

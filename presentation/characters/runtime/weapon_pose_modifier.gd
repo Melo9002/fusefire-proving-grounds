@@ -81,6 +81,14 @@ func _process_modification() -> void:
 		return
 	passes += 1
 	last_shoulder_world = skeleton.global_transform * skeleton.get_bone_global_pose(_right_shoulder).origin
+	# Carrying: the wrists belong to the carry contacts, not to the weapon. The weapon targets, the torso frame and the support
+	# reach are skipped; the same arm IK, elbow guidance and hand grip then run on the contact targets.
+	if bool(rig.call("carry_contacts_active")):
+		var left_shoulder: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin
+		rig.call("apply_carry_targets", [last_shoulder_world, left_shoulder], (rig.get("carry_passenger") as Node3D).call("anchor_world"))
+		report = {"available": false}
+		_guide_elbows(skeleton, true)
+		return
 	# The torso frame is read from the chest in this same pass, before any target is placed, so the stock, both
 	# grips and (after the pass) the weapon itself are built from one frame.
 	if _chest >= 0:
@@ -92,7 +100,7 @@ func _process_modification() -> void:
 	_guide_elbows(skeleton)
 
 ## Elbow poles from the final shoulders and hand targets of this pass (see CharacterRig.apply_elbow_guidance).
-func _guide_elbows(skeleton: Skeleton3D) -> void:
+func _guide_elbows(skeleton: Skeleton3D, carrying := false) -> void:
 	if _chest < 0:
 		return
 	var root_node: Node3D = rig.get("character_root")
@@ -100,7 +108,7 @@ func _guide_elbows(skeleton: Skeleton3D) -> void:
 	var deviation := skeleton.get_bone_global_pose(_chest).basis.orthonormalized() * skeleton.get_bone_global_rest(_chest).basis.orthonormalized().inverse()
 	var chest_world := skeleton_basis * deviation * skeleton_basis.inverse() * root_node.global_basis.orthonormalized()
 	var shoulders := [last_shoulder_world, skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin]
-	rig.call("apply_elbow_guidance", shoulders, chest_world)
+	rig.call("apply_elbow_guidance", shoulders, chest_world, carrying)
 
 func _support_distance(skeleton: Skeleton3D, target: Vector3) -> float:
 	return (skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin).distance_to(target)

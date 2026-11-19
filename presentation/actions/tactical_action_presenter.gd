@@ -225,6 +225,17 @@ func present_mission(result: MissionActionResult, actor: TacticalUnit, _target: 
 	if camera_presented:
 		await _safe_delay(0.3)
 		await _finish_camera(true)
+	await _wait_for_rescue_interaction(actor)
+
+## The rescue is already decided; this only keeps the next command from cutting the carrier's lift short. Bounded, and it observes the
+## actor being freed (death, teardown) instead of waiting on it.
+func _wait_for_rescue_interaction(actor: TacticalUnit) -> void:
+	if not is_inside_tree() or not is_instance_valid(actor) or not is_instance_valid(actor.visual_adapter):
+		return
+	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var deadline := Time.get_ticks_msec() + int((adapter.rescue_interaction.duration() + 0.5) * 1000.0)
+	while is_inside_tree() and is_instance_valid(actor) and is_instance_valid(adapter) and adapter.interaction_active() and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
 
 func _present_extract(result: MissionActionResult, actor: TacticalUnit) -> void:
 	if result.presentation_suppressed: return

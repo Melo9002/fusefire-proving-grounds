@@ -29,6 +29,11 @@ var orient_weight := 0.0
 ## Direction of the fingers' base and the palm-facing direction for each hand, in the weapon frame.
 var hand_forward := Vector3(0.0, -0.5, 0.866)
 var palm_normals := [Vector3.LEFT, Vector3.RIGHT]
+## Contact orientation (skeleton space), per hand (index 0 = left, 1 = right): when `contact_weight` is above zero that hand
+## is turned to this finger direction and palm-facing direction instead of following the weapon (a carried body's limb).
+var contact_weight := [0.0, 0.0]
+var contact_forward := [Vector3.FORWARD, Vector3.FORWARD]
+var contact_normal := [Vector3.DOWN, Vector3.DOWN]
 ## Wrist to middle-finger knuckle, metres (half of it reaches the palm centre).
 var palm_length := 0.09
 
@@ -86,17 +91,22 @@ static func _frame(forward: Vector3, normal: Vector3) -> Basis:
 ## Turns each hand so its fingers point along `hand_forward` and its palm faces `palm_normals`,
 ## both given in the weapon frame. The rest pose is a T-pose with the palms down.
 func _orient_hands(target: Skeleton3D) -> void:
-	if orient_weight <= 0.001:
-		return
 	for hand in 2:
+		var weight := orient_weight
 		var forward := (weapon_basis * hand_forward).normalized()
 		var normal: Vector3 = (weapon_basis * (palm_normals[hand] as Vector3)).normalized()
+		if float(contact_weight[hand]) > 0.001:
+			weight = contact_weight[hand]
+			forward = (contact_forward[hand] as Vector3).normalized()
+			normal = (contact_normal[hand] as Vector3).normalized()
+		if weight <= 0.001:
+			continue
 		var rotation := _frame(forward, normal) * _frame(_finger_rest_direction[hand], Vector3.DOWN).inverse()
 		var desired: Basis = rotation * _hand_rest_basis[hand]
 		var parent_basis := target.get_bone_global_pose(_hand_parents[hand]).basis.orthonormalized()
 		var local := (parent_basis.inverse() * desired).orthonormalized().get_rotation_quaternion()
 		var current := target.get_bone_pose_rotation(_hands[hand])
-		target.set_bone_pose_rotation(_hands[hand], current.slerp(local, clampf(orient_weight, 0.0, 1.0)))
+		target.set_bone_pose_rotation(_hands[hand], current.slerp(local, clampf(weight, 0.0, 1.0)))
 
 func _process_modification() -> void:
 	var target := get_skeleton()

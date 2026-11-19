@@ -49,29 +49,47 @@ var preview_carrying := false
 ## Read-only world-space hints for hybrid pose fitting. Never applied as a root offset.
 var last_cover_contact: Dictionary = {}
 var _segment_state: StringName = &"move"
-var _passenger: Node3D
 
-func present_pickup() -> void:
+## The carrier has just taken `passenger_world` (the rescued actor's place, which the tactical layer has hidden the actor at).
+## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
+## place there is nothing to lift from: the passenger appears across the shoulders as before.
+func present_pickup(passenger_world := Vector3.INF) -> void:
 	_cancel_attack_sequence()
-	arm_ik.active = false
-	weapon.reparent(character_root)
-	weapon.position = stowed_weapon_position
-	weapon.rotation_degrees = stowed_weapon_angles_degrees
-	if not is_instance_valid(_passenger):
-		_passenger = preload("res://presentation/characters/runtime/rescue_passenger.gd").new()
-		_passenger.name = "RescuePassenger"
-		character_root.add_child(_passenger)
-		_passenger.position = passenger_position
+	_return_generation += 1
+	if not rescue_interaction_finished.is_connected(_on_rescue_interaction_finished):
+		rescue_interaction_finished.connect(_on_rescue_interaction_finished)
+	if passenger_world.is_finite():
+		face_world_position(passenger_world)
+		begin_pickup(passenger_world)
+		return
+	begin_carry()
 	_play(&"pickup")
 	_return_to_idle_after(pickup_return_seconds)
 
+## A pickup or release has run out: carry on in whichever loaded state the unit is in.
+func _on_rescue_interaction_finished(kind: int) -> void:
+	if kind == RescueInteraction.Kind.PICKUP:
+		if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
+			_play(&"carry_move")
+		else:
+			present_idle()
+
+## The tactical layer has put the passenger down (the carrier fell): drop the visual one at once, take the rifle back and leave
+## the rest to the revealed actor. Safe in any phase of a pickup or release.
+func present_carry_released() -> void:
+	_return_generation += 1
+	end_carry()
+	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
+		present_idle()
+
 func present_boarding() -> void:
 	_cancel_attack_sequence()
+	finish_interaction_now()
 	_return_generation += 1
 	_play(&"boarding")
-	if is_instance_valid(_passenger):
+	if is_instance_valid(carry_passenger):
 		var tween := create_tween()
-		tween.tween_property(_passenger, "scale", Vector3.ONE * 0.01, 0.55)
+		tween.tween_property(carry_passenger, "presence", 0.01, 0.55)
 
 func _carrying() -> bool:
 	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit())
@@ -216,12 +234,14 @@ func _exit_tree() -> void:
 		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
 
 func present_move() -> void:
+	finish_interaction_now()
 	_cancel_attack_sequence()
 	_return_generation += 1
 	_segment_state = &"move"
 	_play(&"carry_move" if _carrying() else &"move")
 
 func present_path_segment(state_name: StringName) -> void:
+	finish_interaction_now()
 	if state_name == _segment_state:
 		return
 	var was_traversing := _segment_state in TRAVERSAL_STATES
@@ -578,7 +598,10 @@ func _process(delta: float) -> void:
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
 func _update_weapon_pose() -> void:
-	if _carrying(): return
+	if _carrying():
+		_apply_carry_posture()
+		return
+	_carry_lean = 0.0
 	super._update_weapon_pose()
 
 func _align_weapon_to_aim() -> void:

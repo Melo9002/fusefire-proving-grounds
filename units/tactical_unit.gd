@@ -68,7 +68,7 @@ func carry_unit(unit: TacticalUnit) -> void:
 	unit.visible = false
 	unit.process_mode = Node.PROCESS_MODE_DISABLED
 	if visual_adapter:
-		visual_adapter.present_pickup()
+		visual_adapter.present_pickup(unit.global_position)
 
 func get_display_name() -> String:
 	return display_name if not display_name.is_empty() else String(name)
@@ -91,6 +91,9 @@ func release_carried_unit() -> TacticalUnit:
 	if is_instance_valid(passenger):
 		passenger.visible = true
 		passenger.process_mode = Node.PROCESS_MODE_INHERIT
+	# The visual passenger the carrier showed is gone with it; the revealed actor is the one that remains.
+	if visual_adapter:
+		visual_adapter.present_carry_released()
 	return passenger if is_instance_valid(passenger) else null
 
 func get_mission_id() -> StringName:

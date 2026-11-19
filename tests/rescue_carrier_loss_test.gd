@@ -37,6 +37,8 @@ func _run() -> void:
 	await _carrier_falls_and_the_vip_can_be_recovered()
 	await _blocked_drop_cell_falls_back_to_a_free_one()
 	await _losing_a_non_carrier_changes_nothing()
+	await _carrier_falls_during_the_visual_pickup()
+	await _carrier_falls_while_carrying_after_the_pickup()
 	print("Rescue carrier loss: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
@@ -129,4 +131,42 @@ func _losing_a_non_carrier_changes_nothing() -> void:
 	check(objectives.get_objective(&"rescue").is_active() and objectives.get_objective(&"rescue").progress == 0, "The Rescue objective is untouched")
 	check(target.visible and target.grid_position == cell_before, "The VIP has not moved")
 	check(level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING, "The mission continues")
+	await _finish(level)
+
+## 06C-06D: the carrier's presentation. The tactical outcome is the same as above; this checks that the VISUAL passenger the carrier
+## showed does not outlive the carrier's hold, that nothing is duplicated, and that the real actor is the one that remains.
+func _carrier_falls_during_the_visual_pickup() -> void:
+	var level := await _create_level()
+	var turns := level.turn_manager
+	var target := level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var carrier: TacticalUnit = turns.player_units[0]
+	var target_world := target.global_position
+	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, level.battle_controller.grid_manager.get_unit_grid(target) + Vector3i.LEFT)
+	level.objective_manager.try_rescue(carrier, target)   # not awaited: the action returns when the lift ends, and the carrier falls during it
+	await create_timer(0.3).timeout
+	check(carrier.is_carrying_unit(), "Pickup setup: the carrier has taken the VIP")
+	var adapter := carrier.visual_adapter
+	check(adapter.interaction_active() and is_instance_valid(adapter.carry_passenger), "The rescue starts the visual lift, with one passenger")
+	check(absf(adapter.carry_passenger.ground_origin.x - target_world.x) < 0.01 and absf(adapter.carry_passenger.ground_origin.z - target_world.z) < 0.01, "...lying where the rescued actor was")
+	check(not target.visible and level.find_children("RescuePassenger", "", true, false).size() == 1, "The real actor is hidden and exactly one visual passenger shows")
+	await create_timer(0.5).timeout
+	carrier.stats.take_damage(1000)
+	await create_timer(0.3).timeout
+	check(target.visible and target.is_inside_tree() and not carrier.is_carrying_unit(), "The carrier fell mid-pickup: the VIP is revealed, active, and carried by no one")
+	check(not is_instance_valid(adapter.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "...and the carrier's visual passenger is gone, so the VIP is shown only once")
+	check(not adapter.interaction_active() and adapter.weapon.get_parent() == adapter.weapon_attachment, "...the interaction is over and the fallen carrier's weapon is back in its hand")
+	check(level.objective_manager.get_objective(&"rescue").is_active(), "...and the rescue is open to another carrier")
+	await _finish(level)
+
+func _carrier_falls_while_carrying_after_the_pickup() -> void:
+	var level := await _create_level()
+	var turns := level.turn_manager
+	var target := level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var carrier: TacticalUnit = turns.player_units[0]
+	check(await _rescue(level, carrier, target), "Carry setup: the carrier rescues the VIP (the action returns after the lift)")
+	var adapter := carrier.visual_adapter
+	check(not adapter.interaction_active() and is_instance_valid(adapter.carry_passenger) and adapter.carry_passenger.lift == 1.0, "The action returned with the pickup complete and the passenger across the shoulders")
+	carrier.stats.take_damage(1000)
+	await create_timer(0.3).timeout
+	check(target.visible and not is_instance_valid(adapter.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "A carrier that falls with the passenger on its shoulders leaves one passenger: the revealed actor")
 	await _finish(level)

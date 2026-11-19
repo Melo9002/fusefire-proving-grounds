@@ -251,13 +251,22 @@ func _run() -> void:
 	follower.queue_free()
 	rig.weapon_pose_modifier_enabled = true
 
-	# Carrying: the modifier leaves the pose alone while the arm IK is off.
+	# Carrying (06B): the arm IK now belongs to the carry contacts, so the modifier runs in the same pass and places the wrists on
+	# the passenger instead of on the weapon (no weapon targets, no support reach). With the contacts switched off the arm IK stays
+	# off and the modifier leaves the pose alone, as before.
 	rig.preview_carrying = true
 	rig.present_pickup()
 	await _settle(20, 0.5)
 	var passes_before := modifier.passes
 	await _settle(20, 0.2)
-	check(modifier.passes == passes_before, "While carrying (arm IK off) the modifier does nothing")
+	check(modifier.passes > passes_before and rig.carry_contacts_active() and modifier.report.get("available", true) == false, "While carrying with contacts the modifier runs and applies the carry contacts, not the weapon pose")
+	rig.end_carry()
+	rig.carry_contacts_enabled = false
+	rig.present_pickup()
+	await _settle(20, 0.5)
+	passes_before = modifier.passes
+	await _settle(20, 0.2)
+	check(not rig.arm_ik.active and modifier.passes == passes_before, "With the carry contacts off (arm IK off) the modifier does nothing")
 	stage.queue_free()
 	await process_frame
 	print("Weapon pose modifier: %d checks, %d failure(s)" % [checks, failures])

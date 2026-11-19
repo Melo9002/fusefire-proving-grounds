@@ -34,3 +34,6 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [upper-body-investigation-2026-11-19.md](upper-body-investigation-2026-11-19.md) | Upper-body coordination investigation: recoil drift cause, elbow and eye findings, experiment comparison (animation improvement 05). |
 | [torso-weapon-frame-and-elbow-2026-11-19.md](torso-weapon-frame-and-elbow-2026-11-19.md) | Torso-relative weapon frame (implemented) and crouched elbow root cause with pole experiments (animation improvement 05A). |
 | [swivel-preserving-elbow-guidance-2026-11-19.md](swivel-preserving-elbow-guidance-2026-11-19.md) | Swivel-preserving elbow guidance for aiming: algorithm, measurements, transitions (animation improvement 05B). |
+| [humanoid-rescue-passenger-2026-11-19.md](humanoid-rescue-passenger-2026-11-19.md) | Humanoid MIRA rescue passenger replacing the orange placeholder: architecture, anchor, pose, limits (animation improvement 06). |
+
+| [rescue-interaction-2026-11-19.md](rescue-interaction-2026-11-19.md) | Rescue lifecycle trace, shared pickup/release timeline, loaded gait, passenger secondary motion, interruption handling (animation 06C-06D). |
