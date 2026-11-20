@@ -131,7 +131,68 @@ func _run() -> void:
 	adapter.face_world_position(adapter.global_position + Vector3(-5, 0, 0))
 	check(adapter.cover_side == passive_before and adapter.attack_plan.is_empty(), "Merely facing somewhere neither plans an attack nor changes the passive side")
 
+
+	# ---- Damage taken while firing round an edge: the cover pose (crouch, yaw) is held through the hit and the plan ends with the attack.
+	for x in [5, 6, 7]:
+		f.set_cover(Vector3i(x, 0, 12), MapCellData.CoverType.FULL, 2.2)
+	enemy.stats.current_hp = enemy.stats.max_hp   # the earlier attacks must not defeat it
+	f.place(enemy, Vector3i(11, 0, 12))
+	f.ready_actor(actor, 3, 8)
+	adapter.present_idle()
+	await create_timer(1.0).timeout
+	var hit_done: Array = []
+	var shoot := func() -> void:
+		await f.battle.try_attack(actor, enemy)
+		hit_done.append(true)
+	shoot.call()
+	var lowest_depth := 99.0
+	var hit_sent := false
+	var hit_guard := 0
+	while (hit_done.is_empty() or adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE) and hit_guard < 1500:
+		hit_guard += 1
+		await process_frame
+		lowest_depth = minf(lowest_depth, adapter.crouch_modifier.depth) if hit_sent else lowest_depth
+		if not hit_sent and adapter.attack_phase == UnitVisualAdapter.AttackPhase.RECOVER:
+			hit_sent = true
+			adapter.present_hit()
+			lowest_depth = adapter.crouch_modifier.depth
+	await create_timer(0.3).timeout
+	check(hit_sent and lowest_depth > 0.02, "A hit during the shot keeps the cover crouch (lowest depth %.2f)" % lowest_depth)
+	await create_timer(1.5).timeout
+	check(adapter.attack_plan.is_empty() and adapter.get_presentation_state() == &"cover_high" and adapter.cover_side == CoverEdgeSelector.Side.RIGHT, "...and the unit is back in passive cover on its passive side (%s, side %d)" % [adapter.get_presentation_state(), adapter.cover_side])
+
+	# ---- A side the geometry cannot support: the wall runs far to the right, so the right edge is out of reach. A target on the right gets the conservative
+	# passive pose and a recorded mismatch (the presentation never creates a shot: whether such a shot is legal is the tactical layer's answer).
+	for x in [2, 3, 4]:
+		f.set_cover(Vector3i(x, 0, 12), MapCellData.CoverType.FULL, 2.2)
+	adapter.present_idle()
+	await create_timer(1.0).timeout
+	var cover := adapter._cover_context()
+	var unsupported := adapter._plan_attack_posture(cover, f.grid.grid_to_world(Vector3i(0, 0, 14)))
+	check(adapter.cover_edges.right.usable == false and adapter.cover_edges.left.usable == true, "Setup: only the left edge is usable")
+	check(unsupported.mismatch == "target_side_edge_unusable" and int(unsupported.side) == CoverEdgeSelector.Side.LEFT, "A right-hand target with no usable right edge: passive (left) pose, mismatch recorded (%s)" % unsupported.mismatch)
+	check(adapter.attack_plan.is_empty(), "Planning alone starts no attack and shows nothing")
+	var left_only := adapter._plan_attack_posture(cover, f.grid.grid_to_world(Vector3i(12, 0, 12)))
+	check(int(left_only.mode) == CoverEdgeSelector.FiringMode.AROUND_LEFT and left_only.mismatch.is_empty(), "A left-hand target with the one usable (left) edge is engaged round it with no mismatch")
+
+	# ---- Low cover: a real attack is fired over the top (no lean), square to the target.
+	for x in [2, 3, 4, 5, 6, 7]:
+		f.set_cover(Vector3i(x, 0, 12), MapCellData.CoverType.LOW, 0.9)
+	enemy.stats.current_hp = enemy.stats.max_hp
+	f.place(enemy, Vector3i(6, 0, 15))
+	f.ready_actor(actor, 3, 8)
+	adapter.present_idle()
+	await create_timer(1.0).timeout
+	var low_query: AttackQueryResult = f.battle.query_attack(actor, enemy)
+	check(low_query.is_legal(), "Setup: an attack over low cover is tactically legal")
+	var low_states := {"states": [], "muzzle_error": 99.0, "worst_rate": 0.0}
+	await _fire_and_measure(f, adapter, actor, enemy, low_states)
+	var low_plan: Dictionary = adapter.attack_plan_log.back()
+	check(int(low_plan.mode) == CoverEdgeSelector.FiringMode.OVER_COVER and &"shoot" in low_states.states and not (&"shoot_left" in low_states.states or &"shoot_right" in low_states.states), "Low cover is fired over the top with the straight shot (mode %d, states %s)" % [int(low_plan.mode), low_states.states])
+	check(float(low_states.worst_rate) < 900.0, "...without a muzzle jump (worst %.0f deg/s)" % float(low_states.worst_rate))
+
 	# ---- Leaving cover right after firing leaves nothing of the attack posture behind.
+	enemy.stats.current_hp = enemy.stats.max_hp
 	f.place(enemy, Vector3i(11, 0, 12))
 	f.ready_actor(actor, 3, 8)
 	var moved := []
