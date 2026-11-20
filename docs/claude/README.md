@@ -21,6 +21,24 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [Hand contact diagnostics](hand-contact-diagnostics-2026-11-18.md) | The pose workbench overlay and readout for hand-to-weapon contact: keys, colours, what is direct and what is approximate, why only the post-update sample is final, and the baseline JSON. |
 | [Weapon pose modifier](weapon-pose-modifier-2026-11-18.md) | Same-pass weapon target generation (CoverCrouch, WeaponPose, WeaponArmIK, HandGrip), the reach-aware support protraction and its limits, results and known costs. |
 | [AI hard constraints, step 5](ai-constraints-2026-11-18.md) | Where legality is enforced, named blockers and shared-query reasons, explicit squad vetoes, and the 48-match proof. |
+| [weapon-readiness-2026-11-19.md](weapon-readiness-2026-11-19.md) | Weapon readiness model and raise-align-fire attack sequencing (animation improvement 04). |
+| [upper-body-investigation-2026-11-19.md](upper-body-investigation-2026-11-19.md) | Upper-body coordination investigation: recoil drift cause, elbow and eye findings, experiment comparison (animation improvement 05). |
+| [torso-weapon-frame-and-elbow-2026-11-19.md](torso-weapon-frame-and-elbow-2026-11-19.md) | Torso-relative weapon frame (implemented) and crouched elbow root cause with pole experiments (animation improvement 05A). |
+| [swivel-preserving-elbow-guidance-2026-11-19.md](swivel-preserving-elbow-guidance-2026-11-19.md) | Swivel-preserving elbow guidance for aiming: algorithm, measurements, transitions (animation improvement 05B). |
+| [humanoid-rescue-passenger-2026-11-19.md](humanoid-rescue-passenger-2026-11-19.md) | Humanoid MIRA rescue passenger replacing the orange placeholder: architecture, anchor, pose, limits (animation improvement 06). |
+| [rescue-interaction-2026-11-19.md](rescue-interaction-2026-11-19.md) | Rescue lifecycle trace, shared pickup/release timeline, loaded gait, passenger secondary motion, interruption handling (animation 06C-06D). |
+| [locomotion-foundation-2026-11-19.md](locomotion-foundation-2026-11-19.md) | Humanoid locomotion root cause (wrong local-axis assumptions), movement coordinate contract, anatomical gait, parameters, references and limits (stabilization 01). |
+| [locomotion-speed-2026-11-19.md](locomotion-speed-2026-11-19.md) | Speed-responsive locomotion: walk/jog/run profile, stride and cadence, phase-synchronised blending, turning, start/stop, loaded carry, interactive workbench test bench (stabilization 01B). |
+| [rescue-lifecycle-2026-11-19.md](rescue-lifecycle-2026-11-19.md) | Explicit rescue activation, incapacitated target presentation, tactical/presentation timing contract, carrier-loss recovery (stabilization 02). |
+| [cover-posture-2026-11-20.md](cover-posture-2026-11-20.md) | Cover side selection, facing contract, firing stability root causes (yaw ownership conflict, snaps), pose ownership, stock clearance, cover bench (stabilization 03). |
+| [animation-stabilization-summary-2026-11-20.md](animation-stabilization-summary-2026-11-20.md) | Integrated architecture and stabilization summary: modifier ownership, conventions, editable values, cover/rescue/workbench behaviour, limits, deferred work (checkpoint after 01, 01B, 02, 03). |
+| [environmental-traversal-2026-11-20.md](environmental-traversal-2026-11-20.md) | Traversal capability audit (ladder / ledge / vault legal, step-over / mantle not), height-driven ladder pose, weapon sling, ownership, replay, presentation-speed decision, vault prototype status |
+| [movement-foundations-01-research-2026-11-20.md](movement-foundations-01-research-2026-11-20.md) | Movement architecture, tactical vs visual authority, measured stair/obstacle cases (1.50 m float on the range stairs), techniques with sources, roadmap, owner decisions |
+| [movement-foundations-02-2026-11-20.md](movement-foundations-02-2026-11-20.md) | Prototype: opt-in corridor path refinement and stair foot placement (model, planner, policy, pelvis, leg IK), measurements, findings (0.5 m risers), tests, limitations |
+| [movement-foundations-03-2026-11-20.md](movement-foundations-03-2026-11-20.md) | Traversal hardening: timing contract (tactical first, barrier, deadline), explicit ladder/stairs/ramp classification, stair and ramp geometry assessment, path-refiner scan of 120 routes, round-object investigation, loaded-carrier findings |
+| [animation-architecture-audit-2026-11-20.md](animation-architecture-audit-2026-11-20.md) | Task 02 audit: component inventory, diagrams, ownership matrix, dependency analysis, reusability (contexts, rigs, non-humanoids), ranked findings (incl. confirmed spine-twist defect), strengths, tests and performance |
+| [animation-developer-guide-2026-11-20.md](animation-developer-guide-2026-11-20.md) | "If I want to change X, where do I go?" for gait, turning, weapon, cover, rescue, ladder, stairs, rig proportions |
+| [foundation-closure-2026-11-20.md](foundation-closure-2026-11-20.md) | Closure of Movement Foundations 01-03 and audit F-04: final ramp contract, stair alignment correction, spine composition fix, validation results, checkpoint inventory |
 
 ## Project documents these build on
 
@@ -30,16 +48,3 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 - [Project Ironclad](../quality/project-ironclad.md)
 - [Animation editing guide](../animation-editing-guide.md) and [asset edges and hybrid animation](../asset-edge-placement.md)
 - [Simulation](../simulation.md) and [Replay](../replay.md)
-| [weapon-readiness-2026-11-19.md](weapon-readiness-2026-11-19.md) | Weapon readiness model and raise-align-fire attack sequencing (animation improvement 04). |
-| [upper-body-investigation-2026-11-19.md](upper-body-investigation-2026-11-19.md) | Upper-body coordination investigation: recoil drift cause, elbow and eye findings, experiment comparison (animation improvement 05). |
-| [torso-weapon-frame-and-elbow-2026-11-19.md](torso-weapon-frame-and-elbow-2026-11-19.md) | Torso-relative weapon frame (implemented) and crouched elbow root cause with pole experiments (animation improvement 05A). |
-| [swivel-preserving-elbow-guidance-2026-11-19.md](swivel-preserving-elbow-guidance-2026-11-19.md) | Swivel-preserving elbow guidance for aiming: algorithm, measurements, transitions (animation improvement 05B). |
-| [humanoid-rescue-passenger-2026-11-19.md](humanoid-rescue-passenger-2026-11-19.md) | Humanoid MIRA rescue passenger replacing the orange placeholder: architecture, anchor, pose, limits (animation improvement 06). |
-
-| [rescue-interaction-2026-11-19.md](rescue-interaction-2026-11-19.md) | Rescue lifecycle trace, shared pickup/release timeline, loaded gait, passenger secondary motion, interruption handling (animation 06C-06D). |
-| [locomotion-foundation-2026-11-19.md](locomotion-foundation-2026-11-19.md) | Humanoid locomotion root cause (wrong local-axis assumptions), movement coordinate contract, anatomical gait, parameters, references and limits (stabilization 01). |
-| [locomotion-speed-2026-11-19.md](locomotion-speed-2026-11-19.md) | Speed-responsive locomotion: walk/jog/run profile, stride and cadence, phase-synchronised blending, turning, start/stop, loaded carry, interactive workbench test bench (stabilization 01B). |
-| [rescue-lifecycle-2026-11-19.md](rescue-lifecycle-2026-11-19.md) | Explicit rescue activation, incapacitated target presentation, tactical/presentation timing contract, carrier-loss recovery (stabilization 02). |
-| [cover-posture-2026-11-20.md](cover-posture-2026-11-20.md) | Cover side selection, facing contract, firing stability root causes (yaw ownership conflict, snaps), pose ownership, stock clearance, cover bench (stabilization 03). |
-| [animation-stabilization-summary-2026-11-20.md](animation-stabilization-summary-2026-11-20.md) | Integrated architecture and stabilization summary: modifier ownership, conventions, editable values, cover/rescue/workbench behaviour, limits, deferred work (checkpoint after 01, 01B, 02, 03). |
-| [environmental-traversal-2026-11-20.md](environmental-traversal-2026-11-20.md) | Traversal capability audit (ladder / ledge / vault legal, step-over / mantle not), height-driven ladder pose, weapon sling, ownership, replay, presentation-speed decision, vault prototype status |
