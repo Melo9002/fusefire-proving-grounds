@@ -10,6 +10,8 @@ var checks := 0
 
 ## The engine's own delta for the frame just processed (what the animation advanced by). A wall-clock difference between two `await process_frame` resumptions is not that: on a fast
 ## headless frame it can read 1 ms for a frame that moved 3 degrees, which printed as thousands of deg/s although the motion was smooth.
+## The rate is also only meaningful at a realistic frame rate: an uncapped headless run produces 1-5 ms frames with unstable deltas, where the same smooth motion (about 8 degrees per frame at 60 fps)
+## reads 1500-2000 deg/s on some runs. The test therefore pins the frame rate to 60 fps while it measures (the limit is still 900 deg/s, i.e. 15 degrees per frame).
 var _clock := Node.new()
 
 func _frame_dt() -> float:
@@ -17,6 +19,7 @@ func _frame_dt() -> float:
 
 func _initialize() -> void:
 	root.add_child(_clock)
+	Engine.max_fps = 60
 	_run.call_deferred()
 
 func check(ok: bool, message: String) -> void:
