@@ -5,6 +5,8 @@ const BattleConfigurationData := preload("res://systems/battle_configuration.gd"
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
 const ParcelEditorScene := preload("res://tools/parcel_editor/parcel_editor.tscn")
+## Experimental, isolated sandbox (research/): opened by path so Match Setup does not depend on it.
+const EXPLORATION_PLAYGROUND_PATH := "res://research/exploration_playground/exploration_playground.tscn"
 
 @export var player_count: SpinBox
 @export var enemy_count: SpinBox
@@ -85,6 +87,12 @@ func _build_authoring_tools() -> void:
 	parcel_editor.tooltip_text = "Inspect registered 16×16, 16×32, and 32×32 authored parcels and their tactical contracts."
 	parcel_editor.pressed.connect(func(): get_tree().change_scene_to_packed(ParcelEditorScene))
 	box.add_child(parcel_editor)
+	var exploration := Button.new()
+	exploration.name = "ExplorationButton"
+	exploration.text = "Exploration"
+	exploration.tooltip_text = "Experimental sandbox: walk MIRA around a tiny area with an over-the-shoulder camera. Not a battle; no tactical state is created."
+	exploration.pressed.connect(func(): get_tree().change_scene_to_file(EXPLORATION_PLAYGROUND_PATH))
+	box.add_child(exploration)
 	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(box)
 
 func _add_battlefield_option(id: StringName) -> void:
