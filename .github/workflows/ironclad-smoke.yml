@@ -44,6 +44,10 @@ jobs:
           }
           "executable=$executable" >> $env:GITHUB_OUTPUT
 
+      - name: Validate test catalog
+        shell: pwsh
+        run: .\tools\run_tests.ps1 check
+
       - name: Run Ironclad smoke tier
         shell: pwsh
         run: .\tools\run_tests.ps1 smoke -Godot "${{ steps.godot.outputs.executable }}" -LogDirectory artifacts/test-results
