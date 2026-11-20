@@ -60,7 +60,7 @@ var _segment_state: StringName = &"move"
 ## The carrier has just taken `passenger_world` (the rescued actor's place, which the tactical layer has hidden the actor at).
 ## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
 ## place there is nothing to lift from: the passenger appears across the shoulders as before.
-func present_pickup(passenger_world := Vector3.INF, lying_basis = null) -> void:
+func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> void:
 	_cancel_attack_sequence()
 	_return_generation += 1
 	if not rescue_interaction_finished.is_connected(_on_rescue_interaction_finished):
@@ -70,11 +70,11 @@ func present_pickup(passenger_world := Vector3.INF, lying_basis = null) -> void:
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
 		# its shoulders. Otherwise the passenger would "fly" to a carrier still metres away.
 		_pending_pickup_world = passenger_world
-		_pending_lying_basis = lying_basis
+		_pending_lying_basis = lying_orientation
 		return
 	if passenger_world.is_finite():
 		face_world_position(passenger_world)
-		begin_pickup(passenger_world, lying_basis)
+		begin_pickup(passenger_world, lying_orientation)
 		return
 	begin_carry()
 	_play(&"pickup")
@@ -138,8 +138,10 @@ func is_incapacitated() -> bool:
 	return is_instance_valid(_lying_body)
 
 ## The world orientation the body lies in, for the pickup to start from; null when this unit is not lying.
-func lying_basis():
-	return _lying_body.global_basis.orthonormalized() if is_instance_valid(_lying_body) else null
+func lying_basis() -> Variant:
+	if not is_instance_valid(_lying_body):
+		return null
+	return _lying_body.global_basis.orthonormalized()
 
 func _lying_ground_height() -> float:
 	return rescue_interaction.ground_height
@@ -480,7 +482,6 @@ func _cover_crouch_target() -> float:
 func _sync_cover_crouch(delta: float) -> void:
 	if crouch_modifier == null:
 		return
-	var kind := _cover_kind()
 	_update_cover_side()
 	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), cover_profile.crouch_speed * delta)
 	crouch_modifier.depth = _crouch_depth

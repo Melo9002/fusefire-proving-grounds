@@ -235,10 +235,10 @@ func sample(timing := "manual") -> Dictionary:
 	return {"meta": meta, "hands": hands, "points": points}
 
 ## A compact copy of a sample's numbers for logs and baselines: metres and degrees, finite values only.
-static func scalars(sample: Dictionary) -> Dictionary:
-	var out := {"meta": (sample.get("meta", {}) as Dictionary).duplicate(), "hands": []}
+static func scalars(measurement: Dictionary) -> Dictionary:
+	var out := {"meta": (measurement.get("meta", {}) as Dictionary).duplicate(), "hands": []}
 	(out.meta as Dictionary).erase("weapon_basis")
-	for hand: Dictionary in sample.get("hands", []):
+	for hand: Dictionary in measurement.get("hands", []):
 		var entry := {}
 		for key: String in hand:
 			var value: Variant = hand[key]

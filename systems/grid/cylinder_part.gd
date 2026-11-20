@@ -173,22 +173,22 @@ static func resolve(cell_center: Vector3, cylinders: Array[CylinderPart], body_r
 	var candidates: Array[Vector2] = [desired, Vector2(min_x, min_z), Vector2(min_x, max_z), Vector2(max_x, min_z), Vector2(max_x, max_z)]
 	for part in local:
 		var reach := part.radius + margin
-		var axis := part.axis()
-		var toward := desired - axis
+		var axis_point := part.axis()
+		var toward := desired - axis_point
 		if toward.length_squared() > 0.0000000001:
-			candidates.append(axis + toward.normalized() * reach)
+			candidates.append(axis_point + toward.normalized() * reach)
 		for x: float in [min_x, max_x]:
-			var remaining := reach * reach - (x - axis.x) * (x - axis.x)
+			var remaining := reach * reach - (x - axis_point.x) * (x - axis_point.x)
 			if remaining >= 0.0:
 				var spread := sqrt(remaining)
-				candidates.append(Vector2(x, axis.y - spread))
-				candidates.append(Vector2(x, axis.y + spread))
+				candidates.append(Vector2(x, axis_point.y - spread))
+				candidates.append(Vector2(x, axis_point.y + spread))
 		for z: float in [min_z, max_z]:
-			var remaining := reach * reach - (z - axis.y) * (z - axis.y)
+			var remaining := reach * reach - (z - axis_point.y) * (z - axis_point.y)
 			if remaining >= 0.0:
 				var spread := sqrt(remaining)
-				candidates.append(Vector2(axis.x - spread, z))
-				candidates.append(Vector2(axis.x + spread, z))
+				candidates.append(Vector2(axis_point.x - spread, z))
+				candidates.append(Vector2(axis_point.x + spread, z))
 	for first in range(local.size()):
 		for second in range(first + 1, local.size()):
 			candidates.append_array(_circle_crossings(local[first].axis(), local[first].radius + margin, local[second].axis(), local[second].radius + margin))

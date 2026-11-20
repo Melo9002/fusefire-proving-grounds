@@ -151,9 +151,9 @@ func mark_reference() -> void:
 	for hand: Dictionary in current.get("hands", []):
 		if hand.has("palm_in_weapon_frame"):
 			reference[hand.name] = {"palm": hand.palm_in_weapon_frame, "wrist": hand.wrist_in_weapon_frame}
-	for name in ["dominant", "support"]:
-		displacement[name] = {"palm": 0.0, "wrist": 0.0}
-		peak_displacement[name] = {"palm": 0.0, "wrist": 0.0}
+	for hand_name in ["dominant", "support"]:
+		displacement[hand_name] = {"palm": 0.0, "wrist": 0.0}
+		peak_displacement[hand_name] = {"palm": 0.0, "wrist": 0.0}
 
 func _update_displacement(result: Dictionary) -> void:
 	for hand: Dictionary in result.get("hands", []):
@@ -176,7 +176,7 @@ func stop_recording() -> Dictionary:
 	recording = false
 	var summary := {"frames": history.size()}
 	for hand_index in 2:
-		var name: String = HandContactSampler.HAND_NAMES[hand_index]
+		var hand_name: String = HandContactSampler.HAND_NAMES[hand_index]
 		var worst := {"wrist_to_ik_target_mm": 0.0, "palm_to_intended_mm_max": 0.0, "palm_to_intended_mm_min": INF,
 			"reach_margin_mm_min": INF, "reach_fraction_max": 0.0, "finger_direction_error_deg_max": 0.0, "palm_normal_error_deg_max": 0.0,
 			"palm_displacement_mm_max": 0.0, "wrist_displacement_mm_max": 0.0}
@@ -190,7 +190,7 @@ func stop_recording() -> Dictionary:
 			worst.reach_fraction_max = maxf(worst.reach_fraction_max, float(hand.get("reach_fraction", 0.0)))
 			worst.finger_direction_error_deg_max = maxf(worst.finger_direction_error_deg_max, float(hand.get("finger_direction_error_deg", 0.0)))
 			worst.palm_normal_error_deg_max = maxf(worst.palm_normal_error_deg_max, float(hand.get("palm_normal_error_deg", 0.0)))
-			var shift: Dictionary = (entry.get("displacement_mm", {}) as Dictionary).get(name, {})
+			var shift: Dictionary = (entry.get("displacement_mm", {}) as Dictionary).get(hand_name, {})
 			worst.palm_displacement_mm_max = maxf(worst.palm_displacement_mm_max, float(shift.get("palm", 0.0)))
 			worst.wrist_displacement_mm_max = maxf(worst.wrist_displacement_mm_max, float(shift.get("wrist", 0.0)))
 		for key in worst:
@@ -198,7 +198,7 @@ func stop_recording() -> Dictionary:
 				worst[key] = null
 			else:
 				worst[key] = snappedf(float(worst[key]), 0.001)
-		summary[name] = worst
+		summary[hand_name] = worst
 	return summary
 
 ## Measures the cost of sampling at the wrong moment: takes an unsynchronised sample right now (from the caller's

@@ -876,8 +876,8 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 			var carried_side := character_root.global_basis.orthonormalized() * (assignment[2] as Vector3).normalized()
 			approach = Vector3.UP.lerp(carried_side, clampf(float(sample.lift) * 1.2, 0.0, 1.0)).normalized()
 		var frame: Dictionary = carry_passenger.contact_frame(assignment[1], anchor, shoulders[info[2]], approach)
-		var wrap: Vector3 = (frame.axis as Vector3).cross(frame.side).normalized()
-		var fingers: Vector3 = wrap * (1.0 if assignment[0] == &"left" else -1.0)
+		var wrap_direction: Vector3 = (frame.axis as Vector3).cross(frame.side).normalized()
+		var fingers: Vector3 = wrap_direction * (1.0 if assignment[0] == &"left" else -1.0)
 		var normal: Vector3 = -(frame.side as Vector3)
 		var palm: Vector3 = (frame.point as Vector3) + (frame.side as Vector3) * float(frame.radius)
 		var half_palm: float = grip_modifier.palm_length * 0.5 if grip_modifier != null else 0.045

@@ -142,8 +142,8 @@ func _place_abdomen_on_origin() -> void:
 
 ## Follows the carrier: the abdomen goes `anchor_from_neck` (carrier frame, rest pose) from the carrier's neck bone, held in
 ## the chest bone's frame from then on (ChestAnchor). `carrier_root` supplies the carrier frame.
-func attach_to_carrier(carrier_skeleton: Skeleton3D, carrier_root: Node3D, chest_bone: StringName, neck_bone: StringName, anchor_from_neck: Vector3) -> void:
-	_anchor = ChestAnchor.create(carrier_skeleton, carrier_root, chest_bone, neck_bone, anchor_from_neck)
+func attach_to_carrier(carrier_skeleton: Skeleton3D, carrier_node: Node3D, chest_bone: StringName, neck_bone: StringName, anchor_from_neck: Vector3) -> void:
+	_anchor = ChestAnchor.create(carrier_skeleton, carrier_node, chest_bone, neck_bone, anchor_from_neck)
 	if _anchor == null:
 		return
 	_carrier_skeleton = carrier_skeleton
@@ -190,14 +190,14 @@ func _follow() -> void:
 ## point on the lift path (floor, up the carrier's front, onto the shoulders) with the body rolled over about the carrier's x
 ## axis, plus the restrained secondary offset. The one place the passenger's transform is decided.
 func placement(anchor: Transform3D) -> Transform3D:
-	var basis := anchor.basis.orthonormalized()
+	var passenger_basis := anchor.basis.orthonormalized()
 	var origin := anchor.origin
 	if lift < 0.9999 and ground_origin.is_finite() and is_instance_valid(carrier_root):
 		var rolled := smoothstep(0.1, 0.9, lift)
-		basis = Basis(carrier_root.global_basis.orthonormalized().x, roll_direction * PI * (1.0 - rolled)) * basis
+		passenger_basis = Basis(carrier_root.global_basis.orthonormalized().x, roll_direction * PI * (1.0 - rolled)) * passenger_basis
 		if has_ground_basis:
 			# From the way it actually lies to the lift's own orientation over the first third of the lift (never a snap at the start).
-			basis = Basis(ground_basis.get_rotation_quaternion().slerp(basis.get_rotation_quaternion(), smoothstep(0.0, 0.35, lift)))
+			passenger_basis = Basis(ground_basis.get_rotation_quaternion().slerp(passenger_basis.get_rotation_quaternion(), smoothstep(0.0, 0.35, lift)))
 		var waypoint := carrier_root.global_transform * waypoint_local
 		var control := waypoint * 2.0 - (ground_origin + origin) * 0.5
 		var a := ground_origin.lerp(control, lift)
@@ -206,8 +206,8 @@ func placement(anchor: Transform3D) -> Transform3D:
 	elif motion_enabled and motion_offset != Vector3.ZERO and is_instance_valid(carrier_root):
 		var frame := carrier_root.global_basis.orthonormalized()
 		origin += frame * motion_offset
-		basis = frame * Basis(motion_tilt) * frame.inverse() * basis
-	return Transform3D(basis * Basis.from_scale(Vector3.ONE * presence), origin)
+		passenger_basis = frame * Basis(motion_tilt) * frame.inverse() * passenger_basis
+	return Transform3D(passenger_basis * Basis.from_scale(Vector3.ONE * presence), origin)
 
 
 ## Called once per carrier skeleton pass, before the arms are solved: takes the interaction's lift and pose, advances the
@@ -227,9 +227,9 @@ func _update_motion(anchor: Transform3D, delta: float) -> void:
 	motion_tilt = Quaternion.IDENTITY
 	if not is_instance_valid(carrier_root):
 		return
-	var to_local := carrier_root.global_transform.affine_inverse()
-	var local_origin := to_local * anchor.origin
-	var local_basis := (to_local.basis * anchor.basis.orthonormalized()).orthonormalized()
+	var world_to_carrier := carrier_root.global_transform.affine_inverse()
+	var local_origin := world_to_carrier * anchor.origin
+	var local_basis := (world_to_carrier.basis * anchor.basis.orthonormalized()).orthonormalized()
 	if _lag_position == Vector3.INF or lift < 0.9999 or not motion_enabled or motion_response <= 0.0:
 		_lag_position = local_origin
 		_lag_basis = local_basis

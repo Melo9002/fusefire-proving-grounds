@@ -141,12 +141,12 @@ func _refresh_scale(target: Skeleton3D) -> void:
 func _measure_axis(target: Skeleton3D, bone: int, child: int) -> Vector3:
 	if bone < 0:
 		return Vector3.RIGHT
-	var basis := target.get_bone_global_rest(bone).basis
-	var offset := target.get_bone_rest(child).origin if child >= 0 else basis.inverse() * (Vector3.DOWN * 0.1 / _scale)
+	var bone_rest_basis := target.get_bone_global_rest(bone).basis
+	var offset := target.get_bone_rest(child).origin if child >= 0 else bone_rest_basis.inverse() * (Vector3.DOWN * 0.1 / _scale)
 	var best := Vector3.RIGHT
 	var best_score := 0.0
 	for axis in [Vector3.RIGHT, Vector3.UP, Vector3.BACK]:
-		var moved: Vector3 = basis * (Quaternion(axis, 0.2) * offset - offset)
+		var moved: Vector3 = bone_rest_basis * (Quaternion(axis, 0.2) * offset - offset)
 		var score := moved.dot(_forward_skeleton)
 		if absf(score) > absf(best_score):
 			best_score = score

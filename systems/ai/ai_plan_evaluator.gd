@@ -5,20 +5,27 @@ extends RefCounted
 ## and supply, and HP-capped expected damage with kill probability. Pure reads: nothing is executed,
 ## no combat roll is drawn and no state is changed.
 
+## Whole-number quotient that drops the remainder (GDScript's integer division truncates toward zero, which the plan counts have always relied on, including a
+## negative numerator when a move leaves less AP than an aim costs). Written once, with the intent declared, instead of at each call.
+static func _truncated_quotient(numerator: int, denominator: int) -> int:
+	@warning_ignore("integer_division")
+	return numerator / denominator
+
+
 ## How many attacks the unit can pay for right now against this query's cost: its real AP (within the
 ## planning horizon) and, when supply is in use, its real ammo. At least one, since a target is only
 ## scored when a shot is legal.
 static func affordable_attack_shots(unit: TacticalUnit, attack_query: AttackQueryResult, battle: BattleController, max_plan_ap: int) -> int:
-	var count := mini(unit.stats.current_ap, max_plan_ap) / maxi(1, attack_query.cost.ap)
+	var count := _truncated_quotient(mini(unit.stats.current_ap, max_plan_ap), maxi(1, attack_query.cost.ap))
 	if battle.supply_points_enabled:
-		count = mini(count, unit.stats.current_supply_points / maxi(1, attack_query.supply_points_cost))
+		count = mini(count, _truncated_quotient(unit.stats.current_supply_points, maxi(1, attack_query.supply_points_cost)))
 	return maxi(1, count)
 
 ## How many attacks `ap` action points and the given supply can pay for, within the planning horizon.
 static func shots_with(ap: int, supply: int, attack_ap: int, attack_supply: int, uses_supply: bool, max_plan_ap: int) -> int:
-	var count := mini(ap, max_plan_ap) / maxi(1, attack_ap)
+	var count := _truncated_quotient(mini(ap, max_plan_ap), maxi(1, attack_ap))
 	if uses_supply:
-		count = mini(count, supply / maxi(1, attack_supply))
+		count = mini(count, _truncated_quotient(supply, maxi(1, attack_supply)))
 	return maxi(0, count)
 
 ## The best shot sequence the unit could fire from `cell` (its own cell, or a hypothetical one after a
@@ -134,10 +141,10 @@ static func compare_aim(unit: TacticalUnit, target: TacticalUnit, battle: Battle
 	or not attack_query.is_legal() or attack_query.hit_chance >= 100:
 		return {}
 	var planning_ap := mini(unit.stats.current_ap, max_plan_ap)
-	var direct_count := planning_ap / maxi(1, attack_query.cost.ap)
-	var aimed_count := (planning_ap - aim_query.cost.ap) / maxi(1, attack_query.cost.ap)
+	var direct_count := _truncated_quotient(planning_ap, maxi(1, attack_query.cost.ap))
+	var aimed_count := _truncated_quotient(planning_ap - aim_query.cost.ap, maxi(1, attack_query.cost.ap))
 	if battle.supply_points_enabled:
-		var ammo := unit.stats.current_supply_points / maxi(1, attack_query.supply_points_cost)
+		var ammo := _truncated_quotient(unit.stats.current_supply_points, maxi(1, attack_query.supply_points_cost))
 		direct_count = mini(direct_count, ammo)
 		aimed_count = mini(aimed_count, ammo)
 	if aimed_count < 1:

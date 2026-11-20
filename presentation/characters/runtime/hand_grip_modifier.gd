@@ -70,12 +70,12 @@ func setup(target: Skeleton3D, prefix: String) -> bool:
 
 ## The local axis, signed, whose positive rotation moves `child` toward the palm (down in the rest pose).
 func _curl_axis(target: Skeleton3D, bone: int, child: int) -> Vector3:
-	var basis := target.get_bone_global_rest(bone).basis
+	var bone_rest_basis := target.get_bone_global_rest(bone).basis
 	var offset := target.get_bone_rest(child).origin
 	var best := Vector3.BACK
 	var best_score := 0.0
 	for axis in [Vector3.RIGHT, Vector3.UP, Vector3.BACK]:
-		var moved: Vector3 = basis * (Quaternion(axis, 0.2) * offset - offset)
+		var moved: Vector3 = bone_rest_basis * (Quaternion(axis, 0.2) * offset - offset)
 		var score := moved.dot(Vector3.DOWN)
 		if absf(score) > absf(best_score):
 			best_score = score
@@ -101,8 +101,8 @@ func _orient_hands(target: Skeleton3D) -> void:
 			normal = (contact_normal[hand] as Vector3).normalized()
 		if weight <= 0.001:
 			continue
-		var rotation := _frame(forward, normal) * _frame(_finger_rest_direction[hand], Vector3.DOWN).inverse()
-		var desired: Basis = rotation * _hand_rest_basis[hand]
+		var hand_rotation := _frame(forward, normal) * _frame(_finger_rest_direction[hand], Vector3.DOWN).inverse()
+		var desired: Basis = hand_rotation * _hand_rest_basis[hand]
 		var parent_basis := target.get_bone_global_pose(_hand_parents[hand]).basis.orthonormalized()
 		var local := (parent_basis.inverse() * desired).orthonormalized().get_rotation_quaternion()
 		var current := target.get_bone_pose_rotation(_hands[hand])

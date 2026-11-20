@@ -62,14 +62,14 @@ func setup(p_rig: Node3D) -> bool:
 ## The support arm's segment lengths in metres, from the rest pose and the skeleton's scale. Call again if the
 ## skeleton's proportions change (tests do).
 func measure_arms(skeleton: Skeleton3D) -> void:
-	var scale := skeleton.global_basis.get_scale().y if skeleton.is_inside_tree() else 1.0
-	if scale <= 0.0001:
-		scale = 1.0
+	var skeleton_scale := skeleton.global_basis.get_scale().y if skeleton.is_inside_tree() else 1.0
+	if skeleton_scale <= 0.0001:
+		skeleton_scale = 1.0
 	var upper := skeleton.get_bone_global_rest(_left_upper).origin
 	var fore := skeleton.get_bone_global_rest(_left_fore).origin
 	var hand := skeleton.get_bone_global_rest(_left_hand).origin
-	_upper_length = upper.distance_to(fore) * scale
-	_fore_length = fore.distance_to(hand) * scale
+	_upper_length = upper.distance_to(fore) * skeleton_scale
+	_fore_length = fore.distance_to(hand) * skeleton_scale
 
 func _process_modification() -> void:
 	var skeleton := get_skeleton()

@@ -154,7 +154,11 @@ func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, gri
 	for occupant in grid.occupancy_map.values():
 		if not is_instance_valid(occupant): continue
 		var cell := data.get_cell(occupant.grid_position)
-		signature.append([occupant, occupant.grid_position, cell.world_position if cell else null])
+		# An occupant standing outside the map has no cell position: it is recorded as null so the signature still changes when it moves.
+		var occupant_position: Variant = null
+		if cell != null:
+			occupant_position = cell.world_position
+		signature.append([occupant, occupant.grid_position, occupant_position])
 	if checks.get("signature") != signature:
 		checks.clear()
 		checks["signature"] = signature
@@ -360,7 +364,7 @@ static func _cost_heap_push(heap: Array[Array], entry: Array) -> void:
 	heap.append(entry)
 	var i := heap.size() - 1
 	while i > 0:
-		var parent := (i - 1) / 2
+		var parent := (i - 1) >> 1  # the binary heap's parent index; i > 0 here, so this equals the integer quotient
 		if not _cost_heap_less(heap[i], heap[parent]): break
 		var value := heap[parent]
 		heap[parent] = heap[i]

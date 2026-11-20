@@ -87,4 +87,8 @@ func _scorer_and_resources() -> void:
 	check(AIPlanEvaluator.affordable_attack_shots(actor, real_query, f.battle, AIController.MAX_ATTACK_PLAN_AP) == 1, "One AP affords one shot")
 	actor.stats.set_available_ap_for_setup(3)
 	check(AIPlanEvaluator.affordable_attack_shots(actor, real_query, f.battle, 2) == 2, "The planning horizon caps the count")
+	# The whole-number plan counts drop the remainder (truncating toward zero), including a negative numerator.
+	check(AIPlanEvaluator.shots_with(5, 9, 2, 4, true, 6) == 2, "Five AP at two per shot, nine ammo at four per shot: the remainders are dropped (2)")
+	check(AIPlanEvaluator.shots_with(7, 9, 2, 4, false, 6) == 3, "The horizon (6 AP) caps before the quotient: 6 / 2 = 3")
+	check(AIPlanEvaluator.shots_with(-1, 9, 2, 4, false, 6) == 0, "A move that leaves a negative AP budget affords nothing")
 	await f.dispose(self)

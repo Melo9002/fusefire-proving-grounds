@@ -28,8 +28,8 @@ var _legs := []   # per side: [upper, lower]
 func setup(target: Skeleton3D, axes: Dictionary) -> bool:
 	var mixamo := target.find_bone(&"mixamorig_Hips") >= 0
 	_hips = target.find_bone(&"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips")
-	for name in ([&"mixamorig_Spine", &"mixamorig_Spine1", &"mixamorig_Spine2"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest", &"J_Bip_C_UpperChest"]):
-		var index := target.find_bone(name)
+	for bone_name in ([&"mixamorig_Spine", &"mixamorig_Spine1", &"mixamorig_Spine2"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest", &"J_Bip_C_UpperChest"]):
+		var index := target.find_bone(bone_name)
 		if index >= 0:
 			_spine.append(index)
 	var left := [target.find_bone(&"mixamorig_LeftUpLeg" if mixamo else &"J_Bip_L_UpperLeg"), target.find_bone(&"mixamorig_LeftLeg" if mixamo else &"J_Bip_L_LowerLeg")]
