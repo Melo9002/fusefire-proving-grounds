@@ -14,6 +14,8 @@ extends RefCounted
 ## obstacles have no clean end, so they yield NONE unless bounds are present: a documented limitation.
 
 enum Side { LEFT = -1, NONE = 0, RIGHT = 1 }
+## How a unit in cover presents an authorized attack (see plan_attack). PROTECTED is the passive posture (no attack).
+enum FiringMode { PROTECTED, OVER_COVER, AROUND_LEFT, AROUND_RIGHT, ORDINARY }
 
 
 ## {"left": {"distance": m, "usable": bool}, "right": {...}, "normal": Vector3 (unit to wall), "tangent": Vector3 (toward the unit's right)}
@@ -109,3 +111,65 @@ static func choose(found: Dictionary, previous: int, profile: CoverPostureProfil
 		if kept.usable and float(kept.distance) - float(other.distance) <= profile.hysteresis:
 			return previous
 	return wanted
+
+
+## TARGET-AWARE FIRING PLAN for an attack the tactical layer has ALREADY authorized. `to_target` is the direction (world) to the attack's target position, which the
+## action result carries; nothing else about the enemy is read or searched for, and this never decides whether a shot is legal. Only the geometry of the wall
+## the unit stands against and the direction of the shot are used:
+##  * the wall is not between unit and target (`open_side_threshold`)  -> ORDINARY (stand and fire, no peek);
+##  * LOW cover                                                         -> OVER_COVER (rise and fire over the top);
+##  * FULL cover, target clearly to one side                            -> around the edge on THAT side, if it is usable (a shot to the right passes the right end);
+##  * FULL cover, target straight ahead (no side is better)             -> the passive choice (`previous`/`passive`), so a long wall keeps its existing fallback;
+##  * FULL cover, the target's side edge is unusable                    -> the passive choice, and a mismatch is recorded (a legal shot with no plausible pose).
+## `previous` is the side of an earlier attack, kept while the target stays within `attack_side_hysteresis` of straight ahead (no left/right flicker between
+## consecutive attacks). `passive` is the passive-cover side (CoverEdgeSelector.choose). `face_distance` is how far the wall face is from the unit centre (m).
+## Returns {"mode", "side", "mismatch": String ("" when none), "along": cos to the wall normal, "lateral": cos to the tangent (+ = right), "crossing": m}.
+static func plan_attack(found: Dictionary, full_cover: bool, to_target: Vector3, previous: int, passive: int, face_distance: float, profile: CoverPostureProfile) -> Dictionary:
+	var result := {"mode": FiringMode.ORDINARY, "side": Side.NONE, "mismatch": "", "along": 0.0, "lateral": 0.0, "crossing": INF}
+	var flat := Vector3(to_target.x, 0.0, to_target.z)
+	var normal: Vector3 = found.get("normal", Vector3.ZERO)
+	var tangent: Vector3 = found.get("tangent", Vector3.ZERO)
+	if flat.length() < 0.01 or normal == Vector3.ZERO:
+		return result
+	flat = flat.normalized()
+	var along := flat.dot(normal)
+	var lateral := flat.dot(tangent)
+	result.along = along
+	result.lateral = lateral
+	if along <= profile.open_side_threshold:
+		return result
+	if not full_cover:
+		result.mode = FiringMode.OVER_COVER
+		return result
+	var side: int
+	if absf(lateral) <= profile.straight_ahead_threshold:
+		side = passive
+		result.mismatch = "" if side != Side.NONE else "target_ahead_no_usable_edge"
+	else:
+		var wanted: int = Side.RIGHT if lateral > 0.0 else Side.LEFT
+		if previous != Side.NONE and previous != wanted and absf(lateral) < profile.straight_ahead_threshold + profile.attack_side_hysteresis:
+			var kept: Dictionary = found.right if previous == Side.RIGHT else found.left
+			if kept.usable:
+				wanted = previous
+		var edge: Dictionary = found.right if wanted == Side.RIGHT else found.left
+		if edge.usable:
+			side = wanted
+			# Does the straight line to the target clear the wall's end where it passes the wall's face? (Diagnostic only: the tactical shot was authorized from the
+			# cell centre; a visual ray that still crosses the wall means no honest pose exists for it.)
+			var forward := maxf(along, 0.05)
+			var crossing := face_distance * absf(lateral) / forward
+			result.crossing = crossing
+			if crossing + 0.05 < float(edge.distance):
+				result.mismatch = "ray_crosses_wall_end"
+		else:
+			side = passive
+			result.mismatch = "target_side_edge_unusable"
+	result.side = side
+	if side == Side.NONE:
+		result.mode = FiringMode.PROTECTED
+		if result.mismatch.is_empty():
+			result.mismatch = "no_usable_edge"
+	else:
+		result.mode = FiringMode.AROUND_RIGHT if side == Side.RIGHT else FiringMode.AROUND_LEFT
+	return result
+

@@ -59,6 +59,9 @@ func setup(workbench: Node3D) -> void:
 	box.add_child(_label("Cover (synthetic wall; side from CoverEdgeSelector, pose from CoverPostureProfile)"))
 	box.add_child(_row([["Low", func() -> void: _cover(false, 0.9, 1.5, 1.5, true, true, false)], ["Low aim", func() -> void: _cover(false, 0.9, 1.5, 1.5, true, true, true)], ["Left edge", func() -> void: _cover(true, 2.2, 0.5, 2.0, true, true, false)], ["Right edge", func() -> void: _cover(true, 2.2, 2.0, 0.5, true, true, false)]]))
 	box.add_child(_row([["Tie (right)", func() -> void: _cover(true, 2.2, 1.5, 1.5, true, true, false)], ["No edge", func() -> void: _cover(true, 2.2, 3.5, 3.5, false, false, false)], ["Peek aim", func() -> void: _cover(true, 2.2, 0.5, 2.0, true, true, true)], ["Leave", func() -> void: bench.set_cover_demo({})]]))
+	box.add_child(_label("Authorized attack (bench target; the plan is the production CoverEdgeSelector.plan_attack)"))
+	box.add_child(_row([["Target left", func() -> void: bench.set_cover_target(Vector3(5, 0, 1.5))], ["Target right", func() -> void: bench.set_cover_target(Vector3(-5, 0, 1.5))], ["Target ahead", func() -> void: bench.set_cover_target(Vector3(0, 0, 5))], ["Open side", func() -> void: bench.set_cover_target(Vector3(2, 0, -5))]]))
+	box.add_child(_row([["Fire", func() -> void: bench.fire_cover_shot()], ["End attack", func() -> void: bench.set_cover_target(null)], ["Left usable only", func() -> void: _cover(true, 2.2, 0.5, 3.5, true, false, false)], ["Right usable only", func() -> void: _cover(true, 2.2, 3.5, 0.5, false, true, false)]]))
 	var overlay := CheckButton.new()
 	overlay.text = "Cover diagnostics overlay"
 	overlay.toggled.connect(func(on: bool) -> void: bench.cover_diagnostics = on)
@@ -204,4 +207,7 @@ func _process(delta: float) -> void:
 	var r: Dictionary = bench.locomotion_report
 	var modifier = bench.locomotion_modifier
 	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.character_root.rotation.y), bench.crouch_modifier.depth]
+	if not bench.cover_demo.is_empty():
+		var plan: Dictionary = bench.cover_plan
+		cover_line += "\nintent: %s" % ("none (passive cover)" if plan.is_empty() else "authorized attack  mode %s  side %d  along %.2f lateral %.2f%s" % [CoverEdgeSelector.FiringMode.keys()[int(plan.mode)], int(plan.side), float(plan.along), float(plan.lateral), ("  MISMATCH " + str(plan.mismatch)) if not str(plan.mismatch).is_empty() else ""])
 	_readout.text = "state %s\nfeed %.1f m/s, legs follow %.2f m/s\ngait blend %.2f (0 walk, 1 jog, 2 run)  loaded %.2f\ncadence %.2f cycles/s\ntwist %.0f  bank %.1f  pitch %.1f deg%s" % [bench.animation_controller.current_state, bench.preview_speed, r.speed, r.gait, r.loaded, r.cadence, modifier.twist_degrees if modifier != null else 0.0, r.bank, modifier.pitch_degrees if modifier != null else 0.0, cover_line]

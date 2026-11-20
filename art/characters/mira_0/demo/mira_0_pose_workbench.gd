@@ -13,6 +13,12 @@ var turn_goal := NAN
 ## from the production CoverPostureProfile (yaw_offset, crouch_request), exactly what UnitVisualAdapter uses in the game. Empty = no cover scenario.
 var cover_demo := {}
 var cover_side := 0
+## Target-aware firing in the bench: the scripted AUTHORIZED target (a position relative to the unit, in the unit's own frame at rest: +z toward the wall, -x its right) and
+## the plan the production CoverEdgeSelector.plan_attack makes from it. Empty = passive cover. (In the game the same plan comes from the attack result's target position.)
+var cover_target: Variant = null
+var cover_plan := {}
+var _cover_found := {}
+var _bench_heading := 0.0
 var cover_diagnostics := false
 var _cover_group: Node3D
 var _cover_lines: MeshInstance3D
@@ -349,16 +355,59 @@ func set_cover_demo(spec: Dictionary) -> void:
 		cover_side = 0
 		animation_controller.play(&"rifle_idle")
 		return
-	var found := {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}}
-	cover_side = CoverEdgeSelector.choose(found, cover_side, cover_profile)
+	cover_target = null
+	cover_plan = {}
+	rotation.y = 0.0
+	_bench_heading = 0.0
+	_cover_found = {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
+	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, cover_profile)
 	animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
 	_build_cover_visuals()
+
+
+## Authorizes (a position) or ends (null) an attack from the current cover scenario. The body turns to face the target (the facing change is absorbed into the cover
+## yaw offset exactly as UnitVisualAdapter does, so nothing snaps), the plan picks the posture, and ending it returns to the passive cover pose.
+func set_cover_target(target: Variant) -> void:
+	if cover_demo.is_empty():
+		return
+	cover_target = target
+	if target == null:
+		cover_plan = {}
+		_turn_to_heading(0.0)
+		animation_controller.play(&"aim" if cover_demo.aim else &"rifle_idle")
+		return
+	cover_plan = CoverEdgeSelector.plan_attack(_cover_found, bool(cover_demo.full), target as Vector3, int(cover_plan.get("side", 0)), cover_side, 0.5, cover_profile)
+	_turn_to_heading(atan2((target as Vector3).x, (target as Vector3).z))
+	animation_controller.play(&"aim")
+
+
+## Shows the plan's shot (shoot / shoot_left / shoot_right), then back to the aimed pose.
+func fire_cover_shot() -> void:
+	if cover_plan.is_empty():
+		return
+	var shot := &"shoot"
+	match int(cover_plan.mode):
+		CoverEdgeSelector.FiringMode.AROUND_LEFT: shot = &"shoot_left"
+		CoverEdgeSelector.FiringMode.AROUND_RIGHT: shot = &"shoot_right"
+		CoverEdgeSelector.FiringMode.PROTECTED: shot = &"shoot_left" if cover_side < 0 else &"shoot_right"
+	animation_controller.play(shot)
+	await get_tree().create_timer(0.7).timeout
+	if not cover_plan.is_empty():
+		animation_controller.play(&"aim")
+
+
+func _turn_to_heading(heading: float) -> void:
+	var change := angle_difference(rotation.y, heading)
+	rotation.y = heading
+	character_root.rotation.y = wrapf(character_root.rotation.y - change, -PI, PI)
+	_bench_heading = heading
 
 
 func _build_cover_visuals() -> void:
 	var spec := cover_demo
 	_cover_group = Node3D.new()
 	_cover_group.name = "CoverBench"
+	_cover_group.top_level = true   # the wall stays put while the unit turns toward a target
 	add_child(_cover_group)
 	var wall := MeshInstance3D.new()
 	var box := BoxMesh.new()
@@ -409,7 +458,10 @@ func _apply_cover_demo(delta: float) -> void:
 	crouch_modifier.depth = move_toward(crouch_modifier.depth, crouch_modifier.clamp_depth(request), cover_profile.crouch_speed * delta)
 	var kneel_target := clampf((request - crouch_modifier.max_depth) / 0.08, 0.0, 1.0)
 	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, kneel_target, cover_profile.kneel_speed * delta)
-	character_root.rotation.y = rotate_toward(character_root.rotation.y, cover_profile.yaw_offset(bool(spec.full), cover_side, blend), deg_to_rad(cover_profile.turn_degrees_per_second) * delta)
+	var yaw_goal := cover_profile.yaw_offset(bool(spec.full), cover_side, blend)
+	if not cover_plan.is_empty():
+		yaw_goal = cover_profile.attack_yaw_offset(cover_side, int(cover_plan.side), blend)
+	character_root.rotation.y = rotate_toward(character_root.rotation.y, yaw_goal, deg_to_rad(cover_profile.turn_degrees_per_second) * delta)
 	if is_instance_valid(_cover_group):
 		for edge in ["Edge_left", "Edge_right"]:
 			var marker := _cover_group.get_node_or_null(edge) as Node3D
@@ -428,6 +480,8 @@ func _draw_cover_lines() -> void:
 	var chest := global_position + Vector3(0, 1.2, 0)
 	var facing := character_root.global_basis.orthonormalized().z
 	var segments := [[chest, chest + facing * 1.2, Color(0.3, 0.5, 1.0)], [weapon.global_position, weapon.global_position + muzzle_socket.global_basis.z.normalized() * 1.5, Color(1.0, 0.25, 0.2)], [global_position + Vector3(0, 0.6, 0.62), global_position + Vector3(0, 0.6, -0.4), Color(0.3, 1.0, 0.4)]]
+	if cover_target != null:
+		segments.append([chest, chest + (cover_target as Vector3).normalized() * 2.5, Color(1.0, 0.9, 0.2)])   # the authorized attack direction
 	for segment in segments:
 		mesh.surface_set_color(segment[2])
 		mesh.surface_add_vertex(segment[0])

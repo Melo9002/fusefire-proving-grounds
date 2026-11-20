@@ -29,6 +29,18 @@ extends Resource
 @export_range(0.0, 60.0, 1.0, "suffix:°") var peek_yaw_degrees := 20.0
 @export_range(60.0, 720.0, 5.0, "suffix:°/s") var turn_degrees_per_second := 320.0
 
+@export_group("Attack posture")
+## Target-aware firing (an authorized attack is being presented). `along` below is the cosine between the direction to the target and the wall's normal.
+## At or below this the wall is not between the unit and the target (it is behind or beside): an ordinary firing posture, no peeking.
+@export_range(-1.0, 1.0, 0.01) var open_side_threshold := -0.1
+## Target's lateral component (cosine against the wall's tangent) below which it is "straight ahead": no side is better, the passive choice stands.
+@export_range(0.0, 0.5, 0.01) var straight_ahead_threshold := 0.12
+## A side chosen for a previous attack is kept while the target's lateral component stays within this of straight ahead.
+@export_range(0.0, 0.6, 0.01) var attack_side_hysteresis := 0.25
+## Body yaw offset toward the firing edge while aiming at a target. 0 = square to the target (the facing already points at it, so the rifle does too); the
+## lean toward the edge comes from the shoot_left / shoot_right clips.
+@export_range(0.0, 45.0, 1.0, "suffix:°") var attack_aim_yaw_degrees := 0.0
+
 @export_group("Crouch")
 ## Standing behind full cover: how far the knees bend while protected and while aiming (metres of hip drop).
 @export_range(0.0, 0.4, 0.01, "suffix:m") var high_cover_crouch_depth := 0.12
@@ -49,6 +61,14 @@ func yaw_offset(full_cover: bool, side: int, blend: float) -> float:
 	var toward_edge := -float(side)
 	var protected := deg_to_rad(protected_yaw_degrees) * toward_edge
 	var aimed := deg_to_rad(peek_yaw_degrees) * toward_edge if full_cover else 0.0
+	return lerpf(protected, aimed, blend)
+
+
+## Body yaw OFFSET while presenting an attack: the protected turn is toward `protected_side` (the passive choice, so the body does not jump when the weapon
+## starts to rise), the aimed one toward `aimed_side` (the firing edge; usually a square-on 0).
+func attack_yaw_offset(protected_side: int, aimed_side: int, blend: float) -> float:
+	var protected := deg_to_rad(protected_yaw_degrees) * -float(protected_side)
+	var aimed := deg_to_rad(attack_aim_yaw_degrees) * -float(aimed_side)
 	return lerpf(protected, aimed, blend)
 
 

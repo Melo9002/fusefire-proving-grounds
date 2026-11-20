@@ -442,6 +442,13 @@ var _kneel := 0.0
 var _cover_yaw := 0.0
 ## Which wall edge the unit would peek around (CoverEdgeSelector.Side), kept stable by hysteresis; NONE when there is no usable edge or no cover.
 var cover_side := 0
+## The plan for the attack being presented (CoverEdgeSelector.plan_attack): {} when none. Built from the authorized attack's target position only, held until the
+## attack sequence ends so the posture cannot flip mid-attack; `cover_side` stays the PASSIVE choice (what the unit returns to).
+var attack_plan := {}
+## Recent plans (newest last, capped) for diagnostics and tests; mismatches between the tactical shot and a plausible pose are recorded here.
+var attack_plan_log: Array[Dictionary] = []
+var _last_attack_side := 0
+const ATTACK_PLAN_LOG_LIMIT := 24
 var _cover_side_key := Vector3i(-999, 0, -999)
 ## The last edge analysis (distances, usability, normal, tangent), for diagnostics and tests. Presentation only.
 var cover_edges := {}
@@ -463,7 +470,7 @@ func _compute_cover_kind(type: int) -> MapCellData.CoverType:
 	# A shot fired from cover keeps the cover pose: the shot only changes what the arms and weapon do.
 	if state in [&"cover_low", &"shoot"] and type == MapCellData.CoverType.LOW:
 		return MapCellData.CoverType.LOW
-	if state in [&"cover_high", &"shoot_left", &"shoot_right"] and type == MapCellData.CoverType.FULL:
+	if (state in [&"cover_high", &"shoot_left", &"shoot_right"] or (state == &"shoot" and not attack_plan.is_empty())) and type == MapCellData.CoverType.FULL:
 		return MapCellData.CoverType.FULL
 	return MapCellData.CoverType.NONE
 
@@ -501,6 +508,8 @@ func _cover_yaw_target(blend: float) -> float:
 	var kind := _cover_kind()
 	if kind == MapCellData.CoverType.NONE:
 		return 0.0
+	if not attack_plan.is_empty():
+		return cover_profile.attack_yaw_offset(cover_side, int(attack_plan.side), blend)
 	return cover_profile.yaw_offset(kind == MapCellData.CoverType.FULL, cover_side, blend)
 
 ## Re-evaluates which wall edge the unit would peek around while it is in cover (stable by hysteresis); clears it otherwise.
@@ -513,6 +522,7 @@ func _update_cover_side() -> void:
 	var cell := presentation_grid.world_to_grid(global_position)
 	if cell != _cover_side_key:
 		_cover_side_key = cell
+		_last_attack_side = CoverEdgeSelector.Side.NONE
 		cover_side = CoverEdgeSelector.Side.NONE   # a new place: choose afresh (hysteresis only holds within one cell's cover)
 	cover_edges = CoverEdgeSelector.edges(presentation_grid, global_position, last_cover_contact, cover_profile)
 	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, cover_profile)
@@ -555,12 +565,19 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 ## sequence (carrying, no processing) shows the shot immediately, as before.
 func present_attack(target_world_position: Vector3) -> void:
 	var cover := _cover_context()
+	# The firing posture comes from the authorized shot's direction and the wall geometry only (CoverEdgeSelector.plan_attack); a visual pose never creates a shot.
+	var plan := _plan_attack_posture(cover, target_world_position)
 	face_world_position(target_world_position)
 	var shot := &"shoot"
 	if cover.type == MapCellData.CoverType.FULL:
 		# Visual lean only; the combat evaluator has already resolved the shot.
-		shot = &"shoot_left" if cover_side < 0 else &"shoot_right"   # lean toward the chosen edge (right when there is none or it is a tie)
+		match int(plan.get("mode", CoverEdgeSelector.FiringMode.PROTECTED)):
+			CoverEdgeSelector.FiringMode.AROUND_LEFT: shot = &"shoot_left"
+			CoverEdgeSelector.FiringMode.AROUND_RIGHT: shot = &"shoot_right"
+			CoverEdgeSelector.FiringMode.ORDINARY: shot = &"shoot"
+			_: shot = &"shoot_left" if cover_side < 0 else &"shoot_right"   # no honest peek: the passive lean side (right on a tie or none)
 	_cancel_attack_sequence()
+	attack_plan = plan
 	_return_generation += 1
 	_attack_shot_state = shot
 	attack_timeline = {"start": _presentation_clock, "from_state": get_presentation_state(), "from_blend": aim_blend,
@@ -575,6 +592,20 @@ func present_attack(target_world_position: Vector3) -> void:
 	if cover.type == MapCellData.CoverType.NONE and get_presentation_state() not in AIM_POSE_STATES:
 		_play(&"aim")
 	_advance_attack(0.0)
+
+## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.
+func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:
+	if int(cover.type) == MapCellData.CoverType.NONE or not is_instance_valid(presentation_grid):
+		return {}
+	var edges := CoverEdgeSelector.edges(presentation_grid, global_position, cover, cover_profile)
+	var face_distance := float(cover.get("distance", presentation_grid.cell_size * 0.5))
+	var plan := CoverEdgeSelector.plan_attack(edges, int(cover.type) == MapCellData.CoverType.FULL, target_world_position - global_position, _last_attack_side, cover_side, face_distance, cover_profile)
+	if int(plan.mode) in [CoverEdgeSelector.FiringMode.AROUND_LEFT, CoverEdgeSelector.FiringMode.AROUND_RIGHT]:
+		_last_attack_side = int(plan.side)
+	attack_plan_log.append(plan)
+	if attack_plan_log.size() > ATTACK_PLAN_LOG_LIMIT:
+		attack_plan_log.pop_front()
+	return plan
 
 ## True from the attack request until its shot is shown (or it is cancelled). The action presenter
 ## waits on this before showing the target's reaction.
@@ -637,6 +668,7 @@ func _release_attack() -> void:
 
 func _finish_attack_sequence(fired: bool) -> void:
 	readiness.release(ATTACK_SOURCE)
+	attack_plan = {}   # back to the passive cover posture
 	if attack_phase != AttackPhase.NONE:
 		attack_phase = AttackPhase.NONE
 		attack_timeline["end_t"] = _presentation_clock - float(attack_timeline.get("start", 0.0))
