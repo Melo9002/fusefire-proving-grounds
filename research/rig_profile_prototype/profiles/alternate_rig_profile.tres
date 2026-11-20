@@ -1,0 +1,116 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_joint_spec.gd" id="1_xf7wt"]
+[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_anatomy.gd" id="2_cj43u"]
+[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_profile.gd" id="3_fr74x"]
+[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_socket.gd" id="4_ludp6"]
+
+[sub_resource type="Resource" id="Resource_gkwgm"]
+script = ExtResource("1_xf7wt")
+role = &"LeftLowerLeg"
+max_degrees = 140.0
+
+[sub_resource type="Resource" id="Resource_avu0h"]
+script = ExtResource("1_xf7wt")
+role = &"RightLowerLeg"
+max_degrees = 140.0
+
+[sub_resource type="Resource" id="Resource_vkgvk"]
+script = ExtResource("1_xf7wt")
+role = &"LeftLowerArm"
+max_degrees = 140.0
+pole_direction = Vector3(0, 0, -1)
+
+[sub_resource type="Resource" id="Resource_ltc2i"]
+script = ExtResource("1_xf7wt")
+role = &"RightLowerArm"
+max_degrees = 140.0
+pole_direction = Vector3(0, 0, -1)
+
+[sub_resource type="Resource" id="Resource_4hpeo"]
+script = ExtResource("2_cj43u")
+declared_height = 1.43
+joints = Array[ExtResource("1_xf7wt")]([SubResource("Resource_gkwgm"), SubResource("Resource_avu0h"), SubResource("Resource_vkgvk"), SubResource("Resource_ltc2i")])
+
+[sub_resource type="SkeletonProfileHumanoid" id="SkeletonProfileHumanoid_6witu"]
+
+[sub_resource type="BoneMap" id="BoneMap_lfywy"]
+profile = SubResource("SkeletonProfileHumanoid_6witu")
+bone_map/Root = &"root"
+bone_map/Hips = &"pelvis"
+bone_map/Spine = &"spine_01"
+bone_map/Chest = &"spine_02"
+bone_map/UpperChest = &""
+bone_map/Neck = &"neck_01"
+bone_map/Head = &"head"
+bone_map/LeftEye = &""
+bone_map/RightEye = &""
+bone_map/Jaw = &""
+bone_map/LeftShoulder = &"clavicle_l"
+bone_map/LeftUpperArm = &"upperarm_l"
+bone_map/LeftLowerArm = &"lowerarm_l"
+bone_map/LeftHand = &"hand_l"
+bone_map/LeftThumbMetacarpal = &""
+bone_map/LeftThumbProximal = &""
+bone_map/LeftThumbDistal = &""
+bone_map/LeftIndexProximal = &""
+bone_map/LeftIndexIntermediate = &""
+bone_map/LeftIndexDistal = &""
+bone_map/LeftMiddleProximal = &""
+bone_map/LeftMiddleIntermediate = &""
+bone_map/LeftMiddleDistal = &""
+bone_map/LeftRingProximal = &""
+bone_map/LeftRingIntermediate = &""
+bone_map/LeftRingDistal = &""
+bone_map/LeftLittleProximal = &""
+bone_map/LeftLittleIntermediate = &""
+bone_map/LeftLittleDistal = &""
+bone_map/RightShoulder = &"clavicle_r"
+bone_map/RightUpperArm = &"upperarm_r"
+bone_map/RightLowerArm = &"lowerarm_r"
+bone_map/RightHand = &"hand_r"
+bone_map/RightThumbMetacarpal = &""
+bone_map/RightThumbProximal = &""
+bone_map/RightThumbDistal = &""
+bone_map/RightIndexProximal = &""
+bone_map/RightIndexIntermediate = &""
+bone_map/RightIndexDistal = &""
+bone_map/RightMiddleProximal = &""
+bone_map/RightMiddleIntermediate = &""
+bone_map/RightMiddleDistal = &""
+bone_map/RightRingProximal = &""
+bone_map/RightRingIntermediate = &""
+bone_map/RightRingDistal = &""
+bone_map/RightLittleProximal = &""
+bone_map/RightLittleIntermediate = &""
+bone_map/RightLittleDistal = &""
+bone_map/LeftUpperLeg = &"thigh_l"
+bone_map/LeftLowerLeg = &"calf_l"
+bone_map/LeftFoot = &"foot_l"
+bone_map/LeftToes = &""
+bone_map/RightUpperLeg = &"thigh_r"
+bone_map/RightLowerLeg = &"calf_r"
+bone_map/RightFoot = &"foot_r"
+bone_map/RightToes = &""
+
+[sub_resource type="Resource" id="Resource_fts6q"]
+script = ExtResource("4_ludp6")
+socket_name = &"weapon_dominant_hand"
+parent_role = &"RightHand"
+
+[sub_resource type="Resource" id="Resource_qj32v"]
+script = ExtResource("4_ludp6")
+socket_name = &"weapon_support_hand"
+parent_role = &"LeftHand"
+
+[sub_resource type="Resource" id="Resource_c4qfw"]
+script = ExtResource("4_ludp6")
+socket_name = &"sling_chest"
+parent_role = &"Chest"
+
+[resource]
+script = ExtResource("3_fr74x")
+display_name = "Alternate (synthetic, Unreal-style names)"
+skeleton_map = SubResource("BoneMap_lfywy")
+anatomy = SubResource("Resource_4hpeo")
+sockets = Array[ExtResource("4_ludp6")]([SubResource("Resource_fts6q"), SubResource("Resource_qj32v"), SubResource("Resource_c4qfw")])
