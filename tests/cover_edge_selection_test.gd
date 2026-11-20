@@ -8,7 +8,15 @@ var failures := 0
 var checks := 0
 var _rig_yaw_samples: Array[float] = []
 
+## The engine's own delta for the frame just processed (what the animation advanced by). A wall-clock difference between two `await process_frame` resumptions is not that: on a fast
+## headless frame it can read 1 ms for a frame that moved 3 degrees, which printed as thousands of deg/s although the motion was smooth.
+var _clock := Node.new()
+
+func _frame_dt() -> float:
+	return maxf(_clock.get_process_delta_time(), 0.001)
+
 func _initialize() -> void:
+	root.add_child(_clock)
 	_run.call_deferred()
 
 func check(ok: bool, message: String) -> void:
@@ -127,15 +135,12 @@ func _run() -> void:
 	var worst_step := 0.0
 	var depth_low := 99.0
 	var depth_high := -99.0
-	var last_ticks := Time.get_ticks_msec()
 	var worst_rate := 0.0
 	var t_end := Time.get_ticks_msec() + 3500
 	var hit_sent := false
 	while Time.get_ticks_msec() < t_end:
 		await process_frame
-		var now := Time.get_ticks_msec()
-		var dt := maxf((now - last_ticks) / 1000.0, 0.001)
-		last_ticks = now
+		var dt := _frame_dt()
 		var direction := adapter.muzzle_socket.global_basis.z.normalized()
 		if previous != Vector3.ZERO:
 			worst_rate = maxf(worst_rate, rad_to_deg(direction.angle_to(previous)) / dt)

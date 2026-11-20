@@ -8,7 +8,15 @@ const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
 var failures := 0
 var checks := 0
 
+## The engine's own delta for the frame just processed (what the animation advanced by). A wall-clock difference between two `await process_frame` resumptions is not that: on a fast
+## headless frame it can read 1 ms for a frame that moved 3 degrees, which printed as thousands of deg/s although the motion was smooth.
+var _clock := Node.new()
+
+func _frame_dt() -> float:
+	return maxf(_clock.get_process_delta_time(), 0.001)
+
 func _initialize() -> void:
+	root.add_child(_clock)
 	_run.call_deferred()
 
 func check(ok: bool, message: String) -> void:
@@ -219,14 +227,11 @@ func _fire_and_measure(f, adapter: UnitVisualAdapter, actor: TacticalUnit, enemy
 		done.append(true)
 	attack.call()
 	var previous := Vector3.ZERO
-	var last_ticks := Time.get_ticks_msec()
 	var guard := 0
 	while (done.is_empty() or adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE) and guard < 1200:
 		guard += 1
 		await process_frame
-		var now := Time.get_ticks_msec()
-		var dt := maxf((now - last_ticks) / 1000.0, 0.001)
-		last_ticks = now
+		var dt := _frame_dt()
 		var direction := adapter.muzzle_socket.global_basis.z.normalized()
 		if previous != Vector3.ZERO:
 			observed.worst_rate = maxf(float(observed.worst_rate), rad_to_deg(direction.angle_to(previous)) / dt)
