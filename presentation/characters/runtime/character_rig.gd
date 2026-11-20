@@ -25,6 +25,15 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
+## Environmental traversal (see TraversalSolver / TraversalPoseModifier). `traversal` is {} when none; while a ladder is climbed it holds {kind, climbed, length, direction}
+## and `traversal_pose` is the solved pose of that progress. Legs go through `leg_ik` to `foot_targets`, knees toward `knee_poles`.
+@export var traversal_profile: TraversalProfile = TraversalProfile.new()
+var traversal := {}
+var traversal_pose := {}
+var traversal_modifier: TraversalPoseModifier
+var leg_ik: TwoBoneIK3D
+var foot_targets: Array[Marker3D] = []
+var knee_poles: Array[Marker3D] = []
 var crouch_modifier: CoverCrouchModifier
 ## Places the weapon's hand targets from the shoulder of the current skeleton pass (see WeaponPoseModifier).
 var weapon_pose_modifier: WeaponPoseModifier
@@ -316,6 +325,7 @@ func _build_animation_controller() -> void:
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
 	_build_crouch_modifier()
+	_build_traversal_modifier()
 	_build_weapon_pose_modifier()
 	_build_grip_modifier()
 	_build_locomotion_modifier()
@@ -405,6 +415,114 @@ func _build_crouch_modifier() -> void:
 		skeleton.move_child(crouch_modifier, arm_ik.get_index())
 
 
+## The body layer for ladders and obstacles: a pelvis/trunk pose and a two-bone leg IK, after Locomotion and CoverCrouch and before WeaponPose (see TraversalPoseModifier).
+func _build_traversal_modifier() -> void:
+	var mixamo := skeleton.find_bone(&"mixamorig_Hips") >= 0
+	var legs := [
+		[&"mixamorig_LeftUpLeg", &"mixamorig_LeftLeg", &"mixamorig_LeftFoot"] if mixamo else [&"J_Bip_L_UpperLeg", &"J_Bip_L_LowerLeg", &"J_Bip_L_Foot"],
+		[&"mixamorig_RightUpLeg", &"mixamorig_RightLeg", &"mixamorig_RightFoot"] if mixamo else [&"J_Bip_R_UpperLeg", &"J_Bip_R_LowerLeg", &"J_Bip_R_Foot"],
+	]
+	traversal_modifier = TraversalPoseModifier.new()
+	traversal_modifier.name = "Traversal"
+	if not traversal_modifier.setup(self, skeleton, &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips"):
+		traversal_modifier = null
+		return
+	leg_ik = TwoBoneIK3D.new()
+	leg_ik.name = "TraversalLegIK"
+	leg_ik.setting_count = 2
+	skeleton.add_child(traversal_modifier)
+	skeleton.add_child(leg_ik)
+	for side in 2:
+		var foot := Marker3D.new()
+		foot.name = "TraversalFootTarget%d" % side
+		character_root.add_child(foot)
+		var knee := Marker3D.new()
+		knee.name = "TraversalKneePole%d" % side
+		character_root.add_child(knee)
+		foot_targets.append(foot)
+		knee_poles.append(knee)
+		leg_ik.set_root_bone_name(side, legs[side][0])
+		leg_ik.set_middle_bone_name(side, legs[side][1])
+		leg_ik.set_end_bone_name(side, legs[side][2])
+		leg_ik.set_target_node(side, leg_ik.get_path_to(foot))
+		leg_ik.set_pole_node(side, leg_ik.get_path_to(knee))
+	leg_ik.active = false
+	# Just before the arm IK, after whatever was built before (Locomotion, CoverCrouch).
+	if is_instance_valid(arm_ik):
+		skeleton.move_child(traversal_modifier, arm_ik.get_index())
+		skeleton.move_child(leg_ik, arm_ik.get_index())
+
+
+## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
+func begin_traversal(kind: StringName, length: float, direction: int) -> void:
+	traversal = {"kind": kind, "climbed": 0.0, "length": length, "direction": direction}
+	traversal_pose = {}
+
+
+## The height of the character's floor level above the ladder's bottom floor. Solves the pose now (pure function of this height), asks the trunk to lean, and sets
+## how far the rifle is slung (the weapon travels to the sling as the climber mounts and back as they leave; the pose is released again at the ends).
+func set_traversal_progress(climbed: float) -> void:
+	if traversal.is_empty():
+		return
+	traversal.climbed = climbed
+	traversal_pose = TraversalSolver.ladder_pose(traversal_profile, climbed, float(traversal.length), int(traversal.direction))
+	var weight: float = traversal_pose.weight
+	if crouch_modifier != null:
+		crouch_modifier.aim_lean_degrees = float(traversal_pose.lean_degrees) * weight
+	if weight > 0.001:
+		if not is_weapon_stowed():
+			stow_weapon()
+		_stow_blend = weight
+	elif is_weapon_stowed():
+		unstow_weapon()
+		_stow_blend = 1.0
+
+
+## Ends the traversal and leaves nothing of it: the legs, lean, hands and rifle go back to the ordinary pose layers.
+func end_traversal() -> void:
+	if traversal.is_empty():
+		return
+	traversal = {}
+	traversal_pose = {}
+	if crouch_modifier != null:
+		crouch_modifier.aim_lean_degrees = 0.0
+	if is_instance_valid(leg_ik):
+		leg_ik.active = false
+	if grip_modifier != null:
+		grip_modifier.contact_weight = [0.0, 0.0]
+	if is_weapon_stowed() and not carry_contacts_active():
+		unstow_weapon()
+	_stow_blend = 1.0
+
+
+func traversal_contacts_active() -> bool:
+	return not traversal.is_empty() and not traversal_pose.is_empty() and (float(traversal_pose.hand_weight[0]) > 0.001 or float(traversal_pose.hand_weight[1]) > 0.001)
+
+
+## Puts the hands on the rungs (or the deck edge), by the traversal's weight, over wherever the weapon pose placed them. Runs inside the WeaponPose pass, after the weapon
+## targets, so ladder contacts take priority over the rifle grip for as long as they hold (the rifle is slung, so nothing competes for the hands).
+func apply_traversal_hand_targets() -> void:
+	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
+	var up := to_skeleton * Vector3.UP
+	var toward := to_skeleton * character_root.global_basis.orthonormalized().z
+	var weights := [0.0, 0.0]
+	var forwards := [up, up]
+	var normals := [toward, toward]
+	var nodes := [support_ik_target, right_hand_target]   # left, right
+	for side in 2:
+		var contact := character_root.to_global(traversal_pose.hands[side])
+		var node: Node3D = nodes[side]
+		var hold: float = traversal_pose.hand_weight[side]   # the hands let go of the ladder before the body does (short arms)
+		node.global_position = node.global_position.lerp(contact, hold)
+		weights[side] = hold
+	if grip_modifier != null:
+		grip_modifier.orient_weight = 0.0
+		grip_modifier.contact_weight = weights
+		grip_modifier.contact_forward = forwards
+		grip_modifier.contact_normal = normals
+		grip_modifier.curl = [0.6 * weights[0], 0.6 * weights[1]]
+
+
 func _configure_chain(
 	index: int,
 	bones: Array,
@@ -467,6 +585,9 @@ func _update_weapon_pose_inputs() -> void:
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = AIM_LEAN_DEGREES * weapon_blend()
 		crouch_modifier.support_reach_degrees = SUPPORT_REACH_DEGREES * weapon_blend()
+		if not traversal.is_empty() and not traversal_pose.is_empty():
+			# A ladder climbed: the trunk leans into it by the traversal's weight (set_traversal_progress), not into the rifle.
+			crouch_modifier.aim_lean_degrees = lerpf(crouch_modifier.aim_lean_degrees, float(traversal_pose.lean_degrees), float(traversal_pose.weight))
 	if grip_modifier != null:
 		var holding: bool = not (is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"boarding", &"carry_idle", &"carry_move"])
 		grip_modifier.curl = [SUPPORT_GRIP_CURL if holding else 0.0, TRIGGER_HAND_CURL if holding else 0.0]

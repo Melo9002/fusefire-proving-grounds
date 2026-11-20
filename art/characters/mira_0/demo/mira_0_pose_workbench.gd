@@ -245,6 +245,7 @@ func _process(_delta: float) -> void:
 			turn_goal = NAN
 	update_locomotion_presentation(preview_speed if walking else 0.0, heading_rate, _delta)
 	_apply_cover_demo(_delta)
+	_advance_ladder_demo(_delta)
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
 	_update_weapon_pose()
@@ -488,3 +489,116 @@ func _draw_cover_lines() -> void:
 		mesh.surface_set_color(segment[2])
 		mesh.surface_add_vertex(segment[1])
 	mesh.surface_end()
+
+
+## ---- Environmental traversal bench (ladder). The pose is the production TraversalSolver / TraversalPoseModifier / hand contacts: the bench only supplies the height the
+## game would supply (the unit's tactical height up the ladder) and a ladder to look at. The character stays at the origin and the ladder slides past it.
+var ladder_demo := {}
+var traversal_diagnostics := false
+var _ladder_group: Node3D
+var _ladder_markers: Array[MeshInstance3D] = []
+
+
+## Starts a ladder scenario: `length` the ladder's rise (m), `direction` +1 climb / -1 descend, `rate` m/s (0 = hold), `climbed` the starting height.
+func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0) -> void:
+	end_ladder_demo()
+	ladder_demo = {"length": length, "direction": direction, "rate": rate, "climbed": (0.0 if direction > 0 else length) if climbed < 0.0 else climbed, "playing": rate > 0.0}
+	begin_traversal(&"ladder", length, direction)
+	_build_ladder_visuals()
+	set_traversal_progress(float(ladder_demo.climbed))
+	animation_controller.play(&"rifle_idle")
+
+
+func end_ladder_demo() -> void:
+	ladder_demo = {}
+	if is_instance_valid(_ladder_group):
+		_ladder_group.queue_free()
+	_ladder_group = null
+	_ladder_markers.clear()
+	end_traversal()
+
+
+func set_ladder_height(climbed: float) -> void:
+	if ladder_demo.is_empty():
+		return
+	ladder_demo.climbed = clampf(climbed, 0.0, float(ladder_demo.length))
+	set_traversal_progress(float(ladder_demo.climbed))
+
+
+func _advance_ladder_demo(delta: float) -> void:
+	if ladder_demo.is_empty():
+		return
+	if bool(ladder_demo.playing):
+		var next: float = float(ladder_demo.climbed) + float(ladder_demo.rate) * float(ladder_demo.direction) * delta
+		var length: float = float(ladder_demo.length)
+		if next >= length or next <= 0.0:
+			ladder_demo.playing = false
+		set_ladder_height(next)
+	else:
+		set_traversal_progress(float(ladder_demo.climbed))
+	if is_instance_valid(_ladder_group):
+		_ladder_group.position.y = -float(ladder_demo.climbed)
+		for marker in _ladder_markers:
+			marker.visible = traversal_diagnostics
+		_update_ladder_markers()
+
+
+func _build_ladder_visuals() -> void:
+	var profile := traversal_profile
+	var length: float = ladder_demo.length
+	_ladder_group = Node3D.new()
+	_ladder_group.name = "LadderBench"
+	_ladder_group.top_level = true
+	add_child(_ladder_group)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.87, 0.71, 0.3)
+	var plane := profile.ladder_plane_ahead
+	for side in [-1.0, 1.0]:
+		var rail := MeshInstance3D.new()
+		var rail_mesh := BoxMesh.new()
+		rail_mesh.size = Vector3(0.06, length, 0.06)
+		rail.mesh = rail_mesh
+		rail.material_override = material
+		rail.position = Vector3(0.35 * side, length * 0.5, plane)
+		_ladder_group.add_child(rail)
+	for index in TraversalSolver.rung_count_for(profile, length):
+		var rung := MeshInstance3D.new()
+		var rung_mesh := BoxMesh.new()
+		rung_mesh.size = Vector3(0.76, 0.045, 0.045)
+		rung.mesh = rung_mesh
+		rung.material_override = material
+		rung.position = Vector3(0.0, TraversalSolver.rung_height(profile, index, length), plane)
+		_ladder_group.add_child(rung)
+	var deck := MeshInstance3D.new()
+	var deck_mesh := BoxMesh.new()
+	deck_mesh.size = Vector3(3.0, 0.2, 3.0)
+	deck.mesh = deck_mesh
+	var deck_material := StandardMaterial3D.new()
+	deck_material.albedo_color = Color(0.45, 0.47, 0.5)
+	deck.material_override = deck_material
+	deck.position = Vector3(0.0, length - 0.1, plane + 1.5)
+	_ladder_group.add_child(deck)
+	var colours := [Color(1, 0.2, 0.2), Color(0.2, 0.4, 1), Color(1, 0.6, 0.2), Color(0.3, 0.8, 1)]   # L hand, R hand, L foot, R foot
+	for i in 4:
+		var marker := MeshInstance3D.new()
+		var ball := SphereMesh.new()
+		ball.radius = 0.04
+		ball.height = 0.08
+		marker.mesh = ball
+		var marker_material := StandardMaterial3D.new()
+		marker_material.albedo_color = colours[i]
+		marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		marker.material_override = marker_material
+		marker.top_level = true
+		marker.visible = false
+		add_child(marker)
+		_ladder_markers.append(marker)
+
+
+## Optional diagnostics: the four contact targets (left hand red, right hand blue, left foot orange, right foot cyan).
+func _update_ladder_markers() -> void:
+	if _ladder_markers.size() < 4 or traversal_pose.is_empty():
+		return
+	for side in 2:
+		_ladder_markers[side].global_position = character_root.to_global(traversal_pose.hands[side])
+		_ladder_markers[2 + side].global_position = character_root.to_global(traversal_pose.feet[side])

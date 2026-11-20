@@ -97,7 +97,11 @@ func _process_modification() -> void:
 		rig.call("update_torso_frame", chest_in_root, get_process_delta_time())
 	rig.call("apply_weapon_targets", last_shoulder_world)
 	_adjust_support_reach(skeleton)
-	_guide_elbows(skeleton)
+	# A ladder (or obstacle) climbed: the hands go to its contacts over the weapon's targets.
+	var holding := bool(rig.call("traversal_contacts_active"))
+	if holding:
+		rig.call("apply_traversal_hand_targets")
+	_guide_elbows(skeleton, holding)
 
 ## Elbow poles from the final shoulders and hand targets of this pass (see CharacterRig.apply_elbow_guidance).
 func _guide_elbows(skeleton: Skeleton3D, carrying := false) -> void:

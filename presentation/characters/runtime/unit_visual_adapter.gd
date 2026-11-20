@@ -56,6 +56,12 @@ var preview_carrying := false
 ## Read-only world-space hints for hybrid pose fitting. Never applied as a root offset.
 var last_cover_contact: Dictionary = {}
 var _segment_state: StringName = &"move"
+## Ladder traversal (a climb/descend route segment that is vertical): the unit's tactical HEIGHT up the ladder drives the whole pose (TraversalSolver is a pure function of it),
+## so the presentation is the same at any playback speed and from any replay position. `_ladder` is {} when none.
+var _ladder := {}
+var _segment_from := Vector3.ZERO
+var _ladder_step := false
+var _segment_to := Vector3.ZERO
 
 ## The carrier has just taken `passenger_world` (the rescued actor's place, which the tactical layer has hidden the actor at).
 ## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
@@ -296,13 +302,72 @@ func _exit_tree() -> void:
 
 func present_move() -> void:
 	finish_interaction_now()
+	_end_ladder()
 	_cancel_attack_sequence()
 	_return_generation += 1
 	_segment_state = &"move"
 	_play(&"carry_move" if _carrying() else &"move")
 
+## The route segment the tactical unit is about to walk (its start and end, in the tactical node's own coordinates), with the horizontal direction of the ladder's top
+## (`toward_deck`, the way the ladder leans/faces; Vector3.ZERO if unknown). A vertical climb/descend segment is a ladder: the body then climbs by the unit's height. Returns the
+## speed this segment should be presented at (<= 0: the route speed, unchanged); see TraversalProfile.slow_ladder_enabled.
+func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName, toward_deck: Vector3, neighbour_rise := 0.0) -> float:
+	_segment_from = from_world
+	_segment_to = to_world
+	# The level step to or from a ladder's top (a horizontal segment next to a ladder's vertical one) is ordinary walking, not a climb clip.
+	_ladder_step = absf(to_world.y - from_world.y) < 0.05 and state_name in [&"climb", &"descend"] and neighbour_rise >= traversal_profile.ladder_min_rise
+	var vertical := absf(to_world.y - from_world.y) > 0.05 and Vector2(to_world.x - from_world.x, to_world.z - from_world.z).length() < 0.02
+	var profile: TraversalProfile = traversal_profile
+	if _carrying():
+		# A loaded carrier on a ladder is an unsupported combination (the passenger's contacts and the rungs would compete for the hands): the placeholder clips, as before.
+		_ladder_step = false
+		_end_ladder()
+		return 0.0
+	if not (vertical and state_name in [&"climb", &"descend"] and absf(to_world.y - from_world.y) >= profile.ladder_min_rise):
+		_end_ladder()
+		return 0.0
+	var facing := Vector3(toward_deck.x, 0.0, toward_deck.z)
+	_ladder = {"low_y": minf(from_world.y, to_world.y), "length": absf(to_world.y - from_world.y), "direction": 1 if to_world.y > from_world.y else -1,
+		"yaw": atan2(facing.x, facing.z) if facing.length() > 0.01 else rotation.y}
+	if profile == null or not profile.slow_ladder_enabled:
+		return 0.0
+	return profile.climb_speed if int(_ladder.direction) > 0 else profile.descend_speed
+
+
+func is_ladder_active() -> bool:
+	return not _ladder.is_empty()
+
+
+## Once per frame: while a ladder segment is walked, the character faces the ladder and the pose follows the unit's height up it.
+func _tick_traversal(delta: float) -> void:
+	if _ladder.is_empty() or not is_instance_valid(tactical_unit):
+		return
+	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
+	if get_presentation_state() != &"rifle_idle" and get_presentation_state() != &"aim":
+		_play(&"rifle_idle")
+	rotation.y = rotate_toward(rotation.y, float(_ladder.yaw), deg_to_rad(turn_speed_degrees) * delta)
+	if traversal.is_empty():
+		begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
+	set_traversal_progress(climbed)
+
+
+func _end_ladder() -> void:
+	if _ladder.is_empty() and traversal.is_empty():
+		return
+	_ladder = {}
+	end_traversal()
+
+
 func present_path_segment(state_name: StringName) -> void:
 	finish_interaction_now()
+	if not _ladder.is_empty():
+		# Climbing or descending a ladder: no clip of its own, the contacts do it (see _tick_traversal). The leg that steps on or off the deck is ordinary walking.
+		_segment_state = &"ladder"
+		_return_generation += 1
+		_play(&"rifle_idle")
+		return
+	if _ladder_step:
+		state_name = &"move"   # the horizontal step to or from a ladder's top: walking
 	if state_name == _segment_state:
 		return
 	var was_traversing := _segment_state in TRAVERSAL_STATES
@@ -315,6 +380,7 @@ func present_path_segment(state_name: StringName) -> void:
 		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
 
 func present_movement_end() -> void:
+	_end_ladder()
 	if pickup_pending():
 		var world := _pending_pickup_world
 		_pending_pickup_world = Vector3.INF
@@ -685,10 +751,13 @@ func _cancel_attack_sequence() -> void:
 
 func present_hit() -> void:
 	_cancel_attack_sequence()
+	if is_ladder_active():
+		return   # a reaction shot that hits a unit on a ladder: it keeps climbing (no hit clip over the rungs; a hit-on-ladder reaction is not designed yet)
 	_play(&"hit")
 	_return_to_idle_after(hit_return_seconds)
 
 func present_defeat() -> void:
+	_end_ladder()
 	_cancel_attack_sequence()
 	readiness.clear()
 	_return_generation += 1
@@ -721,6 +790,7 @@ func _process(delta: float) -> void:
 	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
 	_advance_attack(delta)
+	_tick_traversal(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 

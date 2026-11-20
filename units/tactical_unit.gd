@@ -54,6 +54,8 @@ var is_moving: bool = false
 ## Suppresses automatic poses while an action service commits authoritative stats.
 var defer_stat_presentation := false
 var _visual_segments: Array[StringName] = []
+var _segment_speed := 0.0
+const DEFAULT_MOVEMENT_SPEED := 5.0
 var _visual_waypoint := -1
 var carried_unit: TacticalUnit
 ## True while this unit is a rescue target awaiting a carrier. DERIVED from the rescue objective by ObjectiveManager (it is not a new tactical
@@ -207,14 +209,47 @@ func _process(delta: float) -> void:
 	if visual_adapter:
 		if _visual_waypoint != current_waypoint_idx:
 			_visual_waypoint = current_waypoint_idx
-			visual_adapter.present_path_segment(_visual_segments[current_waypoint_idx] if current_waypoint_idx < _visual_segments.size() else &"move")
+			var segment_state: StringName = _visual_segments[current_waypoint_idx] if current_waypoint_idx < _visual_segments.size() else &"move"
+			_segment_speed = visual_adapter.note_segment(global_position, target_waypoint, segment_state, _ladder_toward_deck(current_waypoint_idx), _neighbour_rise(current_waypoint_idx))
+			visual_adapter.present_path_segment(segment_state)
 		visual_adapter.update_locomotion(global_position.direction_to(target_waypoint) * movement_speed, delta)
 
-	global_position = global_position.move_toward(target_waypoint, movement_speed * delta)
+	global_position = global_position.move_toward(target_waypoint, _presented_speed() * delta)
 
 	if global_position.distance_to(target_waypoint) < 0.01:
 		global_position = target_waypoint
 		current_waypoint_idx += 1
+
+## The speed at which the current route segment is PRESENTED. The tactical route is walked at `movement_speed` (5 m/s by default), which would take a 4 m ladder 0.8 s; a
+## ladder segment is slower (TraversalProfile.climb_speed / descend_speed), scaled by how far movement_speed is from its default so replay playback speeds still apply.
+## Only the time the move takes to show changes: cells, AP, positions and the replay record are untouched.
+func _presented_speed() -> float:
+	if _segment_speed <= 0.0:
+		return movement_speed
+	return minf(movement_speed, _segment_speed * movement_speed / DEFAULT_MOVEMENT_SPEED)
+
+## The largest vertical rise among the route segments next to segment `index` (the one ending at current_path[index]).
+func _neighbour_rise(index: int) -> float:
+	var rise := 0.0
+	if index >= 2:
+		rise = maxf(rise, absf(current_path[index - 1].y - current_path[index - 2].y))
+	if index + 1 < current_path.size():
+		rise = maxf(rise, absf(current_path[index + 1].y - current_path[index].y))
+	return rise
+
+## For a vertical ladder segment, the horizontal direction from the ladder toward its top deck: the next waypoint after a climb (the step onto the deck) or the previous one
+## before a descent (the step off it). ZERO when the segment is not part of such a route.
+func _ladder_toward_deck(index: int) -> Vector3:
+	if index < 0 or index >= current_path.size():
+		return Vector3.ZERO
+	var here: Vector3 = current_path[index]
+	var before: Vector3 = current_path[index - 1] if index > 0 else here
+	var rising := here.y > before.y
+	if rising and index + 1 < current_path.size():
+		return current_path[index + 1] - here
+	if not rising and index > 0 and index - 1 > 0:
+		return current_path[index - 2] - before
+	return Vector3.ZERO
 
 func move_along_path(path: PackedVector3Array, visual_segments: Array[StringName] = []) -> void:
 	if path.size() == 0:

@@ -14,6 +14,7 @@ var _slow: HSlider
 var _scenario_label: Label
 var _scenario_time := -1.0
 var _scenario := &""
+var _ladder_slider: HSlider
 
 const VIEWS := {
 	"Front": [Vector3(0, 1.1, 3.4), Vector3(0, 0.9, 0)],
@@ -62,6 +63,23 @@ func setup(workbench: Node3D) -> void:
 	box.add_child(_label("Authorized attack (bench target; the plan is the production CoverEdgeSelector.plan_attack)"))
 	box.add_child(_row([["Target left", func() -> void: bench.set_cover_target(Vector3(5, 0, 1.5))], ["Target right", func() -> void: bench.set_cover_target(Vector3(-5, 0, 1.5))], ["Target ahead", func() -> void: bench.set_cover_target(Vector3(0, 0, 5))], ["Open side", func() -> void: bench.set_cover_target(Vector3(2, 0, -5))]]))
 	box.add_child(_row([["Fire", func() -> void: bench.fire_cover_shot()], ["End attack", func() -> void: bench.set_cover_target(null)], ["Left usable only", func() -> void: _cover(true, 2.2, 0.5, 3.5, true, false, false)], ["Right usable only", func() -> void: _cover(true, 2.2, 3.5, 0.5, false, true, false)]]))
+	box.add_child(_label("Environmental traversal: ladder (production solver; the bench supplies the height the game would)"))
+	box.add_child(_row([["Climb 4 m", func() -> void: _ladder(4.0, 1, 0.85)], ["Descend 4 m", func() -> void: _ladder(4.0, -1, 0.75)], ["Climb 3 m", func() -> void: _ladder(3.0, 1, 0.85)], ["Stop", func() -> void: bench.end_ladder_demo()]]))
+	box.add_child(_row([["Pause / play", func() -> void: _ladder_toggle()], ["Mount (hold)", func() -> void: _ladder_hold(0.25)], ["Top-out (hold)", func() -> void: _ladder_hold(3.6)], ["Mid (hold)", func() -> void: _ladder_hold(2.0)]]))
+	_ladder_slider = HSlider.new()
+	_ladder_slider.min_value = 0.0
+	_ladder_slider.max_value = 4.0
+	_ladder_slider.step = 0.01
+	_ladder_slider.value_changed.connect(func(v: float) -> void:
+		if not bench.ladder_demo.is_empty():
+			bench.ladder_demo.playing = false
+			bench.set_ladder_height(v))
+	box.add_child(_ladder_slider)
+	var ladder_markers := CheckButton.new()
+	ladder_markers.text = "Contact markers (hands red/blue, feet orange/cyan)"
+	ladder_markers.toggled.connect(func(on: bool) -> void: bench.traversal_diagnostics = on)
+	box.add_child(ladder_markers)
+	box.add_child(_label("Vault / step-over / mantle: solver prototype only (TraversalSolver.vault_pose); not driven here and not in gameplay"))
 	var overlay := CheckButton.new()
 	overlay.text = "Cover diagnostics overlay"
 	overlay.toggled.connect(func(on: bool) -> void: bench.cover_diagnostics = on)
@@ -172,6 +190,26 @@ func _cover(full: bool, height: float, left: float, right: float, left_ok: bool,
 	bench.set_cover_demo({"full": full, "height": height, "left": left, "right": right, "left_ok": left_ok, "right_ok": right_ok, "aim": aim})
 
 
+func _ladder(length: float, direction: int, rate: float) -> void:
+	_set_speed(0.0, false)
+	bench.start_ladder_demo(length, direction, rate)
+	_ladder_slider.max_value = length
+
+
+func _ladder_toggle() -> void:
+	if not bench.ladder_demo.is_empty():
+		bench.ladder_demo.playing = not bool(bench.ladder_demo.playing)
+
+
+func _ladder_hold(height: float) -> void:
+	_set_speed(0.0, false)
+	if bench.ladder_demo.is_empty():
+		bench.start_ladder_demo(4.0, 1, 0.0, height)
+	else:
+		bench.ladder_demo.playing = false
+		bench.set_ladder_height(height)
+
+
 func _view(view_name: String) -> void:
 	var view: Array = VIEWS[view_name]
 	bench.camera.position = view[0]
@@ -207,6 +245,9 @@ func _process(delta: float) -> void:
 	var r: Dictionary = bench.locomotion_report
 	var modifier = bench.locomotion_modifier
 	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.character_root.rotation.y), bench.crouch_modifier.depth]
+	if not bench.ladder_demo.is_empty() and not bench.traversal_pose.is_empty():
+		var tp: Dictionary = bench.traversal_pose
+		cover_line += "\nladder %.2f / %.2f m  weight %.2f  hand rungs %s  foot rungs %s" % [float(bench.ladder_demo.climbed), float(bench.ladder_demo.length), float(tp.weight), tp.hand_rung, tp.foot_rung]
 	if not bench.cover_demo.is_empty():
 		var plan: Dictionary = bench.cover_plan
 		cover_line += "\nintent: %s" % ("none (passive cover)" if plan.is_empty() else "authorized attack  mode %s  side %d  along %.2f lateral %.2f%s" % [CoverEdgeSelector.FiringMode.keys()[int(plan.mode)], int(plan.side), float(plan.along), float(plan.lateral), ("  MISMATCH " + str(plan.mismatch)) if not str(plan.mismatch).is_empty() else ""])
