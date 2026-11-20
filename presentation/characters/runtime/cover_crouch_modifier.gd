@@ -285,12 +285,26 @@ func set_support_reach(target: Skeleton3D, degrees: float) -> void:
 	var rest := target.get_bone_rest(_support_clavicle).basis.get_rotation_quaternion()
 	target.set_bone_pose_rotation(_support_clavicle, rest * Quaternion(_forward_axis[_support_clavicle], deg_to_rad(degrees)))
 
-## Leans the spine forward by `degrees` in total, shared between the spine bones.
+## Leans the spine forward by `degrees` in total, shared between the spine bones. The lean OWNS the spine's flexion (rotation about the measured forward axis): it replaces whatever
+## flexion the animation baked in (a gait's running lean, a clip's own chest pitch), exactly as before. Every OTHER component of the bone's current pose is kept: the
+## Locomotion modifier runs first and turns the hips by a twist, then gives that twist back up the spine so the chest's net yaw is zero (and banks); writing the spine as the absolute
+## `rest * lean` erased that share and left the chest turned with the hips (audit F-04, `tests/locomotion_cover_composition_test.gd`).
 func _apply_lean(target: Skeleton3D, degrees: float) -> void:
 	var share := degrees / _spine.size()
 	for bone in _spine:
-		var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
-		target.set_bone_pose_rotation(bone, rest * Quaternion(_forward_axis[bone], deg_to_rad(share)))
+		_set_flexion_keeping_rest(target, bone, share)
+
+## Sets the flexion of `bone` about its measured forward axis to `degrees` and leaves the rest of its pose (its twist about the vertical, its bank) as the modifiers before this one
+## made it. The flexion part of the current pose is removed by swing-twist decomposition about that axis; with no other influence this equals `rest * Quaternion(axis, degrees)`.
+func _set_flexion_keeping_rest(target: Skeleton3D, bone: int, degrees: float) -> void:
+	var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()
+	var axis: Vector3 = _forward_axis[bone]
+	var delta := rest.inverse() * target.get_bone_pose_rotation(bone)
+	var along := Vector3(delta.x, delta.y, delta.z).dot(axis)
+	var flexion := Quaternion(axis.x * along, axis.y * along, axis.z * along, delta.w)
+	flexion = flexion.normalized() if flexion.length() > 0.0001 else Quaternion.IDENTITY
+	var others := delta * flexion.inverse()
+	target.set_bone_pose_rotation(bone, (rest * others * Quaternion(axis, deg_to_rad(degrees))).normalized())
 
 ## Replaces the animated flexion with the solved one about the bone's measured forward axis.
 func _set_flexion(target: Skeleton3D, bone: int, degrees: float) -> void:
