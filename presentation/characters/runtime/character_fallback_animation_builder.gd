@@ -32,18 +32,7 @@ func _init(target_skeleton: Skeleton3D) -> void:
 
 
 func _make_directional_move(direction: Vector2) -> Animation:
-	var animation := _make_move()
-	# Re-author thigh swing in travel direction, keeping knee flexion anatomical.
-	# Lift happens during the first half-cycle for the left leg and second for right.
-	for side in ["L", "R"]:
-		var bone := left_upper_leg if side == "L" else right_upper_leg
-		var track := animation.find_track(NodePath(".:%s" % bone), Animation.TYPE_ROTATION_3D)
-		animation.remove_track(track)
-		var sign_value := 1.0 if side == "L" else -1.0
-		var start := _rotation(-22.0 * direction.y * sign_value, 0, 18.0 * direction.x * sign_value)
-		var end := _rotation(22.0 * direction.y * sign_value, 0, -18.0 * direction.x * sign_value)
-		_add_rotation(animation, bone, [0.0, 0.5, 1.0], [start, end, start])
-	return animation
+	return make_gait(profile.walk, direction)
 
 
 func _make_idle() -> Animation:
@@ -118,47 +107,185 @@ func _make_rescue_pose(pose: StringName) -> Animation:
 	return animation
 
 
-## The loaded gait (carry_move): what changes from the unloaded walk, in one place. Presentation only; speed and action costs are
-## the tactical layer's. A narrower, shorter step with the knee lifted less, a smaller bob and a steadier trunk, because the
-## carrier is a capable android under a load, not a tired person: nothing here sags or drags.
-const LOADED_GAIT := {
-	"thigh_swing": 14.0,     # degrees either side of vertical (unloaded 22)
-	"knee_lift": -36.0,      # swing-leg knee flexion at its peak (unloaded -48)
-	"foot_swing": 7.0,       # ankle rock (unloaded 10 and -8)
-	"bob": 0.010,            # hip rise per step, metres (unloaded 0.018)
-	"trunk_sway": Vector3(-1.5, 1.2, 0.6),   # chest rotation at the ends of the cycle, degrees (unloaded -3, 2, 1)
-}
-
 func _make_move(loaded := false) -> Animation:
+	return make_gait(profile.loaded_walk if loaded else profile.walk, Vector2(0.0, 1.0))
+
+
+## The forward clips the animation tree blends by speed: "jog" and "run" (ordinary), and "loaded_fast" (a carrier at speed).
+func make_forward_clip(kind: StringName) -> Animation:
+	match kind:
+		&"jog": return make_gait(profile.jog, Vector2(0.0, 1.0))
+		&"run": return make_gait(profile.run, Vector2(0.0, 1.0))
+		&"loaded_fast": return make_gait(profile.loaded_fast, Vector2(0.0, 1.0))
+	return make_gait(profile.walk, Vector2(0.0, 1.0))
+
+
+## MOVEMENT COORDINATE CONTRACT
+##  * The humanoid's anatomical forward is the way its TOES point; measured from the rest pose (ankle to toe base, vertical removed), in
+##    skeleton space. Up is hips to head. The hip hinge axis is forward x up.
+##  * The visual root (the rig's Character node) faces +Z, the tactical unit turns the rig to its travel direction (UnitVisualAdapter
+##    .update_locomotion), so for ordinary tactical movement the travel direction IS the anatomical forward.
+##  * Locomotion direction is a Vector2 in the character's own frame: x = toward the character's LEFT, y = forward. (0, 1) forward,
+##    (0, -1) backward, (1, 0) side-step left, (-1, 0) side-step right.
+## The imported bones' local axes are NOT assumed to match this: on the MIRA rig a rotation about a leg bone's local x swings the leg
+## SIDEWAYS and the knee's hinge is local z, which is what the old walk got wrong. Every gait rotation here is built as "rotate about the
+## hip hinge (or the vertical, or forward)" and converted into each bone's own local axis from its rest orientation.
+var profile := LocomotionProfile.new()
+var _up := Vector3.UP
+var _forward := Vector3.BACK
+var _hinge := Vector3.RIGHT
+var _axes_measured := false
+
+
+## Anatomical axes (skeleton space), measured once from the rest pose. Safe to call again.
+func measure_axes() -> void:
+	var hips_i := skeleton.find_bone(hips)
+	var head_i := skeleton.find_bone(head)
+	var foot_i := skeleton.find_bone(left_foot)
+	var toe_i := skeleton.find_bone(&"mixamorig_LeftToeBase" if _mixamo else &"J_Bip_L_ToeBase")
+	_axes_measured = true
+	if hips_i < 0 or head_i < 0:
+		return
+	_up = (skeleton.get_bone_global_rest(head_i).origin - skeleton.get_bone_global_rest(hips_i).origin).normalized()
+	if foot_i >= 0 and toe_i >= 0:
+		var toe := skeleton.get_bone_global_rest(toe_i).origin - skeleton.get_bone_global_rest(foot_i).origin
+		toe -= _up * toe.dot(_up)
+		if toe.length() > 0.005:
+			_forward = toe.normalized()
+	_hinge = _forward.cross(_up).normalized()
+
+
+func anatomical_forward() -> Vector3:
+	if not _axes_measured:
+		measure_axes()
+	return _forward
+
+
+func anatomical_up() -> Vector3:
+	if not _axes_measured:
+		measure_axes()
+	return _up
+
+
+func hip_hinge() -> Vector3:
+	if not _axes_measured:
+		measure_axes()
+	return _hinge
+
+
+## Rotation of `bone` by `degrees` about a skeleton-space axis, as a local rotation (what _add_rotation expects).
+func _about(bone: StringName, axis_skeleton: Vector3, degrees: float) -> Quaternion:
+	var index := skeleton.find_bone(bone)
+	if index < 0:
+		return Quaternion.IDENTITY
+	var local_axis := skeleton.get_bone_global_rest(index).basis.orthonormalized().inverse() * axis_skeleton
+	return Quaternion(local_axis.normalized(), deg_to_rad(degrees))
+
+
+## A skeleton-space offset as a position offset in the bone's parent frame.
+func _local_offset(bone: StringName, offset_skeleton: Vector3) -> Vector3:
+	var index := skeleton.find_bone(bone)
+	if index < 0:
+		return Vector3.ZERO
+	var parent := skeleton.get_bone_parent(index)
+	var basis := skeleton.get_bone_global_rest(parent).basis.orthonormalized() if parent >= 0 else Basis.IDENTITY
+	return basis.inverse() * offset_skeleton
+
+
+## One looping stride (1 s; the controller scales it to speed). `direction`: x toward the character's left, y forward (see contract).
+func make_gait(g: LocomotionGait, direction: Vector2) -> Animation:
+	if not _axes_measured:
+		measure_axes()
 	var animation := _new_animation(1.0, true)
-	if loaded:
-		var g := LOADED_GAIT
-		var swing: float = g.thigh_swing
-		var knee: float = g.knee_lift
-		var foot: float = g.foot_swing
-		var bob: float = g.bob
-		var sway: Vector3 = g.trunk_sway
-		_add_position(animation, hips, [0.0, 0.25, 0.5, 0.75, 1.0], [Vector3.ZERO, Vector3(0, bob, 0), Vector3.ZERO, Vector3(0, bob, 0), Vector3.ZERO])
-		_add_rotation(animation, left_upper_leg, [0.0, 0.5, 1.0], [_rotation(-swing, 0, 0), _rotation(swing, 0, 0), _rotation(-swing, 0, 0)])
-		_add_rotation(animation, right_upper_leg, [0.0, 0.5, 1.0], [_rotation(swing, 0, 0), _rotation(-swing, 0, 0), _rotation(swing, 0, 0)])
-		_add_rotation(animation, left_lower_leg, [0.0, 0.25, 0.5, 1.0], [_rotation(-5, 0, 0), _rotation(knee, 0, 0), _rotation(-5, 0, 0), _rotation(-5, 0, 0)])
-		_add_rotation(animation, right_lower_leg, [0.0, 0.5, 0.75, 1.0], [_rotation(-5, 0, 0), _rotation(-5, 0, 0), _rotation(knee, 0, 0), _rotation(-5, 0, 0)])
-		_add_rotation(animation, left_foot, [0.0, 0.5, 1.0], [_rotation(-foot, 0, 0), _rotation(foot, 0, 0), _rotation(-foot, 0, 0)])
-		_add_rotation(animation, right_foot, [0.0, 0.5, 1.0], [_rotation(foot, 0, 0), _rotation(-foot, 0, 0), _rotation(foot, 0, 0)])
-		_add_rotation(animation, chest, [0.0, 0.5, 1.0], [_rotation(sway.x, -sway.y, sway.z), _rotation(sway.x, sway.y, -sway.z), _rotation(sway.x, -sway.y, sway.z)])
-		_add_grip(animation)
-		return animation
-	_add_position(animation, hips, [0.0, 0.25, 0.5, 0.75, 1.0], [Vector3.ZERO, Vector3(0, 0.018, 0), Vector3.ZERO, Vector3(0, 0.018, 0), Vector3.ZERO])
-	# Swing the bent leg forward along the rig's +Z facing direction.
-	_add_rotation(animation, left_upper_leg, [0.0, 0.5, 1.0], [_rotation(-22, 0, 0), _rotation(22, 0, 0), _rotation(-22, 0, 0)])
-	_add_rotation(animation, right_upper_leg, [0.0, 0.5, 1.0], [_rotation(22, 0, 0), _rotation(-22, 0, 0), _rotation(22, 0, 0)])
-	_add_rotation(animation, left_lower_leg, [0.0, 0.25, 0.5, 1.0], [_rotation(-5, 0, 0), _rotation(-48, 0, 0), _rotation(-5, 0, 0), _rotation(-5, 0, 0)])
-	_add_rotation(animation, right_lower_leg, [0.0, 0.5, 0.75, 1.0], [_rotation(-5, 0, 0), _rotation(-5, 0, 0), _rotation(-48, 0, 0), _rotation(-5, 0, 0)])
-	_add_rotation(animation, left_foot, [0.0, 0.5, 1.0], [_rotation(-8, 0, 0), _rotation(10, 0, 0), _rotation(-8, 0, 0)])
-	_add_rotation(animation, right_foot, [0.0, 0.5, 1.0], [_rotation(10, 0, 0), _rotation(-8, 0, 0), _rotation(10, 0, 0)])
-	_add_rotation(animation, chest, [0.0, 0.5, 1.0], [_rotation(-3, -2, 1), _rotation(-3, 2, -1), _rotation(-3, -2, 1)])
+	var keys := 16
+	var times := []
+	for k in keys + 1:
+		times.append(k / float(keys))
+	var forward_weight := absf(direction.y)
+	var side_weight := absf(direction.x)
+	var reverse := direction.y < 0.0
+	var amplitude := g.backward_scale if reverse else 1.0
+	var lateral := _up.cross(_forward)   # toward the character's left
+	var legs := [[left_upper_leg, left_lower_leg, left_foot, 0.0, 1.0], [right_upper_leg, right_lower_leg, right_foot, 0.5, -1.0]]
+	for leg in legs:
+		var thigh_values := []
+		var knee_values := []
+		var ankle_values := []
+		for t in times:
+			var phase := fposmod(float(t) + float(leg[3]), 1.0)
+			var table_phase := 1.0 - phase if reverse else phase
+			var hip := LocomotionGait.sample(g.thigh_table, table_phase) * g.hip_scale * amplitude * forward_weight
+			var knee := LocomotionGait.sample(g.knee_table, table_phase) * g.knee_scale * amplitude * forward_weight
+			var ankle := LocomotionGait.sample(g.ankle_table, table_phase) * g.ankle_scale * amplitude * forward_weight
+			# Keep the foot level while it carries weight: cancel the shin's pitch, fading out through push-off and swing.
+			var flat := clampf(-hip + knee, -35.0, 35.0) * _stance_weight(table_phase, g.stance_fraction)
+			var side_phase := 0.5 - 0.5 * cos(TAU * phase)
+			var side_swing := g.side_step_degrees * side_phase * signf(direction.x) * side_weight
+			var side_knee := g.side_step_knee_degrees * side_phase * side_phase * side_weight
+			var spread := g.stance_spread_degrees * float(leg[4])
+			# Side stepping moves the leg out and back in the frontal plane (about forward), with a lifted knee.
+			thigh_values.append(_about(leg[0], _hinge, hip) * _about(leg[0], _forward, side_swing + spread))
+			knee_values.append(_about(leg[1], _hinge, -maxf(knee, 0.0) - side_knee))
+			ankle_values.append(_about(leg[2], _hinge, ankle + flat * forward_weight + side_knee * 0.5))
+		_add_rotation(animation, leg[0], times, thigh_values)
+		_add_rotation(animation, leg[1], times, knee_values)
+		_add_rotation(animation, leg[2], times, ankle_values)
+	# Pelvis: highest at mid-stance, shifted over the stance leg, turned toward the swinging leg; the chest counter-rotates.
+	var hip_positions := []
+	var pelvis_rotations := []
+	var chest_rotations := []
+	for t in times:
+		var bob := g.pelvis_bob * (1.0 + cos(2.0 * TAU * (float(t) - g.bob_peak_phase))) * 0.5
+		var sway := g.pelvis_sway * sin(TAU * float(t))
+		hip_positions.append(_local_offset(hips, _up * bob + lateral * sway * forward_weight))
+		var yaw := -g.pelvis_yaw_degrees * cos(TAU * float(t)) * forward_weight * (-1.0 if reverse else 1.0)
+		pelvis_rotations.append(_about(hips, _up, yaw))
+		chest_rotations.append(_about(chest, _up, -g.torso_counter_rotation * yaw))
+	if g.forward_lean_degrees > 0.0:
+		# A held forward lean of the trunk (running): the spine pitches about the hip hinge, forward being the way the hips swing the leg back.
+		var lean_rotations := []
+		for t in times:
+			lean_rotations.append(_about(spine, _hinge, -g.forward_lean_degrees * forward_weight))
+		_add_rotation(animation, spine, times, lean_rotations)
+	_add_position(animation, hips, times, hip_positions)
+	_add_rotation(animation, hips, times, pelvis_rotations)
+	_add_rotation(animation, chest, times, chest_rotations)
 	_add_grip(animation)
 	return animation
+
+
+## How much of the foot-flat compensation applies at a point of the cycle: full while the foot carries weight, fading through push-off (the end of
+## stance), off in the swing, coming back for the approach to contact.
+static func _stance_weight(phase: float, stance_fraction: float) -> float:
+	var push_off := stance_fraction
+	if phase < 0.08:
+		return lerpf(0.6, 1.0, phase / 0.08)
+	if phase < push_off - 0.1:
+		return 1.0
+	if phase < push_off:
+		return lerpf(1.0, 0.2, (phase - (push_off - 0.1)) / 0.1)
+	if phase < push_off + 0.12:
+		return lerpf(0.2, 0.0, (phase - push_off) / 0.12)
+	if phase < 0.88:
+		return 0.0
+	return lerpf(0.0, 0.6, (phase - 0.88) / 0.12)
+
+
+## A shot with the body leaning to one side to look round a corner: side -1 leans toward the character's LEFT, +1 toward its right (the clips are named
+## shoot_left / shoot_right). The hip shift is built on the measured anatomical axes (a bone-local x offset moved the hips the wrong way, and further).
+func make_lean_shot(side: int) -> Animation:
+	if not _axes_measured:
+		measure_axes()
+	var shot := _make_shoot()
+	var lateral := _up.cross(_forward)   # toward the character's left
+	var lean := [0.10, 0.14, 0.10]
+	# Bone positions are in the skeleton's own units (the model is scaled up in the rig), so the metres are divided by that scale.
+	var unit := maxf(skeleton.global_basis.get_scale().y if skeleton.is_inside_tree() else 1.0, 0.01)
+	var offsets := []
+	for amount in lean:
+		offsets.append(_local_offset(hips, (lateral * (-float(side) * amount) - _up * 0.03) / unit))
+	_add_position(shot, hips, [0.0, 0.07, 0.32], offsets)
+	return shot
 
 
 func _make_aim() -> Animation:

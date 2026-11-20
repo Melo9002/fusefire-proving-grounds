@@ -33,6 +33,7 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 				result.type = MapCellData.CoverType.FULL if part.end.y - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
 				result.height = part.end.y - ground.world_position.y
 				result.stand_position = ground.world_position
+				result.bounds = part
 	# Round assets: pose against the real curved wall, not the tile-sized stand-in.
 	if grid.map_data.surface_placement_enabled:
 		for entry in SurfaceNavigation.presentation_contacts(grid.map_data, ground.world_position, grid.cell_size * SurfaceNavigation.ROUND_REACH_UNITS):
@@ -44,6 +45,8 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 				result.type = MapCellData.CoverType.FULL if entry.top - ground.world_position.y >= grid.cell_size * 1.2 else MapCellData.CoverType.LOW
 				result.height = entry.top - ground.world_position.y
 				result.stand_position = ground.world_position
+				if entry.has("bounds"):
+					result.bounds = entry.bounds   # a box wall has real ends; a cylinder has none (no peek side)
 	return result
 
 static func path_poses(grid: GridManager, path: PackedVector3Array) -> Array[StringName]:

@@ -37,6 +37,7 @@ func _run() -> void:
 	await _carrier_falls_and_the_vip_can_be_recovered()
 	await _blocked_drop_cell_falls_back_to_a_free_one()
 	await _losing_a_non_carrier_changes_nothing()
+	await _pickup_waits_for_the_carrier_to_arrive()
 	await _carrier_falls_during_the_visual_pickup()
 	await _carrier_falls_while_carrying_after_the_pickup()
 	print("Rescue carrier loss: %d checks, %d failure(s)" % [checks, failures])
@@ -45,6 +46,7 @@ func _run() -> void:
 func _rescue(level: BattleLevel, carrier: TacticalUnit, target: TacticalUnit) -> bool:
 	var grid := level.battle_controller.grid_manager
 	grid.update_unit_position(carrier, carrier.grid_position, grid.get_unit_grid(target) + Vector3i.LEFT)
+	carrier.global_position = grid.grid_to_world(grid.get_unit_grid(target) + Vector3i.LEFT) + Vector3.UP * carrier.standing_height   # the unit has arrived: the lift is shown on arrival
 	return await level.objective_manager.try_rescue(carrier, target)
 
 func _carrier_falls_and_the_vip_can_be_recovered() -> void:
@@ -84,6 +86,7 @@ func _carrier_falls_and_the_vip_can_be_recovered() -> void:
 
 	# A teammate recovers the VIP.
 	grid.update_unit_position(teammate, teammate.grid_position, rescuer_cell)
+	teammate.global_position = grid.grid_to_world(rescuer_cell) + Vector3.UP * teammate.standing_height   # the unit has arrived: the lift is shown on arrival
 	check(objectives.can_rescue(teammate, target), "A teammate beside the dropped VIP can rescue it")
 	check(await objectives.try_rescue(teammate, target), "The teammate carries the VIP")
 	check(teammate.is_carrying_unit() and objectives.get_objective(&"rescue").is_completed(), "The Rescue objective completes again")
@@ -142,6 +145,7 @@ func _carrier_falls_during_the_visual_pickup() -> void:
 	var carrier: TacticalUnit = turns.player_units[0]
 	var target_world := target.global_position
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, level.battle_controller.grid_manager.get_unit_grid(target) + Vector3i.LEFT)
+	carrier.global_position = level.battle_controller.grid_manager.grid_to_world(level.battle_controller.grid_manager.get_unit_grid(target) + Vector3i.LEFT) + Vector3.UP * carrier.standing_height   # the unit has arrived: the lift is shown on arrival
 	level.objective_manager.try_rescue(carrier, target)   # not awaited: the action returns when the lift ends, and the carrier falls during it
 	await create_timer(0.3).timeout
 	check(carrier.is_carrying_unit(), "Pickup setup: the carrier has taken the VIP")
@@ -169,4 +173,38 @@ func _carrier_falls_while_carrying_after_the_pickup() -> void:
 	carrier.stats.take_damage(1000)
 	await create_timer(0.3).timeout
 	check(target.visible and not is_instance_valid(adapter.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "A carrier that falls with the passenger on its shoulders leaves one passenger: the revealed actor")
+	await _finish(level)
+
+## The tactical rescue is decided when the move is committed, before the carrier's body has walked there. The visual lift must wait for it: no
+## passenger on the shoulders of a carrier that is still metres away, and no passenger "flying" to it.
+func _pickup_waits_for_the_carrier_to_arrive() -> void:
+	var level := await _create_level()
+	var grid := level.battle_controller.grid_manager
+	var target := level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var carrier: TacticalUnit = level.turn_manager.player_units[0]
+	var cell := grid.get_unit_grid(target) + Vector3i.LEFT
+	var arrival := grid.grid_to_world(cell) + Vector3.UP * carrier.standing_height
+	grid.update_unit_position(carrier, carrier.grid_position, cell)   # the tactical commit: the carrier is "there" while its body is not
+	var adapter := carrier.visual_adapter
+	level.objective_manager.try_rescue(carrier, target)
+	await create_timer(0.3).timeout
+	check(carrier.is_carrying_unit() and not target.visible, "The tactical pickup is decided at once")
+	check(adapter.pickup_pending() and not adapter.interaction_active() and not is_instance_valid(adapter.carry_passenger), "...but no passenger is shown while the carrier is still far from the rescued actor")
+	check(level.find_children("RescuePassenger", "", true, false).size() == 0 and adapter.weapon.get_parent() == adapter.weapon_attachment, "...the carrier still holds its rifle and carries nobody yet")
+	check(adapter.get_presentation_state() not in [&"pickup", &"carry_idle", &"carry_move"], "...and is not in a carry pose (%s)" % adapter.get_presentation_state())
+	carrier.global_position = carrier.global_position   # (unchanged: the body has not moved)
+	carrier.move_along_path(PackedVector3Array([arrival]))
+	var started := false
+	var worst_gap := 0.0
+	for i in 600:
+		await process_frame
+		if adapter.interaction_active() and is_instance_valid(adapter.carry_passenger):
+			started = true
+			var passenger = adapter.carry_passenger
+			if passenger.lift < 0.5:
+				worst_gap = maxf(worst_gap, Vector2(passenger.global_position.x - adapter.global_position.x, passenger.global_position.z - adapter.global_position.z).length())
+		if started and adapter.rescue_interaction.time > 1.0:
+			break
+	check(started and not adapter.pickup_pending(), "The lift begins when the carrier arrives")
+	check(worst_gap < 1.8, "...with the passenger lying beside it, never far away (%.2f m while it is still low)" % worst_gap)
 	await _finish(level)

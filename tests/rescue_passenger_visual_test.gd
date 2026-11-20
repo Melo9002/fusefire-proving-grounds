@@ -243,7 +243,7 @@ func _run() -> void:
 	var order: Array[String] = []
 	for child in rig.skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
-	check(order == ["CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
+	check(order == ["Locomotion", "CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
 	check(rig.carry_contact_report.size() == 2 and not (rig.carry_contact_report[0] as Dictionary).is_empty() and not (rig.carry_contact_report[1] as Dictionary).is_empty(), "Both anatomical contacts exist")
 	check(String(rig.carry_contact_report[0].contact) == "wrist" and String(rig.carry_contact_report[1].contact) == "thigh", "The right hand holds the wrist and the left the thigh")
 	check(rig.grip_modifier.orient_weight == 0.0 and rig.grip_modifier.contact_weight == [1.0, 1.0], "The hands follow the contacts, not the weapon")

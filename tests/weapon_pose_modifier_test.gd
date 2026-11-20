@@ -74,7 +74,7 @@ func _run() -> void:
 	var order: Array[String] = []
 	for child in skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
-	check(modifier != null and order == ["CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is CoverCrouch, WeaponPose, WeaponArmIK, HandGrip (%s)" % str(order))
+	check(modifier != null and order == ["Locomotion", "CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is Locomotion, CoverCrouch, WeaponPose, WeaponArmIK, HandGrip (%s)" % str(order))
 	check(rig.weapon_pose_modifier_controls_targets(), "The modifier controls the targets at runtime")
 	if not rig.weapon_pose_modifier_controls_targets():
 		print("Weapon pose modifier: %d checks, %d failure(s) (stopped: the modifier is not in control)" % [checks, failures])

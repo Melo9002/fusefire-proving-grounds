@@ -116,7 +116,7 @@ func _run() -> void:
 	var order: Array[String] = []
 	for child in skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
-	check(order == ["CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
+	check(order == ["Locomotion", "CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
 	check(rig.elbow_guidance_enabled, "Elbow guidance is on by default")
 
 	# Relaxed handling is not touched: poles, wrists and weapon are identical with the guidance on and off.

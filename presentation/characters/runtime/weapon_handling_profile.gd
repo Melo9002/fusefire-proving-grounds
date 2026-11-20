@@ -29,6 +29,9 @@ extends Resource
 @export var lowered_grip := Vector3(-0.08, 1.16, 0.15)
 ## Aim blend (0 lowered, 1 aimed) of the READY level: weapon prepared, not in the firing pose.
 @export_range(0.0, 1.0, 0.01) var ready_blend := 0.6
+## Extra clearance of the stock from the shoulder while MOVING with the rifle held (not raised), as an offset of the firing hand (Character-local metres):
+## forward so the butt is carried in front of the shoulder instead of in it. While moving, the held rifle also follows the shoulder (lean, bob).
+@export var ready_clearance := Vector3(0.0, 0.0, 0.065)
 ## Seconds for a full lowered-to-aimed raise, and back. Partial moves take proportionally less.
 @export_range(0.05, 2.0, 0.01, "suffix:s") var raise_seconds := 0.28
 @export_range(0.05, 2.0, 0.01, "suffix:s") var lower_seconds := 0.28

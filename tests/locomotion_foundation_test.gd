@@ -25,7 +25,10 @@ func run() -> void:
 	var controller = visual.animation_controller
 	var direction: Vector2 = controller.animation_tree.get("parameters/move/Direction/blend_position")
 	check(direction.y > 0.9 and absf(direction.x) < 0.01, "Path following must keep the forward clip while turning")
-	check(is_equal_approx(controller.animation_tree.get("parameters/move/Pace/scale"), 5.0 / visual.stride_length), "Cadence must match travel speed")
+	await process_frame
+	await process_frame
+	var cadence: float = controller.animation_tree.get("parameters/move/Pace/scale")
+	check(cadence > 0.3 and cadence <= visual.locomotion_profile.max_cadence + 0.001, "Cadence follows travel speed inside the profile's range (%.2f cycles/s)" % cadence)
 	visual.rotation.y = 0.0
 	visual.update_locomotion(Vector3(0, 0, -2), 0.01)
 	direction = controller.animation_tree.get("parameters/move/Direction/blend_position")

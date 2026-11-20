@@ -55,6 +55,10 @@ func begin_tracking(turn_manager: TurnManager, battle_controller: BattleControll
 	battle_controller.unit_moved.connect(_on_unit_moved)
 	battle_controller.unit_defeated_in_battle.connect(_on_unit_defeated)
 	_initialize_extraction_totals()
+	objective_progress_changed.connect(func(_state: MissionObjectiveState) -> void: refresh_incapacitation())
+	objective_completed.connect(func(_state: MissionObjectiveState) -> void: refresh_incapacitation())
+	objective_failed.connect(func(_state: MissionObjectiveState) -> void: refresh_incapacitation())
+	refresh_incapacitation.call_deferred()
 
 func initialize_terminals(pathfinder: Pathfinder) -> void:
 	if not mission or not _grid_manager: return
@@ -304,6 +308,7 @@ func release_carried_unit(carrier: TacticalUnit, fall_cell: Vector3i) -> bool:
 		rescue.status = MissionObjectiveState.Status.ACTIVE
 		rescue.progress = 0
 		objective_progress_changed.emit(rescue)
+		refresh_incapacitation()
 		print_rich("[color=medium_purple][Objectives][/color] REOPENED — %s (the carrier fell; the VIP can be carried again)" % rescue.definition.title)
 	mission_report_changed.emit()
 	return true
@@ -324,6 +329,24 @@ func _nearest_standable_cell(unit: TacticalUnit, origin: Vector3i, radius: int) 
 		if best.x >= 0:
 			return best
 	return Vector3i(-1, -1, -1)
+
+## Rescue targets still waiting for a carrier are shown incapacitated; a carried one is not. Derived from the rescue objective every time it can have
+## changed (mission start, objective changes, a carrier falling). Owner of the flag TacticalUnit.awaiting_rescue.
+func refresh_incapacitation() -> void:
+	if not _grid_manager or not mission:
+		return
+	var rescue := get_objective(&"rescue")
+	if not rescue:
+		return
+	var waiting := rescue.is_active()
+	for occupied in _grid_manager.occupancy_map:
+		var candidate := _grid_manager.get_unit_at(occupied)
+		if is_instance_valid(candidate) and rescue.definition.target_ids.has(candidate.get_mission_id()) and not candidate.is_carrying_unit():
+			candidate.set_awaiting_rescue(waiting)
+	if _turn_manager:
+		for carrier in _turn_manager.player_units + _turn_manager.allied_units + _turn_manager.enemy_units:
+			if is_instance_valid(carrier) and carrier.is_carrying_unit():
+				carrier.carried_unit.set_awaiting_rescue(false)
 
 func find_mission_actor(target_ids: Array[StringName]) -> TacticalUnit:
 	if not _grid_manager:
@@ -446,13 +469,8 @@ func _on_unit_moved(unit: TacticalUnit, _from: Vector3i, to: Vector3i) -> void:
 	var reach := get_objective(&"reach")
 	if reach and reach.is_active() and unit.faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ALLY] and _grid_manager.map_data.get_objective_zone(&"reach").has(to):
 		complete_objective(&"reach")
-	var rescue := get_objective(&"rescue")
-	if rescue and rescue.is_active() and rescue.definition.is_pursued_by(unit.faction):
-		var target := _adjacent_target(to, rescue.definition.target_ids)
-		# This is a consequence of the movement command, so the enclosing move
-		# recording captures the resulting carried actor and objective progress.
-		# Recording a second nested rescue here would place it before the move.
-		if target: complete_rescue(unit, target)
+	# Rescue is NOT triggered by arriving next to the target. It is an explicit action (the Rescue button, or an AI unit's own decision): moving
+	# adjacent only makes the unit ELIGIBLE (can_rescue). The old behaviour completed the rescue as a side effect of the move command.
 
 func _adjacent_target(cell: Vector3i, ids: Array[StringName]) -> TacticalUnit:
 	for occupied in _grid_manager.occupancy_map:

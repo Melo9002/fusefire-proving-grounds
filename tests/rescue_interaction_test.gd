@@ -41,6 +41,15 @@ func _same_sample(x: Dictionary, y: Dictionary) -> bool:
 			return false
 	return true
 
+## Largest rotation of the left thigh away from its rest orientation over a clip, degrees.
+func _largest_thigh_swing(clip: Animation, builder: CharacterFallbackAnimationBuilder, skeleton: Skeleton3D) -> float:
+	var track := clip.find_track(NodePath(".:%s" % builder.left_upper_leg), Animation.TYPE_ROTATION_3D)
+	var rest := skeleton.get_bone_rest(skeleton.find_bone(builder.left_upper_leg)).basis.get_rotation_quaternion()
+	var largest := 0.0
+	for key in clip.track_get_key_count(track):
+		largest = maxf(largest, rad_to_deg((clip.track_get_key_value(track, key) as Quaternion).angle_to(rest)))
+	return largest
+
 func _frames(count: int) -> void:
 	for i in count:
 		await process_frame
@@ -136,11 +145,9 @@ func _run() -> void:
 	var loaded_move: Animation = rig.animation_controller.animation_player.get_animation(&"carry_move")
 	var plain_move: Animation = rig.animation_controller.animation_player.get_animation(&"move")
 	var builder := CharacterFallbackAnimationBuilder.new(rig.skeleton)
-	var thigh_track_loaded: int = loaded_move.find_track(NodePath(".:%s" % builder.left_upper_leg), Animation.TYPE_ROTATION_3D)
-	var thigh_track_plain: int = plain_move.find_track(NodePath(".:%s" % builder.left_upper_leg), Animation.TYPE_ROTATION_3D)
-	var swing_loaded := absf(rad_to_deg((loaded_move.track_get_key_value(thigh_track_loaded, 1) as Quaternion).get_euler().x))
-	var swing_plain := absf(rad_to_deg((plain_move.track_get_key_value(thigh_track_plain, 1) as Quaternion).get_euler().x))
-	check(swing_loaded < swing_plain - 4.0 and swing_plain > 20.0, "The loaded gait takes a shorter step (%.0f deg against %.0f unloaded) and the unloaded walk is untouched" % [swing_loaded, swing_plain])
+	var swing_loaded := _largest_thigh_swing(loaded_move, builder, rig.skeleton)
+	var swing_plain := _largest_thigh_swing(plain_move, builder, rig.skeleton)
+	check(swing_loaded < swing_plain - 4.0 and swing_plain > 20.0, "The loaded gait takes a shorter step (%.0f deg of hip swing against %.0f unloaded) and the unloaded walk is its own clip" % [swing_loaded, swing_plain])
 
 	var interaction_finished: Array = []
 	rig.rescue_interaction_finished.connect(func(kind: int) -> void: interaction_finished.append(kind))

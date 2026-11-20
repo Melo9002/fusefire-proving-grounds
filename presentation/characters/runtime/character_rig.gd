@@ -138,6 +138,26 @@ var _elbow_swivel: Array[float] = [0.0, 0.0]
 var _elbow_swivel_latched := false
 var _pole_ready: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var _pole_body_offset := Vector3.ZERO
+@export_group("Cover")
+## How the body behaves behind cover (facing offsets, crouch, edge selection). See CoverPostureProfile. Used by the game's adapter and by the workbench.
+@export var cover_profile: CoverPostureProfile = CoverPostureProfile.new()
+@export_group("Locomotion")
+## Gaits, speed thresholds, cadence, turning and start/stop behaviour for this character. See LocomotionProfile.
+@export var locomotion_profile: LocomotionProfile = LocomotionProfile.new()
+## Direction of travel in the character's own frame (x toward its left, y forward). Tactical movement is always forward; the workbench sets the others.
+var locomotion_direction := Vector2(0.0, 1.0)
+## What the presentation is currently doing, for tests and the workbench: the speed the legs follow, the gait blend values, the cadence.
+var locomotion_report := {"speed": 0.0, "gait": 0.0, "loaded": 0.0, "cadence": 0.0, "accel": 0.0, "bank": 0.0}
+var _visual_speed := 0.0
+var _gait_blend := 0.0
+var _loaded_blend := 0.0
+var _speed_accel := 0.0
+var _bank_target := 0.0
+var _heading_rate := 0.0
+var _locomotion_fed_frame := -1
+var locomotion_modifier: LocomotionPoseModifier
+var _twist := 0.0
+var _twist_start := 0.0
 @export_group("Rescue Carry")
 ## Positions are in Character-local metres; stowed angles are degrees. `passenger_anchor_from_neck` is where the
 ## carried passenger's abdomen rests, measured from the neck bone in the carrier's rest pose, in character space
@@ -292,11 +312,13 @@ func _build_animation_controller() -> void:
 		animation_controller.name = "VerticalSliceController"
 		add_child(animation_controller)
 	animation_controller.clip_library = clip_library
+	animation_controller.locomotion_profile = locomotion_profile
 	animation_controller.state_changed.connect(_on_animation_state_changed)
 	animation_controller.setup(skeleton, character_root)
 	_build_crouch_modifier()
 	_build_weapon_pose_modifier()
 	_build_grip_modifier()
+	_build_locomotion_modifier()
 
 
 ## Procedural crouch layer: runs after the animation and before the arm IK, so the arms and
@@ -342,6 +364,20 @@ func _build_weapon_pose_modifier() -> void:
 		skeleton.move_child(modifier, arm_ik.get_index())
 	weapon_pose_modifier = modifier
 	weapon_pose_modifier.active = weapon_pose_modifier_enabled
+
+
+## The situational body adjustments (turn twist, lean into turns, start/stop pitch). First in the modifier order: see LocomotionPoseModifier.
+func _build_locomotion_modifier() -> void:
+	locomotion_modifier = LocomotionPoseModifier.new()
+	locomotion_modifier.name = "Locomotion"
+	if not locomotion_modifier.setup(skeleton, animation_controller.locomotion_axes()):
+		locomotion_modifier = null
+		return
+	skeleton.add_child(locomotion_modifier)
+	for child in skeleton.get_children():
+		if child is SkeletonModifier3D and child != locomotion_modifier:
+			skeleton.move_child(locomotion_modifier, child.get_index())
+			break
 
 
 func _build_crouch_modifier() -> void:
@@ -424,7 +460,8 @@ func _update_weapon_pose_inputs() -> void:
 		moving = animation_controller.current_state in [&"move", &"carry_move"]
 	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, get_process_delta_time() * 5.0)
 	_carry_phase += get_process_delta_time() * TAU * 2.0
-	var ready_grip := handling.lowered_grip + Vector3(0, 0.035, -0.02) * carry_motion_blend
+	# Moving with the rifle held: the butt is carried in front of the shoulder (clearance), a little higher. Standing still is the authored lowered carry.
+	var ready_grip := handling.lowered_grip + (handling.ready_clearance + Vector3(0, 0.02, 0.0)) * carry_motion_blend
 	ready_grip.y += sin(_carry_phase) * 0.008 * carry_motion_blend
 	_ready_grip_base = ready_grip
 	if crouch_modifier != null:
@@ -471,7 +508,9 @@ func apply_weapon_targets(shoulder_world: Vector3) -> void:
 	if not _standing_shoulder_known:
 		_standing_shoulder = shoulder_marker.position
 		_standing_shoulder_known = true
-	var body_offset := shoulder_marker.position - _standing_shoulder if crouch_modifier != null and crouch_modifier.depth > 0.002 else Vector3.ZERO
+	# The held rifle follows the shoulder wherever the body puts it (crouch, a running lean, the step's bob), so its stock keeps its place in front of it.
+	var follow := 1.0 if (crouch_modifier != null and crouch_modifier.depth > 0.002) else carry_motion_blend
+	var body_offset := (shoulder_marker.position - _standing_shoulder) * follow
 	var ready_grip := _ready_grip_base + body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, weapon_blend()) + Vector3(0, 0, -recoil * 0.08)
 	_pole_body_offset = body_offset
@@ -550,6 +589,69 @@ const RELAXED_POLES: Array[Vector3] = [Vector3(-0.50, 0.85, 0.05), Vector3(0.50,
 const RELEASE_STEP := 0.45
 
 
+## Whether the loaded gaits apply (a carried passenger). The adapter extends this to the tactical carry state.
+func _loaded_locomotion() -> bool:
+	return is_instance_valid(carry_passenger)
+
+
+## Once per frame: the speed the character is ACTUALLY moving at (the tactical layer's, or the workbench's preview) and how fast its heading is changing,
+## in, the legs' cadence, gait blend and the body's lean out. The speed the legs respond to follows the real speed with the profile's rise and fall
+## limits; it never drives movement. Idle is a speed of zero: this is also what settles the gait to a stop.
+func update_locomotion_presentation(speed: float, heading_rate: float, delta: float) -> void:
+	if not is_instance_valid(animation_controller) or not is_instance_valid(animation_controller.animation_tree) or delta <= 0.0:
+		return
+	_locomotion_fed_frame = Engine.get_process_frames()
+	var p := locomotion_profile
+	var previous := _visual_speed
+	_visual_speed = move_toward(_visual_speed, speed, (p.speed_rise if speed > _visual_speed else p.speed_fall) * delta)
+	_speed_accel = lerpf(_speed_accel, (_visual_speed - previous) / delta, 1.0 - exp(-delta / 0.08))
+	var k := 1.0 if p.gait_smoothing <= 0.0 else 1.0 - exp(-delta / p.gait_smoothing)
+	_gait_blend = lerpf(_gait_blend, p.gait_blend(_visual_speed), k)
+	_loaded_blend = lerpf(_loaded_blend, p.loaded_blend(_visual_speed), k)
+	var stride := p.loaded_stride_at(_loaded_blend) if _loaded_locomotion() else p.stride_at(_gait_blend)
+	var cadence := p.cadence_for(_visual_speed, stride)
+	animation_controller.set_locomotion(locomotion_direction, cadence)
+	animation_controller.set_gait(_gait_blend, _loaded_blend)
+	_heading_rate = lerpf(_heading_rate, heading_rate, 1.0 - exp(-delta / 0.06))
+	_bank_target = clampf(_heading_rate * _visual_speed * p.bank_gain, -p.bank_max, p.bank_max)
+	if _loaded_locomotion():
+		_bank_target = 0.0   # a carrier keeps the trunk square: the passenger and the hand contacts ride on the chest
+	_update_body_adjustments(delta)
+	locomotion_report = {"speed": _visual_speed, "gait": _gait_blend, "loaded": _loaded_blend, "cadence": cadence, "accel": _speed_accel, "bank": _bank_target}
+
+
+## A facing change that arrived at once (the unit now faces `delta_yaw` radians further round): the chest and weapon already face the new way; the
+## hips are shown catching up (LocomotionPoseModifier). Presentation only.
+func begin_turn(delta_yaw: float) -> void:
+	if locomotion_modifier == null or _loaded_locomotion() or locomotion_profile.turn_twist_limit <= 0.0:
+		return
+	var limit := locomotion_profile.turn_twist_limit
+	_twist = clampf(_twist + rad_to_deg(delta_yaw), -limit, limit)
+	_twist_start = _twist
+
+
+func _update_body_adjustments(delta: float) -> void:
+	if locomotion_modifier == null:
+		return
+	var p := locomotion_profile
+	var moving := _visual_speed > p.idle_below
+	_twist = move_toward(_twist, 0.0, p.turn_unwind_rate * (3.0 if moving else 1.0) * delta)
+	var steps := [0.0, 0.0]
+	if not moving and absf(_twist_start) > 25.0 and absf(_twist) > 0.0:
+		# Two repositioning steps, the foot on the side being turned toward first.
+		var progress := 1.0 - absf(_twist) / absf(_twist_start)
+		var first := 0 if _twist_start > 0.0 else 1
+		steps[first] = p.turn_step_lift * sin(PI * clampf(progress / 0.55, 0.0, 1.0))
+		steps[1 - first] = p.turn_step_lift * sin(PI * clampf((progress - 0.45) / 0.55, 0.0, 1.0))
+	if absf(_twist) < 0.01:
+		_twist_start = 0.0
+	locomotion_modifier.twist_degrees = _twist
+	locomotion_modifier.step_lift = steps
+	locomotion_modifier.bank_degrees = _bank_target
+	var pitch := 0.0 if _loaded_locomotion() else clampf(_speed_accel * p.accel_lean_gain, -p.accel_lean_max, p.accel_lean_max)
+	locomotion_modifier.pitch_degrees = pitch
+
+
 ## Starts the STEADY carry presentation at once (no lift): the passenger across the shoulders, the weapon slung and the wrists on
 ## the carry contacts. A pickup is `begin_pickup`; this is the loaded state both end in, and what tools and tests start from.
 func begin_carry() -> void:
@@ -564,7 +666,7 @@ func begin_carry() -> void:
 ## The pickup: the passenger lies on the floor at `passenger_world` (where the rescued actor was) and the shared timeline lifts
 ## it into the carry while the carrier turns, steps in, kneels, takes hold, rises and steps back. Facing the passenger is the
 ## caller's business (the adapter turns the carrier first); the lift is built in the carrier's own frame.
-func begin_pickup(passenger_world: Vector3) -> void:
+func begin_pickup(passenger_world: Vector3, lying_basis = null) -> void:
 	_discard_passenger()
 	var interaction := rescue_interaction
 	interaction.start(RescueInteraction.Kind.PICKUP)
@@ -581,6 +683,9 @@ func begin_pickup(passenger_world: Vector3) -> void:
 	_reach_curl = grip_modifier.curl[0] if grip_modifier != null else 0.0
 	_ensure_passenger(0.0, 0.0)
 	carry_passenger.ground_origin = Vector3(passenger_world.x, character_root.global_position.y + interaction.ground_height, passenger_world.z)
+	if lying_basis is Basis:
+		carry_passenger.ground_basis = lying_basis
+		carry_passenger.has_ground_basis = true
 	stow_weapon()
 	_stow_blend = 0.0
 	_hands_to_contacts()

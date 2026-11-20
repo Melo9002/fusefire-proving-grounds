@@ -14,6 +14,7 @@ const AIM := &"aim"
 const SHOOT := &"shoot"
 const HIT := &"hit"
 const DEFEAT := &"defeat"
+const FORWARD_GAIT_PARAMETER := "parameters/move/Direction/move/blend_position"
 const STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
 	&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land",
 	&"pickup", &"carry_idle", &"carry_move", &"boarding"]
@@ -41,16 +42,25 @@ var sequence_running := false
 var _sequence_generation := 0
 var _visual_tween: Tween
 var clip_library: AnimationLibrary
+## Locomotion gaits and thresholds (see LocomotionProfile); set before setup(). Null keeps the builder's defaults.
+var locomotion_profile: LocomotionProfile
 var _fallbacks: RefCounted
 
 
 func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D) -> void:
 	skeleton = target_skeleton
 	_fallbacks = FALLBACK_BUILDER.new(skeleton)
+	if locomotion_profile != null:
+		_fallbacks.profile = locomotion_profile
 	visual_root = target_visual_root
 	_build_animation_player()
 	_build_animation_tree()
 	play(IDLE)
+
+
+## The anatomical axes (skeleton space) the procedural clips are built on: up, forward (the way the toes point) and the hip hinge.
+func locomotion_axes() -> Dictionary:
+	return {"up": _fallbacks.anatomical_up(), "forward": _fallbacks.anatomical_forward(), "hinge": _fallbacks.hip_hinge()}
 
 
 func play(state_name: StringName) -> void:
@@ -102,9 +112,14 @@ func _build_animation_player() -> void:
 	var library := AnimationLibrary.new()
 	library.add_animation(IDLE, _fallbacks._make_idle())
 	library.add_animation(MOVE, _fallbacks._make_move())
+	# The forward gaits the speed blend mixes with the walk, phase for phase (all are one-second loops that start at the left heel strike).
+	library.add_animation(&"move_jog", _fallbacks.make_forward_clip(&"jog"))
+	library.add_animation(&"move_run", _fallbacks.make_forward_clip(&"run"))
+	library.add_animation(&"carry_move_fast", _fallbacks.make_forward_clip(&"loaded_fast"))
 	library.add_animation(&"move_back", _fallbacks._make_directional_move(Vector2(0, -1)))
-	library.add_animation(&"move_left", _fallbacks._make_directional_move(Vector2(-1, 0)))
-	library.add_animation(&"move_right", _fallbacks._make_directional_move(Vector2(1, 0)))
+	# Direction x is toward the character's LEFT (see the contract in the animation builder).
+	library.add_animation(&"move_left", _fallbacks._make_directional_move(Vector2(1, 0)))
+	library.add_animation(&"move_right", _fallbacks._make_directional_move(Vector2(-1, 0)))
 	library.add_animation(AIM, _fallbacks._make_aim())
 	library.add_animation(SHOOT, _fallbacks._make_shoot())
 	library.add_animation(HIT, _fallbacks._make_hit())
@@ -114,8 +129,7 @@ func _build_animation_player() -> void:
 	for pose in [&"cover_low", &"cover_high", &"vault", &"climb", &"descend", &"land"]:
 		library.add_animation(pose, _fallbacks._make_tactical_pose(pose))
 	for side in [-1, 1]:
-		var shot: Animation = _fallbacks._make_shoot()
-		_fallbacks._add_position(shot, _fallbacks.hips, [0.0, 0.07, 0.32], [Vector3(side * 0.10, -0.03, 0), Vector3(side * 0.14, -0.03, 0), Vector3(side * 0.10, -0.03, 0)])
+		var shot: Animation = _fallbacks.make_lean_shot(side)
 		library.add_animation(&"shoot_left" if side < 0 else &"shoot_right", shot)
 	# Saved clips are authoritative; builders remain a fallback for missing clips.
 	if clip_library:
@@ -166,11 +180,15 @@ func _build_animation_tree() -> void:
 	for state_name: StringName in STATES:
 		if state_name == &"carry_move":
 			var carry_tree := AnimationNodeBlendTree.new()
-			var carry_clip := AnimationNodeAnimation.new()
-			carry_clip.animation = &"carry_move"
-			carry_tree.add_node(&"Clip", carry_clip)
+			var carry_gaits := AnimationNodeBlendSpace1D.new()
+			carry_gaits.sync = true
+			for entry in [[&"carry_move", 0.0], [&"carry_move_fast", 1.0]]:
+				var carry_clip := AnimationNodeAnimation.new()
+				carry_clip.animation = entry[0]
+				carry_gaits.add_blend_point(carry_clip, entry[1], -1, entry[0])
+			carry_tree.add_node(&"Gait", carry_gaits)
 			carry_tree.add_node(&"Pace", AnimationNodeTimeScale.new())
-			carry_tree.connect_node(&"Pace", 0, &"Clip")
+			carry_tree.connect_node(&"Pace", 0, &"Gait")
 			carry_tree.connect_node(&"output", 0, &"Pace")
 			state_machine.add_node(state_name, carry_tree)
 			continue
@@ -204,16 +222,36 @@ func set_locomotion(direction: Vector2, cycles_per_second: float) -> void:
 	animation_tree.set("parameters/carry_move/Pace/scale", clampf(cycles_per_second, 0.1, 5.0))
 
 
+## Speed blend for the forward walk (0 walk, 1 jog, 2 run) and the loaded one (0 loaded walk, 1 loaded trot). The gaits are phase-synchronised, so the
+## weights can change at any moment without the feet jumping.
+func set_gait(forward_blend: float, loaded_blend := 0.0) -> void:
+	animation_tree.set(FORWARD_GAIT_PARAMETER, forward_blend)
+	animation_tree.set("parameters/carry_move/Gait/blend_position", loaded_blend)
+
+
 func _make_locomotion_tree() -> AnimationNodeBlendTree:
 	var tree := AnimationNodeBlendTree.new()
 	var directions := AnimationNodeBlendSpace2D.new()
 	# Synchronized loops preserve the planted/swinging foot when turning.
 	directions.sync = true
+	# Direction x is toward the character's LEFT (see the movement coordinate contract in the animation builder).
 	var clips := [&"move", &"move_back", &"move_left", &"move_right"]
-	var points := [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0)]
+	var points := [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
 	for i in clips.size():
-		var node := AnimationNodeAnimation.new()
-		node.animation = clips[i]
+		var node: AnimationRootNode
+		if clips[i] == &"move":
+			# Forward travel is itself a blend of the walk, jog and run, chosen by speed.
+			var gaits := AnimationNodeBlendSpace1D.new()
+			gaits.sync = true
+			for entry in [[&"move", 0.0], [&"move_jog", 1.0], [&"move_run", 2.0]]:
+				var gait_clip := AnimationNodeAnimation.new()
+				gait_clip.animation = entry[0]
+				gaits.add_blend_point(gait_clip, entry[1], -1, entry[0])
+			node = gaits
+		else:
+			var clip_node := AnimationNodeAnimation.new()
+			clip_node.animation = clips[i]
+			node = clip_node
 		directions.add_blend_point(node, points[i], -1, clips[i])
 	tree.add_node(&"Direction", directions)
 	tree.add_node(&"Pace", AnimationNodeTimeScale.new())
@@ -234,6 +272,9 @@ func _apply_visual_root_state(state_name: StringName) -> void:
 		_visual_tween.parallel().tween_property(visual_root, "position", Vector3(0.02, 0.035, 0.0), 1.05)
 	else:
 		_visual_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_visual_tween.parallel().tween_property(visual_root, "rotation", Vector3.ZERO, 0.14)
+		# Only the lean axes return to zero. The visual root's YAW belongs to the character's cover posture (UnitVisualAdapter._cover_yaw, written
+		# every frame); resetting it here fought that posture for as long as play() kept being called, then released it with a jump.
+		_visual_tween.parallel().tween_property(visual_root, "rotation:x", 0.0, 0.14)
+		_visual_tween.parallel().tween_property(visual_root, "rotation:z", 0.0, 0.14)
 		_visual_tween.parallel().tween_property(visual_root, "position", Vector3.ZERO, 0.14)
 

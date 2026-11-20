@@ -90,12 +90,24 @@ func _check_rescue() -> void:
 	var carrier := level.turn_manager.player_units[0]
 	var original_speed := carrier.stats.speed
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, approach)
+	carrier.global_position = level.battle_controller.grid_manager.grid_to_world(approach) + Vector3.UP * carrier.standing_height   # the unit has arrived: the lift is shown on arrival
 	var rescue_query := level.battle_controller.query_mission(&"rescue", carrier, target)
 	var rescue_inventory := level.battle_controller.query_mission(&"rescue", carrier)
 	check(rescue_query.is_legal() and rescue_inventory.legal_target_ids.has(target.tactical_id), "Rescue query and target inventory expose the same eligible mission actor")
 	check(rescue_query.cost.ap == 0, "Rescue query preserves the existing zero-AP interaction cost")
+	# Rescue is explicit. Arriving next to the target (the move's own event) only makes the unit ELIGIBLE: the Rescue button appears and nothing is carried.
 	level.battle_controller.unit_moved.emit(carrier, approach + Vector3i.LEFT, approach)
-	check(level.objective_manager.get_objective(&"rescue").is_completed(), "Rescue completes beside its neutral target")
+	check(level.objective_manager.get_objective(&"rescue").is_active() and not carrier.is_carrying_unit() and target.visible, "Moving next to the rescue target does not rescue it")
+	check(target.awaiting_rescue and target.visual_adapter.is_incapacitated(), "The rescue target is shown incapacitated while it waits")
+	var rescue_bar := _world_bar_for(level, carrier)
+	if rescue_bar:
+		rescue_bar._refresh_rescue_button()
+		check(rescue_bar.rescue_button.visible and not rescue_bar.rescue_button.disabled, "A Rescue button is offered to the eligible unit")
+		rescue_bar.rescue_button.button_down.emit()
+		await process_frame
+	else:
+		check(false, "The eligible unit has a world-space action bar")
+	check(level.objective_manager.get_objective(&"rescue").is_completed(), "Rescue completes when the player presses Rescue")
 	check(carrier.is_carrying_unit() and carrier.stats.speed == original_speed - 2, "The rescuer carries the VIP with reduced movement")
 	check(not target.visible, "A carried VIP no longer remains visible at the pickup cell")
 	var enemy := level.turn_manager.enemy_units[0]
@@ -135,6 +147,7 @@ func _check_rescue_early_departure() -> void:
 	var carrier := level.turn_manager.player_units[0]
 	var target_cell := level.battle_controller.grid_manager.get_unit_grid(target)
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, target_cell + Vector3i.LEFT)
+	carrier.global_position = level.battle_controller.grid_manager.grid_to_world(target_cell + Vector3i.LEFT) + Vector3.UP * carrier.standing_height   # the unit has arrived: the lift is shown on arrival
 	check(await level.objective_manager.try_rescue(carrier, target), "Early-departure fixture rescues the VIP authoritatively")
 	var exit := level.battle_controller.grid_manager.map_data.get_objective_zone(&"extract")[0]
 	level.battle_controller.grid_manager.update_unit_position(carrier, carrier.grid_position, exit)

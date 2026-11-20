@@ -81,7 +81,7 @@ func _run() -> void:
 	var order: Array[String] = []
 	for child in rig.skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
-	check(order == ["CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
+	check(order == ["Locomotion", "CoverCrouch", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
 	check(rig.torso_frame_enabled and rig.skeleton.find_bone(rig.torso_bone_name) >= 0, "The torso bone resolves on this skeleton (%s)" % rig.torso_bone_name)
 
 	# Settled poses: the torso frame is the root frame, relaxed handling is identical with the frame on or off.

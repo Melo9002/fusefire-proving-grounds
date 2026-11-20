@@ -21,8 +21,6 @@ const TeamPaletteData := preload("res://presentation/team_presentation_palette.g
 @export_group("Locomotion")
 ## Degrees per second when following a path. Attacks still face their target immediately.
 @export_range(90.0, 1080.0) var turn_speed_degrees := 360.0
-## Metres travelled per full left/right step cycle. Tune alongside the move clip.
-@export_range(0.5, 4.0) var stride_length := 1.6
 @export_group("Action Timing")
 ## Delay before pickup returns to the appropriate idle pose.
 @export_range(0.0, 3.0, 0.01, "suffix:s") var pickup_return_seconds := 0.6
@@ -42,6 +40,15 @@ func get_camera_height() -> float:
 	return maxf(0.2, camera_body_height * global_basis.y.length())
 
 var tactical_unit: TacticalUnit
+var _locomotion_speed := 0.0
+var _locomotion_heading_rate := 0.0
+var _locomotion_age := 1.0
+## Where the rescued actor lies, while the carrier is still walking to it (see present_pickup); INF when no pickup is waiting.
+var _pending_pickup_world := Vector3.INF
+var _pending_lying_basis = null
+var _lying_body: Node3D
+## The way an incapacitated unit lies, degrees about the vertical from the way it faces (across its facing, head to its right).
+const INCAPACITATED_YAW_DEGREES := 90.0
 var presentation_grid: GridManager
 ## Render-only destination context. Normal units leave this unset.
 var preview_cell := Vector3i(-1, -1, -1)
@@ -53,14 +60,21 @@ var _segment_state: StringName = &"move"
 ## The carrier has just taken `passenger_world` (the rescued actor's place, which the tactical layer has hidden the actor at).
 ## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
 ## place there is nothing to lift from: the passenger appears across the shoulders as before.
-func present_pickup(passenger_world := Vector3.INF) -> void:
+func present_pickup(passenger_world := Vector3.INF, lying_basis = null) -> void:
 	_cancel_attack_sequence()
 	_return_generation += 1
 	if not rescue_interaction_finished.is_connected(_on_rescue_interaction_finished):
 		rescue_interaction_finished.connect(_on_rescue_interaction_finished)
+	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rescue_interaction.max_step + rescue_interaction.stand_off + 0.3):
+		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
+		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
+		# its shoulders. Otherwise the passenger would "fly" to a carrier still metres away.
+		_pending_pickup_world = passenger_world
+		_pending_lying_basis = lying_basis
+		return
 	if passenger_world.is_finite():
 		face_world_position(passenger_world)
-		begin_pickup(passenger_world)
+		begin_pickup(passenger_world, lying_basis)
 		return
 	begin_carry()
 	_play(&"pickup")
@@ -77,12 +91,14 @@ func _on_rescue_interaction_finished(kind: int) -> void:
 ## The tactical layer has put the passenger down (the carrier fell): drop the visual one at once, take the rifle back and leave
 ## the rest to the revealed actor. Safe in any phase of a pickup or release.
 func present_carry_released() -> void:
+	_pending_pickup_world = Vector3.INF
 	_return_generation += 1
 	end_carry()
 	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
 func present_boarding() -> void:
+	_pending_pickup_world = Vector3.INF
 	_cancel_attack_sequence()
 	finish_interaction_now()
 	_return_generation += 1
@@ -91,8 +107,51 @@ func present_boarding() -> void:
 		var tween := create_tween()
 		tween.tween_property(carry_passenger, "presence", 0.01, 0.55)
 
+func _flat_distance_to(world: Vector3) -> float:
+	return Vector2(world.x - global_position.x, world.z - global_position.z).length()
+
+## INCAPACITATED PRESENTATION. A unit that is awaiting rescue (TacticalUnit.awaiting_rescue, set by the ObjectiveManager from the rescue objective)
+## is shown lying on its back where it is: its standing rig and rifle are hidden and a passive body in the pickup's own lying pose takes their place.
+## No idle, no weapon, no locomotion. The state is the tactical flag's, so it lasts until the objective changes it (a carrier lifts it, or it is
+## recovered after the carrier fell). Presentation only: the actor stays one actor.
+func present_incapacitated(on: bool) -> void:
+	if on == is_instance_valid(_lying_body):
+		return
+	if on:
+		_cancel_attack_sequence()
+		_return_generation += 1
+		_pending_pickup_world = Vector3.INF
+		character_root.visible = false
+		_lying_body = RESCUE_PASSENGER.new()
+		_lying_body.name = "IncapacitatedBody"
+		add_child(_lying_body)
+		_lying_body.build(character_scene, character_scale)
+		_lying_body.lie_on_ground(Vector3(0.0, _lying_ground_height(), 0.0), deg_to_rad(INCAPACITATED_YAW_DEGREES))
+	else:
+		remove_child(_lying_body)
+		_lying_body.free()
+		_lying_body = null
+		character_root.visible = true
+		present_idle()
+
+func is_incapacitated() -> bool:
+	return is_instance_valid(_lying_body)
+
+## The world orientation the body lies in, for the pickup to start from; null when this unit is not lying.
+func lying_basis():
+	return _lying_body.global_basis.orthonormalized() if is_instance_valid(_lying_body) else null
+
+func _lying_ground_height() -> float:
+	return rescue_interaction.ground_height
+
+func _moving_now() -> bool:
+	return is_instance_valid(tactical_unit) and tactical_unit.is_moving
+
+func pickup_pending() -> bool:
+	return _pending_pickup_world.is_finite()
+
 func _carrying() -> bool:
-	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit())
+	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit() and not pickup_pending())
 const POSE_CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 ## States in which the sights are up.
@@ -254,6 +313,11 @@ func present_path_segment(state_name: StringName) -> void:
 		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
 
 func present_movement_end() -> void:
+	if pickup_pending():
+		var world := _pending_pickup_world
+		_pending_pickup_world = Vector3.INF
+		present_pickup(world, _pending_lying_basis)
+		return
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
 		_return_to_idle_after(landing_return_seconds)
@@ -367,25 +431,32 @@ func _sync_aim_hold(delta: float) -> void:
 ## High cover (standing behind a full wall): a slight wary bend of the knees with the back to the
 ## wall, turning side-on to peek along it when aiming. In both, the rifle stays in its relaxed carry
 ## until she aims or shoots. Presentation only.
-const COVER_HEAD_CLEARANCE := 0.05
-const COVER_EYE_CLEARANCE := 0.05
-const EYE_BELOW_HEAD_TOP := 0.12
+## All cover numbers (crouch depths, clearances, turn rate, peek and protected yaw, edge selection) are CoverPostureProfile's (`cover_profile`).
 const CROUCH_SPEED := 1.1
-const HIDE_YAW_DEGREES := -150.0
-## Standing behind full cover: how far the knees bend, and how side-on she turns to peek.
-const HIGH_COVER_CROUCH_DEPTH := 0.12
-const HIGH_COVER_AIM_CROUCH_DEPTH := 0.04
-const HIGH_COVER_AIM_YAW_DEGREES := -90.0
-const COVER_TURN_DEGREES_PER_SECOND := 320.0
 const KNEEL_BLEND_RANGE := 0.08
 const KNEEL_SPEED := 2.5
 var _crouch_depth := 0.0
 var _kneel := 0.0
 var _cover_yaw := 0.0
+## Which wall edge the unit would peek around (CoverEdgeSelector.Side), kept stable by hysteresis; NONE when there is no usable edge or no cover.
+var cover_side := 0
+var _cover_side_key := Vector3i(-999, 0, -999)
+## The last edge analysis (distances, usability, normal, tangent), for diagnostics and tests. Presentation only.
+var cover_edges := {}
+## The cover kind held through a hit reaction, so the pose does not pop out of cover while the hit clip plays.
+var _held_cover_kind := MapCellData.CoverType.NONE
 
 ## Which cover the pose is in right now: LOW or FULL, or NONE when no cover pose applies.
 func _cover_kind() -> MapCellData.CoverType:
 	var type: int = last_cover_contact.get("type", MapCellData.CoverType.NONE)
+	var held := _compute_cover_kind(type)
+	# A hit reaction keeps the cover pose it interrupted (the hit clip owns the arms; cover keeps owning the legs and yaw).
+	if get_presentation_state() == &"hit" and type != MapCellData.CoverType.NONE and _held_cover_kind != MapCellData.CoverType.NONE:
+		return _held_cover_kind
+	_held_cover_kind = held
+	return held
+
+func _compute_cover_kind(type: int) -> MapCellData.CoverType:
 	var state := get_presentation_state()
 	# A shot fired from cover keeps the cover pose: the shot only changes what the arms and weapon do.
 	if state in [&"cover_low", &"shoot"] and type == MapCellData.CoverType.LOW:
@@ -399,14 +470,9 @@ func _cover_crouch_request() -> float:
 	if crouch_modifier == null:
 		return 0.0
 	var kind := _cover_kind()
-	if kind == MapCellData.CoverType.FULL:
-		return lerpf(HIGH_COVER_CROUCH_DEPTH, HIGH_COVER_AIM_CROUCH_DEPTH, aim_blend)
-	if kind != MapCellData.CoverType.LOW:
+	if kind == MapCellData.CoverType.NONE:
 		return 0.0
-	var cover_height: float = last_cover_contact.get("height", 0.0)
-	var hide := crouch_modifier.standing_head_height - (cover_height - COVER_HEAD_CLEARANCE)
-	var peek := crouch_modifier.standing_head_height - EYE_BELOW_HEAD_TOP - (cover_height + COVER_EYE_CLEARANCE)
-	return maxf(lerpf(hide, peek, aim_blend), 0.0)
+	return cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), aim_blend, crouch_modifier.standing_head_height)
 
 func _cover_crouch_target() -> float:
 	return crouch_modifier.clamp_depth(_cover_crouch_request()) if crouch_modifier != null else 0.0
@@ -415,23 +481,40 @@ func _sync_cover_crouch(delta: float) -> void:
 	if crouch_modifier == null:
 		return
 	var kind := _cover_kind()
-	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), CROUCH_SPEED * delta)
+	_update_cover_side()
+	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), cover_profile.crouch_speed * delta)
 	crouch_modifier.depth = _crouch_depth
 	# Cover lower than the deepest natural crouch can hide behind: go down on one knee.
 	var kneel_target := clampf((_cover_crouch_request() - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
-	_kneel = move_toward(_kneel, kneel_target, KNEEL_SPEED * delta)
+	_kneel = move_toward(_kneel, kneel_target, cover_profile.kneel_speed * delta)
 	crouch_modifier.kneel = _kneel
-	_cover_yaw = rotate_toward(_cover_yaw, _cover_yaw_target(aim_blend), deg_to_rad(COVER_TURN_DEGREES_PER_SECOND) * delta)
+	# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
+	var step := deg_to_rad(cover_profile.turn_degrees_per_second) * delta
+	_cover_yaw = wrapf(_cover_yaw + clampf(angle_difference(_cover_yaw, _cover_yaw_target(aim_blend)), -step, step), -PI, PI)
 	character_root.rotation.y = _cover_yaw
 
-## Body yaw the cover pose asks for at a given weapon blend: back to the wall while hiding, turned to aim.
+## Body yaw OFFSET (relative to the unit's tactical facing) the cover pose asks for at a given weapon blend (see CoverPostureProfile, "facing contract"):
+## protected, the body turns toward the chosen peek edge; aiming over low cover it faces the target squarely; aiming around full cover it turns slightly
+## toward the edge. With no usable edge it stays square to the facing. Never the back to the wall.
 func _cover_yaw_target(blend: float) -> float:
 	var kind := _cover_kind()
-	if kind == MapCellData.CoverType.LOW:
-		return deg_to_rad(HIDE_YAW_DEGREES) * (1.0 - blend)
-	if kind == MapCellData.CoverType.FULL:
-		return lerpf(deg_to_rad(HIDE_YAW_DEGREES), deg_to_rad(HIGH_COVER_AIM_YAW_DEGREES), blend)
-	return 0.0
+	if kind == MapCellData.CoverType.NONE:
+		return 0.0
+	return cover_profile.yaw_offset(kind == MapCellData.CoverType.FULL, cover_side, blend)
+
+## Re-evaluates which wall edge the unit would peek around while it is in cover (stable by hysteresis); clears it otherwise.
+func _update_cover_side() -> void:
+	if _cover_kind() == MapCellData.CoverType.NONE or not is_instance_valid(presentation_grid):
+		cover_side = CoverEdgeSelector.Side.NONE
+		_cover_side_key = Vector3i(-999, 0, -999)
+		cover_edges = {}
+		return
+	var cell := presentation_grid.world_to_grid(global_position)
+	if cell != _cover_side_key:
+		_cover_side_key = cell
+		cover_side = CoverEdgeSelector.Side.NONE   # a new place: choose afresh (hysteresis only holds within one cell's cover)
+	cover_edges = CoverEdgeSelector.edges(presentation_grid, global_position, last_cover_contact, cover_profile)
+	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, cover_profile)
 
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
@@ -457,12 +540,14 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 	if flat.length_squared() < 0.000001:
 		return
 	var desired_yaw := atan2(flat.x, flat.z)
+	var yaw_before := global_rotation.y
 	global_rotation.y = rotate_toward(global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
-	# Tactical paths currently mean "turn and advance." Choosing a clip from the
-	# partially rotated local basis made an ordinary forward run briefly select a
-	# strafe clip during turns. Keep directional clips available for explicit
-	# future movement styles and the workbench; path-following intent is forward.
-	animation_controller.set_locomotion(Vector2(0.0, 1.0), flat.length() / stride_length)
+	# The tactical layer owns speed and heading. This only reports them: the presentation derives its gait, cadence and lean from them every frame.
+	_locomotion_speed = flat.length()
+	_locomotion_age = 0.0
+	_locomotion_heading_rate = angle_difference(yaw_before, global_rotation.y) / maxf(delta, 0.0001)
+	# Tactical paths mean "turn and advance": the clip family is always the forward one (see the movement coordinate contract in the
+	# animation builder); the speed decides walk, jog or run.
 
 ## Stages an attack that is already resolved: raise the weapon to its firing configuration, fire, recover,
 ## release. From an already aimed pose there is no raise: the shot is shown at once. A unit that cannot
@@ -473,7 +558,7 @@ func present_attack(target_world_position: Vector3) -> void:
 	var shot := &"shoot"
 	if cover.type == MapCellData.CoverType.FULL:
 		# Visual lean only; the combat evaluator has already resolved the shot.
-		shot = &"shoot_left" if global_basis.x.dot(cover.direction) >= 0.0 else &"shoot_right"
+		shot = &"shoot_left" if cover_side < 0 else &"shoot_right"   # lean toward the chosen edge (right when there is none or it is a tie)
 	_cancel_attack_sequence()
 	_return_generation += 1
 	_attack_shot_state = shot
@@ -581,7 +666,15 @@ func face_world_position(world_position: Vector3) -> void:
 	flat_direction.y = 0.0
 	if flat_direction.length_squared() > 0.0001:
 		# This imported rig and its rifle are authored facing +Z.
+		var before := rotation.y
 		rotation.y = atan2(flat_direction.x, flat_direction.z)
+		var change := angle_difference(before, rotation.y)
+		if _held_cover_kind != MapCellData.CoverType.NONE and not _moving_now():
+			# In cover the facing change is absorbed into the body's offset, so the body (and the rifle on it) does not snap: it eases to the new pose.
+			_cover_yaw = wrapf(_cover_yaw - change, -PI, PI)
+			character_root.rotation.y = _cover_yaw
+		elif absf(change) > deg_to_rad(1.0):
+			begin_turn(change)
 
 func get_presentation_state() -> StringName:
 	return animation_controller.current_state if is_instance_valid(animation_controller) else &"setup"
@@ -590,12 +683,29 @@ func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
 	_presentation_clock += delta
+	_tick_locomotion(delta)
 	_sync_aim_hold(delta)
 	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
 	_advance_attack(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
+
+## The speed and heading rate the tactical unit reports while it moves; zero otherwise (which is what settles the gait to a stop).
+func _tick_locomotion(delta: float) -> void:
+	if _locomotion_fed_frame == Engine.get_process_frames():
+		return   # a tool or test already fed this frame's speed directly
+	_locomotion_age += delta
+	# A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities.
+	var moving := tactical_unit.is_moving if is_instance_valid(tactical_unit) else _locomotion_age < 0.15
+	var speed := _locomotion_speed if moving else 0.0
+	update_locomotion_presentation(speed, _locomotion_heading_rate if moving else 0.0, delta)
+	if not moving:
+		_locomotion_speed = 0.0
+		_locomotion_heading_rate = 0.0
+
+func _loaded_locomotion() -> bool:
+	return _carrying()
 
 func _update_weapon_pose() -> void:
 	if _carrying():

@@ -5,7 +5,17 @@ extends "res://presentation/characters/runtime/character_rig.gd"
 @onready var camera: Camera3D = get_node_or_null("Camera3D") as Camera3D
 var side_view := false
 var preview_direction := Vector2(0, 1)
-var preview_speed := 1.6
+## Travel speed the preview feeds the production locomotion presentation (m/s). Walk, jog and run follow from the profile's thresholds.
+var preview_speed := 1.3
+## Yaw (radians) the character is turning toward at the game's turn rate while moving, or NAN. Set by the test panel's moving turns.
+var turn_goal := NAN
+## Cover bench (the test panel's Cover row): a synthetic wall with chosen edge distances. The side comes from the production CoverEdgeSelector.choose and the pose
+## from the production CoverPostureProfile (yaw_offset, crouch_request), exactly what UnitVisualAdapter uses in the game. Empty = no cover scenario.
+var cover_demo := {}
+var cover_side := 0
+var cover_diagnostics := false
+var _cover_group: Node3D
+var _cover_lines: MeshInstance3D
 var preview_turning := false
 var _preview_pivot: Node3D
 var _preview_turn_time := 0.0
@@ -28,7 +38,7 @@ func _preview_locomotion(direction: Vector2) -> void:
 	if is_instance_valid(_preview_pivot):
 		_preview_pivot.rotation.y = 0.0
 	preview_direction = direction
-	animation_controller.set_locomotion(direction, preview_speed / 1.6)
+	locomotion_direction = direction
 	if animation_controller.current_state != &"move":
 		animation_controller.play(&"move")
 	_update_status()
@@ -47,6 +57,10 @@ func _ready() -> void:
 	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	camera.look_at(Vector3(0.42, 0.72, 0.0), Vector3.UP)
 	_update_status()
+	# The interactive locomotion test bench (speed slider, gaits, turns, transitions, views, readout) drives this same rig.
+	var test_panel := LocomotionTestPanel.new()
+	get_node("UI").add_child(test_panel)
+	test_panel.setup(self)
 	# BoneAttachment3D receives its final pose after the skeleton modifier pass.
 	# Wait for that pose, then establish the proof's authored rifle orientation.
 	await get_tree().process_frame
@@ -149,12 +163,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_DOWN:
 				_preview_locomotion(Vector2(0, -1))
 			KEY_LEFT:
-				_preview_locomotion(Vector2(-1, 0))
+				_preview_locomotion(Vector2(1, 0))   # x is toward the character's left
 			KEY_RIGHT:
-				_preview_locomotion(Vector2(1, 0))
+				_preview_locomotion(Vector2(-1, 0))
 			KEY_BRACKETLEFT, KEY_BRACKETRIGHT:
-				preview_speed = clampf(preview_speed + (-0.4 if event.keycode == KEY_BRACKETLEFT else 0.4), 0.4, 6.0)
-				animation_controller.set_locomotion(preview_direction, preview_speed / 1.6)
+				preview_speed = clampf(preview_speed + (-0.5 if event.keycode == KEY_BRACKETLEFT else 0.5), 0.0, 8.0)
 				_update_status()
 			KEY_T:
 				_preview_locomotion(Vector2(0, 1))
@@ -214,7 +227,18 @@ func _process(_delta: float) -> void:
 		_preview_pivot.rotation.y = rotate_toward(_preview_pivot.rotation.y, target_yaw, TAU * _delta)
 		var local_travel := _preview_pivot.basis.inverse() * Vector3.FORWARD
 		preview_direction = Vector2(local_travel.x, local_travel.z)
-		animation_controller.set_locomotion(preview_direction, preview_speed / 1.6)
+		locomotion_direction = preview_direction
+	# The production locomotion presentation, fed a preview speed while a movement state is playing (and zero otherwise, which settles it).
+	var walking: bool = animation_controller.current_state in [&"move", &"carry_move"] and not interaction_active()
+	var heading_rate := 0.0
+	if not is_nan(turn_goal):
+		var yaw_before := character_root.rotation.y
+		character_root.rotation.y = rotate_toward(yaw_before, turn_goal, deg_to_rad(360.0) * _delta)
+		heading_rate = angle_difference(yaw_before, character_root.rotation.y) / maxf(_delta, 0.0001)
+		if is_equal_approx(character_root.rotation.y, turn_goal):
+			turn_goal = NAN
+	update_locomotion_presentation(preview_speed if walking else 0.0, heading_rate, _delta)
+	_apply_cover_demo(_delta)
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
 	_update_weapon_pose()
@@ -273,7 +297,7 @@ func _pose_preset_depth() -> float:
 	return 0.0
 
 func _ramp_pose_preset(delta: float) -> void:
-	if crouch_modifier == null or Engine.is_editor_hint():
+	if crouch_modifier == null or Engine.is_editor_hint() or not cover_demo.is_empty():
 		return
 	crouch_modifier.depth = move_toward(crouch_modifier.depth, _pose_preset_depth(), UnitVisualAdapter.CROUCH_SPEED * delta)
 	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, 1.0 if _pose_preset == 2 else 0.0, UnitVisualAdapter.KNEEL_SPEED * delta)
@@ -313,3 +337,100 @@ func _follow_diagnostic_view() -> void:
 			offset = facing * Vector3(-0.85, 0.30, 0.75)
 	camera.position = focus + offset
 	camera.look_at(focus, Vector3.UP)
+
+
+## Starts (or, with an empty spec, ends) a cover scenario. spec: full (bool), height, left / right edge distance (m) and left_ok / right_ok (usable), aim (bool).
+func set_cover_demo(spec: Dictionary) -> void:
+	cover_demo = spec
+	if is_instance_valid(_cover_group):
+		_cover_group.queue_free()
+	_cover_group = null
+	if spec.is_empty():
+		cover_side = 0
+		animation_controller.play(&"rifle_idle")
+		return
+	var found := {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}}
+	cover_side = CoverEdgeSelector.choose(found, cover_side, cover_profile)
+	animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
+	_build_cover_visuals()
+
+
+func _build_cover_visuals() -> void:
+	var spec := cover_demo
+	_cover_group = Node3D.new()
+	_cover_group.name = "CoverBench"
+	add_child(_cover_group)
+	var wall := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	var width: float = float(spec.left) + float(spec.right)
+	box.size = Vector3(width, float(spec.height), 0.25)
+	wall.mesh = box
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.55, 0.5, 0.42)
+	wall.material_override = material
+	# The character faces +z with its right toward -x: the right edge is at x = -right, the left edge at x = +left.
+	wall.position = Vector3((float(spec.left) - float(spec.right)) * 0.5, float(spec.height) * 0.5, 0.75)
+	_cover_group.add_child(wall)
+	for edge in ["left", "right"]:
+		var marker := MeshInstance3D.new()
+		var ball := SphereMesh.new()
+		ball.radius = 0.08
+		ball.height = 0.16
+		marker.mesh = ball
+		var chosen: bool = (edge == "left" and cover_side < 0) or (edge == "right" and cover_side > 0)
+		var color := Color(0.2, 0.9, 0.3) if spec[edge + "_ok"] else Color(0.9, 0.25, 0.2)
+		var edge_material := StandardMaterial3D.new()
+		edge_material.albedo_color = color
+		edge_material.emission_enabled = true
+		edge_material.emission = color
+		edge_material.emission_energy_multiplier = 1.6 if chosen else 0.4
+		marker.material_override = edge_material
+		marker.scale = Vector3.ONE * (1.8 if chosen else 1.0)
+		marker.visible = cover_diagnostics
+		marker.name = "Edge_" + edge
+		marker.position = Vector3((float(spec.left) if edge == "left" else -float(spec.right)), float(spec.height) + 0.1, 0.62)
+		_cover_group.add_child(marker)
+	_cover_lines = MeshInstance3D.new()
+	_cover_lines.mesh = ImmediateMesh.new()
+	var line_material := StandardMaterial3D.new()
+	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_material.vertex_color_use_as_albedo = true
+	_cover_lines.material_override = line_material
+	_cover_lines.top_level = true
+	_cover_group.add_child(_cover_lines)
+
+
+func _apply_cover_demo(delta: float) -> void:
+	if cover_demo.is_empty() or crouch_modifier == null or Engine.is_editor_hint():
+		return
+	var spec := cover_demo
+	var blend := weapon_blend()
+	var request := cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, crouch_modifier.standing_head_height)
+	crouch_modifier.depth = move_toward(crouch_modifier.depth, crouch_modifier.clamp_depth(request), cover_profile.crouch_speed * delta)
+	var kneel_target := clampf((request - crouch_modifier.max_depth) / 0.08, 0.0, 1.0)
+	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, kneel_target, cover_profile.kneel_speed * delta)
+	character_root.rotation.y = rotate_toward(character_root.rotation.y, cover_profile.yaw_offset(bool(spec.full), cover_side, blend), deg_to_rad(cover_profile.turn_degrees_per_second) * delta)
+	if is_instance_valid(_cover_group):
+		for edge in ["Edge_left", "Edge_right"]:
+			var marker := _cover_group.get_node_or_null(edge) as Node3D
+			if marker != null:
+				marker.visible = cover_diagnostics
+		_draw_cover_lines()
+
+
+## Optional overlay: facing (blue), the weapon's direction (red), the wall's normal (green). Off during ordinary use.
+func _draw_cover_lines() -> void:
+	var mesh := _cover_lines.mesh as ImmediateMesh
+	mesh.clear_surfaces()
+	if not cover_diagnostics:
+		return
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	var chest := global_position + Vector3(0, 1.2, 0)
+	var facing := character_root.global_basis.orthonormalized().z
+	var segments := [[chest, chest + facing * 1.2, Color(0.3, 0.5, 1.0)], [weapon.global_position, weapon.global_position + muzzle_socket.global_basis.z.normalized() * 1.5, Color(1.0, 0.25, 0.2)], [global_position + Vector3(0, 0.6, 0.62), global_position + Vector3(0, 0.6, -0.4), Color(0.3, 1.0, 0.4)]]
+	for segment in segments:
+		mesh.surface_set_color(segment[2])
+		mesh.surface_add_vertex(segment[0])
+		mesh.surface_set_color(segment[2])
+		mesh.surface_add_vertex(segment[1])
+	mesh.surface_end()

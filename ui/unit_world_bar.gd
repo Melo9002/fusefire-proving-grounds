@@ -9,6 +9,9 @@ extends Control
 @export var carry_label: Label
 @export var tactical_state_label: Label
 @export var extract_button: Button
+## Shown on the selected unit when a rescue target is within reach (the tactical rescue query says so). Rescue is explicit: arriving next to the
+## target never triggers it.
+@export var rescue_button: Button
 
 @export_group("3D Tracking Settings")
 @export var world_offset: Vector3 = Vector3(0, 2.2, 0)
@@ -32,9 +35,21 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 		# A world-space bar may shift during edge scrolling before mouse release.
 		# Commit on button-down so a valid extraction click cannot be lost.
 		extract_button.button_down.connect(_on_extract_pressed)
+	if rescue_button and not rescue_button.button_down.is_connected(_on_rescue_pressed):
+		rescue_button.button_down.connect(_on_rescue_pressed)
+	# Rescue availability is shown on every eligible unit's own bar, selected or not. It is re-read whenever it can have changed: a unit moved,
+	# an action finished (the query is refused while an action is being resolved, so a refresh made during the move itself finds nothing), a unit
+	# fell (its passenger is put down), and any objective change including the rescue objective reopening.
+	if _battle_controller and not _battle_controller.unit_moved.is_connected(_on_unit_moved):
+		_battle_controller.unit_moved.connect(_on_unit_moved)
+	if _battle_controller and not _battle_controller.action_state_changed.is_connected(_on_action_state_changed):
+		_battle_controller.action_state_changed.connect(_on_action_state_changed)
+	if _battle_controller and not _battle_controller.unit_defeated_in_battle.is_connected(_on_unit_defeated):
+		_battle_controller.unit_defeated_in_battle.connect(_on_unit_defeated)
 	if _turn_manager and not _turn_manager.active_unit_changed.is_connected(_on_active_unit_changed):
 		_turn_manager.active_unit_changed.connect(_on_active_unit_changed)
 	if _objective_manager:
+		_objective_manager.objective_progress_changed.connect(_on_objective_changed)
 		_objective_manager.objective_completed.connect(_on_objective_changed)
 		_objective_manager.objective_failed.connect(_on_objective_changed)
 
@@ -59,6 +74,7 @@ func setup(unit: Node3D, stats: UnitStats, faction: int = 0) -> void:
 		if not conditions.changed.is_connected(_refresh_tactical_state): conditions.changed.connect(_refresh_tactical_state)
 	_refresh_tactical_state()
 	_refresh_extract_button()
+	_refresh_rescue_button()
 
 func _process(_delta: float) -> void:
 	if _battle_controller and _battle_controller.replay_mode:
@@ -118,14 +134,55 @@ func _on_ap_changed(current: int, max_val: int) -> void:
 
 func _on_active_unit_changed(_unit: TacticalUnit) -> void:
 	_refresh_extract_button()
+	_refresh_rescue_button()
+
+func _on_unit_moved(_unit: TacticalUnit, _from: Vector3i, _to: Vector3i) -> void:
+	_refresh_rescue_button()
+
+func _on_action_state_changed(busy: bool) -> void:
+	if not busy:
+		_refresh_rescue_button()
+
+func _on_unit_defeated(_unit: TacticalUnit) -> void:
+	_refresh_rescue_button.call_deferred()
 
 func _on_objective_changed(_state: MissionObjectiveState) -> void:
 	_refresh_extract_button()
+	_refresh_rescue_button()
 
 func _on_extract_pressed() -> void:
 	if _objective_manager and is_instance_valid(_target_unit) and _target_unit is TacticalUnit:
 		await _objective_manager.try_extract(_target_unit as TacticalUnit)
 	_refresh_extract_button()
+
+func _on_rescue_pressed() -> void:
+	var target := _rescue_target()
+	if _objective_manager and target and is_instance_valid(_target_unit) and _target_unit is TacticalUnit:
+		await _objective_manager.try_rescue(_target_unit as TacticalUnit, target)
+	_refresh_rescue_button()
+	_refresh_carry_label()
+
+## The first rescue target this unit can legally pick up now, from the tactical query (range, objective and carrier rules are the tactical layer's).
+func _rescue_target() -> TacticalUnit:
+	if not _battle_controller or not is_instance_valid(_target_unit) or not _target_unit is TacticalUnit:
+		return null
+	var query := _battle_controller.query_mission(&"rescue", _target_unit as TacticalUnit)
+	if query == null or query.legal_target_ids.is_empty():
+		return null
+	return _battle_controller.action_service.actor_registry.resolve(query.legal_target_ids[0])
+
+func _refresh_rescue_button() -> void:
+	if not rescue_button:
+		return
+	rescue_button.visible = false
+	rescue_button.disabled = true
+	if not is_instance_valid(_target_unit) or not _target_unit is TacticalUnit or _turn_manager == null:
+		return
+	var unit := _target_unit as TacticalUnit
+	if _turn_manager.current_phase != TurnManager.TurnPhase.PLAYER_TURN or not _turn_manager.player_units.has(unit):
+		return
+	rescue_button.visible = _rescue_target() != null
+	rescue_button.disabled = not rescue_button.visible
 
 func _refresh_extract_button() -> void:
 	if extract_button:

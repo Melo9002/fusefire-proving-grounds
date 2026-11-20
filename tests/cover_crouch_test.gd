@@ -84,7 +84,8 @@ func _run() -> void:
 	rig.animation_controller.play(&"cover_high")
 	await _settle(rig, 2.0, false, MapCellData.CoverType.FULL)
 	check(modifier.depth > 0.08 and modifier.depth < 0.2 and modifier.kneel < 0.05, "Behind full cover she bends her knees slightly, without kneeling (depth %.3f, kneel %.2f)" % [modifier.depth, modifier.kneel])
-	check(absf(rad_to_deg(rig._cover_yaw)) > 120.0, "Behind full cover her back is to the wall (turned %.0f degrees)" % absf(rad_to_deg(rig._cover_yaw)))
+	# Stabilization 03: the body is never turned away from the wall. It faces the way it would peek (up to protected_yaw), or square with no usable edge.
+	check(absf(rad_to_deg(rig._cover_yaw)) <= rig.cover_profile.protected_yaw_degrees + 1.0, "Behind full cover her back is NOT to the wall (turned %.0f degrees, limit %.0f)" % [absf(rad_to_deg(rig._cover_yaw)), rig.cover_profile.protected_yaw_degrees])
 	check(rig.weapon_blend() < 0.05, "Behind full cover the rifle stays relaxed (blend %.2f)" % rig.weapon_blend())
 	var high_forward: Vector3 = rig.character_root.global_basis.z
 	var high_knee_ahead := (_p(&"mixamorig_LeftLeg") - _p(&"mixamorig_LeftUpLeg")).dot(high_forward)
@@ -95,7 +96,7 @@ func _run() -> void:
 	var hiding_high_depth := modifier.depth
 	await _settle(rig, 2.0, true, MapCellData.CoverType.FULL)
 	check(rig.weapon_blend() > 0.95, "Aiming from behind full cover brings the rifle up")
-	check(absf(rad_to_deg(rig._cover_yaw) + 90.0) < 12.0, "Aiming from behind full cover she turns side-on (turned %.0f degrees)" % rad_to_deg(rig._cover_yaw))
+	check(absf(rad_to_deg(rig._cover_yaw)) <= rig.cover_profile.peek_yaw_degrees + 1.0, "Aiming from behind full cover she turns at most the peek angle toward the edge (turned %.0f degrees)" % rad_to_deg(rig._cover_yaw))
 	check(modifier.depth <= hiding_high_depth + 0.001, "Aiming from full cover never bends deeper than hiding (%.3f vs %.3f)" % [modifier.depth, hiding_high_depth])
 
 	# Out of cover everything returns to standing.

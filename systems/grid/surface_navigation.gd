@@ -254,7 +254,7 @@ static func presentation_contacts(data: MapData, point: Vector3, reach: float) -
 	for bounds in data.presentation_boxes:
 		var contact := Fit.contact(point, bounds, data.body_radius, data.body_height, data.body_clearance)
 		if contact.found and contact.distance <= reach:
-			result.append({"contact": contact, "top": bounds.end.y})
+			result.append({"contact": contact, "top": bounds.end.y, "bounds": bounds})
 	return result
 
 ## Actual nearby contacts, including the actor's own cell and diagonal parts.

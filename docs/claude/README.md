@@ -37,3 +37,8 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [humanoid-rescue-passenger-2026-11-19.md](humanoid-rescue-passenger-2026-11-19.md) | Humanoid MIRA rescue passenger replacing the orange placeholder: architecture, anchor, pose, limits (animation improvement 06). |
 
 | [rescue-interaction-2026-11-19.md](rescue-interaction-2026-11-19.md) | Rescue lifecycle trace, shared pickup/release timeline, loaded gait, passenger secondary motion, interruption handling (animation 06C-06D). |
+| [locomotion-foundation-2026-11-19.md](locomotion-foundation-2026-11-19.md) | Humanoid locomotion root cause (wrong local-axis assumptions), movement coordinate contract, anatomical gait, parameters, references and limits (stabilization 01). |
+| [locomotion-speed-2026-11-19.md](locomotion-speed-2026-11-19.md) | Speed-responsive locomotion: walk/jog/run profile, stride and cadence, phase-synchronised blending, turning, start/stop, loaded carry, interactive workbench test bench (stabilization 01B). |
+| [rescue-lifecycle-2026-11-19.md](rescue-lifecycle-2026-11-19.md) | Explicit rescue activation, incapacitated target presentation, tactical/presentation timing contract, carrier-loss recovery (stabilization 02). |
+| [cover-posture-2026-11-20.md](cover-posture-2026-11-20.md) | Cover side selection, facing contract, firing stability root causes (yaw ownership conflict, snaps), pose ownership, stock clearance, cover bench (stabilization 03). |
+| [animation-stabilization-summary-2026-11-20.md](animation-stabilization-summary-2026-11-20.md) | Integrated architecture and stabilization summary: modifier ownership, conventions, editable values, cover/rescue/workbench behaviour, limits, deferred work (checkpoint after 01, 01B, 02, 03). |

@@ -45,6 +45,10 @@ var waypoint_local := Vector3(0.0, 0.95, 0.38)
 var roll_direction := -1.0
 ## The node that supplies the carrier's frame (its character root).
 var carrier_root: Node3D
+## The orientation (world) the body lies in on the floor, when it has one that is not simply "across the carrier's front": the lift starts from it
+## and settles into the carry's own orientation. Used when an incapacitated actor was already lying somewhere.
+var ground_basis := Basis()
+var has_ground_basis := false
 
 @export_group("Secondary motion")
 ## Off gives the rigid carry. Everything here is a filter of the carrier's own chest motion, never a simulation.
@@ -148,6 +152,16 @@ func attach_to_carrier(carrier_skeleton: Skeleton3D, carrier_root: Node3D, chest
 	_follow()
 
 
+## Lies on the floor with no carrier (an incapacitated rescue target awaiting a carrier): the same lying pose the pickup starts from, so the
+## swap to the carrier's passenger is invisible. `local_origin` is the abdomen's place and `yaw` the heading of the body, both in the parent's frame.
+func lie_on_ground(local_origin: Vector3, yaw: float) -> void:
+	lift = 0.0
+	pose_blend = 0.0
+	_repose(0.0, 0.0)
+	# On its back, head toward the parent's right (the orientation the carrier's lift starts from), turned by `yaw`.
+	transform = Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, PI), local_origin)
+
+
 ## Puts the node where the current lift and the carrier's chest say, now (for after changing `lift` or `ground_origin` outside
 ## the skeleton's own update).
 func refresh() -> void:
@@ -181,6 +195,9 @@ func placement(anchor: Transform3D) -> Transform3D:
 	if lift < 0.9999 and ground_origin.is_finite() and is_instance_valid(carrier_root):
 		var rolled := smoothstep(0.1, 0.9, lift)
 		basis = Basis(carrier_root.global_basis.orthonormalized().x, roll_direction * PI * (1.0 - rolled)) * basis
+		if has_ground_basis:
+			# From the way it actually lies to the lift's own orientation over the first third of the lift (never a snap at the start).
+			basis = Basis(ground_basis.get_rotation_quaternion().slerp(basis.get_rotation_quaternion(), smoothstep(0.0, 0.35, lift)))
 		var waypoint := carrier_root.global_transform * waypoint_local
 		var control := waypoint * 2.0 - (ground_origin + origin) * 0.5
 		var a := ground_origin.lerp(control, lift)

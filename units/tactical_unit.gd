@@ -56,19 +56,29 @@ var defer_stat_presentation := false
 var _visual_segments: Array[StringName] = []
 var _visual_waypoint := -1
 var carried_unit: TacticalUnit
+## True while this unit is a rescue target awaiting a carrier. DERIVED from the rescue objective by ObjectiveManager (it is not a new tactical
+## state and changes no rule); it only tells the presentation to show the unit incapacitated, on the ground.
+var awaiting_rescue := false
 var _movement_speed_before_carry := -1
 var _leak_particles: CPUParticles3D
+
+func set_awaiting_rescue(value: bool) -> void:
+	awaiting_rescue = value
+	if visual_adapter:
+		visual_adapter.present_incapacitated(value)
 
 func carry_unit(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit) or carried_unit != null:
 		return
 	carried_unit = unit
+	var lying_basis_of = unit.visual_adapter.lying_basis() if is_instance_valid(unit.visual_adapter) else null
 	_movement_speed_before_carry = stats.speed
 	stats.speed = maxi(2, stats.speed - 2)
 	unit.visible = false
 	unit.process_mode = Node.PROCESS_MODE_DISABLED
 	if visual_adapter:
-		visual_adapter.present_pickup(unit.global_position)
+		# The pickup starts from where and how the rescued unit actually lies.
+		visual_adapter.present_pickup(unit.global_position, lying_basis_of)
 
 func get_display_name() -> String:
 	return display_name if not display_name.is_empty() else String(name)

@@ -141,6 +141,7 @@ func present_move(result: MoveActionResult) -> void:
 	if result.reaction_events.is_empty():
 		unit.move_along_path(result.presentation_path, result.visual_segments)
 		await _wait_for_movement(unit, result)
+		await _wait_for_rescue_interaction(unit)   # a rescue decided by this move is lifted on arrival; the next command waits for it
 	else:
 		camera_presented = await _present_reactive_move(unit, result) or camera_presented
 	if is_instance_valid(unit): _snap_to_committed_destination(unit, result)
@@ -159,6 +160,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 		var pose: StringName = result.visual_segments[index] if index < result.visual_segments.size() else &"move"
 		unit.move_along_path(segment, [&"move", pose])
 		await _wait_for_movement(unit, result)
+		await _wait_for_rescue_interaction(unit)   # a rescue decided by this move is lifted on arrival; the next command waits for it
 		if not _move_actor_available(unit): return reaction_camera_used
 		for event in reactions_by_checkpoint.get(index, []):
 			var watcher := _actor(event.watcher_id)

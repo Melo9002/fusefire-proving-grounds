@@ -46,7 +46,7 @@ func _run() -> void:
 	check(modifier.kneel > 0.9, "Cover this low is hidden behind on one knee (kneel %.2f)" % modifier.kneel)
 	check(modifier.depth <= modifier.max_depth + 0.0001, "The crouch stays within the human limit (%.3f of %.3f)" % [modifier.depth, modifier.max_depth])
 	var facing_away: float = absf(rad_to_deg(adapter._cover_yaw))
-	check(facing_away > 120.0, "Hiding, her back is to the wall (turned %.0f degrees)" % facing_away)
+	check(facing_away <= adapter.cover_profile.protected_yaw_degrees + 1.0, "Hiding, her back is not to the wall: at most %.0f degrees toward the peek edge (turned %.0f)" % [adapter.cover_profile.protected_yaw_degrees, facing_away])
 	check(fingerprint == BattleStateFingerprint.capture(f.turns, f.grid, f.level.objective_manager), "Crouching and kneeling write no tactical state")
 
 	actor.tactical_state.is_aiming = true

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://4pf4b4gp1p6t" path="res://ui/unit_world_bar.gd" id="1_oug2r"]
 
-[node name="UnitWorldBar" type="Control" unique_id=241115286 node_paths=PackedStringArray("name_label", "hp_bar", "ap_label", "carry_label", "tactical_state_label", "extract_button")]
+[node name="UnitWorldBar" type="Control" unique_id=241115286 node_paths=PackedStringArray("name_label", "hp_bar", "ap_label", "carry_label", "tactical_state_label", "extract_button", "rescue_button")]
 z_index = -10
 layout_mode = 3
 anchors_preset = 0
@@ -15,6 +15,7 @@ ap_label = NodePath("VBoxContainer/APLabel")
 carry_label = NodePath("VBoxContainer/CarryLabel")
 tactical_state_label = NodePath("VBoxContainer/TacticalStateLabel")
 extract_button = NodePath("VBoxContainer/ExtractButton")
+rescue_button = NodePath("VBoxContainer/RescueButton")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=57773374]
 layout_mode = 0
@@ -50,3 +51,9 @@ text = "GUARD"
 visible = false
 layout_mode = 2
 text = "EXTRACT"
+
+[node name="RescueButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+tooltip_text = "Pick up the rescue target next to this unit"
+text = "RESCUE"
