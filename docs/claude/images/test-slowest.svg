@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 526" font-family="Segoe UI,Arial,sans-serif" font-size="13">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="24" font-size="16" font-weight="bold" fill="#222">Slowest 16 tests of the last full run (seconds, previous runner)</text>
+<text x="16" y="58" fill="#222">current_mission_replay_matrix_test</text>
+<rect x="300" y="44" width="430.0" height="18" fill="#c0504d"/>
+<text x="736.0" y="58" fill="#222">227 s</text>
+<text x="16" y="84" fill="#222">bulwark_replay_test</text>
+<rect x="300" y="70" width="265.2" height="18" fill="#c0504d"/>
+<text x="571.2" y="84" fill="#222">140 s</text>
+<text x="16" y="110" fill="#222">commander_foundation_validation</text>
+<rect x="300" y="96" width="173.7" height="18" fill="#c0504d"/>
+<text x="479.7" y="110" fill="#222">92 s</text>
+<text x="16" y="136" fill="#222">current_content_playthrough_test</text>
+<rect x="300" y="122" width="126.0" height="18" fill="#c0504d"/>
+<text x="432.0" y="136" fill="#222">66 s</text>
+<text x="16" y="162" fill="#222">unit_visual_elbow_guidance_test</text>
+<rect x="300" y="148" width="122.2" height="18" fill="#4f81bd"/>
+<text x="428.2" y="162" fill="#222">64 s</text>
+<text x="16" y="188" fill="#222">depot_camera_readability_test</text>
+<rect x="300" y="174" width="120.4" height="18" fill="#4f81bd"/>
+<text x="426.4" y="188" fill="#222">64 s</text>
+<text x="16" y="214" fill="#222">weapon_pose_modifier_test</text>
+<rect x="300" y="200" width="114.6" height="18" fill="#4f81bd"/>
+<text x="420.6" y="214" fill="#222">60 s</text>
+<text x="16" y="240" fill="#222">unit_visual_weapon_readiness_test</text>
+<rect x="300" y="226" width="93.6" height="18" fill="#4f81bd"/>
+<text x="399.6" y="240" fill="#222">49 s</text>
+<text x="16" y="266" fill="#222">ai_stalemate_recovery_smoke</text>
+<rect x="300" y="252" width="80.3" height="18" fill="#c0504d"/>
+<text x="386.3" y="266" fill="#222">42 s</text>
+<text x="16" y="292" fill="#222">current_content_pack_test</text>
+<rect x="300" y="278" width="74.6" height="18" fill="#4f81bd"/>
+<text x="380.6" y="292" fill="#222">39 s</text>
+<text x="16" y="318" fill="#222">authored_parcel_catalog_test</text>
+<rect x="300" y="304" width="66.8" height="18" fill="#4f81bd"/>
+<text x="372.8" y="318" fill="#222">35 s</text>
+<text x="16" y="344" fill="#222">rescue_battle_replay_smoke</text>
+<rect x="300" y="330" width="66.8" height="18" fill="#4f81bd"/>
+<text x="372.8" y="344" fill="#222">35 s</text>
+<text x="16" y="370" fill="#222">world_tactical_isolation_test</text>
+<rect x="300" y="356" width="64.9" height="18" fill="#4f81bd"/>
+<text x="370.9" y="370" fill="#222">34 s</text>
+<text x="16" y="396" fill="#222">unit_visual_torso_weapon_frame_test</text>
+<rect x="300" y="382" width="61.2" height="18" fill="#4f81bd"/>
+<text x="367.2" y="396" fill="#222">32 s</text>
+<text x="16" y="422" fill="#222">rescue_carrier_loss_test</text>
+<rect x="300" y="408" width="55.4" height="18" fill="#4f81bd"/>
+<text x="361.4" y="422" fill="#222">29 s</text>
+<text x="16" y="448" fill="#222">generated_buildings_smoke</text>
+<rect x="300" y="434" width="55.4" height="18" fill="#4f81bd"/>
+<text x="361.4" y="448" fill="#222">29 s</text>
+<text x="16" y="482" fill="#222">These 16 tests = 1040 s of 2216 s (47%) across 210 tests. Red = end-to-end simulations, blue = battle/integration.</text>
+<text x="16" y="504" fill="#555">Source: one full-tier run, 2026-11-20; values include up to 1 s of old-runner wait per test.</text>
+</svg>

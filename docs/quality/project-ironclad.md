@@ -23,20 +23,25 @@ Rendered capture scripts require an ordinary graphics run and, where documented,
 
 ## Unified runner
 
-Run from the repository root in PowerShell:
+Run from the repository root in PowerShell. Every test is described in `tests/catalog.json` (subsystems, scope, criticality, FAST/SMOKE membership, explicit-only status); the runner selects from it. Day-to-day guidance: [testing developer guide](../claude/testing-developer-guide-2026-11-20.md).
 
 ```powershell
-.\tools\run_tests.ps1 smoke
-.\tools\run_tests.ps1 subsystem -Subsystem combat
-.\tools\run_tests.ps1 subsystem -Subsystem replay
-.\tools\run_tests.ps1 full
+.\tools\run_tests.ps1 fast                                # cheap headless tests (80)
+.\tools\run_tests.ps1 fast -Subsystem animation           # FAST tests of one subsystem
+.\tools\run_tests.ps1 smoke                               # 18 critical boundary tests (what CI runs)
+.\tools\run_tests.ps1 subsystem -Subsystem combat         # every ordinary test of a subsystem
+.\tools\run_tests.ps1 subsystem -Contract replay -Critical
+.\tools\run_tests.ps1 select -Test traversal_*,path_refiner_test
+.\tools\run_tests.ps1 changed -Changed <paths>            # or -Since HEAD; add -Thorough for the long tests
+.\tools\run_tests.ps1 full                                # every ordinary test
+.\tools\run_tests.ps1 check                               # validate the catalog only
 ```
 
-Available subsystem names are `combat`, `movement`, `ai`, `replay`, `generation`, `missions`, `assets`, and `ui`. Use `-List` to inspect a tier without executing it. Use `-Godot C:\path\to\godot_console.exe` when the executable is not on `PATH`.
+Subsystems: `core`, `actions`, `combat`, `equipment`, `movement`, `animation`, `ai`, `missions`, `rescue`, `generation`, `replay`, `persistence`, `ui`, `assets`, `tooling` (the older eight names keep selecting at least what they selected before). `-List` shows what would run without executing, `-Why` adds the reason for each test, `-TimeoutSeconds` (default 900) bounds each test, and `-Godot C:\path\to\godot_console.exe` names the executable when it is not on `PATH`.
 
-The smoke tier runs the project scan and ten representative critical regressions. Subsystem tiers select existing tests by stable filename conventions. Full discovers every top-level test except the explicit-only visual and extended lists in the runner. This keeps new ordinary tests in broad verification without maintaining a second exhaustive manifest.
+FAST, SMOKE and the subsystem selections complement the full tier; they never replace it. Full discovers every top-level `tests/*.gd` except the explicit-only scripts. A script missing from the catalog still runs in the full tier and is reported as UNCLASSIFIED; `check` (also run by CI) fails on an unclassified script, a stale entry, an unknown value, or an explicit-only test marked FAST/SMOKE.
 
-Each run prints suite-level pass/fail/skip totals and elapsed time. Detailed stdout, stderr, and Godot engine logs are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. The runner supplies a writable isolated test-output directory for tests that serialize reports. Unexpected `SCRIPT ERROR:`, `Parse Error:` and `Compile Error:` output in stdout/stderr or the engine log fails the entry even when the process exits zero. `-ProbeFailureHandling` deliberately adds both a nonzero-exit probe and a zero-exit script-error probe; that diagnostic run must report two failures. Application-level negative-test diagnostics are not blanket-rejected. A missing executable, missing required script, or nonzero Godot result produces a nonzero runner result.
+Each run prints suite-level pass/fail/skip totals, the time split between the Godot processes and the runner, and the slowest tests. A selection that is not the full tier ends by saying how many ordinary tests it did not run. Detailed stdout, stderr, engine logs and a machine-readable `results.json` are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. Results are `PASS`, `FAIL`, `TIMEOUT` (the process tree is killed; counted as a failure) and, for selected tests that need rendering, `NOT-RUN`. The runner supplies a writable isolated test-output directory (`FUSEFIRE_TEST_OUTPUT_DIR`) for tests that serialize reports. Unexpected `SCRIPT ERROR:`, `Parse Error:` and `Compile Error:` output fails the entry even when the process exits zero. `-ProbeFailureHandling` adds three probes (a nonzero exit, a zero-exit script error and a process that never ends) and must report three failures, one of them a timeout. Application-level negative-test diagnostics are not blanket-rejected. Exit codes: 0 all passed, 1 a failure or timeout, 2 a usage or catalog problem or a test that could not run as requested.
 
 Direct commands remain supported for a single script:
 
@@ -85,29 +90,20 @@ When investigating a failure:
 
 ## Explicit-only validation
 
-The full tier reports these as skipped by policy:
+Twenty-four scripts are classified `run: explicit` in the catalog and are excluded from the full tier (reported as skipped by policy):
 
-- `ai_match_simulation_smoke.gd`
-- `battlefield_stress_smoke.gd`
-- `container_maps_smoke.gd`
-- `map_quality_metrics_smoke.gd`
-- `prototype_1_milestone.gd`
-- `asset_lab_capture.gd`
-- `parcel_editor_capture.gd`
-- `industrial_warehouse_capture.gd`
-- `semantic_asset_contact_sheet.gd`
-- `semantic_asset_review_capture.gd`
-- `semantic_machine_connection_capture.gd`
+* Headless batches and benchmarks (6), run by name, e.g. `.\tools\run_tests.ps1 select -Test container_maps_smoke`: `ai_baseline_report`, `ai_match_simulation_smoke`, `battlefield_stress_smoke`, `container_maps_smoke`, `map_quality_metrics_smoke`, `prototype_1_milestone`.
+* Rendered captures (18), which need a graphics run and a human to inspect the images: `asset_lab_capture`, `authored_parcel_catalog_capture`, `battle_loading_screen_capture`, `class_marker_capture`, `cover_target_aware_capture`, `hand_contact_capture`, `hand_views_capture`, `industrial_warehouse_capture`, `parcel_editor_capture`, `parking_garage_capture`, `pose_review_capture`, `semantic_asset_contact_sheet`, `semantic_asset_review_capture`, `semantic_machine_connection_capture`, `traversal_ladder_capture`, `traversal_stair_capture`, `weapon_closeup_capture`, `weapon_readiness_capture`. The runner reports them as `NOT-RUN` rather than failing them headless; run them directly without `--headless`.
 
-Run long scripts directly when their subsystem changes. Run capture scripts without `--headless` and inspect their images manually. Headless import or scene success does not establish visual correctness.
+A wildcard in `-Test` never selects an explicit-only script; an exact name does. Headless import or scene success does not establish visual correctness.
 
 ## Current limitations
 
-- CI runs only the smoke tier (see GitHub smoke automation below). The full subsystem tiers and the explicit-only batches are not run on GitHub, and artifacts are retained only for failed smoke runs.
+- CI runs the catalog check and the smoke tier (see GitHub smoke automation below). The full subsystem tiers and the explicit-only batches are not run on GitHub, and artifacts are retained only for failed smoke runs.
 - No screenshot comparison, performance budget, coverage percentage, or flaky-test history.
-- Suite classification is filename-based and intentionally lightweight.
+- Classification lives in `tests/catalog.json`; scope labels and the path-to-subsystem map used by `changed` are judgements, not a computed dependency graph, and the selections are aids, not proofs.
 - Individual GDScript tests report their own internal checks differently, so Ironclad reports honest suite counts rather than inventing assertion totals.
-- The runner does not impose per-test timeouts yet; long deterministic scenarios remain visible through per-suite timing.
+- Per-test timeouts exist (default 900 s). Tests are run one at a time: about 25 scripts write fixed file names under `res://.godot/`, so parallel execution is not yet safe.
 
 After the first hosted smoke run, the next useful milestones are optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
 

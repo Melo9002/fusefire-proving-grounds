@@ -39,6 +39,9 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [animation-architecture-audit-2026-11-20.md](animation-architecture-audit-2026-11-20.md) | Task 02 audit: component inventory, diagrams, ownership matrix, dependency analysis, reusability (contexts, rigs, non-humanoids), ranked findings (incl. confirmed spine-twist defect), strengths, tests and performance |
 | [animation-developer-guide-2026-11-20.md](animation-developer-guide-2026-11-20.md) | "If I want to change X, where do I go?" for gait, turning, weapon, cover, rescue, ladder, stairs, rig proportions |
 | [foundation-closure-2026-11-20.md](foundation-closure-2026-11-20.md) | Closure of Movement Foundations 01-03 and audit F-04: final ramp contract, stair alignment correction, spine composition fix, validation results, checkpoint inventory |
+| [test-suite-efficiency-2026-11-20.md](test-suite-efficiency-2026-11-20.md) | Task 02.5: where the 37-minute full run goes, the test catalog and classification, FAST/SMOKE/changed selection, stale and flaky findings, retirement ledger, validation and recommendations |
+| [testing-developer-guide-2026-11-20.md](testing-developer-guide-2026-11-20.md) | "I changed X, which tests do I run?": verified commands, recipes per kind of change, registering a new test |
+| [test-inventory-2026-11-20.md](test-inventory-2026-11-20.md) | Generated table of every test script: subsystems, scope, flags, last measured cost, static counts |
 
 ## Project documents these build on
 

@@ -8,7 +8,7 @@
 - [Intended Combat 2.0 rules](combat-2-rules.md): implemented geometry/cover/range/height and remaining provisional accuracy choices, with expected examples.
 - [Controlled combat examples](combat-controlled-examples.md): open the editable range, locate each setup and run its focused checks.
 - [Current combat rules](combat-current-rules.md): the audited milestone-04 baseline and known inconsistencies.
-- [Project Ironclad](quality/project-ironclad.md): testing commands and failure investigation.
+- [Project Ironclad](quality/project-ironclad.md): testing commands and failure investigation. [Which tests to run for a change](claude/testing-developer-guide-2026-11-20.md).
 - [Replay](replay.md): recording, files and playback.
 - [Simulation](simulation.md): deterministic AI/match diagnostics.
 - [Animation editing](animation-editing-guide.md): character work.

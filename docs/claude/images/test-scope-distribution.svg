@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" font-family="Segoe UI,Arial,sans-serif" font-size="13">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="24" font-size="16" font-weight="bold" fill="#222">Ordinary tests by scope: how many, and how much of the run</text>
+<text x="16" y="64" fill="#222">unit</text>
+<rect x="110" y="50" width="54.3" height="14" fill="#9bbb59"/>
+<text x="170.3" y="62" fill="#222">19 tests (9%)</text>
+<rect x="110" y="66" width="15.6" height="14" fill="#4f81bd"/>
+<text x="131.6" y="78" fill="#222">58 s (3% of time)</text>
+<text x="16" y="102" fill="#222">component</text>
+<rect x="110" y="88" width="114.3" height="14" fill="#9bbb59"/>
+<text x="230.3" y="100" fill="#222">40 tests (19%)</text>
+<rect x="110" y="104" width="91.0" height="14" fill="#4f81bd"/>
+<text x="207.0" y="116" fill="#222">336 s (15% of time)</text>
+<text x="16" y="140" fill="#222">integration</text>
+<rect x="110" y="126" width="128.6" height="14" fill="#9bbb59"/>
+<text x="244.6" y="138" fill="#222">45 tests (21%)</text>
+<rect x="110" y="142" width="105.0" height="14" fill="#4f81bd"/>
+<text x="221.0" y="154" fill="#222">388 s (17% of time)</text>
+<text x="16" y="178" fill="#222">battle</text>
+<rect x="110" y="164" width="268.6" height="14" fill="#9bbb59"/>
+<text x="384.6" y="176" fill="#222">94 tests (45%)</text>
+<rect x="110" y="180" width="217.5" height="14" fill="#4f81bd"/>
+<text x="333.5" y="192" fill="#222">803 s (36% of time)</text>
+<text x="16" y="216" fill="#222">e2e</text>
+<rect x="110" y="202" width="34.3" height="14" fill="#9bbb59"/>
+<text x="150.3" y="214" fill="#222">12 tests (6%)</text>
+<rect x="110" y="218" width="170.9" height="14" fill="#4f81bd"/>
+<text x="286.9" y="230" fill="#222">631 s (28% of time)</text>
+<text x="16" y="248" fill="#555">Green = share of tests, blue = share of measured time. 12 end-to-end scripts hold 28% of the time.</text>
+</svg>
