@@ -154,15 +154,23 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 		if not reactions_by_checkpoint.has(event.checkpoint_index): reactions_by_checkpoint[event.checkpoint_index] = []
 		reactions_by_checkpoint[event.checkpoint_index].append(event)
 	var reaction_camera_used := false
-	for index in range(1, result.presentation_path.size()):
+	var index := 1
+	while index < result.presentation_path.size():
 		if not _move_actor_available(unit): return reaction_camera_used
-		var segment := PackedVector3Array([unit.global_position, result.presentation_path[index]])
-		var pose: StringName = result.visual_segments[index] if index < result.visual_segments.size() else &"move"
-		unit.move_along_path(segment, [&"move", pose])
+		# Walk on to the next checkpoint a watcher reacts at (or the end) in ONE order: a stair or ladder run between reactions stays whole, so its feet and contacts are continuous.
+		var last := index
+		while last < result.presentation_path.size() - 1 and not reactions_by_checkpoint.has(last):
+			last += 1
+		var segment := PackedVector3Array([unit.global_position])
+		var poses: Array[StringName] = [&"move"]
+		for point_index in range(index, last + 1):
+			segment.append(result.presentation_path[point_index])
+			poses.append(result.visual_segments[point_index] if point_index < result.visual_segments.size() else &"move")
+		unit.move_along_path(segment, poses)
 		await _wait_for_movement(unit, result)
 		await _wait_for_rescue_interaction(unit)   # a rescue decided by this move is lifted on arrival; the next command waits for it
 		if not _move_actor_available(unit): return reaction_camera_used
-		for event in reactions_by_checkpoint.get(index, []):
+		for event in reactions_by_checkpoint.get(last, []):
 			var watcher := _actor(event.watcher_id)
 			if not reaction_camera_used and is_instance_valid(watcher) and _camera_available():
 				var reaction_camera_subject := _attack_camera_subject(watcher, unit)
@@ -180,6 +188,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 				unit.finish_defeat_presentation()
 				return reaction_camera_used
 			await _safe_delay(0.18)
+		index = last + 1
 	return reaction_camera_used
 
 func present_simple(result: SimpleActionResult) -> void:
@@ -297,7 +306,8 @@ func _safe_delay(seconds: float) -> void:
 func _wait_for_movement(unit: TacticalUnit, result: MoveActionResult) -> void:
 	# Polling also observes scene teardown; awaiting movement_finished alone could
 	# strand the action barrier if the visual actor disappears mid-traversal.
-	var deadline := Time.get_ticks_msec() + 30000
+	# 30 s, or three times the walk's own estimated presentation time when that is longer (a slow ladder or stair, a slow replay speed).
+	var deadline := Time.get_ticks_msec() + int(maxf(30.0, 3.0 * unit.estimated_move_seconds()) * 1000.0) if is_instance_valid(unit) else Time.get_ticks_msec()
 	while _move_actor_available(unit) and unit.is_moving and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	if not _move_actor_available(unit):

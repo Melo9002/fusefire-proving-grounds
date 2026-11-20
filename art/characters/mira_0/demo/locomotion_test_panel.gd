@@ -15,6 +15,8 @@ var _scenario_label: Label
 var _scenario_time := -1.0
 var _scenario := &""
 var _ladder_slider: HSlider
+var _stair_rise: HSlider
+var _stair_depth: HSlider
 
 const VIEWS := {
 	"Front": [Vector3(0, 1.1, 3.4), Vector3(0, 0.9, 0)],
@@ -80,6 +82,30 @@ func setup(workbench: Node3D) -> void:
 	ladder_markers.toggled.connect(func(on: bool) -> void: bench.traversal_diagnostics = on)
 	box.add_child(ladder_markers)
 	box.add_child(_label("Vault / step-over / mantle: solver prototype only (TraversalSolver.vault_pose); not driven here and not in gameplay"))
+	box.add_child(_label("Stairs (production planner + leg IK; the bench supplies the progress the game would)"))
+	box.add_child(_row([["Up 0.5/0.5", func() -> void: _stairs(0.5, 0.5, 6, true)], ["Down 0.5/0.5", func() -> void: _stairs(0.5, 0.5, 6, false)], ["Up 0.17/0.33", func() -> void: _stairs(0.1667, 0.3333, 12, true)], ["Down 0.17/0.33", func() -> void: _stairs(0.1667, 0.3333, 12, false)]]))
+	box.add_child(_row([["Pause/play", func() -> void: _stairs_toggle()], ["Step frame", func() -> void: bench.step_stair_demo_frame()], ["Mid stair", func() -> void: _stairs_hold(2.2)], ["Stop", func() -> void: bench.end_stair_demo()]]))
+	box.add_child(_label("Stair rise / tread depth (m) for the custom stair, speed (m/s)"))
+	_stair_rise = HSlider.new()
+	_stair_rise.min_value = 0.1
+	_stair_rise.max_value = 0.6
+	_stair_rise.step = 0.01
+	_stair_rise.value = 0.2
+	box.add_child(_stair_rise)
+	_stair_depth = HSlider.new()
+	_stair_depth.min_value = 0.2
+	_stair_depth.max_value = 0.8
+	_stair_depth.step = 0.01
+	_stair_depth.value = 0.3
+	box.add_child(_stair_depth)
+	box.add_child(_row([["Custom up", func() -> void: _stairs(_stair_rise.value, _stair_depth.value, 8, true)], ["Custom down", func() -> void: _stairs(_stair_rise.value, _stair_depth.value, 8, false)]]))
+	var stair_markers := CheckButton.new()
+	stair_markers.text = "Foot markers (planned green/teal, actual red/orange)"
+	stair_markers.toggled.connect(func(on: bool) -> void: bench.stair_diagnostics = on)
+	box.add_child(stair_markers)
+	box.add_child(_label("Path corridor (PathRefiner on synthetic obstacles: route white, smoothed cyan, footprints green)"))
+	box.add_child(_row([["Open", func() -> void: bench.show_path_demo("open")], ["Wall", func() -> void: bench.show_path_demo("wall")], ["Corner", func() -> void: bench.show_path_demo("corner")], ["Column", func() -> void: bench.show_path_demo("column")]]))
+	box.add_child(_row([["Narrow ok", func() -> void: bench.show_path_demo("narrow")], ["Too narrow", func() -> void: bench.show_path_demo("too_narrow")], ["Hide", func() -> void: bench.hide_path_demo()]]))
 	var overlay := CheckButton.new()
 	overlay.text = "Cover diagnostics overlay"
 	overlay.toggled.connect(func(on: bool) -> void: bench.cover_diagnostics = on)
@@ -190,6 +216,24 @@ func _cover(full: bool, height: float, left: float, right: float, left_ok: bool,
 	bench.set_cover_demo({"full": full, "height": height, "left": left, "right": right, "left_ok": left_ok, "right_ok": right_ok, "aim": aim})
 
 
+func _stairs(rise: float, depth: float, count: int, ascending: bool) -> void:
+	_set_speed(0.0, false)
+	bench.start_stair_demo(rise, depth, count, ascending, 1.4)
+
+
+func _stairs_toggle() -> void:
+	if not bench.stair_demo.is_empty():
+		bench.stair_demo.playing = not bool(bench.stair_demo.playing)
+
+
+func _stairs_hold(s: float) -> void:
+	_set_speed(0.0, false)
+	if bench.stair_demo.is_empty():
+		bench.start_stair_demo(0.5, 0.5, 6, true, 1.4, s)
+	bench.stair_demo.playing = false
+	bench.set_stair_demo_s(s)
+
+
 func _ladder(length: float, direction: int, rate: float) -> void:
 	_set_speed(0.0, false)
 	bench.start_ladder_demo(length, direction, rate)
@@ -245,6 +289,12 @@ func _process(delta: float) -> void:
 	var r: Dictionary = bench.locomotion_report
 	var modifier = bench.locomotion_modifier
 	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.character_root.rotation.y), bench.crouch_modifier.depth]
+	if not bench.stair_demo.is_empty() and not bench.stair_pose.is_empty():
+		var sp: Dictionary = bench.stair_pose
+		cover_line += "\nstair s %.2f / %.2f m  weight %.2f  step every %d tread(s)  pelvis %.2f m%s  feet planted %s/%s" % [float(bench.stair_demo.s), float(bench.stair_demo.exit), float(sp.weight), int(sp.step), float(sp.pelvis.height), "" if bool(sp.pelvis.ok) else " UNREACHABLE", (sp.feet[0] as Dictionary).planted, (sp.feet[1] as Dictionary).planted]
+	if not bench.path_demo.is_empty():
+		var pr: Dictionary = bench.path_demo.result
+		cover_line += "\npath %s: rounded %d, min clearance %s m%s" % [bench.path_demo.kind, int(pr.rounded), "none near" if is_inf(float(pr.min_clearance)) else "%.3f" % float(pr.min_clearance), ("  MISMATCH: " + str(pr.mismatches[0])) if not pr.mismatches.is_empty() else ""]
 	if not bench.ladder_demo.is_empty() and not bench.traversal_pose.is_empty():
 		var tp: Dictionary = bench.traversal_pose
 		cover_line += "\nladder %.2f / %.2f m  weight %.2f  hand rungs %s  foot rungs %s" % [float(bench.ladder_demo.climbed), float(bench.ladder_demo.length), float(tp.weight), tp.hand_rung, tp.foot_rung]

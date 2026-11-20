@@ -79,7 +79,8 @@ $visualTests = @(
     "hand_contact_capture.gd",
     "weapon_readiness_capture.gd",
     "cover_target_aware_capture.gd",
-    "traversal_ladder_capture.gd"
+    "traversal_ladder_capture.gd",
+    "traversal_stair_capture.gd"
 )
 $extendedTests = @(
     "ai_baseline_report.gd",

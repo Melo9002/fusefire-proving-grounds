@@ -97,6 +97,7 @@ scale = Vector3(1, 0.75, 1)
 script = ExtResource("elevation_path")
 start_cell = Vector3i(11, 0, 14)
 step_count = 2
+surface_kind = 1
 
 [node name="RampSurface" type="CSGBox3D" parent="TrainingGallery/Ramp"]
 position = Vector3(11, 1.43, 13.45)
@@ -111,6 +112,8 @@ collision_mask = 0
 script = ExtResource("elevation_path")
 start_cell = Vector3i(6, 0, 14)
 step_count = 2
+surface_kind = 2
+treads_per_step = 2
 
 [node name="Tread1" type="CSGBox3D" parent="TrainingGallery/Stairs"]
 position = Vector3(6, 0.25, 14.75)

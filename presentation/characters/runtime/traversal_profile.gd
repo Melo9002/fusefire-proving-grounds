@@ -21,8 +21,6 @@ extends Resource
 ## tactical map exposes; where the rungs really are is an environment metadata requirement.
 @export_range(1.0, 8.0, 0.1, "suffix:m") var reference_rise := 4.0
 @export var rungs_follow_rise := true
-## A vertical route segment shorter than this is not a ladder (the one-metre ledge links of the test range are stepped climbs, not rungs).
-@export_range(0.5, 4.0, 0.1, "suffix:m") var ladder_min_rise := 1.8
 
 @export_group("Ladder body")
 ## How far behind the root (away from the ladder) the pelvis hangs, so the body clears the rungs. A controlled presentation offset inside the cell, never a tactical move.

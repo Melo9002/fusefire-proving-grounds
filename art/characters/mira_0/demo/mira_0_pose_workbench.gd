@@ -246,6 +246,7 @@ func _process(_delta: float) -> void:
 	update_locomotion_presentation(preview_speed if walking else 0.0, heading_rate, _delta)
 	_apply_cover_demo(_delta)
 	_advance_ladder_demo(_delta)
+	_advance_stair_demo(_delta)
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
 	_update_weapon_pose()
@@ -602,3 +603,254 @@ func _update_ladder_markers() -> void:
 	for side in 2:
 		_ladder_markers[side].global_position = character_root.to_global(traversal_pose.hands[side])
 		_ladder_markers[2 + side].global_position = character_root.to_global(traversal_pose.feet[side])
+
+
+## ---- Stair bench: the production StairModel / StairFootPlanner / leg IK / pelvis, driven by the progress the game would supply (the unit's place along the stair). The character
+## stays at the origin and the stair slides past it, exactly as for the ladder. Planned footholds (green) against the ankle bones (red), tread outlines, optional.
+var stair_demo := {}
+var stair_diagnostics := false
+var _stair_group: Node3D
+var _stair_markers: Array[MeshInstance3D] = []
+var _stair_actual: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+
+
+## `rise` and `depth` of one tread (m), `count` treads, `ascending`, `rate` m/s along the stair (0 = hold at `start`), `start` the starting distance (-1 = the walk's start).
+func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, rate: float, start := -1.0) -> void:
+	end_stair_demo()
+	var model := StairModel.new()
+	model.direction = Vector3.BACK
+	model.tread_depth = depth
+	model.tread_rise = rise
+	model.first_riser = 1.0
+	model.count = count
+	var enter := 0.0
+	var exit := model.riser_s(count)
+	var s0 := (enter if ascending else exit) if start < 0.0 else start
+	stair_demo = {"model": model, "ascending": ascending, "rate": rate, "s": s0, "enter": enter, "exit": exit, "playing": rate > 0.0, "step_once": false}
+	_build_stair_visuals()
+	animation_controller.play(&"rifle_idle")
+	_set_stair_state(s0)
+
+
+func end_stair_demo() -> void:
+	stair_demo = {}
+	if is_instance_valid(_stair_group):
+		_stair_group.queue_free()
+	_stair_group = null
+	_stair_markers.clear()
+	end_stairs()
+
+
+## One frame at the bench's own time step (frame stepping).
+func step_stair_demo_frame() -> void:
+	if not stair_demo.is_empty():
+		stair_demo.playing = false
+		stair_demo.step_once = true
+
+
+func _stair_travel(model: StairModel, s: float) -> Vector3:
+	return model.direction * s + Vector3.UP * stair_profile_height(model, s)
+
+
+func stair_profile_height(model: StairModel, s: float) -> float:
+	return model.ride_path_height_at(s, stair_profile.riser_ramp)
+
+
+func _set_stair_state(s: float) -> void:
+	var base: StairModel = stair_demo.model
+	var travel := _stair_travel(base, s)
+	# The stair slides under the fixed character: a copy of the model whose low point is the base's minus the travel.
+	var shifted := StairModel.new()
+	shifted.low = base.low - travel
+	shifted.direction = base.direction
+	shifted.tread_depth = base.tread_depth
+	shifted.tread_rise = base.tread_rise
+	shifted.first_riser = base.first_riser
+	shifted.count = base.count
+	if stair_state.is_empty():
+		begin_stairs(shifted, bool(stair_demo.ascending), float(stair_demo.enter), float(stair_demo.exit))
+	stair_state.model = shifted
+	stair_state.step = 0   # re-plan the holds against the shifted model
+	set_stair_progress(s, float(stair_demo.rate) if float(stair_demo.rate) > 0.0 else 1.0)
+	if is_instance_valid(_stair_group):
+		_stair_group.position = -travel
+
+
+func _advance_stair_demo(delta: float) -> void:
+	if stair_demo.is_empty():
+		return
+	var advance := bool(stair_demo.playing) or bool(stair_demo.step_once)
+	if advance:
+		var step_delta := delta if bool(stair_demo.playing) else 1.0 / 60.0
+		var direction := 1.0 if bool(stair_demo.ascending) else -1.0
+		var next: float = float(stair_demo.s) + float(stair_demo.rate if float(stair_demo.rate) > 0.0 else 1.0) * direction * step_delta
+		if next >= float(stair_demo.exit) or next <= float(stair_demo.enter):
+			stair_demo.playing = false
+			next = clampf(next, float(stair_demo.enter), float(stair_demo.exit))
+		stair_demo.s = next
+		stair_demo.step_once = false
+	_set_stair_state(float(stair_demo.s))
+	if not stair_pose.is_empty() and _stair_markers.size() == 4:
+		for foot in 2:
+			_stair_markers[foot].global_position = (stair_pose.feet[foot] as Dictionary).position
+			_stair_markers[foot].visible = stair_diagnostics
+			_stair_markers[2 + foot].visible = stair_diagnostics
+			_stair_markers[2 + foot].global_position = _stair_actual[foot]
+
+
+func set_stair_demo_s(s: float) -> void:
+	if stair_demo.is_empty():
+		return
+	stair_demo.playing = false
+	stair_demo.s = clampf(s, float(stair_demo.enter), float(stair_demo.exit))
+
+
+func _build_stair_visuals() -> void:
+	var model: StairModel = stair_demo.model
+	_stair_group = Node3D.new()
+	_stair_group.name = "StairBench"
+	_stair_group.top_level = true
+	add_child(_stair_group)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.45, 0.47, 0.5)
+	for k in range(0, model.count + 1):
+		var box := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		var span_end := model.riser_s(k + 1) if k < model.count else model.riser_s(model.count) + 2.0
+		var span_start := model.riser_s(k) if k > 0 else -2.0
+		var top := model.tread_top(k) if k > 0 else 0.0
+		mesh.size = Vector3(1.4, maxf(top, 0.02), span_end - span_start)
+		box.mesh = mesh
+		box.material_override = material
+		box.position = Vector3(0.0, top * 0.5 if k > 0 else -0.01, (span_start + span_end) * 0.5)
+		if k == 0:
+			mesh.size = Vector3(1.4, 0.02, span_end - span_start)
+		_stair_group.add_child(box)
+	var colours := [Color(0.2, 1, 0.3), Color(0.4, 1, 0.8), Color(1, 0.2, 0.2), Color(1, 0.6, 0.2)]   # planned L, planned R, actual L, actual R
+	for i in 4:
+		var marker := MeshInstance3D.new()
+		var ball := SphereMesh.new()
+		ball.radius = 0.035
+		ball.height = 0.07
+		marker.mesh = ball
+		var marker_material := StandardMaterial3D.new()
+		marker_material.albedo_color = colours[i]
+		marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		marker.material_override = marker_material
+		marker.top_level = true
+		marker.visible = false
+		add_child(marker)
+		_stair_markers.append(marker)
+	if skeleton != null and not skeleton.skeleton_updated.is_connected(_record_stair_ankles):
+		skeleton.skeleton_updated.connect(_record_stair_ankles)
+
+
+func _record_stair_ankles() -> void:
+	if stair_demo.is_empty():
+		return
+	for foot in 2:
+		var bone := skeleton.find_bone("mixamorig_LeftFoot" if foot == 0 else "mixamorig_RightFoot")
+		if bone >= 0:
+			_stair_actual[foot] = skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
+
+
+## ---- Path corridor bench: the production PathRefiner on a synthetic obstacle layout. The tactical route (white), the smoothed walk (cyan), the obstacle footprints (orange) and the
+## character footprint (a circle of the body radius) along the walk; a mismatch is written in the readout, never "fixed".
+var path_demo := {}
+var _path_group: Node3D
+
+
+func show_path_demo(kind: String) -> void:
+	hide_path_demo()
+	var radius := 0.319
+	var gap_ok := 2.0 * radius + 0.1
+	var gap_bad := 2.0 * radius - 0.1
+	var parts: Array = []
+	var route := PackedVector3Array([Vector3(-3, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 3)])
+	match kind:
+		"open":
+			pass
+		"wall":
+			parts = [AABB(Vector3(-2.5, 0, -0.9), Vector3(2.0, 2, 0.4))]
+		"corner":
+			parts = [AABB(Vector3(-3, 0, 0.34), Vector3(2.66, 2, 2.66))]
+			route = PackedVector3Array([Vector3(0, 0, 0), Vector3(3, 0, 0), Vector3(3, 0, 3)])
+			parts = [AABB(Vector3(0.0, 0, 0.34), Vector3(2.66, 2, 2.66))]
+		"narrow":
+			parts = [AABB(Vector3(-3, 0, -2.0 - gap_ok * 0.5), Vector3(3.5, 2, 2.0)), AABB(Vector3(-3, 0, gap_ok * 0.5), Vector3(3.5, 2, 2.0))]
+			route = PackedVector3Array([Vector3(-3, 0, 0), Vector3(1.5, 0, 0), Vector3(1.5, 0, 2)])
+		"too_narrow":
+			parts = [AABB(Vector3(-3, 0, -2.0 - gap_bad * 0.5), Vector3(3.5, 2, 2.0)), AABB(Vector3(-3, 0, gap_bad * 0.5), Vector3(3.5, 2, 2.0))]
+			route = PackedVector3Array([Vector3(-3, 0, 0), Vector3(1.5, 0, 0)])
+		"column":
+			parts = [AABB(Vector3(-0.24, 0, 0.76), Vector3(0.48, 2, 0.48))]
+			route = PackedVector3Array([Vector3(-3, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 3)])
+	var profile := PathPresentationProfile.new()
+	profile.enabled = true
+	var result := PathRefiner.refine(route, parts, radius, 1.8, profile)
+	path_demo = {"kind": kind, "result": result, "parts": parts, "route": route}
+	_path_group = Node3D.new()
+	_path_group.name = "PathBench"
+	_path_group.top_level = true
+	add_child(_path_group)
+	for part: AABB in parts:
+		var box := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(part.size.x, 0.05, part.size.z)
+		box.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(1.0, 0.55, 0.15)
+		box.material_override = material
+		box.position = part.get_center() * Vector3(1, 0, 1) + Vector3(0, 0.03, 0)
+		_path_group.add_child(box)
+	var lines := MeshInstance3D.new()
+	var immediate := ImmediateMesh.new()
+	lines.mesh = immediate
+	var line_material := StandardMaterial3D.new()
+	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_material.vertex_color_use_as_albedo = true
+	lines.material_override = line_material
+	_path_group.add_child(lines)
+	_draw_polyline(immediate, route, Color(1, 1, 1), 0.06)
+	_draw_polyline(immediate, result.path, Color(0.2, 0.9, 1.0), 0.09)
+	# The character's footprint along the walk, every 0.3 m.
+	var walked := result.path as PackedVector3Array
+	var travelled := 0.0
+	var next_at := 0.0
+	for i in range(1, walked.size()):
+		var segment := walked[i].distance_to(walked[i - 1])
+		while next_at <= travelled + segment:
+			var along := (next_at - travelled) / maxf(segment, 0.0001)
+			_footprint(walked[i - 1].lerp(walked[i], along), radius)
+			next_at += 0.3
+		travelled += segment
+
+
+func hide_path_demo() -> void:
+	path_demo = {}
+	if is_instance_valid(_path_group):
+		_path_group.queue_free()
+	_path_group = null
+
+
+func _draw_polyline(mesh: ImmediateMesh, points: PackedVector3Array, colour: Color, lift: float) -> void:
+	mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+	for point in points:
+		mesh.surface_set_color(colour)
+		mesh.surface_add_vertex(Vector3(point.x, lift, point.z))
+	mesh.surface_end()
+
+
+func _footprint(center: Vector3, radius: float) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = radius - 0.01
+	torus.outer_radius = radius
+	ring.mesh = torus
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.3, 1.0, 0.4)
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring.material_override = material
+	ring.position = Vector3(center.x, 0.02, center.z)
+	ring.scale = Vector3(1, 0.1, 1)
+	_path_group.add_child(ring)

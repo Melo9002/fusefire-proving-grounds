@@ -139,6 +139,25 @@ static func _compute_traversal_route(data: MapData, from: Vector3, to: Vector3) 
 			return PackedVector3Array([from, Vector3(from.x, peak, from.z), Vector3(to.x, peak, to.z), to])
 	return PackedVector3Array([from, to])
 
+## The traversal link joining two floor points, in either direction, or null. Its `surface_kind` says what it physically is (UNSPECIFIED, RAMP, STAIRS, LADDER).
+static func link_between(data: MapData, from: Vector3, to: Vector3) -> TraversalLinkData:
+	for link in data.traversal_links:
+		var a := data.get_cell(link.from_cell)
+		var b := data.get_cell(link.to_cell)
+		if not a or not b:
+			continue
+		if (a.world_position.is_equal_approx(from) and b.world_position.is_equal_approx(to)) or (link.bidirectional and b.world_position.is_equal_approx(from) and a.world_position.is_equal_approx(to)):
+			return link
+	return null
+
+
+## The authored STAIR link (stairs with a tread count) joining two floor points, or null: a ramp, a ladder and an undeclared link are never stairs.
+static func stair_link(data: MapData, from: Vector3, to: Vector3) -> TraversalLinkData:
+	var link := link_between(data, from, to)
+	if link != null and link.surface_kind == TraversalLinkData.STAIRS and link.treads_per_step > 0:
+		return link
+	return null
+
 static func _vault_at(data: MapData, point: Vector3) -> bool:
 	var key := Vector2i(floori(point.x / data.surface_unit + data.map_size.x * 0.5), floori(point.z / data.surface_unit + data.map_size.y * 0.5))
 	for cell: MapCellData in data.columns.get(key, []):

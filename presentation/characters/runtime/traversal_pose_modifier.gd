@@ -32,7 +32,10 @@ func _process_modification() -> void:
 	if state.is_empty():
 		weight = 0.0
 		pose = {}
-		if is_instance_valid(leg_ik) and leg_ik.active:
+		var stairs: Dictionary = rig.get("stair_pose")
+		if not stairs.is_empty():
+			_apply_stairs(stairs, leg_ik)
+		elif is_instance_valid(leg_ik) and leg_ik.active:
 			leg_ik.active = false
 		return
 	passes += 1
@@ -58,3 +61,31 @@ func _process_modification() -> void:
 			(poles[side] as Node3D).global_position = root.to_global(foot + Vector3(foot.x * 0.5, 0.45, 0.55))
 		leg_ik.influence = weight
 		leg_ik.active = weight > 0.001
+
+
+## Stair walking: the feet go to the planner's footholds through the leg IK and the pelvis takes the height the legs allow (StairFootPlanner.pelvis), both by the stair weight.
+## The root already rides the stair surface (the tactical route), so only the pelvis HEIGHT is replaced; its sideways and fore-aft motion stay the gait's.
+func _apply_stairs(stairs: Dictionary, leg_ik: TwoBoneIK3D) -> void:
+	var stair_weight: float = stairs.weight
+	weight = stair_weight
+	var profile: StairProfile = rig.get("stair_profile")
+	var root: Node3D = rig.get("character_root")
+	var solved: Dictionary = stairs.pelvis
+	var current := skeleton.get_bone_pose_position(_hips)
+	var current_world: Vector3 = skeleton.global_transform * current
+	var hips_world := Vector3(current_world.x, float(solved.height), current_world.z)
+	var target := skeleton.global_transform.affine_inverse() * hips_world
+	skeleton.set_bone_pose_position(_hips, current.lerp(target, stair_weight))
+	if not is_instance_valid(leg_ik):
+		return
+	var feet: Array = rig.get("foot_targets")
+	var poles: Array = rig.get("knee_poles")
+	var forward := root.global_basis.orthonormalized().z
+	for side in 2:
+		var ankle: Vector3 = (stairs.feet[side] as Dictionary).position
+		if not bool((stairs.feet[side] as Dictionary).planted):
+			ankle = StairFootPlanner.limit_ankle(profile, hips_world, ankle)
+		(feet[side] as Node3D).global_position = ankle
+		(poles[side] as Node3D).global_position = ankle + forward * 0.55 + Vector3.UP * 0.45
+	leg_ik.influence = stair_weight
+	leg_ik.active = stair_weight > 0.001

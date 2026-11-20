@@ -29,6 +29,10 @@ var arm_ik: TwoBoneIK3D
 ## and `traversal_pose` is the solved pose of that progress. Legs go through `leg_ik` to `foot_targets`, knees toward `knee_poles`.
 @export var traversal_profile: TraversalProfile = TraversalProfile.new()
 var traversal := {}
+## Stair walking (see StairModel / StairFootPlanner / StairProfile): {} when none; while on a stair {model, ascending, step, holds}; `stair_pose` is the solved feet and pelvis.
+@export var stair_profile: StairProfile = StairProfile.new()
+var stair_state := {}
+var stair_pose := {}
 var traversal_pose := {}
 var traversal_modifier: TraversalPoseModifier
 var leg_ik: TwoBoneIK3D
@@ -476,6 +480,42 @@ func set_traversal_progress(climbed: float) -> void:
 	elif is_weapon_stowed():
 		unstow_weapon()
 		_stow_blend = 1.0
+
+
+## Starts stair walking on `model` (the unit walks it up or down). Not used while carrying a passenger (that keeps the existing loaded gait).
+func begin_stairs(model: StairModel, ascending: bool, enter := 0.0, exit := -1.0) -> void:
+	if model == null or not stair_profile.enabled or is_instance_valid(carry_passenger):
+		return
+	stair_state = {"model": model, "ascending": ascending, "step": 0, "holds": [], "enter": enter, "exit": exit if exit >= 0.0 else model.riser_s(model.count)}
+	stair_pose = {}
+
+
+## The body's place along the stair (distance from the lower cell centre) and its speed: plans the feet and the pelvis now (a pure function of these two numbers).
+func set_stair_progress(s: float, unit_speed: float) -> void:
+	if stair_state.is_empty():
+		return
+	var model: StairModel = stair_state.model
+	var ascending: bool = stair_state.ascending
+	var step := stair_profile.step_treads(unit_speed, false, model.tread_rise)
+	if step != int(stair_state.step):
+		stair_state.step = step
+		stair_state.holds = StairFootPlanner.holds(model, ascending, step)
+	var holds: Array = stair_state.holds
+	var feet: Array = []
+	for foot in 2:
+		feet.append(StairFootPlanner.foot_at(model, stair_profile, holds, ascending, s, foot))
+	var body := character_root.global_position
+	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body)
+	stair_pose = {"feet": feet, "pelvis": solved, "weight": StairFootPlanner.weight_at(s, float(stair_state.enter), float(stair_state.exit), model.tread_depth * 1.5), "s": s, "step": step}
+
+
+func end_stairs() -> void:
+	if stair_state.is_empty():
+		return
+	stair_state = {}
+	stair_pose = {}
+	if is_instance_valid(leg_ik) and traversal.is_empty():
+		leg_ik.active = false
 
 
 ## Ends the traversal and leaves nothing of it: the legs, lean, hands and rifle go back to the ordinary pose layers.

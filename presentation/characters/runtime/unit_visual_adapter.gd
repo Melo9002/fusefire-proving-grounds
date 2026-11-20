@@ -303,6 +303,7 @@ func _exit_tree() -> void:
 func present_move() -> void:
 	finish_interaction_now()
 	_end_ladder()
+	end_stairs()
 	_cancel_attack_sequence()
 	_return_generation += 1
 	_segment_state = &"move"
@@ -311,11 +312,11 @@ func present_move() -> void:
 ## The route segment the tactical unit is about to walk (its start and end, in the tactical node's own coordinates), with the horizontal direction of the ladder's top
 ## (`toward_deck`, the way the ladder leans/faces; Vector3.ZERO if unknown). A vertical climb/descend segment is a ladder: the body then climbs by the unit's height. Returns the
 ## speed this segment should be presented at (<= 0: the route speed, unchanged); see TraversalProfile.slow_ladder_enabled.
-func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName, toward_deck: Vector3, neighbour_rise := 0.0) -> float:
+func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName, toward_deck: Vector3, link_kind := 0) -> float:
 	_segment_from = from_world
 	_segment_to = to_world
-	# The level step to or from a ladder's top (a horizontal segment next to a ladder's vertical one) is ordinary walking, not a climb clip.
-	_ladder_step = absf(to_world.y - from_world.y) < 0.05 and state_name in [&"climb", &"descend"] and neighbour_rise >= traversal_profile.ladder_min_rise
+	# The level step to or from a ladder's top (the horizontal leg of a LADDER link's route) is ordinary walking, not a climb clip.
+	_ladder_step = absf(to_world.y - from_world.y) < 0.05 and state_name in [&"climb", &"descend"] and link_kind == TraversalLinkData.LADDER
 	var vertical := absf(to_world.y - from_world.y) > 0.05 and Vector2(to_world.x - from_world.x, to_world.z - from_world.z).length() < 0.02
 	var profile: TraversalProfile = traversal_profile
 	if _carrying():
@@ -323,7 +324,8 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 		_ladder_step = false
 		_end_ladder()
 		return 0.0
-	if not (vertical and state_name in [&"climb", &"descend"] and absf(to_world.y - from_world.y) >= profile.ladder_min_rise):
+	# Only a link DECLARED a ladder gets the rung contacts; a generic or undeclared vertical link keeps the placeholder clips (no guessing from its height).
+	if not (vertical and link_kind == TraversalLinkData.LADDER):
 		_end_ladder()
 		return 0.0
 	var facing := Vector3(toward_deck.x, 0.0, toward_deck.z)
@@ -334,12 +336,22 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 	return profile.climb_speed if int(_ladder.direction) > 0 else profile.descend_speed
 
 
+func note_stairs(model: StairModel, ascending: bool, enter: float, exit: float) -> void:
+	if not stair_state.is_empty() and stair_state.model == model:
+		return
+	end_stairs()
+	begin_stairs(model, ascending, enter, exit)
+
+
 func is_ladder_active() -> bool:
 	return not _ladder.is_empty()
 
 
 ## Once per frame: while a ladder segment is walked, the character faces the ladder and the pose follows the unit's height up it.
 func _tick_traversal(delta: float) -> void:
+	if not stair_state.is_empty() and is_instance_valid(tactical_unit):
+		var floor_position := tactical_unit.global_position - Vector3.UP * tactical_unit.standing_height
+		set_stair_progress((stair_state.model as StairModel).progress_of(floor_position), _locomotion_speed)
 	if _ladder.is_empty() or not is_instance_valid(tactical_unit):
 		return
 	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
@@ -381,6 +393,7 @@ func present_path_segment(state_name: StringName) -> void:
 
 func present_movement_end() -> void:
 	_end_ladder()
+	end_stairs()
 	if pickup_pending():
 		var world := _pending_pickup_world
 		_pending_pickup_world = Vector3.INF
@@ -758,6 +771,7 @@ func present_hit() -> void:
 
 func present_defeat() -> void:
 	_end_ladder()
+	end_stairs()
 	_cancel_attack_sequence()
 	readiness.clear()
 	_return_generation += 1

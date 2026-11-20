@@ -62,7 +62,13 @@ static func _connect_surface_paths(node: Node, parent_transform: Transform3D, da
 			for index in range(1, route.size()):
 				var from := _local_cell_to_grid(transform, route[index - 1], data, unit)
 				var to := _local_cell_to_grid(transform, route[index], data, unit)
-				if data.has_cell(from) and data.has_cell(to): data.add_traversal_link(TraversalLinkData.new(from, to))
+				if data.has_cell(from) and data.has_cell(to):
+					var link := TraversalLinkData.new(from, to)
+					link.surface_kind = node.surface_kind
+					link.treads_per_step = node.treads_per_step
+					# The last link of a ramp climbs onto its exit deck: the physical ramp ends at the cell boundary (verified with physics rays on the range), a step below the deck.
+					link.step_at_to = node.surface_kind == TraversalLinkData.RAMP and index == route.size() - 1
+					data.add_traversal_link(link)
 	for child in node.get_children(): _connect_surface_paths(child, transform, data, unit)
 
 static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float, precise_shot_bounds: bool, shape_revision: int) -> void:
@@ -86,7 +92,9 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 	if node.has_meta("ladder_local_bottom"):
 		var bottom := _local_cell_to_grid(transform, node.get_meta("ladder_local_bottom"), data, unit)
 		var top := _local_cell_to_grid(transform, node.get_meta("ladder_local_top"), data, unit)
-		data.add_traversal_link(TraversalLinkData.new(bottom, top, true))
+		var ladder_link := TraversalLinkData.new(bottom, top, true)
+		ladder_link.surface_kind = TraversalLinkData.LADDER   # explicit: only a declared ladder gets the rung contacts
+		data.add_traversal_link(ladder_link)
 	for child in node.get_children():
 		_compile_contents(child, transform, data, unit, precise_shot_bounds, shape_revision)
 
