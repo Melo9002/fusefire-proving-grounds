@@ -65,8 +65,8 @@ func _run() -> void:
 	var look := Vector3(0, 0.9, 0)
 	for entry in states:
 		var state := entry.split("@")[0]
-		rig._aim_held = entry.ends_with("+aim")
-		rig._aim_release_left = 1000000.0
+		rig.presenter.aim.held = entry.ends_with("+aim")
+		rig.presenter.aim.release_left = 1000000.0
 		if "@" in entry:
 			var cover_height := float(entry.split("@")[1].split("+")[0])
 			var cover_type := MapCellData.CoverType.FULL if state == "cover_high" else MapCellData.CoverType.LOW
@@ -74,7 +74,6 @@ func _run() -> void:
 		else:
 			rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 		rig.animation_controller.play(StringName(state))
-		rig._retarget_aim_blend()
 		for i in 40: await process_frame
 		await create_timer(1.6).timeout
 		var tiles: Array[Image] = []

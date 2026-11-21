@@ -89,19 +89,19 @@ func _scenario(directory: String, scenario: String, images: bool) -> void:
 	var tiles: Array = [[], []]
 	var rows: Array = []
 	var phase_log: Array = []
-	adapter.shot_fired.connect(func(timeline: Dictionary) -> void: phase_log.append({"event": "shot_fired", "t": timeline.fire_t}))
+	adapter.presenter.attack.shot_released.connect(func(timeline: Dictionary) -> void: phase_log.append({"event": "shot_fired", "t": timeline.fire_t}))
 	adapter.present_attack(enemy.global_position)
-	var started: float = adapter._presentation_clock
+	var started: float = adapter.presenter.time
 	var next_tile := 0
 	var interrupted := false
-	while next_tile < TIMES.size() and adapter._presentation_clock - started < 2.0:
-		var t: float = adapter._presentation_clock - started
+	while next_tile < TIMES.size() and adapter.presenter.time - started < 2.0:
+		var t: float = adapter.presenter.time - started
 		if scenario == "interrupt" and not interrupted and t >= 0.12:
 			interrupted = true
 			adapter.present_hit()
 			phase_log.append({"event": "hit", "t": t})
 		var sample: Dictionary = diagnostics.latest
-		rows.append({"t": snappedf(t, 0.0001), "phase": adapter.attack_phase, "state": String(adapter.get_presentation_state()), "blend": snappedf(adapter.aim_blend, 0.0001),
+		rows.append({"t": snappedf(t, 0.0001), "phase": adapter.presenter.attack.phase, "state": String(adapter.get_presentation_state()), "blend": snappedf(adapter.aim_blend, 0.0001),
 			"muzzle_error_deg": snappedf(adapter.weapon_alignment_error_degrees(), 0.001), "flash": adapter.muzzle_flash.visible, "recoil": snappedf(adapter.recoil, 0.0001),
 			"readiness": String(WeaponReadiness.level_name(adapter.readiness_level())),
 			"dominant_wrist_mm": snappedf(float(sample.hands[0].wrist_to_ik_target) * 1000.0, 0.01) if not sample.is_empty() else -1.0,
@@ -130,14 +130,14 @@ func _scenario(directory: String, scenario: String, images: bool) -> void:
 						sheet.blit_rect(tiles[v][index], Rect2i(Vector2i.ZERO, TILE), Vector2i(column * TILE.x, v * TILE.y))
 			sheet.save_png(directory.path_join("readiness-%s-%s.png" % [scenario, "ab"[half]]))
 	var out := FileAccess.open(directory.path_join("readiness-%s.json" % scenario), FileAccess.WRITE)
-	out.store_string(JSON.stringify({"scenario": scenario, "timeline": _plain(adapter.attack_timeline), "events": phase_log, "frames": rows}, "  "))
+	out.store_string(JSON.stringify({"scenario": scenario, "timeline": _plain(adapter.presenter.attack.timeline), "events": phase_log, "frames": rows}, "  "))
 	out.close()
-	print("READINESS %s: fired %s at %.3f s, muzzle %.2f deg, blend %.3f, forced %s, %d frames" % [scenario, adapter.attack_timeline.get("fired"), adapter.attack_timeline.get("fire_t", -1.0), adapter.attack_timeline.get("fire_muzzle_error_degrees", -1.0), adapter.attack_timeline.get("fire_blend", -1.0), adapter.attack_timeline.get("forced"), rows.size()])
+	print("READINESS %s: fired %s at %.3f s, muzzle %.2f deg, blend %.3f, forced %s, %d frames" % [scenario, adapter.presenter.attack.timeline.get("fired"), adapter.presenter.attack.timeline.get("fire_t", -1.0), adapter.presenter.attack.timeline.get("fire_muzzle_error_degrees", -1.0), adapter.presenter.attack.timeline.get("fire_blend", -1.0), adapter.presenter.attack.timeline.get("forced"), rows.size()])
 	for viewport in viewports: viewport.queue_free()
 	await f.dispose(self)
 
 func _plain(timeline: Dictionary) -> Dictionary:
 	var copy := timeline.duplicate(true)
 	for entry in copy.get("phases", []):
-		entry["phase"] = String(UnitVisualAdapter.AttackPhase.keys()[entry["phase"]])
+		entry["phase"] = String(AttackSequence.Phase.keys()[entry["phase"]])
 	return copy

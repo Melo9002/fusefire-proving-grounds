@@ -20,9 +20,8 @@ func _p(bone: StringName) -> Vector3:
 
 func _settle(rig: UnitVisualAdapter, height: float, aiming: bool, type := MapCellData.CoverType.LOW) -> void:
 	rig.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
-	rig._aim_held = aiming
-	rig._aim_release_left = 1000000.0
-	rig._retarget_aim_blend()
+	rig.presenter.aim.held = aiming
+	rig.presenter.aim.release_left = 1000000.0
 	for i in 150: await process_frame
 
 func _run() -> void:
@@ -101,7 +100,7 @@ func _run() -> void:
 
 	# Out of cover everything returns to standing.
 	rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
-	rig._aim_held = false
+	rig.presenter.aim.held = false
 	rig.animation_controller.play(&"rifle_idle")
 	for i in 150: await process_frame
 	check(modifier.depth < 0.01 and modifier.kneel < 0.01, "Leaving cover stands her back up (depth %.3f, kneel %.2f)" % [modifier.depth, modifier.kneel])

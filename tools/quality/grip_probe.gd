@@ -61,9 +61,8 @@ func _run() -> void:
 		var n_rest := _palm_normal(side)
 		rest_sign[side] = 1.0 if n_rest.dot(Vector3.DOWN) > 0.0 else -1.0
 	rig.animation_controller.play(&"aim")
-	rig._aim_held = true
-	rig._aim_release_left = 1000000.0
-	rig._retarget_aim_blend()
+	rig.presenter.aim.held = true
+	rig.presenter.aim.release_left = 1000000.0
 	for i in 90: await process_frame
 	await create_timer(0.8).timeout
 	var facing: Basis = rig.character_root.global_basis

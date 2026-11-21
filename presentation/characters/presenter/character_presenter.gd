@@ -5,7 +5,8 @@ extends RefCounted
 ##  * the reported velocity and the heading rate derived from it, and facing that follows the velocity,
 ##  * the "is it moving" decision that settles the gait to a stop,
 ##  * posture requests (`postures`, a PostureArbiter),
-## and it exposes the persistent state as a PresentationIntent snapshot. It does NOT own animation mathematics: gait, cadence, bank and twist stay in CharacterRig, which this
+## the attack lifecycle (`attack`), the persistent aim hold (`aim`), the timed hold of a finite state such as a hit (`begin_hold`), the defeat (`begin_defeat`) and the advance of the rescue clock, all
+## settled through ActionHandles and all advanced here, once per frame, and it exposes the persistent state as a PresentationIntent snapshot. It does NOT own animation mathematics: gait, cadence, bank and twist stay in CharacterRig, which this
 ## calls. It has no `_process`: the host node ticks it once per frame (see TRANSITION), so nothing can advance twice.
 ##
 ## TRANSITION (documented, not hidden): today UnitVisualAdapter and the workbench ARE the CharacterRig, so the presenter is a component of that node and bound to it, and the host
@@ -25,6 +26,19 @@ var heading_rate := 0.0
 var velocity := Vector3.ZERO
 ## Persistent posture requests: the cover policy (CONTEXT) and the rescue lift (ACTION) write here in production; tools write their own sources.
 var postures := PostureArbiter.new()
+## The attack lifecycle (RAISE, ALIGN, FIRE, RECOVER, RELEASE): the only clock of an attack. The context supplies an AttackHost; the sequence settles an AttackHandle.
+var attack := AttackSequence.new()
+## The committed Aim's persistent mirror (never a handle).
+var aim := AimHold.new()
+
+var _hold_left := -1.0
+var _hold_due: Callable
+var _hold_handle: ActionHandle
+var _hold_armed_frame := -1
+var _defeat_left := -1.0
+var _defeat_handle: ActionHandle
+var _defeat_armed_frame := -1
+var _actions_frame := -1
 
 var _age := 1.0
 var _authority_known := false
@@ -75,6 +89,7 @@ func tick(delta: float) -> void:
 	time += delta
 	tick_count += 1
 	last_tick_frame = Engine.get_process_frames()
+	_advance_timed_states(delta)
 	if not is_instance_valid(rig) or rig.locomotion_fed_this_frame():
 		return
 	if _scripted:
@@ -87,6 +102,76 @@ func tick(delta: float) -> void:
 		speed = 0.0
 		heading_rate = 0.0
 		velocity = Vector3.ZERO
+
+## Starts a finite state that holds for `seconds` of presentation time and then runs `due` (a hit reaction returning to idle, a pickup's clip returning to idle). It replaces a scene-tree timer: the
+## countdown runs in tick(), so it follows the engine's own delta and pauses with the character. One hold at a time: a new one (or cancel_hold) ends the previous with INTERRUPTED. The handle
+## settles COMPLETED after `due` has run, INTERRUPTED if the hold was superseded or the character removed.
+func begin_hold(seconds: float, due: Callable) -> ActionHandle:
+	cancel_hold()
+	_hold_left = maxf(seconds, 0.0)
+	_hold_due = due
+	_hold_armed_frame = Engine.get_process_frames()
+	_hold_handle = ActionHandle.new()
+	return _hold_handle
+
+## Ends a running hold (a newer presentation took over). A no-op when none runs.
+func cancel_hold() -> void:
+	var handle := _hold_handle
+	_hold_handle = null
+	_hold_left = -1.0
+	_hold_due = Callable()
+	if handle != null:
+		handle.settle(PresentationTypes.Outcome.INTERRUPTED)
+
+func is_holding() -> bool:
+	return _hold_handle != null
+
+## A defeat: the one-shot defeat clip runs for `seconds` and its end state stays. Everything else the character was presenting is ended by the caller (see UnitVisualAdapter.present_defeat); this only
+## settles the defeat itself. A repeated request while the clip is still running is the same defeat (the same handle, no restart).
+func begin_defeat(seconds: float) -> ActionHandle:
+	if _defeat_handle != null:
+		return _defeat_handle
+	_defeat_left = maxf(seconds, 0.0)
+	_defeat_armed_frame = Engine.get_process_frames()
+	_defeat_handle = ActionHandle.new()
+	return _defeat_handle
+
+func is_defeating() -> bool:
+	return _defeat_handle != null
+
+## A timed state counts down from the FRAME AFTER it was begun, as the scene-tree timers it replaces did: the frame it starts in is not part of its time, whichever node began it.
+func _advance_timed_states(delta: float) -> void:
+	var frame := Engine.get_process_frames()
+	if _hold_handle != null and frame != _hold_armed_frame:
+		_hold_left -= delta
+		if _hold_left <= 0.0:
+			var handle := _hold_handle
+			var due := _hold_due
+			_hold_handle = null   # the slot is clear before `due` runs: it may start the next hold or cancel nothing
+			_hold_left = -1.0
+			_hold_due = Callable()
+			if due.is_valid():
+				due.call()
+			handle.settle(PresentationTypes.Outcome.COMPLETED)
+	if _defeat_handle != null and frame != _defeat_armed_frame:
+		_defeat_left -= delta
+		if _defeat_left <= 0.0:
+			var finished := _defeat_handle
+			_defeat_handle = null
+			_defeat_left = -1.0
+			finished.settle(PresentationTypes.Outcome.COMPLETED)
+
+## The action stage of a frame: the attack moves on, and the rescue clock advances (the rig applies what it says; see CharacterRig.advance_rescue_clock). Call once per frame, after readiness and
+## posture have been followed and before the weapon-pose update that applies the results. Both hosts (the tactical adapter and the workbench) call it from the same place in their update; a second call
+## in the same engine frame does nothing, so nothing can advance twice.
+func advance_actions(delta: float) -> void:
+	var frame := Engine.get_process_frames()
+	if frame == _actions_frame:
+		return
+	_actions_frame = frame
+	attack.advance(delta, time)
+	if is_instance_valid(rig):
+		rig.advance_rescue_clock(delta)
 
 ## Resolves the persistent posture request (`postures`) and has the rig follow it for one frame. Call once per frame, after the host has set or released its requests. `drive_yaw` is false for a
 ## host that moves the body yaw itself. The rig does the posing; this only chooses what it should follow.
@@ -110,6 +195,14 @@ func intent() -> PresentationIntent:
 
 ## Releases everything the presenter holds: no posture request outlives the character.
 func teardown() -> void:
+	attack.cancel()
+	aim.clear()
+	cancel_hold()
+	if _defeat_handle != null:
+		var defeat := _defeat_handle
+		_defeat_handle = null
+		_defeat_left = -1.0
+		defeat.settle(PresentationTypes.Outcome.INTERRUPTED)
 	postures.teardown()
 	speed = 0.0
 	heading_rate = 0.0

@@ -35,9 +35,8 @@ func _run() -> void:
 	for index in angles.size():
 		if index == 3:
 			rig.animation_controller.play(&"aim")
-			rig._aim_held = true
-			rig._aim_release_left = 1000000.0
-			rig._retarget_aim_blend()
+			rig.presenter.aim.held = true
+			rig.presenter.aim.release_left = 1000000.0
 			for i in 60: await process_frame
 		var forward := rig.character_root.global_basis.z
 		var direction := forward.rotated(Vector3.UP, deg_to_rad(angles[index] if index < 3 else 35.0))

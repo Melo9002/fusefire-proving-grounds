@@ -47,14 +47,14 @@ func _initialize() -> void:
 	unit.move_along_path(PackedVector3Array([Vector3(2.0, 1.0, 3.0), Vector3(2.1, 1.0, 3.0)]))
 	await process_frame
 	_assert(adapter.get_presentation_state() == &"move", "movement drives move animation")
-	unit.present_attack(Vector3(5.0, 1.0, 3.0))
-	_assert(unit.is_attack_pending() and adapter.get_presentation_state() == &"aim", "attack from a relaxed carry first raises the weapon (aim stance, shot still pending)")
+	var attack: AttackHandle = unit.present_attack(Vector3(5.0, 1.0, 3.0))
+	_assert(not attack.shot.is_done() and adapter.get_presentation_state() == &"aim", "attack from a relaxed carry first raises the weapon (aim stance, shot still pending)")
 	var raise_frames := 0
-	while unit.is_attack_pending() and raise_frames < 120:
+	while not attack.shot.is_done() and raise_frames < 120:
 		await process_frame
 		raise_frames += 1
 	await process_frame
-	_assert(adapter.get_presentation_state() == &"shoot" and bool(adapter.attack_timeline.get("fired", false)), "attack drives shoot animation once the weapon is raised")
+	_assert(adapter.get_presentation_state() == &"shoot" and bool(adapter.presenter.attack.timeline.get("fired", false)), "attack drives shoot animation once the weapon is raised")
 	unit.stats.take_damage(25)
 	await process_frame
 	_assert(adapter.get_presentation_state() == &"hit", "damage drives hit animation")

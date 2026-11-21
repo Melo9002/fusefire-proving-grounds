@@ -446,14 +446,15 @@ func _refine_flat_runs(data: MapData, points: PackedVector3Array, poses: Array[S
 		return {"points": points, "poses": poses, "stair_ids": stair_ids, "kinds": kinds}
 	return {"points": out, "poses": out_poses, "stair_ids": out_ids, "kinds": out_kinds}
 
-func present_attack(target_world_position: Vector3) -> void:
-	if visual_adapter:
-		visual_adapter.present_attack(target_world_position)
+## Shows an attack that is already resolved. The handle's `shot` settles when the shot is visible (the tactical layer waits on it before the target reacts); it never decides the attack's result.
+func present_attack(target_world_position: Vector3) -> AttackHandle:
+	var handle: AttackHandle = visual_adapter.present_attack(target_world_position) if visual_adapter else null
 	attack_presented.emit(target_world_position)
-
-## True while the visual attack is still raising the weapon, before the shot is shown.
-func is_attack_pending() -> bool:
-	return visual_adapter != null and is_instance_valid(visual_adapter) and visual_adapter.is_attack_pending()
+	if handle == null:
+		handle = AttackHandle.new()
+		handle.shot.settle(PresentationTypes.Outcome.SKIPPED)
+		handle.settle(PresentationTypes.Outcome.SKIPPED)
+	return handle
 
 func present_aim() -> void:
 	if visual_adapter:

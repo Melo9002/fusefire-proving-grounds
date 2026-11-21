@@ -3,11 +3,6 @@ extends CharacterRig
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
-## The shot is shown: muzzle flash and recoil begin together. `timeline` is the attack's record (attack_timeline).
-signal shot_fired(timeline: Dictionary)
-## The attack presentation is over. fired is false when it was cancelled by a higher-priority presentation.
-signal attack_sequence_ended(fired: bool)
-
 const TeamPaletteData := preload("res://presentation/team_presentation_palette.gd")
 
 @export_group("Team Presentation")
@@ -66,10 +61,11 @@ var _segment_to := Vector3.ZERO
 ## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
 ## place there is nothing to lift from: the passenger appears across the shoulders as before.
 ## Returns the handle of the visual lift: it settles when the lift ends (see CharacterRig.rescue_presentation). A pickup that has to wait for the carrier to arrive returns the reserved handle at once and the
-## same handle is the one the lift settles later; a pickup without a place has no timeline to run (the passenger just appears across the shoulders), so nothing was presented and it is SKIPPED.
+## same handle is the one the lift settles later; a pickup without a place has no lift to run (the passenger just appears across the shoulders): its handle is the pickup clip's hold, which settles when the
+## unit returns to idle.
 func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> ActionHandle:
-	_cancel_attack_sequence()
-	_return_generation += 1
+	presenter.attack.cancel()
+	presenter.cancel_hold()
 	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rescue_interaction.max_step + rescue_interaction.stand_off + 0.3):
 		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
@@ -89,8 +85,7 @@ func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) ->
 		return handle
 	begin_carry()
 	_play(&"pickup")
-	_return_to_idle_after(pickup_return_seconds)
-	return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
+	return presenter.begin_hold(pickup_return_seconds, _return_from_hold)
 
 ## A pickup's lift has run out (or was run to its end at once): carry on in whichever loaded state the unit is in. An interrupted or cancelled lift is not carried on from: whoever ended it owns what follows.
 func _on_pickup_presented(outcome: PresentationTypes.Outcome) -> void:
@@ -120,16 +115,16 @@ func _clear_pending_pickup(outcome: PresentationTypes.Outcome) -> void:
 ## the rest to the revealed actor. Safe in any phase of a pickup or release.
 func present_carry_released() -> void:
 	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
-	_return_generation += 1
+	presenter.cancel_hold()
 	end_carry()
 	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
 func present_boarding() -> void:
 	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
-	_cancel_attack_sequence()
+	presenter.attack.cancel()
 	finish_interaction_now()
-	_return_generation += 1
+	presenter.cancel_hold()
 	_play(&"boarding")
 	if is_instance_valid(carry_passenger):
 		var tween := create_tween()
@@ -146,8 +141,8 @@ func present_incapacitated(on: bool) -> void:
 	if on == is_instance_valid(_lying_body):
 		return
 	if on:
-		_cancel_attack_sequence()
-		_return_generation += 1
+		presenter.attack.cancel()
+		presenter.cancel_hold()
 		_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 		character_root.visible = false
 		_lying_body = RESCUE_PASSENGER.new()
@@ -188,29 +183,48 @@ const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 const AIM_POSE_STATES: Array[StringName] = [&"aim", &"shoot", &"shoot_left", &"shoot_right"]
 ## Quiet states a held Aim may change. A shot, hit, defeat, move or traversal is never interrupted.
 const AIM_SETTLE_STATES: Array[StringName] = [&"aim", &"rifle_idle", &"cover_low", &"cover_high"]
-## After the committed Aim ends, the sights stay up this long so the rifle does not dip while the
-## attack camera moves in before the shot. A shot or any other action takes over sooner.
-const AIM_RELEASE_GRACE := 1.0
-## Presentation-only mirror of the committed Aim: true while the sights should be up.
-var _aim_held := false
-var _aim_release_left := 0.0
+## The committed Aim's persistent mirror and its release grace are the presenter's (`presenter.aim`, AimHold); this keeps the policy: when the Aim still counts as held and what a transition does to the pose.
 
-## Attack presentation: Raise -> Align -> Fire -> Recover -> Release. The tactical attack is already resolved
-## when this runs; it only stages that outcome. Time is the sum of frame deltas, never wall time, so the
-## sequence depends on what was presented, not on how fast the machine ran.
-enum AttackPhase { NONE, RAISE, ALIGN, FIRE, RECOVER, RELEASE }
-const ATTACK_SOURCE := &"attack"
-var attack_phase := AttackPhase.NONE
-## Record of the latest attack: times (presentation seconds), phases, aim blend and muzzle error at the shot.
-var attack_timeline: Dictionary = {}
-## Presentation seconds: owned by the presenter; this accessor keeps existing readers (attack timelines, tests) working.
-var _presentation_clock: float:
-	get: return presenter.time
-	set(value): presenter.time = value
-var _attack_shot_state := &"shoot"
-var _recover_left := 0.0
-var _return_generation := 0
+## Attack presentation (Raise -> Align -> Fire -> Recover -> Release) is `presenter.attack` (AttackSequence); its clock is the presenter's. This adapter only supplies the body: AdapterAttackHost.
+var _attack_host := AdapterAttackHost.new(self)
 var _team_accent: MeshInstance3D
+
+## What the attack sequence asks of this body (see AttackHost): the firing configuration, the clips, the readiness request and the cover plan.
+class AdapterAttackHost extends AttackHost:
+	var adapter: UnitVisualAdapter
+	func _init(owner_adapter: UnitVisualAdapter) -> void:
+		adapter = owner_adapter
+	func sequence_available() -> bool:
+		return not adapter._carrying() and adapter.can_process() and is_instance_valid(adapter.muzzle_socket)
+	func immediate_release() -> bool:
+		return adapter._carrying() or not adapter.can_process()
+	func weapon_aligned() -> bool:
+		return adapter.weapon_aligned()
+	func alignment_error_degrees() -> float:
+		return adapter.weapon_alignment_error_degrees()
+	func aim_blend() -> float:
+		return adapter.aim_blend
+	func aim_target() -> float:
+		return adapter._aim_target(adapter.get_presentation_state())
+	func max_raise_wait_seconds() -> float:
+		return adapter.handling.max_raise_wait_seconds
+	func recover_seconds() -> float:
+		return adapter.handling.shot_recover_seconds
+	func begin_raise() -> void:
+		adapter.readiness.request(AttackSequence.SOURCE, WeaponReadiness.Level.AIMED)
+		if adapter._cover_context().type == MapCellData.CoverType.NONE and adapter.get_presentation_state() not in adapter.AIM_POSE_STATES:
+			adapter._play(&"aim")
+	func release_aimed() -> void:
+		adapter.readiness.release(AttackSequence.SOURCE)
+	func play_shot(state: StringName) -> void:
+		adapter._play(state)
+	func resume_after_shot() -> void:
+		if is_instance_valid(adapter.tactical_unit) and adapter.tactical_unit.is_moving:
+			adapter._play(&"carry_move" if adapter._segment_state == &"move" and adapter._carrying() else adapter._segment_state)
+		else:
+			adapter.present_idle()
+	func attack_ended() -> void:
+		adapter.attack_plan = {}
 
 func _ready() -> void:
 	_build_character()
@@ -330,8 +344,8 @@ func present_move() -> void:
 	finish_interaction_now()
 	_end_ladder()
 	end_stairs()
-	_cancel_attack_sequence()
-	_return_generation += 1
+	presenter.attack.cancel()
+	presenter.cancel_hold()
 	_segment_state = &"move"
 	_play(&"carry_move" if _carrying() else &"move")
 
@@ -401,7 +415,7 @@ func present_path_segment(state_name: StringName) -> void:
 	if not _ladder.is_empty():
 		# Climbing or descending a ladder: no clip of its own, the contacts do it (see _tick_traversal). The leg that steps on or off the deck is ordinary walking.
 		_segment_state = &"ladder"
-		_return_generation += 1
+		presenter.cancel_hold()
 		_play(&"rifle_idle")
 		return
 	if _ladder_step:
@@ -410,10 +424,10 @@ func present_path_segment(state_name: StringName) -> void:
 		return
 	var was_traversing := _segment_state in TRAVERSAL_STATES
 	_segment_state = state_name
-	_return_generation += 1
+	presenter.cancel_hold()
 	if was_traversing and state_name == &"move":
 		_play(&"land")
-		_return_to_idle_after(landing_return_seconds)
+		presenter.begin_hold(landing_return_seconds, _return_from_hold)
 	else:
 		_play(&"carry_move" if state_name == &"move" and _carrying() else state_name)
 
@@ -427,7 +441,7 @@ func present_movement_end() -> void:
 		return
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
-		_return_to_idle_after(landing_return_seconds)
+		presenter.begin_hold(landing_return_seconds, _return_from_hold)
 	else:
 		present_idle()
 
@@ -443,8 +457,7 @@ func _cover_context() -> Dictionary:
 ## is_aiming flag (see _sync_aim_hold), so replays and AI units behave the same.
 func present_aim() -> void:
 	if _carrying(): return
-	_aim_held = true
-	_aim_release_left = AIM_RELEASE_GRACE
+	presenter.aim.engage()
 	present_idle()
 
 ## Reads committed state only; never writes it.
@@ -463,7 +476,7 @@ func requested_readiness(state_name: StringName = &"") -> WeaponReadiness.Level:
 	if state_name == &"":
 		state_name = get_presentation_state()
 	var level := readiness.requested()
-	if state_name in AIM_POSE_STATES or _aim_held:
+	if state_name in AIM_POSE_STATES or presenter.aim.held:
 		level = WeaponReadiness.Level.AIMED
 	return level
 
@@ -479,7 +492,7 @@ func release_readiness(source: StringName) -> void:
 
 func _settle_readiness_pose() -> void:
 	var state := get_presentation_state()
-	if attack_phase == AttackPhase.NONE and state in AIM_SETTLE_STATES and not _carrying():
+	if not presenter.attack.is_active() and state in AIM_SETTLE_STATES and not _carrying():
 		_settle_aim_pose(state)
 
 ## The level the weapon is actually at (derived from the aim blend it has reached).
@@ -489,14 +502,10 @@ func readiness_level() -> WeaponReadiness.Level:
 	return WeaponReadiness.level_for_blend(aim_blend, handling)
 
 ## The blend follows its target every frame: up over the profile's raise time, down over its lower time.
-## Nothing needs to retarget it; callers that still do so (see _retarget_aim_blend) change nothing.
 func _advance_readiness(delta: float) -> void:
 	var target := _aim_target(get_presentation_state())
 	var seconds := handling.raise_seconds if target > aim_blend else handling.lower_seconds
 	aim_blend = move_toward(aim_blend, target, delta / maxf(seconds, 0.001))
-
-func _retarget_aim_blend() -> void:
-	pass
 
 ## Angle between the muzzle and the firing direction (the character's forward, which the weapon is
 ## rotated onto at full aim). 0 when the weapon is in its firing configuration.
@@ -518,20 +527,9 @@ func weapon_aligned() -> bool:
 ## cancels it, or the next activation. Never interrupts a shot, hit, defeat, move or traversal.
 func _sync_aim_hold(delta: float) -> void:
 	var state := get_presentation_state()
-	if _aim_should_hold():
-		_aim_release_left = AIM_RELEASE_GRACE
-		if not _aim_held:
-			_aim_held = true
-			if state in AIM_SETTLE_STATES: _settle_aim_pose(state)
-		return
-	if not _aim_held:
-		return
-	_aim_release_left -= delta
-	# Once the unit has moved on to a shot or any other action, the hold is simply over.
-	if _aim_release_left <= 0.0 or state not in AIM_SETTLE_STATES:
-		_aim_held = false
-		if state in AIM_SETTLE_STATES: _settle_aim_pose(state)
-		else: _retarget_aim_blend()
+	# A transition (the hold engaged or ended) re-settles a quiet pose; a shot, hit, defeat, move or traversal is never interrupted.
+	if presenter.aim.update(delta, _aim_should_hold(), state in AIM_SETTLE_STATES) != AimHold.Transition.NONE and state in AIM_SETTLE_STATES:
+		_settle_aim_pose(state)
 
 ## Low cover: crouch only as deep as the cover is tall (never beyond what a person can), turned
 ## with the back to the wall while hiding, and facing the wall, eyes just over the top, to aim.
@@ -627,19 +625,18 @@ func _update_cover_side() -> void:
 
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
-		# Keep the cover pose; only the weapon comes up or goes down.
-		_retarget_aim_blend()
+		pass   # keep the cover pose; the weapon blend follows its target on its own
 	else:
 		present_idle()
 
 func present_idle() -> void:
-	_return_generation += 1
+	presenter.cancel_hold()
 	if _carrying():
 		_play(&"carry_idle")
 		return
 	var cover := _cover_context()
 	if cover.type == MapCellData.CoverType.NONE:
-		_play(&"aim" if (_aim_held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED) else &"rifle_idle")
+		_play(&"aim" if (presenter.aim.held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED) else &"rifle_idle")
 	else:
 		face_world_position(global_position + cover.direction)
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
@@ -653,7 +650,8 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 ## Stages an attack that is already resolved: raise the weapon to its firing configuration, fire, recover,
 ## release. From an already aimed pose there is no raise: the shot is shown at once. A unit that cannot
 ## sequence (carrying, no processing) shows the shot immediately, as before.
-func present_attack(target_world_position: Vector3) -> void:
+## Returns the attack's handle: `handle.shot` settles when the shot is shown (what the tactical layer waits on before the target reacts), the handle itself when the release is over (see AttackHandle).
+func present_attack(target_world_position: Vector3) -> AttackHandle:
 	var cover := _cover_context()
 	# The firing posture comes from the authorized shot's direction and the wall geometry only (CoverEdgeSelector.plan_attack); a visual pose never creates a shot.
 	var plan := _plan_attack_posture(cover, target_world_position)
@@ -666,22 +664,10 @@ func present_attack(target_world_position: Vector3) -> void:
 			CoverEdgeSelector.FiringMode.AROUND_RIGHT: shot = &"shoot_right"
 			CoverEdgeSelector.FiringMode.ORDINARY: shot = &"shoot"
 			_: shot = &"shoot_left" if cover_side < 0 else &"shoot_right"   # no honest peek: the passive lean side (right on a tie or none)
-	_cancel_attack_sequence()
+	presenter.attack.cancel()   # a newer attack ends the running one first (its cover plan is dropped before this one's is set)
 	attack_plan = plan
-	_return_generation += 1
-	_attack_shot_state = shot
-	attack_timeline = {"start": _presentation_clock, "from_state": get_presentation_state(), "from_blend": aim_blend,
-		"phases": [], "forced": false, "fired": false, "shot_state": shot}
-	if _carrying() or not can_process() or not is_instance_valid(muzzle_socket):
-		attack_timeline["forced"] = true
-		_fire_shot()
-		return
-	attack_phase = AttackPhase.RAISE
-	_note_attack_phase(AttackPhase.RAISE)
-	readiness.request(ATTACK_SOURCE, WeaponReadiness.Level.AIMED)
-	if cover.type == MapCellData.CoverType.NONE and get_presentation_state() not in AIM_POSE_STATES:
-		_play(&"aim")
-	_advance_attack(0.0)
+	presenter.cancel_hold()
+	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), aim_blend)
 
 ## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.
 func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:
@@ -697,100 +683,39 @@ func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> 
 		attack_plan_log.pop_front()
 	return plan
 
-## True from the attack request until its shot is shown (or it is cancelled). The action presenter
-## waits on this before showing the target's reaction.
-func is_attack_pending() -> bool:
-	return attack_phase == AttackPhase.RAISE or attack_phase == AttackPhase.ALIGN
+## A hit reaction: the hit clip, held for `hit_return_seconds` of presentation time, then back to idle (or on with the walk). It ends a running attack and is itself ended by anything newer. The handle
+## settles COMPLETED at the return, INTERRUPTED if something took over, SKIPPED when a ladder shows no reaction.
+func present_hit() -> ActionHandle:
+	presenter.attack.cancel()
+	if is_ladder_active():
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)   # a reaction shot that hits a unit on a ladder: it keeps climbing (no hit clip over the rungs; a hit-on-ladder reaction is not designed yet)
+	_play(&"hit")
+	return presenter.begin_hold(hit_return_seconds, _return_from_hold)
 
-func _note_attack_phase(phase: AttackPhase) -> void:
-	var phases: Array = attack_timeline.get("phases", [])
-	phases.append({"phase": phase, "t": _presentation_clock - float(attack_timeline.get("start", 0.0)), "blend": aim_blend,
-		"muzzle_error_degrees": weapon_alignment_error_degrees()})
-
-func _advance_attack(delta: float) -> void:
-	match attack_phase:
-		AttackPhase.RAISE:
-			var waited := _presentation_clock - float(attack_timeline.get("start", 0.0))
-			var aligned := weapon_aligned()
-			if not aligned and waited < handling.max_raise_wait_seconds:
-				return
-			attack_phase = AttackPhase.ALIGN
-			_note_attack_phase(AttackPhase.ALIGN)
-			attack_timeline["forced"] = not aligned
-			_fire_shot()
-		AttackPhase.RECOVER:
-			_recover_left -= delta
-			if _recover_left <= 0.0:
-				_release_attack()
-		AttackPhase.RELEASE:
-			if is_equal_approx(aim_blend, _aim_target(get_presentation_state())):
-				_finish_attack_sequence(true)
-
-## Muzzle flash, recoil and trigger together: the shot state starts them (see _on_animation_state_changed).
-func _fire_shot() -> void:
-	var start := float(attack_timeline.get("start", _presentation_clock))
-	attack_timeline["fired"] = true
-	attack_timeline["fire_t"] = _presentation_clock - start
-	attack_timeline["fire_blend"] = aim_blend
-	attack_timeline["fire_muzzle_error_degrees"] = weapon_alignment_error_degrees()
-	attack_phase = AttackPhase.FIRE
-	_note_attack_phase(AttackPhase.FIRE)
-	_play(_attack_shot_state)
-	attack_phase = AttackPhase.RECOVER
-	_recover_left = handling.shot_recover_seconds
-	_note_attack_phase(AttackPhase.RECOVER)
-	shot_fired.emit(attack_timeline)
-	if _carrying() or not can_process():
-		_release_attack()
-
-## Back to the readiness the unit is otherwise holding: relaxed unless a committed Aim (or another
-## request) keeps the weapon up.
-func _release_attack() -> void:
-	readiness.release(ATTACK_SOURCE)
-	attack_phase = AttackPhase.RELEASE
-	_note_attack_phase(AttackPhase.RELEASE)
+## The timed state ran out (a hit, a landing, a pickup clip): walk on or go to the idle that fits.
+func _return_from_hold() -> void:
 	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
 		_play(&"carry_move" if _segment_state == &"move" and _carrying() else _segment_state)
 	else:
 		present_idle()
-	if is_equal_approx(aim_blend, _aim_target(get_presentation_state())):
-		_finish_attack_sequence(true)
 
-func _finish_attack_sequence(fired: bool) -> void:
-	readiness.release(ATTACK_SOURCE)
-	attack_plan = {}   # back to the passive cover posture
-	if attack_phase != AttackPhase.NONE:
-		attack_phase = AttackPhase.NONE
-		attack_timeline["end_t"] = _presentation_clock - float(attack_timeline.get("start", 0.0))
-		attack_sequence_ended.emit(fired)
-
-## A higher-priority or newer presentation took over: drop the attack's readiness request so the weapon
-## goes back to whatever the new state wants, and let anyone waiting on the attack continue.
-func _cancel_attack_sequence() -> void:
-	if attack_phase != AttackPhase.NONE:
-		attack_timeline["cancelled"] = true
-		_finish_attack_sequence(bool(attack_timeline.get("fired", false)))
-	else:
-		readiness.release(ATTACK_SOURCE)
-
-func present_hit() -> void:
-	_cancel_attack_sequence()
-	if is_ladder_active():
-		return   # a reaction shot that hits a unit on a ladder: it keeps climbing (no hit clip over the rungs; a hit-on-ladder reaction is not designed yet)
-	_play(&"hit")
-	_return_to_idle_after(hit_return_seconds)
-
-func present_defeat() -> void:
+## Defeat ends everything else this character was presenting (the rescue, a traversal, the attack, the held aim, a pending hit return) and plays the one-shot defeat clip. A repeat while the clip is still
+## running is the same defeat. The handle settles COMPLETED when the clip has run its length, INTERRUPTED if the character is removed first.
+func present_defeat() -> ActionHandle:
+	if presenter.is_defeating():
+		return presenter.begin_defeat(0.0)
+	presenter.aim.clear()
 	# A rescue under way cannot continue on a defeated carrier: its visual operation is interrupted here (the tactical layer puts the passenger down, which frees the carried body).
 	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	if interaction_active():
 		_halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
 	_end_ladder()
 	end_stairs()
-	_cancel_attack_sequence()
+	presenter.attack.cancel()
 	readiness.clear()
-	_return_generation += 1
+	presenter.cancel_hold()
 	_play(&"defeat")
+	return presenter.begin_defeat(animation_controller.state_length(&"defeat") if is_instance_valid(animation_controller) else 0.0)
 
 func face_world_position(world_position: Vector3) -> void:
 	var flat_direction := world_position - global_position
@@ -818,7 +743,7 @@ func _process(delta: float) -> void:
 	_sync_aim_hold(delta)
 	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
-	_advance_attack(delta)
+	presenter.advance_actions(delta)
 	_tick_traversal(delta)
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
@@ -847,17 +772,6 @@ func _align_weapon_to_aim() -> void:
 func _play(state_name: StringName) -> void:
 	if is_instance_valid(animation_controller):
 		animation_controller.play(state_name)
-
-func _return_to_idle_after(seconds: float) -> void:
-	_return_generation += 1
-	var generation := _return_generation
-	await get_tree().create_timer(seconds, false).timeout
-	if generation != _return_generation:
-		return
-	if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
-		_play(&"carry_move" if _segment_state == &"move" and _carrying() else _segment_state)
-	else:
-		present_idle()
 
 func _forward_state_change(state_name: StringName) -> void:
 	presentation_state_changed.emit(state_name)

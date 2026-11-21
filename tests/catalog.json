@@ -101,6 +101,7 @@
   "combat_guard_coverage_cache_test": {"sub": ["combat"], "scope": "battle"},
   "combat_height_range_test": {"sub": ["combat"], "scope": "battle"},
   "combat_prediction_consistency_test": {"sub": ["combat"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},
+  "combat_presentation_lifecycle_test": {"sub": ["animation", "combat", "actions"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync"]},
   "combat_real_map_closure_test": {"sub": ["actions", "combat", "core"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},
   "combat_reliability_test": {"sub": ["combat"], "scope": "integration", "crit": "critical", "contracts": ["authority"]},
   "combat_roll_endpoint_test": {"sub": ["combat"], "scope": "unit", "fast": true},

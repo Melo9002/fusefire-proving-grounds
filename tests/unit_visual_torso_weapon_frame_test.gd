@@ -24,8 +24,8 @@ const POSES := [
 ]
 
 func _set_pose(rig: UnitVisualAdapter, state: String, cover: float, aimed: bool) -> void:
-	rig._aim_held = aimed
-	rig._aim_release_left = 1000000.0
+	rig.presenter.aim.held = aimed
+	rig.presenter.aim.release_left = 1000000.0
 	if cover > 0.0:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": cover, "direction": Vector3.FORWARD}
 	else:
@@ -54,8 +54,8 @@ func _kick(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, kick: St
 	else:
 		rig.animation_controller.play(kick)
 	var worst := {"support_shift": 0.0, "dominant_shift": 0.0, "dominant_wrist": 0.0, "support_wrist": 0.0, "stock": 0.0, "frame_angle": 0.0, "muzzle_vs_frame": 0.0}
-	var t0: float = rig._presentation_clock
-	while rig._presentation_clock - t0 < 0.5:
+	var t0: float = rig.presenter.time
+	while rig.presenter.time - t0 < 0.5:
 		await process_frame
 		var s: Dictionary = diagnostics.latest
 		worst.support_shift = maxf(worst.support_shift, (s.hands[1].palm_in_weapon_frame as Vector3).distance_to(base_support) * 1000.0)

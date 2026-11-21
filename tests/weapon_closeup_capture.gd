@@ -38,9 +38,8 @@ func _run() -> void:
 	_marker(rig.sight_marker, Color(0.2, 0.4, 1.0))
 	_marker(rig.muzzle_socket, Color(1.0, 0.2, 0.2))
 	rig.animation_controller.play(&"aim")
-	rig._aim_held = true
-	rig._aim_release_left = 1000000.0
-	rig._retarget_aim_blend()
+	rig.presenter.aim.held = true
+	rig.presenter.aim.release_left = 1000000.0
 	for i in 60: await process_frame
 	await create_timer(1.0).timeout
 	# Distance from the support palm to the middle of the front handle (weapon frame, from the mesh profile).

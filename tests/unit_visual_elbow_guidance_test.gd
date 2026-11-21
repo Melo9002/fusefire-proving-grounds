@@ -28,8 +28,8 @@ const POSES := [
 ]
 
 func _set_pose(pose: Array, aimed := true) -> void:
-	rig._aim_held = aimed
-	rig._aim_release_left = 1000000.0
+	rig.presenter.aim.held = aimed
+	rig.presenter.aim.release_left = 1000000.0
 	if float(pose[2]) > 0.0:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": pose[2], "direction": Vector3.FORWARD}
 	else:
@@ -87,8 +87,8 @@ func _transition(from_pose: Array, to_pose: Array) -> Dictionary:
 	var prev := latest.duplicate(true)
 	var worst := {"swivel_jump": 0.0, "elbow_jump": 0.0, "pole_jump": 0.0, "wrist_err": 0.0, "max_height": -99.0}
 	var prev_pole: Vector3 = rig.right_elbow_pole.global_position
-	var t0: float = rig._presentation_clock
-	while rig._presentation_clock - t0 < 3.0:
+	var t0: float = rig.presenter.time
+	while rig.presenter.time - t0 < 3.0:
 		await process_frame
 		for i in 2:
 			if float(latest[i].offset_from_line) > 3.0 and float(prev[i].offset_from_line) > 3.0:
@@ -172,8 +172,8 @@ func _run() -> void:
 		var worst := {"swivel": 0.0, "support": 0.0, "stock": 0.0, "wrist": 0.0}
 		var base_swivel: float = latest[0].swivel
 		rig.animation_controller.play(&"shoot")
-		var t0: float = rig._presentation_clock
-		while rig._presentation_clock - t0 < 0.5:
+		var t0: float = rig.presenter.time
+		while rig.presenter.time - t0 < 0.5:
 			await process_frame
 			worst.swivel = maxf(worst.swivel, _angle_gap(latest[0].swivel, base_swivel))
 			worst.support = maxf(worst.support, (diagnostics.latest.hands[1].palm_in_weapon_frame as Vector3).distance_to(base_support) * 1000.0)

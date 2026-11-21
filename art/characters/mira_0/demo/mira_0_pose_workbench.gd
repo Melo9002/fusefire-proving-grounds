@@ -252,6 +252,7 @@ func _process(_delta: float) -> void:
 	_advance_stair_demo(_delta)
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
+	presenter.advance_actions(_delta)   # the same action stage the tactical host runs: the presenter advances the rescue clock, this rig applies it
 	_update_weapon_pose()
 
 

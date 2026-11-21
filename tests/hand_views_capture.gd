@@ -35,9 +35,8 @@ func _run() -> void:
 	camera.make_current()
 	for i in 20: await process_frame
 	rig.animation_controller.play(state)
-	rig._aim_held = state == &"aim"
-	rig._aim_release_left = 1000000.0
-	rig._retarget_aim_blend()
+	rig.presenter.aim.held = state == &"aim"
+	rig.presenter.aim.release_left = 1000000.0
 	for i in 60: await process_frame
 	await create_timer(1.0).timeout
 	var tiles: Array[Image] = []

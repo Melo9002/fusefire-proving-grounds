@@ -51,8 +51,8 @@ func _sheet(tiles: Array[Image], tile: Vector2i) -> Image:
 
 func _apply(rig: UnitVisualAdapter, entry: String) -> void:
 	var state := entry.split("@")[0].replace("+aim", "")
-	rig._aim_held = entry.ends_with("+aim")
-	rig._aim_release_left = 1000000.0
+	rig.presenter.aim.held = entry.ends_with("+aim")
+	rig.presenter.aim.release_left = 1000000.0
 	if "@" in entry:
 		var height_text := entry.split("@")[1].replace("+aim", "")
 		if state == "shoot":
@@ -63,7 +63,6 @@ func _apply(rig: UnitVisualAdapter, entry: String) -> void:
 	else:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	rig.animation_controller.play(StringName(state))
-	rig._retarget_aim_blend()
 
 func _settle(entry: String) -> void:
 	if entry.begins_with("shoot@"):

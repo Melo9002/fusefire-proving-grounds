@@ -104,7 +104,20 @@ func _run() -> void:
 		if path == "tests/animation_module_boundaries_test.gd":
 			continue
 		check(retired.search(_code(path)) == null, "%s still uses the retired rescue_interaction_finished signal: observe the ActionHandle that begin_pickup/begin_release/present_pickup return" % path)
-		# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
+		# Combat presentation ownership (Task 07 package 6): the attack, the aim hold, the timed hit return and the rescue clock live in the presenter. The adapter, the rig and the workbench keep no clock,
+	# timer or lifecycle state of their own for them, and nothing observes the retired signals or polls the retired "pending" accessor.
+	var retired_state := RegEx.create_from_string("_return_generation|_return_to_idle_after|\battack_phase\b|\bAttackPhase\b|_aim_held|_aim_release_left|_presentation_clock|_attack_shot_state|_recover_left|\bshot_fired\b|attack_sequence_ended|is_attack_pending|_retarget_aim_blend|ATTACK_SOURCE|AIM_RELEASE_GRACE")
+	for path in ["presentation/characters/runtime/unit_visual_adapter.gd", "presentation/characters/runtime/character_rig.gd", "art/characters/mira_0/demo/mira_0_pose_workbench.gd", "units/tactical_unit.gd", "presentation/actions/tactical_action_presenter.gd"]:
+		var found := retired_state.search(_code(path))
+		check(found == null, "%s still uses retired combat-presentation state (%s): it belongs to CharacterPresenter now" % [path, found.get_string() if found else ""])
+	check(not _code("presentation/characters/runtime/unit_visual_adapter.gd").contains("create_timer("), "The adapter starts no scene-tree timer: timed states are the presenter's (begin_hold)")
+	var advances := RegEx.create_from_string("rescue_interaction\\.advance\\(").search_all(rig_code + _code("presentation/characters/runtime/unit_visual_adapter.gd") + _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd"))
+	check(advances.size() == 1 and rig_code.contains("func advance_rescue_clock("), "The rescue clock is advanced in exactly one place (%d), CharacterRig.advance_rescue_clock, which only the presenter's action stage calls" % advances.size())
+	var stage_callers := RegEx.create_from_string("advance_rescue_clock\\(")
+	for path in _scripts("presentation") + _scripts("art/characters"):
+		if path != "presentation/characters/runtime/character_rig.gd" and path != "presentation/characters/presenter/character_presenter.gd":
+			check(stage_callers.search(_code(path)) == null, "%s advances the rescue clock itself: it is the presenter's action stage" % path)
+	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")
 	for path in ["cover_crouch_modifier", "hand_grip_modifier", "locomotion_pose_modifier", "traversal_pose_modifier", "weapon_pose_modifier"]:

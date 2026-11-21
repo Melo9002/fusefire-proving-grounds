@@ -50,10 +50,10 @@ func _run() -> void:
 		attack.call()
 		var taken := {"aim": false, "shot": false}
 		var guard := 0
-		while (done.is_empty() or adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE) and guard < 1500:
+		while (done.is_empty() or adapter.presenter.attack.phase != AttackSequence.Phase.NONE) and guard < 1500:
 			guard += 1
 			await process_frame
-			if not taken.aim and adapter.aim_blend > 0.9 and adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE:
+			if not taken.aim and adapter.aim_blend > 0.9 and adapter.presenter.attack.phase != AttackSequence.Phase.NONE:
 				taken.aim = true
 				tiles.append(await _snap("aim"))
 			if not taken.shot and adapter.get_presentation_state() in [&"shoot", &"shoot_left", &"shoot_right"]:

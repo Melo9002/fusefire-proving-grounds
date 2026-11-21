@@ -63,6 +63,13 @@ func locomotion_axes() -> Dictionary:
 	return {"up": _fallbacks.anatomical_up(), "forward": _fallbacks.anatomical_forward(), "hinge": _fallbacks.hip_hinge()}
 
 
+## How long the clip of a state is, seconds (0 when it has none). The one-shot states (hit, defeat) report their own length so a finite presentation does not repeat it as a constant.
+func state_length(state_name: StringName) -> float:
+	if animation_player == null or not animation_player.has_animation(state_name):
+		return 0.0
+	return animation_player.get_animation(state_name).length
+
+
 func play(state_name: StringName) -> void:
 	if state_name not in STATES or playback == null:
 		return

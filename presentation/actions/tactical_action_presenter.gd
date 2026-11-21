@@ -45,8 +45,7 @@ func present_attack(result: AttackActionResult) -> void:
 		result.presentation_error = "Attack actor left the scene during presentation"
 		await _finish_camera(camera_presented)
 		return
-	attacker.present_attack(result.target_position)
-	await _wait_for_shot(attacker)
+	await _wait_for_shot(attacker.present_attack(result.target_position))
 	if result.did_hit and is_instance_valid(target):
 		target.present_attack_impact(result.target_defeated)
 		if result.target_defeated: target.finish_defeat_presentation()
@@ -59,8 +58,7 @@ func present_attack(result: AttackActionResult) -> void:
 			var return_camera_subject := _attack_camera_subject(target, attacker)
 			var return_camera_focus := target.global_position if return_camera_subject == attacker else (attacker.global_position if is_instance_valid(attacker) else result.target_position)
 			camera_presented = await action_camera_director.present(return_camera_subject, &"attack", return_camera_focus, 0, true) or camera_presented
-		target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position)
-		await _wait_for_shot(target)
+		await _wait_for_shot(target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position))
 		if event.did_hit and is_instance_valid(attacker):
 			attacker.present_attack_impact(event.target_defeated)
 			if event.target_defeated: attacker.finish_defeat_presentation()
@@ -178,8 +176,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 				reaction_camera_used = await action_camera_director.present(reaction_camera_subject, &"attack", reaction_camera_focus, 0, true)
 			if not _move_actor_available(unit): return reaction_camera_used
 			if is_instance_valid(watcher):
-				watcher.present_attack(unit.global_position)
-				await _wait_for_shot(watcher)
+				await _wait_for_shot(watcher.present_attack(unit.global_position))
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
 			if attack_feedback.is_valid(): attack_feedback.call(watcher, unit, event.did_hit, event.hit_chance)
@@ -294,13 +291,14 @@ func _camera_available() -> bool:
 	return is_instance_valid(action_camera_director) and not (replay_mode_provider.is_valid() and replay_mode_provider.call())
 
 ## The attack was resolved before it was shown. Its target reacts when the shot is visible, not when the
-## attacker starts raising the weapon. The visual adapter bounds the raise itself; the deadline only guards
-## against a unit that disappears or stops processing.
-func _wait_for_shot(unit: TacticalUnit) -> void:
-	if not is_instance_valid(unit) or not is_inside_tree():
+## attacker starts raising the weapon. The presenter bounds the raise itself; the deadline only guards
+## against a character that stops processing. The shot handle settles when the shot is shown, when the attack
+## is ended by something newer (a hit, a defeat) or when the character is removed; it never changes the result.
+func _wait_for_shot(attack: AttackHandle) -> void:
+	if attack == null or not is_inside_tree():
 		return
 	var deadline := Time.get_ticks_msec() + 3000
-	while is_instance_valid(unit) and unit.is_attack_pending() and Time.get_ticks_msec() < deadline:
+	while not attack.shot.is_done() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 
 func _safe_delay(seconds: float) -> void:

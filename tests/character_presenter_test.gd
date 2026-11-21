@@ -65,7 +65,7 @@ func _run() -> void:
 	var t0 := v.presenter.time
 	await process_frame
 	await process_frame
-	check(v.presenter.time > t0 and absf(v._presentation_clock - v.presenter.time) < 0.000001, "The adapter's presentation clock is the presenter's time (one owner)")
+	check(v.presenter.time > t0, "The presenter's presentation clock advances, and it is the only one (the adapter keeps no clock of its own)")
 
 	# ---- 4. A reported velocity turns the body toward it and drives the gait; silence settles it.
 	v.global_rotation.y = 0.0

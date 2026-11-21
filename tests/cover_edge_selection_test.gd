@@ -150,7 +150,7 @@ func _run() -> void:
 		previous = direction
 		depth_low = minf(depth_low, adapter.crouch_modifier.depth)
 		depth_high = maxf(depth_high, adapter.crouch_modifier.depth)
-		if not hit_sent and adapter.attack_phase == UnitVisualAdapter.AttackPhase.NONE and not done.is_empty() and Time.get_ticks_msec() > t_end - 2200:
+		if not hit_sent and adapter.presenter.attack.phase == AttackSequence.Phase.NONE and not done.is_empty() and Time.get_ticks_msec() > t_end - 2200:
 			hit_sent = true
 			adapter.present_hit()
 	print("  cover firing: worst muzzle angular rate %.0f deg/s, crouch depth range %.2f to %.2f" % [worst_rate, depth_low, depth_high])

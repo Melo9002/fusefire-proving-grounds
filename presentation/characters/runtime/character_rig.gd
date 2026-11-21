@@ -1163,12 +1163,17 @@ func _hands_to_contacts() -> void:
 const CARRY_LEAN_DEGREES := 20.0
 const CARRY_LEAN_SECONDS := 0.4
 
-## Once per frame while carrying (before the skeleton's modifiers): advances the interaction, then sets the carrier's body from
+## The rescue clock moves on one frame. Called by the presenter's action stage, once per frame, for every host: the presenter owns WHEN the lift progresses, this rig owns what it looks like. A character that is
+## not a loaded carrier (see _loaded_locomotion) does not advance it, exactly as it never applied it.
+func advance_rescue_clock(delta: float) -> void:
+	if rescue_interaction.active() and _loaded_locomotion():
+		rescue_interaction.advance(delta)
+
+
+## Once per frame while carrying (before the skeleton's modifiers, after the presenter has advanced the clock): sets the carrier's body from
 ## its sample (bend, kneel, lean, step toward the passenger, base clip, weapon position).
 func _apply_carry_posture() -> void:
 	var delta := get_process_delta_time()
-	if rescue_interaction.active():
-		rescue_interaction.advance(delta)
 	_interaction_sample = rescue_interaction.sample()
 	var sample := _interaction_sample
 	var interacting := rescue_interaction.active()

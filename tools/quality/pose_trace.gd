@@ -9,9 +9,21 @@ const BONES := ["Hips", "Spine", "Spine2", "Neck", "Head", "LeftShoulder", "Left
 const DT := 1.0 / 60.0
 var traces := {}
 var _frame_record: Dictionary = {}
+var meta := {}
 
 func _initialize() -> void:
 	_run.call_deferred()
+
+## Attack bookkeeping is read through whichever owner the code under test has (the adapter before Task 07 package 6, the presenter after), so one trace compares both.
+func _attack_phase(v: UnitVisualAdapter) -> int:
+	if v.presenter.get("attack") != null:
+		return int(v.presenter.attack.phase)
+	return int(v.get("attack_phase"))
+
+func _attack_timeline(v: UnitVisualAdapter) -> Dictionary:
+	if v.presenter.get("attack") != null:
+		return v.presenter.attack.timeline
+	return v.get("attack_timeline")
 
 func _snapshot(v: UnitVisualAdapter) -> Dictionary:
 	var to_root: Transform3D = v.character_root.global_transform.affine_inverse() * v.skeleton.global_transform
@@ -39,7 +51,7 @@ func _snapshot(v: UnitVisualAdapter) -> Dictionary:
 		passenger = [pt.origin.x, pt.origin.y, pt.origin.z, pq.x, pq.y, pq.z, pq.w]
 	return {"bones": bones, "targets": targets, "leg_ik": v.leg_ik.active if is_instance_valid(v.leg_ik) else false, "arm_ik": v.arm_ik.active, "stowed": v.is_weapon_stowed(),
 		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y,
-		"passenger": passenger, "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z]}
+		"passenger": passenger, "state": String(v.get_presentation_state()), "attack_phase": _attack_phase(v), "aim_blend": v.aim_blend, "readiness": int(v.readiness_level()), "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z]}
 
 func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) -> void:
 	var stage := Node3D.new()
@@ -60,8 +72,17 @@ func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) ->
 		rows.append(_frame_record.duplicate(true))
 	v.skeleton.skeleton_updated.disconnect(capture)
 	traces[tag] = rows
+	var timeline := _attack_timeline(v)
+	var phases := []
+	for p in timeline.get("phases", []):
+		phases.append([int(p.phase), snappedf(float(p.t), 0.0001)])
+	meta[tag] = {"fired": timeline.get("fired", false), "forced": timeline.get("forced", false), "cancelled": timeline.get("cancelled", false), "fire_t": snappedf(float(timeline.get("fire_t", -1.0)), 0.0001),
+		"end_t": snappedf(float(timeline.get("end_t", -1.0)), 0.0001), "phases": phases}
 	stage.queue_free()
 	await process_frame
+
+func _place(v: UnitVisualAdapter) -> Vector3:
+	return v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0
 
 func _cover(v: UnitVisualAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
 	v.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
@@ -104,25 +125,78 @@ func _run() -> void:
 		if i >= 5 and i < 160: v.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))
 		if i == 160: v.end_traversal())
 	await _scenario("carry", 160, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true
 		if i == 20: v.begin_carry()
 		if i >= 20 and i < 100: v.update_locomotion(Vector3(0, 0, 1.0), DT)
 		if i == 110: v.end_carry())
 	# Rescue (Task 07 package 5): a whole pickup (start, contact, attachment, settle), the carry walking, and a whole release. 3.0 s pickup, 3.0 s release at 60 fps.
 	await _scenario("rescue_pickup", 260, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 10: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
 		if i >= 200 and i < 250: v.update_locomotion(Vector3(0, 0, 1.0), DT))
 	await _scenario("rescue_release", 360, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 0: v.begin_carry()
 		if i >= 5 and i < 60: v.update_locomotion(Vector3(0, 0, 1.0), DT)
 		if i == 90: v.begin_release())
 	await _scenario("rescue_cover_return", 330, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 0: _cover(v, 1.1)
 		if i == 30: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
 		if i == 100: v.end_carry()
 		if i == 101: _cover(v, 1.1))
 	await _scenario("rescue_cancel", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 10: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
 		if i == 90: v.end_carry())
+	# Combat presentation (Task 07 package 6): attack from several starting poses, repeated and interrupted attacks, aim hold and release, hit and defeat in the middle of other actions.
+	var ahead := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + v.global_basis.z * 6.0
+	var side := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + v.global_basis.x * 5.0 + v.global_basis.z * 2.0
+	await _scenario("attack_standing", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_attack(ahead.call(v)))
+	await _scenario("attack_aimed", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.present_aim()
+		if i == 60: v.present_attack(ahead.call(v)))
+	await _scenario("attack_cover_low", 220, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: _cover(v, 1.1)
+		if i == 30: v.present_attack(side.call(v)))
+	await _scenario("attack_full_cover", 220, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: _cover(v, 2.0, MapCellData.CoverType.FULL)
+		if i == 30: v.present_attack(side.call(v)))
+	await _scenario("attack_repeat", 260, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_attack(ahead.call(v))
+		if i == 24: v.present_attack(ahead.call(v))
+		if i == 140: v.present_attack(side.call(v)))
+	await _scenario("hit_idle", 160, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_hit()
+		if i == 90: v.present_hit())
+	await _scenario("hit_during_aim", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.present_aim()
+		if i == 40: v.present_hit())
+	await _scenario("hit_during_attack", 220, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_attack(ahead.call(v))
+		if i == 32: v.present_hit())
+	await _scenario("defeat_during_attack", 180, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_attack(ahead.call(v))
+		if i == 31: v.present_defeat()
+		if i == 50: v.present_defeat())
+	await _scenario("defeat_during_aim", 160, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.present_aim()
+		if i == 40: v.present_defeat())
+	await _scenario("aim_release", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 10: v.present_aim()
+		if i == 150: v.present_hit())
+	await _scenario("rescue_defeat", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true
+		if i == 10: v.begin_pickup(_place(v))
+		if i == 70: v.present_defeat()
+		if i == 72: v.present_carry_released())
+	await _scenario("rescue_hit_idle_timer", 260, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.preview_carrying = true
+		if i == 10: v.present_pickup()
+		if i == 40: v.present_hit())
+	# Timelines the code under test recorded for the attacks (phases and times in presentation seconds): the shot and release timing the frame-by-frame rows cannot show on their own.
+	traces["__meta"] = meta
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(traces))
 	file.close()

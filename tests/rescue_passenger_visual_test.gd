@@ -342,8 +342,8 @@ func _run() -> void:
 	root.add_child(reference)
 	reference.position = Vector3(3.0, 0.0, 0.0)
 	for r in [rig, reference]:
-		r._aim_held = true
-		r._aim_release_left = 1000000.0
+		r.presenter.aim.held = true
+		r.presenter.aim.release_left = 1000000.0
 		r.animation_controller.play(&"aim")
 	await create_timer(1.8).timeout
 	var local_of := func(r: UnitVisualAdapter, node: Node3D) -> Vector3: return r.character_root.global_transform.affine_inverse() * node.global_position

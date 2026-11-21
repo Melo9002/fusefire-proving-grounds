@@ -78,9 +78,8 @@ func _production_rig() -> void:
 		skeleton.add_child(attachment)
 		bone_attachments[bone] = attachment
 	rig.animation_controller.play(&"aim")
-	rig._aim_held = true
-	rig._aim_release_left = 1000000.0
-	rig._retarget_aim_blend()
+	rig.presenter.aim.held = true
+	rig.presenter.aim.release_left = 1000000.0
 	for i in 80: await process_frame
 	var weapon_before: Transform3D = rig.weapon.global_transform
 	var wrist_before: Vector3 = (bone_attachments[&"mixamorig_RightHand"] as Node3D).global_position
@@ -130,9 +129,8 @@ func _production_rig() -> void:
 
 	# The pose changes the numbers.
 	var aim_palm: Vector3 = (second.hands as Array)[HandContactSampler.SUPPORT].palm
-	rig._aim_held = false
+	rig.presenter.aim.held = false
 	rig.animation_controller.play(&"rifle_idle")
-	rig._retarget_aim_blend()
 	for i in 80: await process_frame
 	var idle_sample := diagnostics.latest
 	check(String(idle_sample.meta.state) == "rifle_idle" and (((idle_sample.hands as Array)[HandContactSampler.SUPPORT].palm as Vector3).distance_to(aim_palm) > 0.02), "The readings follow a pose change (support palm moved %.1f cm)" % (((idle_sample.hands as Array)[HandContactSampler.SUPPORT].palm as Vector3).distance_to(aim_palm) * 100.0))
@@ -140,9 +138,8 @@ func _production_rig() -> void:
 	# Contact reference and displacement.
 	diagnostics.mark_reference()
 	check(not diagnostics.reference.is_empty() and float(diagnostics.displacement.support.palm) == 0.0 and float(diagnostics.peak_displacement.support.palm) == 0.0, "Marking a reference zeroes the displacement and the peaks")
-	rig._aim_held = true
+	rig.presenter.aim.held = true
 	rig.animation_controller.play(&"aim")
-	rig._retarget_aim_blend()
 	diagnostics.start_recording()
 	for i in 60: await process_frame
 	var summary := diagnostics.stop_recording()
@@ -153,9 +150,8 @@ func _production_rig() -> void:
 	var probe := _TimingProbe.new()
 	probe.diagnostics = diagnostics
 	stage.add_child(probe)
-	rig._aim_held = false
+	rig.presenter.aim.held = false
 	rig.animation_controller.play(&"move")
-	rig._retarget_aim_blend()
 	for i in 60: await process_frame
 	check(probe.samples > 10 and probe.worst_wrist_metres >= 0.0 and is_finite(probe.worst_wrist_metres), "Sampling from _process was compared with the post-update sample (%d samples)" % probe.samples)
 	print("TIMING sampling from _process instead of after the skeleton update: worst wrist difference %.2f mm, worst palm %.2f mm, worst weapon basis %.4f deg over %d frames while moving" % [probe.worst_wrist_metres * 1000.0, probe.worst_palm_metres * 1000.0, probe.worst_weapon_degrees, probe.samples])

@@ -95,7 +95,7 @@ func _run() -> void:
 	var world_before := actor.global_position
 	var ap_before := actor.stats.current_ap
 	var observed := {"states": [], "muzzle_error": 99.0, "worst_rate": 0.0, "plan_mode": -1, "plan_side": 0}
-	adapter.shot_fired.connect(func(_timeline: Dictionary) -> void:
+	adapter.presenter.attack.shot_released.connect(func(_timeline: Dictionary) -> void:
 		var to_target := enemy.global_position - adapter.muzzle_socket.global_position
 		to_target.y = 0.0
 		var muzzle_dir := adapter.muzzle_socket.global_basis.z
@@ -159,11 +159,11 @@ func _run() -> void:
 	var lowest_depth := 99.0
 	var hit_sent := false
 	var hit_guard := 0
-	while (hit_done.is_empty() or adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE) and hit_guard < 1500:
+	while (hit_done.is_empty() or adapter.presenter.attack.phase != AttackSequence.Phase.NONE) and hit_guard < 1500:
 		hit_guard += 1
 		await process_frame
 		lowest_depth = minf(lowest_depth, adapter.crouch_modifier.depth) if hit_sent else lowest_depth
-		if not hit_sent and adapter.attack_phase == UnitVisualAdapter.AttackPhase.RECOVER:
+		if not hit_sent and adapter.presenter.attack.phase == AttackSequence.Phase.RECOVER:
 			hit_sent = true
 			adapter.present_hit()
 			lowest_depth = adapter.crouch_modifier.depth
@@ -231,7 +231,7 @@ func _fire_and_measure(f, adapter: UnitVisualAdapter, actor: TacticalUnit, enemy
 	attack.call()
 	var previous := Vector3.ZERO
 	var guard := 0
-	while (done.is_empty() or adapter.attack_phase != UnitVisualAdapter.AttackPhase.NONE) and guard < 1200:
+	while (done.is_empty() or adapter.presenter.attack.phase != AttackSequence.Phase.NONE) and guard < 1200:
 		guard += 1
 		await process_frame
 		var dt := _frame_dt()
