@@ -36,8 +36,13 @@ const KNEEL_REAR_SHIN_BACK := deg_to_rad(80.0)
 const KNEEL_KNEE_HEIGHT := 0.06
 const KNEEL_FRONT_SHIN_LEAN := deg_to_rad(10.0)
 const KNEEL_LEAN_DEGREES := 22.0
-## How far the resting rear foot points its toes down from "flat".
-const KNEEL_TOE_DEGREES := 55.0
+## How far the resting rear foot is plantar-flexed from a LEVEL foot, degrees. The rear shin lies back along the ground, so a level foot (toes forward) would fold back over the calf; the foot
+## has to be turned nearly all the way round, toes pointing back and down with the instep toward the floor. The old value (+55, applied the other way) left the foot folded UP and FORWARD over
+## the calf, about 150 degrees from the shin line (dorsiflexed far past what an ankle can do): the visibly broken rear foot. 145 leaves about 35 degrees between the shin line and the foot, the instep close to the floor (the toe tips do not go below the planted foot's toes).
+const KNEEL_REAR_FOOT_PLANTAR_DEGREES := 145.0
+## The rear foot's final direction (see _aim_rear_foot): the ankle-to-toe-tip line points back, this far outward from straight back, and this far below level (the ankle sits a little above the floor and the toe tips on it).
+const KNEEL_REAR_FOOT_TOE_OUT_DEGREES := 12.0
+const KNEEL_REAR_FOOT_DROP_DEGREES := 8.0
 
 ## Requested hip drop in metres. Clamped to max_depth.
 var depth := 0.0
@@ -60,6 +65,10 @@ var _hips := -1
 var _upper: Array[int] = []
 var _lower: Array[int] = []
 var _foot: Array[int] = []
+## The toe bone below each foot (-1 when the foot has none): the rear foot of the kneel is aimed along foot-to-toe.
+var _toe: Array[int] = []
+## Per foot: the vector from the ankle to the tip of the toes (the last toe bone, or the toe bone), in the foot bone's own frame at rest. The kneel aims this line.
+var _foot_tip_local: Array[Vector3] = []
 var _spine: Array[int] = []
 var _support_clavicle := -1
 ## Per bone: the local axis (sign included) whose positive rotation swings the child joint forward.
@@ -81,6 +90,13 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 		_upper.append(target.find_bone(bones[side + "_upper"]))
 		_lower.append(target.find_bone(bones[side + "_lower"]))
 		_foot.append(target.find_bone(bones[side + "_foot"]))
+		var toe_children := target.get_bone_children(_foot[-1]) if _foot[-1] >= 0 else PackedInt32Array()
+		_toe.append(toe_children[0] if not toe_children.is_empty() else -1)
+		var tip := _toe[-1]
+		while tip >= 0 and not target.get_bone_children(tip).is_empty():
+			tip = target.get_bone_children(tip)[0]
+		var foot_rest := target.get_bone_global_rest(_foot[-1]) if _foot[-1] >= 0 else Transform3D.IDENTITY
+		_foot_tip_local.append(foot_rest.basis.orthonormalized().inverse() * (target.get_bone_global_rest(tip).origin - foot_rest.origin) if tip >= 0 else Vector3.ZERO)
 	for bone_name in bones.spine:
 		_spine.append(target.find_bone(bone_name))
 	var top := target.find_bone(bones.head_top)
@@ -257,14 +273,40 @@ func _process_modification() -> void:
 			if side == kneel_leg:
 				thigh_k = -rad_to_deg(KNEEL_REAR_THIGH_BACK)
 				knee_k = rad_to_deg(KNEEL_REAR_SHIN_BACK - KNEEL_REAR_THIGH_BACK)
-				foot_k = -thigh_k + knee_k + KNEEL_TOE_DEGREES
+				foot_k = -thigh_k + knee_k - KNEEL_REAR_FOOT_PLANTAR_DEGREES
 			thigh = lerpf(thigh, thigh_k, weight)
 			knee = lerpf(knee, knee_k, weight)
 			foot = lerpf(foot, foot_k, weight)
 		_set_flexion(target, _upper[side], thigh)
 		_set_flexion(target, _lower[side], -knee)
 		_set_flexion(target, _foot[side], foot)
+		if side == kneel_leg and weight > 0.0 and not _kneel_front.is_empty():
+			_aim_rear_foot(target, side, weight)
 	_apply_lean(target, current_lean_degrees() + aim_lean_degrees)
+
+## Finishes the rear foot of the half-kneel by DIRECTION instead of by a flexion number: the foot-to-toe line is turned to point back, a little outward and slightly down so the instep rests on
+## the floor, whatever this body's foot bone happens to be rotated at rest and whichever leg is down. The flexion above only brings the foot close (so the turn here is small and never ambiguous);
+## the turn is blended in with the kneel weight. It is expressed against the character's own up and forward, so it is the same at any elevation and on either side.
+func _aim_rear_foot(target: Skeleton3D, side: int, weight: float) -> void:
+	var toe := _toe[side]
+	if toe < 0:
+		return
+	var foot := _foot[side]
+	var up := (target.global_basis.inverse() * Vector3.UP).normalized()
+	var forward := (_forward_skeleton - up * _forward_skeleton.dot(up)).normalized()
+	var left := up.cross(forward).normalized()
+	var outward := left if side == 0 else -left
+	var out_angle := deg_to_rad(KNEEL_REAR_FOOT_TOE_OUT_DEGREES)
+	var drop_angle := deg_to_rad(KNEEL_REAR_FOOT_DROP_DEGREES)
+	var horizontal := -forward * cos(out_angle) + outward * sin(out_angle)
+	var wanted := (horizontal * cos(drop_angle) - up * sin(drop_angle)).normalized()
+	var foot_basis := target.get_bone_global_pose(foot).basis.orthonormalized()
+	var toe_direction := (foot_basis * _foot_tip_local[side]).normalized()
+	var turn := Quaternion.IDENTITY.slerp(Quaternion(toe_direction, wanted), weight)
+	var parent_basis := target.get_bone_global_pose(target.get_bone_parent(foot)).basis.orthonormalized()
+	# A bone's pose rotation is its whole local rotation (the rest rotation is its default), so the new local is simply the new global seen from the parent.
+	var local := parent_basis.inverse() * (Basis(turn) * foot_basis)
+	target.set_bone_pose_rotation(foot, local.get_rotation_quaternion())
 
 func _apply_support_reach(target: Skeleton3D) -> void:
 	if _support_clavicle < 0 or support_reach_degrees <= 0.05:

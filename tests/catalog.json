@@ -153,6 +153,7 @@
   "industrial_warehouse_ai_smoke": {"sub": ["ai", "generation"], "scope": "e2e"},
   "industrial_warehouse_capture": {"sub": ["generation"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "industrial_warehouse_vertical_slice_smoke": {"sub": ["generation"], "scope": "integration", "fast": true},
+  "kneel_foot_pose_test": {"sub": ["animation"], "scope": "integration", "fast": true},
   "locomotion_cover_composition_test": {"sub": ["animation", "assets", "movement"], "scope": "component", "crit": "critical", "contracts": ["presentation-sync"], "smoke": true, "fast": true},
   "locomotion_foundation_test": {"sub": ["animation", "assets", "movement"], "scope": "integration", "fast": true},
   "locomotion_gait_test": {"sub": ["animation", "assets", "movement"], "scope": "component"},
