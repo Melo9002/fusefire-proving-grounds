@@ -150,15 +150,15 @@ func _carrier_falls_during_the_visual_pickup() -> void:
 	await create_timer(0.3).timeout
 	check(carrier.is_carrying_unit(), "Pickup setup: the carrier has taken the VIP")
 	var adapter := carrier.visual_adapter
-	check(adapter.interaction_active() and is_instance_valid(adapter.carry_passenger), "The rescue starts the visual lift, with one passenger")
-	check(absf(adapter.carry_passenger.ground_origin.x - target_world.x) < 0.01 and absf(adapter.carry_passenger.ground_origin.z - target_world.z) < 0.01, "...lying where the rescued actor was")
+	check(adapter.rig.interaction_active() and is_instance_valid(adapter.rig.carry_passenger), "The rescue starts the visual lift, with one passenger")
+	check(absf(adapter.rig.carry_passenger.ground_origin.x - target_world.x) < 0.01 and absf(adapter.rig.carry_passenger.ground_origin.z - target_world.z) < 0.01, "...lying where the rescued actor was")
 	check(not target.visible and level.find_children("RescuePassenger", "", true, false).size() == 1, "The real actor is hidden and exactly one visual passenger shows")
 	await create_timer(0.5).timeout
 	carrier.stats.take_damage(1000)
 	await create_timer(0.3).timeout
 	check(target.visible and target.is_inside_tree() and not carrier.is_carrying_unit(), "The carrier fell mid-pickup: the VIP is revealed, active, and carried by no one")
-	check(not is_instance_valid(adapter.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "...and the carrier's visual passenger is gone, so the VIP is shown only once")
-	check(not adapter.interaction_active() and adapter.weapon.get_parent() == adapter.weapon_attachment, "...the interaction is over and the fallen carrier's weapon is back in its hand")
+	check(not is_instance_valid(adapter.rig.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "...and the carrier's visual passenger is gone, so the VIP is shown only once")
+	check(not adapter.rig.interaction_active() and adapter.rig.weapon.get_parent() == adapter.rig.weapon_attachment, "...the interaction is over and the fallen carrier's weapon is back in its hand")
 	check(level.objective_manager.get_objective(&"rescue").is_active(), "...and the rescue is open to another carrier")
 	await _finish(level)
 
@@ -169,10 +169,10 @@ func _carrier_falls_while_carrying_after_the_pickup() -> void:
 	var carrier: TacticalUnit = turns.player_units[0]
 	check(await _rescue(level, carrier, target), "Carry setup: the carrier rescues the VIP (the action returns after the lift)")
 	var adapter := carrier.visual_adapter
-	check(not adapter.interaction_active() and is_instance_valid(adapter.carry_passenger) and adapter.carry_passenger.lift == 1.0, "The action returned with the pickup complete and the passenger across the shoulders")
+	check(not adapter.rig.interaction_active() and is_instance_valid(adapter.rig.carry_passenger) and adapter.rig.carry_passenger.lift == 1.0, "The action returned with the pickup complete and the passenger across the shoulders")
 	carrier.stats.take_damage(1000)
 	await create_timer(0.3).timeout
-	check(target.visible and not is_instance_valid(adapter.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "A carrier that falls with the passenger on its shoulders leaves one passenger: the revealed actor")
+	check(target.visible and not is_instance_valid(adapter.rig.carry_passenger) and level.find_children("RescuePassenger", "", true, false).size() == 0, "A carrier that falls with the passenger on its shoulders leaves one passenger: the revealed actor")
 	await _finish(level)
 
 ## The tactical rescue is decided when the move is committed, before the carrier's body has walked there. The visual lift must wait for it: no
@@ -189,8 +189,8 @@ func _pickup_waits_for_the_carrier_to_arrive() -> void:
 	level.objective_manager.try_rescue(carrier, target)
 	await create_timer(0.3).timeout
 	check(carrier.is_carrying_unit() and not target.visible, "The tactical pickup is decided at once")
-	check(adapter.pickup_pending() and not adapter.interaction_active() and not is_instance_valid(adapter.carry_passenger), "...but no passenger is shown while the carrier is still far from the rescued actor")
-	check(level.find_children("RescuePassenger", "", true, false).size() == 0 and adapter.weapon.get_parent() == adapter.weapon_attachment, "...the carrier still holds its rifle and carries nobody yet")
+	check(adapter.pickup_pending() and not adapter.rig.interaction_active() and not is_instance_valid(adapter.rig.carry_passenger), "...but no passenger is shown while the carrier is still far from the rescued actor")
+	check(level.find_children("RescuePassenger", "", true, false).size() == 0 and adapter.rig.weapon.get_parent() == adapter.rig.weapon_attachment, "...the carrier still holds its rifle and carries nobody yet")
 	check(adapter.get_presentation_state() not in [&"pickup", &"carry_idle", &"carry_move"], "...and is not in a carry pose (%s)" % adapter.get_presentation_state())
 	carrier.global_position = carrier.global_position   # (unchanged: the body has not moved)
 	carrier.move_along_path(PackedVector3Array([arrival]))
@@ -198,12 +198,12 @@ func _pickup_waits_for_the_carrier_to_arrive() -> void:
 	var worst_gap := 0.0
 	for i in 600:
 		await process_frame
-		if adapter.interaction_active() and is_instance_valid(adapter.carry_passenger):
+		if adapter.rig.interaction_active() and is_instance_valid(adapter.rig.carry_passenger):
 			started = true
-			var passenger = adapter.carry_passenger
+			var passenger = adapter.rig.carry_passenger
 			if passenger.lift < 0.5:
 				worst_gap = maxf(worst_gap, Vector2(passenger.global_position.x - adapter.global_position.x, passenger.global_position.z - adapter.global_position.z).length())
-		if started and adapter.rescue_interaction.time > 1.0:
+		if started and adapter.rig.rescue_interaction.time > 1.0:
 			break
 	check(started and not adapter.pickup_pending(), "The lift begins when the carrier arrives")
 	check(worst_gap < 1.8, "...with the passenger lying beside it, never far away (%.2f m while it is still low)" % worst_gap)

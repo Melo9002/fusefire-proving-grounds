@@ -67,13 +67,13 @@ func _ready() -> void:
 	visual.presentation_state_changed.connect(func(state: StringName) -> void:
 		if state not in states_seen:
 			states_seen.append(state))
-	visual.skeleton.skeleton_updated.connect(_sample_pose)
+	visual.rig.skeleton.skeleton_updated.connect(_sample_pose)
 	for i in 20:
 		await get_tree().process_frame
 	set_process(true)
 
 func _sample_pose() -> void:
-	var skeleton: Skeleton3D = visual.skeleton
+	var skeleton: Skeleton3D = visual.rig.skeleton
 	var hips := skeleton.find_bone("mixamorig_Hips")
 	var left := skeleton.find_bone("mixamorig_LeftFoot")
 	var right := skeleton.find_bone("mixamorig_RightFoot")
@@ -83,7 +83,7 @@ func _sample_pose() -> void:
 	hips_y = (to_world * skeleton.get_bone_global_pose(hips)).origin.y
 	var a := to_world * skeleton.get_bone_global_pose(left).origin
 	var b := to_world * skeleton.get_bone_global_pose(right).origin
-	var forward := visual.global_basis.z
+	var forward := visual.rig.global_basis.z
 	foot_gap = absf((a - b).dot(forward))
 	if phase in [1, 4]:
 		hips_range = Vector2(minf(hips_range.x, hips_y), maxf(hips_range.y, hips_y))
@@ -103,10 +103,10 @@ func _process(delta: float) -> void:
 	frames += 1
 	clock += delta
 	phase_clock += delta
-	var report: Dictionary = visual.locomotion_report
+	var report: Dictionary = visual.rig.locomotion_report
 	max_cadence = maxf(max_cadence, float(report.get("cadence", 0.0)))
 	max_speed = maxf(max_speed, float(report.get("speed", 0.0)))
-	max_twist = maxf(max_twist, absf(float(visual.locomotion_modifier.twist_degrees)))
+	max_twist = maxf(max_twist, absf(float(visual.rig.locomotion_modifier.twist_degrees)))
 	match phase:
 		0:   # idle
 			if phase_clock > 1.5:
@@ -148,7 +148,7 @@ func _process(delta: float) -> void:
 				_next()
 		4:   # "unarmed": the rifle slung (an approximation: the rifle still exists)
 			if phase_clock < 0.05:
-				visual.stow_weapon()
+				visual.rig.stow_weapon()
 				max_speed = 0.0
 				foot_gap_peak = 0.0
 				visual.present_move()
@@ -163,14 +163,14 @@ func _process(delta: float) -> void:
 				visual.update_locomotion(to.normalized() * (step / delta), delta)
 			else:
 				visual.present_idle()
-				check(visual.is_weapon_stowed(), "Weapon slung (the only unarmed approximation available)")
+				check(visual.rig.is_weapon_stowed(), "Weapon slung (the only unarmed approximation available)")
 				check(max_speed > 0.9 and foot_gap_peak > 0.15, "Walking with the weapon slung still steps (speed %.2f, foot separation %.2f m)" % [max_speed, foot_gap_peak])
 				_next()
 		5:   # a crouch request outside cover
 			if phase_clock < 0.05:
-				visual.crouch_modifier.depth = 0.3
+				visual.rig.crouch_modifier.depth = 0.3
 			if phase_clock > 0.8:
-				var depth := float(visual.crouch_modifier.depth)
+				var depth := float(visual.rig.crouch_modifier.depth)
 				if depth > 0.25:
 					observed("a direct crouch request persisted (depth %.2f)" % depth)
 				else:

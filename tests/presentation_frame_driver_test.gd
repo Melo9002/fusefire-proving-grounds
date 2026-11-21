@@ -18,8 +18,8 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 ## Records, at the moment this host's first modifier finishes, how many ticks the presenter has had and on which engine frame the latest one ran.
-func _watch(host: CharacterRig, samples: Array) -> void:
-	host.locomotion_modifier.modification_processed.connect(func() -> void:
+func _watch(host: Node3D, samples: Array) -> void:
+	host.rig.locomotion_modifier.modification_processed.connect(func() -> void:
 		samples.append([host.presenter.tick_count, host.presenter.last_tick_frame, Engine.get_process_frames(), host.presenter.time]))
 
 func _verify_driver(label: String, samples: Array) -> void:
@@ -37,7 +37,7 @@ func _run() -> void:
 	root.add_child(stage)
 	var adapter: UnitVisualAdapter = VISUAL.instantiate()
 	stage.add_child(adapter)
-	var bench: CharacterRig = WORKBENCH.instantiate()
+	var bench: Node3D = WORKBENCH.instantiate()
 	root.add_child(bench)
 	for i in 10:
 		await process_frame
@@ -49,26 +49,26 @@ func _run() -> void:
 		await process_frame
 	_verify_driver("Tactical visual", adapter_samples)
 	_verify_driver("Workbench", bench_samples)
-	check(adapter.presenter != bench.presenter and adapter.presenter.rig == adapter and bench.presenter.rig == bench, "Each host has its own presenter bound to its own rig")
+	check(adapter.presenter != bench.presenter and adapter.presenter.rig == adapter.rig and bench.presenter.rig == bench.rig, "Each host has its own presenter bound to its own rig")
 
 	# ---- Same elapsed time on both, advanced once per frame by the engine's delta.
 	var t0_a := adapter.presenter.time
-	var t0_b := bench.presenter.time
+	var t0_b: float = bench.presenter.time
 	var frames0 := Engine.get_process_frames()
 	for i in 20:
 		await process_frame
 	var frames := Engine.get_process_frames() - frames0
 	var elapsed_a := adapter.presenter.time - t0_a
-	var elapsed_b := bench.presenter.time - t0_b
+	var elapsed_b: float = bench.presenter.time - t0_b
 	check(absf(elapsed_a - elapsed_b) < 0.0001 and elapsed_a > 0.0, "Both hosts advance presentation time by the same engine deltas (%.4f s over %d frames)" % [elapsed_a, frames])
 
 	# ---- The workbench feeds authored motion through the shared presenter: a preview walk reaches the gait; its idle heading rate is preserved.
-	bench.animation_controller.play(&"move")
+	bench.rig.animation_controller.play(&"move")
 	for i in 60:
 		await process_frame
-	check(bench.presenter.speed > 0.5 and bench.locomotion_report.speed > 0.5, "A preview walk is fed through the presenter into the production locomotion (%.2f m/s)" % bench.locomotion_report.speed)
-	bench.animation_controller.play(&"rifle_idle")
-	bench.turn_goal = bench.character_root.rotation.y + deg_to_rad(120.0)
+	check(bench.presenter.speed > 0.5 and bench.rig.locomotion_report.speed > 0.5, "A preview walk is fed through the presenter into the production locomotion (%.2f m/s)" % bench.rig.locomotion_report.speed)
+	bench.rig.animation_controller.play(&"rifle_idle")
+	bench.turn_goal = bench.rig.character_root.rotation.y + deg_to_rad(120.0)
 	var saw_idle_heading := false
 	for i in 20:
 		await process_frame

@@ -26,7 +26,7 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _facing(rig: UnitVisualAdapter) -> Basis:
-	return rig.character_root.global_basis.orthonormalized()
+	return rig.rig.character_root.global_basis.orthonormalized()
 
 func _snap(camera: Camera3D, position_value: Vector3, look_at_value: Vector3, fov: float, tile: Vector2i) -> Image:
 	camera.fov = fov
@@ -62,7 +62,7 @@ func _apply(rig: UnitVisualAdapter, entry: String) -> void:
 			rig.last_cover_contact = {"type": cover_type, "height": float(height_text), "direction": Vector3.FORWARD}
 	else:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
-	rig.animation_controller.play(StringName(state))
+	rig.rig.animation_controller.play(StringName(state))
 
 func _settle(entry: String) -> void:
 	if entry.begins_with("shoot@"):
@@ -118,13 +118,13 @@ func _run() -> void:
 	stage.add_child(camera)
 	camera.make_current()
 	for i in 20: await process_frame
-	var diagnostics := HandContactDiagnostics.attach(rig)
+	var diagnostics := HandContactDiagnostics.attach(rig.rig)
 	if diagnostics == null:
 		push_error("the rig cannot be measured")
 		quit(1)
 		return
 	# "legacy" in the arguments runs the old target generation (shoulder read before the skeleton's modifiers) for comparison.
-	rig.weapon_pose_modifier_enabled = not legacy
+	rig.rig.weapon_pose_modifier_enabled = not legacy
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 	var baseline := {"godot": Engine.get_version_info().string, "images": _images, "legacy_targets": legacy, "poses": {}, "transitions": {}, "setup_issues": diagnostics.sampler.setup_issues}
@@ -150,8 +150,8 @@ func _run() -> void:
 		body.append(await _snap(camera, base + facing * Vector3(2.6, 0.2, 0.2), base, 30.0, BODY_TILE))
 		_sheet(body, BODY_TILE).save_png(directory.path_join("%s-%s-body.png" % [tag, entry.replace("@", "_").replace("+", "_")]))
 		diagnostics.set_labels_visible(true)
-		var firing: Vector3 = rig.weapon.to_global(rig.handling.firing_grip)
-		var support: Vector3 = rig.weapon.to_global(rig.handling.support_grip)
+		var firing: Vector3 = rig.rig.weapon.to_global(rig.rig.handling.firing_grip)
+		var support: Vector3 = rig.rig.weapon.to_global(rig.rig.handling.support_grip)
 		var hands: Array[Image] = []
 		hands.append(await _snap(camera, firing + facing * Vector3(-0.50, 0.14, 0.34), firing, 26.0, HANDS_TILE))
 		hands.append(await _snap(camera, support + facing * Vector3(0.50, 0.14, 0.34), support, 26.0, HANDS_TILE))

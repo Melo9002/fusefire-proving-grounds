@@ -1,8 +1,26 @@
 @tool
-extends CharacterRig
+extends Node3D
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)
+
+## The skeletal character this host drives (a child CharacterRig: the model, the modifiers, the IK and the poses), and its presenter (the character's presentation time, intent and action lifecycles). This node is
+## the TACTICAL CONTEXT HOST: it reads the tactical unit, chooses what to present and asks the presenter and the rig for it. It holds no skeleton and applies no pose.
+## Where this host's CharacterRig child is (the scene's "Rig" node by default).
+@export var rig_path := NodePath("Rig")
+## The CharacterRig this host drives and the presenter it owns: plain variables (resolved as soon as the scene is instantiated, before it enters the tree), because a host reads them every frame.
+var rig: CharacterRig
+var presenter: CharacterPresenter
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_SCENE_INSTANTIATED:
+		_resolve_rig()
+
+func _resolve_rig() -> void:
+	if rig == null:
+		rig = get_node_or_null(rig_path) as CharacterRig
+		if rig != null:
+			presenter = rig.presenter
 const TeamPaletteData := preload("res://presentation/team_presentation_palette.gd")
 
 @export_group("Team Presentation")
@@ -64,7 +82,7 @@ func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) ->
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)   # a defeated carrier lifts nobody
 	presenter.attack.cancel()
 	presenter.cancel_hold()
-	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rescue_interaction.max_step + rescue_interaction.stand_off + 0.3):
+	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rig.rescue_interaction.max_step + rig.rescue_interaction.stand_off + 0.3):
 		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
 		# its shoulders. Otherwise the passenger would "fly" to a carrier still metres away.
@@ -72,11 +90,11 @@ func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) ->
 	if passenger_world.is_finite():
 		presenter.arrive_pickup(func(_world: Vector3, _basis: Variant) -> void: pass)   # a lift starting now takes over any held request and its reserved handle
 		face_world_position(passenger_world)
-		var handle := begin_pickup(passenger_world, lying_orientation)
+		var handle := rig.begin_pickup(passenger_world, lying_orientation)
 		if not handle.finished.is_connected(_on_pickup_presented):
 			handle.finished.connect(_on_pickup_presented, CONNECT_ONE_SHOT)
 		return handle
-	begin_carry()
+	rig.begin_carry()
 	_play(&"pickup")
 	return presenter.begin_hold(pickup_return_seconds, _return_from_hold)
 
@@ -93,22 +111,22 @@ func _on_pickup_presented(outcome: PresentationTypes.Outcome) -> void:
 func present_carry_released() -> void:
 	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	presenter.cancel_hold()
-	end_carry()
-	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
+	rig.end_carry()
+	if is_instance_valid(rig.animation_controller) and rig.animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
 func present_boarding() -> void:
 	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	presenter.attack.cancel()
-	finish_interaction_now()
+	rig.finish_interaction_now()
 	presenter.cancel_hold()
 	_play(&"boarding")
-	if is_instance_valid(carry_passenger):
+	if is_instance_valid(rig.carry_passenger):
 		var tween := create_tween()
-		tween.tween_property(carry_passenger, "presence", 0.01, 0.55)
+		tween.tween_property(rig.carry_passenger, "presence", 0.01, 0.55)
 
 func _flat_distance_to(world: Vector3) -> float:
-	return Vector2(world.x - global_position.x, world.z - global_position.z).length()
+	return Vector2(world.x - rig.global_position.x, world.z - rig.global_position.z).length()
 
 ## INCAPACITATED PRESENTATION. A unit that is awaiting rescue (TacticalUnit.awaiting_rescue, set by the ObjectiveManager from the rescue objective)
 ## is shown lying on its back where it is: its standing rig and rifle are hidden and a passive body in the pickup's own lying pose takes their place.
@@ -121,17 +139,17 @@ func present_incapacitated(on: bool) -> void:
 		presenter.attack.cancel()
 		presenter.cancel_hold()
 		presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
-		character_root.visible = false
-		_lying_body = RESCUE_PASSENGER.new()
+		rig.character_root.visible = false
+		_lying_body = rig.RESCUE_PASSENGER.new()
 		_lying_body.name = "IncapacitatedBody"
-		add_child(_lying_body)
-		_lying_body.build(character_scene, character_scale, rig_profile)
+		rig.add_child(_lying_body)
+		_lying_body.build(rig.character_scene, rig.character_scale, rig.rig_profile)
 		_lying_body.lie_on_ground(Vector3(0.0, _lying_ground_height(), 0.0), deg_to_rad(INCAPACITATED_YAW_DEGREES))
 	else:
-		remove_child(_lying_body)
+		rig.remove_child(_lying_body)
 		_lying_body.free()
 		_lying_body = null
-		character_root.visible = true
+		rig.character_root.visible = true
 		present_idle()
 
 func is_incapacitated() -> bool:
@@ -144,7 +162,7 @@ func lying_basis() -> Variant:
 	return _lying_body.global_basis.orthonormalized()
 
 func _lying_ground_height() -> float:
-	return rescue_interaction.ground_height
+	return rig.rescue_interaction.ground_height
 
 func _moving_now() -> bool:
 	return is_instance_valid(tactical_unit) and tactical_unit.is_moving
@@ -173,7 +191,7 @@ class AdapterAttackHost extends AttackHost:
 	func _init(owner_adapter: UnitVisualAdapter) -> void:
 		adapter = owner_adapter
 	func sequence_available() -> bool:
-		return not adapter._carrying() and adapter.can_process() and is_instance_valid(adapter.muzzle_socket)
+		return not adapter._carrying() and adapter.can_process() and is_instance_valid(adapter.rig.muzzle_socket)
 	func immediate_release() -> bool:
 		return adapter._carrying() or not adapter.can_process()
 	func weapon_aligned() -> bool:
@@ -181,19 +199,19 @@ class AdapterAttackHost extends AttackHost:
 	func alignment_error_degrees() -> float:
 		return adapter.weapon_alignment_error_degrees()
 	func aim_blend() -> float:
-		return adapter.aim_blend
+		return adapter.rig.aim_blend
 	func aim_target() -> float:
 		return adapter._aim_target(adapter.get_presentation_state())
 	func max_raise_wait_seconds() -> float:
-		return adapter.handling.max_raise_wait_seconds
+		return adapter.rig.handling.max_raise_wait_seconds
 	func recover_seconds() -> float:
-		return adapter.handling.shot_recover_seconds
+		return adapter.rig.handling.shot_recover_seconds
 	func begin_raise() -> void:
-		adapter.readiness.request(AttackSequence.SOURCE, WeaponReadiness.Level.AIMED)
+		adapter.rig.readiness.request(AttackSequence.SOURCE, WeaponReadiness.Level.AIMED)
 		if adapter._cover_context().type == MapCellData.CoverType.NONE and adapter.get_presentation_state() not in adapter.AIM_POSE_STATES:
 			adapter._play(&"aim")
 	func release_aimed() -> void:
-		adapter.readiness.release(AttackSequence.SOURCE)
+		adapter.rig.readiness.release(AttackSequence.SOURCE)
 	func play_shot(state: StringName) -> void:
 		adapter._play(state)
 	func resume_after_shot() -> void:
@@ -204,24 +222,26 @@ class AdapterAttackHost extends AttackHost:
 	func attack_ended() -> void:
 		adapter.attack_plan = {}
 
+## The rig is configured for this host before it builds (a parent enters the tree before its children are ready): the tactical carry state says when the character is a loaded carrier, and the readiness
+## stage (not the playing clip) drives the sights.
+func _enter_tree() -> void:
+	_resolve_rig()
+	rig.loaded_query = _carrying
+	rig.aim_blend_follows_clips = false
+
 func _ready() -> void:
-	_build_character()
-	_build_weapon_attachment()
-	_build_arm_ik()
-	_build_animation_controller()
+	# The rig built the character in its own _ready (a child is ready first); this host configures the tactical context around it.
 	_build_team_accent()
 	_apply_class_marker()
 	presenter.aim_settling_states = AIM_SETTLE_STATES
 	presenter.aim_hold_changed.connect(_on_aim_hold_changed)
-	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
-	animation_controller.state_changed.connect(_forward_state_change)
+	rig.animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
 	if not is_inside_tree(): return
 	await get_tree().process_frame
 	if not is_inside_tree(): return
 	for problem in presenter.foot_point_problems():
 		push_error("[UnitVisualAdapter] %s" % problem)
-	_align_weapon_to_aim()
 
 func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit
@@ -246,20 +266,20 @@ func _apply_class_marker() -> void:
 	set_class_marker(color)
 
 func set_class_marker(color: Color) -> void:
-	if not is_instance_valid(skeleton):
+	if not is_instance_valid(rig.skeleton):
 		return
-	var existing := skeleton.get_node_or_null(CLASS_MARKER_NAME)
+	var existing := rig.skeleton.get_node_or_null(CLASS_MARKER_NAME)
 	if existing:
 		existing.queue_free()
 	if color.a <= 0.0:
 		return
-	var bone_name := bones.torso
-	if skeleton.find_bone(bone_name) < 0:
+	var bone_name := rig.bones.torso
+	if rig.skeleton.find_bone(bone_name) < 0:
 		return
 	var attachment := BoneAttachment3D.new()
 	attachment.name = CLASS_MARKER_NAME
 	attachment.bone_name = bone_name
-	skeleton.add_child(attachment)
+	rig.skeleton.add_child(attachment)
 	var band := MeshInstance3D.new()
 	var tube := CylinderMesh.new()
 	tube.top_radius = CLASS_MARKER_RADIUS
@@ -282,7 +302,7 @@ func set_class_marker(color: Color) -> void:
 	# true size in the character's frame. It still rides the bone through every later pose.
 	await get_tree().process_frame
 	if is_instance_valid(band) and band.is_inside_tree() and is_inside_tree():
-		band.global_basis = character_root.global_basis * Basis.from_scale(CLASS_MARKER_FIT)
+		band.global_basis = rig.character_root.global_basis * Basis.from_scale(CLASS_MARKER_FIT)
 
 func _build_team_accent() -> void:
 	_team_accent = MeshInstance3D.new()
@@ -295,7 +315,7 @@ func _build_team_accent() -> void:
 	_team_accent.mesh = ring
 	_team_accent.position = Vector3(0.0, team_palette.height, 0.0)
 	_team_accent.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_team_accent)
+	rig.add_child(_team_accent)
 	_apply_team_accent()
 
 func _apply_team_accent() -> void:
@@ -315,17 +335,10 @@ func _apply_team_accent() -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_team_accent.material_override = material
 
-func _exit_tree() -> void:
-	super()   # the rig releases the presenter (no posture request outlives the character)
-	# Skeleton modifiers can emit once more while their hierarchy is being
-	# removed. Disconnect before descendants lose legal global transforms.
-	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
-		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
-
 func present_move() -> void:
-	finish_interaction_now()
+	rig.finish_interaction_now()
 	_end_ladder()
-	end_stairs()
+	rig.end_stairs()
 	presenter.attack.cancel()
 	presenter.cancel_hold()
 	_segment_state = &"move"
@@ -340,7 +353,7 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 	# The level step to or from a ladder's top (the horizontal leg of a LADDER link's route) is ordinary walking, not a climb clip.
 	_ladder_step = absf(to_world.y - from_world.y) < 0.05 and state_name in [&"climb", &"descend"] and link_kind == TraversalLinkData.LADDER
 	var vertical := absf(to_world.y - from_world.y) > 0.05 and Vector2(to_world.x - from_world.x, to_world.z - from_world.z).length() < 0.02
-	var profile: TraversalProfile = traversal_profile
+	var profile: TraversalProfile = rig.traversal_profile
 	if _carrying():
 		# A loaded carrier on a ladder is an unsupported combination (the passenger's contacts and the rungs would compete for the hands): the placeholder clips, as before.
 		_ladder_step = false
@@ -352,17 +365,17 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 		return 0.0
 	var facing := Vector3(toward_deck.x, 0.0, toward_deck.z)
 	_ladder = {"low_y": minf(from_world.y, to_world.y), "length": absf(to_world.y - from_world.y), "direction": 1 if to_world.y > from_world.y else -1,
-		"yaw": atan2(facing.x, facing.z) if facing.length() > 0.01 else rotation.y}
+		"yaw": atan2(facing.x, facing.z) if facing.length() > 0.01 else rig.rotation.y}
 	if profile == null or not profile.slow_ladder_enabled:
 		return 0.0
 	return profile.climb_speed if int(_ladder.direction) > 0 else profile.descend_speed
 
 
 func note_stairs(model: StairModel, ascending: bool, enter: float, exit: float) -> void:
-	if stairs != null and stairs.model == model:
+	if rig.stairs != null and rig.stairs.model == model:
 		return
-	end_stairs()
-	begin_stairs(model, ascending, enter, exit)
+	rig.end_stairs()
+	rig.begin_stairs(model, ascending, enter, exit)
 
 
 func is_ladder_active() -> bool:
@@ -371,29 +384,29 @@ func is_ladder_active() -> bool:
 
 ## Once per frame: while a ladder segment is walked, the character faces the ladder and the pose follows the unit's height up it.
 func _tick_traversal(delta: float) -> void:
-	if stairs != null and is_instance_valid(tactical_unit):
+	if rig.stairs != null and is_instance_valid(tactical_unit):
 		var floor_position := tactical_unit.global_position - Vector3.UP * tactical_unit.standing_height
-		set_stair_progress(stairs.model.progress_of(floor_position), presenter.speed)
+		rig.set_stair_progress(rig.stairs.model.progress_of(floor_position), presenter.speed)
 	if _ladder.is_empty() or not is_instance_valid(tactical_unit):
 		return
 	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
 	if get_presentation_state() != &"rifle_idle" and get_presentation_state() != &"aim":
 		_play(&"rifle_idle")
 	presenter.turn_toward_yaw(float(_ladder.yaw), turn_speed_degrees, delta)
-	if ladder == null:
-		begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
-	set_traversal_progress(climbed)
+	if rig.ladder == null:
+		rig.begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
+	rig.set_traversal_progress(climbed)
 
 
 func _end_ladder() -> void:
-	if _ladder.is_empty() and ladder == null:
+	if _ladder.is_empty() and rig.ladder == null:
 		return
 	_ladder = {}
-	end_traversal()
+	rig.end_traversal()
 
 
 func present_path_segment(state_name: StringName) -> void:
-	finish_interaction_now()
+	rig.finish_interaction_now()
 	if not _ladder.is_empty():
 		# Climbing or descending a ladder: no clip of its own, the contacts do it (see _tick_traversal). The leg that steps on or off the deck is ordinary walking.
 		_segment_state = &"ladder"
@@ -415,8 +428,8 @@ func present_path_segment(state_name: StringName) -> void:
 
 func present_movement_end() -> void:
 	_end_ladder()
-	end_stairs()
-	if presenter.arrive_pickup(func(world: Vector3, basis: Variant) -> void: present_pickup(world, basis)):
+	rig.end_stairs()
+	if presenter.arrive_pickup(func(world: Vector3, lying: Variant) -> void: present_pickup(world, lying)):
 		return   # the carrier arrived: the lift starts and takes over the reserved handle
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
@@ -427,7 +440,7 @@ func present_movement_end() -> void:
 func _cover_context() -> Dictionary:
 	var cell := preview_cell if preview_cell != Vector3i(-1, -1, -1) else tactical_unit.grid_position if is_instance_valid(tactical_unit) else Vector3i(-1, -1, -1)
 	if is_instance_valid(presentation_grid) and cell != Vector3i(-1, -1, -1):
-		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, cell, global_basis.z)
+		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, cell, rig.global_basis.z)
 	else:
 		last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	return last_cover_contact
@@ -435,7 +448,7 @@ func _cover_context() -> Dictionary:
 ## The Aim action committed: bring the sights up now. The pose then follows the committed
 ## is_aiming flag (see _process and CharacterPresenter.aim_committed), so replays and AI units behave the same.
 func present_aim() -> void:
-	if _carrying() or not has_weapon(): return   # nothing to raise
+	if _carrying() or not rig.has_weapon(): return   # nothing to raise
 	presenter.aim.engage()
 	present_idle()
 
@@ -445,16 +458,16 @@ func _aim_should_hold() -> bool:
 		and not tactical_unit.is_moving and not _carrying()
 
 func _aim_target(state_name: StringName) -> float:
-	return WeaponReadiness.blend_for(requested_readiness(state_name), handling)
+	return WeaponReadiness.blend_for(requested_readiness(state_name), rig.handling)
 
 ## The level the unit is asking for: the highest of any request (an attack, later a Guard), the aim
 ## stance, and a held Aim. A carrier holds nothing.
 func requested_readiness(state_name: StringName = &"") -> WeaponReadiness.Level:
-	if _carrying() or not has_weapon():
+	if _carrying() or not rig.has_weapon():
 		return WeaponReadiness.Level.STOWED   # a carrier holds nothing, and neither does a character with no weapon
 	if state_name == &"":
 		state_name = get_presentation_state()
-	var level := readiness.requested()
+	var level := rig.readiness.requested()
 	if state_name in AIM_POSE_STATES or presenter.aim.held:
 		level = WeaponReadiness.Level.AIMED
 	return level
@@ -462,11 +475,11 @@ func requested_readiness(state_name: StringName = &"") -> WeaponReadiness.Level:
 ## Sustained readiness: a source (a future Guard, say) asks for a level and holds it until it releases the
 ## request. Attacks use the same model. Quiet poses settle to match; shots, hits and movement are not interrupted.
 func request_readiness(source: StringName, level: WeaponReadiness.Level) -> void:
-	readiness.request(source, level)
+	rig.readiness.request(source, level)
 	_settle_readiness_pose()
 
 func release_readiness(source: StringName) -> void:
-	readiness.release(source)
+	rig.readiness.release(source)
 	_settle_readiness_pose()
 
 func _settle_readiness_pose() -> void:
@@ -476,31 +489,31 @@ func _settle_readiness_pose() -> void:
 
 ## The level the weapon is actually at (derived from the aim blend it has reached).
 func readiness_level() -> WeaponReadiness.Level:
-	if _carrying() or not has_weapon():
+	if _carrying() or not rig.has_weapon():
 		return WeaponReadiness.Level.STOWED
-	return WeaponReadiness.level_for_blend(aim_blend, handling)
+	return WeaponReadiness.level_for_blend(rig.aim_blend, rig.handling)
 
 ## The blend follows its target every frame: up over the profile's raise time, down over its lower time.
 func _advance_readiness(delta: float) -> void:
 	var target := _aim_target(get_presentation_state())
-	var seconds := handling.raise_seconds if target > aim_blend else handling.lower_seconds
-	aim_blend = move_toward(aim_blend, target, delta / maxf(seconds, 0.001))
+	var seconds := rig.handling.raise_seconds if target > rig.aim_blend else rig.handling.lower_seconds
+	rig.aim_blend = move_toward(rig.aim_blend, target, delta / maxf(seconds, 0.001))
 
 ## Angle between the muzzle and the firing direction (the character's forward, which the weapon is
 ## rotated onto at full aim). 0 when the weapon is in its firing configuration.
 func weapon_alignment_error_degrees() -> float:
-	if not is_instance_valid(muzzle_socket) or not muzzle_socket.is_inside_tree():
+	if not is_instance_valid(rig.muzzle_socket) or not rig.muzzle_socket.is_inside_tree():
 		return 0.0
-	var muzzle := muzzle_socket.global_basis.z.normalized()
-	var forward := (character_root.global_basis * torso_frame).z.normalized()
+	var muzzle := rig.muzzle_socket.global_basis.z.normalized()
+	var forward := (rig.character_root.global_basis * rig.torso_frame).z.normalized()
 	return rad_to_deg(acos(clampf(muzzle.dot(forward), -1.0, 1.0)))
 
 ## The firing configuration is reached: the weapon is within tolerance of the firing pose, and in
 ## cover the body has finished turning into its aiming stance.
 func weapon_aligned() -> bool:
-	if weapon_alignment_error_degrees() > handling.alignment_tolerance_degrees:
+	if weapon_alignment_error_degrees() > rig.handling.alignment_tolerance_degrees:
 		return false
-	return absf(angle_difference(_cover_yaw, _cover_yaw_target(1.0))) <= deg_to_rad(handling.alignment_tolerance_degrees)
+	return absf(angle_difference(rig._cover_yaw, _cover_yaw_target(1.0))) <= deg_to_rad(rig.handling.alignment_tolerance_degrees)
 
 ## The held Aim engaged or ended (the presenter progresses it from the committed-aim input): a quiet pose is re-settled so the weapon comes up or goes down. A shot, hit, defeat, move or traversal is never interrupted.
 func _on_aim_hold_changed(_transition: AimHold.Transition, settling: bool) -> void:
@@ -551,17 +564,17 @@ func _compute_cover_kind(type: int) -> MapCellData.CoverType:
 
 ## Depth the cover asks for, before the human limit. 0 when not behind cover.
 func _cover_crouch_request() -> float:
-	if crouch_modifier == null:
+	if rig.crouch_modifier == null:
 		return 0.0
 	var kind := _cover_kind()
 	if kind == MapCellData.CoverType.NONE:
 		return 0.0
-	return cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), aim_blend, crouch_modifier.standing_head_height)
+	return rig.cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), rig.aim_blend, rig.crouch_modifier.standing_head_height)
 
 ## Cover POLICY, once per frame: what the cover the unit is in asks of the body, handed to the presenter as a persistent posture request (released when there is no cover pose), and then
 ## the presenter resolves and the rig applies it. Nothing here writes the crouch, kneel or body yaw any more.
 func _sync_cover_crouch(delta: float) -> void:
-	if crouch_modifier == null:
+	if rig.crouch_modifier == null:
 		return
 	_update_cover_side()
 	var request := _cover_crouch_request()
@@ -569,9 +582,9 @@ func _sync_cover_crouch(delta: float) -> void:
 		presenter.postures.release(COVER_POSTURE_SOURCE)
 	else:
 		# The posture KIND is the classification (a kneel once the kneel blend is past halfway); the rig derives the continuous blend from the depth itself.
-		var posture := PresentationTypes.Posture.KNEEL if request > crouch_modifier.max_depth + KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
-		presenter.postures.set_posture(COVER_POSTURE_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, _cover_yaw_target(aim_blend), request)
-	presenter.apply_posture(delta, cover_profile)
+		var posture := PresentationTypes.Posture.KNEEL if request > rig.crouch_modifier.max_depth + rig.KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
+		presenter.postures.set_posture(COVER_POSTURE_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, _cover_yaw_target(rig.aim_blend), request)
+	presenter.apply_posture(delta, rig.cover_profile)
 
 ## Body yaw OFFSET (relative to the unit's tactical facing) the cover pose asks for at a given weapon blend (see CoverPostureProfile, "facing contract"):
 ## protected, the body turns toward the chosen peek edge; aiming over low cover it faces the target squarely; aiming around full cover it turns slightly
@@ -581,8 +594,8 @@ func _cover_yaw_target(blend: float) -> float:
 	if kind == MapCellData.CoverType.NONE:
 		return 0.0
 	if not attack_plan.is_empty():
-		return cover_profile.attack_yaw_offset(cover_side, int(attack_plan.side), blend)
-	return cover_profile.yaw_offset(kind == MapCellData.CoverType.FULL, cover_side, blend)
+		return rig.cover_profile.attack_yaw_offset(cover_side, int(attack_plan.side), blend)
+	return rig.cover_profile.yaw_offset(kind == MapCellData.CoverType.FULL, cover_side, blend)
 
 ## Re-evaluates which wall edge the unit would peek around while it is in cover (stable by hysteresis); clears it otherwise.
 func _update_cover_side() -> void:
@@ -591,13 +604,13 @@ func _update_cover_side() -> void:
 		_cover_side_key = Vector3i(-999, 0, -999)
 		cover_edges = {}
 		return
-	var cell := presentation_grid.world_to_grid(global_position)
+	var cell := presentation_grid.world_to_grid(rig.global_position)
 	if cell != _cover_side_key:
 		_cover_side_key = cell
 		_last_attack_side = CoverEdgeSelector.Side.NONE
 		cover_side = CoverEdgeSelector.Side.NONE   # a new place: choose afresh (hysteresis only holds within one cell's cover)
-	cover_edges = CoverEdgeSelector.edges(presentation_grid, global_position, last_cover_contact, cover_profile)
-	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, cover_profile)
+	cover_edges = CoverEdgeSelector.edges(presentation_grid, rig.global_position, last_cover_contact, rig.cover_profile)
+	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, rig.cover_profile)
 
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
@@ -612,9 +625,9 @@ func present_idle() -> void:
 		return
 	var cover := _cover_context()
 	if cover.type == MapCellData.CoverType.NONE:
-		_play(&"aim" if (has_weapon() and (presenter.aim.held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED)) else &"rifle_idle")
+		_play(&"aim" if (rig.has_weapon() and (presenter.aim.held or _aim_should_hold() or rig.readiness.requested() == WeaponReadiness.Level.AIMED)) else &"rifle_idle")
 	else:
-		face_world_position(global_position + cover.direction)
+		face_world_position(rig.global_position + cover.direction)
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
 
 func update_locomotion(world_velocity: Vector3, delta: float) -> void:
@@ -633,7 +646,7 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 		refused.shot.settle(PresentationTypes.Outcome.CANCELLED)
 		refused.settle(PresentationTypes.Outcome.CANCELLED)
 		return refused
-	if not has_weapon():
+	if not rig.has_weapon():
 		var unarmed := AttackHandle.new()   # no weapon, no shot to show: nothing was presented (the attack's result is gameplay's)
 		unarmed.shot.settle(PresentationTypes.Outcome.SKIPPED)
 		unarmed.settle(PresentationTypes.Outcome.SKIPPED)
@@ -646,15 +659,15 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 	presenter.attack.cancel()   # a newer attack ends the running one first (its cover plan is dropped before this one's is set)
 	attack_plan = plan
 	presenter.cancel_hold()
-	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), aim_blend)
+	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), rig.aim_blend)
 
 ## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.
 func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:
 	if int(cover.type) == MapCellData.CoverType.NONE or not is_instance_valid(presentation_grid):
 		return {}
-	var edges := CoverEdgeSelector.edges(presentation_grid, global_position, cover, cover_profile)
+	var edges := CoverEdgeSelector.edges(presentation_grid, rig.global_position, cover, rig.cover_profile)
 	var face_distance := float(cover.get("distance", presentation_grid.cell_size * 0.5))
-	var plan := CoverEdgeSelector.plan_attack(edges, int(cover.type) == MapCellData.CoverType.FULL, target_world_position - global_position, _last_attack_side, cover_side, face_distance, cover_profile)
+	var plan := CoverEdgeSelector.plan_attack(edges, int(cover.type) == MapCellData.CoverType.FULL, target_world_position - rig.global_position, _last_attack_side, cover_side, face_distance, rig.cover_profile)
 	if int(plan.mode) in [CoverEdgeSelector.FiringMode.AROUND_LEFT, CoverEdgeSelector.FiringMode.AROUND_RIGHT]:
 		_last_attack_side = int(plan.side)
 	attack_plan_log.append(plan)
@@ -667,7 +680,7 @@ func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> 
 func present_hit() -> ActionHandle:
 	if presenter.is_defeated():
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)   # defeat is terminal: nothing outranks it, a hit after it shows nothing
-	if interaction_active():
+	if rig.interaction_active():
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)   # a rescue lift owns the body and was already committed; a cosmetic reaction does not cut it short
 	presenter.attack.cancel()
 	if is_ladder_active():
@@ -690,15 +703,15 @@ func present_defeat() -> ActionHandle:
 	presenter.aim.clear()
 	# A rescue under way cannot continue on a defeated carrier: its visual operation is interrupted here (the tactical layer puts the passenger down, which frees the carried body).
 	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
-	if interaction_active():
-		_halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
+	if rig.interaction_active():
+		rig._halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
 	_end_ladder()
-	end_stairs()
+	rig.end_stairs()
 	presenter.attack.cancel()
-	readiness.clear()
+	rig.readiness.clear()
 	presenter.cancel_hold()
 	_play(&"defeat")
-	return presenter.begin_defeat(animation_controller.state_length(&"defeat") if is_instance_valid(animation_controller) else 0.0)
+	return presenter.begin_defeat(rig.animation_controller.state_length(&"defeat") if is_instance_valid(rig.animation_controller) else 0.0)
 
 func face_world_position(world_position: Vector3) -> void:
 	# This imported rig and its rifle are authored facing +Z. The presenter decides and the rig applies; this only says whether the cover pose holds the body (the tactical cover kind and movement).
@@ -715,10 +728,10 @@ func _facing_absorbed_by_cover() -> bool:
 	return _held_cover_kind != MapCellData.CoverType.NONE and not _moving_now()
 
 func get_presentation_state() -> StringName:
-	return animation_controller.current_state if is_instance_valid(animation_controller) else &"setup"
+	return rig.animation_controller.current_state if is_instance_valid(rig.animation_controller) else &"setup"
 
 func _process(delta: float) -> void:
-	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
+	if not is_inside_tree() or not is_instance_valid(rig.skeleton) or not rig.skeleton.is_inside_tree():
 		return
 	_sync_movement_authority()
 	presenter.aim_committed = _aim_should_hold()   # a tactical fact translated into the presenter's typed input; the presenter does the rest
@@ -727,7 +740,7 @@ func _process(delta: float) -> void:
 	_sync_cover_crouch(delta)
 	presenter.advance_actions(delta)
 	_tick_traversal(delta)
-	_update_weapon_pose()
+	rig.update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
 ## A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities (the presenter infers that).
@@ -737,27 +750,9 @@ func _sync_movement_authority() -> void:
 	else:
 		presenter.clear_movement_authority()
 
-func _loaded_locomotion() -> bool:
-	return _carrying()
-
-func _update_weapon_pose() -> void:
-	if _carrying():
-		_apply_carry_posture()
-		return
-	_carry_lean = 0.0
-	super._update_weapon_pose()
-
-func _align_weapon_to_aim() -> void:
-	if _carrying(): return
-	super._align_weapon_to_aim()
-
 func _play(state_name: StringName) -> void:
-	if is_instance_valid(animation_controller):
-		animation_controller.play(state_name)
+	if is_instance_valid(rig.animation_controller):
+		rig.animation_controller.play(state_name)
 
 func _forward_state_change(state_name: StringName) -> void:
 	presentation_state_changed.emit(state_name)
-
-func _on_animation_state_changed(state_name: StringName) -> void:
-	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
-		_play_shot_feedback()

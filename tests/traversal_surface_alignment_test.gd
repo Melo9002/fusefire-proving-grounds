@@ -23,7 +23,7 @@ func _surface(x: float, z: float) -> float:
 	return hit.position.y if not hit.is_empty() else NAN
 
 func _grab(adapter) -> void:
-	var sk: Skeleton3D = adapter.skeleton
+	var sk: Skeleton3D = adapter.rig.skeleton
 	for n in ["LeftFoot", "RightFoot"]:
 		snap[n] = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_" + n)).origin
 
@@ -80,7 +80,7 @@ func _run() -> void:
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
 	var adapter: UnitVisualAdapter = actor.visual_adapter
-	adapter.skeleton.skeleton_updated.connect(func() -> void: _grab(adapter))
+	adapter.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(adapter))
 	for i in 20: await process_frame
 	for leg in [[Vector3i(11, 3, 12), "up"], [Vector3i(11, 0, 15), "down"]]:
 		f.ready_actor(actor, 6, 4)
@@ -128,15 +128,15 @@ func _run() -> void:
 		while done.is_empty() and guard < 3500:
 			guard += 1
 			await process_frame
-			if adapter.stairs == null or adapter.stairs.pose == null or adapter.stairs.pose.weight < 0.99:
+			if adapter.rig.stairs == null or adapter.rig.stairs.pose == null or adapter.rig.stairs.pose.weight < 0.99:
 				continue
 			for foot in 2:
-				var info: StairPose.Foot = adapter.stairs.pose.feet[foot]
+				var info: StairPose.Foot = adapter.rig.stairs.pose.feet[foot]
 				if not info.planted:
 					continue
 				var target: Vector3 = info.position
 				var surface := _surface(target.x, target.z)
-				worst_sole = maxf(worst_sole, absf((target.y - adapter.stair_profile.ankle_height) - surface))
+				worst_sole = maxf(worst_sole, absf((target.y - adapter.rig.stair_profile.ankle_height) - surface))
 				worst_ankle = maxf(worst_ankle, (snap.LeftFoot if foot == 0 else snap.RightFoot).distance_to(target))
 				samples += 1
 		print("  stairs %s: %d planted samples, sole-to-physical-tread difference %.4f m, ankle error %.4f m" % [leg[1], samples, worst_sole, worst_ankle])

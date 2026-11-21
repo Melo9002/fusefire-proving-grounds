@@ -85,8 +85,8 @@ func _run() -> void:
 	stage.add_child(visual)
 	for i in 10:
 		await process_frame
-	check(visual.bones != null and visual.bones.degraded.is_empty() and visual.bones.profile_name != "" and visual.crouch_modifier != null and visual.locomotion_modifier != null and visual.traversal_modifier != null and visual.grip_modifier != null and visual.weapon_pose_modifier != null,
-		"The production visual builds every stage from its profile and reports nothing degraded (%s)" % [visual.bones.degraded])
+	check(visual.rig.bones != null and visual.rig.bones.degraded.is_empty() and visual.rig.bones.profile_name != "" and visual.rig.crouch_modifier != null and visual.rig.locomotion_modifier != null and visual.rig.traversal_modifier != null and visual.rig.grip_modifier != null and visual.rig.weapon_pose_modifier != null,
+		"The production visual builds every stage from its profile and reports nothing degraded (%s)" % [visual.rig.bones.degraded])
 	stage.queue_free()
 	await process_frame
 	var dirs := ["presentation", "units", "systems", "art/characters"]

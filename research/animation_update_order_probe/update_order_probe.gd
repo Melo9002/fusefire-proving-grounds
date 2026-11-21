@@ -24,10 +24,10 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	await process_frame
-	var skeleton: Skeleton3D = visual.skeleton
+	var skeleton: Skeleton3D = visual.rig.skeleton
 	process_frame.connect(func(): sink.append("SceneTree.process_frame"))
 	physics_frame.connect(func(): sink.append("SceneTree.physics_frame"))
-	var tree: AnimationTree = visual.animation_controller.animation_tree
+	var tree: AnimationTree = visual.rig.animation_controller.animation_tree
 	tree.mixer_applied.connect(func(): sink.append("AnimationTree.mixer_applied"))
 	tree.mixer_updated.connect(func(): sink.append("AnimationTree.mixer_updated"))
 	for m in skeleton.get_children():

@@ -26,7 +26,7 @@ func _run_script(presentation: bool) -> Dictionary:
 	actor.stair_profile.enabled = presentation
 	actor.stair_profile.slow_stairs_enabled = presentation
 	actor.path_presentation.enabled = presentation
-	adapter.traversal_profile.slow_ladder_enabled = presentation
+	adapter.rig.traversal_profile.slow_ladder_enabled = presentation
 	for i in 20: await process_frame
 	var records: Array = []
 	f.battle.action_service.action_committed.connect(func(result) -> void: records.append(JSON.stringify(result.to_replay_record())))

@@ -103,21 +103,21 @@ func _run() -> void:
 	adapter.present_idle()
 	await create_timer(1.0).timeout
 	check(adapter.get_presentation_state() == &"cover_low" and adapter.cover_side == CoverEdgeSelector.Side.RIGHT, "Centred behind a low wall the unit peeks right (side %d)" % adapter.cover_side)
-	check(absf(rad_to_deg(adapter._cover_yaw) + adapter.cover_profile.protected_yaw_degrees) < 2.0, "Protected, the body turns toward the right edge by the protected angle, not away from the wall (%.0f)" % rad_to_deg(adapter._cover_yaw))
+	check(absf(rad_to_deg(adapter.rig._cover_yaw) + adapter.rig.cover_profile.protected_yaw_degrees) < 2.0, "Protected, the body turns toward the right edge by the protected angle, not away from the wall (%.0f)" % rad_to_deg(adapter.rig._cover_yaw))
 	check(not adapter.cover_edges.has("enemy") and not adapter.cover_edges.has("target") and adapter.cover_edges.keys().size() == 4, "The edge analysis holds geometry only: no enemy or target information")
 	# Facing independence and no target leakage: facing the enemy from the other side changes neither the side nor the world orientation of the body.
-	var world_yaw_before: float = adapter.rotation.y + adapter.character_root.rotation.y
+	var world_yaw_before: float = adapter.rig.rotation.y + adapter.rig.character_root.rotation.y
 	var side_before: int = adapter.cover_side
 	adapter.face_world_position(adapter.global_position + Vector3(-5, 0, 0))
 	await process_frame
-	var world_yaw_after: float = adapter.rotation.y + adapter.character_root.rotation.y
+	var world_yaw_after: float = adapter.rig.rotation.y + adapter.rig.character_root.rotation.y
 	check(adapter.cover_side == side_before and absf(angle_difference(world_yaw_before, world_yaw_after)) < deg_to_rad(3.0), "A facing change does not change the peek side and does not snap the body (%.1f deg)" % rad_to_deg(angle_difference(world_yaw_before, world_yaw_after)))
 	adapter.present_idle()
 	await create_timer(1.0).timeout
 	# Leave the wall and place it so the left is nearer: z 10..11.
 	f.set_cover(Vector3i(6, 0, 9), MapCellData.CoverType.NONE, 0.0)
 	await create_timer(0.8).timeout
-	check(adapter.cover_side == CoverEdgeSelector.Side.LEFT and rad_to_deg(adapter._cover_yaw) > adapter.cover_profile.protected_yaw_degrees - 2.0, "Wall extending to the right only: the nearer edge is the left and the body turns that way (side %d, %.0f deg)" % [adapter.cover_side, rad_to_deg(adapter._cover_yaw)])
+	check(adapter.cover_side == CoverEdgeSelector.Side.LEFT and rad_to_deg(adapter.rig._cover_yaw) > adapter.rig.cover_profile.protected_yaw_degrees - 2.0, "Wall extending to the right only: the nearer edge is the left and the body turns that way (side %d, %.0f deg)" % [adapter.cover_side, rad_to_deg(adapter.rig._cover_yaw)])
 	f.set_cover(Vector3i(6, 0, 9), MapCellData.CoverType.LOW, 0.9)
 	await create_timer(0.8).timeout
 	check(adapter.cover_side == CoverEdgeSelector.Side.LEFT, "Restoring the tie does not flip the side back (hysteresis)")
@@ -144,12 +144,12 @@ func _run() -> void:
 	while Time.get_ticks_msec() < t_end:
 		await process_frame
 		var dt := _frame_dt()
-		var direction := adapter.muzzle_socket.global_basis.z.normalized()
+		var direction := adapter.rig.muzzle_socket.global_basis.z.normalized()
 		if previous != Vector3.ZERO:
 			worst_rate = maxf(worst_rate, rad_to_deg(direction.angle_to(previous)) / dt)
 		previous = direction
-		depth_low = minf(depth_low, adapter.crouch_modifier.depth)
-		depth_high = maxf(depth_high, adapter.crouch_modifier.depth)
+		depth_low = minf(depth_low, adapter.rig.crouch_modifier.depth)
+		depth_high = maxf(depth_high, adapter.rig.crouch_modifier.depth)
 		if not hit_sent and adapter.presenter.attack.phase == AttackSequence.Phase.NONE and not done.is_empty() and Time.get_ticks_msec() > t_end - 2200:
 			hit_sent = true
 			adapter.present_hit()
@@ -158,7 +158,7 @@ func _run() -> void:
 	check(depth_low > 0.2, "The cover crouch is held through the whole sequence, hit included (lowest depth %.2f)" % depth_low)
 	check(adapter.get_presentation_state() in [&"cover_low", &"hit"] and adapter._held_cover_kind == MapCellData.CoverType.LOW, "After the hit the unit is still in its cover pose (%s)" % adapter.get_presentation_state())
 	await create_timer(1.2).timeout
-	check(adapter.get_presentation_state() == &"cover_low" and adapter.aim_blend < 0.05, "...and recovers to the protected posture with the weapon down")
+	check(adapter.get_presentation_state() == &"cover_low" and adapter.rig.aim_blend < 0.05, "...and recovers to the protected posture with the weapon down")
 
 	# ---- Leaving cover: nothing of the cover pose is left, and ordinary locomotion takes over.
 	var moved := []
@@ -170,22 +170,22 @@ func _run() -> void:
 	while moved.is_empty():
 		await process_frame
 	await create_timer(1.0).timeout
-	check(absf(adapter._cover_yaw) < deg_to_rad(1.0) and adapter.crouch_modifier.depth < 0.01 and adapter.crouch_modifier.kneel < 0.01 and adapter.cover_side == CoverEdgeSelector.Side.NONE, "After leaving cover the yaw offset, crouch and side are all cleared")
+	check(absf(adapter.rig._cover_yaw) < deg_to_rad(1.0) and adapter.rig.crouch_modifier.depth < 0.01 and adapter.rig.crouch_modifier.kneel < 0.01 and adapter.cover_side == CoverEdgeSelector.Side.NONE, "After leaving cover the yaw offset, crouch and side are all cleared")
 	var owners := 0
-	for child in adapter.skeleton.get_children():
+	for child in adapter.rig.skeleton.get_children():
 		if child is LocomotionPoseModifier or child is CoverCrouchModifier:
 			owners += 1
 	check(owners == 2, "Each of the two body modifiers exists exactly once (no duplicate ownership)")
 
 	# ---- The lean clips lean the way their names say (character's left is +x), by a believable amount, head following the hips.
-	var sk := adapter.skeleton
-	adapter.animation_controller.animation_tree.active = false
-	var to_root := adapter.character_root.global_transform.affine_inverse() * sk.global_transform
+	var sk := adapter.rig.skeleton
+	adapter.rig.animation_controller.animation_tree.active = false
+	var to_root := adapter.rig.character_root.global_transform.affine_inverse() * sk.global_transform
 	sk.reset_bone_poses()
 	var rest_hips: Vector3 = to_root * sk.get_bone_global_pose(sk.find_bone("mixamorig_Hips")).origin
 	var lean_dx := {}
 	for clip in [&"shoot_left", &"shoot_right"]:
-		var a: Animation = adapter.animation_controller.animation_player.get_animation(clip)
+		var a: Animation = adapter.rig.animation_controller.animation_player.get_animation(clip)
 		sk.reset_bone_poses()
 		for track in a.get_track_count():
 			var bone := sk.find_bone(a.track_get_path(track).get_subname(0))
@@ -196,7 +196,7 @@ func _run() -> void:
 		lean_dx[clip] = (to_root * sk.get_bone_global_pose(sk.find_bone("mixamorig_Hips")).origin).x - rest_hips.x
 	check(lean_dx[&"shoot_left"] > 0.05 and lean_dx[&"shoot_left"] < 0.2, "shoot_left leans toward the character's LEFT (%.3f m)" % lean_dx[&"shoot_left"])
 	check(lean_dx[&"shoot_right"] < -0.05 and lean_dx[&"shoot_right"] > -0.2, "shoot_right leans toward the character's RIGHT (%.3f m)" % lean_dx[&"shoot_right"])
-	adapter.animation_controller.animation_tree.active = true
+	adapter.rig.animation_controller.animation_tree.active = true
 
 	await f.dispose(self)
 	print("Cover edge selection: %d checks, %d failure(s)" % [checks, failures])

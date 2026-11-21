@@ -50,29 +50,29 @@ func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
 	v = VISUAL.instantiate()
-	v.weapon_scene = null
+	v.rig.weapon_scene = null
 	stage.add_child(v)
 	# The finished pose, with its solved IK, is valid only where the skeleton updates.
-	v.skeleton.skeleton_updated.connect(func() -> void:
+	v.rig.skeleton.skeleton_updated.connect(func() -> void:
 		if pending != "":
 			var tag := pending
 			pending = ""
 			_results[tag] = _measure())
 	await _frames(30)
 	await _sample("standing")
-	v.animation_controller.play(&"move")
+	v.rig.animation_controller.play(&"move")
 	for i in 80:
 		v.update_locomotion(Vector3(0, 0, 3.0), 1.0 / 60.0)
 		await process_frame
 	await _sample("walking", true)
-	v.animation_controller.play(&"idle")
+	v.rig.animation_controller.play(&"idle")
 	for i in 60:
 		v.update_locomotion(Vector3.ZERO, 1.0 / 60.0)
 		await process_frame
 	v.presenter.postures.set_posture(&"c", PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, 0.40)
 	await _frames(60)
 	await _sample("crouched")
-	v.presenter.postures.set_posture(&"c", PresentationTypes.Posture.KNEEL, PresentationTypes.PRIORITY_CONTEXT, 0.0, v.crouch_modifier.max_depth + CharacterRig.KNEEL_BLEND_RANGE)
+	v.presenter.postures.set_posture(&"c", PresentationTypes.Posture.KNEEL, PresentationTypes.PRIORITY_CONTEXT, 0.0, v.rig.crouch_modifier.max_depth + CharacterRig.KNEEL_BLEND_RANGE)
 	await _frames(80)
 	await _sample("kneeling")
 	v.presenter.postures.release(&"c")
@@ -96,7 +96,7 @@ func _run() -> void:
 ## Hand and forearm vertex depth inside each leg, and the arm's angle from vertical, from the skinned mesh as the skeleton just posed it.
 func _measure() -> Dictionary:
 	var mesh_instance := _mesh(v)
-	var skeleton := v.skeleton
+	var skeleton := v.rig.skeleton
 	var skin := mesh_instance.skin
 	var arrays := mesh_instance.mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
@@ -128,8 +128,8 @@ func _measure() -> Dictionary:
 		dominant[i] = best_bone
 	var result := {"hand_depth": 0.0, "forearm_depth": 0.0, "hand_vertices": 0, "leg_triangles": 0, "arm_angle_degrees": 0.0}
 	for side in 2:
-		var arm: Array[StringName] = v.bones.right_arm if side == 0 else v.bones.left_arm
-		var leg: Array[StringName] = v.bones.right_leg if side == 0 else v.bones.left_leg
+		var arm: Array[StringName] = v.rig.bones.right_arm if side == 0 else v.rig.bones.left_arm
+		var leg: Array[StringName] = v.rig.bones.right_leg if side == 0 else v.rig.bones.left_leg
 		var hand_bones := {}
 		_descendants(skeleton, skeleton.find_bone(arm[2]), hand_bones)
 		var forearm_bone := skeleton.find_bone(arm[1])

@@ -20,7 +20,7 @@ func _attach(skeleton: Skeleton3D, bone: StringName) -> void:
 	_attachments[bone] = attachment
 
 func _w(rig: UnitVisualAdapter, point: Vector3) -> Vector3:
-	return rig.weapon.global_transform.affine_inverse() * point
+	return rig.rig.weapon.global_transform.affine_inverse() * point
 
 func _bone(bone: StringName) -> Vector3:
 	return (_attachments[bone] as BoneAttachment3D).global_position
@@ -52,7 +52,7 @@ func _run() -> void:
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame
-	var skeleton: Skeleton3D = rig.skeleton
+	var skeleton: Skeleton3D = rig.rig.skeleton
 	for bone in [&"mixamorig_RightHand", &"mixamorig_RightHandMiddle1", &"mixamorig_RightHandIndex1", &"mixamorig_RightHandPinky1", &"mixamorig_LeftHandIndex1", &"mixamorig_LeftHandPinky1", &"mixamorig_LeftHand", &"mixamorig_LeftHandMiddle1", &"mixamorig_LeftHandMiddle4", &"mixamorig_RightHandMiddle4", &"mixamorig_LeftHandIndex4", &"mixamorig_RightHandIndex4", &"mixamorig_RightArm", &"mixamorig_RightForeArm", &"mixamorig_LeftArm", &"mixamorig_LeftForeArm", &"mixamorig_Spine2", &"mixamorig_Spine1", &"mixamorig_RightShoulder", &"mixamorig_Neck"]:
 		_attach(skeleton, bone)
 	# Palm normal from the knuckle row, signed so that it points down in the rest T-pose.
@@ -60,17 +60,17 @@ func _run() -> void:
 	for side in ["Left", "Right"]:
 		var n_rest := _palm_normal(side)
 		rest_sign[side] = 1.0 if n_rest.dot(Vector3.DOWN) > 0.0 else -1.0
-	rig.animation_controller.play(&"aim")
+	rig.rig.animation_controller.play(&"aim")
 	rig.presenter.aim.held = true
 	rig.presenter.aim.release_left = 1000000.0
 	for i in 90: await process_frame
 	await create_timer(0.8).timeout
-	var facing: Basis = rig.character_root.global_basis
+	var facing: Basis = rig.rig.character_root.global_basis
 	var right_palm := (_bone(&"mixamorig_RightHand") + _bone(&"mixamorig_RightHandMiddle1")) * 0.5
 	var left_palm := (_bone(&"mixamorig_LeftHand") + _bone(&"mixamorig_LeftHandMiddle1")) * 0.5
 	print("GRIP right wrist %s palm %s -> pistol grip error %s" % [_r(_w(rig, _bone(&"mixamorig_RightHand"))), _r(_w(rig, right_palm)), _r(_w(rig, right_palm) - PISTOL_GRIP)])
 	print("GRIP left  wrist %s palm %s -> front handle error %s" % [_r(_w(rig, _bone(&"mixamorig_LeftHand"))), _r(_w(rig, left_palm)), _r(_w(rig, left_palm) - FRONT_HANDLE)])
-	var rear := rig.weapon.to_global(STOCK_REAR)
+	var rear := rig.rig.weapon.to_global(STOCK_REAR)
 	var arm := _bone(&"mixamorig_RightArm")
 	var rel: Vector3 = facing.inverse() * (rear - arm)
 	print("STOCK rear plate relative to right shoulder joint, character frame (x lateral, y up, z forward): %s" % _r(rel))
@@ -78,7 +78,7 @@ func _run() -> void:
 	print("STOCK rear plate relative to chest (Spine2), character frame: %s" % _r(chest))
 	print("ARM lengths: right upper %.3f fore %.3f | left upper %.3f fore %.3f" % [_bone(&"mixamorig_RightArm").distance_to(_bone(&"mixamorig_RightForeArm")), _bone(&"mixamorig_RightForeArm").distance_to(_bone(&"mixamorig_RightHand")), _bone(&"mixamorig_LeftArm").distance_to(_bone(&"mixamorig_LeftForeArm")), _bone(&"mixamorig_LeftForeArm").distance_to(_bone(&"mixamorig_LeftHand"))])
 	print("ARM reach: right shoulder->wrist %.3f | left shoulder->wrist %.3f" % [_bone(&"mixamorig_RightArm").distance_to(_bone(&"mixamorig_RightHand")), _bone(&"mixamorig_LeftArm").distance_to(_bone(&"mixamorig_LeftHand"))])
-	print("MARKERS stock_marker %s shoulder_marker (world rel. arm, char frame) %s" % [_r(_w(rig, rig.stock_marker.global_position)), _r(facing.inverse() * (rig.shoulder_marker.global_position - arm))])
+	print("MARKERS stock_marker %s shoulder_marker (world rel. arm, char frame) %s" % [_r(_w(rig, rig.rig.stock_marker.global_position)), _r(facing.inverse() * (rig.rig.shoulder_marker.global_position - arm))])
 	for side in ["Left", "Right"]:
 		var normal: Vector3 = _palm_normal(side) * rest_sign[side]
 		var along: Vector3 = _bone(StringName("mixamorig_%sHandMiddle1" % side)) - _bone(StringName("mixamorig_%sHand" % side))
@@ -86,7 +86,7 @@ func _run() -> void:
 		var wrist_position := _bone(StringName("mixamorig_%sHand" % side))
 		var tip_offset: Vector3 = tip - wrist_position
 		print("FINGER %s middle tip: %.3f m from wrist, %.3f m toward the palm side (negative = bent backward)" % [side, tip_offset.length(), tip_offset.dot(normal)])
-		print("HAND %s fingers point (weapon frame) %s | palm faces %s" % [side, _r(rig.weapon.global_basis.orthonormalized().inverse() * along.normalized()), _r(rig.weapon.global_basis.orthonormalized().inverse() * normal)])
+		print("HAND %s fingers point (weapon frame) %s | palm faces %s" % [side, _r(rig.rig.weapon.global_basis.orthonormalized().inverse() * along.normalized()), _r(rig.rig.weapon.global_basis.orthonormalized().inverse() * normal)])
 	quit(0)
 
 func _r(v: Vector3) -> String:

@@ -1,5 +1,26 @@
 @tool
-extends CharacterRig
+extends Node3D
+## The animation workbench: a HOST of the shared character architecture, like the tactical adapter but for inspection. It drives a CharacterRig (its child) and that rig's CharacterPresenter exactly as the game does
+## (presenter tick, then the action stage, then the rig's weapon pose), and adds the test panel, the cover and ladder and stair benches and the diagnostics around it.
+
+## Where this host's CharacterRig child is (the scene's "Rig" node by default).
+@export var rig_path := NodePath("Rig")
+## The CharacterRig this host drives and the presenter it owns: plain variables (resolved as soon as the scene is instantiated, before it enters the tree), because a host reads them every frame.
+var rig: CharacterRig
+var presenter: CharacterPresenter
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_SCENE_INSTANTIATED:
+		_resolve_rig()
+
+func _enter_tree() -> void:
+	_resolve_rig()
+
+func _resolve_rig() -> void:
+	if rig == null:
+		rig = get_node_or_null(rig_path) as CharacterRig
+		if rig != null:
+			presenter = rig.presenter
 
 @onready var status_label: Label = get_node_or_null("UI/Status") as Label
 @onready var camera: Camera3D = get_node_or_null("Camera3D") as Camera3D
@@ -46,39 +67,28 @@ func _preview_locomotion(direction: Vector2) -> void:
 	if is_instance_valid(_preview_pivot):
 		_preview_pivot.rotation.y = 0.0
 	preview_direction = direction
-	locomotion_direction = direction
-	if animation_controller.current_state != &"move":
-		animation_controller.play(&"move")
+	rig.locomotion_direction = direction
+	if rig.animation_controller.current_state != &"move":
+		rig.animation_controller.play(&"move")
 	_update_status()
 
 func _ready() -> void:
-	_build_character()
-	_build_weapon_attachment()
-	_build_arm_ik()
 	if Engine.is_editor_hint():
-		await get_tree().process_frame
-		await get_tree().process_frame
-		_align_weapon_to_aim()
-		_update_weapon_pose()
-		return
-	_build_animation_controller()
-	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
+		return   # the rig poses itself in the editor (its own _ready)
+	rig.animation_controller.state_changed.connect(_on_animation_state_changed)
 	camera.look_at(Vector3(0.42, 0.72, 0.0), Vector3.UP)
 	_update_status()
 	# The interactive locomotion test bench (speed slider, gaits, turns, transitions, views, readout) drives this same rig.
 	var test_panel := LocomotionTestPanel.new()
 	get_node("UI").add_child(test_panel)
 	test_panel.setup(self)
-	# BoneAttachment3D receives its final pose after the skeleton modifier pass.
-	# Wait for that pose, then establish the proof's authored rifle orientation.
+	await get_tree().process_frame   # the rig aligns its own weapon once the skeleton has posed (its _ready)
 	await get_tree().process_frame
-	await get_tree().process_frame
-	_align_weapon_to_aim()
 	if "--side-view" in OS.get_cmdline_user_args():
 		camera.position = Vector3(3.4, 1.3, 0.1)
 		camera.look_at(Vector3(0, 0.85, 0), Vector3.UP)
 	if "--auto-sequence" in OS.get_cmdline_user_args():
-		animation_controller.play_sequence()
+		rig.animation_controller.play_sequence()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -115,57 +125,57 @@ func _unhandled_input(event: InputEvent) -> void:
 				_cycle_diagnostic_view()
 			KEY_R:
 				# Pickup from the floor: the passenger lies a metre in front (the same call the game makes with the rescued actor's place).
-				finish_interaction_now()
-				end_carry()
-				begin_pickup(character_root.global_position + character_root.global_basis.orthonormalized().z * 1.0)
+				rig.finish_interaction_now()
+				rig.end_carry()
+				rig.begin_pickup(rig.character_root.global_position + rig.character_root.global_basis.orthonormalized().z * 1.0)
 				_update_status()
 			KEY_Q:
 				# Release: lower the passenger to the floor and let go. The passenger is left lying so it can be looked at.
-				if is_instance_valid(carry_passenger) and not interaction_active():
-					keep_released_passenger = true
-					begin_release()
+				if is_instance_valid(rig.carry_passenger) and not rig.interaction_active():
+					rig.keep_released_passenger = true
+					rig.begin_release()
 				_update_status()
 			KEY_K:
 				# Carrier-death interruption: the tactical layer has put the passenger down, so the visual one is dropped at once.
-				end_carry()
-				animation_controller.play(&"rifle_idle")
+				rig.end_carry()
+				rig.animation_controller.play(&"rifle_idle")
 				_update_status()
 			KEY_O:
-				rescue_interaction.paused = not rescue_interaction.paused
+				rig.rescue_interaction.paused = not rig.rescue_interaction.paused
 				_update_status()
 			KEY_COMMA, KEY_PERIOD:
-				if interaction_active():
-					rescue_interaction.paused = true
-					rescue_interaction.scrub(rescue_interaction.time + (0.1 if event.keycode == KEY_PERIOD else -0.1))
+				if rig.interaction_active():
+					rig.rescue_interaction.paused = true
+					rig.rescue_interaction.scrub(rig.rescue_interaction.time + (0.1 if event.keycode == KEY_PERIOD else -0.1))
 				_update_status()
 			KEY_Y:
-				passenger_motion_enabled = not passenger_motion_enabled
+				rig.passenger_motion_enabled = not rig.passenger_motion_enabled
 				_update_status()
 			KEY_P:
-				finish_interaction_now()
-				animation_controller.play(&"carry_idle")
+				rig.finish_interaction_now()
+				rig.animation_controller.play(&"carry_idle")
 			KEY_M:
-				finish_interaction_now()
-				animation_controller.play(&"carry_move")
+				rig.finish_interaction_now()
+				rig.animation_controller.play(&"carry_move")
 			KEY_E:
-				finish_interaction_now()
-				animation_controller.play(&"boarding")
+				rig.finish_interaction_now()
+				rig.animation_controller.play(&"boarding")
 			KEY_7:
-				animation_controller.play(&"cover_low")
+				rig.animation_controller.play(&"cover_low")
 			KEY_8:
-				animation_controller.play(&"cover_high")
+				rig.animation_controller.play(&"cover_high")
 			KEY_9:
-				animation_controller.play(&"shoot_left")
+				rig.animation_controller.play(&"shoot_left")
 			KEY_0:
-				animation_controller.play(&"shoot_right")
+				rig.animation_controller.play(&"shoot_right")
 			KEY_V:
-				animation_controller.play(&"vault")
+				rig.animation_controller.play(&"vault")
 			KEY_B:
-				animation_controller.play(&"climb")
+				rig.animation_controller.play(&"climb")
 			KEY_N:
-				animation_controller.play(&"descend")
+				rig.animation_controller.play(&"descend")
 			KEY_L:
-				animation_controller.play(&"land")
+				rig.animation_controller.play(&"land")
 			KEY_UP:
 				_preview_locomotion(Vector2(0, 1))
 			KEY_DOWN:
@@ -182,14 +192,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				if not is_instance_valid(_preview_pivot):
 					_preview_pivot = Node3D.new()
 					_preview_pivot.name = "LocomotionPreviewPivot"
-					add_child(_preview_pivot)
-					character_root.reparent(_preview_pivot)
+					rig.add_child(_preview_pivot)
+					rig.character_root.reparent(_preview_pivot)
 				_preview_turn_time = 0.0
 				preview_turning = true
 				_update_status()
 			KEY_I:
-				ik_enabled = not ik_enabled
-				arm_ik.active = ik_enabled
+				rig.ik_enabled = not rig.ik_enabled
+				rig.arm_ik.active = rig.ik_enabled
 				_update_status()
 			KEY_C:
 				side_view = not side_view
@@ -198,30 +208,30 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				get_tree().quit()
 			KEY_1:
-				animation_controller.play(&"rifle_idle")
+				rig.animation_controller.play(&"rifle_idle")
 			KEY_2:
 				_preview_locomotion(Vector2(0, 1))
 			KEY_3:
-				animation_controller.play(&"aim")
+				rig.animation_controller.play(&"aim")
 			KEY_4:
-				animation_controller.play(&"shoot")
+				rig.animation_controller.play(&"shoot")
 			KEY_5:
-				animation_controller.play(&"hit")
+				rig.animation_controller.play(&"hit")
 			KEY_6:
-				animation_controller.play(&"defeat")
+				rig.animation_controller.play(&"defeat")
 			KEY_SPACE:
-				animation_controller.play_sequence()
+				rig.animation_controller.play_sequence()
 
 
 func _update_status() -> void:
 	if not is_instance_valid(status_label):
 		return
-	var state_name: StringName = animation_controller.current_state if is_instance_valid(animation_controller) else &"setup"
+	var state_name: StringName = rig.animation_controller.current_state if is_instance_valid(rig.animation_controller) else &"setup"
 	# Keep controls in the demo so individual poses are easy to inspect.
-	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
+	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if rig.ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
 	status_label.text += "\nR: pickup    P: carry idle    M: carry move    E: boarding    Q: release    K: carrier-death drop"
-	status_label.text += "\nO: pause timeline    , / .: scrub 0.1 s    Y: passenger motion %s    Rescue: %s" % ["on" if passenger_motion_enabled else "off", ("%s %.2f/%.2f s %s" % [RescueInteraction.Kind.keys()[rescue_interaction.kind], rescue_interaction.time, rescue_interaction.duration(), rescue_interaction.phase_name()]) if interaction_active() else "-"]
+	status_label.text += "\nO: pause timeline    , / .: scrub 0.1 s    Y: passenger motion %s    Rescue: %s" % ["on" if rig.passenger_motion_enabled else "off", ("%s %.2f/%.2f s %s" % [RescueInteraction.Kind.keys()[rig.rescue_interaction.kind], rig.rescue_interaction.time, rig.rescue_interaction.duration(), rig.rescue_interaction.phase_name()]) if rig.interaction_active() else "-"]
 	var diagnostics_on := is_instance_valid(_diagnostics) and _diagnostics.enabled
 	status_label.text += "\nH: hand diagnostics %s    J: labels    G: mark contact    Z: pose %s    X: view %s" % ["ON" if diagnostics_on else "off", POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
 
@@ -229,59 +239,47 @@ func _update_status() -> void:
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	if preview_turning and animation_controller.current_state == &"move":
+	if preview_turning and rig.animation_controller.current_state == &"move":
 		_preview_turn_time += _delta
 		var target_yaw := PI if int(_preview_turn_time / 2.0) % 2 == 0 else 0.0
 		_preview_pivot.rotation.y = rotate_toward(_preview_pivot.rotation.y, target_yaw, TAU * _delta)
 		var local_travel := _preview_pivot.basis.inverse() * Vector3.FORWARD
 		preview_direction = Vector2(local_travel.x, local_travel.z)
-		locomotion_direction = preview_direction
+		rig.locomotion_direction = preview_direction
 	# The production locomotion presentation, fed a preview speed while a movement state is playing (and zero otherwise, which settles it).
-	var walking: bool = animation_controller.current_state in [&"move", &"carry_move"] and not interaction_active()
+	var walking: bool = rig.animation_controller.current_state in [&"move", &"carry_move"] and not rig.interaction_active()
 	var heading_rate := 0.0
 	if not is_nan(turn_goal):
-		heading_rate = presenter.turn_root_toward(turn_goal, 360.0, _delta)
-		if is_equal_approx(character_root.rotation.y, turn_goal):
+		heading_rate = rig.presenter.turn_root_toward(turn_goal, 360.0, _delta)
+		if is_equal_approx(rig.character_root.rotation.y, turn_goal):
 			turn_goal = NAN
-	presenter.set_scripted_motion(preview_speed if walking else 0.0, heading_rate)   # authored preview motion, fed as given (a turn preview keeps its heading rate while idle)
-	presenter.tick(_delta)
+	rig.presenter.set_scripted_motion(preview_speed if walking else 0.0, heading_rate)   # authored preview motion, fed as given (a turn preview keeps its heading rate while idle)
+	rig.presenter.tick(_delta)
 	_apply_cover_demo(_delta)
 	_advance_ladder_demo(_delta)
 	_advance_stair_demo(_delta)
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
-	presenter.advance_actions(_delta)   # the same action stage the tactical host runs: the presenter advances the rescue clock, this rig applies it
-	_update_weapon_pose()
+	rig.presenter.advance_actions(_delta)   # the same action stage the tactical host runs: the presenter advances the rescue clock, this rig applies it
+	rig.update_weapon_pose()
+	if is_instance_valid(rig.carry_passenger) and rig.interaction_active():
+		_update_status()
 
 
+## The workbench's own response to the clip that plays: a rescue pose takes the carry (the same passenger, contacts, lean and slung weapon the game uses); anything else lets it go.
 func _on_animation_state_changed(state_name: StringName) -> void:
-	var rescue_pose := state_name in [&"pickup", &"carry_idle", &"carry_move", &"boarding"] or interaction_active()
+	var rescue_pose := state_name in [&"pickup", &"carry_idle", &"carry_move", &"boarding"] or rig.interaction_active()
 	if rescue_pose:
-		begin_carry()   # the same passenger, contacts, lean and slung weapon the game uses
-	elif is_instance_valid(carry_passenger):
-		end_carry()
-		arm_ik.active = ik_enabled
+		rig.begin_carry()
+	elif is_instance_valid(rig.carry_passenger):
+		rig.end_carry()
+		rig.arm_ik.active = rig.ik_enabled
 	_update_status()
-	super._on_animation_state_changed(state_name)
-
-func _align_weapon_to_aim() -> void:
-	if is_instance_valid(carry_passenger):
-		return
-	super._align_weapon_to_aim()
-
-func _update_weapon_pose() -> void:
-	if is_instance_valid(carry_passenger):
-		_apply_carry_posture()
-		if interaction_active():
-			_update_status()
-		return
-	super._update_weapon_pose()
-
 
 ## H: switches the hand-contact diagnostics (overlay and readout) on or off. They are created on first use.
 func _toggle_diagnostics() -> void:
 	if not is_instance_valid(_diagnostics):
-		_diagnostics = HandContactDiagnostics.attach(self)
+		_diagnostics = HandContactDiagnostics.attach(rig, self)
 		if _diagnostics == null:
 			push_warning("Hand-contact diagnostics are unavailable for this rig")
 			return
@@ -299,25 +297,25 @@ func _cycle_pose_preset() -> void:
 	_update_status()
 
 func _pose_preset_depth() -> float:
-	if crouch_modifier == null:
+	if rig.crouch_modifier == null:
 		return 0.0
 	match _pose_preset:
-		1: return crouch_modifier.clamp_depth(0.41)   # about the depth for hiding behind 1.15 m cover
-		2: return crouch_modifier.max_depth           # what the adapter asks for behind cover too low to crouch behind
+		1: return rig.crouch_modifier.clamp_depth(0.41)   # about the depth for hiding behind 1.15 m cover
+		2: return rig.crouch_modifier.max_depth           # what the adapter asks for behind cover too low to crouch behind
 	return 0.0
 
 func _ramp_pose_preset(delta: float) -> void:
-	if crouch_modifier == null or Engine.is_editor_hint() or not cover_demo.is_empty():
+	if rig.crouch_modifier == null or Engine.is_editor_hint() or not cover_demo.is_empty():
 		return
 	# A diagnostic preset is a BASE-priority posture request: a cover demo (CONTEXT) wins over it, and releasing the preset returns to standing.
 	if _pose_preset == 0:
-		presenter.postures.release(POSE_PRESET_SOURCE)
+		rig.presenter.postures.release(POSE_PRESET_SOURCE)
 	else:
 		var posture := PresentationTypes.Posture.KNEEL if _pose_preset == 2 else PresentationTypes.Posture.CROUCH
 		# A kneel is asked for as one blend range past the deepest crouch.
-		var request := _pose_preset_depth() + (KNEEL_BLEND_RANGE if _pose_preset == 2 else 0.0)
-		presenter.postures.set_posture(POSE_PRESET_SOURCE, posture, PresentationTypes.PRIORITY_BASE, 0.0, request)
-	presenter.apply_posture(delta, cover_profile, false)
+		var request := _pose_preset_depth() + (rig.KNEEL_BLEND_RANGE if _pose_preset == 2 else 0.0)
+		rig.presenter.postures.set_posture(POSE_PRESET_SOURCE, posture, PresentationTypes.PRIORITY_BASE, 0.0, request)
+	rig.presenter.apply_posture(delta, rig.cover_profile, false)
 
 ## X: cycles fixed diagnostic camera views. The close-ups follow the hands as the pose changes.
 func _cycle_diagnostic_view() -> void:
@@ -329,11 +327,11 @@ func _cycle_diagnostic_view() -> void:
 	_update_status()
 
 func _follow_diagnostic_view() -> void:
-	if _diagnostic_view == 0 or not is_instance_valid(camera) or not is_instance_valid(weapon):
+	if _diagnostic_view == 0 or not is_instance_valid(camera) or not is_instance_valid(rig.weapon):
 		return
-	var facing := character_root.global_basis.orthonormalized()
-	var firing := weapon.to_global(handling.firing_grip)
-	var support := weapon.to_global(handling.support_grip)
+	var facing := rig.character_root.global_basis.orthonormalized()
+	var firing := rig.weapon.to_global(rig.handling.firing_grip)
+	var support := rig.weapon.to_global(rig.handling.support_grip)
 	var focus := ORBIT_FOCUS
 	var offset := Vector3.ZERO
 	camera.fov = 30.0
@@ -364,16 +362,16 @@ func set_cover_demo(spec: Dictionary) -> void:
 	_cover_group = null
 	if spec.is_empty():
 		cover_side = 0
-		presenter.postures.release(COVER_DEMO_SOURCE)
-		animation_controller.play(&"rifle_idle")
+		rig.presenter.postures.release(COVER_DEMO_SOURCE)
+		rig.animation_controller.play(&"rifle_idle")
 		return
 	cover_target = null
 	cover_plan = {}
-	presenter.face_yaw(0.0, false, false)   # square to the wall again, at once: no hips catching up, no absorption
+	rig.presenter.face_yaw(0.0, false, false)   # square to the wall again, at once: no hips catching up, no absorption
 	_bench_heading = 0.0
 	_cover_found = {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
-	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, cover_profile)
-	animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
+	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, rig.cover_profile)
+	rig.animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
 	_build_cover_visuals()
 
 
@@ -386,25 +384,25 @@ func set_cover_target(target: Variant) -> void:
 	if target == null:
 		cover_plan = {}
 		_turn_to_heading(0.0)
-		animation_controller.play(&"aim" if cover_demo.aim else &"rifle_idle")
+		rig.animation_controller.play(&"aim" if cover_demo.aim else &"rifle_idle")
 		return
-	cover_plan = CoverEdgeSelector.plan_attack(_cover_found, bool(cover_demo.full), target as Vector3, int(cover_plan.get("side", 0)), cover_side, 0.5, cover_profile)
+	cover_plan = CoverEdgeSelector.plan_attack(_cover_found, bool(cover_demo.full), target as Vector3, int(cover_plan.get("side", 0)), cover_side, 0.5, rig.cover_profile)
 	_turn_to_heading(atan2((target as Vector3).x, (target as Vector3).z))
-	animation_controller.play(&"aim")
+	rig.animation_controller.play(&"aim")
 
 
 ## Shows the plan's shot (shoot / shoot_left / shoot_right), then back to the aimed pose.
 func fire_cover_shot() -> void:
 	if cover_plan.is_empty():
 		return
-	animation_controller.play(CoverEdgeSelector.shot_state(bool(cover_demo.full), cover_plan, cover_side))   # the same decision the tactical unit's attack makes
+	rig.animation_controller.play(CoverEdgeSelector.shot_state(bool(cover_demo.full), cover_plan, cover_side))   # the same decision the tactical unit's attack makes
 	await get_tree().create_timer(0.7).timeout
 	if not cover_plan.is_empty():
-		animation_controller.play(&"aim")
+		rig.animation_controller.play(&"aim")
 
 
 func _turn_to_heading(heading: float) -> void:
-	presenter.face_yaw(heading, true, false)   # the cover pose absorbs the change (no snap); the bench shows no hips catching up
+	rig.presenter.face_yaw(heading, true, false)   # the cover pose absorbs the change (no snap); the bench shows no hips catching up
 	_bench_heading = heading
 
 
@@ -455,18 +453,18 @@ func _build_cover_visuals() -> void:
 
 
 func _apply_cover_demo(delta: float) -> void:
-	if cover_demo.is_empty() or crouch_modifier == null or Engine.is_editor_hint():
+	if cover_demo.is_empty() or rig.crouch_modifier == null or Engine.is_editor_hint():
 		return
 	var spec := cover_demo
-	var blend := weapon_blend()
-	var request := cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, crouch_modifier.standing_head_height)
-	var yaw_goal := cover_profile.yaw_offset(bool(spec.full), cover_side, blend)
+	var blend := rig.weapon_blend()
+	var request := rig.cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, rig.crouch_modifier.standing_head_height)
+	var yaw_goal := rig.cover_profile.yaw_offset(bool(spec.full), cover_side, blend)
 	if not cover_plan.is_empty():
-		yaw_goal = cover_profile.attack_yaw_offset(cover_side, int(cover_plan.side), blend)
+		yaw_goal = rig.cover_profile.attack_yaw_offset(cover_side, int(cover_plan.side), blend)
 	# The demo is a CONTEXT-priority posture request, followed by the same shared ramp the tactical unit uses.
-	var posture := PresentationTypes.Posture.KNEEL if request > crouch_modifier.max_depth + KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
-	presenter.postures.set_posture(COVER_DEMO_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, yaw_goal, request)
-	presenter.apply_posture(delta, cover_profile, true)
+	var posture := PresentationTypes.Posture.KNEEL if request > rig.crouch_modifier.max_depth + rig.KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
+	rig.presenter.postures.set_posture(COVER_DEMO_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, yaw_goal, request)
+	rig.presenter.apply_posture(delta, rig.cover_profile, true)
 	if is_instance_valid(_cover_group):
 		for edge in ["Edge_left", "Edge_right"]:
 			var marker := _cover_group.get_node_or_null(edge) as Node3D
@@ -482,9 +480,9 @@ func _draw_cover_lines() -> void:
 	if not cover_diagnostics:
 		return
 	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
-	var chest := global_position + Vector3(0, 1.2, 0)
-	var facing := character_root.global_basis.orthonormalized().z
-	var segments := [[chest, chest + facing * 1.2, Color(0.3, 0.5, 1.0)], [weapon.global_position, weapon.global_position + muzzle_socket.global_basis.z.normalized() * 1.5, Color(1.0, 0.25, 0.2)], [global_position + Vector3(0, 0.6, 0.62), global_position + Vector3(0, 0.6, -0.4), Color(0.3, 1.0, 0.4)]]
+	var chest := rig.global_position + Vector3(0, 1.2, 0)
+	var facing := rig.character_root.global_basis.orthonormalized().z
+	var segments := [[chest, chest + facing * 1.2, Color(0.3, 0.5, 1.0)], [rig.weapon.global_position, rig.weapon.global_position + rig.muzzle_socket.global_basis.z.normalized() * 1.5, Color(1.0, 0.25, 0.2)], [global_position + Vector3(0, 0.6, 0.62), global_position + Vector3(0, 0.6, -0.4), Color(0.3, 1.0, 0.4)]]
 	if cover_target != null:
 		segments.append([chest, chest + (cover_target as Vector3).normalized() * 2.5, Color(1.0, 0.9, 0.2)])   # the authorized attack direction
 	for segment in segments:
@@ -507,10 +505,10 @@ var _ladder_markers: Array[MeshInstance3D] = []
 func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0) -> void:
 	end_ladder_demo()
 	ladder_demo = {"length": length, "direction": direction, "rate": rate, "climbed": (0.0 if direction > 0 else length) if climbed < 0.0 else climbed, "playing": rate > 0.0}
-	begin_traversal(&"ladder", length, direction)
+	rig.begin_traversal(&"ladder", length, direction)
 	_build_ladder_visuals()
-	set_traversal_progress(float(ladder_demo.climbed))
-	animation_controller.play(&"rifle_idle")
+	rig.set_traversal_progress(float(ladder_demo.climbed))
+	rig.animation_controller.play(&"rifle_idle")
 
 
 func end_ladder_demo() -> void:
@@ -519,14 +517,14 @@ func end_ladder_demo() -> void:
 		_ladder_group.queue_free()
 	_ladder_group = null
 	_ladder_markers.clear()
-	end_traversal()
+	rig.end_traversal()
 
 
 func set_ladder_height(climbed: float) -> void:
 	if ladder_demo.is_empty():
 		return
 	ladder_demo.climbed = clampf(climbed, 0.0, float(ladder_demo.length))
-	set_traversal_progress(float(ladder_demo.climbed))
+	rig.set_traversal_progress(float(ladder_demo.climbed))
 
 
 func _advance_ladder_demo(delta: float) -> void:
@@ -539,7 +537,7 @@ func _advance_ladder_demo(delta: float) -> void:
 			ladder_demo.playing = false
 		set_ladder_height(next)
 	else:
-		set_traversal_progress(float(ladder_demo.climbed))
+		rig.set_traversal_progress(float(ladder_demo.climbed))
 	if is_instance_valid(_ladder_group):
 		_ladder_group.position.y = -float(ladder_demo.climbed)
 		for marker in _ladder_markers:
@@ -548,7 +546,7 @@ func _advance_ladder_demo(delta: float) -> void:
 
 
 func _build_ladder_visuals() -> void:
-	var profile := traversal_profile
+	var profile := rig.traversal_profile
 	var length: float = ladder_demo.length
 	_ladder_group = Node3D.new()
 	_ladder_group.name = "LadderBench"
@@ -601,11 +599,11 @@ func _build_ladder_visuals() -> void:
 
 ## Optional diagnostics: the four contact targets (left hand red, right hand blue, left foot orange, right foot cyan).
 func _update_ladder_markers() -> void:
-	if _ladder_markers.size() < 4 or ladder == null or ladder.pose == null:
+	if _ladder_markers.size() < 4 or rig.ladder == null or rig.ladder.pose == null:
 		return
 	for side in 2:
-		_ladder_markers[side].global_position = character_root.to_global(ladder.pose.hands[side])
-		_ladder_markers[2 + side].global_position = character_root.to_global(ladder.pose.feet[side])
+		_ladder_markers[side].global_position = rig.character_root.to_global(rig.ladder.pose.hands[side])
+		_ladder_markers[2 + side].global_position = rig.character_root.to_global(rig.ladder.pose.feet[side])
 
 
 ## ---- Stair bench: the production StairModel / StairFootPlanner / leg IK / pelvis, driven by the progress the game would supply (the unit's place along the stair). The character
@@ -631,7 +629,7 @@ func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, ra
 	var s0 := (enter if ascending else exit) if start < 0.0 else start
 	stair_demo = {"model": model, "ascending": ascending, "rate": rate, "s": s0, "enter": enter, "exit": exit, "playing": rate > 0.0, "step_once": false}
 	_build_stair_visuals()
-	animation_controller.play(&"rifle_idle")
+	rig.animation_controller.play(&"rifle_idle")
 	_set_stair_state(s0)
 
 
@@ -641,7 +639,7 @@ func end_stair_demo() -> void:
 		_stair_group.queue_free()
 	_stair_group = null
 	_stair_markers.clear()
-	end_stairs()
+	rig.end_stairs()
 
 
 ## One frame at the bench's own time step (frame stepping).
@@ -656,7 +654,7 @@ func _stair_travel(model: StairModel, s: float) -> Vector3:
 
 
 func stair_profile_height(model: StairModel, s: float) -> float:
-	return model.ride_path_height_at(s, stair_profile.riser_ramp)
+	return model.ride_path_height_at(s, rig.stair_profile.riser_ramp)
 
 
 func _set_stair_state(s: float) -> void:
@@ -670,11 +668,11 @@ func _set_stair_state(s: float) -> void:
 	shifted.tread_rise = base.tread_rise
 	shifted.first_riser = base.first_riser
 	shifted.count = base.count
-	if stairs == null:
-		begin_stairs(shifted, bool(stair_demo.ascending), float(stair_demo.enter), float(stair_demo.exit))
-	stairs.model = shifted
-	stairs.step = 0   # re-plan the holds against the shifted model
-	set_stair_progress(s, float(stair_demo.rate) if float(stair_demo.rate) > 0.0 else 1.0)
+	if rig.stairs == null:
+		rig.begin_stairs(shifted, bool(stair_demo.ascending), float(stair_demo.enter), float(stair_demo.exit))
+	rig.stairs.model = shifted
+	rig.stairs.step = 0   # re-plan the holds against the shifted model
+	rig.set_stair_progress(s, float(stair_demo.rate) if float(stair_demo.rate) > 0.0 else 1.0)
 	if is_instance_valid(_stair_group):
 		_stair_group.position = -travel
 
@@ -693,9 +691,9 @@ func _advance_stair_demo(delta: float) -> void:
 		stair_demo.s = next
 		stair_demo.step_once = false
 	_set_stair_state(float(stair_demo.s))
-	if stairs != null and stairs.pose != null and _stair_markers.size() == 4:
+	if rig.stairs != null and rig.stairs.pose != null and _stair_markers.size() == 4:
 		for foot in 2:
-			_stair_markers[foot].global_position = stairs.pose.feet[foot].position
+			_stair_markers[foot].global_position = rig.stairs.pose.feet[foot].position
 			_stair_markers[foot].visible = stair_diagnostics
 			_stair_markers[2 + foot].visible = stair_diagnostics
 			_stair_markers[2 + foot].global_position = _stair_actual[foot]
@@ -744,17 +742,17 @@ func _build_stair_visuals() -> void:
 		marker.visible = false
 		add_child(marker)
 		_stair_markers.append(marker)
-	if skeleton != null and not skeleton.skeleton_updated.is_connected(_record_stair_ankles):
-		skeleton.skeleton_updated.connect(_record_stair_ankles)
+	if rig.skeleton != null and not rig.skeleton.skeleton_updated.is_connected(_record_stair_ankles):
+		rig.skeleton.skeleton_updated.connect(_record_stair_ankles)
 
 
 func _record_stair_ankles() -> void:
 	if stair_demo.is_empty():
 		return
 	for foot in 2:
-		var bone := skeleton.find_bone(bones.left_leg[2] if foot == 0 else bones.right_leg[2])
+		var bone := rig.skeleton.find_bone(rig.bones.left_leg[2] if foot == 0 else rig.bones.right_leg[2])
 		if bone >= 0:
-			_stair_actual[foot] = skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
+			_stair_actual[foot] = rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(bone).origin
 
 
 ## ---- Path corridor bench: the production PathRefiner on a synthetic obstacle layout. The tactical route (white), the smoothed walk (cyan), the obstacle footprints (orange) and the

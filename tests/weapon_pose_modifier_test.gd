@@ -34,7 +34,7 @@ func _apply(rig: UnitVisualAdapter, entry: String) -> void:
 		rig.last_cover_contact = {"type": cover_type, "height": float(entry.split("@")[1].replace("+aim", "")), "direction": Vector3.FORWARD}
 	else:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
-	rig.animation_controller.play(StringName(state))
+	rig.rig.animation_controller.play(StringName(state))
 
 func _settle(frames := 40, seconds := 1.6) -> void:
 	for i in frames: await process_frame
@@ -48,13 +48,13 @@ func _new_rig() -> Array:
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame
-	var diagnostics := HandContactDiagnostics.attach(rig)
+	var diagnostics := HandContactDiagnostics.attach(rig.rig)
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 	return [stage, rig, diagnostics]
 
 func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
-	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.character_root.global_basis * rig.shoulder_contact_offset
+	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
 func _run() -> void:
@@ -62,20 +62,20 @@ func _run() -> void:
 	var stage: Node3D = made[0]
 	var rig: UnitVisualAdapter = made[1]
 	var diagnostics: HandContactDiagnostics = made[2]
-	var modifier: WeaponPoseModifier = rig.weapon_pose_modifier
+	var modifier: WeaponPoseModifier = rig.rig.weapon_pose_modifier
 	if modifier == null:
 		push_error("The rig has no WeaponPose modifier")
 		quit(1)
 		return
-	var skeleton: Skeleton3D = rig.skeleton
+	var skeleton: Skeleton3D = rig.rig.skeleton
 
 	# Order of the skeleton's modifiers.
 	var order: Array[String] = []
 	for child in skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
 	check(modifier != null and order == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is Locomotion, CoverCrouch, Traversal, TraversalLegIK, WeaponPose, WeaponArmIK, HandGrip (%s)" % str(order))
-	check(rig.weapon_pose_modifier_controls_targets(), "The modifier controls the targets at runtime")
-	if not rig.weapon_pose_modifier_controls_targets():
+	check(rig.rig.weapon_pose_modifier_controls_targets(), "The modifier controls the targets at runtime")
+	if not rig.rig.weapon_pose_modifier_controls_targets():
 		print("Weapon pose modifier: %d checks, %d failure(s) (stopped: the modifier is not in control)" % [checks, failures])
 		quit(1)
 		return
@@ -83,7 +83,7 @@ func _run() -> void:
 	# Same-pass shoulder: the modifier's shoulder is the final one, not the animation-only one a _process sees.
 	var reader := StaleReader.new()
 	reader.skeleton = skeleton
-	reader.bone = skeleton.find_bone(rig.right_arm_bones[0])
+	reader.bone = skeleton.find_bone(rig.rig.right_arm_bones[0])
 	stage.add_child(reader)
 	_apply(rig, "cover_low@0.5+aim")
 	await _settle()
@@ -125,8 +125,8 @@ func _run() -> void:
 	await _settle()
 	var with_extra: Dictionary = diagnostics.latest
 	var shoulder_with: Vector3 = (with_extra.hands[1].shoulder as Vector3)
-	var limit_before := rig.support_protraction_limit_degrees
-	rig.support_protraction_limit_degrees = 14.0
+	var limit_before := rig.rig.support_protraction_limit_degrees
+	rig.rig.support_protraction_limit_degrees = 14.0
 	await _settle(10, 0.3)
 	var without: Dictionary = diagnostics.latest
 	var shoulder_shift := shoulder_with.distance_to(without.hands[1].shoulder)
@@ -137,15 +137,15 @@ func _run() -> void:
 	var forearm_without := (without.hands[1].elbow as Vector3).distance_to(without.hands[1].wrist)
 	check(absf(forearm_with - forearm_without) < 0.0005, "No bone is stretched: the forearm keeps its length (%.1f and %.1f cm)" % [forearm_with * 100.0, forearm_without * 100.0])
 	# The limit is a property of the character: a wider one is used and also respected.
-	rig.support_protraction_limit_degrees = 30.0
+	rig.rig.support_protraction_limit_degrees = 30.0
 	await _settle(10, 0.3)
 	var wide: Dictionary = diagnostics.latest
 	check(float(float(wide.meta.get("protraction_total_deg", -1.0))) <= 30.001 and float(float(wide.meta.get("protraction_total_deg", -1.0))) > 18.0 and float(wide.hands[1].wrist_to_ik_target) < 0.0005, "A wider limit of 30 deg is used as needed and respected (%.1f deg, error %.2f mm)" % [float(wide.meta.get("protraction_total_deg", -1.0)), float(wide.hands[1].wrist_to_ik_target) * 1000.0])
-	rig.support_protraction_limit_degrees = limit_before
+	rig.rig.support_protraction_limit_degrees = limit_before
 
 	# Different arm length: the deficit is larger, reported, bounded, and the arm is not stretched.
-	var left_hand := skeleton.find_bone(rig.left_arm_bones[2])
-	var left_fore := skeleton.find_bone(rig.left_arm_bones[1])
+	var left_hand := skeleton.find_bone(rig.rig.left_arm_bones[2])
+	var left_fore := skeleton.find_bone(rig.rig.left_arm_bones[1])
 	var rest_original := skeleton.get_bone_rest(left_hand)
 	var rest_short := rest_original
 	rest_short.origin *= 0.90
@@ -169,16 +169,16 @@ func _run() -> void:
 	diagnostics.sampler.setup(rig)
 
 	# Different grip distance: a farther front grip needs more reach, still bounded and measured.
-	var support_grip_before := rig.handling.support_grip
-	rig.handling.support_grip = support_grip_before + Vector3(0, 0, 0.05)
-	rig._place_hands_on_weapon()
+	var support_grip_before := rig.rig.handling.support_grip
+	rig.rig.handling.support_grip = support_grip_before + Vector3(0, 0, 0.05)
+	rig.rig._place_hands_on_weapon()
 	_apply(rig, "aim")
 	await _settle()
 	var far_grip: Dictionary = diagnostics.latest
 	check(float(float(far_grip.meta.get("protraction_total_deg", -1.0))) <= 18.001 and float(float(far_grip.meta.get("protraction_total_deg", -1.0))) > float(float(settled["aim"].meta.get("protraction_total_deg", -1.0))), "A farther front grip asks for more protraction, within the limit (%.1f deg)" % float(far_grip.meta.get("protraction_total_deg", -1.0)))
 	check(absf(float(far_grip.hands[1].wrist_to_ik_target) * 1000.0 - float(float(far_grip.meta.get("support_deficit_mm", -1.0)))) < 1.0, "...and any remaining error equals the reported deficit (%.1f mm)" % float(far_grip.meta.get("support_deficit_mm", -1.0)))
-	rig.handling.support_grip = support_grip_before
-	rig._place_hands_on_weapon()
+	rig.rig.handling.support_grip = support_grip_before
+	rig.rig._place_hands_on_weapon()
 
 	# Transitions: contact stays put in the weapon's frame.
 	var transitions := [["rifle_idle", "aim"], ["aim", "rifle_idle"], ["cover_low@0.5", "cover_low@0.5+aim"], ["cover_low@0.5+aim", "cover_low@0.5"], ["aim", "cover_low@0.5+aim"], ["rifle_idle", "cover_low@1.15+aim"]]
@@ -202,7 +202,7 @@ func _run() -> void:
 	await _settle()
 	diagnostics.mark_reference()
 	diagnostics.start_recording()
-	rig.animation_controller.play(&"shoot")
+	rig.rig.animation_controller.play(&"shoot")
 	var shot_time := 0.0
 	while shot_time < 0.5:
 		var before := Time.get_ticks_msec()
@@ -216,7 +216,7 @@ func _run() -> void:
 	for entry in ["rifle_idle", "move", "hit"]:
 		var positions := {}
 		for mode in ["legacy", "modifier", "legacy2"]:
-			rig.weapon_pose_modifier_enabled = mode == "modifier"
+			rig.rig.weapon_pose_modifier_enabled = mode == "modifier"
 			_apply(rig, entry)
 			await _settle(30, 0.8)
 			var s := diagnostics.latest
@@ -234,21 +234,21 @@ func _run() -> void:
 	# follow the REAL chest instead of the animation-only one, by exactly the amount the two chests differ. By design.
 	var follower := StaleReader.new()
 	follower.skeleton = skeleton
-	follower.bone = skeleton.find_bone(rig.right_arm_bones[0])
+	follower.bone = skeleton.find_bone(rig.rig.right_arm_bones[0])
 	stage.add_child(follower)
 	for entry in ["cover_low@1.15", "cover_high@2.0"]:
-		rig.weapon_pose_modifier_enabled = false
+		rig.rig.weapon_pose_modifier_enabled = false
 		_apply(rig, entry)
 		await _settle(30, 1.0)
 		var legacy_sample := diagnostics.latest
 		var chest_gap: float = follower.stale_world.distance_to(legacy_sample.hands[0].shoulder)
 		var legacy_wrist: Vector3 = legacy_sample.hands[0].wrist
-		rig.weapon_pose_modifier_enabled = true
+		rig.rig.weapon_pose_modifier_enabled = true
 		await _settle(10, 0.4)
 		var new_wrist: Vector3 = diagnostics.latest.hands[0].wrist
 		check(absf(new_wrist.distance_to(legacy_wrist) - chest_gap) < 0.006, "%s: the low-ready hands moved %.1f mm, the real chest differs from the animation-only chest by %.1f mm (by design)" % [entry, new_wrist.distance_to(legacy_wrist) * 1000.0, chest_gap * 1000.0])
 	follower.queue_free()
-	rig.weapon_pose_modifier_enabled = true
+	rig.rig.weapon_pose_modifier_enabled = true
 
 	# Carrying (06B): the arm IK now belongs to the carry contacts, so the modifier runs in the same pass and places the wrists on
 	# the passenger instead of on the weapon (no weapon targets, no support reach). With the contacts switched off the arm IK stays
@@ -258,14 +258,14 @@ func _run() -> void:
 	await _settle(20, 0.5)
 	var passes_before := modifier.passes
 	await _settle(20, 0.2)
-	check(modifier.passes > passes_before and rig.carry_contacts_active() and modifier.report.get("available", true) == false, "While carrying with contacts the modifier runs and applies the carry contacts, not the weapon pose")
-	rig.end_carry()
-	rig.carry_contacts_enabled = false
+	check(modifier.passes > passes_before and rig.rig.carry_contacts_active() and modifier.report.get("available", true) == false, "While carrying with contacts the modifier runs and applies the carry contacts, not the weapon pose")
+	rig.rig.end_carry()
+	rig.rig.carry_contacts_enabled = false
 	rig.present_pickup()
 	await _settle(20, 0.5)
 	passes_before = modifier.passes
 	await _settle(20, 0.2)
-	check(not rig.arm_ik.active and modifier.passes == passes_before, "With the carry contacts off (arm IK off) the modifier does nothing")
+	check(not rig.rig.arm_ik.active and modifier.passes == passes_before, "With the carry contacts off (arm IK off) the modifier does nothing")
 	stage.queue_free()
 	await process_frame
 	print("Weapon pose modifier: %d checks, %d failure(s)" % [checks, failures])

@@ -26,7 +26,7 @@ func _new_rig() -> Array:
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 30: await process_frame
-	var diagnostics := HandContactDiagnostics.attach(rig)
+	var diagnostics := HandContactDiagnostics.attach(rig.rig)
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 	return [stage, rig, diagnostics]
@@ -48,8 +48,8 @@ func _row(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, started: 
 	var sample: Dictionary = diagnostics.latest
 	var row := {
 		"t": rig.presenter.time - started, "phase": rig.presenter.attack.phase, "state": rig.get_presentation_state(),
-		"blend": rig.aim_blend, "err": rig.weapon_alignment_error_degrees(), "flash": rig.muzzle_flash.visible,
-		"recoil": rig.recoil, "depth": rig._crouch_depth, "kneel": rig._kneel,
+		"blend": rig.rig.aim_blend, "err": rig.weapon_alignment_error_degrees(), "flash": rig.rig.muzzle_flash.visible,
+		"recoil": rig.rig.recoil, "depth": rig.rig._crouch_depth, "kneel": rig.rig._kneel,
 	}
 	if not sample.is_empty():
 		row["dominant_wrist"] = float(sample.hands[0].wrist_to_ik_target)
@@ -59,7 +59,7 @@ func _row(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, started: 
 	return row
 
 func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
-	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.character_root.global_basis * rig.shoulder_contact_offset
+	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
 func _first(rows: Array, key: String, value) -> int:
@@ -112,7 +112,7 @@ func _run() -> void:
 	var made: Array = await _new_rig()
 	var rig: UnitVisualAdapter = made[1]
 	var diagnostics: HandContactDiagnostics = made[2]
-	check(rig.get_presentation_state() == &"rifle_idle" and rig.aim_blend < 0.01 and rig.readiness_level() == WeaponReadiness.Level.LOWERED, "A fresh unit carries the weapon lowered")
+	check(rig.get_presentation_state() == &"rifle_idle" and rig.rig.aim_blend < 0.01 and rig.readiness_level() == WeaponReadiness.Level.LOWERED, "A fresh unit carries the weapon lowered")
 	var forward := rig.global_basis.z
 	var target := rig.global_position + forward * 8.0
 
@@ -143,7 +143,7 @@ func _run() -> void:
 	check(absf((release_at - recover_at) - profile.shot_recover_seconds) < 0.06, "Release starts shot_recover_seconds after the shot (%.3f s, profile %.2f s)" % [release_at - recover_at, profile.shot_recover_seconds])
 	var normalized_fire: float = float(timeline.fire_t) / float(timeline.end_t)
 	print("  normalized timeline (fraction of the %.3f s sequence): raise ends/fires at %.2f, release starts at %.2f" % [timeline.end_t, normalized_fire, release_at / float(timeline.end_t)])
-	check(rig.presenter.attack.phase == AttackSequence.Phase.NONE and rig.get_presentation_state() == &"rifle_idle" and rig.aim_blend < 0.01 and not rig.readiness.has_request(AttackSequence.SOURCE), "An ordinary attack ends relaxed: idle, blend 0, no request left (blend %.3f)" % rig.aim_blend)
+	check(rig.presenter.attack.phase == AttackSequence.Phase.NONE and rig.get_presentation_state() == &"rifle_idle" and rig.rig.aim_blend < 0.01 and not rig.rig.readiness.has_request(AttackSequence.SOURCE), "An ordinary attack ends relaxed: idle, blend 0, no request left (blend %.3f)" % rig.rig.aim_blend)
 	check(rig.readiness_level() == WeaponReadiness.Level.LOWERED, "Readiness is lowered again")
 	var dominant := _max(rows, "dominant_wrist")
 	check(dominant < 0.002, "The firing hand stays on its grip through the whole sequence (worst %.2f mm)" % (dominant * 1000.0))
@@ -165,7 +165,7 @@ func _run() -> void:
 	rig.presenter.aim.release_left = 1000000.0
 	rig.present_idle()
 	await create_timer(0.8).timeout
-	check(rig.aim_blend > 0.99 and rig.readiness_level() == WeaponReadiness.Level.AIMED, "Setup: aim held, weapon aimed")
+	check(rig.rig.aim_blend > 0.99 and rig.readiness_level() == WeaponReadiness.Level.AIMED, "Setup: aim held, weapon aimed")
 	rows = await _sequence(rig, diagnostics, target)
 	timeline = rig.presenter.attack.timeline
 	check(float(timeline.fire_t) == 0.0 and rows[0].flash and rows[0].state == &"shoot", "From an aimed pose the shot is shown on the first frame, with no raise")
@@ -181,15 +181,15 @@ func _run() -> void:
 	rig.request_readiness(&"guard", WeaponReadiness.Level.AIMED)
 	rig.present_idle()
 	await create_timer(0.8).timeout
-	check(rig.aim_blend > 0.99 and rig.get_presentation_state() == &"aim", "A sustained AIMED request holds the aim stance (state %s)" % rig.get_presentation_state())
+	check(rig.rig.aim_blend > 0.99 and rig.get_presentation_state() == &"aim", "A sustained AIMED request holds the aim stance (state %s)" % rig.get_presentation_state())
 	rows = await _sequence(rig, diagnostics, target)
-	check(float(rig.presenter.attack.timeline.fire_t) == 0.0 and rig.aim_blend > 0.99 and rig.get_presentation_state() == &"aim", "After its shot a unit with a sustained request is still aimed (blend %.2f, state %s)" % [rig.aim_blend, rig.get_presentation_state()])
+	check(float(rig.presenter.attack.timeline.fire_t) == 0.0 and rig.rig.aim_blend > 0.99 and rig.get_presentation_state() == &"aim", "After its shot a unit with a sustained request is still aimed (blend %.2f, state %s)" % [rig.rig.aim_blend, rig.get_presentation_state()])
 	rig.release_readiness(&"guard")
 	await create_timer(0.9).timeout
-	check(rig.aim_blend < 0.01, "Withdrawing the request lowers the weapon")
+	check(rig.rig.aim_blend < 0.01, "Withdrawing the request lowers the weapon")
 	rig.request_readiness(&"guard", WeaponReadiness.Level.READY)
 	await create_timer(0.8).timeout
-	check(absf(rig.aim_blend - profile.ready_blend) < 0.01 and rig.readiness_level() == WeaponReadiness.Level.READY, "A READY request holds the ready blend, short of aimed (blend %.2f)" % rig.aim_blend)
+	check(absf(rig.rig.aim_blend - profile.ready_blend) < 0.01 and rig.readiness_level() == WeaponReadiness.Level.READY, "A READY request holds the ready blend, short of aimed (blend %.2f)" % rig.rig.aim_blend)
 	rows = await _sequence(rig, diagnostics, target)
 	var from_ready: Dictionary = rig.presenter.attack.timeline
 	check(float(from_ready.fire_t) < float(timeline.fire_t) + expected_raise and float(from_ready.fire_t) > 0.0 and not bool(from_ready.forced) and float(from_ready.fire_muzzle_error_degrees) <= tolerance + 0.01, "From READY only the remaining raise is shown (fired at %.3f s, muzzle %.2f deg)" % [from_ready.fire_t, from_ready.fire_muzzle_error_degrees])
@@ -203,16 +203,16 @@ func _run() -> void:
 	var interrupted: AttackHandle = rig.present_attack(target)
 	interrupted.when_done(func(outcome: int) -> void: ended.append(outcome))
 	await create_timer(0.1).timeout
-	check(not interrupted.shot.is_done() and rig.aim_blend > 0.1, "Setup: the raise is under way")
+	check(not interrupted.shot.is_done() and rig.rig.aim_blend > 0.1, "Setup: the raise is under way")
 	rig.present_hit()
 	var saw_flash := false
 	for i in 40:
 		await process_frame
-		saw_flash = saw_flash or rig.muzzle_flash.visible
+		saw_flash = saw_flash or rig.rig.muzzle_flash.visible
 	check(ended == [PresentationTypes.Outcome.INTERRUPTED] and interrupted.shot.outcome == PresentationTypes.Outcome.INTERRUPTED and fired_signals[0] == 0 and not saw_flash and not rig.presenter.attack.is_pending(), "A hit during the raise interrupts it: both handles INTERRUPTED once, no shot, no flash")
 	check(rig.get_presentation_state() in [&"hit", &"rifle_idle"] and rig.presenter.attack.phase == AttackSequence.Phase.NONE, "The hit state owns the pose (%s)" % rig.get_presentation_state())
 	await create_timer(1.6).timeout
-	check(rig.get_presentation_state() == &"rifle_idle" and rig.aim_blend < 0.01 and not rig.readiness.has_request(AttackSequence.SOURCE), "The weapon is not stuck raised after the interruption (state %s, blend %.2f)" % [rig.get_presentation_state(), rig.aim_blend])
+	check(rig.get_presentation_state() == &"rifle_idle" and rig.rig.aim_blend < 0.01 and not rig.rig.readiness.has_request(AttackSequence.SOURCE), "The weapon is not stuck raised after the interruption (state %s, blend %.2f)" % [rig.get_presentation_state(), rig.rig.aim_blend])
 
 	# 6. Superseded: a second attack replaces the first mid-raise; exactly one shot is shown for it.
 	ended.clear()
@@ -228,8 +228,8 @@ func _run() -> void:
 	while (rig.presenter.attack.phase != AttackSequence.Phase.NONE or guard < 5) and guard < 200:
 		await process_frame
 		guard += 1
-		if rig.muzzle_flash.visible and not was_visible: flashes += 1
-		was_visible = rig.muzzle_flash.visible
+		if rig.rig.muzzle_flash.visible and not was_visible: flashes += 1
+		was_visible = rig.rig.muzzle_flash.visible
 	check(fired_signals[0] == 1 and flashes == 1, "A superseded attack is dropped: one shot, one flash (%d shots, %d flashes)" % [fired_signals[0], flashes])
 	check(ended == [PresentationTypes.Outcome.INTERRUPTED, PresentationTypes.Outcome.COMPLETED], "The first sequence was interrupted and settled once, the second completed (%s)" % str(ended))
 	await _quiet(rig)
@@ -241,7 +241,7 @@ func _run() -> void:
 	await create_timer(0.1).timeout
 	rig.present_defeat()
 	await create_timer(0.8).timeout
-	check(rig.get_presentation_state() == &"defeat" and ended == [PresentationTypes.Outcome.INTERRUPTED] and not rig.readiness.has_request(AttackSequence.SOURCE) and not rig.muzzle_flash.visible, "Defeat during the raise wins: defeat state, no shot, request dropped")
+	check(rig.get_presentation_state() == &"defeat" and ended == [PresentationTypes.Outcome.INTERRUPTED] and not rig.rig.readiness.has_request(AttackSequence.SOURCE) and not rig.rig.muzzle_flash.visible, "Defeat during the raise wins: defeat state, no shot, request dropped")
 	rig.queue_free()
 	made[0].queue_free()
 	await process_frame
@@ -256,7 +256,7 @@ func _run() -> void:
 	var carried_attack: AttackHandle = carrier.present_attack(carrier.global_position + carrier.global_basis.z * 8.0)
 	check(carried_attack.shot.outcome == PresentationTypes.Outcome.SKIPPED and not carrier.presenter.attack.is_pending() and carrier.presenter.attack.phase == AttackSequence.Phase.NONE, "A carrier's attack request starts no raise sequence")
 	await create_timer(0.8).timeout
-	check(carrier.aim_blend < 0.01 and carrier.readiness_level() == WeaponReadiness.Level.STOWED, "...and its weapon stays stowed (blend %.2f)" % carrier.aim_blend)
+	check(carrier.rig.aim_blend < 0.01 and carrier.readiness_level() == WeaponReadiness.Level.STOWED, "...and its weapon stays stowed (blend %.2f)" % carrier.rig.aim_blend)
 	carry_made[0].queue_free()
 	await process_frame
 
@@ -276,11 +276,11 @@ func _battle_cases() -> void:
 	f.ready_actor(actor, 3, 4)
 	f.act_as(actor)
 	var adapter := actor.visual_adapter
-	var diagnostics := HandContactDiagnostics.attach(adapter)
+	var diagnostics := HandContactDiagnostics.attach(adapter.rig)
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 	for i in 30: await process_frame
-	var profile: WeaponHandlingProfile = adapter.handling
+	var profile: WeaponHandlingProfile = adapter.rig.handling
 	var threshold := profile.aimed_blend_threshold()
 
 	# Posture-independent readiness: standing, partial crouch, full crouch, half-kneel behind low cover.
@@ -293,8 +293,8 @@ func _battle_cases() -> void:
 		adapter.present_idle()
 		await create_timer(1.6).timeout
 		for i in 3: await process_frame
-		var depth_before: float = adapter._crouch_depth
-		var kneel_before: float = adapter._kneel
+		var depth_before: float = adapter.rig._crouch_depth
+		var kneel_before: float = adapter.rig._kneel
 		var rows: Array = await _sequence(adapter, diagnostics, enemy.global_position)
 		var attack_rows := _until_release(rows)
 		var timeline: Dictionary = adapter.presenter.attack.timeline
@@ -313,13 +313,13 @@ func _battle_cases() -> void:
 		check(_max(rows, "dominant_wrist") < 0.002, "%s: the firing hand stays on the grip (worst %.2f mm)" % [label, _max(rows, "dominant_wrist") * 1000.0])
 		print("  %s: fire %.3f s, muzzle %.2f deg, dominant wrist %.2f mm, support wrist worst %.2f mm (shot and recover %.2f mm; support elbow at the shot %.0f deg), stock before the shot %.2f mm" % [label, timeline.fire_t, timeline.fire_muzzle_error_degrees, _max(rows, "dominant_wrist") * 1000.0, _max(rows, "support_wrist") * 1000.0, _max(attack_rows, "support_wrist", fire_row) * 1000.0, rows[fire_row].elbow_support, float(rows[maxi(fire_row - 1, 0)].stock) * 1000.0])
 		await create_timer(1.6).timeout
-		check(adapter.aim_blend < 0.01 and adapter.presenter.attack.phase == AttackSequence.Phase.NONE, "%s: the weapon is relaxed again (blend %.2f)" % [label, adapter.aim_blend])
-		check(absf(adapter._crouch_depth - depth_before) < 0.02 and absf(adapter._kneel - kneel_before) < 0.05, "%s: the body is back in its hiding posture (crouch %.3f vs %.3f, kneel %.2f vs %.2f)" % [label, adapter._crouch_depth, depth_before, adapter._kneel, kneel_before])
+		check(adapter.rig.aim_blend < 0.01 and adapter.presenter.attack.phase == AttackSequence.Phase.NONE, "%s: the weapon is relaxed again (blend %.2f)" % [label, adapter.rig.aim_blend])
+		check(absf(adapter.rig._crouch_depth - depth_before) < 0.02 and absf(adapter.rig._kneel - kneel_before) < 0.05, "%s: the body is back in its hiding posture (crouch %.3f vs %.3f, kneel %.2f vs %.2f)" % [label, adapter.rig._crouch_depth, depth_before, adapter.rig._kneel, kneel_before])
 		adapter.presenter.aim.held = true
 		adapter.presenter.aim.release_left = 1000000.0
 		adapter.present_idle()
 		await create_timer(1.6).timeout
-		check(absf(adapter._crouch_depth - shot_depth) < 0.03 and absf(adapter._kneel - shot_kneel) < 0.1, "%s: the shot posture equals the held-aim posture (crouch %.3f vs %.3f, kneel %.2f vs %.2f)" % [label, shot_depth, adapter._crouch_depth, shot_kneel, adapter._kneel])
+		check(absf(adapter.rig._crouch_depth - shot_depth) < 0.03 and absf(adapter.rig._kneel - shot_kneel) < 0.1, "%s: the shot posture equals the held-aim posture (crouch %.3f vs %.3f, kneel %.2f vs %.2f)" % [label, shot_depth, adapter.rig._crouch_depth, shot_kneel, adapter.rig._kneel])
 		adapter.presenter.aim.held = false
 		adapter.present_idle()
 		await create_timer(1.6).timeout

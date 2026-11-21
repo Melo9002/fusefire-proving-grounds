@@ -43,7 +43,7 @@ func _drive(frames: int, step: Callable) -> void:
 	for i in 15:
 		await process_frame
 	for index in rigs.size():
-		var sk := rigs[index].skeleton
+		var sk: Skeleton3D = rigs[index].rig.skeleton
 		for child in sk.get_children():
 			if child is SkeletonModifier3D:
 				var keep := index < PoseOwnership.STAGE_ORDER.size() and StringName(child.name) == PoseOwnership.STAGE_ORDER[index]
@@ -55,7 +55,7 @@ func _drive(frames: int, step: Callable) -> void:
 			for child in sk.get_children():
 				if child is SkeletonModifier3D:
 					(child as SkeletonModifier3D).active = index < PoseOwnership.STAGE_ORDER.size() and StringName(child.name) == PoseOwnership.STAGE_ORDER[index]
-		rigs[index].animation_controller.animation_tree.mixer_applied.connect(enforce)
+		rigs[index].rig.animation_controller.animation_tree.mixer_applied.connect(enforce)
 		for child in sk.get_children():
 			if child is SkeletonModifier3D:
 				(child as SkeletonModifier3D).modification_processed.connect(enforce)
@@ -68,13 +68,13 @@ func _drive(frames: int, step: Callable) -> void:
 			var mine: Array = latest[index]
 			if mine.is_empty() or control.is_empty():
 				continue
-			var sk := rigs[index].skeleton
+			var sk: Skeleton3D = rigs[index].rig.skeleton
 			var stage := PoseOwnership.STAGE_ORDER[index]
 			for bone in mine.size():
 				var a: Transform3D = mine[bone]
 				var b: Transform3D = control[bone]
 				if a.origin.distance_to(b.origin) > 0.0001 or a.basis.get_rotation_quaternion().angle_to(b.basis.get_rotation_quaternion()) > 0.001:
-					var role := PoseOwnership.role_of(rigs[index].bones, sk.get_bone_name(bone))
+					var role := PoseOwnership.role_of(rigs[index].rig.bones, sk.get_bone_name(bone))
 					if not observed.has(stage):
 						observed[stage] = {}
 					observed[stage][role if role != &"" else StringName("UNMAPPED:" + sk.get_bone_name(bone))] = true
@@ -83,7 +83,7 @@ func _drive(frames: int, step: Callable) -> void:
 
 func _cover(v: UnitVisualAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
 	v.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
-	v.animation_controller.play(&"cover_low" if type == MapCellData.CoverType.LOW else &"cover_high")
+	v.rig.animation_controller.play(&"cover_low" if type == MapCellData.CoverType.LOW else &"cover_high")
 
 func _run() -> void:
 	# ---- Part 1: the declarations are consistent with the modifier order and with each other.
@@ -98,11 +98,11 @@ func _run() -> void:
 	root.add_child(probe)
 	for i in 3:
 		await process_frame
-	for child in probe.skeleton.get_children():
+	for child in probe.rig.skeleton.get_children():
 		if child is SkeletonModifier3D:
 			production_order.append(StringName(child.name))
 	check(production_order == PoseOwnership.STAGE_ORDER, "The production skeleton's modifier children are exactly the declared stages, in order: %s" % [production_order])
-	var probe_bones: RigBones = probe.bones
+	var probe_bones: RigBones = probe.rig.bones
 	probe.queue_free()
 	await process_frame
 	check(PoseOwnership.role_of(probe_bones, "mixamorig_LeftShoulder") == &"support_clavicle" and PoseOwnership.role_of(probe_bones, "mixamorig_RightHandIndex1") == &"fingers" and PoseOwnership.role_of(probe_bones, "mixamorig_LeftLeg") == &"shin" and PoseOwnership.role_of(probe_bones, "mixamorig_LeftUpLeg") == &"thigh", "Bone names map to the declared roles")
@@ -115,30 +115,30 @@ func _run() -> void:
 
 	# ---- Part 2: what the stages really write stays inside what they declare.
 	await _drive(150, func(v: UnitVisualAdapter, i: int) -> void:
-		if i == 10: v.begin_turn(deg_to_rad(80.0))
+		if i == 10: v.rig.begin_turn(deg_to_rad(80.0))
 		if i > 20 and i < 100: v.update_locomotion(Vector3(0, 0, 3.0), 1.0 / 60.0))
 	await _drive(130, func(v: UnitVisualAdapter, i: int) -> void:
 		if i == 0: _cover(v, 0.4)
 		if i == 50: v.request_readiness(&"own", WeaponReadiness.Level.AIMED))
 	await _drive(130, func(v: UnitVisualAdapter, i: int) -> void:
 		if i == 0: _cover(v, 1.1)
-		if i == 40: v.begin_turn(deg_to_rad(60.0))
+		if i == 40: v.rig.begin_turn(deg_to_rad(60.0))
 		if i == 50: v.request_readiness(&"own", WeaponReadiness.Level.AIMED))
 	await _drive(160, func(v: UnitVisualAdapter, i: int) -> void:
-		if i == 5: v.begin_traversal(&"ladder", 3.0, 1)
-		if i >= 5 and i < 130: v.set_traversal_progress(clampf(float(i - 5) * 0.02, 0.0, 2.6))
-		if i == 130: v.end_traversal())
+		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, 1)
+		if i >= 5 and i < 130: v.rig.set_traversal_progress(clampf(float(i - 5) * 0.02, 0.0, 2.6))
+		if i == 130: v.rig.end_traversal())
 	var model := StairModel.from_links(Vector3.ZERO, Vector3(0, 0, 1), 1.0, 1.0, 2, 3)
 	await _drive(160, func(v: UnitVisualAdapter, i: int) -> void:
-		if i == 5: v.begin_stairs(model, true)
+		if i == 5: v.rig.begin_stairs(model, true)
 		if i >= 5 and i < 130:
 			v.update_locomotion(Vector3(0, 0, 1.2), 1.0 / 60.0)
-			v.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
-		if i == 130: v.end_stairs())
+			v.rig.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
+		if i == 130: v.rig.end_stairs())
 	await _drive(120, func(v: UnitVisualAdapter, i: int) -> void:
-		if i == 20: v.begin_carry()
+		if i == 20: v.rig.begin_carry()
 		if i >= 20 and i < 90: v.update_locomotion(Vector3(0, 0, 1.0), 1.0 / 60.0)
-		if i == 100: v.end_carry())
+		if i == 100: v.rig.end_carry())
 
 	var stages_seen := 0
 	for stage in PoseOwnership.STAGE_ORDER:

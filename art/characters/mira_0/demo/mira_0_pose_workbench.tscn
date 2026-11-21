@@ -1,10 +1,11 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://art/characters/mira_0/demo/mira_0_pose_workbench.gd" id="1_script"]
 [ext_resource type="Script" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 [ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
 [ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
+[ext_resource type="Script" uid="uid://c25va4fkc3c6l" path="res://presentation/characters/runtime/character_rig.gd" id="9_rig"]
 
 [sub_resource type="Environment" id="Environment_demo"]
 background_mode = 1
@@ -34,13 +35,16 @@ emission_energy_multiplier = 1.8
 
 [node name="Mira0PoseWorkbench" type="Node3D"]
 script = ExtResource("1_script")
+
+[node name="Rig" type="Node3D" parent="."]
+script = ExtResource("9_rig")
 character_scene = ExtResource("3_model")
 rig_profile = ExtResource("4_profile")
 weapon_scene = ExtResource("5_weapon")
 character_scale = 1.6
 clip_library = null
 
-[node name="VerticalSliceController" type="Node" parent="."]
+[node name="VerticalSliceController" type="Node" parent="Rig"]
 script = ExtResource("2_animation")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -62,21 +66,21 @@ omni_range = 4.0
 mesh = SubResource("Plane_floor")
 material_override = SubResource("Material_floor")
 
-[node name="Character" type="Node3D" parent="."]
+[node name="Character" type="Node3D" parent="Rig"]
 
-[node name="IKTargets" type="Node3D" parent="Character"]
+[node name="IKTargets" type="Node3D" parent="Rig/Character"]
 
-[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets"]
+[node name="RightHandTarget" type="Marker3D" parent="Rig/Character/IKTargets"]
 position = Vector3(-0.19, 1.12, 0.19)
 
-[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget"]
+[node name="TargetPreview" type="MeshInstance3D" parent="Rig/Character/IKTargets/RightHandTarget"]
 mesh = SubResource("Sphere_target")
 material_override = SubResource("Material_target")
 
-[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets"]
+[node name="RightElbowPole" type="Marker3D" parent="Rig/Character/IKTargets"]
 position = Vector3(-0.48, 1.03, 0.02)
 
-[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets"]
+[node name="LeftElbowPole" type="Marker3D" parent="Rig/Character/IKTargets"]
 position = Vector3(0.48, 1.04, 0.05)
 
 [node name="Camera3D" type="Camera3D" parent="."]

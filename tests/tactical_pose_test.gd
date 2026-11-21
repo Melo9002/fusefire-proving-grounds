@@ -37,7 +37,7 @@ func run() -> void:
 	root.add_child(demo)
 	await process_frame
 	await process_frame
-	var controller = demo.animation_controller
+	var controller = demo.rig.animation_controller
 	for pose in [&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land", &"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		controller.play(pose)
 		await create_timer(0.2).timeout

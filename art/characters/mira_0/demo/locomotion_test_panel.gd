@@ -156,18 +156,18 @@ func _set_speed(value: float, start_moving := true) -> void:
 	if not is_equal_approx(_speed_slider.value, value):
 		_speed_slider.set_value_no_signal(value)
 	var gait: String = "idle"
-	var blend: float = bench.locomotion_profile.gait_blend(value)
-	if value >= bench.locomotion_profile.idle_below:
+	var blend: float = bench.rig.locomotion_profile.gait_blend(value)
+	if value >= bench.rig.locomotion_profile.idle_below:
 		gait = ("walk" if blend < 0.5 else "jog") if blend < 1.5 else "run"
 	_speed_label.text = "Speed %.1f m/s  ->  %s%s" % [value, gait, " (loaded)" if _loaded != null and _loaded.button_pressed else ""]
-	if start_moving and value >= bench.locomotion_profile.idle_below:
+	if start_moving and value >= bench.rig.locomotion_profile.idle_below:
 		_ensure_moving()
 
 
 func _ensure_moving() -> void:
 	var state: StringName = &"carry_move" if (_loaded != null and _loaded.button_pressed) else &"move"
-	if bench.animation_controller.current_state != state:
-		bench.animation_controller.play(state)
+	if bench.rig.animation_controller.current_state != state:
+		bench.rig.animation_controller.play(state)
 
 
 func _preset(speed: float) -> void:
@@ -176,18 +176,18 @@ func _preset(speed: float) -> void:
 
 
 func _direction(direction: Vector2) -> void:
-	bench.locomotion_direction = direction
+	bench.rig.locomotion_direction = direction
 	bench.preview_direction = direction
 
 
 func _on_loaded_toggled(pressed: bool) -> void:
-	bench.finish_interaction_now()
+	bench.rig.finish_interaction_now()
 	if pressed:
-		bench.begin_carry()
-		bench.animation_controller.play(&"carry_idle" if bench.preview_speed < 0.15 else &"carry_move")
+		bench.rig.begin_carry()
+		bench.rig.animation_controller.play(&"carry_idle" if bench.preview_speed < 0.15 else &"carry_move")
 	else:
-		bench.end_carry()
-		bench.animation_controller.play(&"rifle_idle" if bench.preview_speed < 0.15 else &"move")
+		bench.rig.end_carry()
+		bench.rig.animation_controller.play(&"rifle_idle" if bench.preview_speed < 0.15 else &"move")
 	_set_speed(bench.preview_speed)
 
 
@@ -195,14 +195,14 @@ func _turn_in_place(degrees: float) -> void:
 	_set_speed(0.0)
 	bench.turn_goal = NAN
 	var change := deg_to_rad(degrees)
-	bench.character_root.rotation.y += change
-	bench.begin_turn(change)
+	bench.rig.character_root.rotation.y += change
+	bench.rig.begin_turn(change)
 
 
 func _moving_turn(degrees: float) -> void:
 	if bench.preview_speed < 1.0:
 		_set_speed(4.0)
-	bench.turn_goal = bench.character_root.rotation.y + deg_to_rad(degrees)
+	bench.turn_goal = bench.rig.character_root.rotation.y + deg_to_rad(degrees)
 
 
 func _start_scenario(kind: StringName) -> void:
@@ -286,19 +286,19 @@ func _process(delta: float) -> void:
 		_set_speed(target)
 		if _scenario == &"":
 			_scenario_label.text = ""
-	var r: Dictionary = bench.locomotion_report
-	var modifier = bench.locomotion_modifier
-	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.character_root.rotation.y), bench.crouch_modifier.depth]
-	if not bench.stair_demo.is_empty() and bench.stairs != null and bench.stairs.pose != null:
-		var sp: StairPose = bench.stairs.pose
+	var r: Dictionary = bench.rig.locomotion_report
+	var modifier = bench.rig.locomotion_modifier
+	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.rig.character_root.rotation.y), bench.rig.crouch_modifier.depth]
+	if not bench.stair_demo.is_empty() and bench.rig.stairs != null and bench.rig.stairs.pose != null:
+		var sp: StairPose = bench.rig.stairs.pose
 		cover_line += "\nstair s %.2f / %.2f m  weight %.2f  step every %d tread(s)  pelvis %.2f m%s  feet planted %s/%s" % [float(bench.stair_demo.s), float(bench.stair_demo.exit), sp.weight, sp.step, sp.pelvis_height, "" if sp.pelvis_ok else " UNREACHABLE", sp.feet[0].planted, sp.feet[1].planted]
 	if not bench.path_demo.is_empty():
 		var pr: Dictionary = bench.path_demo.result
 		cover_line += "\npath %s: rounded %d, min clearance %s m%s" % [bench.path_demo.kind, int(pr.rounded), "none near" if is_inf(float(pr.min_clearance)) else "%.3f" % float(pr.min_clearance), ("  MISMATCH: " + str(pr.mismatches[0])) if not pr.mismatches.is_empty() else ""]
-	if not bench.ladder_demo.is_empty() and bench.ladder != null and bench.ladder.pose != null:
-		var tp: LadderPose = bench.ladder.pose
+	if not bench.ladder_demo.is_empty() and bench.rig.ladder != null and bench.rig.ladder.pose != null:
+		var tp: LadderPose = bench.rig.ladder.pose
 		cover_line += "\nladder %.2f / %.2f m  weight %.2f  hand rungs %s  foot rungs %s" % [float(bench.ladder_demo.climbed), float(bench.ladder_demo.length), tp.weight, tp.hand_rung, tp.foot_rung]
 	if not bench.cover_demo.is_empty():
 		var plan: Dictionary = bench.cover_plan
 		cover_line += "\nintent: %s" % ("none (passive cover)" if plan.is_empty() else "authorized attack  mode %s  side %d  along %.2f lateral %.2f%s" % [CoverEdgeSelector.FiringMode.keys()[int(plan.mode)], int(plan.side), float(plan.along), float(plan.lateral), ("  MISMATCH " + str(plan.mismatch)) if not str(plan.mismatch).is_empty() else ""])
-	_readout.text = "state %s\nfeed %.1f m/s, legs follow %.2f m/s\ngait blend %.2f (0 walk, 1 jog, 2 run)  loaded %.2f\ncadence %.2f cycles/s\ntwist %.0f  bank %.1f  pitch %.1f deg%s" % [bench.animation_controller.current_state, bench.preview_speed, r.speed, r.gait, r.loaded, r.cadence, modifier.twist_degrees if modifier != null else 0.0, r.bank, modifier.pitch_degrees if modifier != null else 0.0, cover_line]
+	_readout.text = "state %s\nfeed %.1f m/s, legs follow %.2f m/s\ngait blend %.2f (0 walk, 1 jog, 2 run)  loaded %.2f\ncadence %.2f cycles/s\ntwist %.0f  bank %.1f  pitch %.1f deg%s" % [bench.rig.animation_controller.current_state, bench.preview_speed, r.speed, r.gait, r.loaded, r.cadence, modifier.twist_degrees if modifier != null else 0.0, r.bank, modifier.pitch_degrees if modifier != null else 0.0, cover_line]

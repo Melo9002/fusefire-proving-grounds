@@ -162,9 +162,9 @@ func _marker() -> void:
 	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
 	root.add_child(rig)
 	for i in 4: await process_frame
-	check(rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME) == null, "A unit with no class color has no stripe")
+	check(rig.rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME) == null, "A unit with no class color has no stripe")
 	rig.set_class_marker(Color(1.0, 0.82, 0.1))
-	var stripe := rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME)
+	var stripe := rig.rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME)
 	check(stripe != null and stripe.get_child_count() == 1 and stripe.get_child(0) is MeshInstance3D, "A class color paints one stripe on the chest")
 	for i in 3: await process_frame
 	if stripe:
@@ -176,6 +176,6 @@ func _marker() -> void:
 		check(world_height > 0.03 and world_height < 0.15, "The stripe is about 7 cm tall in the world (%.3f m)" % world_height)
 	rig.set_class_marker(Color(0, 0, 0, 0))
 	for i in 3: await process_frame
-	check(rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME) == null, "A transparent color removes the stripe")
+	check(rig.rig.skeleton.get_node_or_null(UnitVisualAdapter.CLASS_MARKER_NAME) == null, "A transparent color removes the stripe")
 	rig.queue_free()
 	await process_frame

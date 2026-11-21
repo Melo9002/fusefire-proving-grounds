@@ -273,6 +273,29 @@ func _rifle_local_basis() -> Basis:
 	return Basis(carry_rotation.slerp(torso_frame.get_rotation_quaternion(), weapon_blend()))
 
 
+## Builds the character: the model, the weapon (if any), the arm IK and the animation controller. A host (the tactical adapter, the workbench, a tool) adds this node and drives it: the presenter's tick
+## and `update_weapon_pose` once per frame. The rig has no frame callback of its own, so a character is advanced exactly once per frame by whoever hosts it.
+func _ready() -> void:
+	_build_character()
+	_build_weapon_attachment()
+	_build_arm_ik()
+	if Engine.is_editor_hint():
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_align_weapon_to_aim()
+		update_weapon_pose()
+		return
+	_build_animation_controller()
+	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	_align_weapon_to_aim()
+
+
 func _build_character() -> void:
 	assert(character_scene != null, "Character scene is required")
 	var model := character_scene.instantiate() as Node3D
@@ -681,6 +704,8 @@ func _align_weapon_to_aim() -> void:
 	# Runtime animations will provide this aiming basis. For the static proof,
 	# keep +Z as the muzzle direction and +Y as weapon-up while the attachment
 	# continues to inherit the right wrist's position.
+	if is_loaded():
+		return   # a carrier's weapon is slung: the stow follows the body instead
 	if not is_inside_tree() \
 		or not is_instance_valid(character_root) or not character_root.is_inside_tree() \
 		or not is_instance_valid(weapon_attachment) or not weapon_attachment.is_inside_tree() \
@@ -692,9 +717,14 @@ func _align_weapon_to_aim() -> void:
 	weapon.position = weapon_attachment.global_basis.inverse() * (desired_global_basis * grip_offset)
 
 
-func _update_weapon_pose() -> void:
+## Once per frame, after the presenter has advanced: the arms, hands and weapon for this frame (a loaded carrier's carry posture, else the weapon or relaxed-arm inputs).
+func update_weapon_pose() -> void:
 	if not is_instance_valid(skeleton):
 		return
+	if is_loaded():
+		_apply_carry_posture()
+		return
+	_carry_lean = 0.0
 	_update_weapon_pose_inputs()
 	if weapon_pose_modifier_controls_targets():
 		return   # the WeaponPose modifier places the targets in the skeleton pass, from the real shoulder
@@ -947,15 +977,22 @@ const RELAXED_POLES: Array[Vector3] = [Vector3(-0.50, 0.85, 0.05), Vector3(0.50,
 const RELEASE_STEP := 0.45
 
 
-## Whether the loaded gaits apply (a carried passenger). The adapter extends this to the tactical carry state.
-func _loaded_locomotion() -> bool:
-	return is_instance_valid(carry_passenger)
+## What the context host may tell this rig about the character it carries. `loaded_query` is a `func() -> bool`: when set, it says whether the character is a loaded carrier (the tactical host answers from
+## its unit's carry state, which leads the visual passenger); unset, a character is loaded when its visual passenger exists (the workbench and tools).
+var loaded_query: Callable
+
+## Whether the loaded gaits and the carry pose apply.
+func is_loaded() -> bool:
+	return loaded_query.call() if loaded_query.is_valid() else is_instance_valid(carry_passenger)
 
 
 ## Once per frame: the speed the character is ACTUALLY moving at (the tactical layer's, or the workbench's preview) and how fast its heading is changing,
 ## in, the legs' cadence, gait blend and the body's lean out. The speed the legs respond to follows the real speed with the profile's rise and fall
 ## limits; it never drives movement. Idle is a speed of zero: this is also what settles the gait to a stop.
 func _exit_tree() -> void:
+	# Skeleton modifiers can emit once more while their hierarchy is being removed. Disconnect before descendants lose legal global transforms.
+	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
+		skeleton.skeleton_updated.disconnect(_align_weapon_to_aim)
 	presenter.teardown()
 	if _rescue_handle != null:
 		# Nothing waits on a character that is gone: the timeline stops and whoever observes the handle is told it was interrupted.
@@ -1002,13 +1039,13 @@ func update_locomotion_presentation(speed: float, heading_rate: float, delta: fl
 	var k := 1.0 if p.gait_smoothing <= 0.0 else 1.0 - exp(-delta / p.gait_smoothing)
 	_gait_blend = lerpf(_gait_blend, p.gait_blend(_visual_speed), k)
 	_loaded_blend = lerpf(_loaded_blend, p.loaded_blend(_visual_speed), k)
-	var stride := p.loaded_stride_at(_loaded_blend) if _loaded_locomotion() else p.stride_at(_gait_blend)
+	var stride := p.loaded_stride_at(_loaded_blend) if is_loaded() else p.stride_at(_gait_blend)
 	var cadence := p.cadence_for(_visual_speed, stride)
 	animation_controller.set_locomotion(locomotion_direction, cadence)
 	animation_controller.set_gait(_gait_blend, _loaded_blend)
 	_heading_rate = lerpf(_heading_rate, heading_rate, 1.0 - exp(-delta / 0.06))
 	_bank_target = clampf(_heading_rate * _visual_speed * p.bank_gain, -p.bank_max, p.bank_max)
-	if _loaded_locomotion():
+	if is_loaded():
 		_bank_target = 0.0   # a carrier keeps the trunk square: the passenger and the hand contacts ride on the chest
 	_update_body_adjustments(delta)
 	locomotion_report = {"speed": _visual_speed, "gait": _gait_blend, "loaded": _loaded_blend, "cadence": cadence, "accel": _speed_accel, "bank": _bank_target}
@@ -1033,7 +1070,7 @@ func absorb_facing_change(change: float) -> void:
 ## A facing change that arrived at once (the unit now faces `delta_yaw` radians further round): the chest and weapon already face the new way; the
 ## hips are shown catching up (LocomotionPoseModifier). Presentation only.
 func begin_turn(delta_yaw: float) -> void:
-	if locomotion_modifier == null or _loaded_locomotion() or locomotion_profile.turn_twist_limit <= 0.0:
+	if locomotion_modifier == null or is_loaded() or locomotion_profile.turn_twist_limit <= 0.0:
 		return
 	var limit := locomotion_profile.turn_twist_limit
 	_twist = clampf(_twist + rad_to_deg(delta_yaw), -limit, limit)
@@ -1060,7 +1097,7 @@ func _update_body_adjustments(delta: float) -> void:
 	input.step_lift_left = steps[0]
 	input.step_lift_right = steps[1]
 	input.bank_degrees = _bank_target
-	var pitch := 0.0 if _loaded_locomotion() else clampf(_speed_accel * p.accel_lean_gain, -p.accel_lean_max, p.accel_lean_max)
+	var pitch := 0.0 if is_loaded() else clampf(_speed_accel * p.accel_lean_gain, -p.accel_lean_max, p.accel_lean_max)
 	input.pitch_degrees = pitch
 	locomotion_modifier.apply_input(input)
 
@@ -1212,7 +1249,7 @@ func end_carry(leave_passenger := false) -> void:
 	_interaction_sample = {}
 	if is_instance_valid(carry_passenger):
 		if leave_passenger:
-			carry_passenger.detach_to(get_parent())
+			carry_passenger.detach_to(_beside_host())
 		else:
 			carry_passenger.get_parent().remove_child(carry_passenger)
 			carry_passenger.free()
@@ -1252,6 +1289,12 @@ func _ensure_passenger(lift: float, pose: float) -> void:
 	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck)
 
 
+## Where a passenger left lying (the workbench's keep_released_passenger) is put: beside this rig's host, in the host's own container, so it is no longer part of the carrier.
+func _beside_host() -> Node:
+	var host := get_parent()
+	return host.get_parent() if host != null and host.get_parent() != null else host
+
+
 func _discard_passenger() -> void:
 	if is_instance_valid(carry_passenger):
 		carry_passenger.get_parent().remove_child(carry_passenger)
@@ -1272,9 +1315,9 @@ const CARRY_LEAN_DEGREES := 20.0
 const CARRY_LEAN_SECONDS := 0.4
 
 ## The rescue clock moves on one frame. Called by the presenter's action stage, once per frame, for every host: the presenter owns WHEN the lift progresses, this rig owns what it looks like. A character that is
-## not a loaded carrier (see _loaded_locomotion) does not advance it, exactly as it never applied it.
+## not a loaded carrier (see is_loaded) does not advance it, exactly as it never applied it.
 func advance_rescue_clock(delta: float) -> void:
-	if rescue_interaction.active() and _loaded_locomotion():
+	if rescue_interaction.active() and is_loaded():
 		rescue_interaction.advance(delta)
 
 
@@ -1461,10 +1504,14 @@ func _play_shot_feedback() -> void:
 	await get_tree().create_timer(0.075, false).timeout
 	if generation == _shot_feedback_generation:
 		muzzle_flash.visible = false
+## Whether the sights follow the playing clip (a standalone rig: the workbench and tools). A host with its own readiness (the tactical adapter) turns this off and drives `aim_blend` from it.
+var aim_blend_follows_clips := true
+
 func _on_animation_state_changed(state_name: StringName) -> void:
-	if _pose_tween != null and _pose_tween.is_valid():
-		_pose_tween.kill()
-	_pose_tween = create_tween()
-	_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot", &"shoot_left", &"shoot_right"] else 0.0, 0.28)
+	if aim_blend_follows_clips:
+		if _pose_tween != null and _pose_tween.is_valid():
+			_pose_tween.kill()
+		_pose_tween = create_tween()
+		_pose_tween.tween_property(self, "aim_blend", 1.0 if state_name in [&"aim", &"shoot", &"shoot_left", &"shoot_right"] else 0.0, 0.28)
 	if state_name in [&"shoot", &"shoot_left", &"shoot_right"]:
 		_play_shot_feedback()

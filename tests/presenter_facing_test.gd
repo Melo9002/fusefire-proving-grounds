@@ -32,7 +32,7 @@ func _visual() -> Array:
 	return [stage, v]
 
 func _world_yaw(v: UnitVisualAdapter) -> float:
-	return v.character_root.global_rotation.y
+	return v.rig.character_root.global_rotation.y
 
 func _run() -> void:
 	var pair := await _visual()
@@ -44,77 +44,77 @@ func _run() -> void:
 	var east := v.global_position + Vector3(5.0, 3.0, 1.0)
 	p.face_point(east)
 	var expected := atan2(5.0, 1.0)
-	check(absf(angle_difference(v.rotation.y, expected)) < 0.0001 and p.facing_mode == FacingMode.FACE_POINT and not p.has_authority_yaw, "face_point turns the node to the point's horizontal bearing (%.1f degrees) and reports FACE_POINT" % rad_to_deg(v.rotation.y))
-	var before := v.rotation.y
+	check(absf(angle_difference(v.rig.rotation.y, expected)) < 0.0001 and p.facing_mode == FacingMode.FACE_POINT and not p.has_authority_yaw, "face_point turns the node to the point's horizontal bearing (%.1f degrees) and reports FACE_POINT" % rad_to_deg(v.rig.rotation.y))
+	var before := v.rig.rotation.y
 	p.face_point(east)
-	check(is_equal_approx(v.rotation.y, before), "Facing the same point again changes nothing")
+	check(is_equal_approx(v.rig.rotation.y, before), "Facing the same point again changes nothing")
 	p.face_point(v.global_position + Vector3(0.0, 4.0, 0.0))
-	check(is_equal_approx(v.rotation.y, before), "A point straight above the character is ignored")
+	check(is_equal_approx(v.rig.rotation.y, before), "A point straight above the character is ignored")
 
 	# ---- An explicit yaw, and the hips showing the turn only for a visible change.
 	p.face_yaw(deg_to_rad(-120.0))
-	check(absf(angle_difference(v.rotation.y, deg_to_rad(-120.0))) < 0.0001 and p.facing_mode == FacingMode.FACE_YAW, "face_yaw sets the node's yaw and reports FACE_YAW")
-	var twist_before: float = v._twist
+	check(absf(angle_difference(v.rig.rotation.y, deg_to_rad(-120.0))) < 0.0001 and p.facing_mode == FacingMode.FACE_YAW, "face_yaw sets the node's yaw and reports FACE_YAW")
+	var twist_before: float = v.rig._twist
 	p.face_yaw(deg_to_rad(-120.5))
-	check(is_equal_approx(v._twist, twist_before), "A change under one degree shows no hips turn")
+	check(is_equal_approx(v.rig._twist, twist_before), "A change under one degree shows no hips turn")
 	p.face_yaw(deg_to_rad(-60.0), false, false)
-	check(is_equal_approx(v._twist, twist_before), "show_turn false changes the yaw without the hips catching up")
+	check(is_equal_approx(v.rig._twist, twist_before), "show_turn false changes the yaw without the hips catching up")
 	p.face_yaw(deg_to_rad(40.0))
-	check(absf(v._twist) > 1.0, "A visible change makes the hips catch up (twist %.1f degrees)" % v._twist)
+	check(absf(v.rig._twist) > 1.0, "A visible change makes the hips catch up (twist %.1f degrees)" % v.rig._twist)
 
 	# ---- Following velocity, and holding facing.
-	var yaw_start := v.rotation.y
+	var yaw_start := v.rig.rotation.y
 	p.report_velocity(Vector3(0, 0, 2.0), 1.0 / 60.0, 360.0)
-	var moved_toward := absf(angle_difference(v.rotation.y, 0.0)) < absf(angle_difference(yaw_start, 0.0))
+	var moved_toward := absf(angle_difference(v.rig.rotation.y, 0.0)) < absf(angle_difference(yaw_start, 0.0))
 	check(moved_toward and p.facing_mode == FacingMode.FOLLOW_VELOCITY and p.speed > 1.9, "Reported velocity turns the character toward it and reports FOLLOW_VELOCITY")
 	p.face_yaw(deg_to_rad(90.0))
 	p.hold_facing()
-	var held_at := v.rotation.y
+	var held_at := v.rig.rotation.y
 	for i in 30:
 		p.report_velocity(Vector3(0, 0, 2.0), 1.0 / 60.0, 360.0)
-	check(p.is_facing_held() and is_equal_approx(v.rotation.y, held_at) and p.speed > 1.9 and p.heading_rate == 0.0 and p.intent().facing_mode == FacingMode.HOLD,
+	check(p.is_facing_held() and is_equal_approx(v.rig.rotation.y, held_at) and p.speed > 1.9 and p.heading_rate == 0.0 and p.intent().facing_mode == FacingMode.HOLD,
 		"A held facing keeps the yaw while the character still moves (speed %.1f), and the snapshot says HOLD" % p.speed)
 	p.release_facing_hold()
 	for i in 30:
 		p.report_velocity(Vector3(0, 0, 2.0), 1.0 / 60.0, 360.0)
-	check(not p.is_facing_held() and absf(angle_difference(v.rotation.y, 0.0)) < absf(angle_difference(held_at, 0.0)), "Releasing the hold lets velocity turn it again")
+	check(not p.is_facing_held() and absf(angle_difference(v.rig.rotation.y, 0.0)) < absf(angle_difference(held_at, 0.0)), "Releasing the hold lets velocity turn it again")
 
 	# ---- Authority: shown exactly as supplied, reported, and replaced by the next request of any kind.
 	p.face_authoritative(deg_to_rad(33.0))
-	check(absf(angle_difference(v.rotation.y, deg_to_rad(33.0))) < 0.0001 and p.has_authority_yaw and is_equal_approx(p.authority_yaw, deg_to_rad(33.0)) and p.intent().facing_mode == FacingMode.FACE_YAW,
+	check(absf(angle_difference(v.rig.rotation.y, deg_to_rad(33.0))) < 0.0001 and p.has_authority_yaw and is_equal_approx(p.authority_yaw, deg_to_rad(33.0)) and p.intent().facing_mode == FacingMode.FACE_YAW,
 		"A committed yaw is shown exactly and reported as authoritative")
 	p.face_point(v.global_position + Vector3(1.0, 0.0, 0.0))
 	check(not p.has_authority_yaw, "A later facing request replaces it")
 	v.face_committed_direction(Vector2(1.0, 1.0))
-	check(absf(angle_difference(v.rotation.y, PI / 4.0)) < 0.0001 and p.has_authority_yaw, "The adapter turns a committed X/Z direction into the authoritative yaw (north-east is 45 degrees)")
+	check(absf(angle_difference(v.rig.rotation.y, PI / 4.0)) < 0.0001 and p.has_authority_yaw, "The adapter turns a committed X/Z direction into the authoritative yaw (north-east is 45 degrees)")
 	v.face_committed_direction(Vector2.ZERO)
-	check(absf(angle_difference(v.rotation.y, PI / 4.0)) < 0.0001, "A zero direction is ignored")
+	check(absf(angle_difference(v.rig.rotation.y, PI / 4.0)) < 0.0001, "A zero direction is ignored")
 
 	# ---- Eased turns: the node (a ladder's heading) and the visual root (the workbench's preview turn).
 	p.face_yaw(0.0)
 	p.turn_toward_yaw(deg_to_rad(170.0), 360.0, 0.1)
-	check(absf(angle_difference(v.rotation.y, deg_to_rad(36.0))) < 0.0001, "turn_toward_yaw turns at the given rate (36 degrees in 0.1 s at 360 per second)")
-	v.character_root.rotation.y = 0.0
+	check(absf(angle_difference(v.rig.rotation.y, deg_to_rad(36.0))) < 0.0001, "turn_toward_yaw turns at the given rate (36 degrees in 0.1 s at 360 per second)")
+	v.rig.character_root.rotation.y = 0.0
 	var rate := p.turn_root_toward(deg_to_rad(170.0), 360.0, 0.1)
-	check(absf(v.character_root.rotation.y - deg_to_rad(36.0)) < 0.0001 and absf(rate - deg_to_rad(360.0)) < 0.001, "turn_root_toward turns the visual root and returns the heading rate (%.2f rad/s)" % rate)
-	check(p.facing_direction().is_equal_approx(Vector3(sin(v.rotation.y), 0.0, cos(v.rotation.y))), "facing_direction is the read-only horizontal facing")
-	v.character_root.rotation.y = 0.0
+	check(absf(v.rig.character_root.rotation.y - deg_to_rad(36.0)) < 0.0001 and absf(rate - deg_to_rad(360.0)) < 0.001, "turn_root_toward turns the visual root and returns the heading rate (%.2f rad/s)" % rate)
+	check(p.facing_direction().is_equal_approx(Vector3(sin(v.rig.rotation.y), 0.0, cos(v.rig.rotation.y))), "facing_direction is the read-only horizontal facing")
+	v.rig.character_root.rotation.y = 0.0
 	await _frames(2)
 
 	# ---- Cover: a facing change is absorbed into the cover yaw, so the body does not snap (the visual root's world yaw is continuous).
 	v.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": 1.1, "direction": Vector3.FORWARD}
-	v.animation_controller.play(&"cover_low")
+	v.rig.animation_controller.play(&"cover_low")
 	await _frames(40)
 	p.face_yaw(0.0)
 	await process_frame
 	var world_before := _world_yaw(v)
-	var cover_before := v._cover_yaw
+	var cover_before := v.rig._cover_yaw
 	v.face_world_position(v.global_position + Vector3(4.0, 0.0, -3.0))
 	var jump := absf(angle_difference(_world_yaw(v), world_before))
-	check(jump < 0.001 and absf(angle_difference(v._cover_yaw, cover_before)) > 0.1, "In cover the facing change is absorbed into the cover yaw: the body's world yaw does not jump (%.4f rad) and the offset took it up" % jump)
-	var ramp_before := absf(angle_difference(v._cover_yaw, v._cover_yaw_target(0.0)))
+	check(jump < 0.001 and absf(angle_difference(v.rig._cover_yaw, cover_before)) > 0.1, "In cover the facing change is absorbed into the cover yaw: the body's world yaw does not jump (%.4f rad) and the offset took it up" % jump)
+	var ramp_before := absf(angle_difference(v.rig._cover_yaw, v._cover_yaw_target(0.0)))
 	await _frames(30)
-	check(absf(angle_difference(v._cover_yaw, v._cover_yaw_target(0.0))) < ramp_before and p.postures.resolved_source() == v.COVER_POSTURE_SOURCE, "...and the cover posture then eases the body to its pose, still the cover request that wins")
+	check(absf(angle_difference(v.rig._cover_yaw, v._cover_yaw_target(0.0))) < ramp_before and p.postures.resolved_source() == v.COVER_POSTURE_SOURCE, "...and the cover posture then eases the body to its pose, still the cover request that wins")
 	await _drop(stage)
 
 	# ---- The shot decision is one function for both hosts (a pure table), and neither host repeats it.
@@ -137,9 +137,9 @@ func _run() -> void:
 	await _frames(15)
 	bench.set_cover_demo({"full": false, "height": 1.1, "left": 0.4, "right": 0.4, "left_ok": true, "right_ok": true, "aim": true})
 	await _frames(30)
-	var bench_world: float = bench.character_root.global_rotation.y
+	var bench_world: float = bench.rig.character_root.global_rotation.y
 	bench.set_cover_target(bench.global_position + Vector3(3.0, 0.0, 2.0))
-	check(bench.presenter.facing_mode == FacingMode.FACE_YAW and absf(angle_difference(bench.character_root.global_rotation.y, bench_world)) < 0.001, "The workbench's cover target faces through the presenter and the body does not snap")
+	check(bench.presenter.facing_mode == FacingMode.FACE_YAW and absf(angle_difference(bench.rig.character_root.global_rotation.y, bench_world)) < 0.001, "The workbench's cover target faces through the presenter and the body does not snap")
 	bench.set_cover_demo({})
 	bench.queue_free()
 	await _frames(2)
@@ -184,16 +184,16 @@ func _shield_wiring() -> void:
 		guard.tactical_state.reset()
 		guard.tactical_state.establish_shield(committed)
 		await presenter.present_shield(result)
-		var shown := guard.visual_adapter.rotation.y
+		var shown := guard.visual_adapter.rig.rotation.y
 		var committed_yaw := atan2(committed.x, committed.y)
 		var toward_threat := atan2(offset.x, offset.z)
 		check(absf(angle_difference(shown, committed_yaw)) < 0.0001 and guard.visual_adapter.presenter.has_authority_yaw, "Shield presentation shows the committed facing exactly and reports it as authoritative (offset %s)" % [offset])
 		worst = maxf(worst, absf(rad_to_deg(angle_difference(shown, toward_threat))))
 	check(worst < 0.01, "...and it is the direction toward the threat the unit used to face (worst difference %.5f degrees)" % worst)
 	guard.tactical_state.reset()
-	guard.visual_adapter.rotation.y = 0.0
+	guard.visual_adapter.rig.rotation.y = 0.0
 	await presenter.present_shield(result)
-	check(absf(angle_difference(guard.visual_adapter.rotation.y, atan2(threat.global_position.x - guard.global_position.x, threat.global_position.z - guard.global_position.z))) < 0.0001 and not guard.visual_adapter.presenter.has_authority_yaw,
+	check(absf(angle_difference(guard.visual_adapter.rig.rotation.y, atan2(threat.global_position.x - guard.global_position.x, threat.global_position.z - guard.global_position.z))) < 0.0001 and not guard.visual_adapter.presenter.has_authority_yaw,
 		"Without a committed shield facing the presentation still faces the threat's position, as before")
 	guard.queue_free()
 	threat.queue_free()

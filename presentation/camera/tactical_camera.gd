@@ -504,11 +504,11 @@ func _update_cinematic_camera(delta: float) -> void:
 		return
 	var actor_position := _cinematic_actor.global_position - Vector3.UP * _cinematic_actor.standing_height
 	if is_instance_valid(_cinematic_actor.visual_adapter):
-		actor_position = _cinematic_actor.visual_adapter.global_position
+		actor_position = _cinematic_actor.visual_adapter.rig.global_position
 	var direction := _cinematic_focus - actor_position
 	direction.y = 0.0
 	if direction.length_squared() < 0.001:
-		direction = _cinematic_actor.visual_adapter.global_basis.z if is_instance_valid(_cinematic_actor.visual_adapter) else Vector3.BACK
+		direction = _cinematic_actor.visual_adapter.rig.global_basis.z if is_instance_valid(_cinematic_actor.visual_adapter) else Vector3.BACK
 	else:
 		direction = direction.normalized()
 	var visual := _cinematic_actor.visual_adapter

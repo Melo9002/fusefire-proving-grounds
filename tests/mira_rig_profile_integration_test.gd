@@ -18,8 +18,8 @@ func _run() -> void:
 	var v: UnitVisualAdapter = VISUAL.instantiate()
 	root.add_child(v)
 	await process_frame
-	check(v.rig_profile != null, "The production MIRA scene assigns her rig profile")
-	var r = v.resolved_rig
+	check(v.rig.rig_profile != null, "The production MIRA scene assigns her rig profile")
+	var r = v.rig.resolved_rig
 	check(r != null, "The profile was resolved when the character was built")
 	if r == null:
 		quit(1)
@@ -33,12 +33,12 @@ func _run() -> void:
 	check(absf(stair.leg_length - m.hips_to_ankle) < 0.02, "The production stair profile's leg length (%.3f) agrees with the resolved hips-to-ankle span (%.3f)" % [stair.leg_length, m.hips_to_ankle])
 	# Driving (Task 07 package 9, replacing the passive contract of package 1): the profile is the ONLY source of the skeleton's bones. The rig reads its configuration from it, builds every stage, and a role the
 	# resolver found is the bone the stack uses.
-	check(v.bones != null and v.bones.profile_name == String(v.rig_profile.display_name) and v.bones.degraded.is_empty(), "The rig's bone configuration comes from the profile and nothing is degraded")
+	check(v.rig.bones != null and v.rig.bones.profile_name == String(v.rig.rig_profile.display_name) and v.rig.bones.degraded.is_empty(), "The rig's bone configuration comes from the profile and nothing is degraded")
 	var agree := true
-	for pair in [[&"Hips", v.bones.hips], [&"Head", v.bones.head], [&"LeftHand", v.bones.left_arm[2]], [&"RightFoot", v.bones.right_leg[2]], [&"UpperChest", v.bones.torso]]:
-		agree = agree and v.skeleton.get_bone_name(r.bone(pair[0])) == String(pair[1])
+	for pair in [[&"Hips", v.rig.bones.hips], [&"Head", v.rig.bones.head], [&"LeftHand", v.rig.bones.left_arm[2]], [&"RightFoot", v.rig.bones.right_leg[2]], [&"UpperChest", v.rig.bones.torso]]:
+		agree = agree and v.rig.skeleton.get_bone_name(r.bone(pair[0])) == String(pair[1])
 	check(agree, "The resolver and the stack agree on which bone plays each role")
-	var stages := v.skeleton.get_children().filter(func(c): return c is SkeletonModifier3D).map(func(c): return String(c.name))
+	var stages := v.rig.skeleton.get_children().filter(func(c): return c is SkeletonModifier3D).map(func(c): return String(c.name))
 	check(stages == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "The full modifier stack is built from the profile: %s" % [stages])
 	print("MIRA rig profile integration: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

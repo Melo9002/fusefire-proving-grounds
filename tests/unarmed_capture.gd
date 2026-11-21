@@ -27,7 +27,7 @@ func _snap(camera: Camera3D, position_value: Vector3, look_at_value: Vector3, fe
 func _character(stage: Node3D, armed: bool) -> UnitVisualAdapter:
 	var v := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
 	if not armed:
-		v.weapon_scene = null
+		v.rig.weapon_scene = null
 	stage.add_child(v)
 	v.position = Vector3.ZERO   # standing on the floor
 	return v
@@ -73,14 +73,14 @@ func _run() -> void:
 	await _snap(camera, front, look)
 	await _snap(camera, side, look)
 	await _snap(camera, three_quarter, look)
-	bare.animation_controller.play(&"move")
+	bare.rig.animation_controller.play(&"move")
 	var walk := func() -> void: bare.update_locomotion(Vector3(0, 0, 3.0), 1.0 / 60.0)
 	for i in 70:
 		walk.call()
 		await process_frame
 	await _snap(camera, side, look, walk)
 	await _snap(camera, three_quarter, look, walk)
-	bare.animation_controller.play(&"idle")
+	bare.rig.animation_controller.play(&"idle")
 	for i in 60:
 		bare.update_locomotion(Vector3.ZERO, 1.0 / 60.0)
 		await process_frame
@@ -90,7 +90,7 @@ func _run() -> void:
 	await _snap(camera, side, look)
 	await _snap(camera, three_quarter, look)
 	await _snap(camera, front, look)
-	bare.presenter.postures.set_posture(&"capture", PresentationTypes.Posture.KNEEL, PresentationTypes.PRIORITY_CONTEXT, 0.0, bare.crouch_modifier.max_depth + CharacterRig.KNEEL_BLEND_RANGE)
+	bare.presenter.postures.set_posture(&"capture", PresentationTypes.Posture.KNEEL, PresentationTypes.PRIORITY_CONTEXT, 0.0, bare.rig.crouch_modifier.max_depth + CharacterRig.KNEEL_BLEND_RANGE)
 	for i in 80:
 		await process_frame
 	await _snap(camera, side, look)
@@ -99,16 +99,16 @@ func _run() -> void:
 	bare.presenter.postures.release(&"capture")
 	for i in 60:
 		await process_frame
-	bare.begin_traversal(&"ladder", 3.0, 1)
+	bare.rig.begin_traversal(&"ladder", 3.0, 1)
 	for i in 70:
-		bare.set_traversal_progress(1.4)
+		bare.rig.set_traversal_progress(1.4)
 		await process_frame
 	await _snap(camera, side, look + Vector3(0, 0.2, 0))
-	bare.end_traversal()
+	bare.rig.end_traversal()
 	for i in 30:
 		await process_frame
 	bare.preview_carrying = true
-	bare.begin_carry()
+	bare.rig.begin_carry()
 	for i in 40:
 		await process_frame
 	await _snap(camera, front, look)

@@ -14,10 +14,10 @@ func _p(bone: StringName) -> Vector3:
 
 ## Bone positions in the character's own frame (x right/left, y up, z forward) relative to the floor point.
 func _dump(rig: UnitVisualAdapter, label: String) -> void:
-	var inverse := rig.character_root.global_basis.inverse()
+	var inverse := rig.rig.character_root.global_basis.inverse()
 	var out := "CROUCH-DUMP %s" % label
 	for bone in [&"mixamorig_Hips", &"mixamorig_Spine2", &"mixamorig_HeadTop_End", &"mixamorig_LeftUpLeg", &"mixamorig_LeftLeg", &"mixamorig_LeftFoot", &"mixamorig_RightUpLeg", &"mixamorig_RightLeg", &"mixamorig_RightFoot"]:
-		var local := inverse * (_p(bone) - rig.character_root.global_position)
+		var local := inverse * (_p(bone) - rig.rig.character_root.global_position)
 		out += "\n   %-22s x %.3f y %.3f z %.3f" % [bone, local.x, local.y, local.z]
 	print(out)
 
@@ -31,10 +31,10 @@ func _run() -> void:
 	for bone in [&"mixamorig_Head", &"mixamorig_HeadTop_End", &"mixamorig_LeftFoot", &"mixamorig_RightFoot", &"mixamorig_Hips", &"mixamorig_LeftLeg", &"mixamorig_LeftUpLeg"]:
 		var attachment := BoneAttachment3D.new()
 		attachment.bone_name = bone
-		rig.skeleton.add_child(attachment)
+		rig.rig.skeleton.add_child(attachment)
 		_attachments[bone] = attachment
 	for i in 10: await process_frame
-	var modifier := rig.crouch_modifier
+	var modifier := rig.rig.crouch_modifier
 	print("CROUCH modifier=", modifier != null)
 	if modifier == null:
 		quit(1)
@@ -43,9 +43,9 @@ func _run() -> void:
 	for bone in [&"mixamorig_Spine2", &"mixamorig_RightLeg", &"mixamorig_RightUpLeg", &"mixamorig_RightFoot"]:
 		var extra := BoneAttachment3D.new()
 		extra.bone_name = bone
-		rig.skeleton.add_child(extra)
+		rig.rig.skeleton.add_child(extra)
 		_attachments[bone] = extra
-	rig.animation_controller.play(&"cover_low")
+	rig.rig.animation_controller.play(&"cover_low")
 	for i in 30: await process_frame
 	_dump(rig, "standing-ish")
 	for height in HEIGHTS:
@@ -54,12 +54,12 @@ func _run() -> void:
 			rig.presenter.aim.held = aiming
 			rig.presenter.aim.release_left = 1000000.0
 			for i in 120: await process_frame
-			var forward: Vector3 = rig.character_root.global_basis.z
+			var forward: Vector3 = rig.rig.character_root.global_basis.z
 			var head := _p(&"mixamorig_HeadTop_End")
 			var hips := _p(&"mixamorig_Hips")
 			var lean := (head - hips).dot(forward)
 			var knee_forward := (_p(&"mixamorig_LeftLeg") - _p(&"mixamorig_LeftUpLeg")).dot(forward)
-			print("CROUCH h=%.2f %s depth=%.3f/%.3f head=%.3f lean=%.3f kneeFwd=%.3f ankles %.3f %.3f yaw=%.0f" % [height, "aim " if aiming else "hide", modifier.depth, modifier.max_depth, head.y, lean, knee_forward, _p(&"mixamorig_LeftFoot").y, _p(&"mixamorig_RightFoot").y, rad_to_deg(rig._cover_yaw)])
+			print("CROUCH h=%.2f %s depth=%.3f/%.3f head=%.3f lean=%.3f kneeFwd=%.3f ankles %.3f %.3f yaw=%.0f" % [height, "aim " if aiming else "hide", modifier.depth, modifier.max_depth, head.y, lean, knee_forward, _p(&"mixamorig_LeftFoot").y, _p(&"mixamorig_RightFoot").y, rad_to_deg(rig.rig._cover_yaw)])
 	rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": 0.9, "direction": Vector3.FORWARD}
 	rig.presenter.aim.held = false
 	for i in 120: await process_frame

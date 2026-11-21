@@ -19,7 +19,7 @@ func check(ok: bool, message: String) -> void:
 
 ## Bone positions relative to the character's floor point, in the character's own frame (x right, y up, z forward).
 func _measure(rig: UnitVisualAdapter, attachments: Dictionary, side: String) -> Dictionary:
-	var forward := rig.character_root.global_basis.z.slide(Vector3.UP).normalized()
+	var forward := rig.rig.character_root.global_basis.z.slide(Vector3.UP).normalized()
 	var frame := Basis(Vector3.UP.cross(forward).normalized(), Vector3.UP, forward)
 	var result := {}
 	for bone in BONES:
@@ -41,16 +41,16 @@ func _pose(elevation: float, rear: int) -> Dictionary:
 		for bone in BONES:
 			var a := BoneAttachment3D.new()
 			a.bone_name = "mixamorig_%s%s" % [side, bone]
-			rig.skeleton.add_child(a)
+			rig.rig.skeleton.add_child(a)
 			attachments["%s%s" % [side, bone]] = a
-	rig.crouch_modifier.kneel_leg = rear
+	rig.rig.crouch_modifier.kneel_leg = rear
 	rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": 0.4, "direction": Vector3.FORWARD}
-	rig.animation_controller.play(&"cover_low")
+	rig.rig.animation_controller.play(&"cover_low")
 	for i in 90:
 		await process_frame
 	var rear_side := "Right" if rear == 1 else "Left"
 	var front_side := "Left" if rear == 1 else "Right"
-	var out := {"rear": _measure(rig, attachments, rear_side), "front": _measure(rig, attachments, front_side), "kneel": rig.crouch_modifier.kneel, "rig": rig, "stage": stage}
+	var out := {"rear": _measure(rig, attachments, rear_side), "front": _measure(rig, attachments, front_side), "kneel": rig.rig.crouch_modifier.kneel, "rig": rig, "stage": stage}
 	return out
 
 func _angle_deg(a: Vector3, b: Vector3) -> float:

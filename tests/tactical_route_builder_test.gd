@@ -129,7 +129,7 @@ func _run() -> void:
 	var ladder_segments: Array[StringName] = []
 	ladder_segments.assign(ladder_detail.visual_segments)
 	actor.move_along_path(ladder_detail.presentation_path, ladder_segments)
-	var expected := TacticalRouteBuilder.estimated_seconds(actor.route, actor.current_waypoint_idx, actor.global_position, actor.movement_speed, TacticalUnit.DEFAULT_MOVEMENT_SPEED, actor.stair_profile, actor.visual_adapter.traversal_profile)
+	var expected := TacticalRouteBuilder.estimated_seconds(actor.route, actor.current_waypoint_idx, actor.global_position, actor.movement_speed, TacticalUnit.DEFAULT_MOVEMENT_SPEED, actor.stair_profile, actor.visual_adapter.rig.traversal_profile)
 	check(is_equal_approx(actor.estimated_move_seconds(), expected) and expected > 2.0, "The unit's estimate is the builder's (%.2f s for the ladder)" % expected)
 	check(actor.stats.current_ap == ap_before and actor.grid_position == cell_before, "Building and showing a route changes neither AP nor the committed cell")
 	actor.is_moving = false

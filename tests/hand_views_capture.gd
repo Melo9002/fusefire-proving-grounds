@@ -34,15 +34,15 @@ func _run() -> void:
 	stage.add_child(camera)
 	camera.make_current()
 	for i in 20: await process_frame
-	rig.animation_controller.play(state)
+	rig.rig.animation_controller.play(state)
 	rig.presenter.aim.held = state == &"aim"
 	rig.presenter.aim.release_left = 1000000.0
 	for i in 60: await process_frame
 	await create_timer(1.0).timeout
 	var tiles: Array[Image] = []
 	for view in VIEWS:
-		camera.global_position = rig.weapon.to_global(view[0])
-		camera.look_at(rig.weapon.to_global(view[1]), rig.weapon.global_basis.y)
+		camera.global_position = rig.rig.weapon.to_global(view[0])
+		camera.look_at(rig.rig.weapon.to_global(view[1]), rig.rig.weapon.global_basis.y)
 		for i in 3: await process_frame
 		await RenderingServer.frame_post_draw
 		var image := root.get_texture().get_image()

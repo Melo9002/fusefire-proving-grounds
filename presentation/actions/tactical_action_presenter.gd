@@ -78,7 +78,7 @@ func present_reload(result: ReloadActionResult) -> void:
 		return
 	var camera_presented := false
 	if _camera_available():
-		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		var facing := unit.visual_adapter.rig.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
 		camera_presented = await action_camera_director.present(unit, &"reload", unit.global_position + facing * 3.0, result.actor_ap_after)
 	print_rich("[color=light_blue][Reload][/color] %s restores %d SP (%d/%d)" % [unit.get_log_name(), result.supply_points_restored, result.supply_points_after, result.max_supply_points])
 	if camera_presented:
@@ -205,7 +205,7 @@ func present_simple(result: SimpleActionResult) -> void:
 		return
 	var camera_presented := false
 	if _camera_available():
-		var facing := unit.visual_adapter.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
+		var facing := unit.visual_adapter.rig.global_basis.z if is_instance_valid(unit.visual_adapter) else Vector3.FORWARD
 		camera_presented = await action_camera_director.present(unit, &"defend", unit.global_position + facing * 3.0, result.actor_ap_after)
 	if camera_presented:
 		await _safe_delay(0.25)
@@ -243,10 +243,10 @@ func _wait_for_rescue_interaction(actor: TacticalUnit) -> void:
 	if not is_inside_tree() or not is_instance_valid(actor) or not is_instance_valid(actor.visual_adapter):
 		return
 	var adapter: UnitVisualAdapter = actor.visual_adapter
-	var handle: ActionHandle = adapter.rescue_presentation()
+	var handle: ActionHandle = adapter.rig.rescue_presentation()
 	if handle == null:
 		return
-	var deadline := Time.get_ticks_msec() + int((adapter.rescue_interaction.duration() + 0.5) * 1000.0)
+	var deadline := Time.get_ticks_msec() + int((adapter.rig.rescue_interaction.duration() + 0.5) * 1000.0)
 	while is_inside_tree() and not handle.is_done() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 
@@ -257,7 +257,7 @@ func _present_extract(result: MissionActionResult, actor: TacticalUnit) -> void:
 		return
 	var camera_presented := false
 	if _camera_available():
-		var facing := actor.visual_adapter.global_basis.z if is_instance_valid(actor.visual_adapter) else Vector3.FORWARD
+		var facing := actor.visual_adapter.rig.global_basis.z if is_instance_valid(actor.visual_adapter) else Vector3.FORWARD
 		camera_presented = await action_camera_director.present(actor, &"extract", actor.global_position + facing * 3.0, actor.stats.current_ap, true)
 	if is_instance_valid(actor) and is_instance_valid(actor.visual_adapter):
 		actor.visual_adapter.present_boarding()

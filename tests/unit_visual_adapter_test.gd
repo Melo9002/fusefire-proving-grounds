@@ -23,9 +23,9 @@ func _initialize() -> void:
 	unit.face_world_position(unit.global_position + Vector3.RIGHT * 4.0)
 	await process_frame
 	# A carried rifle points diagonally; measure body facing from rest toes.
-	var rig: Skeleton3D = adapter.skeleton
-	var foot_name: StringName = adapter.bones.right_leg[2]
-	var toe_name: StringName = adapter.bones.right_toes
+	var rig: Skeleton3D = adapter.rig.skeleton
+	var foot_name: StringName = adapter.rig.bones.right_leg[2]
+	var toe_name: StringName = adapter.rig.bones.right_toes
 	var foot := rig.get_bone_global_rest(rig.find_bone(foot_name)).origin
 	var toe := rig.get_bone_global_rest(rig.find_bone(toe_name)).origin
 	var visual_forward := rig.global_basis * (toe - foot)

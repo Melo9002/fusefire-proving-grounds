@@ -25,7 +25,7 @@ func _frames(count: int) -> void:
 ## The leg's joints in the character's frame (x its left, y up, z forward) at cycle position `t` of a clip, with the clip's tracks applied
 ## to a rest-posed skeleton.
 func _pose_at(clip: Animation, t: float) -> Dictionary:
-	var sk := _rig.skeleton
+	var sk := _rig.rig.skeleton
 	sk.reset_bone_poses()
 	for track in clip.get_track_count():
 		var bone := sk.find_bone(clip.track_get_path(track).get_subname(0))
@@ -35,7 +35,7 @@ func _pose_at(clip: Animation, t: float) -> Dictionary:
 			sk.set_bone_pose_rotation(bone, clip.rotation_track_interpolate(track, t))
 		elif clip.track_get_type(track) == Animation.TYPE_POSITION_3D:
 			sk.set_bone_pose_position(bone, clip.position_track_interpolate(track, t))
-	var to_root := _rig.character_root.global_transform.affine_inverse() * sk.global_transform
+	var to_root := _rig.rig.character_root.global_transform.affine_inverse() * sk.global_transform
 	var out := {}
 	for side in ["Left", "Right"]:
 		for joint in ["UpLeg", "Leg", "Foot"]:
@@ -46,7 +46,7 @@ func _knee_flexion(pose: Dictionary, side: String) -> float:
 	return 180.0 - rad_to_deg((pose[side + "UpLeg"] - pose[side + "Leg"]).angle_to(pose[side + "Foot"] - pose[side + "Leg"]))
 
 func _on_updated() -> void:
-	var sk := _rig.skeleton
+	var sk := _rig.rig.skeleton
 	_live_lengths = []
 	for side in ["Left", "Right"]:
 		var hip := sk.get_bone_global_pose(sk.find_bone("mixamorig_%sUpLeg" % side)).origin
@@ -61,12 +61,12 @@ func _run() -> void:
 	stage.add_child(rig)
 	await _frames(20)
 	_rig = rig
-	var sk := rig.skeleton
-	var player: AnimationPlayer = rig.animation_controller.animation_player
-	var builder := CharacterFallbackAnimationBuilder.new(sk, rig.bones)
+	var sk := rig.rig.skeleton
+	var player: AnimationPlayer = rig.rig.animation_controller.animation_player
+	var builder := CharacterFallbackAnimationBuilder.new(sk, rig.rig.bones)
 
 	# ---- Coordinate contract: the measured anatomical axes against the rig's visual root.
-	var to_root_basis := rig.character_root.global_basis.orthonormalized().inverse() * sk.global_basis.orthonormalized()
+	var to_root_basis := rig.rig.character_root.global_basis.orthonormalized().inverse() * sk.global_basis.orthonormalized()
 	var forward := to_root_basis * builder.anatomical_forward()
 	var up := to_root_basis * builder.anatomical_up()
 	check(forward.dot(Vector3.BACK) > 0.95, "The anatomical forward (toes) is the visual root's +Z (%s)" % str(forward))
@@ -144,12 +144,12 @@ func _run() -> void:
 		if child is SkeletonModifier3D:
 			order.append(String(child.name))
 	check(order == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
-	check(rig.get_presentation_state() == &"move" and not rig.carry_contacts_active() and rig.arm_ik.active, "Walking with the rifle keeps the weapon pose and arm IK in charge of the arms")
-	var hand_to_weapon := rig.right_hand_target.global_position.distance_to(rig.weapon.to_global(rig.handling.firing_grip))
+	check(rig.get_presentation_state() == &"move" and not rig.rig.carry_contacts_active() and rig.rig.arm_ik.active, "Walking with the rifle keeps the weapon pose and arm IK in charge of the arms")
+	var hand_to_weapon := rig.rig.right_hand_target.global_position.distance_to(rig.rig.weapon.to_global(rig.rig.handling.firing_grip))
 	check(hand_to_weapon < 0.15, "While walking the right hand stays on the rifle's grip (%.0f mm)" % (hand_to_weapon * 1000.0))
 
 	# ---- A 110 degree turn while walking: gradual, monotonic, and the forward clip throughout.
-	rig.rotation.y = 0.0
+	rig.rig.rotation.y = 0.0
 	var yaw_before := 0.0
 	var monotonic := true
 	var forward_throughout := true
@@ -157,11 +157,11 @@ func _run() -> void:
 	for i in 60:
 		rig.update_locomotion(direction * 1.3, 1.0 / 60.0)
 		await process_frame
-		monotonic = monotonic and rig.rotation.y >= yaw_before - 0.0001
-		yaw_before = rig.rotation.y
-		var blend: Vector2 = rig.animation_controller.animation_tree.get("parameters/move/Direction/blend_position")
+		monotonic = monotonic and rig.rig.rotation.y >= yaw_before - 0.0001
+		yaw_before = rig.rig.rotation.y
+		var blend: Vector2 = rig.rig.animation_controller.animation_tree.get("parameters/move/Direction/blend_position")
 		forward_throughout = forward_throughout and blend.y > 0.9 and absf(blend.x) < 0.01
-	check(monotonic and absf(rig.rotation.y - deg_to_rad(110.0)) < 0.01, "The unit turns steadily to its travel direction (%.0f deg)" % rad_to_deg(rig.rotation.y))
+	check(monotonic and absf(rig.rig.rotation.y - deg_to_rad(110.0)) < 0.01, "The unit turns steadily to its travel direction (%.0f deg)" % rad_to_deg(rig.rig.rotation.y))
 	check(forward_throughout and rig.get_presentation_state() == &"move", "The forward walk stays selected through the turn")
 
 	# ---- Start and stop: idle to move to idle through the controller, without leaving a locomotion state behind.
@@ -170,7 +170,7 @@ func _run() -> void:
 	check(rig.get_presentation_state() == &"rifle_idle", "Movement ends in the idle stance (%s)" % rig.get_presentation_state())
 
 	# ---- Directions are reachable and distinct through the blend space.
-	var tree: AnimationTree = rig.animation_controller.animation_tree
+	var tree: AnimationTree = rig.rig.animation_controller.animation_tree
 	for entry in [[Vector2(0, 1), &"move"], [Vector2(0, -1), &"move_back"], [Vector2(1, 0), &"move_left"], [Vector2(-1, 0), &"move_right"]]:
 		var space := (tree.tree_root as AnimationNodeStateMachine).get_node(&"move") as AnimationNodeBlendTree
 		var blend_space := space.get_node(&"Direction") as AnimationNodeBlendSpace2D

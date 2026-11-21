@@ -70,8 +70,8 @@ func _run() -> void:
 	check(travelled.z > 1.5 and absf(travelled.x) < 0.3, "W moves MIRA forward along the camera direction (%.2f, %.2f)" % [travelled.x, travelled.z])
 	check(absf(speed - world.MOVE_SPEED) < 0.15, "Walking speed matches MOVE_SPEED (%.2f vs %.2f m/s)" % [speed, world.MOVE_SPEED])
 	check(world.visual.get_presentation_state() == &"move", "The movement clip state plays while walking")
-	check(float(world.visual.locomotion_report.get("speed", 0.0)) > 1.0, "The gait presentation follows the real speed (%.2f)" % float(world.visual.locomotion_report.get("speed", 0.0)))
-	check(absf(rad_to_deg(angle_difference(world.visual.global_rotation.y, 0.0))) < 10.0, "MIRA faces the movement direction")
+	check(float(world.visual.rig.locomotion_report.get("speed", 0.0)) > 1.0, "The gait presentation follows the real speed (%.2f)" % float(world.visual.rig.locomotion_report.get("speed", 0.0)))
+	check(absf(rad_to_deg(angle_difference(world.visual.rig.global_rotation.y, 0.0))) < 10.0, "MIRA faces the movement direction")
 	var focus: Vector3 = world.body.global_position + Vector3(0.0, 1.45, 0.0)
 	var camera_distance: float = world.camera.global_position.distance_to(focus)
 	check(camera_distance > 2.2 and camera_distance < 4.2, "The camera keeps following at a sensible distance while moving (%.2f m)" % camera_distance)
@@ -85,7 +85,7 @@ func _run() -> void:
 	_press(&"playground_right", false)
 	_press(&"playground_forward", false)
 	await create_timer(1.2).timeout
-	var settled: float = float(world.visual.locomotion_report.get("speed", 9.0))
+	var settled: float = float(world.visual.rig.locomotion_report.get("speed", 9.0))
 	check(settled < 0.1 and world.visual.get_presentation_state() == &"rifle_idle", "Releasing the keys returns MIRA to idle (speed %.2f, state %s)" % [settled, world.visual.get_presentation_state()])
 
 	# ---- Solid props block MIRA.
@@ -114,7 +114,7 @@ func _run() -> void:
 	world.zoom_by(100.0)
 	check(is_equal_approx(world.zoom, world.ZOOM_RANGE.y), "Zoom stops at the farthest distance")
 	world.zoom = world.DEFAULT_ZOOM
-	var facing: float = world.visual.global_rotation.y
+	var facing: float = world.visual.rig.global_rotation.y
 	_press(&"playground_recenter", true)
 	await create_timer(1.5).timeout
 	_press(&"playground_recenter", false)
@@ -133,7 +133,7 @@ func _run() -> void:
 	await _frames(6)
 	check(world.chair_seat.material_override != seat_before and world.toast_label.visible, "Pressing E gives a visible response (chair changes colour, a message shows)")
 	var to_chair: Vector3 = world.chair_position - world.body.global_position
-	check(absf(rad_to_deg(angle_difference(world.visual.global_rotation.y, atan2(to_chair.x, to_chair.z)))) < 5.0, "MIRA turns toward the chair")
+	check(absf(rad_to_deg(angle_difference(world.visual.rig.global_rotation.y, atan2(to_chair.x, to_chair.z)))) < 5.0, "MIRA turns toward the chair")
 
 	# ---- Esc opens the menu and releases the mouse; Resume captures it again; Back returns to Match Setup.
 	_press(&"ui_cancel", true)

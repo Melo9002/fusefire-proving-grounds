@@ -30,7 +30,7 @@ func _set_pose(rig: UnitVisualAdapter, state: String, cover: float, aimed: bool)
 		rig.last_cover_contact = {"type": MapCellData.CoverType.LOW, "height": cover, "direction": Vector3.FORWARD}
 	else:
 		rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
-	rig.animation_controller.play(StringName(state))
+	rig.rig.animation_controller.play(StringName(state))
 
 func _settle() -> void:
 	for i in 40: await process_frame
@@ -38,7 +38,7 @@ func _settle() -> void:
 	for i in 3: await process_frame
 
 func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
-	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.character_root.global_basis * rig.shoulder_contact_offset
+	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
 func _angle(basis: Basis) -> float:
@@ -52,7 +52,7 @@ func _kick(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, kick: St
 	if kick == &"hit":
 		rig.present_hit()
 	else:
-		rig.animation_controller.play(kick)
+		rig.rig.animation_controller.play(kick)
 	var worst := {"support_shift": 0.0, "dominant_shift": 0.0, "dominant_wrist": 0.0, "support_wrist": 0.0, "stock": 0.0, "frame_angle": 0.0, "muzzle_vs_frame": 0.0}
 	var t0: float = rig.presenter.time
 	while rig.presenter.time - t0 < 0.5:
@@ -63,7 +63,7 @@ func _kick(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, kick: St
 		worst.dominant_wrist = maxf(worst.dominant_wrist, float(s.hands[0].wrist_to_ik_target) * 1000.0)
 		worst.support_wrist = maxf(worst.support_wrist, float(s.hands[1].wrist_to_ik_target) * 1000.0)
 		worst.stock = maxf(worst.stock, _stock_error(rig, s) * 1000.0)
-		worst.frame_angle = maxf(worst.frame_angle, _angle(rig.torso_frame))
+		worst.frame_angle = maxf(worst.frame_angle, _angle(rig.rig.torso_frame))
 		worst.muzzle_vs_frame = maxf(worst.muzzle_vs_frame, rig.weapon_alignment_error_degrees())
 	return worst
 
@@ -74,25 +74,25 @@ func _run() -> void:
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 30: await process_frame
-	var diagnostics := HandContactDiagnostics.attach(rig)
+	var diagnostics := HandContactDiagnostics.attach(rig.rig)
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 
 	var order: Array[String] = []
-	for child in rig.skeleton.get_children():
+	for child in rig.rig.skeleton.get_children():
 		if child is SkeletonModifier3D: order.append(String(child.name))
 	check(order == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
-	check(rig.torso_frame_enabled and rig.skeleton.find_bone(rig.torso_bone_name) >= 0, "The torso bone resolves on this skeleton (%s)" % rig.torso_bone_name)
+	check(rig.rig.torso_frame_enabled and rig.rig.skeleton.find_bone(rig.rig.torso_bone_name) >= 0, "The torso bone resolves on this skeleton (%s)" % rig.rig.torso_bone_name)
 
 	# Settled poses: the torso frame is the root frame, relaxed handling is identical with the frame on or off.
 	var settled := {}
 	for enabled in [true, false]:
-		rig.torso_frame_enabled = enabled
+		rig.rig.torso_frame_enabled = enabled
 		_set_pose(rig, "rifle_idle", -1.0, false)
 		await _settle()
 		var s: Dictionary = diagnostics.latest
-		settled[enabled] = {"weapon": rig.weapon.global_transform, "dominant": s.hands[0].wrist, "support": s.hands[1].wrist, "frame": _angle(rig.torso_frame)}
-	rig.torso_frame_enabled = true
+		settled[enabled] = {"weapon": rig.rig.weapon.global_transform, "dominant": s.hands[0].wrist, "support": s.hands[1].wrist, "frame": _angle(rig.rig.torso_frame)}
+	rig.rig.torso_frame_enabled = true
 	check(float(settled[true].frame) < 0.001 and float(settled[false].frame) < 0.001, "Relaxed: the torso frame is the root frame")
 	check((settled[true].weapon as Transform3D).origin.distance_to((settled[false].weapon as Transform3D).origin) < 0.0001 and _angle((settled[true].weapon as Transform3D).basis * (settled[false].weapon as Transform3D).basis.inverse()) < 0.01, "Relaxed weapon placement is identical with the frame on and off")
 	check((settled[true].dominant as Vector3).distance_to(settled[false].dominant) < 0.0001 and (settled[true].support as Vector3).distance_to(settled[false].support) < 0.0001, "Relaxed hands are identical with the frame on and off")
@@ -101,11 +101,11 @@ func _run() -> void:
 	for pose in POSES:
 		var label: String = pose[0]
 		for enabled in [true, false]:
-			rig.torso_frame_enabled = enabled
+			rig.rig.torso_frame_enabled = enabled
 			_set_pose(rig, pose[1], pose[2], true)
 			await _settle()
 			var s: Dictionary = diagnostics.latest
-			check(_angle(rig.torso_frame) < 0.01, "%s aim (frame %s): settled, the torso frame is the root frame" % [label, enabled])
+			check(_angle(rig.rig.torso_frame) < 0.01, "%s aim (frame %s): settled, the torso frame is the root frame" % [label, enabled])
 			check(_stock_error(rig, s) < 0.0005, "%s aim: the stock is in the shoulder pocket before the shot (%.2f mm)" % [label, _stock_error(rig, s) * 1000.0])
 			var muzzle_before: float = rig.weapon_alignment_error_degrees()
 			var shot := await _kick(rig, diagnostics, &"shoot")
@@ -120,7 +120,7 @@ func _run() -> void:
 				check(float(shot.muzzle_vs_frame) < 0.5, "%s: the muzzle follows the torso frame (%.2f deg)" % [label, shot.muzzle_vs_frame])
 			_set_pose(rig, pose[1], pose[2], true)   # the unit returns to its aimed pose, as the attack's release does
 			await create_timer(0.4).timeout
-			check(_angle(rig.torso_frame) < 0.1, "%s: after the kick the frame is back to the root frame (%.2f deg)" % [label, _angle(rig.torso_frame)])
+			check(_angle(rig.rig.torso_frame) < 0.1, "%s: after the kick the frame is back to the root frame (%.2f deg)" % [label, _angle(rig.rig.torso_frame)])
 	var baseline_standing: Dictionary = results[["standing", false]]
 	var baseline_crouch: Dictionary = results[["crouch", false]]
 	var baseline_kneel: Dictionary = results[["half-kneel", false]]
@@ -132,38 +132,38 @@ func _run() -> void:
 		check(float(results[[label, true]].support_shift) < 0.25 * float(results[[label, false]].support_shift), "%s: the drift fell by more than three quarters" % label)
 
 	# A hit reaction while aimed: the weapon and hands move with the torso instead of detaching.
-	rig.torso_frame_enabled = true
+	rig.rig.torso_frame_enabled = true
 	_set_pose(rig, "aim", -1.0, true)
 	await _settle()
 	var hit := await _kick(rig, diagnostics, &"hit")
-	rig.torso_frame_enabled = false
+	rig.rig.torso_frame_enabled = false
 	_set_pose(rig, "aim", -1.0, true)
 	await _settle()
 	var hit_off := await _kick(rig, diagnostics, &"hit")
-	rig.torso_frame_enabled = true
+	rig.rig.torso_frame_enabled = true
 	print("  hit while aimed: support palm shift %.1f mm (frame off %.1f), dominant %.2f (off %.2f), frame turn %.1f deg" % [hit.support_shift, hit_off.support_shift, hit.dominant_shift, hit_off.dominant_shift, hit.frame_angle])
 	check(float(hit.frame_angle) < 0.01, "A hit reaction does not turn the weapon frame (%.2f deg): it keeps the root-frame weapon" % hit.frame_angle)
 	check(absf(float(hit.support_shift) - float(hit_off.support_shift)) < 0.3 and absf(float(hit.dominant_shift) - float(hit_off.dominant_shift)) < 0.3, "Hit reactions behave exactly as before (support %.2f vs %.2f mm)" % [hit.support_shift, hit_off.support_shift])
 	await create_timer(1.6).timeout
-	check(_angle(rig.torso_frame) < 0.01, "After the hit the frame is settled")
+	check(_angle(rig.rig.torso_frame) < 0.01, "After the hit the frame is settled")
 
 	# Turning and cover-facing changes turn the root, not the torso frame.
 	_set_pose(rig, "aim", -1.0, true)
 	await _settle()
-	var weapon_before: Basis = rig.weapon.global_basis
+	var weapon_before: Basis = rig.rig.weapon.global_basis
 	rig.rotation.y += deg_to_rad(70.0)
 	var worst_turn_frame := 0.0
 	for i in 20:
 		await process_frame
-		worst_turn_frame = maxf(worst_turn_frame, _angle(rig.torso_frame))
+		worst_turn_frame = maxf(worst_turn_frame, _angle(rig.rig.torso_frame))
 	check(worst_turn_frame < 0.01, "Turning the character does not appear in the torso frame (%.3f deg)" % worst_turn_frame)
-	var turned := rig.weapon.global_basis * weapon_before.inverse()
+	var turned := rig.rig.weapon.global_basis * weapon_before.inverse()
 	check(absf(_angle(turned) - 70.0) < 0.2, "The weapon turns with the character (%.2f of 70 deg)" % _angle(turned))
 	rig.rotation.y -= deg_to_rad(70.0)
 
 	# Switching it off restores the root-frame weapon exactly.
-	rig.torso_frame_enabled = false
+	rig.rig.torso_frame_enabled = false
 	await process_frame
-	check(_angle(rig.torso_frame) < 0.0001, "Switched off, the frame is the root frame")
+	check(_angle(rig.rig.torso_frame) < 0.0001, "Switched off, the frame is the root frame")
 	print("Torso weapon frame: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

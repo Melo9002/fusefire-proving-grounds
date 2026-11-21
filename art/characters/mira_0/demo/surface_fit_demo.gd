@@ -129,7 +129,7 @@ func update_demo() -> void:
 	visual.position = point
 	visual.face_world_position(contact.surface_position)
 	visual.last_cover_contact = contact
-	visual.animation_controller.play(&"cover_high")
+	visual.rig.animation_controller.play(&"cover_high")
 	ghost.position = point + Vector3.UP * 0.05
 	contact_marker.position = contact.surface_position
 	var source := point + Vector3.UP * 1.1

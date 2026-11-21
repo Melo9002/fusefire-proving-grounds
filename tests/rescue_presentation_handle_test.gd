@@ -37,7 +37,7 @@ func _drop(v: UnitVisualAdapter) -> void:
 	await _frames(2)
 
 func _place(v: UnitVisualAdapter) -> Vector3:
-	return v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0
+	return v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0
 
 func _passengers(node: Node) -> int:
 	return node.find_children("RescuePassenger", "", true, false).size()
@@ -57,148 +57,148 @@ func _run() -> void:
 	var SKIPPED := PresentationTypes.Outcome.SKIPPED
 
 	# ---- 1. A normal pickup: one handle, a posture request that exists for the lift only, the carry afterwards.
-	check(v.rescue_presentation() == null and not v.presenter.postures.has_request(SOURCE), "Idle: no rescue handle and no rescue posture request")
-	var pickup: ActionHandle = v.begin_pickup(_place(v))
+	check(v.rig.rescue_presentation() == null and not v.presenter.postures.has_request(SOURCE), "Idle: no rescue handle and no rescue posture request")
+	var pickup: ActionHandle = v.rig.begin_pickup(_place(v))
 	var seen := _watch(pickup)
 	await _frames(40)
-	check(not pickup.is_done() and v.rescue_presentation() == pickup, "The lift is a running operation with a pending handle")
+	check(not pickup.is_done() and v.rig.rescue_presentation() == pickup, "The lift is a running operation with a pending handle")
 	check(v.presenter.postures.has_request(SOURCE) and v.presenter.postures.resolved_source() == SOURCE and v.presenter.postures.resolved_exact(), "...and the carrier's bend is an exact request in the posture arbiter")
-	check(v.presenter.postures.resolved_depth() > 0.0 and v.crouch_modifier.depth > 0.0, "...which the rig applied (depth %.3f)" % v.crouch_modifier.depth)
+	check(v.presenter.postures.resolved_depth() > 0.0 and v.rig.crouch_modifier.depth > 0.0, "...which the rig applied (depth %.3f)" % v.rig.crouch_modifier.depth)
 	# Repeated pickup requests are the same operation, not a second pickup.
-	var time_before := v.rescue_interaction.time
-	var again: ActionHandle = v.begin_pickup(_place(v))
-	check(again == pickup and v.rescue_interaction.time >= time_before and _passengers(v) == 1, "A repeated pickup request returns the same handle, does not restart the timeline and adds no second passenger")
-	check(v.begin_release().is_done() and v.begin_release().outcome == SKIPPED, "A release requested during the lift is rejected at once (SKIPPED) and the lift goes on: %s" % [v.interaction_active()])
-	v.rescue_interaction.scrub(v.rescue_interaction.duration() - 0.05)
+	var time_before := v.rig.rescue_interaction.time
+	var again: ActionHandle = v.rig.begin_pickup(_place(v))
+	check(again == pickup and v.rig.rescue_interaction.time >= time_before and _passengers(v) == 1, "A repeated pickup request returns the same handle, does not restart the timeline and adds no second passenger")
+	check(v.rig.begin_release().is_done() and v.rig.begin_release().outcome == SKIPPED, "A release requested during the lift is rejected at once (SKIPPED) and the lift goes on: %s" % [v.rig.interaction_active()])
+	v.rig.rescue_interaction.scrub(v.rig.rescue_interaction.duration() - 0.05)
 	await _frames(8)
 	check(seen == [COMPLETED] and pickup.is_done(), "The lift settles COMPLETED exactly once: %s" % [seen])
-	check(not v.presenter.postures.has_request(SOURCE) and v.rescue_presentation() == null, "...the posture request is released and nothing is pending")
-	check(is_instance_valid(v.carry_passenger) and v.carry_contacts_active() and v.is_weapon_stowed(), "The carry that follows holds the passenger and the slung rifle")
+	check(not v.presenter.postures.has_request(SOURCE) and v.rig.rescue_presentation() == null, "...the posture request is released and nothing is pending")
+	check(is_instance_valid(v.rig.carry_passenger) and v.rig.carry_contacts_active() and v.rig.is_weapon_stowed(), "The carry that follows holds the passenger and the slung rifle")
 	var settled_late := []
 	pickup.when_done(func(outcome: int) -> void: settled_late.append(outcome))
 	check(settled_late == [COMPLETED] and await pickup.wait() == COMPLETED, "A settled handle is still safe to observe: when_done runs at once and wait() does not hang")
 
 	# ---- 2. Release: repeated requests, completion, nothing left behind.
-	var release: ActionHandle = v.begin_release()
+	var release: ActionHandle = v.rig.begin_release()
 	var release_seen := _watch(release)
-	check(v.begin_release() == release, "A repeated release request returns the same handle")
+	check(v.rig.begin_release() == release, "A repeated release request returns the same handle")
 	await _frames(20)
 	check(v.presenter.postures.has_request(SOURCE) and not release.is_done(), "The release is running, with its own posture request")
-	v.rescue_interaction.scrub(v.rescue_interaction.duration() - 0.05)
+	v.rig.rescue_interaction.scrub(v.rig.rescue_interaction.duration() - 0.05)
 	await _frames(8)
 	check(release_seen == [COMPLETED] and _passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE), "The release settles COMPLETED once, the passenger is gone and no posture request is left")
-	check(v.begin_release().is_done() and v.begin_release().outcome == SKIPPED, "Releasing with nobody carried is rejected at once (SKIPPED)")
+	check(v.rig.begin_release().is_done() and v.rig.begin_release().outcome == SKIPPED, "Releasing with nobody carried is rejected at once (SKIPPED)")
 
 	# ---- 3. Cover underneath: a context request keeps its place, the lift wins while it runs, the cover takes the body back.
 	v.presenter.postures.set_posture(TEST_COVER, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, 0.30)
 	await _frames(40)
-	check(absf(v.crouch_modifier.depth - 0.30) < 0.02, "Setup: the cover request is followed (depth %.3f)" % v.crouch_modifier.depth)
-	var lift: ActionHandle = v.begin_pickup(_place(v))
+	check(absf(v.rig.crouch_modifier.depth - 0.30) < 0.02, "Setup: the cover request is followed (depth %.3f)" % v.rig.crouch_modifier.depth)
+	var lift: ActionHandle = v.rig.begin_pickup(_place(v))
 	await _frames(30)
 	check(v.presenter.postures.resolved_source() == SOURCE and v.presenter.postures.has_request(TEST_COVER), "During the lift the rescue request wins and the cover request is untouched underneath")
 	lift.cancel()
 	await _frames(2)
-	check(lift.outcome == CANCELLED and v.presenter.postures.resolved_source() == TEST_COVER and absf(v.crouch_modifier.depth - 0.30) < 0.02,
-		"Cancelled, the cover takes the body back at once (source %s, depth %.3f)" % [v.presenter.postures.resolved_source(), v.crouch_modifier.depth])
-	check(v.presenter.postures.has_request(TEST_COVER) and not v.presenter.postures.has_request(SOURCE) and _passengers(v) == 0 and not v.interaction_active(), "...nothing of the lift is left and the cover request was never cleared by it")
+	check(lift.outcome == CANCELLED and v.presenter.postures.resolved_source() == TEST_COVER and absf(v.rig.crouch_modifier.depth - 0.30) < 0.02,
+		"Cancelled, the cover takes the body back at once (source %s, depth %.3f)" % [v.presenter.postures.resolved_source(), v.rig.crouch_modifier.depth])
+	check(v.presenter.postures.has_request(TEST_COVER) and not v.presenter.postures.has_request(SOURCE) and _passengers(v) == 0 and not v.rig.interaction_active(), "...nothing of the lift is left and the cover request was never cleared by it")
 	v.presenter.postures.release(&"test/unrelated")
 	check(v.presenter.postures.has_request(TEST_COVER), "Releasing some other source does not clear anyone's request")
 	v.presenter.postures.release(TEST_COVER)
 	await _frames(40)
-	check(v.crouch_modifier.depth < 0.01, "With no request left the body stands again (%.3f)" % v.crouch_modifier.depth)
+	check(v.rig.crouch_modifier.depth < 0.01, "With no request left the body stands again (%.3f)" % v.rig.crouch_modifier.depth)
 
 	# ---- 4. Cancellation before the passenger is attached: a reserved handle that never started.
-	var reserved: ActionHandle = v.reserve_rescue_handle()
-	check(v.reserve_rescue_handle() == reserved and v.rescue_presentation() == null, "A reserved handle is one operation and is not 'running' before its timeline starts")
+	var reserved: ActionHandle = v.rig.reserve_rescue_handle()
+	check(v.rig.reserve_rescue_handle() == reserved and v.rig.rescue_presentation() == null, "A reserved handle is one operation and is not 'running' before its timeline starts")
 	var reserved_seen := _watch(reserved)
 	reserved.cancel()
-	check(reserved_seen == [CANCELLED] and not v.interaction_active() and _passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE), "Cancelled before attachment: nothing attached, nothing requested, the handle settled CANCELLED")
+	check(reserved_seen == [CANCELLED] and not v.rig.interaction_active() and _passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE), "Cancelled before attachment: nothing attached, nothing requested, the handle settled CANCELLED")
 	reserved.cancel()
 	check(reserved_seen == [CANCELLED], "A second cancel is ignored: the first outcome stands")
 
 	# ---- 5. Cancelled mid-pickup leaves nothing; cancelled mid-release keeps the carry.
-	var p2: ActionHandle = v.begin_pickup(_place(v))
-	v.rescue_interaction.paused = true
-	v.rescue_interaction.scrub(1.8)
+	var p2: ActionHandle = v.rig.begin_pickup(_place(v))
+	v.rig.rescue_interaction.paused = true
+	v.rig.rescue_interaction.scrub(1.8)
 	await _frames(4)
 	var p2_seen := _watch(p2)
 	p2.cancel()
 	await _frames(2)
-	check(p2_seen == [CANCELLED] and _passengers(v) == 0 and not v.is_weapon_stowed() and v.crouch_modifier.depth < 0.01 and v.crouch_modifier.kneel < 0.01 and v.position.is_equal_approx(home),
-		"A pickup cancelled mid-lift: no passenger, the rifle back in hand, the carrier upright at its own place (seen %s, passengers %d, stowed %s, depth %.3f, kneel %.3f, at %s)" % [p2_seen, _passengers(v), v.is_weapon_stowed(), v.crouch_modifier.depth, v.crouch_modifier.kneel, v.position])
-	v.rescue_interaction.paused = false
-	v.begin_carry()
-	var r2: ActionHandle = v.begin_release()
-	v.rescue_interaction.paused = true
-	v.rescue_interaction.scrub(1.2)
+	check(p2_seen == [CANCELLED] and _passengers(v) == 0 and not v.rig.is_weapon_stowed() and v.rig.crouch_modifier.depth < 0.01 and v.rig.crouch_modifier.kneel < 0.01 and v.position.is_equal_approx(home),
+		"A pickup cancelled mid-lift: no passenger, the rifle back in hand, the carrier upright at its own place (seen %s, passengers %d, stowed %s, depth %.3f, kneel %.3f, at %s)" % [p2_seen, _passengers(v), v.rig.is_weapon_stowed(), v.rig.crouch_modifier.depth, v.rig.crouch_modifier.kneel, v.position])
+	v.rig.rescue_interaction.paused = false
+	v.rig.begin_carry()
+	var r2: ActionHandle = v.rig.begin_release()
+	v.rig.rescue_interaction.paused = true
+	v.rig.rescue_interaction.scrub(1.2)
 	await _frames(4)
 	var r2_seen := _watch(r2)
 	r2.cancel()
 	await _frames(2)
-	check(r2_seen == [CANCELLED] and is_instance_valid(v.carry_passenger) and v.carry_passenger.lift == 1.0 and not v.interaction_active() and not v.presenter.postures.has_request(SOURCE),
+	check(r2_seen == [CANCELLED] and is_instance_valid(v.rig.carry_passenger) and v.rig.carry_passenger.lift == 1.0 and not v.rig.interaction_active() and not v.presenter.postures.has_request(SOURCE),
 		"A release cancelled midway leaves the passenger carried, steady across the shoulders")
-	v.rescue_interaction.paused = false
+	v.rig.rescue_interaction.paused = false
 
 	# ---- 6. Interruption after attachment: the carrier loses the passenger (the tactical layer put it down).
-	v.end_carry()
-	var p3: ActionHandle = v.begin_pickup(_place(v))
-	v.rescue_interaction.paused = true
-	v.rescue_interaction.scrub(2.4)
+	v.rig.end_carry()
+	var p3: ActionHandle = v.rig.begin_pickup(_place(v))
+	v.rig.rescue_interaction.paused = true
+	v.rig.rescue_interaction.scrub(2.4)
 	await _frames(4)
 	var p3_seen := _watch(p3)
 	v.present_carry_released()
 	await _frames(3)
-	check(p3_seen == [INTERRUPTED] and _passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE) and v.crouch_modifier.depth < 0.01 and not v.interaction_active(),
+	check(p3_seen == [INTERRUPTED] and _passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE) and v.rig.crouch_modifier.depth < 0.01 and not v.rig.interaction_active(),
 		"Interrupted after attachment: INTERRUPTED once, no passenger, no request, upright")
 	v.present_carry_released()
 	check(p3_seen == [INTERRUPTED], "A repeated interruption changes nothing")
-	v.rescue_interaction.paused = false
+	v.rig.rescue_interaction.paused = false
 
 	# ---- 7. Defeat during a pickup, and while carrying.
-	var p4: ActionHandle = v.begin_pickup(_place(v))
-	v.rescue_interaction.paused = true
-	v.rescue_interaction.scrub(1.5)
+	var p4: ActionHandle = v.rig.begin_pickup(_place(v))
+	v.rig.rescue_interaction.paused = true
+	v.rig.rescue_interaction.scrub(1.5)
 	await _frames(4)
 	var p4_seen := _watch(p4)
 	v.present_defeat()
 	await _frames(3)
-	check(p4_seen == [INTERRUPTED] and not v.interaction_active() and not v.presenter.postures.has_request(SOURCE), "Defeat during a pickup interrupts its operation and releases its posture")
+	check(p4_seen == [INTERRUPTED] and not v.rig.interaction_active() and not v.presenter.postures.has_request(SOURCE), "Defeat during a pickup interrupts its operation and releases its posture")
 	v.present_carry_released()
 	check(_passengers(v) == 0, "...and the tactical layer's release then leaves no passenger on the fallen carrier")
-	v.rescue_interaction.paused = false
-	v.end_carry()
-	v.begin_carry()
+	v.rig.rescue_interaction.paused = false
+	v.rig.end_carry()
+	v.rig.begin_carry()
 	v.present_defeat()
-	check(is_instance_valid(v.carry_passenger) and v.rescue_presentation() == null, "Defeat while carrying has no operation to interrupt; the passenger is left to the authoritative release")
+	check(is_instance_valid(v.rig.carry_passenger) and v.rig.rescue_presentation() == null, "Defeat while carrying has no operation to interrupt; the passenger is left to the authoritative release")
 	v.present_carry_released()
 	check(_passengers(v) == 0 and not v.presenter.postures.has_request(SOURCE), "...which frees it")
 
 	# ---- 8. Skipped: run to its end at once.
-	var p5: ActionHandle = v.begin_pickup(_place(v))
+	var p5: ActionHandle = v.rig.begin_pickup(_place(v))
 	var p5_seen := _watch(p5)
 	await _frames(5)
-	v.finish_interaction_now()
-	check(p5_seen == [SKIPPED] and v.carry_passenger.lift == 1.0 and not v.presenter.postures.has_request(SOURCE), "Run to its end at once, the lift settles SKIPPED in its final state")
-	v.end_carry()
+	v.rig.finish_interaction_now()
+	check(p5_seen == [SKIPPED] and v.rig.carry_passenger.lift == 1.0 and not v.presenter.postures.has_request(SOURCE), "Run to its end at once, the lift settles SKIPPED in its final state")
+	v.rig.end_carry()
 
 	# ---- 9. Several observers, and one that re-enters in its callback.
-	var p6: ActionHandle = v.begin_pickup(_place(v))
+	var p6: ActionHandle = v.rig.begin_pickup(_place(v))
 	var first := _watch(p6)
 	var second := _watch(p6)
 	var nested: Array = []
 	p6.when_done(func(outcome: int) -> void:
-		var inner: ActionHandle = v.begin_release()
-		nested.append([outcome, inner.is_done(), inner == p6, v.rescue_presentation() == inner]))
+		var inner: ActionHandle = v.rig.begin_release()
+		nested.append([outcome, inner.is_done(), inner == p6, v.rig.rescue_presentation() == inner]))
 	var third := _watch(p6)
-	v.rescue_interaction.scrub(v.rescue_interaction.duration() - 0.05)
+	v.rig.rescue_interaction.scrub(v.rig.rescue_interaction.duration() - 0.05)
 	await _frames(8)
 	check(first == [COMPLETED] and second == [COMPLETED] and third == [COMPLETED], "Every observer is told once, in the same outcome: %s %s %s" % [first, second, third])
 	check(nested.size() == 1 and nested[0][0] == COMPLETED and not nested[0][1] and not nested[0][2] and nested[0][3], "An observer may start the release from inside the callback: it finds a clean rig and gets a fresh, running handle: %s" % [nested])
-	check(v.rescue_presentation() != null and v.interaction_active(), "...which is running now")
-	v.end_carry()
+	check(v.rig.rescue_presentation() != null and v.rig.interaction_active(), "...which is running now")
+	v.rig.end_carry()
 
 	# ---- 10. Teardown during an active action: the observer is told, nothing waits, nothing is left.
-	var p7: ActionHandle = v.begin_pickup(_place(v))
+	var p7: ActionHandle = v.rig.begin_pickup(_place(v))
 	var p7_seen := _watch(p7)
 	var waiter: Array = []
 	var wait_for := func() -> void:
@@ -262,7 +262,7 @@ func _production_rescue() -> void:
 	var adapter := carrier.visual_adapter
 	var rescue_task := _start_rescue(level, carrier, target)
 	await create_timer(0.4).timeout
-	var handle := adapter.rescue_presentation()
+	var handle := adapter.rig.rescue_presentation()
 	check(handle != null and not handle.is_done(), "A production rescue runs one presentation handle")
 	var seen := _watch(handle) if handle != null else []
 	var accepted: bool = await _result_of(rescue_task)
@@ -279,14 +279,14 @@ func _production_rescue() -> void:
 	adapter = carrier.visual_adapter
 	var task2 := _start_rescue(level, carrier, target)
 	await create_timer(1.0).timeout
-	var h2 := adapter.rescue_presentation()
+	var h2 := adapter.rig.rescue_presentation()
 	check(h2 != null, "Setup: a lift is running")
 	if h2 != null:
 		h2.cancel()
 	var accepted2: bool = await _result_of(task2)
 	check(accepted2 and carrier.is_carrying_unit() and not target.visible and carrier.stats.current_hp > 0,
 		"Cancelling the visual operation does not change the authoritative result: the rescue was accepted and the carrier still carries (accepted %s)" % accepted2)
-	check(not is_instance_valid(adapter.carry_passenger) and not adapter.presenter.postures.has_request(SOURCE), "...only the visual lift was withdrawn")
+	check(not is_instance_valid(adapter.rig.carry_passenger) and not adapter.presenter.postures.has_request(SOURCE), "...only the visual lift was withdrawn")
 	level.queue_free()
 	await _frames(2)
 
@@ -298,7 +298,7 @@ func _production_rescue() -> void:
 	adapter = carrier.visual_adapter
 	_start_rescue(level, carrier, target)
 	await create_timer(1.4).timeout
-	var h3 := adapter.rescue_presentation()
+	var h3 := adapter.rig.rescue_presentation()
 	var seen3 := _watch(h3) if h3 != null else []
 	carrier.stats.take_damage(1000)
 	await create_timer(0.4).timeout
@@ -315,9 +315,9 @@ func _production_rescue() -> void:
 	adapter = carrier.visual_adapter
 	_start_rescue(level, carrier, target)
 	await create_timer(0.3).timeout
-	var pending := adapter.reserve_rescue_handle()
+	var pending := adapter.rig.reserve_rescue_handle()
 	var pending_seen := _watch(pending)
-	check(adapter.pickup_pending() and not pending.is_done() and adapter.rescue_presentation() == null, "A held pickup has a reserved handle that is not yet running")
+	check(adapter.pickup_pending() and not pending.is_done() and adapter.rig.rescue_presentation() == null, "A held pickup has a reserved handle that is not yet running")
 	carrier.stats.take_damage(1000)
 	await create_timer(0.4).timeout
 	check(pending_seen == [INTERRUPTED] and not adapter.pickup_pending(), "Losing the carrier before it arrives interrupts the reserved handle and leaves nothing pending: %s" % [pending_seen])
@@ -332,8 +332,8 @@ func _production_rescue() -> void:
 	adapter = carrier.visual_adapter
 	_start_rescue(level, carrier, target)
 	await create_timer(0.3).timeout
-	var held := adapter.reserve_rescue_handle()
+	var held := adapter.rig.reserve_rescue_handle()
 	held.cancel()
-	check(not adapter.pickup_pending() and not adapter.interaction_active(), "Cancelling a pickup that was waiting for its carrier leaves nothing pending, so no lift starts on arrival")
+	check(not adapter.pickup_pending() and not adapter.rig.interaction_active(), "Cancelling a pickup that was waiting for its carrier leaves nothing pending, so no lift starts on arrival")
 	level.queue_free()
 	await _frames(2)

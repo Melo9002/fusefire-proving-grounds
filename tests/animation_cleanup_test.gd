@@ -20,12 +20,12 @@ func _spawn() -> UnitVisualAdapter:
 	return v
 
 func _clean(v: UnitVisualAdapter, label: String) -> void:
-	check(v.ladder == null, "%s: traversal state released" % label)
-	check(v.ladder == null or v.ladder.pose == null, "%s: traversal pose released" % label)
-	check(v.stairs == null, "%s: stair state and pose released" % label)
+	check(v.rig.ladder == null, "%s: traversal state released" % label)
+	check(v.rig.ladder == null or v.rig.ladder.pose == null, "%s: traversal pose released" % label)
+	check(v.rig.stairs == null, "%s: stair state and pose released" % label)
 	check(not v.is_ladder_active(), "%s: ladder inactive" % label)
-	check(not is_instance_valid(v.leg_ik) or not v.leg_ik.active, "%s: leg IK inactive" % label)
-	check(not v.is_weapon_stowed(), "%s: weapon not left stowed" % label)
+	check(not is_instance_valid(v.rig.leg_ik) or not v.rig.leg_ik.active, "%s: leg IK inactive" % label)
+	check(not v.rig.is_weapon_stowed(), "%s: weapon not left stowed" % label)
 
 func _run() -> void:
 	for i in 3:
@@ -33,17 +33,17 @@ func _run() -> void:
 	# Ladder interrupted by the end of movement.
 	var a := _spawn()
 	await process_frame
-	a.begin_traversal(&"ladder", 3.0, 1)
-	a.set_traversal_progress(1.2)
+	a.rig.begin_traversal(&"ladder", 3.0, 1)
+	a.rig.set_traversal_progress(1.2)
 	await process_frame
-	check(a.ladder != null, "Setup: a ladder traversal is active")
+	check(a.rig.ladder != null, "Setup: a ladder traversal is active")
 	a.present_movement_end()
 	_clean(a, "ladder -> movement end")
 	# Ladder interrupted by defeat.
 	var b := _spawn()
 	await process_frame
-	b.begin_traversal(&"ladder", 3.0, -1)
-	b.set_traversal_progress(2.0)
+	b.rig.begin_traversal(&"ladder", 3.0, -1)
+	b.rig.set_traversal_progress(2.0)
 	await process_frame
 	b.present_defeat()
 	_clean(b, "ladder -> defeat")
@@ -53,10 +53,10 @@ func _run() -> void:
 	for label in ["movement end", "defeat"]:
 		var c := _spawn()
 		await process_frame
-		c.begin_stairs(model, true)
-		c.set_stair_progress(1.0, 1.5)
+		c.rig.begin_stairs(model, true)
+		c.rig.set_stair_progress(1.0, 1.5)
 		await process_frame
-		check(c.stairs != null, "Setup: stairs are active (%s)" % label)
+		check(c.rig.stairs != null, "Setup: stairs are active (%s)" % label)
 		if label == "defeat":
 			c.present_defeat()
 		else:
@@ -69,8 +69,8 @@ func _run() -> void:
 	# A hit mid-ladder does not leave or corrupt the traversal; ending it afterwards still cleans up.
 	var d := _spawn()
 	await process_frame
-	d.begin_traversal(&"ladder", 3.0, 1)
-	d.set_traversal_progress(0.5)
+	d.rig.begin_traversal(&"ladder", 3.0, 1)
+	d.rig.set_traversal_progress(0.5)
 	d.present_hit()
 	d.present_movement_end()
 	_clean(d, "ladder -> hit -> movement end")

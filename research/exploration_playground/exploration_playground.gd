@@ -392,14 +392,14 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if Input.is_action_pressed(RECENTER_ACTION) and not menu_open:
 		# Behind the character: the camera rig looks along -Z, the character faces +Z at yaw 0.
-		var behind := visual.global_rotation.y + PI
+		var behind: float = visual.rig.global_rotation.y + PI
 		yaw = lerp_angle(yaw, behind, 1.0 - exp(-RECENTER_RATE * delta))
 		_apply_camera_rotation()
 	pivot_position = pivot_position.lerp(_focus_point(), 1.0 - exp(-CAMERA_FOLLOW_RATE * delta))
 	camera_pivot.global_position = pivot_position
 	spring.spring_length = lerpf(spring.spring_length, zoom, 1.0 - exp(-10.0 * delta))
 	_update_interaction(delta)
-	var report: Dictionary = visual.locomotion_report
+	var report: Dictionary = visual.rig.locomotion_report
 	state_label.text = "state: %s   speed: %.2f m/s" % [visual.get_presentation_state(), float(report.get("speed", 0.0))]
 
 func _focus_point() -> Vector3:

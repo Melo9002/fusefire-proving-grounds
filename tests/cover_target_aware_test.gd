@@ -96,9 +96,9 @@ func _run() -> void:
 	var ap_before := actor.stats.current_ap
 	var observed := {"states": [], "muzzle_error": 99.0, "worst_rate": 0.0, "plan_mode": -1, "plan_side": 0}
 	adapter.presenter.attack.shot_released.connect(func(_timeline: Dictionary) -> void:
-		var to_target := enemy.global_position - adapter.muzzle_socket.global_position
+		var to_target := enemy.global_position - adapter.rig.muzzle_socket.global_position
 		to_target.y = 0.0
-		var muzzle_dir := adapter.muzzle_socket.global_basis.z
+		var muzzle_dir := adapter.rig.muzzle_socket.global_basis.z
 		muzzle_dir.y = 0.0
 		observed.muzzle_error = rad_to_deg(muzzle_dir.angle_to(to_target)))
 
@@ -116,7 +116,7 @@ func _run() -> void:
 	check(actor.stats.current_ap == ap_before - 1, "The attack cost one AP as before (%d -> %d)" % [ap_before, actor.stats.current_ap])
 	check(adapter.attack_plan.is_empty() and adapter.cover_side == CoverEdgeSelector.Side.RIGHT, "After the attack the plan is gone and the passive side (right) is back")
 	await create_timer(1.0).timeout
-	check(adapter.get_presentation_state() == &"cover_high" and adapter.aim_blend < 0.05, "...and the unit is in its protected cover pose with the weapon down (%s)" % adapter.get_presentation_state())
+	check(adapter.get_presentation_state() == &"cover_high" and adapter.rig.aim_blend < 0.05, "...and the unit is in its protected cover pose with the weapon down (%s)" % adapter.get_presentation_state())
 
 	# ---- Attack 2: the enemy moves to the RIGHT (-x) side; the next attack uses the other edge, once, with no flicker during the attack.
 	observed.states = []
@@ -162,11 +162,11 @@ func _run() -> void:
 	while (hit_done.is_empty() or adapter.presenter.attack.phase != AttackSequence.Phase.NONE) and hit_guard < 1500:
 		hit_guard += 1
 		await process_frame
-		lowest_depth = minf(lowest_depth, adapter.crouch_modifier.depth) if hit_sent else lowest_depth
+		lowest_depth = minf(lowest_depth, adapter.rig.crouch_modifier.depth) if hit_sent else lowest_depth
 		if not hit_sent and adapter.presenter.attack.phase == AttackSequence.Phase.RECOVER:
 			hit_sent = true
 			adapter.present_hit()
-			lowest_depth = adapter.crouch_modifier.depth
+			lowest_depth = adapter.rig.crouch_modifier.depth
 	await create_timer(0.3).timeout
 	check(hit_sent and lowest_depth > 0.02, "A hit during the shot keeps the cover crouch (lowest depth %.2f)" % lowest_depth)
 	await create_timer(1.5).timeout
@@ -216,7 +216,7 @@ func _run() -> void:
 		guard += 1
 		await process_frame
 	await create_timer(1.0).timeout
-	check(adapter.attack_plan.is_empty() and absf(adapter._cover_yaw) < deg_to_rad(1.0) and adapter.crouch_modifier.depth < 0.01, "Attack then move out of cover: no plan, yaw offset or crouch is left behind (plan %s, yaw %.1f, depth %.2f, cell %s, moved %s, AP %d, why %s)" % [adapter.attack_plan, rad_to_deg(adapter._cover_yaw), adapter.crouch_modifier.depth, actor.grid_position, moved, actor.stats.current_ap, f.battle.action_service.last_rejection.message if f.battle.action_service.last_rejection else "-"])
+	check(adapter.attack_plan.is_empty() and absf(adapter.rig._cover_yaw) < deg_to_rad(1.0) and adapter.rig.crouch_modifier.depth < 0.01, "Attack then move out of cover: no plan, yaw offset or crouch is left behind (plan %s, yaw %.1f, depth %.2f, cell %s, moved %s, AP %d, why %s)" % [adapter.attack_plan, rad_to_deg(adapter.rig._cover_yaw), adapter.rig.crouch_modifier.depth, actor.grid_position, moved, actor.stats.current_ap, f.battle.action_service.last_rejection.message if f.battle.action_service.last_rejection else "-"])
 
 	await f.dispose(self)
 	print("Cover target-aware firing: %d checks, %d failure(s)" % [checks, failures])
@@ -235,7 +235,7 @@ func _fire_and_measure(f, adapter: UnitVisualAdapter, actor: TacticalUnit, enemy
 		guard += 1
 		await process_frame
 		var dt := _frame_dt()
-		var direction := adapter.muzzle_socket.global_basis.z.normalized()
+		var direction := adapter.rig.muzzle_socket.global_basis.z.normalized()
 		if previous != Vector3.ZERO:
 			observed.worst_rate = maxf(float(observed.worst_rate), rad_to_deg(direction.angle_to(previous)) / dt)
 		previous = direction

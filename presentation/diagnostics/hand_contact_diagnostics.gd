@@ -23,7 +23,9 @@ extends Node
 
 signal sampled(sample: Dictionary)
 
-var rig: Node3D
+var rig: CharacterRig
+## Where the readout is drawn (a node with a "UI" child, such as the workbench); null: the diagnostics make their own layer.
+var ui_host: Node
 var sampler := HandContactSampler.new()
 var overlay: HandContactOverlay
 var latest: Dictionary = {}
@@ -41,13 +43,14 @@ var _readout: Label
 var _readout_layer: CanvasLayer
 
 ## Creates diagnostics for `p_rig` (not yet enabled). Returns null when the rig cannot be measured.
-static func attach(p_rig: Node3D) -> HandContactDiagnostics:
+static func attach(p_rig: CharacterRig, p_ui_host: Node = null) -> HandContactDiagnostics:
 	var diagnostics := HandContactDiagnostics.new()
 	diagnostics.name = "HandContactDiagnostics"
 	if not diagnostics.sampler.setup(p_rig):
 		diagnostics.free()
 		return null
 	diagnostics.rig = p_rig
+	diagnostics.ui_host = p_ui_host
 	p_rig.add_child(diagnostics)
 	return diagnostics
 
@@ -107,7 +110,7 @@ func _ensure_readout() -> void:
 	_readout.offset_right = -16.0
 	_readout.offset_top = 18.0
 	_readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var host := rig.get_node_or_null("UI")
+	var host: Node = ui_host.get_node_or_null("UI") if ui_host != null else null
 	if host == null:
 		_readout_layer = CanvasLayer.new()
 		_readout_layer.name = "HandContactReadoutLayer"

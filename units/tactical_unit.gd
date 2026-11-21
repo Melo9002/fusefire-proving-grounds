@@ -233,7 +233,7 @@ func _process(delta: float) -> void:
 				visual_adapter.note_stairs(run.model, run.ascending, run.enter, run.exit)
 				_segment_speed = TacticalRouteBuilder.stair_segment_speed(stair_profile)
 			else:
-				visual_adapter.end_stairs()
+				visual_adapter.rig.end_stairs()
 			visual_adapter.present_path_segment(segment_state)
 		visual_adapter.update_locomotion(global_position.direction_to(target_waypoint) * movement_speed, delta)
 
@@ -250,7 +250,7 @@ func _presented_speed() -> float:
 ## How long the rest of the current route will take to PRESENT, in seconds, at the speeds the walk will use (see TacticalRouteBuilder.estimated_seconds). The action presenter uses it so a slow traversal is
 ## never mistaken for a stuck one.
 func estimated_move_seconds() -> float:
-	var traversal_profile: TraversalProfile = visual_adapter.traversal_profile if visual_adapter != null and is_instance_valid(visual_adapter) else null
+	var traversal_profile: TraversalProfile = visual_adapter.rig.traversal_profile if visual_adapter != null and is_instance_valid(visual_adapter) else null
 	return TacticalRouteBuilder.estimated_seconds(route, current_waypoint_idx, global_position, movement_speed, DEFAULT_MOVEMENT_SPEED, stair_profile, traversal_profile)
 
 func move_along_path(path: PackedVector3Array, visual_segments: Array[StringName] = []) -> void:

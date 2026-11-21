@@ -34,13 +34,13 @@ func _run() -> void:
 	var angles := [0.0, 90.0, 180.0, 0.0]
 	for index in angles.size():
 		if index == 3:
-			rig.animation_controller.play(&"aim")
+			rig.rig.animation_controller.play(&"aim")
 			rig.presenter.aim.held = true
 			rig.presenter.aim.release_left = 1000000.0
 			for i in 60: await process_frame
-		var forward := rig.character_root.global_basis.z
+		var forward := rig.rig.character_root.global_basis.z
 		var direction := forward.rotated(Vector3.UP, deg_to_rad(angles[index] if index < 3 else 35.0))
-		var hips: Vector3 = rig.skeleton.to_global(rig.skeleton.get_bone_global_pose(rig.skeleton.find_bone(&"mixamorig_Hips")).origin)
+		var hips: Vector3 = rig.rig.skeleton.to_global(rig.rig.skeleton.get_bone_global_pose(rig.rig.skeleton.find_bone(&"mixamorig_Hips")).origin)
 		var focus := hips + Vector3(0, 0.25, 0)
 		camera.position = focus + direction * 2.4
 		camera.look_at(focus, Vector3.UP)

@@ -46,10 +46,10 @@ func _run() -> void:
 	var v := _spawn()
 	for i in 5:
 		await process_frame
-	check(is_instance_valid(v.presenter) and v.presenter.rig == v and v.tactical_unit == null, "The production visual owns a presenter bound to itself and has no tactical unit")
+	check(is_instance_valid(v.presenter) and v.presenter.rig == v.rig and v.tactical_unit == null, "The production visual owns a presenter bound to its rig and has no tactical unit")
 	var ticks_at_modifier: Array = []
 	var frame_at_modifier: Array = []
-	v.locomotion_modifier.modification_processed.connect(func() -> void:
+	v.rig.locomotion_modifier.modification_processed.connect(func() -> void:
 		ticks_at_modifier.append(v.presenter.tick_count)
 		frame_at_modifier.append([v.presenter.last_tick_frame, Engine.get_process_frames()]))
 	for i in 12:
@@ -68,19 +68,19 @@ func _run() -> void:
 	check(v.presenter.time > t0, "The presenter's presentation clock advances, and it is the only one (the adapter keeps no clock of its own)")
 
 	# ---- 4. A reported velocity turns the body toward it and drives the gait; silence settles it.
-	v.global_rotation.y = 0.0
+	v.rig.global_rotation.y = 0.0
 	v.update_locomotion(Vector3(4, 0, 0), 0.05)   # +X: a yaw of +90 degrees
-	var turned := v.global_rotation.y
+	var turned := v.rig.global_rotation.y
 	check(turned > 0.0 and turned <= deg_to_rad(v.turn_speed_degrees) * 0.05 + 0.0001, "Facing follows the velocity at the configured turn rate (%.3f rad in 0.05 s)" % turned)
 	check(absf(v.presenter.speed - 4.0) < 0.0001 and v.presenter.velocity.is_equal_approx(Vector3(4, 0, 0)), "The presenter holds the reported speed and velocity")
 	check(v.presenter.intent().facing_mode == PresentationTypes.FacingMode.FOLLOW_VELOCITY, "While reported moving the intent's facing mode is FOLLOW_VELOCITY")
 	for i in 30:
 		v.update_locomotion(Vector3(4, 0, 0), 1.0 / 60.0)
 		await process_frame
-	check(v.locomotion_report.speed > 0.5, "A moving report is turned into gait speed by the production locomotion (%.2f m/s)" % v.locomotion_report.speed)
+	check(v.rig.locomotion_report.speed > 0.5, "A moving report is turned into gait speed by the production locomotion (%.2f m/s)" % v.rig.locomotion_report.speed)
 	for i in 60:
 		await process_frame
-	check(v.presenter.speed == 0.0 and v.presenter.velocity == Vector3.ZERO and v.locomotion_report.speed < 0.05, "With no reports the character settles to a stop (speed %.3f)" % v.locomotion_report.speed)
+	check(v.presenter.speed == 0.0 and v.presenter.velocity == Vector3.ZERO and v.rig.locomotion_report.speed < 0.05, "With no reports the character settles to a stop (speed %.3f)" % v.rig.locomotion_report.speed)
 	check(v.presenter.intent().facing_mode == PresentationTypes.FacingMode.HOLD, "...and the intent says HOLD")
 	# A movement authority overrides the inference.
 	v.set_process(false)   # the host re-asserts its own authority every frame, so tick by hand to test the presenter's rule
@@ -93,13 +93,13 @@ func _run() -> void:
 	v.set_process(true)
 
 	# ---- 5. The snapshot reads state that has one owner (readiness and equipment stay the rig's; the presenter only reads them).
-	v.readiness.request(&"test", WeaponReadiness.Level.AIMED)
+	v.rig.readiness.request(&"test", WeaponReadiness.Level.AIMED)
 	check(v.presenter.intent().readiness == WeaponReadiness.Level.AIMED, "Readiness in the snapshot is the rig's own request table (not a copy)")
-	v.readiness.release(&"test")
+	v.rig.readiness.release(&"test")
 	check(v.presenter.intent().equipment == PresentationTypes.EquipmentState.HELD, "A carried rifle reads as HELD")
-	v.stow_weapon()
+	v.rig.stow_weapon()
 	check(v.presenter.intent().equipment == PresentationTypes.EquipmentState.SLUNG, "A stowed rifle reads as SLUNG")
-	v.unstow_weapon()
+	v.rig.unstow_weapon()
 
 	# ---- 6. Parity: the presenter's locomotion path equals feeding the rig directly (what the workbench does today).
 	var a := _spawn()
@@ -116,18 +116,18 @@ func _run() -> void:
 		a.presenter.heading_rate = rate
 		a.presenter.set_movement_authority(speed > 0.0)
 		a.presenter.tick(dt)
-		b.update_locomotion_presentation(speed, rate if speed > 0.0 else 0.0, dt)
-		worst = maxf(worst, absf(a.locomotion_report.gait - b.locomotion_report.gait) + absf(a.locomotion_report.cadence - b.locomotion_report.cadence) + absf(a.locomotion_report.bank - b.locomotion_report.bank) + absf(a.locomotion_report.speed - b.locomotion_report.speed))
+		b.rig.update_locomotion_presentation(speed, rate if speed > 0.0 else 0.0, dt)
+		worst = maxf(worst, absf(a.rig.locomotion_report.gait - b.rig.locomotion_report.gait) + absf(a.rig.locomotion_report.cadence - b.rig.locomotion_report.cadence) + absf(a.rig.locomotion_report.bank - b.rig.locomotion_report.bank) + absf(a.rig.locomotion_report.speed - b.rig.locomotion_report.speed))
 		await process_frame
 	check(worst < 0.0001, "The presenter path and the direct rig feed give the same gait, cadence, bank and speed every frame (worst difference %.6f)" % worst)
 	# A second tick in the same frame must not feed (and so must not advance the smoothing) twice.
-	var before: float = a.locomotion_report.speed
+	var before: float = a.rig.locomotion_report.speed
 	a.presenter.speed = 4.0
 	a.presenter.set_movement_authority(true)
 	a.presenter.tick(dt)
-	var after_one: float = a.locomotion_report.speed
+	var after_one: float = a.rig.locomotion_report.speed
 	a.presenter.tick(dt)
-	check(a.locomotion_report.speed == after_one and after_one != before, "A second tick in the same frame advances presentation time but never feeds the gait twice")
+	check(a.rig.locomotion_report.speed == after_one and after_one != before, "A second tick in the same frame advances presentation time but never feeds the gait twice")
 
 	print("CharacterPresenter: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

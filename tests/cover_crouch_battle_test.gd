@@ -28,12 +28,12 @@ func _run() -> void:
 	f.ready_actor(actor, 3, 4)
 	f.act_as(actor)
 	var adapter := actor.visual_adapter
-	check(adapter != null and adapter.crouch_modifier != null, "A battle unit has the procedural crouch layer")
-	if adapter == null or adapter.crouch_modifier == null:
+	check(adapter != null and adapter.rig.crouch_modifier != null, "A battle unit has the procedural crouch layer")
+	if adapter == null or adapter.rig.crouch_modifier == null:
 		await f.dispose(self)
 		quit(1)
 		return
-	var modifier := adapter.crouch_modifier
+	var modifier := adapter.rig.crouch_modifier
 	for i in 30: await process_frame
 	check(modifier.depth < 0.01 and modifier.kneel < 0.01, "In the open she stands")
 
@@ -45,15 +45,15 @@ func _run() -> void:
 	check(is_equal_approx(adapter.last_cover_contact.get("height", 0.0), 0.9), "The pose sees the cover's real height (%s)" % str(adapter.last_cover_contact.get("height")))
 	check(modifier.kneel > 0.9, "Cover this low is hidden behind on one knee (kneel %.2f)" % modifier.kneel)
 	check(modifier.depth <= modifier.max_depth + 0.0001, "The crouch stays within the human limit (%.3f of %.3f)" % [modifier.depth, modifier.max_depth])
-	var facing_away: float = absf(rad_to_deg(adapter._cover_yaw))
-	check(facing_away <= adapter.cover_profile.protected_yaw_degrees + 1.0, "Hiding, her back is not to the wall: at most %.0f degrees toward the peek edge (turned %.0f)" % [adapter.cover_profile.protected_yaw_degrees, facing_away])
+	var facing_away: float = absf(rad_to_deg(adapter.rig._cover_yaw))
+	check(facing_away <= adapter.rig.cover_profile.protected_yaw_degrees + 1.0, "Hiding, her back is not to the wall: at most %.0f degrees toward the peek edge (turned %.0f)" % [adapter.rig.cover_profile.protected_yaw_degrees, facing_away])
 	check(fingerprint == BattleStateFingerprint.capture(f.turns, f.grid, f.level.objective_manager), "Crouching and kneeling write no tactical state")
 
 	actor.tactical_state.is_aiming = true
 	await _wait(1.6)
-	check(adapter.get_presentation_state() == &"cover_low" and adapter.aim_blend > 0.95, "Aiming in cover keeps the cover pose with the sights up")
+	check(adapter.get_presentation_state() == &"cover_low" and adapter.rig.aim_blend > 0.95, "Aiming in cover keeps the cover pose with the sights up")
 	check(modifier.kneel < 0.1 and modifier.depth > 0.1, "To look over the cover she rises from the kneel to a crouch (kneel %.2f, depth %.3f)" % [modifier.kneel, modifier.depth])
-	check(absf(rad_to_deg(adapter._cover_yaw)) < 10.0, "Aiming, she faces the wall (turned %.0f degrees)" % absf(rad_to_deg(adapter._cover_yaw)))
+	check(absf(rad_to_deg(adapter.rig._cover_yaw)) < 10.0, "Aiming, she faces the wall (turned %.0f degrees)" % absf(rad_to_deg(adapter.rig._cover_yaw)))
 
 	await f.dispose(self)
 	print("Cover crouch battle: %d checks, %d failure(s)" % [checks, failures])

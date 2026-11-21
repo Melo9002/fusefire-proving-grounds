@@ -80,7 +80,7 @@ func _proximity_is_not_rescue() -> void:
 	# The target waits on the ground, incapacitated, at its tactical place.
 	var adapter := target.visual_adapter
 	check(target.awaiting_rescue and adapter.is_incapacitated(), "The rescue target waits incapacitated")
-	check(not adapter.character_root.visible and adapter.weapon.get_parent() != null and not adapter.character_root.visible, "...with its standing rig and rifle not shown")
+	check(not adapter.rig.character_root.visible and adapter.rig.weapon.get_parent() != null and not adapter.rig.character_root.visible, "...with its standing rig and rifle not shown")
 	check(_bodies(target, "IncapacitatedBody") == 1 and _passengers(level) == 1, "...as exactly one lying body")
 	var body := target.find_child("IncapacitatedBody", true, false) as Node3D
 	check(Vector2(body.global_position.x - target.global_position.x, body.global_position.z - target.global_position.z).length() < 0.05, "...lying where the actor is (%.2f m from its tactical position)" % Vector2(body.global_position.x - target.global_position.x, body.global_position.z - target.global_position.z).length())
@@ -96,7 +96,7 @@ func _proximity_is_not_rescue() -> void:
 		await process_frame
 	level.battle_controller.unit_moved.emit(carrier, from, cell)
 	await create_timer(0.5).timeout
-	check(objectives.get_objective(&"rescue").is_active() and not carrier.is_carrying_unit() and target.visible and not carrier.visual_adapter.interaction_active(), "Walking up to the target does not pick it up")
+	check(objectives.get_objective(&"rescue").is_active() and not carrier.is_carrying_unit() and target.visible and not carrier.visual_adapter.rig.interaction_active(), "Walking up to the target does not pick it up")
 	check(objectives.can_rescue(carrier, target) and level.battle_controller.query_mission(&"rescue", carrier).legal_target_ids.has(target.tactical_id), "...but makes the unit eligible")
 	check(level.battle_controller.query_mission(&"rescue", carrier, target).cost.ap == 0, "Rescue keeps its zero-AP interaction cost")
 	if bar:
@@ -120,8 +120,8 @@ func _pickup_starts_from_how_the_target_lies() -> void:
 	await create_timer(0.35).timeout
 	var adapter := carrier.visual_adapter
 	check(carrier.is_carrying_unit() and not target.visible and not target.awaiting_rescue, "Pressing Rescue picks the target up")
-	check(adapter.interaction_active() and adapter.rescue_interaction.phase_name() in [&"align", &"reach"], "...and the timed lift begins (%s)" % adapter.rescue_interaction.phase_name())
-	var passenger := adapter.carry_passenger
+	check(adapter.rig.interaction_active() and adapter.rig.rescue_interaction.phase_name() in [&"align", &"reach"], "...and the timed lift begins (%s)" % adapter.rig.rescue_interaction.phase_name())
+	var passenger := adapter.rig.carry_passenger
 	check(passenger != null and passenger.lift == 0.0, "The passenger starts lying on the floor")
 	check(passenger.global_position.distance_to(lying_origin) < 0.02, "...exactly where the incapacitated body lay (%.1f mm)" % (passenger.global_position.distance_to(lying_origin) * 1000.0))
 	check((passenger.global_basis.orthonormalized() * lying_basis.inverse()).get_rotation_quaternion().get_angle() < 0.05, "...in the way it lay (no turning at the start of the lift)")
@@ -129,12 +129,12 @@ func _pickup_starts_from_how_the_target_lies() -> void:
 	var worst_jump := 0.0
 	var last: Vector3 = passenger.global_position
 	var started := Time.get_ticks_msec()
-	while adapter.interaction_active() and Time.get_ticks_msec() - started < 8000:
+	while adapter.rig.interaction_active() and Time.get_ticks_msec() - started < 8000:
 		await process_frame
 		worst_jump = maxf(worst_jump, passenger.global_position.distance_to(last))
 		last = passenger.global_position
 	check(worst_jump < 0.12, "The passenger never jumps during the lift (%.1f cm per frame)" % (worst_jump * 100.0))
-	check(not adapter.interaction_active() and passenger.lift == 1.0 and _passengers(level) == 1, "The lift completes into the carry with one passenger (active %s, lift %s, passengers %d)" % [adapter.interaction_active(), str(passenger.lift), _passengers(level)])
+	check(not adapter.rig.interaction_active() and passenger.lift == 1.0 and _passengers(level) == 1, "The lift completes into the carry with one passenger (active %s, lift %s, passengers %d)" % [adapter.rig.interaction_active(), str(passenger.lift), _passengers(level)])
 	await _finish(level)
 
 func _carrier_lost_before_arrival() -> void:
@@ -147,7 +147,7 @@ func _carrier_lost_before_arrival() -> void:
 	grid.update_unit_position(carrier, carrier.grid_position, cell)   # decided "there", the body still far away
 	level.objective_manager.try_rescue(carrier, target)
 	await create_timer(0.3).timeout
-	check(carrier.visual_adapter.pickup_pending() and not carrier.visual_adapter.interaction_active(), "A rescue decided while the carrier's body is still far is held until it arrives")
+	check(carrier.visual_adapter.pickup_pending() and not carrier.visual_adapter.rig.interaction_active(), "A rescue decided while the carrier's body is still far is held until it arrives")
 	carrier.stats.take_damage(1000)
 	await create_timer(0.4).timeout
 	check(not carrier.visual_adapter.pickup_pending() and _passengers(level) == 1, "The carrier lost before arriving leaves no pending lift and no carried passenger")
@@ -164,13 +164,13 @@ func _carrier_lost_during_lift_and_second_carrier() -> void:
 	_arrive(level, carrier, target)
 	level.objective_manager.try_rescue(carrier, target)
 	await create_timer(1.4).timeout
-	check(carrier.visual_adapter.interaction_active() and carrier.visual_adapter.carry_passenger.lift > 0.0, "The carrier is lifting (lift %.2f)" % carrier.visual_adapter.carry_passenger.lift)
+	check(carrier.visual_adapter.rig.interaction_active() and carrier.visual_adapter.rig.carry_passenger.lift > 0.0, "The carrier is lifting (lift %.2f)" % carrier.visual_adapter.rig.carry_passenger.lift)
 	var fall_position := carrier.global_position
 	carrier.stats.take_damage(1000)
 	await create_timer(0.4).timeout
 	var adapter := target.visual_adapter
-	check(target.visible and target.awaiting_rescue and adapter.is_incapacitated() and not adapter.character_root.visible, "Dropped mid-lift, the target lies incapacitated, not standing")
-	check(_passengers(level) == 1 and _bodies(level, "IncapacitatedBody") == 1 and not is_instance_valid(carrier.visual_adapter.carry_passenger), "Exactly one lying body, none left on the dead carrier")
+	check(target.visible and target.awaiting_rescue and adapter.is_incapacitated() and not adapter.rig.character_root.visible, "Dropped mid-lift, the target lies incapacitated, not standing")
+	check(_passengers(level) == 1 and _bodies(level, "IncapacitatedBody") == 1 and not is_instance_valid(carrier.visual_adapter.rig.carry_passenger), "Exactly one lying body, none left on the dead carrier")
 	var body := target.find_child("IncapacitatedBody", true, false) as Node3D
 	check(Vector2(body.global_position.x - target.global_position.x, body.global_position.z - target.global_position.z).length() < 0.05, "The body lies at the actor's tactical position again")
 	# A second, eligible unit picks it up through the same explicit action and gets the full lift.
@@ -182,9 +182,9 @@ func _carrier_lost_during_lift_and_second_carrier() -> void:
 	bar.rescue_button.button_down.emit()
 	await create_timer(0.4).timeout
 	var second := helper.visual_adapter
-	check(helper.is_carrying_unit() and second.interaction_active() and is_instance_valid(second.carry_passenger) and _passengers(level) == 1 and _bodies(level, "IncapacitatedBody") == 0, "The second carrier performs the pickup with one passenger presentation")
+	check(helper.is_carrying_unit() and second.rig.interaction_active() and is_instance_valid(second.rig.carry_passenger) and _passengers(level) == 1 and _bodies(level, "IncapacitatedBody") == 0, "The second carrier performs the pickup with one passenger presentation")
 	await create_timer(3.3).timeout
-	check(not second.interaction_active() and second.carry_passenger.lift == 1.0 and level.objective_manager.get_objective(&"rescue").is_completed(), "...and completes it: the rescue is done again")
+	check(not second.rig.interaction_active() and second.rig.carry_passenger.lift == 1.0 and level.objective_manager.get_objective(&"rescue").is_completed(), "...and completes it: the rescue is done again")
 	await _finish(level)
 
 func _carrier_lost_while_carrying() -> void:
@@ -194,11 +194,11 @@ func _carrier_lost_while_carrying() -> void:
 	var carrier: TacticalUnit = level.turn_manager.player_units[0]
 	_arrive(level, carrier, target)
 	check(await level.objective_manager.try_rescue(carrier, target), "Setup: the carrier rescues the target (the action returns after the lift)")
-	check(not carrier.visual_adapter.interaction_active() and not target.visible, "...and is carrying it")
+	check(not carrier.visual_adapter.rig.interaction_active() and not target.visible, "...and is carrying it")
 	carrier.stats.take_damage(1000)
 	await create_timer(0.4).timeout
-	check(target.visible and target.visual_adapter.is_incapacitated() and _passengers(level) == 1 and not is_instance_valid(carrier.visual_adapter.carry_passenger), "Lost while carrying: one incapacitated body, nothing left on the carrier")
-	check(carrier.visual_adapter.weapon.get_parent() == carrier.visual_adapter.weapon_attachment and not carrier.visual_adapter.is_weapon_stowed(), "...and the fallen carrier's weapon is back in its hand")
+	check(target.visible and target.visual_adapter.is_incapacitated() and _passengers(level) == 1 and not is_instance_valid(carrier.visual_adapter.rig.carry_passenger), "Lost while carrying: one incapacitated body, nothing left on the carrier")
+	check(carrier.visual_adapter.rig.weapon.get_parent() == carrier.visual_adapter.rig.weapon_attachment and not carrier.visual_adapter.rig.is_weapon_stowed(), "...and the fallen carrier's weapon is back in its hand")
 	await _finish(level)
 
 func _repeated_commands() -> void:
@@ -216,7 +216,7 @@ func _repeated_commands() -> void:
 	carrier.move_along_path(PackedVector3Array([carrier.global_position + Vector3(0, 0, 1.5)]))
 	await create_timer(0.3).timeout
 	var adapter := carrier.visual_adapter
-	check(not adapter.interaction_active() and adapter.carry_passenger.lift == 1.0, "A movement order during the lift settles it into the carry")
+	check(not adapter.rig.interaction_active() and adapter.rig.carry_passenger.lift == 1.0, "A movement order during the lift settles it into the carry")
 	while carrier.is_moving:
 		await process_frame
 	check(adapter.get_presentation_state() == &"carry_idle", "...and the carrier ends in the carry idle (%s)" % adapter.get_presentation_state())

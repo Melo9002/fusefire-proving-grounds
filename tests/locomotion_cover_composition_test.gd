@@ -19,7 +19,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _grab(rig) -> void:
-	var sk: Skeleton3D = rig.skeleton
+	var sk: Skeleton3D = rig.rig.skeleton
 	for n in ["Hips", "Spine", "Spine1", "Spine2", "LeftUpLeg", "LeftFoot"]:
 		var index := sk.find_bone("mixamorig_" + n)
 		snap[n] = sk.get_bone_global_pose(index)
@@ -46,22 +46,22 @@ func _signed(q: Quaternion, axis: Vector3) -> float:
 
 func _apply(rig, twist: float, lean: float, depth := 0.0, bank := 0.0, pitch := 0.0) -> void:
 	for i in 6:
-		rig.locomotion_modifier.twist_degrees = twist
-		rig.locomotion_modifier.bank_degrees = bank
-		rig.locomotion_modifier.pitch_degrees = pitch
-		rig.crouch_modifier.aim_lean_degrees = lean
-		rig.crouch_modifier.depth = depth
+		rig.rig.locomotion_modifier.twist_degrees = twist
+		rig.rig.locomotion_modifier.bank_degrees = bank
+		rig.rig.locomotion_modifier.pitch_degrees = pitch
+		rig.rig.crouch_modifier.aim_lean_degrees = lean
+		rig.rig.crouch_modifier.depth = depth
 		await process_frame
 
 func _run() -> void:
 	var rig = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
 	root.add_child(rig)
 	for i in 30: await process_frame
-	rig.skeleton.skeleton_updated.connect(func() -> void: _grab(rig))
-	rig.animation_controller.play(&"rifle_idle")
+	rig.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(rig))
+	rig.rig.animation_controller.play(&"rifle_idle")
 	for i in 20: await process_frame
 	rig.set_process(false)   # the rig's own driver would overwrite the modifier fields each frame
-	axes = rig.animation_controller.locomotion_axes()
+	axes = rig.rig.animation_controller.locomotion_axes()
 	await _apply(rig, 0.0, 0.0)
 	for n in snap:
 		base[n] = snap[n]
@@ -96,7 +96,7 @@ func _run() -> void:
 	check(absf(chest_both.y - chest_lean.y) < 0.75, "Turn + lean: the lean is the same as without the turn (%.1f vs %.1f degrees): no loss, no double application" % [chest_both.y, chest_lean.y])
 
 	# ---- 4. Loaded carry: the carry lean (20 degrees) while turning.
-	rig.begin_carry()
+	rig.rig.begin_carry()
 	for i in 10: await process_frame
 	var carry_lean := 20.0
 	await _apply(rig, 0.0, carry_lean)
@@ -108,7 +108,7 @@ func _run() -> void:
 	print("  carry: lean only pitch %.1f; with a 15 degree turn: hips yaw %.1f, chest yaw %.1f, chest pitch %.1f" % [carry_pitch, carry_hips.x, carry_chest.x, carry_chest.y])
 	check(absf(absf(carry_hips.x) - 15.0) < 1.0 and absf(carry_chest.x - carry_base_yaw) < 1.5, "Loaded carry turning: the hips turn, the chest stays square (%.2f degrees)" % (carry_chest.x - carry_base_yaw))
 	check(absf(carry_chest.y - carry_pitch) < 1.0, "Loaded carry turning: the carry lean is kept (%.1f vs %.1f degrees)" % [carry_chest.y, carry_pitch])
-	rig.end_carry()
+	rig.rig.end_carry()
 	for i in 10: await process_frame
 
 	# ---- 5. A cover pose (crouch drop and legs) with lean and a turn.

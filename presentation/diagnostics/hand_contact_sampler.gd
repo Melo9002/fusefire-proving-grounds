@@ -37,7 +37,7 @@ const KIND := {
 	"finger_joints_to_grip_centre": "approx",
 }
 
-var rig: Node3D
+var rig: CharacterRig
 var skeleton: Skeleton3D
 var weapon: Node3D
 var handling: WeaponHandlingProfile

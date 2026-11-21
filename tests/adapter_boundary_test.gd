@@ -73,7 +73,7 @@ func _committed_aim() -> void:
 	check(not p.aim_committed and not p.aim.held and seconds > 0.9 and seconds < 1.25 and events.size() == 2 and events[1][0] == AimHold.Transition.RELEASED,
 		"After the Aim is cleared the sights stay up for the grace period and then release once (%.2f s)" % seconds)
 	await _frames(70)
-	check(unit.visual_adapter.aim_blend < 0.05 and not unit.visual_adapter.readiness.has_request(AttackSequence.SOURCE), "...the weapon is relaxed again and no attack request is left (blend %.2f)" % unit.visual_adapter.aim_blend)
+	check(unit.visual_adapter.rig.aim_blend < 0.05 and not unit.visual_adapter.rig.readiness.has_request(AttackSequence.SOURCE), "...the weapon is relaxed again and no attack request is left (blend %.2f)" % unit.visual_adapter.rig.aim_blend)
 	# The committed Aim persists through a hit (the hit plays uninterrupted, then the aimed stance returns); a hold in its grace period is ended by the hit.
 	unit.tactical_state.establish_aim()
 	await _frames(3)
@@ -198,13 +198,13 @@ func _precedence() -> void:
 
 	# A rescue lift already committed is not cut short by a cosmetic hit.
 	v.preview_carrying = true
-	var lift := v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z)
+	var lift := v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z)
 	var lift_seen := _watch(lift)
 	await _frames(20)
 	var during_lift := v.present_hit()
-	check(during_lift.outcome == SKIPPED and during_lift.is_done() and v.interaction_active() and not p.is_holding() and lift_seen.is_empty() and v.get_presentation_state() != &"hit",
+	check(during_lift.outcome == SKIPPED and during_lift.is_done() and v.rig.interaction_active() and not p.is_holding() and lift_seen.is_empty() and v.get_presentation_state() != &"hit",
 		"A hit during a rescue lift is SKIPPED: no clip, no hold, the lift carries on")
-	v.end_carry()
+	v.rig.end_carry()
 	v.preview_carrying = false
 	await _frames(3)
 
@@ -260,16 +260,16 @@ func _pending_pickup() -> void:
 	var target: TacticalUnit = pair[1]
 	var adapter := carrier.visual_adapter
 	var p := adapter.presenter
-	check(p.has_pending_pickup() and adapter.pickup_pending() and not adapter.interaction_active(), "A rescue decided far away is held by the presenter, nothing is lifted yet")
-	var reserved := adapter.reserve_rescue_handle()
+	check(p.has_pending_pickup() and adapter.pickup_pending() and not adapter.rig.interaction_active(), "A rescue decided far away is held by the presenter, nothing is lifted yet")
+	var reserved := adapter.rig.reserve_rescue_handle()
 	var reserved_seen := _watch(reserved)
-	check(adapter.rescue_presentation() == null and not reserved.is_done(), "...with a reserved handle that is not running")
+	check(adapter.rig.rescue_presentation() == null and not reserved.is_done(), "...with a reserved handle that is not running")
 	var grid := level.battle_controller.grid_manager
 	var cell := grid.get_unit_grid(target) + Vector3i.LEFT
 	carrier.global_position = grid.grid_to_world(cell) + Vector3.UP * carrier.standing_height
 	adapter.present_movement_end()
-	check(not p.has_pending_pickup() and adapter.interaction_active() and adapter.rescue_presentation() == reserved, "The carrier arrives: the held request starts the lift, and the same reserved handle is the one running")
-	adapter.rescue_interaction.scrub(adapter.rescue_interaction.duration() - 0.05)
+	check(not p.has_pending_pickup() and adapter.rig.interaction_active() and adapter.rig.rescue_presentation() == reserved, "The carrier arrives: the held request starts the lift, and the same reserved handle is the one running")
+	adapter.rig.rescue_interaction.scrub(adapter.rig.rescue_interaction.duration() - 0.05)
 	await _frames(8)
 	check(reserved_seen == [COMPLETED] and not p.has_pending_pickup(), "...and it settles COMPLETED once")
 	level.queue_free()
@@ -281,12 +281,12 @@ func _pending_pickup() -> void:
 	carrier = pair[0]
 	adapter = carrier.visual_adapter
 	p = adapter.presenter
-	var held := adapter.reserve_rescue_handle()
+	var held := adapter.rig.reserve_rescue_handle()
 	var held_seen := _watch(held)
 	held.cancel()
 	check(held_seen == [CANCELLED] and not p.has_pending_pickup(), "Cancelling the held pickup forgets it: CANCELLED once, nothing pending")
 	adapter.present_movement_end()
-	check(not adapter.interaction_active() and not is_instance_valid(adapter.carry_passenger), "...and the carrier's arrival starts no lift")
+	check(not adapter.rig.interaction_active() and not is_instance_valid(adapter.rig.carry_passenger), "...and the carrier's arrival starts no lift")
 	level.queue_free()
 	await _frames(2)
 
@@ -295,7 +295,7 @@ func _pending_pickup() -> void:
 	pair = await _far_carrier(level)
 	carrier = pair[0]
 	adapter = carrier.visual_adapter
-	var defeat_held := adapter.reserve_rescue_handle()
+	var defeat_held := adapter.rig.reserve_rescue_handle()
 	var defeat_held_seen := _watch(defeat_held)
 	adapter.present_defeat()
 	check(defeat_held_seen == [INTERRUPTED] and not adapter.presenter.has_pending_pickup(), "A defeat while the pickup waits settles its handle INTERRUPTED and forgets it")
@@ -307,7 +307,7 @@ func _pending_pickup() -> void:
 	pair = await _far_carrier(level)
 	carrier = pair[0]
 	adapter = carrier.visual_adapter
-	var torn := adapter.reserve_rescue_handle()
+	var torn := adapter.rig.reserve_rescue_handle()
 	var torn_seen := _watch(torn)
 	var presenter_ref := adapter.presenter
 	carrier.queue_free()
@@ -319,7 +319,7 @@ func _pending_pickup() -> void:
 func _facing_hint() -> void:
 	# The replay camera's focus uses a read-only facing hint, never the adapter's transform.
 	var unit := await _unit()
-	unit.visual_adapter.rotation.y = deg_to_rad(90.0)
+	unit.visual_adapter.rig.rotation.y = deg_to_rad(90.0)
 	check(unit.get_presentation_facing().is_equal_approx(Vector3(1, 0, 0)) and unit.get_presentation_facing().is_equal_approx(unit.visual_adapter.presenter.facing_direction()), "The presentation facing hint is the presenter's read-only horizontal facing")
 	var replay_text := FileAccess.get_file_as_string("res://systems/replay/battle_replay_player.gd")
 	check(not replay_text.contains("visual_adapter.global_basis") and replay_text.contains("get_presentation_facing()"), "The replay player no longer reads the adapter's transform")

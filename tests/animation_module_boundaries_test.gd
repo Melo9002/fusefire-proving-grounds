@@ -158,6 +158,20 @@ func _run() -> void:
 		check(setup_line != null and not setup_line.get_string().contains("Dictionary"), "%s is configured with typed inputs, not a dictionary" % modifier_path)
 	check(not FileAccess.get_file_as_string("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").contains("Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)") and unit_code.contains("func _place_visual()"),
 		"The character visual scene has no origin offset (feet at its origin) and TacticalUnit composes it standing_height below the unit's origin")
+	# Composition (Task 07 package 10): the tactical adapter and the workbench are HOSTS of a CharacterRig, not CharacterRigs. A host owns its context (tactical reads, workbench controls) and drives its rig child
+	# and that rig's presenter once per frame; the rig owns the skeleton, the modifiers, the targets and the poses and has no frame callback of its own.
+	var adapter_code := _code("presentation/characters/runtime/unit_visual_adapter.gd")
+	var workbench_code := _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd")
+	check(adapter_code.contains("extends Node3D") and workbench_code.contains("extends Node3D"), "The tactical adapter and the workbench are plain Node3D hosts of a CharacterRig")
+	for path in _scripts("presentation") + _scripts("art") + _scripts("units") + _scripts("tools") + _scripts("research"):
+		check(RegEx.create_from_string("(?m)^extends\\s+(CharacterRig|UnitVisualAdapter)\\b").search(_code(path)) == null, "%s inherits the rig or the adapter: hosts compose a CharacterRig" % path)
+	check(RegEx.create_from_string("(?m)^func _(physics_)?process\\(").search(rig_code) == null, "CharacterRig has no frame callback: its host advances it (the presenter tick and update_weapon_pose) exactly once per frame")
+	for builder in ["_build_character", "_build_weapon_attachment", "_build_arm_ik", "_build_animation_controller"]:
+		check(not adapter_code.contains(builder) and not workbench_code.contains(builder), "A host does not build the skeleton (%s): the rig builds itself" % builder)
+	check(not adapter_code.contains("skeleton.add_child") or adapter_code.contains("CLASS_MARKER_NAME"), "The adapter attaches only its class marker to the skeleton")
+	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "art/characters/mira_0/demo/mira_0_pose_workbench.tscn"]:
+		var scene_text := FileAccess.get_file_as_string("res://" + scene_path)
+		check(scene_text.contains('[node name="Rig" type="Node3D" parent="."]') and scene_text.contains("character_rig.gd"), "%s hosts its CharacterRig as the Rig child" % scene_path)
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")

@@ -16,7 +16,7 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _local(rig: UnitVisualAdapter, bone: StringName) -> Vector3:
-	return rig.character_root.global_basis.inverse() * ((_attachments[bone] as BoneAttachment3D).global_position - rig.character_root.global_position)
+	return rig.rig.character_root.global_basis.inverse() * ((_attachments[bone] as BoneAttachment3D).global_position - rig.rig.character_root.global_position)
 
 func _run() -> void:
 	var stage := Node3D.new()
@@ -25,7 +25,7 @@ func _run() -> void:
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame
-	var skeleton: Skeleton3D = rig.skeleton
+	var skeleton: Skeleton3D = rig.rig.skeleton
 	for pair in CASES:
 		for bone in pair:
 			if not _attachments.has(bone):
@@ -33,8 +33,8 @@ func _run() -> void:
 				attachment.bone_name = bone
 				skeleton.add_child(attachment)
 				_attachments[bone] = attachment
-	rig.animation_controller.animation_tree.active = false
-	rig.animation_controller.animation_player.stop()
+	rig.rig.animation_controller.animation_tree.active = false
+	rig.rig.animation_controller.animation_player.stop()
 	skeleton.reset_bone_poses()
 	for i in 5: await process_frame
 	for pair in CASES:

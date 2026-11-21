@@ -21,15 +21,15 @@ func run() -> void:
 	await process_frame
 	visual.present_move()
 	visual.update_locomotion(Vector3(5, 0, 0), 0.05)
-	check(visual.rotation.y > 0.0 and visual.rotation.y < PI / 2, "Turn must be gradual")
-	var controller = visual.animation_controller
+	check(visual.rig.rotation.y > 0.0 and visual.rig.rotation.y < PI / 2, "Turn must be gradual")
+	var controller = visual.rig.animation_controller
 	var direction: Vector2 = controller.animation_tree.get("parameters/move/Direction/blend_position")
 	check(direction.y > 0.9 and absf(direction.x) < 0.01, "Path following must keep the forward clip while turning")
 	await process_frame
 	await process_frame
 	var cadence: float = controller.animation_tree.get("parameters/move/Pace/scale")
-	check(cadence > 0.3 and cadence <= visual.locomotion_profile.max_cadence + 0.001, "Cadence follows travel speed inside the profile's range (%.2f cycles/s)" % cadence)
-	visual.rotation.y = 0.0
+	check(cadence > 0.3 and cadence <= visual.rig.locomotion_profile.max_cadence + 0.001, "Cadence follows travel speed inside the profile's range (%.2f cycles/s)" % cadence)
+	visual.rig.rotation.y = 0.0
 	visual.update_locomotion(Vector3(0, 0, -2), 0.01)
 	direction = controller.animation_tree.get("parameters/move/Direction/blend_position")
 	check(direction.y > 0.9, "Path reversal must turn and continue using the forward clip")

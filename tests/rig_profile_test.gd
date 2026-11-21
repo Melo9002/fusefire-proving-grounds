@@ -62,18 +62,18 @@ func _run() -> void:
 	root.add_child(visual)
 	for i in 20:
 		await process_frame
-	var axes: RigAxes = visual.animation_controller.locomotion_axes()
+	var axes: RigAxes = visual.rig.animation_controller.locomotion_axes()
 	var up_error := rad_to_deg(ma.up.angle_to(axes.up))
 	var forward_error := rad_to_deg(ma.forward.angle_to(axes.forward))
-	print("  production vs profile: up %.2f deg, forward %.2f deg, standing head height %.3f vs %.3f" % [up_error, forward_error, visual.crouch_modifier.standing_head_height, ma.standing_height - ma.ankle_height])
+	print("  production vs profile: up %.2f deg, forward %.2f deg, standing head height %.3f vs %.3f" % [up_error, forward_error, visual.rig.crouch_modifier.standing_head_height, ma.standing_height - ma.ankle_height])
 	check(up_error < 0.5, "The profile's derived up axis equals production's measured up axis (%.2f degrees)" % up_error)
 	check(forward_error < 4.0, "The derived forward (from the hips) agrees with production's toe-based forward within 4 degrees (%.2f); production measures from the toes, the profile needs none" % forward_error)
-	check(absf((ma.standing_height - ma.ankle_height) - visual.crouch_modifier.standing_head_height) < 0.02, "Standing head height above the ankle equals what CoverCrouchModifier measures (within 2 cm)")
-	var live = Resolver.resolve(Fix.mira_profile(), visual.skeleton)
+	check(absf((ma.standing_height - ma.ankle_height) - visual.rig.crouch_modifier.standing_head_height) < 0.02, "Standing head height above the ankle equals what CoverCrouchModifier measures (within 2 cm)")
+	var live = Resolver.resolve(Fix.mira_profile(), visual.rig.skeleton)
 	check(not live.diagnostics.has_code(&"E_SCALE_MISMATCH") and not live.diagnostics.has_errors(), "Against the in-scene production skeleton (shown at 1.6x) the declared character_scale 1.6 is consistent")
 	var wrong := Fix.mira_profile()
 	wrong.anatomy.character_scale = 1.0
-	check(Resolver.resolve(wrong, visual.skeleton).diagnostics.has_code(&"E_SCALE_MISMATCH"), "A wrong declared scale against the in-scene skeleton is an error (the scale would be applied twice or not at all)")
+	check(Resolver.resolve(wrong, visual.rig.skeleton).diagnostics.has_code(&"E_SCALE_MISMATCH"), "A wrong declared scale against the in-scene skeleton is an error (the scale would be applied twice or not at all)")
 	visual.queue_free()
 	await process_frame
 

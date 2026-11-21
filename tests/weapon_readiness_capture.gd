@@ -29,7 +29,7 @@ func _run() -> void:
 	quit(0)
 
 func _views(rig: UnitVisualAdapter, focus_y: float) -> Array:
-	var basis := rig.character_root.global_basis.orthonormalized()
+	var basis := rig.rig.character_root.global_basis.orthonormalized()
 	var origin := rig.global_position + Vector3.UP * focus_y
 	return [
 		[origin + basis * Vector3(-2.3, 0.35, 0.3), origin],
@@ -73,7 +73,7 @@ func _scenario(directory: String, scenario: String, images: bool) -> void:
 		camera.current = true
 		viewports.append(viewport)
 		cameras.append(camera)
-	var diagnostics := HandContactDiagnostics.attach(adapter)
+	var diagnostics := HandContactDiagnostics.attach(adapter.rig)
 	diagnostics.set_readout_visible(false)
 	diagnostics.set_enabled(true)
 	if diagnostics.overlay != null:
@@ -101,8 +101,8 @@ func _scenario(directory: String, scenario: String, images: bool) -> void:
 			adapter.present_hit()
 			phase_log.append({"event": "hit", "t": t})
 		var sample: Dictionary = diagnostics.latest
-		rows.append({"t": snappedf(t, 0.0001), "phase": adapter.presenter.attack.phase, "state": String(adapter.get_presentation_state()), "blend": snappedf(adapter.aim_blend, 0.0001),
-			"muzzle_error_deg": snappedf(adapter.weapon_alignment_error_degrees(), 0.001), "flash": adapter.muzzle_flash.visible, "recoil": snappedf(adapter.recoil, 0.0001),
+		rows.append({"t": snappedf(t, 0.0001), "phase": adapter.presenter.attack.phase, "state": String(adapter.get_presentation_state()), "blend": snappedf(adapter.rig.aim_blend, 0.0001),
+			"muzzle_error_deg": snappedf(adapter.weapon_alignment_error_degrees(), 0.001), "flash": adapter.rig.muzzle_flash.visible, "recoil": snappedf(adapter.rig.recoil, 0.0001),
 			"readiness": String(WeaponReadiness.level_name(adapter.readiness_level())),
 			"dominant_wrist_mm": snappedf(float(sample.hands[0].wrist_to_ik_target) * 1000.0, 0.01) if not sample.is_empty() else -1.0,
 			"support_wrist_mm": snappedf(float(sample.hands[1].wrist_to_ik_target) * 1000.0, 0.01) if not sample.is_empty() else -1.0,

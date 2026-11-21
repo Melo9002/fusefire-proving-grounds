@@ -47,23 +47,23 @@ func _run() -> void:
 	await _frames(15)
 
 	# ---- 1. The weapon-pose modifier against a fake placer: no rig involved.
-	v.weapon_pose_modifier.active = false
+	v.rig.weapon_pose_modifier.active = false
 	var placer := RecordingPlacer.new()
 	var binding := WeaponPoseBinding.new()
-	binding.skeleton = v.skeleton
-	binding.right_shoulder_bone = v.right_arm_bones[0]
-	binding.left_arm_bones.assign(v.left_arm_bones)
-	binding.chest_bone = v.torso_bone_name
-	binding.character_root = v.character_root
-	binding.arm_ik = v.arm_ik
-	binding.support_target = v.support_ik_target
-	binding.crouch = v.crouch_modifier
+	binding.skeleton = v.rig.skeleton
+	binding.right_shoulder_bone = v.rig.right_arm_bones[0]
+	binding.left_arm_bones.assign(v.rig.left_arm_bones)
+	binding.chest_bone = v.rig.torso_bone_name
+	binding.character_root = v.rig.character_root
+	binding.arm_ik = v.rig.arm_ik
+	binding.support_target = v.rig.support_ik_target
+	binding.crouch = v.rig.crouch_modifier
 	binding.settings = WeaponPoseSettings.new()
 	binding.placer = placer
 	var modifier := WeaponPoseModifier.new()
 	modifier.name = "FakeWeaponPose"
 	check(modifier.setup(binding), "The modifier wires itself from a binding alone")
-	v.skeleton.add_child(modifier)
+	v.rig.skeleton.add_child(modifier)
 	var seen_delta: Array[float] = []
 	modifier.modification_processed.connect(func() -> void: seen_delta.append(v.get_process_delta_time()))
 	await _frames(6)
@@ -95,16 +95,16 @@ func _run() -> void:
 	# Arm IK off: the modifier leaves everything alone.
 	placer.is_holding = false
 	placer.calls.clear()
-	v.arm_ik.active = false
+	v.rig.arm_ik.active = false
 	await _frames(3)
 	check(placer.calls.is_empty(), "With the arm IK off the modifier asks for nothing")
-	v.arm_ik.active = true
+	v.rig.arm_ik.active = true
 	modifier.queue_free()
-	v.weapon_pose_modifier.active = true
+	v.rig.weapon_pose_modifier.active = true
 	await process_frame
 
 	# ---- 2. Every custom modifier is safe at a zero delta (the engine can call them with 0 right after the skeleton initialises).
-	for child in v.skeleton.get_children():
+	for child in v.rig.skeleton.get_children():
 		if child is SkeletonModifier3D and child.has_method("_process_modification_with_delta"):
 			child._process_modification_with_delta(0.0)
 	check(true, "Every custom modifier runs at delta 0 without error")
@@ -112,48 +112,48 @@ func _run() -> void:
 
 	# ---- 3. Influence is applied by the engine, once. The locomotion twist at influence 0.5 is half of the twist at influence 1.
 	v.set_process(false)   # nothing else rewrites the twist while measuring
-	var hips := v.skeleton.find_bone("mixamorig_Hips")
+	var hips := v.rig.skeleton.find_bone("mixamorig_Hips")
 	var input := RigInput.new()
 	input.twist_degrees = 40.0
 	var angles := {}
 	for influence in [0.0, 0.5, 1.0]:
-		v.locomotion_modifier.influence = influence
-		v.locomotion_modifier.apply_input(input)
+		v.rig.locomotion_modifier.influence = influence
+		v.rig.locomotion_modifier.apply_input(input)
 		var latest := [Transform3D.IDENTITY]
-		var grab := func() -> void: latest[0] = _locals(v.skeleton, hips)
-		v.skeleton.skeleton_updated.connect(grab)
+		var grab := func() -> void: latest[0] = _locals(v.rig.skeleton, hips)
+		v.rig.skeleton.skeleton_updated.connect(grab)
 		await _frames(3)
-		v.skeleton.skeleton_updated.disconnect(grab)
+		v.rig.skeleton.skeleton_updated.disconnect(grab)
 		angles[influence] = latest[0].basis.get_rotation_quaternion()
 	var base: Quaternion = angles[0.0]
 	var full := rad_to_deg(base.angle_to(angles[1.0]))
 	var half := rad_to_deg(base.angle_to(angles[0.5]))
 	check(full > 20.0, "Setup: the full twist turns the hips (%.1f degrees)" % full)
 	check(absf(half - full * 0.5) < full * 0.08, "Influence 0.5 gives half the turn (%.1f of %.1f degrees): the engine applies influence once, the modifier does not apply it again" % [half, full])
-	v.locomotion_modifier.influence = 1.0
-	v.locomotion_modifier.apply_input(RigInput.new())
+	v.rig.locomotion_modifier.influence = 1.0
+	v.rig.locomotion_modifier.apply_input(RigInput.new())
 	v.set_process(true)
 
 	# ---- 4. The traversal modifier is fed typed input that the rig keeps in step with its state.
-	var tm := v.traversal_modifier
+	var tm := v.rig.traversal_modifier
 	var ti: TraversalPoseInput = tm.input
 	check(ti.mode == TraversalPoseInput.Mode.NONE, "Idle: the traversal input is NONE")
-	v.begin_traversal(&"ladder", 3.0, 1)
+	v.rig.begin_traversal(&"ladder", 3.0, 1)
 	check(ti.mode == TraversalPoseInput.Mode.LADDER and not ti.solved, "A ladder begins: LADDER, nothing solved yet")
-	v.set_traversal_progress(1.5)
-	check(ti.solved and is_equal_approx(ti.weight, v.ladder.pose.weight) and ti.hips_local.is_equal_approx(v.ladder.pose.hips) and ti.feet_local[1].is_equal_approx(v.ladder.pose.feet[1]), "The published input is the solved ladder pose (weight %.2f)" % ti.weight)
+	v.rig.set_traversal_progress(1.5)
+	check(ti.solved and is_equal_approx(ti.weight, v.rig.ladder.pose.weight) and ti.hips_local.is_equal_approx(v.rig.ladder.pose.hips) and ti.feet_local[1].is_equal_approx(v.rig.ladder.pose.feet[1]), "The published input is the solved ladder pose (weight %.2f)" % ti.weight)
 	await _frames(3)
-	check(v.leg_ik.active and v.foot_targets[0].global_position.distance_to(v.character_root.to_global(ti.feet_local[0])) < 0.0005, "The modifier places the foot target from the typed input alone")
+	check(v.rig.leg_ik.active and v.rig.foot_targets[0].global_position.distance_to(v.rig.character_root.to_global(ti.feet_local[0])) < 0.0005, "The modifier places the foot target from the typed input alone")
 	var model := StairModel.from_links(Vector3.ZERO, Vector3(0, 0, 1), 1.0, 1.0, 2, 3)
-	v.begin_stairs(model, true)
-	v.set_stair_progress(0.8, 1.2)
+	v.rig.begin_stairs(model, true)
+	v.rig.set_stair_progress(0.8, 1.2)
 	check(ti.mode == TraversalPoseInput.Mode.LADDER, "A ladder takes precedence over stairs, as before")
-	v.end_traversal()
-	check(ti.mode == TraversalPoseInput.Mode.STAIRS and ti.solved and is_equal_approx(ti.pelvis_height, v.stairs.pose.pelvis_height) and ti.ankles_world[0].is_equal_approx(v.stairs.pose.feet[0].position) and ti.stair_profile == v.stair_profile, "With the ladder over, the stair pose is published (pelvis %.3f)" % ti.pelvis_height)
-	v.end_stairs()
+	v.rig.end_traversal()
+	check(ti.mode == TraversalPoseInput.Mode.STAIRS and ti.solved and is_equal_approx(ti.pelvis_height, v.rig.stairs.pose.pelvis_height) and ti.ankles_world[0].is_equal_approx(v.rig.stairs.pose.feet[0].position) and ti.stair_profile == v.rig.stair_profile, "With the ladder over, the stair pose is published (pelvis %.3f)" % ti.pelvis_height)
+	v.rig.end_stairs()
 	check(ti.mode == TraversalPoseInput.Mode.NONE and ti.weight == 0.0, "Ending everything clears the input: nothing of the traversal is left")
 	await _frames(3)
-	check(not v.leg_ik.active and tm.weight == 0.0, "...and the leg IK is off again")
+	check(not v.rig.leg_ik.active and tm.weight == 0.0, "...and the leg IK is off again")
 
 	print("Modifier boundary: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

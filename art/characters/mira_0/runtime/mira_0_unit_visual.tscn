@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 [ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
 [ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
+[ext_resource type="Script" uid="uid://c25va4fkc3c6l" path="res://presentation/characters/runtime/character_rig.gd" id="9_rig"]
 
 [sub_resource type="SphereMesh" id="Sphere_target"]
 radius = 0.018
@@ -14,28 +15,31 @@ height = 0.036
 script = ExtResource("1_adapter")
 camera_focus_anchor = Vector3(0, 0.98, 0)
 camera_eye_anchor = Vector3(0, 1.48, 0)
+
+[node name="Rig" type="Node3D" parent="."]
+script = ExtResource("9_rig")
 character_scene = ExtResource("3_model")
 character_scale = 1.6
 rig_profile = ExtResource("4_profile")
 weapon_scene = ExtResource("5_weapon")
 clip_library = null
 
-[node name="VerticalSliceController" type="Node" parent="." unique_id=1993812038]
+[node name="VerticalSliceController" type="Node" parent="Rig" unique_id=1993812038]
 script = ExtResource("2_animation")
 
-[node name="Character" type="Node3D" parent="." unique_id=991362236]
+[node name="Character" type="Node3D" parent="Rig" unique_id=991362236]
 
-[node name="IKTargets" type="Node3D" parent="Character" unique_id=631873967]
+[node name="IKTargets" type="Node3D" parent="Rig/Character" unique_id=631873967]
 
-[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets" unique_id=344191419]
+[node name="RightHandTarget" type="Marker3D" parent="Rig/Character/IKTargets" unique_id=344191419]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 1.12, 0.19)
 
-[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget" unique_id=1694427233]
+[node name="TargetPreview" type="MeshInstance3D" parent="Rig/Character/IKTargets/RightHandTarget" unique_id=1694427233]
 visible = false
 mesh = SubResource("Sphere_target")
 
-[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets" unique_id=1183020262]
+[node name="RightElbowPole" type="Marker3D" parent="Rig/Character/IKTargets" unique_id=1183020262]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48, 1.03, 0.02)
 
-[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets" unique_id=130846089]
+[node name="LeftElbowPole" type="Marker3D" parent="Rig/Character/IKTargets" unique_id=130846089]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.48, 1.04, 0.05)

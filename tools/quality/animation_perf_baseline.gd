@@ -26,8 +26,8 @@ func _run() -> void:
 		# (Skeleton3D.advance runs the animation mixer and every modifier) for all characters, many times, with a different time step each iteration so nothing is cached.
 		# Take the mixer and the modifiers off the automatic schedule so the timing loop below is the only thing driving them.
 		for v in visuals:
-			v.skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-			v.animation_controller.animation_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+			v.rig.skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
+			v.rig.animation_controller.animation_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 		var process_samples: Array[float] = []
 		var stack_samples: Array[float] = []
 		for frame in FRAMES:
@@ -37,8 +37,8 @@ func _run() -> void:
 				v._process(delta)
 			var t1 := Time.get_ticks_usec()
 			for v in visuals:
-				v.animation_controller.animation_tree.advance(delta)
-				v.skeleton.advance(delta)
+				v.rig.animation_controller.animation_tree.advance(delta)
+				v.rig.skeleton.advance(delta)
 			var t2 := Time.get_ticks_usec()
 			process_samples.append((t1 - t0) / 1000.0)
 			stack_samples.append((t2 - t1) / 1000.0)

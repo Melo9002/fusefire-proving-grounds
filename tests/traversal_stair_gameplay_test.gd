@@ -17,7 +17,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _grab(adapter) -> void:
-	var sk: Skeleton3D = adapter.skeleton
+	var sk: Skeleton3D = adapter.rig.skeleton
 	for n in ["LeftFoot", "RightFoot", "Hips", "Spine2", "Head", "LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg"]:
 		snap[n] = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("mixamorig_" + n)).origin
 
@@ -33,11 +33,11 @@ func _walk(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination: Vect
 	var last_upper := {}
 	while done.is_empty() and Time.get_ticks_msec() - started < 40000:
 		await process_frame
-		if adapter.stairs == null or adapter.stairs.pose == null:
+		if adapter.rig.stairs == null or adapter.rig.stairs.pose == null:
 			continue
 		log.frames += 1
-		var model: StairModel = adapter.stairs.model
-		var pose: StairPose = adapter.stairs.pose
+		var model: StairModel = adapter.rig.stairs.model
+		var pose: StairPose = adapter.rig.stairs.pose
 		var floor_position := actor.global_position - Vector3.UP * actor.standing_height
 		var s: float = model.progress_of(floor_position)
 		# The root reference rides the line through the cell centres (each on the foot of a riser): never above the physical tread under it, at most one riser below it. The visible body
@@ -46,9 +46,9 @@ func _walk(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination: Vect
 		log.max_float = maxf(float(log.max_float), above)
 		log.max_sink = minf(float(log.max_sink), above)
 		# The pose is a pure function of the progress: the planner agrees with what the rig holds.
-		var holds: Array = StairFootPlanner.holds(model, adapter.stairs.ascending, pose.step)
+		var holds: Array = StairFootPlanner.holds(model, adapter.rig.stairs.ascending, pose.step)
 		for foot in 2:
-			var expected := StairFootPlanner.foot_at(model, adapter.stair_profile, holds, adapter.stairs.ascending, pose.s, foot)
+			var expected := StairFootPlanner.foot_at(model, adapter.rig.stair_profile, holds, adapter.rig.stairs.ascending, pose.s, foot)
 			if (expected.position as Vector3).distance_to(pose.feet[foot].position) > 0.0001:
 				log.mismatch += 1
 			var info: StairPose.Foot = pose.feet[foot]
@@ -90,7 +90,7 @@ func _run() -> void:
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
 	var adapter: UnitVisualAdapter = actor.visual_adapter
-	adapter.skeleton.skeleton_updated.connect(func() -> void: _grab(adapter))
+	adapter.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(adapter))
 	for i in 20: await process_frame
 	var ap_before := actor.stats.current_ap
 
@@ -112,8 +112,8 @@ func _run() -> void:
 	check(int(up.pelvis_unreachable) == 0, "The pelvis stays inside the legs' reach through the whole ascent (%d unreachable frames)" % up.pelvis_unreachable)
 	check(float(up.max_weight) > 0.99 and float(up.worst_weight_step) < 0.25, "The stair pose comes in and goes out smoothly (peak %.2f, worst step %.2f per frame)" % [up.max_weight, up.worst_weight_step])
 	await create_timer(0.6).timeout
-	check(adapter.stairs == null and not adapter.leg_ik.active, "On the landing nothing of the stair is left: no stair state, the leg IK is off")
-	check(adapter.ladder == null and adapter.get_presentation_state() != &"climb", "...and no placeholder climb clip was used")
+	check(adapter.rig.stairs == null and not adapter.rig.leg_ik.active, "On the landing nothing of the stair is left: no stair state, the leg IK is off")
+	check(adapter.rig.ladder == null and adapter.get_presentation_state() != &"climb", "...and no placeholder climb clip was used")
 
 	# ---- Down.
 	f.ready_actor(actor, 6, 4)
@@ -126,7 +126,7 @@ func _run() -> void:
 	check(float(down.max_float) <= 0.001 and float(down.max_sink) >= -0.5 - 0.001 and int(down.mismatch) == 0 and float(down.slide) < 0.0001, "Down: the same guarantees (float %.2f, sink %.3f, %d differences, slide %.5f)" % [down.max_float, down.max_sink, down.mismatch, down.slide])
 	check(float(down.worst_ankle) < 0.05 and int(down.pelvis_unreachable) == 0, "Down: ankles on the footholds (%.3f m), pelvis in reach (%d)" % [down.worst_ankle, down.pelvis_unreachable])
 	await create_timer(0.6).timeout
-	check(adapter.stairs == null and not adapter.leg_ik.active, "At the bottom the stair state is cleaned up too")
+	check(adapter.rig.stairs == null and not adapter.rig.leg_ik.active, "At the bottom the stair state is cleaned up too")
 
 	# ---- Interruption: defeat mid-stair leaves nothing behind.
 	f.ready_actor(actor, 6, 4)
@@ -134,13 +134,13 @@ func _run() -> void:
 		await f.battle.try_move(actor, top)
 	go.call()
 	var guard := 0
-	while (adapter.stairs == null or (adapter.stairs.pose.s if adapter.stairs.pose != null else 0.0) < 1.2) and guard < 900:
+	while (adapter.rig.stairs == null or (adapter.rig.stairs.pose.s if adapter.rig.stairs.pose != null else 0.0) < 1.2) and guard < 900:
 		guard += 1
 		await process_frame
-	check(adapter.stairs != null, "Mid-stair: the stair state is active")
+	check(adapter.rig.stairs != null, "Mid-stair: the stair state is active")
 	adapter.present_defeat()
 	await process_frame
-	check(adapter.stairs == null and not adapter.leg_ik.active, "Defeat mid-stair clears the stair state and the leg IK")
+	check(adapter.rig.stairs == null and not adapter.rig.leg_ik.active, "Defeat mid-stair clears the stair state and the leg IK")
 
 	await f.dispose(self)
 	print("Traversal stair gameplay: %d checks, %d failure(s)" % [checks, failures])

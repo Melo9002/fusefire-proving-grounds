@@ -33,7 +33,7 @@ func _run() -> void:
 	visual.add_child(child)
 	for i in 3:
 		await process_frame
-	var skeleton: Skeleton3D = visual.skeleton
+	var skeleton: Skeleton3D = visual.rig.skeleton
 	var modifiers: Array = skeleton.get_children().filter(func(c): return c is SkeletonModifier3D)
 	var names: Array = modifiers.map(func(c): return String(c.name))
 	print("  modifier order: ", names)

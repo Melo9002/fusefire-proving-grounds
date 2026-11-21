@@ -199,7 +199,7 @@ func _production_visual() -> void:
 	var attack := v.present_attack(_target(v))
 	var attack_seen := _watch(attack)
 	var shot_seen := _watch(attack.shot)
-	check(not attack.shot.is_done() and p.attack.is_pending() and v.readiness.has_request(AttackSequence.SOURCE), "An attack from idle raises the weapon first: the shot is pending and the weapon-up request is held")
+	check(not attack.shot.is_done() and p.attack.is_pending() and v.rig.readiness.has_request(AttackSequence.SOURCE), "An attack from idle raises the weapon first: the shot is pending and the weapon-up request is held")
 	var guard := 0
 	while not attack.shot.is_done() and guard < 200:
 		await process_frame
@@ -209,7 +209,7 @@ func _production_visual() -> void:
 	while not attack.is_done() and guard < 200:
 		await process_frame
 		guard += 1
-	check(attack_seen == [COMPLETED] and not p.attack.is_active() and not v.readiness.has_request(AttackSequence.SOURCE) and v.attack_plan.is_empty(), "The attack settles COMPLETED once; no readiness request and no cover plan is left")
+	check(attack_seen == [COMPLETED] and not p.attack.is_active() and not v.rig.readiness.has_request(AttackSequence.SOURCE) and v.attack_plan.is_empty(), "The attack settles COMPLETED once; no readiness request and no cover plan is left")
 
 	# A repeated attack supersedes the first (INTERRUPTED once); the second completes; one shot is shown.
 	var shots := [0]
@@ -230,7 +230,7 @@ func _production_visual() -> void:
 	await _frames(3)
 	var hit := v.present_hit()
 	var hit_seen := _watch(hit)
-	check(raising_seen == [INTERRUPTED] and raising_shot == [INTERRUPTED] and v.get_presentation_state() == &"hit" and not v.readiness.has_request(AttackSequence.SOURCE), "A hit during the attack interrupts it (both handles once) and owns the pose")
+	check(raising_seen == [INTERRUPTED] and raising_shot == [INTERRUPTED] and v.get_presentation_state() == &"hit" and not v.rig.readiness.has_request(AttackSequence.SOURCE), "A hit during the attack interrupts it (both handles once) and owns the pose")
 	var t0 := p.time
 	var returned_after := 0.0
 	guard = 0
@@ -260,14 +260,14 @@ func _production_visual() -> void:
 	v.presentation_state_changed.connect(func(state: StringName) -> void: states.append(state))
 	var defeat := v.present_defeat()
 	var defeat_seen := _watch(defeat)
-	check(doomed_seen == [INTERRUPTED] and not p.attack.is_active() and not p.aim.held and not v.readiness.has_request(AttackSequence.SOURCE) and not p.is_holding() and v.get_presentation_state() == &"defeat",
+	check(doomed_seen == [INTERRUPTED] and not p.attack.is_active() and not p.aim.held and not v.rig.readiness.has_request(AttackSequence.SOURCE) and not p.is_holding() and v.get_presentation_state() == &"defeat",
 		"Defeat during an attack and a held aim ends both: attack INTERRUPTED, no aim hold, no readiness request, no pending hold")
 	var again := v.present_defeat()
 	await _frames(2)
 	check(again == defeat and states.count(&"defeat") == 1, "A repeated defeat request is the same defeat and does not restart the clip")
 	var hit_after := v.present_hit()
 	check(hit_after.outcome == CANCELLED and defeat_seen.is_empty(), "A hit after the defeat is refused (CANCELLED) without disturbing the defeat handle")
-	var clip: float = v.animation_controller.state_length(&"defeat")
+	var clip: float = v.rig.animation_controller.state_length(&"defeat")
 	check(clip > 1.0, "The defeat reports its clip length (%.2f s)" % clip)
 	t0 = p.time
 	guard = 0
@@ -282,13 +282,13 @@ func _production_visual() -> void:
 	stage = pair[0]
 	v = pair[1]
 	v.preview_carrying = true
-	var lift := v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
+	var lift := v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0)
 	var lift_seen := _watch(lift)
 	await _frames(30)
 	var rescue_defeat := v.present_defeat()
-	check(lift_seen == [INTERRUPTED] and not v.interaction_active() and not v.presenter.postures.has_request(CharacterRig.RESCUE_POSTURE_SOURCE) and not rescue_defeat.is_done(), "Defeat during a rescue interrupts the lift and releases its posture; the defeat itself runs")
+	check(lift_seen == [INTERRUPTED] and not v.rig.interaction_active() and not v.presenter.postures.has_request(CharacterRig.RESCUE_POSTURE_SOURCE) and not rescue_defeat.is_done(), "Defeat during a rescue interrupts the lift and releases its posture; the defeat itself runs")
 	v.present_carry_released()
-	check(not is_instance_valid(v.carry_passenger) and not v.presenter.is_holding(), "...and the tactical release leaves no passenger and no hold")
+	check(not is_instance_valid(v.rig.carry_passenger) and not v.presenter.is_holding(), "...and the tactical release leaves no passenger and no hold")
 	await _drop(stage)
 
 	# Teardown with outstanding handles: an attack in flight and a hit hold, on two characters.
@@ -325,39 +325,39 @@ func _rescue_through_the_presenter() -> void:
 	var stage: Node3D = pair[0]
 	var v: UnitVisualAdapter = pair[1]
 	v.preview_carrying = true
-	v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z)
-	var t0 := v.rescue_interaction.time
+	v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z)
+	var t0 := v.rig.rescue_interaction.time
 	var p0 := v.presenter.time
 	await _frames(30)
-	var lift_time := v.rescue_interaction.time - t0
+	var lift_time := v.rig.rescue_interaction.time - t0
 	var presented := v.presenter.time - p0
 	check(absf(lift_time - presented) < 0.002 and lift_time > 0.3, "The tactical host advances the lift by exactly the presentation time, once per frame (%.4f of %.4f s)" % [lift_time, presented])
-	var before := v.rescue_interaction.time
+	var before := v.rig.rescue_interaction.time
 	v.presenter.advance_actions(0.25)
-	var after_first := v.rescue_interaction.time
+	var after_first := v.rig.rescue_interaction.time
 	v.presenter.advance_actions(0.25)
-	check(is_equal_approx(after_first - before, 0.25) and is_equal_approx(v.rescue_interaction.time, after_first), "The stage advances the clock once per engine frame: a second call in the same frame advances nothing")
-	var carrier_time := v.rescue_interaction.time
+	check(is_equal_approx(after_first - before, 0.25) and is_equal_approx(v.rig.rescue_interaction.time, after_first), "The stage advances the clock once per engine frame: a second call in the same frame advances nothing")
+	var carrier_time := v.rig.rescue_interaction.time
 	v.preview_carrying = false
 	await _frames(5)
-	check(is_equal_approx(v.rescue_interaction.time, carrier_time), "A character that is not a loaded carrier does not advance the clock (as it never applied it)")
+	check(is_equal_approx(v.rig.rescue_interaction.time, carrier_time), "A character that is not a loaded carrier does not advance the clock (as it never applied it)")
 	await _drop(stage)
 
 	# The workbench host uses the same stage.
 	var bench: Node3D = WORKBENCH.instantiate()
 	root.add_child(bench)
 	await _frames(15)
-	bench.begin_pickup(bench.character_root.global_position + bench.character_root.global_basis.orthonormalized().z)
-	var b0: float = bench.rescue_interaction.time
+	bench.rig.begin_pickup(bench.rig.character_root.global_position + bench.rig.character_root.global_basis.orthonormalized().z)
+	var b0: float = bench.rig.rescue_interaction.time
 	var bp0: float = bench.presenter.time
 	await _frames(30)
-	var bench_lift: float = bench.rescue_interaction.time - b0
+	var bench_lift: float = bench.rig.rescue_interaction.time - b0
 	var bench_presented: float = bench.presenter.time - bp0
 	check(absf(bench_lift - bench_presented) < 0.002 and bench_lift > 0.3, "The workbench advances the lift through the same presenter stage (%.4f of %.4f s)" % [bench_lift, bench_presented])
-	bench.rescue_interaction.paused = true
-	var held_at: float = bench.rescue_interaction.time
+	bench.rig.rescue_interaction.paused = true
+	var held_at: float = bench.rig.rescue_interaction.time
 	await _frames(5)
-	check(is_equal_approx(bench.rescue_interaction.time, held_at), "The workbench's pause still holds the timeline")
+	check(is_equal_approx(bench.rig.rescue_interaction.time, held_at), "The workbench's pause still holds the timeline")
 	bench.queue_free()
 	await _frames(2)
 

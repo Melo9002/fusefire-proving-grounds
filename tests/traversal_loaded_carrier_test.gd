@@ -27,13 +27,13 @@ func _carry_walk(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination
 		guard += 1
 		await process_frame
 		log.frames += 1
-		log.stairs = bool(log.stairs) or adapter.stairs != null
-		log.ladder = bool(log.ladder) or adapter.is_ladder_active() or adapter.ladder != null
-		log.leg_ik = bool(log.leg_ik) or adapter.leg_ik.active
-		log.stowed_always = bool(log.stowed_always) and adapter.is_weapon_stowed()
-		if is_instance_valid(adapter.carry_passenger):
-			var chest: Vector3 = adapter.skeleton.global_transform * adapter.skeleton.get_bone_global_pose(adapter.skeleton.find_bone("mixamorig_Spine2")).origin
-			var drift: float = (adapter.carry_passenger as Node3D).global_position.distance_to(chest)
+		log.stairs = bool(log.stairs) or adapter.rig.stairs != null
+		log.ladder = bool(log.ladder) or adapter.is_ladder_active() or adapter.rig.ladder != null
+		log.leg_ik = bool(log.leg_ik) or adapter.rig.leg_ik.active
+		log.stowed_always = bool(log.stowed_always) and adapter.rig.is_weapon_stowed()
+		if is_instance_valid(adapter.rig.carry_passenger):
+			var chest: Vector3 = adapter.rig.skeleton.global_transform * adapter.rig.skeleton.get_bone_global_pose(adapter.rig.skeleton.find_bone("mixamorig_Spine2")).origin
+			var drift: float = (adapter.rig.carry_passenger as Node3D).global_position.distance_to(chest)
 			log.drift_min = minf(float(log.drift_min), drift)
 			log.drift_max = maxf(float(log.drift_max), drift)
 		var floor_position := actor.global_position - Vector3.UP * actor.standing_height
@@ -55,9 +55,9 @@ func _run() -> void:
 	var adapter: UnitVisualAdapter = actor.visual_adapter
 	for i in 20: await process_frame
 	adapter.preview_carrying = true
-	adapter.begin_carry()
+	adapter.rig.begin_carry()
 	for i in 20: await process_frame
-	check(is_instance_valid(adapter.carry_passenger) and adapter.is_weapon_stowed(), "Setup: the carrier holds a passenger with the rifle slung")
+	check(is_instance_valid(adapter.rig.carry_passenger) and adapter.rig.is_weapon_stowed(), "Setup: the carrier holds a passenger with the rifle slung")
 
 	# ---- Stairs: the carrier rides the treads (no vertical pop) in the carry gait; the stair feet are NOT applied.
 	var stair_model := StairModel.from_links(data.get_cell(Vector3i(6, 0, 15)).world_position, data.get_cell(Vector3i(6, 3, 12)).world_position, 1.0, 1.0, 2, 3)
@@ -96,7 +96,7 @@ func _run() -> void:
 	check(float(ladder.drift_max) - float(ladder.drift_min) < 0.05 and bool(ladder.stowed_always), "The passenger does not detach or clip away from the carrier during the placeholder climb (drift %.3f m)" % (float(ladder.drift_max) - float(ladder.drift_min)))
 	check(float(ladder.seconds) < 2.0, "The unsupported climb runs at the route speed (%.1f s), not the slow ladder presentation" % ladder.seconds)
 	await create_timer(0.4).timeout
-	check(adapter.stairs == null and adapter.ladder == null and not adapter.leg_ik.active and is_instance_valid(adapter.carry_passenger), "Afterwards nothing of stairs or ladder is left and the carry is intact")
+	check(adapter.rig.stairs == null and adapter.rig.ladder == null and not adapter.rig.leg_ik.active and is_instance_valid(adapter.rig.carry_passenger), "Afterwards nothing of stairs or ladder is left and the carry is intact")
 
 	await f.dispose(self)
 	print("Traversal loaded carrier: %d checks, %d failure(s)" % [checks, failures])

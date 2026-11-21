@@ -56,10 +56,10 @@ func _run() -> void:
 	camera.make_current()
 	var head_attachment := BoneAttachment3D.new()
 	head_attachment.bone_name = &"mixamorig_Head"
-	rig.skeleton.add_child(head_attachment)
+	rig.rig.skeleton.add_child(head_attachment)
 	var top_attachment := BoneAttachment3D.new()
 	top_attachment.bone_name = &"mixamorig_HeadTop_End"
-	rig.skeleton.add_child(top_attachment)
+	rig.rig.skeleton.add_child(top_attachment)
 	for i in 20: await process_frame
 	DirAccess.make_dir_recursive_absolute(directory)
 	var look := Vector3(0, 0.9, 0)
@@ -73,19 +73,19 @@ func _run() -> void:
 			rig.last_cover_contact = {"type": cover_type, "height": cover_height, "direction": Vector3.FORWARD}
 		else:
 			rig.last_cover_contact = {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
-		rig.animation_controller.play(StringName(state))
+		rig.rig.animation_controller.play(StringName(state))
 		for i in 40: await process_frame
 		await create_timer(1.6).timeout
 		var tiles: Array[Image] = []
 		# Views are relative to the character's facing, so a turned body is still seen front/side/back.
-		var facing: Basis = rig.character_root.global_basis
+		var facing: Basis = rig.rig.character_root.global_basis
 		tiles.append(await _snap(camera, facing * Vector3(0, 1.1, 2.7), look))       # front
 		tiles.append(await _snap(camera, facing * Vector3(2.7, 1.1, 0), look))       # side (character's left)
 		tiles.append(await _snap(camera, facing * Vector3(0, 1.1, -2.7), look))      # back
 		tiles.append(await _snap(camera, facing * Vector3(1.9, 1.35, 1.9), look))    # three-quarter
 		# From the eye along the sight line: does the character see through the sights?
-		var forward := rig.weapon.global_basis.z.normalized()
-		var eye := head_attachment.global_position + (top_attachment.global_position - head_attachment.global_position) * 0.55 + rig.character_root.global_basis.z * 0.085
+		var forward := rig.rig.weapon.global_basis.z.normalized()
+		var eye := head_attachment.global_position + (top_attachment.global_position - head_attachment.global_position) * 0.55 + rig.rig.character_root.global_basis.z * 0.085
 		camera.fov = 50.0
 		tiles.append(await _snap(camera, eye, eye + forward, false))
 		camera.fov = 75.0
