@@ -152,7 +152,7 @@ func _run() -> void:
 	skeleton.set_bone_rest(left_hand, rest_short)
 	skeleton.set_bone_pose_position(left_hand, rest_short.origin)
 	modifier.measure_arms(skeleton)
-	diagnostics.sampler.setup(rig)
+	diagnostics.sampler.setup(rig.rig)
 	_apply(rig, "aim")
 	await _settle()
 	var short_aim: Dictionary = diagnostics.latest
@@ -166,7 +166,7 @@ func _run() -> void:
 	skeleton.set_bone_rest(left_hand, rest_original)
 	skeleton.set_bone_pose_position(left_hand, rest_original.origin)
 	modifier.measure_arms(skeleton)
-	diagnostics.sampler.setup(rig)
+	diagnostics.sampler.setup(rig.rig)
 
 	# Different grip distance: a farther front grip needs more reach, still bounded and measured.
 	var support_grip_before := rig.rig.handling.support_grip

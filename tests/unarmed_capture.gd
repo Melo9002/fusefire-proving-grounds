@@ -58,6 +58,8 @@ func _run() -> void:
 	var front := Vector3(0, 1.0, 2.3)
 	var side := Vector3(2.3, 1.0, 0)
 	var three_quarter := Vector3(1.7, 1.05, 1.7)
+	var other_side := Vector3(-2.3, 1.0, 0)
+	var hip_look := Vector3(0, 0.85, 0)
 
 	var armed := _character(stage, true)
 	for i in 30:
@@ -73,6 +75,8 @@ func _run() -> void:
 	await _snap(camera, front, look)
 	await _snap(camera, side, look)
 	await _snap(camera, three_quarter, look)
+	await _snap(camera, Vector3(0.9, 0.95, 0.9), hip_look)    # hand beside the thigh, close, from the character's left-front
+	await _snap(camera, Vector3(-0.9, 0.95, 0.9), hip_look)   # and from the right-front
 	bare.rig.animation_controller.play(&"move")
 	var walk := func() -> void: bare.update_locomotion(Vector3(0, 0, 3.0), 1.0 / 60.0)
 	for i in 70:
@@ -96,6 +100,7 @@ func _run() -> void:
 	await _snap(camera, side, look)
 	await _snap(camera, three_quarter, look)
 	await _snap(camera, front, look)
+	await _snap(camera, other_side, look)   # the opposite-side kneeling view
 	bare.presenter.postures.release(&"capture")
 	for i in 60:
 		await process_frame
@@ -113,6 +118,27 @@ func _run() -> void:
 		await process_frame
 	await _snap(camera, front, look)
 
+	# The equipped carrier lifting a passenger, carrying it, and setting it down (the rescue presentation).
+	bare.queue_free()
+	await process_frame
+	var carrier := _character(stage, true)
+	for i in 30:
+		await process_frame
+	var lift_from: Vector3 = carrier.rig.character_root.global_position + Vector3(0, 0, 1.1)
+	carrier.preview_carrying = true   # no tactical unit here: the context says this character is the carrier
+	carrier.rig.begin_pickup(lift_from)
+	for i in 50:
+		await process_frame
+	await _snap(camera, side, look)   # mid-lift
+	for i in 300:
+		await process_frame
+	await _snap(camera, three_quarter, look)   # carrying
+	await _snap(camera, front, look)
+	carrier.rig.begin_release()
+	for i in 60:
+		await process_frame
+	await _snap(camera, side, look)   # mid-release
+
 	var columns := 8
 	var rows := ceili(float(_tiles.size()) / columns)
 	var sheet := Image.create(TILE.x * columns, TILE.y * rows, false, Image.FORMAT_RGBA8)
@@ -120,5 +146,5 @@ func _run() -> void:
 		sheet.blit_rect(_tiles[index], Rect2i(Vector2i.ZERO, TILE), Vector2i((index % columns) * TILE.x, (index / columns) * TILE.y))
 	DirAccess.make_dir_recursive_absolute(directory)
 	sheet.save_png(directory + "/unarmed-sheet.png")
-	print("unarmed_capture: %d tiles written to %s/unarmed-sheet.png (equipped front, side; unarmed standing front, side, three-quarter; walking side, three-quarter; crouched side, three-quarter, front; kneeling side, three-quarter, front; ladder; carrying)" % [_tiles.size(), directory])
+	print("unarmed_capture: %d tiles written to %s/unarmed-sheet.png (equipped front, side; unarmed standing front, side, three-quarter, two hip close-ups; walking side, three-quarter; crouched side, three-quarter, front; kneeling side, three-quarter, front, opposite side; ladder; carrying; then an equipped carrier mid-lift, carrying (three-quarter, front) and mid-release)" % [_tiles.size(), directory])
 	quit(0)
