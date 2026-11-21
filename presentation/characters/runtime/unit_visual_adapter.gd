@@ -1,5 +1,5 @@
 @tool
-extends "res://presentation/characters/runtime/character_rig.gd"
+extends CharacterRig
 class_name UnitVisualAdapter
 
 signal presentation_state_changed(state_name: StringName)

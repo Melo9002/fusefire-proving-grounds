@@ -1,5 +1,5 @@
 @tool
-extends "res://presentation/characters/runtime/character_rig.gd"
+extends CharacterRig
 
 @onready var status_label: Label = get_node_or_null("UI/Status") as Label
 @onready var camera: Camera3D = get_node_or_null("Camera3D") as Camera3D

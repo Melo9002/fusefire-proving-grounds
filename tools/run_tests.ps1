@@ -159,6 +159,45 @@ $skippedExplicit = @()
 $selectionTitle = $Tier
 $smokeNames = @($discovered | Where-Object { $meta[$_].Smoke })
 
+# Tests that reference a fixture/support file (a path under tests/ below the top level), directly or transitively through other fixture/support files. Matching is by the
+# res:// path string (the way tests preload fixtures) or by the fixture's class_name when it declares one; the area-table fallback covers anything neither finds.
+$script:testSourceIndex = $null
+function Get-FixtureReferrers([string]$relativePath) {
+    if ($null -eq $script:testSourceIndex) {
+        $script:testSourceIndex = @{}
+        foreach ($file in (Get-ChildItem -LiteralPath $testsRoot -Recurse -File -Include *.gd, *.tscn, *.tres)) {
+            $relative = $file.FullName.Substring($repoRoot.Length + 1).Replace("\", "/")
+            $script:testSourceIndex[$relative] = Get-Content -LiteralPath $file.FullName -Raw
+        }
+    }
+    $found = New-Object System.Collections.Generic.HashSet[string]
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+    $queue = New-Object System.Collections.Generic.Queue[string]
+    [void]$seen.Add($relativePath)
+    $queue.Enqueue($relativePath)
+    while ($queue.Count -gt 0) {
+        $current = $queue.Dequeue()
+        $needle = "res://$current"
+        # A fixture that declares a class_name is also reached by that name.
+        $classPattern = $null
+        if ($script:testSourceIndex.ContainsKey($current)) {
+            $declared = [regex]::Match($script:testSourceIndex[$current], '(?m)^class_name\s+(\w+)')
+            if ($declared.Success) { $classPattern = '\b' + $declared.Groups[1].Value + '\b' }
+        }
+        foreach ($candidate in $script:testSourceIndex.Keys) {
+            if ($candidate -eq $current) { continue }
+            $text = $script:testSourceIndex[$candidate]
+            if (-not $text.Contains($needle) -and ($null -eq $classPattern -or -not [regex]::IsMatch($text, $classPattern))) { continue }
+            if ($candidate -match '^tests/[^/]+\.gd$') {
+                [void]$found.Add([IO.Path]::GetFileNameWithoutExtension($candidate))
+            } elseif ($seen.Add($candidate)) {
+                $queue.Enqueue($candidate)
+            }
+        }
+    }
+    return @($found | Sort-Object)
+}
+
 function Add-Selection([string]$name, [string]$reason) {
     $existing = $selected | Where-Object { $_.Name -eq $name } | Select-Object -First 1
     if ($null -ne $existing) { if ($existing.Reason -notlike "*$reason*") { $existing.Reason += "; $reason" }; return }
@@ -223,9 +262,32 @@ switch ($Tier) {
         $broaden = $false
         $areaNotes = @()
         foreach ($path in $paths) {
-            if ($path -like "tests/*" -and $path -like "*.gd") {
+            if ($path -match '^tests/[^/]+\.gd$') {
                 $n = [IO.Path]::GetFileNameWithoutExtension($path)
                 if ($meta.ContainsKey($n) -and -not $meta[$n].Explicit) { Add-Selection $n "the test itself changed" }
+                continue
+            }
+            if ($path -like "tests/*" -and ($path -like "*.gd" -or $path -like "*.tscn" -or $path -like "*.tres" -or $path -like "*.json" -or $path -like "*.gdshader")) {
+                # A fixture or support file (anything under tests/ that is not a top-level test script): select every test that references it, directly or through other fixture/support files.
+                # tests/catalog.json is test metadata, not a fixture.
+                if ($path -eq "tests/catalog.json") { continue }
+                $referrers = @(Get-FixtureReferrers $path)
+                $fixtureTests = @($referrers | Where-Object { $meta.ContainsKey($_) -and -not $meta[$_].Explicit })
+                if ($fixtureTests.Count -gt 0) {
+                    foreach ($n in $fixtureTests) { Add-Selection $n "references changed fixture/support file $path" }
+                    $areaNotes += "$path -> $($fixtureTests.Count) referencing test(s) (fixture/support reference scan)"
+                    continue
+                }
+                # Nothing references it: fall back to the area table, and say so.
+                $fallback = $null
+                foreach ($area in $catalog.areas) { if ($path.StartsWith($area.path) -and ($null -eq $fallback -or $area.path.Length -gt $fallback.path.Length)) { $fallback = $area } }
+                if ($null -ne $fallback) {
+                    foreach ($s in $fallback.sub) { [void]$affected.Add($s) }
+                    $areaNotes += "$path -> unreferenced fixture/support file: fell back to subsystem $($fallback.sub -join '+')"
+                } else {
+                    $broaden = $true
+                    $areaNotes += "$path -> unreferenced fixture/support file with no area: broadened to every critical test"
+                }
                 continue
             }
             if ($path -like "docs/*" -or $path -like "*.md" -or $path -like "*.import" -or $path -like "*.uid" -or $path -like "tests/*") { continue }

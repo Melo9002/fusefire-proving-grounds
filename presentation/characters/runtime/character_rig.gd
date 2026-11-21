@@ -1,12 +1,17 @@
 @tool
+class_name CharacterRig
 extends Node3D
 
+const RigResolver := preload("res://presentation/characters/rig_profile/rig_resolver.gd")
 const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/runtime/character_animation_controller.gd")
 
 @export_group("Model Assets")
 ## Character model to assemble. It must contain a Skeleton3D.
 ## Character model instantiated by this presentation rig. MIRA Zero is the supported default.
 @export var character_scene: PackedScene = preload("res://art/characters/mira_0/models/mira_0_prototype.glb")
+## Optional rig profile (anatomy, joint limits, sockets) describing `character_scene`'s skeleton. PASSIVE in Task 07's first package: it is resolved and validated once when the character is built
+## and the result is exposed as `resolved_rig`; nothing in the rig reads it to pose the character yet, so assigning or clearing it changes no behaviour.
+@export var rig_profile: Resource
 ## Uniform correction applied to imported models whose source units are not metres.
 @export_range(0.1, 4.0, 0.01) var character_scale := 1.0
 ## Weapon model to attach. It must contain SupportHandTarget and MuzzleSocket nodes.
@@ -248,7 +253,17 @@ func _build_character() -> void:
 	character_root.add_child(model)
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	assert(skeleton != null, "Character model must contain Skeleton3D")
+	_resolve_rig_profile()
 	assert(right_arm_bones.size() == 3 and left_arm_bones.size() == 3, "Arm bone maps require upper arm, forearm, and hand")
+
+
+## The profile resolved against this character's skeleton (a RigResolver.Resolved), or null without a profile. Read-only information: roles, measurements, capabilities, diagnostics.
+var resolved_rig: RefCounted
+
+func _resolve_rig_profile() -> void:
+	resolved_rig = null
+	if rig_profile != null:
+		resolved_rig = RigResolver.resolve(rig_profile, skeleton)
 
 
 func _build_weapon_attachment() -> void:

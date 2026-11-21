@@ -2,10 +2,10 @@ extends RefCounted
 ## Task 05 PROTOTYPE: resolves a RigProfile against a real Skeleton3D. It maps semantic roles to bone indices, derives the body's axes and proportions from the REST POSE (metres, with the
 ## character scale applied exactly once), validates everything against FuseFire's needs, and reports what the body can structurally present. It never writes to the skeleton.
 ## It is a validation experiment: no production code calls it, and it does not animate anything.
-const Roles := preload("res://research/rig_profile_prototype/rig_roles.gd")
-const Diagnostics := preload("res://research/rig_profile_prototype/rig_diagnostics.gd")
-const RigProfile := preload("res://research/rig_profile_prototype/rig_profile.gd")
-const EquipmentPresentation := preload("res://research/rig_profile_prototype/equipment_presentation.gd")
+const Roles := preload("res://presentation/characters/rig_profile/rig_roles.gd")
+const Diagnostics := preload("res://presentation/characters/rig_profile/rig_diagnostics.gd")
+const RigProfile := preload("res://presentation/characters/rig_profile/rig_profile.gd")
+const EquipmentPresentation := preload("res://presentation/characters/equipment/equipment_presentation.gd")
 
 enum Status { SUPPORTED, FALLBACK, UNSUPPORTED, NOT_IMPLEMENTED }
 

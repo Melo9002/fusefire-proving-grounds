@@ -3,11 +3,11 @@ extends RefCounted
 ##   A  MIRA: the real production skeleton (Mixamo names, T-pose, native scale 0.58 m hips shown at 1.6x, local bone axes rotated 90 degrees about Y, a head-top end bone, five-finger hands).
 ##   B  Alternate: a small SYNTHETIC skeleton, not a production character: Unreal-style names, a different hierarchy (a root bone, only two spine bones), A-pose arms, shorter legs and arms, wider
 ##      shoulders, facing -Z (the opposite of Godot's convention), bone local +X along each bone, no toes, no fingers, no head-top bone (so its height is declared).
-const RigProfile := preload("res://research/rig_profile_prototype/rig_profile.gd")
-const Anatomy := preload("res://research/rig_profile_prototype/rig_anatomy.gd")
-const JointSpec := preload("res://research/rig_profile_prototype/rig_joint_spec.gd")
-const Socket := preload("res://research/rig_profile_prototype/rig_socket.gd")
-const EquipmentPresentation := preload("res://research/rig_profile_prototype/equipment_presentation.gd")
+const RigProfile := preload("res://presentation/characters/rig_profile/rig_profile.gd")
+const Anatomy := preload("res://presentation/characters/rig_profile/rig_anatomy.gd")
+const JointSpec := preload("res://presentation/characters/rig_profile/rig_joint_spec.gd")
+const Socket := preload("res://presentation/characters/rig_profile/rig_socket.gd")
+const EquipmentPresentation := preload("res://presentation/characters/equipment/equipment_presentation.gd")
 const MIRA_MODEL := "res://art/characters/mira_0/models/mira_0_prototype.glb"
 
 # ---------------------------------------------------------------- shared helpers

@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://presentation/characters/runtime/unit_visual_adapter.gd" id="1_adapter"]
 [ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
+[ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
 
 [sub_resource type="SphereMesh" id="Sphere_target"]
 radius = 0.018
@@ -15,6 +16,7 @@ camera_focus_anchor = Vector3(0, 0.98, 0)
 camera_eye_anchor = Vector3(0, 1.48, 0)
 character_scene = ExtResource("3_model")
 character_scale = 1.6
+rig_profile = ExtResource("4_profile")
 right_arm_bones = Array[StringName]([&"mixamorig_RightArm", &"mixamorig_RightForeArm", &"mixamorig_RightHand"])
 left_arm_bones = Array[StringName]([&"mixamorig_LeftArm", &"mixamorig_LeftForeArm", &"mixamorig_LeftHand"])
 clip_library = null

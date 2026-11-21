@@ -1,6 +1,6 @@
 extends Resource
 ## Task 05 PROTOTYPE. The authored (not derivable) facts about a body. No gameplay role, faction, class, AP or mission field belongs here.
-const JointSpec := preload("res://research/rig_profile_prototype/rig_joint_spec.gd")
+const JointSpec := preload("res://presentation/characters/rig_profile/rig_joint_spec.gd")
 ## Multiplies the skeleton's native units to metres, exactly once. Must equal the scale the model is actually shown at (checked when the skeleton is in a scene tree).
 @export var character_scale := 1.0
 ## The bone at the very top of the head (an end bone), when the skeleton has one.

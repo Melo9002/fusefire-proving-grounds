@@ -2,10 +2,10 @@ extends SceneTree
 ## Task 05 evidence (a PROTOTYPE, not production): one rig-profile schema and one validator describe two meaningfully different humanoid skeletons (the real MIRA skeleton and a small synthetic
 ## Unreal-style one), reject deliberately broken profiles with clear diagnostics, and feed a production pure solver (the stair planner) from profile-derived proportions. It does NOT animate the
 ## second skeleton: the full modifier stack on another rig is Task 09's proof. Structural headless checks say nothing about how any pose looks.
-const Fix := preload("res://research/rig_profile_prototype/fixtures.gd")
-const Resolver := preload("res://research/rig_profile_prototype/rig_resolver.gd")
-const Roles := preload("res://research/rig_profile_prototype/rig_roles.gd")
-const RigProfile := preload("res://research/rig_profile_prototype/rig_profile.gd")
+const Fix := preload("res://tests/fixtures/rigs/rig_fixtures.gd")
+const Resolver := preload("res://presentation/characters/rig_profile/rig_resolver.gd")
+const Roles := preload("res://presentation/characters/rig_profile/rig_roles.gd")
+const RigProfile := preload("res://presentation/characters/rig_profile/rig_profile.gd")
 const Status := Resolver.Status
 var failures := 0
 var checks := 0
@@ -171,13 +171,13 @@ func _run() -> void:
 				if String(property.name).to_lower().contains(word):
 					leak = true
 	check(not leak, "The rig profile resources contain no gameplay-role field (faction, archetype, mission, AP, movement range...)")
-	var loaded_a = Resolver.resolve(load("res://research/rig_profile_prototype/profiles/mira_rig_profile.tres"), a_skeleton)
-	var loaded_b = Resolver.resolve(load("res://research/rig_profile_prototype/profiles/alternate_rig_profile.tres"), b_skeleton)
+	var loaded_a = Resolver.resolve(load("res://art/characters/mira_0/mira_0_rig_profile.tres"), a_skeleton)
+	var loaded_b = Resolver.resolve(load("res://tests/fixtures/rigs/alternate_rig_profile.tres"), b_skeleton)
 	check(not loaded_a.diagnostics.has_errors() and not loaded_b.diagnostics.has_errors() and loaded_a.bone_index == a.bone_index and loaded_b.bone_index == b.bone_index and absf(loaded_a.measurements.leg_length - ma.leg_length) < 0.0001, "The saved .tres files (BoneMap and SkeletonProfileHumanoid included) load and resolve identically to the code-built profiles")
 
 	a_skeleton.free()
 	b_skeleton.free()
 	collapsed.free()
 	renamed.free()
-	print("Rig profile prototype: %d checks, %d failure(s)" % [checks, failures])
+	print("Rig profile: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

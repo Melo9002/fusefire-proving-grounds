@@ -1,9 +1,9 @@
 [gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_joint_spec.gd" id="1_xf7wt"]
-[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_anatomy.gd" id="2_cj43u"]
-[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_profile.gd" id="3_fr74x"]
-[ext_resource type="Script" path="res://research/rig_profile_prototype/rig_socket.gd" id="4_ludp6"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_joint_spec.gd" id="1_xf7wt"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_anatomy.gd" id="2_cj43u"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_profile.gd" id="3_fr74x"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_socket.gd" id="4_ludp6"]
 
 [sub_resource type="Resource" id="Resource_gkwgm"]
 script = ExtResource("1_xf7wt")
