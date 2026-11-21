@@ -33,7 +33,7 @@ func run() -> void:
 	for cell_pos in [Vector3i(2, 0, 2), Vector3i(3, 0, 2), Vector3i(4, 0, 2), Vector3i(4, 2, 2), Vector3i(4, 0, 2)]:
 		path.append(grid.grid_to_world(cell_pos))
 	check(CONTEXT.path_poses(grid, path) == [&"move", &"vault", &"vault", &"climb", &"descend"], "Raw path distinguishes cover from elevation")
-	var demo = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
+	var demo = load("res://tools/animation_workbench/pose_workbench.tscn").instantiate()
 	root.add_child(demo)
 	await process_frame
 	await process_frame

@@ -4,7 +4,7 @@ extends SceneTree
 ## arbitration against a higher-priority source, ramp continuity, and release on every way a cover pose can end (leaving cover, defeat, teardown). The workbench's cover demo and diagnostic
 ## preset use the same two shared calls. Structural headless checks say nothing about how any pose looks; the cover look itself is pinned by the existing cover tests.
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
-const WORKBENCH := preload("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn")
+const WORKBENCH := preload("res://tools/animation_workbench/pose_workbench.tscn")
 const SOURCE := &"tactical/cover"
 var failures := 0
 var checks := 0

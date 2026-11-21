@@ -3,7 +3,7 @@ extends SceneTree
 ## the absorption of a facing change into a cover pose, and a direction gameplay authority committed. The tactical adapter only translates (which cover holds the body, which direction is committed) and writes no
 ## yaw of its own; the workbench uses the same presenter calls and the same shot decision as the tactical host. Structural headless checks.
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
-const WORKBENCH := preload("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn")
+const WORKBENCH := preload("res://tools/animation_workbench/pose_workbench.tscn")
 const UNIT_SCENE := preload("res://units/tactical_unit.tscn")
 const FacingMode := PresentationTypes.FacingMode
 var failures := 0
@@ -127,7 +127,7 @@ func _run() -> void:
 	check(CoverEdgeSelector.shot_state(true, plan_protected, -1) == &"shoot_left" and CoverEdgeSelector.shot_state(true, plan_protected, 1) == &"shoot_right" and CoverEdgeSelector.shot_state(true, {}, 0) == &"shoot_right",
 		"Full cover with no honest peek: the passive lean side (right on a tie or none)")
 	check(CoverEdgeSelector.shot_state(false, plan_left, -1) == &"shoot", "Low cover always shows the ordinary shot")
-	for path in ["res://art/characters/mira_0/demo/mira_0_pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
+	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)
 		check(not text.contains("FiringMode.AROUND_LEFT: shot") and not text.contains("&\"shoot_left\" if cover_side"), "%s does not repeat the shot decision" % path.get_file())
 

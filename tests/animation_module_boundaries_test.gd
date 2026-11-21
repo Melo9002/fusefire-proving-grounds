@@ -105,11 +105,11 @@ func _run() -> void:
 		# Combat presentation ownership (Task 07 package 6): the attack, the aim hold, the timed hit return and the rescue clock live in the presenter. The adapter, the rig and the workbench keep no clock,
 	# timer or lifecycle state of their own for them, and nothing observes the retired signals or polls the retired "pending" accessor.
 	var retired_state := RegEx.create_from_string("_return_generation|_return_to_idle_after|\battack_phase\b|\bAttackPhase\b|_aim_held|_aim_release_left|_presentation_clock|_attack_shot_state|_recover_left|\bshot_fired\b|attack_sequence_ended|is_attack_pending|_retarget_aim_blend|ATTACK_SOURCE|AIM_RELEASE_GRACE")
-	for path in ["presentation/tactical/unit_visual_adapter.gd", "presentation/characters/rig/character_rig.gd", "art/characters/mira_0/demo/mira_0_pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
+	for path in ["presentation/tactical/unit_visual_adapter.gd", "presentation/characters/rig/character_rig.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
 		var found := retired_state.search(_code(path))
 		check(found == null, "%s still uses retired combat-presentation state (%s): it belongs to CharacterPresenter now" % [path, found.get_string() if found else ""])
 	check(not _code("presentation/tactical/unit_visual_adapter.gd").contains("create_timer("), "The adapter starts no scene-tree timer: timed states are the presenter's (begin_hold)")
-	var advances := RegEx.create_from_string("rescue_interaction\\.advance\\(").search_all(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd"))
+	var advances := RegEx.create_from_string("rescue_interaction\\.advance\\(").search_all(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd"))
 	check(advances.size() == 1 and rig_code.contains("func advance_rescue_clock("), "The rescue clock is advanced in exactly one place (%d), CharacterRig.advance_rescue_clock, which only the presenter's action stage calls" % advances.size())
 	var stage_callers := RegEx.create_from_string("advance_rescue_clock\\(")
 	for path in _scripts("presentation") + _scripts("art/characters"):
@@ -118,7 +118,7 @@ func _run() -> void:
 	# Facing and persistent-action ownership (Task 07 package 7): the presenter decides facing and the rig applies it. Only the rig writes a yaw (its three appliers and the cover-yaw ramp); no host, adapter or
 	# tactical unit writes the visual root yaw or the cover yaw; the committed Aim's progression and the pending pickup are the presenter's; TacticalUnit keeps no defeat timer for a character that has a lifecycle.
 	var yaw_writer := RegEx.create_from_string("(^|[^_A-Za-z.])rotation\\.y\\s*=[^=]|character_root\\.rotation\\.y\\s*=[^=]|global_rotation\\.y\\s*=[^=]|_cover_yaw\\s*=[^=]")
-	for path in ["presentation/tactical/unit_visual_adapter.gd", "art/characters/mira_0/demo/mira_0_pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
+	for path in ["presentation/tactical/unit_visual_adapter.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
 		var found_yaw := yaw_writer.search(_code(path))
 		check(found_yaw == null, "%s writes a yaw itself (%s): facing goes through CharacterPresenter and is applied by the rig" % [path, found_yaw.get_string() if found_yaw else ""])
 	check(yaw_writer.search_all(rig_code).size() == 5, "CharacterRig writes a yaw in %d places: the cover-yaw setter, the ramp, apply_facing_yaw, apply_root_yaw and absorb_facing_change are the only ones (5)" % yaw_writer.search_all(rig_code).size())
@@ -140,7 +140,7 @@ func _run() -> void:
 	var route_builder_code := _code("presentation/tactical/tactical_route_builder.gd")
 	check(route_builder_code.contains("extends RefCounted") and RegEx.create_from_string("TacticalUnit|visual_adapter|UnitVisualAdapter|get_node|get_tree|add_child").search(route_builder_code) == null, "TacticalRouteBuilder is pure: no unit, adapter, node or scene-tree access")
 	var traversal_dicts := RegEx.create_from_string("var (traversal|traversal_pose|stair_state|stair_pose)\\b")
-	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd")) == null,
+	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd")) == null,
 		"The rig, the adapter and the workbench keep no traversal or stair dictionary: the state is LadderClimb and StairWalk (typed)")
 	# Rig independence (Task 07 package 9): no skeleton bone name in production code (the rig profile holds them), no required weapon, no dictionary-configured modifier, and the foot-point convention in the
 	# composition: the visual scene has no origin offset and TacticalUnit places it.
@@ -159,7 +159,7 @@ func _run() -> void:
 	# Composition (Task 07 package 10): the tactical adapter and the workbench are HOSTS of a CharacterRig, not CharacterRigs. A host owns its context (tactical reads, workbench controls) and drives its rig child
 	# and that rig's presenter once per frame; the rig owns the skeleton, the modifiers, the targets and the poses and has no frame callback of its own.
 	var adapter_code := _code("presentation/tactical/unit_visual_adapter.gd")
-	var workbench_code := _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd")
+	var workbench_code := _code("tools/animation_workbench/pose_workbench.gd")
 	check(adapter_code.contains("extends Node3D") and workbench_code.contains("extends Node3D"), "The tactical adapter and the workbench are plain Node3D hosts of a CharacterRig")
 	for path in _scripts("presentation") + _scripts("art") + _scripts("units") + _scripts("tools") + _scripts("research"):
 		check(RegEx.create_from_string("(?m)^extends\\s+(CharacterRig|UnitVisualAdapter)\\b").search(_code(path)) == null, "%s inherits the rig or the adapter: hosts compose a CharacterRig" % path)
@@ -167,7 +167,7 @@ func _run() -> void:
 	for builder in ["_build_character", "_build_weapon_attachment", "_build_arm_ik", "_build_animation_controller"]:
 		check(not adapter_code.contains(builder) and not workbench_code.contains(builder), "A host does not build the skeleton (%s): the rig builds itself" % builder)
 	check(not adapter_code.contains("skeleton.add_child") or adapter_code.contains("CLASS_MARKER_NAME"), "The adapter attaches only its class marker to the skeleton")
-	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "art/characters/mira_0/demo/mira_0_pose_workbench.tscn"]:
+	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "tools/animation_workbench/pose_workbench.tscn"]:
 		var scene_text := FileAccess.get_file_as_string("res://" + scene_path)
 		check(scene_text.contains('[node name="Rig" type="Node3D" parent="."]') and scene_text.contains("character_rig.gd"), "%s hosts its CharacterRig as the Rig child" % scene_path)
 	# Cover (Task 07 package 10): the reusable body-motion parameters (CoverPostureProfile) are separate from the tactical edge-selection policy (CoverEdgePolicy, read by CoverEdgeSelector).

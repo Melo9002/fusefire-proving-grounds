@@ -8,7 +8,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var out_path := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://ladder.png"
-	var bench = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
+	var bench = load("res://tools/animation_workbench/pose_workbench.tscn").instantiate()
 	root.add_child(bench)
 	for i in 30: await process_frame
 	var camera := Camera3D.new()

@@ -4,7 +4,7 @@ extends SceneTree
 ## interruption precedence (hit, defeat, a newer attack, a requester's cancel, teardown), the persistent aim hold (never a handle), rescue advancement through the presenter in both hosts, and a production
 ## attack whose authoritative result is untouched by anything that happens to its handles. Structural headless checks, not a visual verdict.
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
-const WORKBENCH := preload("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn")
+const WORKBENCH := preload("res://tools/animation_workbench/pose_workbench.tscn")
 const UNIT_SCENE := preload("res://units/tactical_unit.tscn")
 const COMPLETED := PresentationTypes.Outcome.COMPLETED
 const CANCELLED := PresentationTypes.Outcome.CANCELLED

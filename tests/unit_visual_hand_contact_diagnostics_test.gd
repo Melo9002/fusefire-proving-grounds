@@ -199,7 +199,7 @@ func _key(keycode: Key) -> InputEventKey:
 	return event
 
 func _workbench() -> void:
-	var workbench: Node3D = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
+	var workbench: Node3D = load("res://tools/animation_workbench/pose_workbench.tscn").instantiate()
 	root.add_child(workbench)
 	for i in 30: await process_frame
 	var status: Label = workbench.get_node("UI/Status")

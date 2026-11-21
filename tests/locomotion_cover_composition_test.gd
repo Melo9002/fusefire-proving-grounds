@@ -54,7 +54,7 @@ func _apply(rig, twist: float, lean: float, depth := 0.0, bank := 0.0, pitch := 
 		await process_frame
 
 func _run() -> void:
-	var rig = load("res://art/characters/mira_0/demo/mira_0_pose_workbench.tscn").instantiate()
+	var rig = load("res://tools/animation_workbench/pose_workbench.tscn").instantiate()
 	root.add_child(rig)
 	for i in 30: await process_frame
 	rig.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(rig))
