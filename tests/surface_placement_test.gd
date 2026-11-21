@@ -1,7 +1,7 @@
 extends SceneTree
 ## Prototype fits/contact hints must stay separate from live tactical permission.
 const Fit = preload("res://systems/grid/surface_placement.gd")
-const Pose = preload("res://presentation/characters/runtime/tactical_pose_context.gd")
+const Pose = preload("res://presentation/tactical/tactical_pose_context.gd")
 var failures := 0
 var checks := 0
 

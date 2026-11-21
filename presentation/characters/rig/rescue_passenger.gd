@@ -19,7 +19,7 @@ extends Node3D
 ##    frame and replayed every skeleton update, so the passenger leans, bobs and turns with the carrier's torso instead of
 ##    hanging from a fixed point in space. The passenger's own root origin is never the attachment point.
 
-const PoseTable := preload("res://presentation/characters/runtime/passive_passenger_pose.gd")
+const PoseTable := preload("res://presentation/characters/rig/passive_passenger_pose.gd")
 ## Body frame -> carrier frame before the yaw. Columns are where the body's x, y and z axes point.
 const BODY_TO_CARRY := Basis(Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, -1, 0))
 

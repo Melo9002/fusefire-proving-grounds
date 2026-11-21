@@ -4,7 +4,7 @@ extends Node
 ## character_fallback_animation_builder.gd.
 ## Workflow and procedural timing: docs/animation-editing-guide.md.
 
-const FALLBACK_BUILDER := preload("res://presentation/characters/runtime/character_fallback_animation_builder.gd")
+const FALLBACK_BUILDER := preload("res://presentation/characters/rig/character_fallback_animation_builder.gd")
 
 signal state_changed(state_name: StringName)
 

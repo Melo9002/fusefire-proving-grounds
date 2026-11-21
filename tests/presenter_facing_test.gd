@@ -127,7 +127,7 @@ func _run() -> void:
 	check(CoverEdgeSelector.shot_state(true, plan_protected, -1) == &"shoot_left" and CoverEdgeSelector.shot_state(true, plan_protected, 1) == &"shoot_right" and CoverEdgeSelector.shot_state(true, {}, 0) == &"shoot_right",
 		"Full cover with no honest peek: the passive lean side (right on a tie or none)")
 	check(CoverEdgeSelector.shot_state(false, plan_left, -1) == &"shoot", "Low cover always shows the ordinary shot")
-	for path in ["res://art/characters/mira_0/demo/mira_0_pose_workbench.gd", "res://presentation/characters/runtime/unit_visual_adapter.gd"]:
+	for path in ["res://art/characters/mira_0/demo/mira_0_pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)
 		check(not text.contains("FiringMode.AROUND_LEFT: shot") and not text.contains("&\"shoot_left\" if cover_side"), "%s does not repeat the shot decision" % path.get_file())
 

@@ -15,7 +15,7 @@ reported loudly and still runs in the full tier.
 .\tools\run_tests.ps1 subsystem -Subsystem movement,replay -Critical
 .\tools\run_tests.ps1 select -Test traversal_*,path_refiner_test
 .\tools\run_tests.ps1 changed -Since HEAD
-.\tools\run_tests.ps1 changed -Changed presentation/characters/runtime/cover_crouch_modifier.gd
+.\tools\run_tests.ps1 changed -Changed presentation/characters/rig/modifiers/cover_crouch_modifier.gd
 .\tools\run_tests.ps1 full -List
 .\tools\run_tests.ps1 full
 .\tools\run_tests.ps1 check

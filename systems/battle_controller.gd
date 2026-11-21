@@ -341,7 +341,7 @@ func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var path_cells: Array[Vector3i] = []
 	for point in path:
 		path_cells.append(world_to_grid(point))
-	return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations, "path_cells": path_cells, "path": path, "path_cost": pathfinder.get_path_cost(path, world_to_grid), "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/characters/runtime/tactical_pose_context.gd").path_poses(grid_manager, path)}
+	return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations, "path_cells": path_cells, "path": path, "path_cost": pathfinder.get_path_cost(path, world_to_grid), "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/tactical/tactical_pose_context.gd").path_poses(grid_manager, path)}
 
 func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
 	unit_moved.emit(unit, start_cell, target_cell)

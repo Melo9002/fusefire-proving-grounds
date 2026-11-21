@@ -76,7 +76,7 @@ func _run() -> void:
 	check(saw_idle_heading, "While idle, a turn preview still feeds its heading rate (speed 0, heading %.2f rad/s at some frame): the workbench behaviour is preserved" % bench.presenter.heading_rate)
 
 	# ---- No second path: neither host calls the locomotion feed or writes the posture ramps itself.
-	for path in ["res://art/characters/mira_0/demo/mira_0_pose_workbench.gd", "res://presentation/characters/runtime/unit_visual_adapter.gd"]:
+	for path in ["res://art/characters/mira_0/demo/mira_0_pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)
 		check(not text.contains("update_locomotion_presentation("), "%s no longer drives the locomotion feed directly" % path.get_file())
 		check(not text.contains("crouch_modifier.depth =") and not text.contains("crouch_modifier.kneel ="), "%s no longer writes the crouch depth or kneel directly" % path.get_file())

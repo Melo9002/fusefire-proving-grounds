@@ -100,7 +100,7 @@ func _run() -> void:
 	await _frames(2)
 
 	# ---- The dictionaries are gone.
-	var rig_text := FileAccess.get_file_as_string("res://presentation/characters/runtime/character_rig.gd")
+	var rig_text := FileAccess.get_file_as_string("res://presentation/characters/rig/character_rig.gd")
 	check(not rig_text.contains("var traversal_pose") and not rig_text.contains("var stair_pose") and not rig_text.contains("var stair_state") and not rig_text.contains("var traversal :="), "The rig keeps no traversal or stair dictionary")
 
 	print("Traversal state: %d checks, %d failure(s)" % [checks, failures])

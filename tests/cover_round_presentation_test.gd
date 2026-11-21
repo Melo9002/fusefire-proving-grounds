@@ -2,7 +2,7 @@ extends SceneTree
 ## Round assets read as round: cover markers hug the real curved wall and pose contacts face it,
 ## while the tactical data (reserved tiles, cover, shots, standing points) is untouched.
 ## Rendered review (needs a display): -- capture <directory>
-const Pose = preload("res://presentation/characters/runtime/tactical_pose_context.gd")
+const Pose = preload("res://presentation/tactical/tactical_pose_context.gd")
 
 var failures := 0
 var checks := 0

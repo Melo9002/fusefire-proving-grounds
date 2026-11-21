@@ -16,7 +16,7 @@
   {"path": "units/", "sub": ["core", "actions", "combat"], "central": true},
   {"path": "levels/", "sub": ["core"], "central": true},
   {"path": "presentation/characters/", "sub": ["animation"], "central": false},
-  {"path": "presentation/actions/", "sub": ["animation", "actions"], "central": false},
+  {"path": "presentation/tactical/", "sub": ["animation", "actions"], "central": false},
   {"path": "presentation/camera/", "sub": ["ui"], "central": false},
   {"path": "presentation/overlays/", "sub": ["ui"], "central": false},
   {"path": "presentation/objectives/", "sub": ["ui", "missions"], "central": false},
@@ -28,6 +28,7 @@
   {"path": "tests/fixtures/rigs/", "sub": ["animation"], "central": false},
   {"path": "tests/fixtures/legacy_generation/", "sub": ["generation"], "central": false},
   {"path": "tests/support/", "sub": ["ai"], "central": false},
+  {"path": "tools/animation_workbench/", "sub": ["animation", "tooling"], "central": false},
   {"path": "tools/", "sub": ["tooling"], "central": false},
   {"path": "project.godot", "sub": ["core"], "central": true}
 ],

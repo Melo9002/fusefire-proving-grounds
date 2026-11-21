@@ -2,7 +2,7 @@ extends SceneTree
 ## Invariants: supported fit, swept route, body separation, shared shot/pose point,
 ## independent source-cell geometry and deterministic reconstructed evidence.
 const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.gd")
-const Pose = preload("res://presentation/characters/runtime/tactical_pose_context.gd")
+const Pose = preload("res://presentation/tactical/tactical_pose_context.gd")
 var failures := 0
 var checks := 0
 

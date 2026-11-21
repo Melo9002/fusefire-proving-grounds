@@ -1,6 +1,6 @@
 extends SceneTree
 
-const CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
+const CONTEXT := preload("res://presentation/tactical/tactical_pose_context.gd")
 var failures := 0
 
 func check(ok: bool, message: String) -> void:

@@ -110,7 +110,7 @@ func _run() -> void:
 	doomed.free()
 
 	# ---- Superseded writers are gone: the cover policy no longer touches the ramps (text-level ratchet lives in animation_module_boundaries_test).
-	var adapter_text := FileAccess.get_file_as_string("res://presentation/characters/runtime/unit_visual_adapter.gd")
+	var adapter_text := FileAccess.get_file_as_string("res://presentation/tactical/unit_visual_adapter.gd")
 	check(not adapter_text.contains("crouch_modifier.depth =") and not adapter_text.contains("crouch_modifier.kneel ="), "The adapter has no direct writer of the crouch depth or kneel any more")
 
 	# ---- The workbench uses the same shared calls: a diagnostic preset (BASE) and a cover demo (CONTEXT) arbitrate through the presenter.

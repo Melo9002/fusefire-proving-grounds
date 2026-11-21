@@ -3,7 +3,7 @@ class_name CharacterRig
 extends Node3D
 
 const RigResolver := preload("res://presentation/characters/rig_profile/rig_resolver.gd")
-const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/runtime/character_animation_controller.gd")
+const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/rig/character_animation_controller.gd")
 
 @export_group("Model Assets")
 ## Character model to assemble. It must contain a Skeleton3D.
@@ -248,7 +248,7 @@ var _stow_blend := 1.0
 const CARRY_CONTACTS := [[&"right", &"wrist"], [&"left", &"thigh", Vector3(0.4, 0.0, 1.0)]]
 ## Fingers' grip tightness on the contacts (0 open, 1 fist).
 const CARRY_GRIP_CURL := 0.75
-const RESCUE_PASSENGER := preload("res://presentation/characters/runtime/rescue_passenger.gd")
+const RESCUE_PASSENGER := preload("res://presentation/characters/rig/rescue_passenger.gd")
 ## The carried passenger while carrying, else null. Created by begin_carry, freed by end_carry.
 var carry_passenger: Node3D
 ## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's

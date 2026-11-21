@@ -108,7 +108,7 @@ func _run() -> void:
 		if child is SkeletonModifier3D and child.has_method("_process_modification_with_delta"):
 			child._process_modification_with_delta(0.0)
 	check(true, "Every custom modifier runs at delta 0 without error")
-	check(not FileAccess.get_file_as_string("res://presentation/characters/runtime/weapon_pose_modifier.gd").contains("_process_modification()"), "The deprecated callback is gone from the weapon-pose modifier")
+	check(not FileAccess.get_file_as_string("res://presentation/characters/rig/modifiers/weapon_pose_modifier.gd").contains("_process_modification()"), "The deprecated callback is gone from the weapon-pose modifier")
 
 	# ---- 3. Influence is applied by the engine, once. The locomotion twist at influence 0.5 is half of the twist at influence 1.
 	v.set_process(false)   # nothing else rewrites the twist while measuring

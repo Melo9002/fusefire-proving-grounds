@@ -173,7 +173,7 @@ func pickup_pending() -> bool:
 
 func _carrying() -> bool:
 	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit() and not pickup_pending())
-const POSE_CONTEXT := preload("res://presentation/characters/runtime/tactical_pose_context.gd")
+const POSE_CONTEXT := preload("res://presentation/tactical/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 ## States in which the sights are up.
 const AIM_POSE_STATES: Array[StringName] = [&"aim", &"shoot", &"shoot_left", &"shoot_right"]
