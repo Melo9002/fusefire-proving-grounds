@@ -273,6 +273,7 @@
   "traversal_surface_alignment_test": {"sub": ["animation", "movement"], "scope": "integration"},
   "traversal_timing_contract_test": {"sub": ["animation", "movement"], "scope": "integration", "crit": "critical", "contracts": ["movement"]},
   "turn_removal_continuation_test": {"sub": ["core"], "scope": "integration", "crit": "critical", "contracts": ["lifecycle"], "smoke": true, "fast": true},
+  "hit_defeat_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "unarmed_capture": {"sub": ["animation", "equipment"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "unarmed_hand_clearance_test": {"sub": ["animation", "equipment"], "scope": "integration", "fast": true},
   "unarmed_humanoid_test": {"sub": ["animation", "combat", "rescue", "equipment"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},
