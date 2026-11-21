@@ -124,6 +124,17 @@ static func choose(found: Dictionary, previous: int, profile: CoverPostureProfil
 ## `previous` is the side of an earlier attack, kept while the target stays within `attack_side_hysteresis` of straight ahead (no left/right flicker between
 ## consecutive attacks). `passive` is the passive-cover side (CoverEdgeSelector.choose). `face_distance` is how far the wall face is from the unit centre (m).
 ## Returns {"mode", "side", "mismatch": String ("" when none), "along": cos to the wall normal, "lateral": cos to the tangent (+ = right), "crossing": m}.
+## Which shot clip an attack from this cover shows (visual only: the combat evaluator has already resolved the shot): around-the-edge leans for full cover, the passive lean side when no honest peek exists, an ordinary
+## shot otherwise. The tactical adapter and the workbench both ask this, so the two cannot drift.
+static func shot_state(full_cover: bool, plan: Dictionary, passive_side: int) -> StringName:
+	if not full_cover:
+		return &"shoot"
+	match int(plan.get("mode", FiringMode.PROTECTED)):
+		FiringMode.AROUND_LEFT: return &"shoot_left"
+		FiringMode.AROUND_RIGHT: return &"shoot_right"
+		FiringMode.ORDINARY: return &"shoot"
+	return &"shoot_left" if passive_side < 0 else &"shoot_right"   # no honest peek: the passive lean side (right on a tie or none)
+
 static func plan_attack(found: Dictionary, full_cover: bool, to_target: Vector3, previous: int, passive: int, face_distance: float, profile: CoverPostureProfile) -> Dictionary:
 	var result := {"mode": FiringMode.ORDINARY, "side": Side.NONE, "mismatch": "", "along": 0.0, "lateral": 0.0, "crossing": INF}
 	var flat := Vector3(to_target.x, 0.0, to_target.z)

@@ -266,7 +266,7 @@ func _production_visual() -> void:
 	await _frames(2)
 	check(again == defeat and states.count(&"defeat") == 1, "A repeated defeat request is the same defeat and does not restart the clip")
 	var hit_after := v.present_hit()
-	check(hit_after != null and defeat_seen.is_empty(), "A hit after the defeat is accepted without disturbing the defeat handle")
+	check(hit_after.outcome == CANCELLED and defeat_seen.is_empty(), "A hit after the defeat is refused (CANCELLED) without disturbing the defeat handle")
 	var clip: float = v.animation_controller.state_length(&"defeat")
 	check(clip > 1.0, "The defeat reports its clip length (%.2f s)" % clip)
 	t0 = p.time

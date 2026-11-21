@@ -922,6 +922,22 @@ func update_locomotion_presentation(speed: float, heading_rate: float, delta: fl
 	locomotion_report = {"speed": _visual_speed, "gait": _gait_blend, "loaded": _loaded_blend, "cadence": cadence, "accel": _speed_accel, "bank": _bank_target}
 
 
+## The presenter's facing, applied: the node's yaw, the visual root's yaw, and the absorption of a facing change into the cover yaw. These are the only writers of facing in a rig; the DECISIONS (toward which
+## point, whether a cover pose absorbs the change, how fast to turn) are CharacterPresenter's.
+func apply_facing_yaw(yaw: float) -> void:
+	rotation.y = yaw
+
+
+func apply_root_yaw(yaw: float) -> void:
+	if is_instance_valid(character_root):
+		character_root.rotation.y = yaw
+
+
+## A facing change of `change` radians arrived while a cover pose holds the body: the body (and the rifle on it) does not snap, its offset takes the change up and eases to the new pose.
+func absorb_facing_change(change: float) -> void:
+	_cover_yaw = wrapf(_cover_yaw - change, -PI, PI)
+
+
 ## A facing change that arrived at once (the unit now faces `delta_yaw` radians further round): the chest and weapon already face the new way; the
 ## hips are shown catching up (LocomotionPoseModifier). Presentation only.
 func begin_turn(delta_yaw: float) -> void:

@@ -50,7 +50,7 @@ func _snapshot(v: UnitVisualAdapter) -> Dictionary:
 		var pq := pt.basis.orthonormalized().get_rotation_quaternion()
 		passenger = [pt.origin.x, pt.origin.y, pt.origin.z, pq.x, pq.y, pq.z, pq.w]
 	return {"bones": bones, "targets": targets, "leg_ik": v.leg_ik.active if is_instance_valid(v.leg_ik) else false, "arm_ik": v.arm_ik.active, "stowed": v.is_weapon_stowed(),
-		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y,
+		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y, "node_yaw": v.rotation.y,
 		"passenger": passenger, "state": String(v.get_presentation_state()), "attack_phase": _attack_phase(v), "aim_blend": v.aim_blend, "readiness": int(v.readiness_level()), "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z]}
 
 func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) -> void:
@@ -195,10 +195,35 @@ func _run() -> void:
 		if i == 0: v.preview_carrying = true
 		if i == 10: v.present_pickup()
 		if i == 40: v.present_hit())
+	# Facing (Task 07 package 7): a facing change toward a world point from idle and from cover (absorbed into the cover yaw), explicit repeats, a facing change while an attack is staged and while a
+	# hit reaction holds, and the velocity-follow turn of a walk (the "locomotion" scenario). The node yaw and the visual root yaw are both recorded.
+	var east := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + Vector3(5.0, 0.0, 1.0)
+	var west := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + Vector3(-4.0, 0.0, -3.0)
+	await _scenario("face_idle", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.face_world_position(east.call(v))
+		if i == 24: v.face_world_position(east.call(v))
+		if i == 70: v.face_world_position(west.call(v))
+		if i == 71: v.face_world_position(v.global_position))
+	await _scenario("face_cover_low", 220, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: _cover(v, 1.1)
+		if i == 30: v.face_world_position(east.call(v))
+		if i == 90: v.face_world_position(west.call(v)))
+	await _scenario("face_cover_aimed", 240, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: _cover(v, 2.0, MapCellData.CoverType.FULL)
+		if i == 20: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED)
+		if i == 50: v.face_world_position(east.call(v))
+		if i == 120: v.present_attack(west.call(v)))
+	await _scenario("face_during_hit", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 20: v.present_hit()
+		if i == 30: v.face_world_position(east.call(v)))
+	await _scenario("walk_turn", 240, func(v: UnitVisualAdapter, i: int) -> void:
+		var heading := Vector3(0, 0, 1) if i < 60 else (Vector3(1, 0, 0) if i < 120 else Vector3(-1, 0, -1).normalized())
+		if i < 180: v.update_locomotion(heading * 2.5, DT)
+		if i == 200: v.face_world_position(east.call(v)))
 	# Timelines the code under test recorded for the attacks (phases and times in presentation seconds): the shot and release timing the frame-by-frame rows cannot show on their own.
 	traces["__meta"] = meta
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(traces))
 	file.close()
-	print("pose_trace: wrote %d scenarios to %s" % [traces.size(), path])
+	print("pose_trace: wrote %d scenarios (plus the __meta attack timelines) to %s" % [traces.size() - 1, path])
 	quit(0)

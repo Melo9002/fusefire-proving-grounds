@@ -117,6 +117,21 @@ func _run() -> void:
 	for path in _scripts("presentation") + _scripts("art/characters"):
 		if path != "presentation/characters/runtime/character_rig.gd" and path != "presentation/characters/presenter/character_presenter.gd":
 			check(stage_callers.search(_code(path)) == null, "%s advances the rescue clock itself: it is the presenter's action stage" % path)
+	# Facing and persistent-action ownership (Task 07 package 7): the presenter decides facing and the rig applies it. Only the rig writes a yaw (its three appliers and the cover-yaw ramp); no host, adapter or
+	# tactical unit writes the visual root yaw or the cover yaw; the committed Aim's progression and the pending pickup are the presenter's; TacticalUnit keeps no defeat timer for a character that has a lifecycle.
+	var yaw_writer := RegEx.create_from_string("(^|[^_A-Za-z.])rotation\\.y\\s*=[^=]|character_root\\.rotation\\.y\\s*=[^=]|global_rotation\\.y\\s*=[^=]|_cover_yaw\\s*=[^=]")
+	for path in ["presentation/characters/runtime/unit_visual_adapter.gd", "art/characters/mira_0/demo/mira_0_pose_workbench.gd", "units/tactical_unit.gd", "presentation/actions/tactical_action_presenter.gd"]:
+		var found_yaw := yaw_writer.search(_code(path))
+		check(found_yaw == null, "%s writes a yaw itself (%s): facing goes through CharacterPresenter and is applied by the rig" % [path, found_yaw.get_string() if found_yaw else ""])
+	check(yaw_writer.search_all(rig_code).size() == 5, "CharacterRig writes a yaw in %d places: the cover-yaw setter, the ramp, apply_facing_yaw, apply_root_yaw and absorb_facing_change are the only ones (5)" % yaw_writer.search_all(rig_code).size())
+	var presenter_code := _code("presentation/characters/presenter/character_presenter.gd")
+	check(yaw_writer.search_all(presenter_code).size() == 1, "The presenter writes a yaw directly only to follow velocity (everything else goes through the rig's appliers)")
+	check(RegEx.create_from_string("tactical_state|TacticalUnit|TacticalAction").search(presenter_code + _code("presentation/characters/presenter/aim_hold.gd")) == null, "The presenter reads no tactical state: the committed Aim arrives as a typed input")
+	var retired_adapter := RegEx.create_from_string("_pending_pickup_world|_pending_lying_basis|_pending_handle|_sync_aim_hold|_on_pending_pickup_settled|_clear_pending_pickup")
+	var found_retired := retired_adapter.search(_code("presentation/characters/runtime/unit_visual_adapter.gd"))
+	check(found_retired == null, "The adapter still holds retired pending-pickup or aim-hold state (%s)" % [found_retired.get_string() if found_retired else ""])
+	check(_code("units/tactical_unit.gd").count("create_timer(") == 1, "TacticalUnit keeps exactly one timer: the floor for a unit whose visual does not process (the presenter's removal handle covers every other defeat)")
+	check(not _code("systems/replay/battle_replay_player.gd").contains("visual_adapter.global_basis"), "The replay player does not read the adapter's transform")
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")

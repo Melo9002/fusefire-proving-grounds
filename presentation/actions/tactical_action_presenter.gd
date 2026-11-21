@@ -105,7 +105,9 @@ func present_shield(result: ShieldActionResult) -> void:
 	if result.presentation_suppressed:
 		return
 	var threat := _actor(result.request.target_id)
-	if is_instance_valid(threat):
+	if unit.tactical_state != null and unit.tactical_state.is_shielding and not unit.tactical_state.shield_facing.is_zero_approx():
+		unit.face_committed_direction(unit.tactical_state.shield_facing)   # the stance's committed facing, shown exactly as gameplay supplied it
+	elif is_instance_valid(threat):
 		unit.face_world_position(threat.global_position)
 	# Shield-specific animation is deferred. Authoritative state remains visible
 	# in the HUD and combat diagnostics while the normal idle pose is safe.

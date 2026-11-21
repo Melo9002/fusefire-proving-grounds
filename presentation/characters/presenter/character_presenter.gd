@@ -31,6 +31,29 @@ var attack := AttackSequence.new()
 ## The committed Aim's persistent mirror (never a handle).
 var aim := AimHold.new()
 
+## How the character's yaw is being decided (the vocabulary of the Task 04 contract). FOLLOW_VELOCITY while it walks, FACE_POINT / FACE_YAW after a facing request, FACE_YAW with `authority_yaw` set when gameplay
+## supplied the value, HOLD while facing is held. A request of any kind replaces the previous one.
+var facing_mode := PresentationTypes.FacingMode.HOLD
+## The latest yaw gameplay authority supplied (radians, the rig node's yaw), valid while `has_authority_yaw`.
+var authority_yaw := 0.0
+var has_authority_yaw := false
+var _facing_hold := false
+## The committed Aim, as the context reports it (typed input; this presenter never reads a tactical type), and the clip states in which a held Aim may re-settle the pose.
+var aim_committed := false
+var aim_settling_states: Array[StringName] = []
+## The held Aim engaged or ended. `settling` says the character was in a quiet state a held Aim may change; the context re-settles its pose then.
+signal aim_hold_changed(transition: AimHold.Transition, settling: bool)
+
+## A rescue pickup that has to wait for its carrier to arrive (the lift is shown on arrival), with the handle reserved for it.
+class PendingPickup extends RefCounted:
+	var world := Vector3.INF
+	var lying_basis: Variant = null
+	var handle: ActionHandle
+var _pending_pickup: PendingPickup
+
+var _removal_left := -1.0
+var _removal_handle: ActionHandle
+var _removal_armed_frame := -1
 var _hold_left := -1.0
 var _hold_due: Callable
 var _hold_handle: ActionHandle
@@ -75,13 +98,87 @@ func report_velocity(world_velocity: Vector3, delta: float, turn_speed_degrees: 
 	var flat := Vector3(world_velocity.x, 0.0, world_velocity.z)
 	if flat.length_squared() < 0.000001 or not is_instance_valid(rig):
 		return
-	var desired_yaw := atan2(flat.x, flat.z)
-	var yaw_before := rig.global_rotation.y
-	rig.global_rotation.y = rotate_toward(rig.global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
 	speed = flat.length()
 	velocity = flat
 	_age = 0.0
+	if _facing_hold:
+		heading_rate = 0.0   # facing is held: the character still moves, it does not turn toward its velocity
+		return
+	var desired_yaw := atan2(flat.x, flat.z)
+	var yaw_before := rig.global_rotation.y
+	rig.global_rotation.y = rotate_toward(rig.global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
+	facing_mode = PresentationTypes.FacingMode.FOLLOW_VELOCITY
+	has_authority_yaw = false
 	heading_rate = angle_difference(yaw_before, rig.global_rotation.y) / maxf(delta, 0.0001)
+
+## FACING. A change of facing that arrives at once (a shot's target, a cover pose's wall, a committed direction): the node turns now, and the body either absorbs the change into its cover yaw (`absorb_into_cover`,
+## which the context decides: the unit is in cover and standing still) so nothing snaps, or shows the hips catching up (`begin_turn`, past one degree). `yaw` is the node's own yaw (radians about the vertical,
+## +Z forward). The rig applies; nothing else writes facing.
+func face_yaw(yaw: float, absorb_into_cover := false, show_turn := true) -> void:
+	if not is_instance_valid(rig):
+		return
+	var before := rig.rotation.y
+	rig.apply_facing_yaw(yaw)
+	var change := angle_difference(before, rig.rotation.y)
+	if absorb_into_cover:
+		rig.absorb_facing_change(change)
+	elif show_turn and absf(change) > deg_to_rad(1.0):
+		rig.begin_turn(change)
+	facing_mode = PresentationTypes.FacingMode.HOLD if _facing_hold else PresentationTypes.FacingMode.FACE_YAW
+	has_authority_yaw = false
+
+## Faces a world point (horizontally). A point on the character's own vertical axis changes nothing.
+func face_point(world_point: Vector3, absorb_into_cover := false) -> void:
+	if not is_instance_valid(rig):
+		return
+	var flat := world_point - rig.global_position
+	flat.y = 0.0
+	if flat.length_squared() <= 0.0001:
+		return
+	face_yaw(atan2(flat.x, flat.z), absorb_into_cover)
+	facing_mode = PresentationTypes.FacingMode.HOLD if _facing_hold else PresentationTypes.FacingMode.FACE_POINT
+
+## A facing that gameplay authority committed (an explicit direction a rule depends on): shown exactly as supplied, and reported as such (`has_authority_yaw`, `authority_yaw`, FACE_YAW). The presenter never
+## derives it and never changes it; a later facing request of any kind replaces it, exactly as a later visual facing replaces any other.
+func face_authoritative(yaw: float, absorb_into_cover := false) -> void:
+	face_yaw(yaw, absorb_into_cover)
+	authority_yaw = yaw
+	has_authority_yaw = true
+
+## Eased turn of the node toward `yaw` at `degrees_per_second` (a ladder's heading). Call every frame it should turn.
+func turn_toward_yaw(yaw: float, degrees_per_second: float, delta: float) -> void:
+	if not is_instance_valid(rig):
+		return
+	rig.apply_facing_yaw(rotate_toward(rig.rotation.y, yaw, deg_to_rad(degrees_per_second) * delta))
+	facing_mode = PresentationTypes.FacingMode.FACE_YAW
+	has_authority_yaw = false
+
+## Eased turn of the VISUAL ROOT toward `yaw` (an authored preview turn in the workbench): returns the heading rate this frame, which the caller feeds to the gait as scripted motion.
+func turn_root_toward(yaw: float, degrees_per_second: float, delta: float) -> float:
+	if not is_instance_valid(rig) or not is_instance_valid(rig.character_root):
+		return 0.0
+	var before := rig.character_root.rotation.y
+	rig.apply_root_yaw(rotate_toward(before, yaw, deg_to_rad(degrees_per_second) * delta))
+	return angle_difference(before, rig.character_root.rotation.y) / maxf(delta, 0.0001)
+
+## Keeps the facing where it is: the character still moves, it does not turn toward its velocity, until the hold is released.
+func hold_facing() -> void:
+	_facing_hold = true
+	facing_mode = PresentationTypes.FacingMode.HOLD
+
+func release_facing_hold() -> void:
+	_facing_hold = false
+
+func is_facing_held() -> bool:
+	return _facing_hold
+
+## The direction the character faces now (horizontal, unit length), for a reader that must not reach into the rig (a replay camera's focus point). Read-only.
+func facing_direction() -> Vector3:
+	if not is_instance_valid(rig):
+		return Vector3.FORWARD
+	var forward := rig.global_basis.z
+	forward.y = 0.0
+	return forward.normalized() if forward.length_squared() > 0.000001 else Vector3.FORWARD
 
 ## Advances presentation by one frame. Call exactly once per frame, with the delta the engine gave the host's `_process` (already scaled by the engine; never scaled again).
 ## Feeds the rig's locomotion presentation unless something already fed it this frame (a tool or test driving the rig directly).
@@ -90,6 +187,7 @@ func tick(delta: float) -> void:
 	tick_count += 1
 	last_tick_frame = Engine.get_process_frames()
 	_advance_timed_states(delta)
+	_advance_aim_hold(delta)
 	if not is_instance_valid(rig) or rig.locomotion_fed_this_frame():
 		return
 	if _scripted:
@@ -130,14 +228,76 @@ func is_holding() -> bool:
 ## settles the defeat itself. A repeated request while the clip is still running is the same defeat (the same handle, no restart).
 func begin_defeat(seconds: float) -> ActionHandle:
 	if _defeat_handle != null:
-		return _defeat_handle
+		return _defeat_handle   # the same defeat, running or finished: a repeat never restarts it
 	_defeat_left = maxf(seconds, 0.0)
 	_defeat_armed_frame = Engine.get_process_frames()
 	_defeat_handle = ActionHandle.new()
 	return _defeat_handle
 
-func is_defeating() -> bool:
+## True from the first defeat request on: defeat is terminal (Task 04 precedence: it outranks every other presentation request, which are then refused).
+func is_defeated() -> bool:
 	return _defeat_handle != null
+
+## True while the defeat clip is still running.
+func is_defeating() -> bool:
+	return _defeat_handle != null and not _defeat_handle.is_done()
+
+## The tactical layer removes a defeated character once its defeat has been readable. The handle settles when the defeat clip has finished AND at least `minimum_seconds` of presentation time have passed since
+## this request, whichever is later; INTERRUPTED if the character is removed first. One request at a time (a repeat returns the same handle).
+func removal_handle(minimum_seconds: float) -> ActionHandle:
+	if _removal_handle != null:
+		return _removal_handle
+	_removal_left = maxf(minimum_seconds, 0.0)
+	_removal_armed_frame = Engine.get_process_frames()
+	_removal_handle = ActionHandle.new()
+	return _removal_handle
+
+## PENDING PICKUP. A rescue decided while the carrier's body is still walking to the rescued character is held here until the carrier arrives, with the handle reserved for it (the rig settles that handle once
+## the lift runs). `arrive_pickup` hands the held request to `begin` (the context starts the lift) and forgets it. Cancelling it, a defeat or a teardown settles the reserved handle: nothing waits forever.
+func hold_pickup(world: Vector3, lying_basis: Variant) -> ActionHandle:
+	if _pending_pickup != null and not _pending_pickup.handle.is_done():
+		_pending_pickup.world = world
+		_pending_pickup.lying_basis = lying_basis
+		return _pending_pickup.handle
+	var pending := PendingPickup.new()
+	pending.world = world
+	pending.lying_basis = lying_basis
+	pending.handle = rig.reserve_rescue_handle()
+	pending.handle.finished.connect(_on_pending_pickup_settled.bind(pending), CONNECT_ONE_SHOT)
+	_pending_pickup = pending
+	return pending.handle
+
+func has_pending_pickup() -> bool:
+	return _pending_pickup != null
+
+## The carrier arrived: the held pickup is handed to `begin(world, lying_basis)` and forgotten (the lift it starts takes the reserved handle over). Returns false when nothing was held.
+func arrive_pickup(begin: Callable) -> bool:
+	var pending := _pending_pickup
+	if pending == null:
+		return false
+	_pending_pickup = null
+	begin.call(pending.world, pending.lying_basis)
+	return true
+
+## The held pickup will not happen (the carrier fell, boarded, was freed, the requester cancelled): it is forgotten and its handle is settled with `outcome` unless a lift already took it over.
+func cancel_pending_pickup(outcome: PresentationTypes.Outcome) -> void:
+	var pending := _pending_pickup
+	_pending_pickup = null
+	if pending != null and not pending.handle.is_done() and not (is_instance_valid(rig) and rig.interaction_active()):
+		pending.handle.settle(outcome)
+
+func _on_pending_pickup_settled(outcome: PresentationTypes.Outcome, pending: PendingPickup) -> void:
+	if pending == _pending_pickup and outcome == PresentationTypes.Outcome.CANCELLED:
+		_pending_pickup = null   # the requester withdrew it: it is not started on arrival
+
+## The committed Aim's per-frame progression: the context reports whether the Aim is still committed (`aim_committed`), and the hold engages, stays through its grace period and releases here. It reads the
+## character's current clip state to know whether a quiet pose may be re-settled; what a transition does to the pose is the context's (`aim_hold_changed`).
+func _advance_aim_hold(delta: float) -> void:
+	var controller: Object = rig.animation_controller if is_instance_valid(rig) else null
+	var settling: bool = controller != null and is_instance_valid(controller) and StringName(controller.current_state) in aim_settling_states
+	var transition := aim.update(delta, aim_committed, settling)
+	if transition != AimHold.Transition.NONE:
+		aim_hold_changed.emit(transition, settling)
 
 ## A timed state counts down from the FRAME AFTER it was begun, as the scene-tree timers it replaces did: the frame it starts in is not part of its time, whichever node began it.
 func _advance_timed_states(delta: float) -> void:
@@ -153,13 +313,15 @@ func _advance_timed_states(delta: float) -> void:
 			if due.is_valid():
 				due.call()
 			handle.settle(PresentationTypes.Outcome.COMPLETED)
-	if _defeat_handle != null and frame != _defeat_armed_frame:
+	if _defeat_handle != null and not _defeat_handle.is_done() and frame != _defeat_armed_frame:
 		_defeat_left -= delta
 		if _defeat_left <= 0.0:
-			var finished := _defeat_handle
-			_defeat_handle = null
 			_defeat_left = -1.0
-			finished.settle(PresentationTypes.Outcome.COMPLETED)
+			_defeat_handle.settle(PresentationTypes.Outcome.COMPLETED)   # the handle stays: a defeat that finished is still the defeat
+	if _removal_handle != null and not _removal_handle.is_done() and frame != _removal_armed_frame:
+		_removal_left -= delta
+		if _removal_left <= 0.0 and (_defeat_handle == null or _defeat_handle.is_done()):
+			_removal_handle.settle(PresentationTypes.Outcome.COMPLETED)
 
 ## The action stage of a frame: the attack moves on, and the rescue clock advances (the rig applies what it says; see CharacterRig.advance_rescue_clock). Call once per frame, after readiness and
 ## posture have been followed and before the weapon-pose update that applies the results. Both hosts (the tactical adapter and the workbench) call it from the same place in their update; a second call
@@ -187,7 +349,12 @@ func intent() -> PresentationIntent:
 		snapshot.readiness = rig.readiness.requested()
 		snapshot.equipment = PresentationTypes.EquipmentState.SLUNG if rig.is_weapon_stowed() else PresentationTypes.EquipmentState.HELD
 	snapshot.velocity = velocity
-	snapshot.facing_mode = PresentationTypes.FacingMode.FOLLOW_VELOCITY if speed > 0.0 else PresentationTypes.FacingMode.HOLD
+	if _facing_hold:
+		snapshot.facing_mode = PresentationTypes.FacingMode.HOLD
+	elif facing_mode == PresentationTypes.FacingMode.FACE_POINT or facing_mode == PresentationTypes.FacingMode.FACE_YAW:
+		snapshot.facing_mode = facing_mode
+	else:
+		snapshot.facing_mode = PresentationTypes.FacingMode.FOLLOW_VELOCITY if speed > 0.0 else PresentationTypes.FacingMode.HOLD
 	snapshot.posture = postures.resolved()
 	snapshot.posture_yaw_offset = postures.resolved_yaw_offset()
 	snapshot.posture_depth = postures.resolved_depth()
@@ -198,11 +365,19 @@ func teardown() -> void:
 	attack.cancel()
 	aim.clear()
 	cancel_hold()
+	cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	if _defeat_handle != null:
 		var defeat := _defeat_handle
 		_defeat_handle = null
 		_defeat_left = -1.0
-		defeat.settle(PresentationTypes.Outcome.INTERRUPTED)
+		defeat.settle(PresentationTypes.Outcome.INTERRUPTED)   # a no-op when the defeat had finished
+	if _removal_handle != null:
+		var removal := _removal_handle
+		_removal_handle = null
+		removal.settle(PresentationTypes.Outcome.INTERRUPTED)
+	aim_committed = false
+	_facing_hold = false
+	has_authority_yaw = false
 	postures.teardown()
 	speed = 0.0
 	heading_rate = 0.0

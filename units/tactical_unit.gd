@@ -464,14 +464,40 @@ func face_world_position(target_world_position: Vector3) -> void:
 	if visual_adapter:
 		visual_adapter.face_world_position(target_world_position)
 
+## How long a defeated unit's body stays so its one-shot defeat pose is readable (the tactical cleanup floor).
+const DEFEAT_REMOVAL_SECONDS := 1.25
+## A defeat that never settles (a character that no longer processes) must not keep the body for ever.
+const DEFEAT_REMOVAL_DEADLINE_MS := 6000
+
 func finish_defeat_presentation() -> void:
 	# Tactical removal has already happened. Leave only the harmless visual body
-	# long enough for its one-shot defeat pose to be readable.
+	# long enough for its one-shot defeat pose to be readable: the presenter's removal handle settles when the
+	# defeat has finished and DEFEAT_REMOVAL_SECONDS of presentation time have passed, or when the character is
+	# removed. A unit with no processing visual has no lifecycle to observe and keeps the plain floor.
 	collision_layer = 0
 	collision_mask = 0
-	await get_tree().create_timer(1.25, false).timeout
+	var removal: ActionHandle = null
+	if visual_adapter != null and is_instance_valid(visual_adapter) and visual_adapter.can_process():
+		removal = visual_adapter.presenter.removal_handle(DEFEAT_REMOVAL_SECONDS)
+	if removal != null:
+		var deadline := Time.get_ticks_msec() + DEFEAT_REMOVAL_DEADLINE_MS
+		while is_inside_tree() and not removal.is_done() and Time.get_ticks_msec() < deadline:
+			await get_tree().process_frame
+	elif is_inside_tree():
+		await get_tree().create_timer(DEFEAT_REMOVAL_SECONDS, false).timeout
 	if is_instance_valid(self):
 		queue_free()
+
+## The direction this unit's visual faces, horizontal and unit length: a read-only presentation hint (a replay camera's focus), never an input to any rule.
+func get_presentation_facing() -> Vector3:
+	if visual_adapter != null and is_instance_valid(visual_adapter):
+		return visual_adapter.presenter.facing_direction()
+	return Vector3.FORWARD
+
+## Shows a direction gameplay authority committed (the Shield stance's facing) exactly as supplied.
+func face_committed_direction(direction: Vector2) -> void:
+	if visual_adapter:
+		visual_adapter.face_committed_direction(direction)
 
 func _spawn_world_hud() -> void:
 	if not unit_hud_scene:

@@ -36,10 +36,6 @@ func get_camera_height() -> float:
 
 var tactical_unit: TacticalUnit
 ## Where the rescued actor lies, while the carrier is still walking to it (see present_pickup); INF when no pickup is waiting.
-var _pending_pickup_world := Vector3.INF
-var _pending_lying_basis = null
-## The rescue handle reserved while that pickup waits for its carrier to arrive (the rig settles it once the lift runs; see present_pickup).
-var _pending_handle: ActionHandle
 var _lying_body: Node3D
 ## The way an incapacitated unit lies, degrees about the vertical from the way it faces (across its facing, head to its right).
 const INCAPACITATED_YAW_DEGREES := 90.0
@@ -64,20 +60,17 @@ var _segment_to := Vector3.ZERO
 ## same handle is the one the lift settles later; a pickup without a place has no lift to run (the passenger just appears across the shoulders): its handle is the pickup clip's hold, which settles when the
 ## unit returns to idle.
 func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> ActionHandle:
+	if presenter.is_defeated():
+		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)   # a defeated carrier lifts nobody
 	presenter.attack.cancel()
 	presenter.cancel_hold()
 	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rescue_interaction.max_step + rescue_interaction.stand_off + 0.3):
 		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
 		# its shoulders. Otherwise the passenger would "fly" to a carrier still metres away.
-		_pending_pickup_world = passenger_world
-		_pending_lying_basis = lying_orientation
-		if _pending_handle == null or _pending_handle.is_done():
-			_pending_handle = reserve_rescue_handle()
-			_pending_handle.finished.connect(_on_pending_pickup_settled.bind(_pending_handle), CONNECT_ONE_SHOT)
-		return _pending_handle
+		return presenter.hold_pickup(passenger_world, lying_orientation)   # the presenter holds it (and its reserved handle) until the carrier arrives
 	if passenger_world.is_finite():
-		_pending_handle = null   # the lift takes the reserved handle over from here
+		presenter.arrive_pickup(func(_world: Vector3, _basis: Variant) -> void: pass)   # a lift starting now takes over any held request and its reserved handle
 		face_world_position(passenger_world)
 		var handle := begin_pickup(passenger_world, lying_orientation)
 		if not handle.finished.is_connected(_on_pickup_presented):
@@ -95,33 +88,17 @@ func _on_pickup_presented(outcome: PresentationTypes.Outcome) -> void:
 		else:
 			present_idle()
 
-## The requester cancelled a pickup that was still waiting for its carrier: it is not started on arrival. (Settlements made by the rig itself have already cleared the pending state.)
-func _on_pending_pickup_settled(outcome: PresentationTypes.Outcome, handle: ActionHandle) -> void:
-	if handle == _pending_handle and outcome == PresentationTypes.Outcome.CANCELLED:
-		_pending_pickup_world = Vector3.INF
-		_pending_lying_basis = null
-		_pending_handle = null
-
-## A pickup that was still waiting for its carrier is withdrawn: nothing is pending and whoever waits on the reserved handle is told the presentation will not happen.
-func _clear_pending_pickup(outcome: PresentationTypes.Outcome) -> void:
-	_pending_pickup_world = Vector3.INF
-	_pending_lying_basis = null
-	var handle := _pending_handle
-	_pending_handle = null
-	if handle != null and not handle.is_done() and not interaction_active():
-		_settle_rescue(outcome)
-
 ## The tactical layer has put the passenger down (the carrier fell): drop the visual one at once, take the rifle back and leave
 ## the rest to the revealed actor. Safe in any phase of a pickup or release.
 func present_carry_released() -> void:
-	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
+	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	presenter.cancel_hold()
 	end_carry()
 	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
 func present_boarding() -> void:
-	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
+	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	presenter.attack.cancel()
 	finish_interaction_now()
 	presenter.cancel_hold()
@@ -143,7 +120,7 @@ func present_incapacitated(on: bool) -> void:
 	if on:
 		presenter.attack.cancel()
 		presenter.cancel_hold()
-		_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
+		presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 		character_root.visible = false
 		_lying_body = RESCUE_PASSENGER.new()
 		_lying_body.name = "IncapacitatedBody"
@@ -172,8 +149,9 @@ func _lying_ground_height() -> float:
 func _moving_now() -> bool:
 	return is_instance_valid(tactical_unit) and tactical_unit.is_moving
 
+## A pickup is waiting for this carrier to arrive (held by the presenter).
 func pickup_pending() -> bool:
-	return _pending_pickup_world.is_finite()
+	return presenter.has_pending_pickup()
 
 func _carrying() -> bool:
 	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit() and not pickup_pending())
@@ -233,6 +211,8 @@ func _ready() -> void:
 	_build_animation_controller()
 	_build_team_accent()
 	_apply_class_marker()
+	presenter.aim_settling_states = AIM_SETTLE_STATES
+	presenter.aim_hold_changed.connect(_on_aim_hold_changed)
 	skeleton.skeleton_updated.connect(_align_weapon_to_aim)
 	animation_controller.state_changed.connect(_forward_state_change)
 	await get_tree().process_frame
@@ -397,7 +377,7 @@ func _tick_traversal(delta: float) -> void:
 	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
 	if get_presentation_state() != &"rifle_idle" and get_presentation_state() != &"aim":
 		_play(&"rifle_idle")
-	rotation.y = rotate_toward(rotation.y, float(_ladder.yaw), deg_to_rad(turn_speed_degrees) * delta)
+	presenter.turn_toward_yaw(float(_ladder.yaw), turn_speed_degrees, delta)
 	if traversal.is_empty():
 		begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
 	set_traversal_progress(climbed)
@@ -434,11 +414,8 @@ func present_path_segment(state_name: StringName) -> void:
 func present_movement_end() -> void:
 	_end_ladder()
 	end_stairs()
-	if pickup_pending():
-		var world := _pending_pickup_world
-		_pending_pickup_world = Vector3.INF
-		present_pickup(world, _pending_lying_basis)   # the reserved handle is taken over by the lift it starts
-		return
+	if presenter.arrive_pickup(func(world: Vector3, basis: Variant) -> void: present_pickup(world, basis)):
+		return   # the carrier arrived: the lift starts and takes over the reserved handle
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
 		presenter.begin_hold(landing_return_seconds, _return_from_hold)
@@ -454,7 +431,7 @@ func _cover_context() -> Dictionary:
 	return last_cover_contact
 
 ## The Aim action committed: bring the sights up now. The pose then follows the committed
-## is_aiming flag (see _sync_aim_hold), so replays and AI units behave the same.
+## is_aiming flag (see _process and CharacterPresenter.aim_committed), so replays and AI units behave the same.
 func present_aim() -> void:
 	if _carrying(): return
 	presenter.aim.engage()
@@ -523,13 +500,10 @@ func weapon_aligned() -> bool:
 		return false
 	return absf(angle_difference(_cover_yaw, _cover_yaw_target(1.0))) <= deg_to_rad(handling.alignment_tolerance_degrees)
 
-## Keeps the sights up for as long as the committed Aim lasts: until its attack, an action that
-## cancels it, or the next activation. Never interrupts a shot, hit, defeat, move or traversal.
-func _sync_aim_hold(delta: float) -> void:
-	var state := get_presentation_state()
-	# A transition (the hold engaged or ended) re-settles a quiet pose; a shot, hit, defeat, move or traversal is never interrupted.
-	if presenter.aim.update(delta, _aim_should_hold(), state in AIM_SETTLE_STATES) != AimHold.Transition.NONE and state in AIM_SETTLE_STATES:
-		_settle_aim_pose(state)
+## The held Aim engaged or ended (the presenter progresses it from the committed-aim input): a quiet pose is re-settled so the weapon comes up or goes down. A shot, hit, defeat, move or traversal is never interrupted.
+func _on_aim_hold_changed(_transition: AimHold.Transition, settling: bool) -> void:
+	if settling:
+		_settle_aim_pose(get_presentation_state())
 
 ## Low cover: crouch only as deep as the cover is tall (never beyond what a person can), turned
 ## with the back to the wall while hiding, and facing the wall, eyes just over the top, to aim.
@@ -652,18 +626,16 @@ func update_locomotion(world_velocity: Vector3, delta: float) -> void:
 ## sequence (carrying, no processing) shows the shot immediately, as before.
 ## Returns the attack's handle: `handle.shot` settles when the shot is shown (what the tactical layer waits on before the target reacts), the handle itself when the release is over (see AttackHandle).
 func present_attack(target_world_position: Vector3) -> AttackHandle:
+	if presenter.is_defeated():
+		var refused := AttackHandle.new()   # defeat is terminal: a defeated character shows no shot
+		refused.shot.settle(PresentationTypes.Outcome.CANCELLED)
+		refused.settle(PresentationTypes.Outcome.CANCELLED)
+		return refused
 	var cover := _cover_context()
 	# The firing posture comes from the authorized shot's direction and the wall geometry only (CoverEdgeSelector.plan_attack); a visual pose never creates a shot.
 	var plan := _plan_attack_posture(cover, target_world_position)
 	face_world_position(target_world_position)
-	var shot := &"shoot"
-	if cover.type == MapCellData.CoverType.FULL:
-		# Visual lean only; the combat evaluator has already resolved the shot.
-		match int(plan.get("mode", CoverEdgeSelector.FiringMode.PROTECTED)):
-			CoverEdgeSelector.FiringMode.AROUND_LEFT: shot = &"shoot_left"
-			CoverEdgeSelector.FiringMode.AROUND_RIGHT: shot = &"shoot_right"
-			CoverEdgeSelector.FiringMode.ORDINARY: shot = &"shoot"
-			_: shot = &"shoot_left" if cover_side < 0 else &"shoot_right"   # no honest peek: the passive lean side (right on a tie or none)
+	var shot := CoverEdgeSelector.shot_state(cover.type == MapCellData.CoverType.FULL, plan, cover_side)   # visual lean only; the combat evaluator has already resolved the shot
 	presenter.attack.cancel()   # a newer attack ends the running one first (its cover plan is dropped before this one's is set)
 	attack_plan = plan
 	presenter.cancel_hold()
@@ -686,6 +658,10 @@ func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> 
 ## A hit reaction: the hit clip, held for `hit_return_seconds` of presentation time, then back to idle (or on with the walk). It ends a running attack and is itself ended by anything newer. The handle
 ## settles COMPLETED at the return, INTERRUPTED if something took over, SKIPPED when a ladder shows no reaction.
 func present_hit() -> ActionHandle:
+	if presenter.is_defeated():
+		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)   # defeat is terminal: nothing outranks it, a hit after it shows nothing
+	if interaction_active():
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)   # a rescue lift owns the body and was already committed; a cosmetic reaction does not cut it short
 	presenter.attack.cancel()
 	if is_ladder_active():
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)   # a reaction shot that hits a unit on a ladder: it keeps climbing (no hit clip over the rungs; a hit-on-ladder reaction is not designed yet)
@@ -702,11 +678,11 @@ func _return_from_hold() -> void:
 ## Defeat ends everything else this character was presenting (the rescue, a traversal, the attack, the held aim, a pending hit return) and plays the one-shot defeat clip. A repeat while the clip is still
 ## running is the same defeat. The handle settles COMPLETED when the clip has run its length, INTERRUPTED if the character is removed first.
 func present_defeat() -> ActionHandle:
-	if presenter.is_defeating():
-		return presenter.begin_defeat(0.0)
+	if presenter.is_defeated():
+		return presenter.begin_defeat(0.0)   # the same defeat, running or finished: it is never restarted
 	presenter.aim.clear()
 	# A rescue under way cannot continue on a defeated carrier: its visual operation is interrupted here (the tactical layer puts the passenger down, which frees the carried body).
-	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
+	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	if interaction_active():
 		_halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
 	_end_ladder()
@@ -718,19 +694,18 @@ func present_defeat() -> ActionHandle:
 	return presenter.begin_defeat(animation_controller.state_length(&"defeat") if is_instance_valid(animation_controller) else 0.0)
 
 func face_world_position(world_position: Vector3) -> void:
-	var flat_direction := world_position - global_position
-	flat_direction.y = 0.0
-	if flat_direction.length_squared() > 0.0001:
-		# This imported rig and its rifle are authored facing +Z.
-		var before := rotation.y
-		rotation.y = atan2(flat_direction.x, flat_direction.z)
-		var change := angle_difference(before, rotation.y)
-		if _held_cover_kind != MapCellData.CoverType.NONE and not _moving_now():
-			# In cover the facing change is absorbed into the body's offset, so the body (and the rifle on it) does not snap: it eases to the new pose.
-			_cover_yaw = wrapf(_cover_yaw - change, -PI, PI)
-			character_root.rotation.y = _cover_yaw
-		elif absf(change) > deg_to_rad(1.0):
-			begin_turn(change)
+	# This imported rig and its rifle are authored facing +Z. The presenter decides and the rig applies; this only says whether the cover pose holds the body (the tactical cover kind and movement).
+	presenter.face_point(world_position, _facing_absorbed_by_cover())
+
+## A direction gameplay authority committed (a world X/Z vector, as TacticalState.shield_facing is): shown exactly, and reported as authoritative by the presenter.
+func face_committed_direction(direction: Vector2) -> void:
+	if direction.is_zero_approx():
+		return
+	presenter.face_authoritative(atan2(direction.x, direction.y), _facing_absorbed_by_cover())
+
+## In cover a facing change is absorbed into the body's offset so the body (and the rifle on it) does not snap: it eases to the new pose.
+func _facing_absorbed_by_cover() -> bool:
+	return _held_cover_kind != MapCellData.CoverType.NONE and not _moving_now()
 
 func get_presentation_state() -> StringName:
 	return animation_controller.current_state if is_instance_valid(animation_controller) else &"setup"
@@ -739,8 +714,8 @@ func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
 	_sync_movement_authority()
+	presenter.aim_committed = _aim_should_hold()   # a tactical fact translated into the presenter's typed input; the presenter does the rest
 	presenter.tick(delta)
-	_sync_aim_hold(delta)
 	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
 	presenter.advance_actions(delta)

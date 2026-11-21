@@ -240,9 +240,7 @@ func _process(_delta: float) -> void:
 	var walking: bool = animation_controller.current_state in [&"move", &"carry_move"] and not interaction_active()
 	var heading_rate := 0.0
 	if not is_nan(turn_goal):
-		var yaw_before := character_root.rotation.y
-		character_root.rotation.y = rotate_toward(yaw_before, turn_goal, deg_to_rad(360.0) * _delta)
-		heading_rate = angle_difference(yaw_before, character_root.rotation.y) / maxf(_delta, 0.0001)
+		heading_rate = presenter.turn_root_toward(turn_goal, 360.0, _delta)
 		if is_equal_approx(character_root.rotation.y, turn_goal):
 			turn_goal = NAN
 	presenter.set_scripted_motion(preview_speed if walking else 0.0, heading_rate)   # authored preview motion, fed as given (a turn preview keeps its heading rate while idle)
@@ -371,7 +369,7 @@ func set_cover_demo(spec: Dictionary) -> void:
 		return
 	cover_target = null
 	cover_plan = {}
-	rotation.y = 0.0
+	presenter.face_yaw(0.0, false, false)   # square to the wall again, at once: no hips catching up, no absorption
 	_bench_heading = 0.0
 	_cover_found = {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
 	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, cover_profile)
@@ -399,21 +397,14 @@ func set_cover_target(target: Variant) -> void:
 func fire_cover_shot() -> void:
 	if cover_plan.is_empty():
 		return
-	var shot := &"shoot"
-	match int(cover_plan.mode):
-		CoverEdgeSelector.FiringMode.AROUND_LEFT: shot = &"shoot_left"
-		CoverEdgeSelector.FiringMode.AROUND_RIGHT: shot = &"shoot_right"
-		CoverEdgeSelector.FiringMode.PROTECTED: shot = &"shoot_left" if cover_side < 0 else &"shoot_right"
-	animation_controller.play(shot)
+	animation_controller.play(CoverEdgeSelector.shot_state(bool(cover_demo.full), cover_plan, cover_side))   # the same decision the tactical unit's attack makes
 	await get_tree().create_timer(0.7).timeout
 	if not cover_plan.is_empty():
 		animation_controller.play(&"aim")
 
 
 func _turn_to_heading(heading: float) -> void:
-	var change := angle_difference(rotation.y, heading)
-	rotation.y = heading
-	character_root.rotation.y = wrapf(character_root.rotation.y - change, -PI, PI)
+	presenter.face_yaw(heading, true, false)   # the cover pose absorbs the change (no snap); the bench shows no hips catching up
 	_bench_heading = heading
 
 

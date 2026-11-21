@@ -213,10 +213,7 @@ func _action_focus_point(record: Dictionary, actor: TacticalUnit) -> Vector3:
 		var target := _find_unit(record.get("target", ""))
 		if is_instance_valid(target):
 			return target.global_position
-	var facing := Vector3.FORWARD
-	if is_instance_valid(actor.visual_adapter):
-		facing = actor.visual_adapter.global_basis.z.normalized()
-	return actor.global_position + facing * 4.0
+	return actor.global_position + actor.get_presentation_facing() * 4.0   # a camera focus point only: the presentation's read-only facing hint, no replay outcome depends on it
 
 func _create_controls() -> void:
 	var canvas := level.get_node_or_null("Visualizers/BattleUI") as CanvasLayer
