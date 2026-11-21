@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://c25va4fkc3c6l" path="res://presentation/characters/rig/character_rig.gd" id="9_rig"]
+[ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://presentation/characters/rig/character_animation_controller.gd" id="2_animation"]
+[ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
+[ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
+
+[sub_resource type="SphereMesh" id="Sphere_target"]
+radius = 0.018
+height = 0.036
+
+[node name="Rig" type="Node3D"]
+script = ExtResource("9_rig")
+character_scene = ExtResource("3_model")
+character_scale = 1.6
+rig_profile = ExtResource("4_profile")
+weapon_scene = ExtResource("5_weapon")
+clip_library = null
+
+[node name="VerticalSliceController" type="Node" parent="."]
+script = ExtResource("2_animation")
+
+[node name="Character" type="Node3D" parent="."]
+
+[node name="IKTargets" type="Node3D" parent="Character"]
+
+[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 1.12, 0.19)
+
+[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget"]
+visible = false
+mesh = SubResource("Sphere_target")
+
+[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48, 1.03, 0.02)
+
+[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.48, 1.04, 0.05)

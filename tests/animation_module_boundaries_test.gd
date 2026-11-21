@@ -169,7 +169,24 @@ func _run() -> void:
 	check(not adapter_code.contains("skeleton.add_child") or adapter_code.contains("CLASS_MARKER_NAME"), "The adapter attaches only its class marker to the skeleton")
 	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "tools/animation_workbench/pose_workbench.tscn"]:
 		var scene_text := FileAccess.get_file_as_string("res://" + scene_path)
-		check(scene_text.contains('[node name="Rig" type="Node3D" parent="."]') and scene_text.contains("character_rig.gd"), "%s hosts its CharacterRig as the Rig child" % scene_path)
+		var hosts_rig := scene_text.contains('[node name="Rig" type="Node3D" parent="."]') and scene_text.contains("character_rig.gd")
+		hosts_rig = hosts_rig or (scene_text.contains('[node name="Rig" parent="." instance=') and scene_text.contains("mira_0_rig.tscn"))
+		check(hosts_rig, "%s hosts its CharacterRig as the Rig child" % scene_path)
+	# Context independence (Task 08): the exploration host reads no tactical type, nothing shared knows the exploration host, the playground asks the presenter instead of reaching for clip states or facing,
+	# and both hosts instance the same rig scene.
+	var tactical_words := RegEx.create_from_string("Tactical|tactical_|GridManager|MapCellData|TurnManager|action_points|AIController|CoverEdge")
+	for path in _scripts("presentation/exploration"):
+		check(tactical_words.search(_code(path)) == null, "%s reads a tactical type: the exploration host knows no unit, turn, AP, grid or combat state" % path)
+		check(_code(path).contains("extends Node3D") or _code(path).contains("extends"), "%s extends a node" % path)
+	for path in _scripts("presentation/characters"):
+		check(not _code(path).contains("ExplorationCharacterHost"), "%s (shared character presentation) names the exploration host" % path)
+	var playground_code := _code("research/exploration_playground/exploration_playground.gd")
+	check(not playground_code.contains("present_move") and not playground_code.contains("present_idle") and not playground_code.contains("update_locomotion") and not playground_code.contains("face_world_position") 			and not playground_code.contains("TacticalCharacterAdapter") and not playground_code.contains("animation_controller.play"),
+		"The playground asks its host (report_velocity, face_point, set_crouched, inspect): no clip-state requests, no facing logic and no tactical adapter of its own")
+	check(not playground_code.contains("func _physics_process"), "The playground moves its body per rendered frame, not on 60 Hz physics ticks (uneven steps are visible as a tremor at higher frame rates)")
+	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "art/characters/mira_0/runtime/mira_0_exploration_visual.tscn"]:
+		check(FileAccess.get_file_as_string("res://" + scene_path).contains("mira_0_rig.tscn"), "%s instances the shared rig scene (one MIRA setup for every context)" % scene_path)
+	check(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path("res://research").path_join("animation_host_probe")), "The Task 03 host probe is retired: its checks live in exploration_host_test")
 	# Cover (Task 07 package 10): the reusable body-motion parameters (CoverPostureProfile) are separate from the tactical edge-selection policy (CoverEdgePolicy, read by CoverEdgeSelector).
 	var cover_profile_code := _code("presentation/characters/motion/cover_posture_profile.gd")
 	var edge_fields := RegEx.create_from_string("var (edge_reach|tie_tolerance|tie_side|hysteresis|wall_scan_limit|open_side_threshold|straight_ahead_threshold|attack_side_hysteresis)\\b")

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/exploration/exploration_character_host.gd" id="1_host"]
+[ext_resource type="PackedScene" path="res://art/characters/mira_0/runtime/mira_0_rig.tscn" id="2_rig"]
+
+[node name="Mira0ExplorationVisual" type="Node3D"]
+script = ExtResource("1_host")
+
+[node name="Rig" parent="." instance=ExtResource("2_rig")]

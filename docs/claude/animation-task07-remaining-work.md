@@ -131,3 +131,5 @@ Behaviour first, moves last: behaviour batches then work on the files where they
 
 Checkpoints on `main` (not pushed): `e6c6748` composition, `ad0413e` cover split and dead-code removal, `dd848ca` runtime/ reorganisation, `9f28a94` workbench move, `5d14f66` adapter rename, `c5507b6` documentation, then the final evidence commit. Requirements 1 to 24 are DONE; none is BLOCKED; one is DECIDED (8: no handle for tactical movement). Nothing in this list was labelled deferred to declare completion. Items that remain are future animation work, not Task 07 requirements: an arm swing for unarmed walking, general body self-collision, the carry clip's dead upper-arm track (kept removed), a second humanoid (Task 09), the non-tactical demonstration (Task 08), broader capabilities and workbench diagnostics (Tasks 10 to 12). Task 07 is awaiting the owner's review; it is not declared closed here.
 
+**Task 08 (2026-11-21, separate from Task 07, which stays closed).** The non-tactical context proof is implemented against issue #50; see "Task 08" in `animation-presenter-foundation-2026-11-20.md`. It needed no change to the shared rig or presenter.
+

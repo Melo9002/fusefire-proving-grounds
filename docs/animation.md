@@ -10,8 +10,8 @@ Gameplay decides what happens and owns authority (AP, cells, occupancy, legality
  gameplay (TacticalUnit, systems/)            authoritative, knows nothing of poses
         |  reads / calls present_*()
  context host   TacticalCharacterAdapter  (tactical)      reads tactical state, chooses requests, cover policy
+                ExplorationCharacterHost  (exploration)    a controller's wishes: move, face, crouch, inspect
                 PoseWorkbench             (tools)         controls and benches
-                a probe / test            (anything)
         |  requests (context-neutral)         drives once per frame: presenter.tick, advance_actions, rig.update_weapon_pose
  CharacterPresenter (RefCounted, in the rig)  time, facing, postures, aim/attack/hit/defeat lifecycles, rescue clock, ActionHandles
         |  typed inputs
@@ -46,6 +46,7 @@ presentation/characters/        shared: no tactical, exploration or base types, 
   rig_profile/                  RigProfile, RigAnatomy, RigResolver, roles, joint specs, sockets, diagnostics (pure data)
   motion/                       LocomotionProfile/Gait, Traversal and Stair profiles and solvers, PathRefiner, CoverPostureProfile
   equipment/                    WeaponHandlingProfile, EquipmentPresentation
+presentation/exploration/       the non-tactical host: ExplorationCharacterHost (reads no tactical type; ratcheted)
 presentation/tactical/          the tactical host and its policy: TacticalCharacterAdapter, TacticalActionPresenter, CoverEdgeSelector,
                                 CoverEdgePolicy, TacticalPoseContext, TacticalRouteBuilder
 presentation/diagnostics/       hand-contact diagnostics (read the rig, never write it)
@@ -53,7 +54,7 @@ tools/animation_workbench/      the pose workbench (pose_workbench.tscn) and its
 tools/quality/                  pose_trace, route_trace, animation_perf_baseline and probes
 art/characters/mira_0/          model, rig profile (mira_0_rig_profile.tres), runtime/mira_0_unit_visual.tscn (the production character)
 tests/                          flat; tagged in tests/catalog.json
-research/                       evidence only: host probe, update-order probe, exploration playground
+research/                       evidence only: update-order probe, exploration playground (the Task 03 host probe was retired into exploration_host_test)
 ```
 
 Modifier order (declared in `PoseOwnership`, checked by `pose_ownership_test`): Locomotion, CoverCrouch, Traversal, TraversalLegIK, WeaponPose, WeaponArmIK, HandGrip. IK results are valid only at `skeleton_updated`, not between updates.
@@ -66,7 +67,11 @@ Modifier order (declared in `PoseOwnership`, checked by `pose_ownership_test`): 
 4. Ask for actions through the presenter and rig (`begin_pickup`, `begin_release`, attack, hit, defeat) and await the returned `ActionHandle` (COMPLETED, SKIPPED, INTERRUPTED, CANCELLED). A handle describes the visual operation only; gameplay outcomes never depend on it.
 5. Read `presenter.intent()` for the character's persistent state (posture, facing, equipment, readiness) when something else needs it.
 
-`TacticalCharacterAdapter` is the worked example; `tools/animation_workbench/pose_workbench.gd` is the smallest. Nothing in the shared module may import gameplay.
+`TacticalCharacterAdapter` is the tactical example; `ExplorationCharacterHost` is the minimal context-neutral one; `tools/animation_workbench/pose_workbench.gd` is the third. Nothing in the shared module may import gameplay.
+
+### The non-tactical host (Task 08)
+
+`ExplorationCharacterHost` (`presentation/exploration/`, scene `art/characters/mira_0/runtime/mira_0_exploration_visual.tscn`) hosts the same rig scene as the tactical unit (`mira_0_rig.tscn`) with no unit, turns, AP, cover or combat state. A controller asks for: `report_velocity(world_velocity, delta)` (the presenter turns the body toward it and derives the gait), `face_point` / `face_yaw`, `set_crouched(on)` (a CONTEXT-priority posture request) and `inspect(world_point, seconds)`, which turns to the object, bends toward it and returns an `ActionHandle` (COMPLETED when the hold ends, INTERRUPTED when the controller walks away or the host is removed, CANCELLED if one is already running). The host selects the clip state (`move` or `rifle_idle`) and drives the frame: presenter tick, posture, action stage, `rig.update_weapon_pose()`. Equipment is the scene's choice: set `rig.weapon_scene = null` before the host enters the tree for an unarmed MIRA. `ExplorationSpawnGuard` (same folder) is the mode's fall safety net: a body that falls out of the world is let fall for a moment, then returned to the nearest spawn point (any `Node3D` in group `exploration_spawn`) with its velocity cleared; the controller then calls `host.reset_motion(yaw)`. A controller should move its body per rendered frame (speed times that frame's delta), not on 60 Hz physics ticks: stepping only on ticks while the camera and animation run per frame shows as a tremor at higher frame rates. The host also offers `set_aiming` and `fire` (the shared attack sequence through a small `AttackHost`), `react_hit` and `defeat`, `enter_cover`/`leave_cover` (the shared cover posture), `begin_climb`/`set_climb_height`, `begin_stairs`/`set_stairs_progress`, and `pick_up`/`put_down` (the shared rescue lift and release). The example controller is `research/exploration_playground/` (WASD, Shift run, RMB aim, LMB fire, Space cover or a placeholder jump, E climb, lift or inspect, C crouch, Q holster, middle mouse recenters). It is a proof of concept, not an exploration architecture: each action is its own small component (`playground_combat`, `playground_cover`, `playground_traversal`, `playground_carry`, `playground_player_health`, plus mannequins and props). Test: `exploration_actions_test`; render: `tests/exploration_actions_capture.gd`.
 
 ## How to add or configure a humanoid rig
 
@@ -118,4 +123,4 @@ Contracts to know before editing: `animation_module_boundaries_test` (module and
 
 ## Known limits and future work
 
-Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid (Task 09); a non-tactical demonstration (Task 08); broader capability, traversal and workbench-diagnostics work (Tasks 10 to 12).
+Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid (Task 09); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); broader capability, traversal and workbench-diagnostics work (Tasks 10 to 12).

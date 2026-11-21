@@ -1,17 +1,17 @@
 extends Node3D
-## EXPERIMENTAL exploration playground (Task 03 companion). Walk MIRA around a tiny sandbox with an over-the-shoulder camera.
+## Exploration playground (Task 03 companion, completed for Task 08). Walk MIRA around a tiny sandbox with an over-the-shoulder camera.
 ##
-## This is a throwaway sandbox for feeling the existing character presentation outside tactical combat. It is NOT a gameplay mode: there is no TacticalUnit, no AP,
-## no grid, no mission and no battle here. MIRA is the production visual scene driven only through its public presentation calls (`present_move`, `present_idle`,
-## `update_locomotion`, `face_world_position`), exactly as research/animation_host_probe does. Everything in this file is local to the playground and meant to be replaced
-## by Task 04's intent interface and Task 08's real non-tactical context.
+## This is a sandbox for the shared character presentation OUTSIDE tactical combat. It is NOT a gameplay mode: there is no TacticalUnit, no AP, no grid, no mission and no battle here. MIRA is hosted by
+## ExplorationCharacterHost (presentation/exploration/): the same CharacterRig scene the tactical adapter hosts, driven through the shared CharacterPresenter. This controller only decides what the character
+## does (it reports its velocity, asks to face a point, crouch, stand, inspect the chair, or be unarmed) and owns the sandbox itself (the world, the camera, the menu); it has no clip-state requests and no
+## facing logic of its own.
 ##
-## Controls: WASD move, mouse look, wheel zoom, right mouse button recenters behind MIRA, E interact, Esc release the mouse and show the menu.
-## Known limitations of the existing presentation (deliberately not worked around): the rifle is always built (no unarmed state), crouching exists only as a cover
-## function, there is no sitting or interaction animation, and the visual is composed at its feet (a character visual has no origin offset of its own), so a standalone host just places it on the floor.
+## Controls: WASD move, Shift run, right mouse aims, left mouse fires, Space takes or leaves cover (or jumps: a placeholder), E climbs, lifts or puts down a body (or inspects the chair), mouse look, wheel zoom, middle mouse button recenters behind MIRA, C crouch or stand, E inspect the chair, Q holster or draw the rifle (MIRA is rebuilt), Esc release the mouse and show the menu.
 
 ## Walking speed in metres per second. The walk gait applies up to the locomotion profile's `walk_until` (1.6 m/s); above it the jog starts to blend in.
 const MOVE_SPEED := 1.4
+## Hold Shift to run (m/s): the presenter derives the jog and run gait from the reported speed, the controller only moves faster.
+const RUN_SPEED := 4.6
 ## How quickly the body reaches MOVE_SPEED and stops again (m/s per second). Smooths starts and stops so the feet do not slide against an instant velocity.
 const ACCELERATION := 9.0
 const MOUSE_SENSITIVITY := 0.0025
@@ -25,14 +25,28 @@ const CAMERA_FOLLOW_RATE := 14.0
 const RECENTER_RATE := 6.0
 const INTERACT_DISTANCE := 2.4
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
-const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
+const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_exploration_visual.tscn")
 const ACTIONS := {
-	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E,
+	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E, &"playground_crouch": KEY_C, &"playground_weapon": KEY_Q, &"playground_run": KEY_SHIFT, &"playground_cover": KEY_SPACE, &"playground_respawn": KEY_R,
 }
 const RECENTER_ACTION := &"playground_recenter"
+const AIM_ACTION := &"playground_aim"
+## Jumping is a placeholder: the body goes up and comes down, the character keeps its pose (no jump animation exists yet).
+const JUMP_SPEED := 4.0
 
 var body: CharacterBody3D
-var visual: Node3D
+var visual: ExplorationCharacterHost
+var armed := true
+var spawn_guard: ExplorationSpawnGuard
+var ui_layer: CanvasLayer
+var props := {}
+var dead := false
+var _jump_requested := false
+var combat: PlaygroundCombat
+var cover: PlaygroundCover
+var traversal: PlaygroundTraversal
+var carry: PlaygroundCarry
+var player_health: PlaygroundPlayerHealth
 var chair_seat: MeshInstance3D
 var chair_position := Vector3.ZERO
 var camera_pivot: Node3D
@@ -64,6 +78,7 @@ func _ready() -> void:
 	_build_character()
 	_build_camera()
 	_build_ui()
+	_build_actions()
 	pivot_position = _focus_point()
 	yaw = PI   # start looking along the character's facing (+Z): the camera sits behind it
 	_apply_camera_rotation()
@@ -90,9 +105,15 @@ func _register_inputs() -> void:
 	if not InputMap.has_action(RECENTER_ACTION):
 		InputMap.add_action(RECENTER_ACTION)
 		var button := InputEventMouseButton.new()
-		button.button_index = MOUSE_BUTTON_RIGHT
+		button.button_index = MOUSE_BUTTON_MIDDLE
 		InputMap.action_add_event(RECENTER_ACTION, button)
 		_registered.append(RECENTER_ACTION)
+	if not InputMap.has_action(AIM_ACTION):
+		InputMap.add_action(AIM_ACTION)
+		var aim_button := InputEventMouseButton.new()
+		aim_button.button_index = MOUSE_BUTTON_RIGHT
+		InputMap.action_add_event(AIM_ACTION, aim_button)
+		_registered.append(AIM_ACTION)
 
 func _material(color: Color, emissive := false) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
@@ -172,6 +193,12 @@ func _build_world() -> void:
 	pillar_shape.height = 2.4
 	_solid(pillar_mesh, pillar_shape, Vector3(2.5, 1.2, 3.5), _material(Color(0.5, 0.55, 0.8)), "Pillar")
 	_build_chair(Vector3(4.0, 0.0, -3.0))
+	props = PlaygroundProps.build(self, self)
+	var spawn := Marker3D.new()
+	spawn.name = "SpawnPoint"
+	spawn.position = Vector3(0.0, 0.05, 0.0)
+	spawn.add_to_group(ExplorationSpawnGuard.SPAWN_GROUP)
+	add_child(spawn)
 
 ## A chair-shaped placeholder: seat, back and four legs, with ONE box collider. Nothing about it is a furniture system.
 func _build_chair(at: Vector3) -> void:
@@ -232,10 +259,65 @@ func _build_character() -> void:
 	collider.position = Vector3(0.0, 0.85, 0.0)
 	body.add_child(collider)
 	add_child(body)
+	_spawn_visual(true, 0.0)
+	# Falling out of the world is part of exploration mode: the body is returned to a spawn point and the character forgets its motion.
+	spawn_guard = ExplorationSpawnGuard.new()
+	spawn_guard.name = "SpawnGuard"
+	spawn_guard.body = body
+	spawn_guard.respawned.connect(func(point: Node3D, _position: Vector3) -> void:
+		visual.reset_motion(point.global_rotation.y if point != null else NAN)
+		pivot_position = _focus_point())
+	add_child(spawn_guard)
+
+## (Re)builds MIRA under the body, equipped or without a weapon. The character is built with its equipment (a weapon scene or none), so changing it rebuilds the character in place, keeping its facing and posture.
+func _spawn_visual(with_weapon: bool, facing_yaw: float) -> void:
+	var was_crouched := is_instance_valid(visual) and visual.is_crouched()
+	if is_instance_valid(visual):
+		body.remove_child(visual)
+		visual.free()
 	visual = VISUAL.instantiate()
+	if not with_weapon:
+		visual.rig.weapon_scene = null
+	visual.rig.rotation.y = facing_yaw
 	body.add_child(visual)
-	# The production scene hangs 1 m below a tactical unit's origin (the unit's origin is its body centre); here the body origin IS the floor, so undo that offset.
+	armed = with_weapon
+	# The character's origin is its feet (the foot-point convention): the body origin IS the floor here, so the visual sits at zero.
 	visual.position = Vector3.ZERO
+	if was_crouched:
+		visual.set_crouched(true)
+
+## Holsters or draws the rifle.
+func toggle_weapon() -> void:
+	combat.set_aim(false)
+	cover.leave()
+	_spawn_visual(not armed, visual.rig.rotation.y)
+
+## The action packages: aim and shoot with mannequins, cover, ladder and stairs, carrying a body, and health with a respawn screen.
+func _build_actions() -> void:
+	combat = PlaygroundCombat.new()
+	combat.name = "Combat"
+	add_child(combat)
+	combat.setup(self, ui_layer)
+	cover = PlaygroundCover.new()
+	cover.name = "Cover"
+	add_child(cover)
+	cover.setup(self)
+	traversal = PlaygroundTraversal.new()
+	traversal.name = "Traversal"
+	add_child(traversal)
+	traversal.setup(self, props)
+	carry = PlaygroundCarry.new()
+	carry.name = "Carry"
+	add_child(carry)
+	carry.setup(self, props.carry_spot)
+	player_health = PlaygroundPlayerHealth.new()
+	player_health.name = "PlayerHealth"
+	add_child(player_health)
+	player_health.setup(self, ui_layer)
+	for spot: Vector3 in props.target_spots:
+		var target := PlaygroundTarget.new()
+		target.position = spot
+		add_child(target)
 
 func _build_camera() -> void:
 	camera_pivot = Node3D.new()
@@ -262,8 +344,9 @@ func _build_camera() -> void:
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	ui_layer = layer
 	hint_label = Label.new()
-	hint_label.text = "EXPERIMENTAL SANDBOX\nWASD move   Mouse look   Wheel zoom   Right mouse: recenter   E: interact   Esc: menu"
+	hint_label.text = "EXPERIMENTAL SANDBOX\nWASD move   Mouse look   Wheel zoom   Middle mouse: recenter   Shift: run   C: crouch   RMB: aim   LMB: fire   Space: cover / jump   E: use   Q: rifle on/off   Esc: menu"
 	hint_label.position = Vector2(16.0, 12.0)
 	layer.add_child(hint_label)
 	state_label = Label.new()
@@ -321,7 +404,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			_open_menu()
 		get_viewport().set_input_as_handled()
 		return
-	if menu_open:
+	if event.is_action_pressed(&"playground_respawn"):
+		player_health.respawn()
+		return
+	if menu_open or dead:
+		return
+	if event.is_action_pressed(AIM_ACTION):
+		combat.set_aim(true)
+		return
+	if event.is_action_released(AIM_ACTION):
+		combat.set_aim(false)
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		look((event as InputEventMouseMotion).relative)
@@ -334,8 +426,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_LEFT:
 				if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 					_set_mouse_captured(true)
+				else:
+					combat.fire()
 	elif event.is_action_pressed(&"playground_interact"):
 		interact()
+	elif event.is_action_pressed(&"playground_cover"):
+		_cover_or_jump()
+	elif event.is_action_pressed(&"playground_crouch"):
+		if not cover.active and not traversal.on_ladder and not visual.is_carrying():
+			visual.set_crouched(not visual.is_crouched())
+	elif event.is_action_pressed(&"playground_weapon"):
+		toggle_weapon()
+
+## Space: take cover when a wall is in reach (leave it when already in cover), otherwise a placeholder jump.
+func _cover_or_jump() -> void:
+	if cover.active:
+		cover.leave()
+	elif cover.can_enter():
+		cover.enter()
+	elif not traversal.on_ladder and not visual.is_carrying():
+		_jump_requested = true
 
 func look(relative: Vector2) -> void:
 	yaw -= relative.x * MOUSE_SENSITIVITY
@@ -373,23 +483,51 @@ func move_direction() -> Vector3:
 	right.y = 0.0
 	return (right.normalized() * input.x + forward.normalized() * input.y).normalized()
 
-func _physics_process(delta: float) -> void:
-	var wanted := move_direction() * MOVE_SPEED
+## The controller moves the body at the RENDER rate (called first in `_process`): moving it on physics ticks (60 Hz) while the camera and the animation run per rendered frame made the character advance in uneven
+## steps (a tremor at any higher frame rate). `move_and_slide` collides and slides the same from `_process`.
+func _move(delta: float) -> void:
+	if dead:
+		body.velocity = Vector3(0.0, -2.0 if body.is_on_floor() else body.velocity.y - 9.8 * delta, 0.0)
+		body.move_and_slide()
+		moving = false
+		return
+	if traversal.on_ladder:
+		traversal.move_ladder(delta)
+		return
+	if cover.active:
+		cover.move(delta)
+		return
+	# Speed is distance per second whatever the frame rate (every step scales by this frame's delta); move_and_slide sweeps the capsule through the whole step, so a slow frame cannot skip it through a wall.
+	var top_speed := RUN_SPEED if Input.is_action_pressed(&"playground_run") else MOVE_SPEED
+	if visual.is_carrying():
+		top_speed = MOVE_SPEED * PlaygroundCarry.CARRY_SPEED_FACTOR
+	elif combat.aiming:
+		top_speed = MOVE_SPEED * 0.7
+	if carry.busy:
+		top_speed = 0.0   # the lift or the release owns her body
+	var wanted := move_direction() * top_speed
 	var velocity := Vector3(body.velocity.x, 0.0, body.velocity.z).move_toward(wanted, ACCELERATION * delta)
-	body.velocity = Vector3(velocity.x, -2.0 if body.is_on_floor() else body.velocity.y - 9.8 * delta, velocity.z)
+	var vertical: float
+	if traversal.on_stairs:
+		vertical = 0.0   # the treads carry her (see PlaygroundTraversal)
+	elif _jump_requested and body.is_on_floor():
+		vertical = JUMP_SPEED
+	else:
+		vertical = -2.0 if body.is_on_floor() else body.velocity.y - 9.8 * delta
+	_jump_requested = false
+	body.velocity = Vector3(velocity.x, vertical, velocity.z)
 	body.move_and_slide()
+	traversal.update_stairs(delta)
 	var real := body.get_real_velocity()
 	var flat := Vector3(real.x, 0.0, real.z)
-	if flat.length() > 0.05:
-		if not moving:
-			moving = true
-			visual.present_move()   # the caller requests the clip state itself (see the research report)
-		visual.update_locomotion(flat, delta)   # turns toward the velocity and feeds the gait
-	elif moving:
-		moving = false
-		visual.present_idle()
+	moving = flat.length() > 0.05
+	if moving:
+		visual.report_velocity(flat, delta)   # the presenter turns the body toward it and derives the gait; the host selects the clip state
 
 func _process(delta: float) -> void:
+	_move(delta)
+	combat.update(delta)
+	player_health.process(delta)
 	if Input.is_action_pressed(RECENTER_ACTION) and not menu_open:
 		# Behind the character: the camera rig looks along -Z, the character faces +Z at yaw 0.
 		var behind: float = visual.rig.global_rotation.y + PI
@@ -400,7 +538,7 @@ func _process(delta: float) -> void:
 	spring.spring_length = lerpf(spring.spring_length, zoom, 1.0 - exp(-10.0 * delta))
 	_update_interaction(delta)
 	var report: Dictionary = visual.rig.locomotion_report
-	state_label.text = "state: %s   speed: %.2f m/s" % [visual.get_presentation_state(), float(report.get("speed", 0.0))]
+	state_label.text = "state: %s   speed: %.2f m/s   %s%s" % [visual.get_presentation_state(), float(report.get("speed", 0.0)), "rifle" if armed else "unarmed", "   crouched" if visual.is_crouched() else ""]
 
 func _focus_point() -> Vector3:
 	var right := Basis(Vector3.UP, yaw).x
@@ -420,19 +558,80 @@ func distance_to_chair() -> float:
 func can_interact() -> bool:
 	return distance_to_chair() <= INTERACT_DISTANCE
 
-## The non-tactical interaction REQUEST this sandbox tests: face the object (a production call) and show a visible response. There is no sitting or interaction animation
-## to play: the existing presentation has none.
+## What E would do now, as the prompt: lift or put down a body, climb the ladder, inspect the chair; empty when nothing is in reach.
+func _prompt_text() -> String:
+	if dead or menu_open:
+		return ""
+	if visual.is_carrying():
+		return "" if carry.busy else "Press E to put the body down"
+	if traversal.can_mount():
+		return "Press E to climb"
+	if carry.can_pick_up():
+		return "Press E to lift the body"
+	if can_interact() and not cover.active and not traversal.on_ladder:
+		return "Press E to interact"
+	return ""
+
+## E, by context: put the carried body down, climb the ladder, lift the body, or inspect the chair (MIRA turns to it, bends toward it and stands again; the chair responds). Returns whether it did anything.
 func interact() -> bool:
-	if menu_open or not can_interact():
+	if menu_open or dead:
 		return false
-	visual.face_world_position(Vector3(chair_position.x, 0.0, chair_position.z))
+	if visual.is_carrying():
+		if carry.busy:
+			return false
+		carry.put_down()
+		return true
+	if traversal.can_mount():
+		traversal.mount()
+		return true
+	if carry.can_pick_up():
+		carry.pick_up()
+		return true
+	return _inspect_chair()
+
+## The non-tactical interaction this sandbox exercises on the chair: the presenter turns her to it, she bends toward it for the interaction's length and stands again, and the chair responds. The presentation is the
+## host's `inspect` (an ActionHandle that settles COMPLETED, or INTERRUPTED if the player walks away); what inspecting MEANS here is this sandbox's business.
+func _inspect_chair() -> bool:
+	if not can_interact() or cover.active or traversal.on_ladder:
+		return false
+	var handle := visual.inspect(Vector3(chair_position.x, 0.0, chair_position.z))
+	if handle.is_done():
+		return false   # already inspecting
 	interacted = not interacted
 	chair_seat.material_override = _seat_materials[1 if interacted else 0]
-	_show_toast("Interacted with the chair (MIRA turns to it; there is no sitting animation yet)")
+	_show_toast("Inspecting the chair")
+	handle.when_done(func(outcome: PresentationTypes.Outcome) -> void:
+		_show_toast("Done inspecting" if outcome == PresentationTypes.Outcome.COMPLETED else "Interrupted"))
 	return true
 
+## The player went down (health at zero): the defeat plays, the actions let go.
+func on_player_down() -> void:
+	dead = true
+	combat.set_aim(false)
+	cover.leave()
+	if traversal.on_ladder:
+		traversal._end_ladder()
+	if traversal.on_stairs:
+		traversal.on_stairs = false
+		traversal._pass_through_deck(false)
+	visual.defeat()
+
+func show_cursor() -> void:
+	_set_mouse_captured(false)
+
+## A respawn after defeat: MIRA is rebuilt standing with the same equipment and returned to a spawn point.
+func respawn_player() -> void:
+	dead = false
+	_jump_requested = false
+	_spawn_visual(armed, 0.0)
+	carry.character_rebuilt()
+	spawn_guard.respawn()
+	_set_mouse_captured(true)
+
 func _update_interaction(delta: float) -> void:
-	prompt_label.visible = can_interact() and not menu_open
+	var prompt := _prompt_text()
+	prompt_label.visible = prompt != ""
+	prompt_label.text = prompt
 	if toast_time > 0.0:
 		toast_time -= delta
 		if toast_time <= 0.0:

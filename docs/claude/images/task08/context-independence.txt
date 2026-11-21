@@ -1,0 +1,7 @@
+tactical (TacticalUnit + TacticalCharacterAdapter): host script res://presentation/tactical/tactical_character_adapter.gd; rig scene res://art/characters/mira_0/runtime/mira_0_rig.tscn; rig script res://presentation/characters/rig/character_rig.gd; presenter res://presentation/characters/presenter/character_presenter.gd; animation controller res://presentation/characters/rig/character_animation_controller.gd; weapon AUG
+exploration (ExplorationCharacterHost, equipped): host script res://presentation/exploration/exploration_character_host.gd; rig scene res://art/characters/mira_0/runtime/mira_0_rig.tscn; rig script res://presentation/characters/rig/character_rig.gd; presenter res://presentation/characters/presenter/character_presenter.gd; animation controller res://presentation/characters/rig/character_animation_controller.gd; weapon AUG
+  no TacticalUnit in the scene: true
+  the inspection settled with outcome 0 (0 = COMPLETED): true
+exploration (ExplorationCharacterHost, unarmed): host script res://presentation/exploration/exploration_character_host.gd; rig scene res://art/characters/mira_0/runtime/mira_0_rig.tscn; rig script res://presentation/characters/rig/character_rig.gd; presenter res://presentation/characters/presenter/character_presenter.gd; animation controller res://presentation/characters/rig/character_animation_controller.gd; weapon none
+  no TacticalUnit in the scene: true
+  the inspection settled with outcome 0 (0 = COMPLETED): true

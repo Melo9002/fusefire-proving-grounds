@@ -11,4 +11,4 @@ Shared humanoid character presentation. Nothing here may import gameplay, tactic
 | `motion/` | profiles, gait tables, pure solvers (ladder, stairs, paths), `CoverPostureProfile` | nothing above it |
 | `equipment/` | `WeaponHandlingProfile`, `EquipmentPresentation` | `rig_profile/` sockets |
 
-A context host (`presentation/tactical/TacticalCharacterAdapter`, `tools/animation_workbench/`) composes a `CharacterRig` and drives it and its presenter once per frame.
+A context host (`presentation/tactical/TacticalCharacterAdapter`, `presentation/exploration/ExplorationCharacterHost`, `tools/animation_workbench/`) composes a `CharacterRig` and drives it and its presenter once per frame.

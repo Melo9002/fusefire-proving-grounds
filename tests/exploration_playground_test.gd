@@ -1,7 +1,7 @@
 extends SceneTree
 ## The experimental Exploration playground (Task 03 companion): reachable from Match Setup, playable with no tactical state, and able to return. This is a headless test of
 ## behaviour driven through the real input actions; it says nothing about how the sandbox LOOKS (that needs a human at a window). Uses the production MIRA visual, so it also
-## documents what the existing presentation does outside combat (see research/animation_host_probe for the scripted evidence this builds on).
+## documents what the existing presentation does outside combat (the Task 03 host probe was retired into tests/exploration_host_test.gd).
 const MATCH_SETUP := "res://ui/match_setup.tscn"
 const PLAYGROUND := "res://research/exploration_playground/exploration_playground.tscn"
 var failures := 0
@@ -88,6 +88,38 @@ func _run() -> void:
 	var settled: float = float(world.visual.rig.locomotion_report.get("speed", 9.0))
 	check(settled < 0.1 and world.visual.get_presentation_state() == &"rifle_idle", "Releasing the keys returns MIRA to idle (speed %.2f, state %s)" % [settled, world.visual.get_presentation_state()])
 
+	# ---- Shift runs (the presenter derives the faster gait from the reported speed), C crouches and stands, Q holsters and draws the rifle (MIRA is rebuilt in place).
+	_press(&"playground_forward", true)
+	_press(&"playground_run", true)
+	await create_timer(1.6).timeout
+	var run_speed: float = Vector3(world.body.get_real_velocity().x, 0.0, world.body.get_real_velocity().z).length()
+	check(run_speed > world.MOVE_SPEED * 2.5 and world.visual.presenter.speed > 3.5 and world.visual.get_presentation_state() == &"move", "Holding Shift runs (%.2f m/s, presenter speed %.2f)" % [run_speed, world.visual.presenter.speed])
+	_press(&"playground_run", false)
+	_press(&"playground_forward", false)
+	await create_timer(1.2).timeout
+	_press(&"playground_crouch", true)
+	_press(&"playground_crouch", false)
+	await create_timer(1.2).timeout
+	check(world.visual.is_crouched() and world.visual.rig.crouch_modifier.depth > 0.2, "C crouches MIRA through the presenter's posture request (%.2f m)" % world.visual.rig.crouch_modifier.depth)
+	_press(&"playground_crouch", true)
+	_press(&"playground_crouch", false)
+	await create_timer(1.5).timeout
+	check(not world.visual.is_crouched() and world.visual.rig.crouch_modifier.depth < 0.02, "C again stands her up")
+	var facing_before: float = world.visual.rig.rotation.y
+	_press(&"playground_weapon", true)
+	_press(&"playground_weapon", false)
+	await create_timer(0.8).timeout
+	check(not world.armed and not world.visual.rig.has_weapon() and world.visual.rig.equipment_state() == PresentationTypes.EquipmentState.NONE and absf(angle_difference(world.visual.rig.rotation.y, facing_before)) < 0.01, "Q holsters the rifle: the same character rebuilt with no weapon, facing kept")
+	_press(&"playground_forward", true)
+	await create_timer(1.0).timeout
+	_press(&"playground_forward", false)
+	check(world.visual.get_presentation_state() == &"move" and float(world.visual.rig.locomotion_report.get("speed", 0.0)) > 1.0, "Unarmed MIRA walks through the same host")
+	await create_timer(0.8).timeout
+	_press(&"playground_weapon", true)
+	_press(&"playground_weapon", false)
+	await create_timer(0.8).timeout
+	check(world.armed and world.visual.rig.has_weapon(), "Q again draws the rifle")
+
 	# ---- Solid props block MIRA.
 	world.body.global_position = Vector3(-3.0, 0.0, 1.0)
 	world.body.velocity = Vector3.ZERO
@@ -134,6 +166,47 @@ func _run() -> void:
 	check(world.chair_seat.material_override != seat_before and world.toast_label.visible, "Pressing E gives a visible response (chair changes colour, a message shows)")
 	var to_chair: Vector3 = world.chair_position - world.body.global_position
 	check(absf(rad_to_deg(angle_difference(world.visual.rig.global_rotation.y, atan2(to_chair.x, to_chair.z)))) < 5.0, "MIRA turns toward the chair")
+	check(world.visual.is_interacting(), "The interaction is a running presentation (inspecting)")
+	await create_timer(2.4).timeout
+	check(not world.visual.is_interacting() and world.toast_label.text == "Done inspecting", "The interaction completes by itself and the sandbox hears it (%s)" % world.toast_label.text)
+
+	# ---- Falling out of the world is part of exploration mode: the body falls for a moment, then returns to the spawn point and the character forgets its motion.
+	var respawns := []
+	world.spawn_guard.respawned.connect(func(point: Node3D, position: Vector3) -> void: respawns.append(position))
+	world.body.global_position = Vector3(22.0, 0.3, 4.0)   # past the platform's edge
+	world.body.velocity = Vector3.ZERO
+	var lowest: float = 0.0
+	var started := Time.get_ticks_msec()
+	while respawns.is_empty() and Time.get_ticks_msec() - started < 5000:
+		await process_frame
+		lowest = minf(lowest, world.body.global_position.y)
+	check(lowest < -2.0 and respawns.size() == 1, "Walking off the platform lets MIRA fall, then returns her (lowest %.1f m)" % lowest)
+	await create_timer(0.6).timeout
+	var spawn_flat: Vector3 = world.body.global_position
+	spawn_flat.y = 0.0
+	check(spawn_flat.length() < 0.3 and world.body.is_on_floor() and world.body.get_real_velocity().length() < 0.5, "...at the spawn point, standing, with no leftover velocity (%s)" % [world.body.global_position])
+	check(world.visual.get_presentation_state() == &"rifle_idle" and not world.visual.is_moving() and not world.visual.is_interacting(), "...and her presentation is idle again")
+	world.body.global_position = Vector3(3.0, 0.0, -1.8)
+	world.body.velocity = Vector3.ZERO
+	await _frames(6)
+
+	# ---- Movement does not depend on the frame rate: the same walk covers the same distance at 30 fps and at 240 fps.
+	var distances := []
+	for fps in [30, 240]:
+		Engine.max_fps = fps
+		world.body.global_position = Vector3(-15.0, 0.0, -15.0)
+		world.body.velocity = Vector3.ZERO
+		await create_timer(0.5).timeout
+		var from: Vector3 = world.body.global_position
+		_press(&"playground_forward", true)
+		await create_timer(1.5).timeout
+		_press(&"playground_forward", false)
+		var moved: Vector3 = world.body.global_position - from
+		moved.y = 0.0
+		distances.append(moved.length())
+		await create_timer(0.6).timeout
+	Engine.max_fps = 0
+	check(absf(distances[0] - distances[1]) < 0.25 * distances[1] and distances[0] > 1.0, "Walking covers the same distance at 30 and at 240 fps (%.2f m and %.2f m)" % [distances[0], distances[1]])
 
 	# ---- Esc opens the menu and releases the mouse; Resume captures it again; Back returns to Match Setup.
 	_press(&"ui_cancel", true)
