@@ -568,6 +568,7 @@ func _publish_traversal_input() -> void:
 		input.solved = true
 		input.weight = stairs.pose.weight
 		input.pelvis_height = stairs.pose.pelvis_height
+		input.pelvis_offset = stairs.pose.pelvis_offset
 		input.ankles_world = [stairs.pose.feet[0].position, stairs.pose.feet[1].position]
 		input.planted = [stairs.pose.feet[0].planted, stairs.pose.feet[1].planted]
 		input.stair_profile = stair_profile
@@ -623,9 +624,10 @@ func set_stair_progress(s: float, unit_speed: float) -> void:
 	var feet: Array = []
 	for foot in 2:
 		feet.append(StairFootPlanner.foot_at(model, stair_profile, holds, ascending, s, foot))
-	var body := character_root.global_position
+	var shift := StairFootPlanner.sway_at(model, stair_profile, holds, ascending, s)
+	var body := character_root.global_position + shift   # the legs are solved for the pelvis where it will actually be
 	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body)
-	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step)
+	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step, shift)
 	_publish_traversal_input()
 
 

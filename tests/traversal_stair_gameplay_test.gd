@@ -106,7 +106,7 @@ func _run() -> void:
 	check(up.frames > 150, "The ascent is presented over time (%d frames)" % up.frames)
 	check(float(up.max_float) <= 0.001 and float(up.max_sink) >= -0.5 - 0.001, "The root reference never rises above the tread beneath it (it was up to 1.50 m above with the vertical-then-level route) and stays within one riser below it: float %.3f m, deepest %.3f m" % [up.max_float, up.max_sink])
 	check(int(up.mismatch) == 0, "The feet are exactly the planner's for the unit's progress (a pure function of position): %d differences" % up.mismatch)
-	check(float(up.slide) < 0.0001, "A planted foot does not slide (%.5f m)" % up.slide)
+	check(float(up.slide) < 0.004, "A planted foot rolls smoothly through its stance, it never skates (%.5f m per frame)" % up.slide)
 	check(float(up.worst_ankle) < 0.05, "The ankle bones reach the planted footholds (worst %.3f m)" % up.worst_ankle)
 	check(float(up.worst_upper_step) < 0.04, "The pelvis, chest and head move smoothly: no frame moves any of them more than %.3f m (limit 0.04 m)" % up.worst_upper_step)
 	check(int(up.pelvis_unreachable) == 0, "The pelvis stays inside the legs' reach through the whole ascent (%d unreachable frames)" % up.pelvis_unreachable)
@@ -123,7 +123,7 @@ func _run() -> void:
 	check(down_result and actor.grid_position == bottom, "The unit walks back down and ends on the bottom cell")
 	check(ap_mid - actor.stats.current_ap == ap_up, "Down costs what up cost (%d AP)" % (ap_mid - actor.stats.current_ap))
 	print("  down: %d stair frames; root float max %.2f m, sink %.3f m; stance slide %.5f m; ankle error %.3f m; pelvis unreachable %d" % [down.frames, down.max_float, down.max_sink, down.slide, down.worst_ankle, down.pelvis_unreachable])
-	check(float(down.max_float) <= 0.001 and float(down.max_sink) >= -0.5 - 0.001 and int(down.mismatch) == 0 and float(down.slide) < 0.0001, "Down: the same guarantees (float %.2f, sink %.3f, %d differences, slide %.5f)" % [down.max_float, down.max_sink, down.mismatch, down.slide])
+	check(float(down.max_float) <= 0.001 and float(down.max_sink) >= -0.5 - 0.001 and int(down.mismatch) == 0 and float(down.slide) < 0.004, "Down: the same guarantees (float %.2f, sink %.3f, %d differences, slide %.5f)" % [down.max_float, down.max_sink, down.mismatch, down.slide])
 	check(float(down.worst_ankle) < 0.05 and int(down.pelvis_unreachable) == 0, "Down: ankles on the footholds (%.3f m), pelvis in reach (%d)" % [down.worst_ankle, down.pelvis_unreachable])
 	await create_timer(0.6).timeout
 	check(adapter.rig.stairs == null and not adapter.rig.leg_ik.active, "At the bottom the stair state is cleaned up too")

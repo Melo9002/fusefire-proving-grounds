@@ -39,13 +39,23 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	treads.name = "StairTreads"
 	world.add_child(treads)
 	for k in range(1, STAIR_STEPS + 1):
-		var tread := MeshInstance3D.new()
-		var mesh := BoxMesh.new()
+		# Each tread is a solid box (nobody walks through the side of a staircase); while she is ON the stairs the treads carry her instead (see PlaygroundTraversal), so they are ignored then.
 		var top := stairs.tread_top(k)
-		mesh.size = Vector3(STAIR_WIDTH, top, STAIR_DEPTH)
-		tread.mesh = mesh
-		tread.material_override = tread_material
+		var size := Vector3(STAIR_WIDTH, top, STAIR_DEPTH)
+		var tread := StaticBody3D.new()
+		tread.name = "Tread%d" % k
 		tread.position = Vector3(stairs.low.x, top * 0.5, stairs.low.z + stairs.riser_s(k) + STAIR_DEPTH * 0.5)
+		var mesh_instance := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = size
+		mesh_instance.mesh = mesh
+		mesh_instance.material_override = tread_material
+		tread.add_child(mesh_instance)
+		var collider := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = size
+		collider.shape = box
+		tread.add_child(collider)
 		treads.add_child(tread)
 	info["stairs"] = stairs
 	# A ramp (a real collider the body walks up) to a low platform.

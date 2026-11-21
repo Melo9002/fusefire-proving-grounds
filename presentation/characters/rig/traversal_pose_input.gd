@@ -15,6 +15,8 @@ var hips_local := Vector3.ZERO
 var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 ## STAIRS: the pelvis height the legs allow, the two ankle targets (world), whether each foot is planted, and the profile that limits an unplanted ankle's reach.
 var pelvis_height := 0.0
+## The pelvis's sideways shift over the supporting foot (world, horizontal).
+var pelvis_offset := Vector3.ZERO
 var ankles_world: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var planted: Array[bool] = [false, false]
 var stair_profile: StairProfile

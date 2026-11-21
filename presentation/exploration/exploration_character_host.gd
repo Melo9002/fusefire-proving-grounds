@@ -371,6 +371,7 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not is_instance_valid(rig) or not rig.is_inside_tree() or not is_instance_valid(rig.skeleton) or not rig.skeleton.is_inside_tree():
 		return
 	_select_state()
+	_sync_posture()
 	_advance_aim(delta)
 	presenter.tick(delta)
 	_sync_cover(delta)
@@ -404,7 +405,8 @@ func _select_state() -> void:
 
 
 func _sync_posture() -> void:
-	if _crouched:
+	# A crouch is suspended on a staircase or a ladder: the stair and ladder poses own the legs and the pelvis there, and a crouch on top of them sinks the body into the treads.
+	if _crouched and rig.stairs == null and rig.ladder == null:
 		presenter.postures.set_posture(CROUCH_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth))
 	else:
 		presenter.postures.release(CROUCH_SOURCE)

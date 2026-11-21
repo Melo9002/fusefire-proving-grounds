@@ -77,13 +77,19 @@ func _run() -> void:
 	await _wait(0.3)
 	# Stairs, mid-way.
 	_place(Vector3(-12.0, 0.0, 4.6), PI)
+	world.visual.set_crouched(true)   # crouch and run held on the stairs: the stair pose takes over (this used to sink her into the treads)
 	await _wait(0.5)
 	_press(&"playground_forward", true)
+	_press(&"playground_run", true)
 	var started := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - started < 9000 and world.body.global_position.y < 1.0:
 		await process_frame
+	await _wait(0.35)
+	await _snap()   # a moment later: the feet are on different phases of their stance
 	_press(&"playground_forward", false)
+	_press(&"playground_run", false)
 	await _snap()
+	world.visual.set_crouched(false)
 	# Carry.
 	_place(Vector3(8.0, 0.0, -4.5), PI)
 	await _wait(0.5)

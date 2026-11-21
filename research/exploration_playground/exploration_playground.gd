@@ -503,6 +503,8 @@ func _move(delta: float) -> void:
 		top_speed = MOVE_SPEED * PlaygroundCarry.CARRY_SPEED_FACTOR
 	elif combat.aiming:
 		top_speed = MOVE_SPEED * 0.7
+	if traversal.on_stairs:
+		top_speed = minf(top_speed, MOVE_SPEED)   # the stair pose plans one foot per tread: a run is too fast for it, so she takes the stairs at a walk
 	if carry.busy:
 		top_speed = 0.0   # the lift or the release owns her body
 	var wanted := move_direction() * top_speed

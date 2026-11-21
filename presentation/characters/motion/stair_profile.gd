@@ -26,6 +26,19 @@ enum ContactPolicy { EVERY_TREAD, ALTERNATE, AUTO }
 @export_range(0.0, 0.2, 0.005, "suffix:m") var ankle_setback := 0.03
 ## Half the distance between the feet across the stair.
 @export_range(0.03, 0.3, 0.005, "suffix:m") var foot_half_spread := 0.10
+@export_group("Stance")
+## A planted foot is not nailed to one point: through its stance it ROLLS (the ankle drifts forward as the body passes over it and the heel comes up toward toe-off), where it lands varies a little from tread to tread,
+## and the pelvis shifts toward the foot that carries the weight. All of it is a pure function of where the body is along the stair (nothing accumulates), so replay, seeking and frame rate are unaffected. Off, the feet
+## are locked at one point per hold and the pelvis keeps the gait's sideways motion (the earlier behaviour).
+@export var stance_motion_enabled := true
+## How far the ankle drifts forward over a whole stance, heel strike to toe-off (metres, along the travel direction). Kept small: the sole stays on its tread.
+@export_range(0.0, 0.15, 0.005, "suffix:m") var stance_roll := 0.06
+## How far the ankle rises by toe-off (the heel comes up), over the second half of the stance.
+@export_range(0.0, 0.08, 0.0025, "suffix:m") var heel_lift := 0.03
+## Where a foot lands varies by up to this much (along and across the tread), the same every time for the same tread: no two steps are identical copies.
+@export_range(0.0, 0.04, 0.001, "suffix:m") var placement_variation := 0.012
+## The pelvis shifts this far sideways toward the supporting foot (metres at full single support).
+@export_range(0.0, 0.08, 0.0025, "suffix:m") var pelvis_sway := 0.025
 @export_group("Pelvis")
 ## The pelvis is placed from the FEET (not from the floor under the root): high enough that no knee flexes past the limit, low enough that no leg overreaches. Leg length is the
 ## hip-to-ankle distance of the rig (CharacterRig measures it); the defaults are MIRA's.

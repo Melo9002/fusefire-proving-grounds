@@ -29,8 +29,10 @@ var pelvis_high := 0.0
 var weight := 0.0
 var s := 0.0
 var step := 0
+## The sideways shift of the pelvis over the supporting foot (world, horizontal); zero with the stance motion off.
+var pelvis_offset := Vector3.ZERO
 
-static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: float, along: float, tread_step: int) -> StairPose:
+static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: float, along: float, tread_step: int, shift := Vector3.ZERO) -> StairPose:
 	var pose := StairPose.new()
 	for result: Dictionary in foot_results:
 		pose.feet.append(Foot.from_planner(result))
@@ -41,4 +43,5 @@ static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: f
 	pose.weight = pose_weight
 	pose.s = along
 	pose.step = tread_step
+	pose.pelvis_offset = shift
 	return pose

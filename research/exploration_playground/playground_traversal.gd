@@ -83,7 +83,7 @@ func update_stairs(_delta: float) -> bool:
 	var lateral := absf((p - stairs.low).dot(right))
 	var end := stairs.end_s()
 	if not on_stairs:
-		if lateral < stairs.width * 0.5 and s > -0.2 and s < end + 0.2 and not ctx.dead and not ctx.visual.is_carrying():
+		if lateral < stairs.width * 0.5 and s > -0.5 and s < end + 0.2 and not ctx.dead and not ctx.visual.is_carrying():
 			var h := stairs.ride_path_height_at(clampf(s, 0.0, end), ramp)
 			if absf(p.y - h) < 0.3 and ctx.body.is_on_floor():
 				_ascending = ctx.body.get_real_velocity().dot(stairs.direction) >= 0.0
@@ -91,7 +91,7 @@ func update_stairs(_delta: float) -> bool:
 				on_stairs = true
 				_pass_through_deck(true)
 		return on_stairs
-	if lateral > stairs.width * 0.5 + 0.1 or s < -0.35 or s > end + 0.35 or ctx.dead:
+	if lateral > stairs.width * 0.5 + 0.1 or s < -0.7 or s > end + 0.35 or ctx.dead:
 		on_stairs = false
 		ctx.visual.end_stairs()
 		_pass_through_deck(false)
@@ -106,12 +106,19 @@ func update_stairs(_delta: float) -> bool:
 	return true
 
 
-## While she rides the treads her capsule would catch on the deck's front face (the treads carry her, kinematically): the deck is ignored until she is off the stairs.
+## While she rides the treads her capsule would catch on the deck's front face and on the treads themselves (the treads carry her, kinematically): they are ignored until she is off the stairs.
 func _pass_through_deck(on: bool) -> void:
+	var solids: Array[PhysicsBody3D] = []
 	var deck := ctx.get_node_or_null("StairDeck") as PhysicsBody3D
-	if deck == null:
-		return
-	if on:
-		ctx.body.add_collision_exception_with(deck)
-	else:
-		ctx.body.remove_collision_exception_with(deck)
+	if deck != null:
+		solids.append(deck)
+	var treads := ctx.get_node_or_null("StairTreads")
+	if treads != null:
+		for child in treads.get_children():
+			if child is PhysicsBody3D:
+				solids.append(child)
+	for solid in solids:
+		if on:
+			ctx.body.add_collision_exception_with(solid)
+		else:
+			ctx.body.remove_collision_exception_with(solid)

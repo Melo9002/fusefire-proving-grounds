@@ -1,7 +1,7 @@
 class_name StairFootPlanner
 extends RefCounted
 ## Foot placement for walking a staircase: PURE and deterministic, a function of (stair model, contact policy, where the body is along the stair). Nothing accumulates, so the feet
-## are the same at any frame rate, replay speed or seek position. It plans where each foot is and what it does (stance or swing); the rig's leg IK puts the ankle there.
+## are the same at any frame rate, replay speed or seek position. (With the stance motion on a planted foot rolls through its stance; with it off it is locked at one point.) It plans where each foot is and what it does (stance or swing); the rig's leg IK puts the ankle there.
 ##
 ## Holds: the ordered places a foot is put, in TRAVEL order (the ground before the stair, the chosen treads, the landing). With a step of one tread every tread is a hold; with two
 ## every second one (counted from the top so a stair is always finished on its last tread). Feet alternate holds (even holds the left foot, odd the right). A foot is on hold j
@@ -59,10 +59,13 @@ static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, 
 		hold_b = hold_a
 		hold_a = clampi(nearest - 2, 0, last)
 		swing = clampf(index - (float(nearest) - 1.5), 0.0, 1.0)
-	var from_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot)
-	var to_point := _hold_point(model, profile, hold_list[hold_b], ascending, foot)
+	# A planted foot ROLLS through its stance (phase -0.5 at heel strike to +0.5 at toe-off); the swing leaves from the toe-off state and arrives at the next heel-strike state, so nothing jumps.
+	var phase := clampf(index - float(nearest), -0.5, 0.5)
+	var from_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, 0.5)
+	var to_point := _hold_point(model, profile, hold_list[hold_b], ascending, foot, hold_b, -0.5)
 	if swing <= 0.0 or hold_a == hold_b:
-		return {"position": to_point if swing > 0.0 else from_point, "planted": true, "hold": hold_a, "swing": 0.0, "tread_top": float(hold_list[hold_a].height)}
+		var planted_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, phase)
+		return {"position": planted_point, "planted": true, "hold": hold_a, "swing": 0.0, "tread_top": float(hold_list[hold_a].height), "phase": phase}
 	var going_up := to_point.y >= from_point.y
 	# Up: lift first, travel after, so the foot clears the riser. Down: travel first (out over the nosing), drop after: the foot never goes down through the tread it left.
 	var travel := smoothstep(profile.travel_start, 1.0, swing) if going_up else smoothstep(0.0, 1.0 - profile.travel_start, swing)
@@ -73,12 +76,45 @@ static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, 
 	return {"position": position, "planted": false, "hold": hold_b, "swing": swing, "tread_top": maxf(float(hold_list[hold_a].height), float(hold_list[hold_b].height))}
 
 
-static func _hold_point(model: StairModel, profile: StairProfile, hold: Dictionary, ascending: bool, foot: int) -> Vector3:
+## The ankle target for a foot on `hold` (index `hold_id` in the list) at stance `phase` (-0.5 heel strike .. +0.5 toe-off). With the stance motion off this is one fixed point per hold.
+static func _hold_point(model: StairModel, profile: StairProfile, hold: Dictionary, ascending: bool, foot: int, hold_id := -1, phase := 0.0) -> Vector3:
 	var facing := model.direction if ascending else -model.direction
 	var left := Vector3.UP.cross(facing).normalized()
 	var side := profile.foot_half_spread * (1.0 if foot == LEFT else -1.0)
-	var along := model.low + model.direction * float(hold.s) - facing * profile.ankle_setback + left * side
-	return Vector3(along.x, float(hold.height) + profile.ankle_height, along.z)
+	var forward := -profile.ankle_setback
+	var lift := 0.0
+	if profile.stance_motion_enabled and hold_id >= 0:
+		forward += profile.stance_roll * phase
+		lift = profile.heel_lift * smoothstep(0.05, 0.5, phase)
+		var variation := _variation(hold_id, foot, profile.placement_variation)
+		forward += variation.x
+		side += variation.y
+		var reach := maxf(model.width * 0.5 - 0.1, 0.05)
+		side = clampf(side, -reach, reach)
+	var along := model.low + model.direction * float(hold.s) + facing * forward + left * side
+	return Vector3(along.x, float(hold.height) + profile.ankle_height + lift, along.z)
+
+
+## A small deterministic offset (along, across) for a foot landing on hold `hold_id`: the same for the same hold every time, different between holds and between feet.
+static func _variation(hold_id: int, foot: int, amount: float) -> Vector2:
+	if amount <= 0.0:
+		return Vector2.ZERO
+	var a := sin(float(hold_id) * 12.9898 + float(foot) * 78.233) * 43758.5453
+	var b := sin(float(hold_id) * 39.3468 + float(foot) * 11.135) * 24634.6345
+	return Vector2((a - floorf(a)) * 2.0 - 1.0, (b - floorf(b)) * 2.0 - 1.0) * amount
+
+
+## The sideways shift of the pelvis toward the foot that carries the weight (world, horizontal): zero in double support, a full `pelvis_sway` toward the planted foot while the other swings.
+static func sway_at(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float) -> Vector3:
+	if not profile.stance_motion_enabled or profile.pelvis_sway <= 0.0:
+		return Vector3.ZERO
+	var support: Array[float] = []
+	for foot in 2:
+		var result := foot_at(model, profile, hold_list, ascending, s, foot)
+		support.append(1.0 if bool(result.planted) else 0.5 + 0.5 * cos(TAU * float(result.swing)))   # 1 at lift-off, 0 mid-swing, 1 at landing
+	var facing := model.direction if ascending else -model.direction
+	var left := Vector3.UP.cross(facing).normalized()
+	return left * profile.pelvis_sway * (support[LEFT] - support[RIGHT])
 
 
 ## The pelvis height for a body at `body_xz` (world x/z of the hips), from the two feet (`feet` = the dictionaries foot_at returns): a PLANTED foot constrains the pelvis both

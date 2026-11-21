@@ -73,12 +73,12 @@ func _apply_ladder() -> void:
 
 
 ## Stair walking: the feet go to the planner's footholds through the leg IK and the pelvis takes the height the legs allow (StairFootPlanner.pelvis), both by the stair weight.
-## The root already rides the stair surface (the tactical route), so only the pelvis HEIGHT is replaced; its sideways and fore-aft motion stay the gait's.
+## The root already rides the stair surface (the tactical route), so the pelvis HEIGHT is replaced and, with the stance motion on, it shifts sideways over the supporting foot; its fore-aft motion stays the gait's.
 func _apply_stairs() -> void:
 	weight = input.weight
 	var current := skeleton.get_bone_pose_position(_hips)
 	var current_world: Vector3 = skeleton.global_transform * current
-	var hips_world := Vector3(current_world.x, input.pelvis_height, current_world.z)
+	var hips_world := Vector3(current_world.x + input.pelvis_offset.x, input.pelvis_height, current_world.z + input.pelvis_offset.z)
 	var target := skeleton.global_transform.affine_inverse() * hips_world
 	skeleton.set_bone_pose_position(_hips, current.lerp(target, weight))
 	if not is_instance_valid(leg_ik):

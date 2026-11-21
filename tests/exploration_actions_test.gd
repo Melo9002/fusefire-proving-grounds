@@ -139,6 +139,35 @@ func _run() -> void:
 	await _wait(0.8)
 	check(absf(world.body.global_position.y) < 0.15 and world.body.is_on_floor(), "...and back down to the floor (y %.2f)" % world.body.global_position.y)
 
+	# ---- Stairs with a crouch and a run held: the stair pose owns her legs, so the crouch is suspended and she takes the stairs at a walk (the pelvis stays at standing height).
+	_place(Vector3(-12.0, 0.0, 4.4), PI)
+	world.visual.set_crouched(true)
+	await _wait(0.8)
+	_press(&"playground_forward", true)
+	_press(&"playground_run", true)
+	var deepest_crouch := 0.0
+	var fastest := 0.0
+	started = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - started < 9000 and world.body.global_position.z < 8.0:
+		await process_frame
+		if world.traversal.on_stairs and Time.get_ticks_msec() - started > 1500:
+			deepest_crouch = maxf(deepest_crouch, world.visual.rig.crouch_modifier.depth)
+			fastest = maxf(fastest, Vector3(world.body.get_real_velocity().x, 0.0, world.body.get_real_velocity().z).length())
+	_press(&"playground_forward", false)
+	_press(&"playground_run", false)
+	check(world.traversal.on_stairs and deepest_crouch < 0.05, "A held crouch is suspended on the stairs (deepest crouch %.2f m while on them)" % deepest_crouch)
+	check(fastest < world.MOVE_SPEED + 0.3, "A held run is walked on the stairs (%.2f m/s)" % fastest)
+	world.visual.set_crouched(false)
+	_place(Vector3(-12.0, 0.0, 3.0), 0.0)
+	await _wait(0.6)
+	# The treads are solid from the side: walking into them does not go through.
+	_place(Vector3(-10.4, 0.0, 6.6), PI * 0.5)
+	await _wait(0.5)
+	_press(&"playground_forward", true)
+	await _wait(1.8)
+	_press(&"playground_forward", false)
+	check(world.body.global_position.x > -11.2 and not world.traversal.on_stairs, "The staircase has collision: walking into its side stops her (x %.2f)" % world.body.global_position.x)
+
 	# ---- Ramp: a plain collider.
 	_place(Vector3(7.5, 0.0, 8.0), -PI * 0.5)
 	await _wait(0.5)

@@ -1,6 +1,7 @@
 extends SceneTree
-## Stair geometry and foot placement (pure): the stair model's alignment with the tactical cells, the root ride path, and the planner's feet: on the treads, locked in stance,
-## clearing the risers going up and down, reachable, deterministic, and following the contact policy.
+## Stair geometry and foot placement (pure): the stair model's alignment with the tactical cells, the root ride path, and the planner's feet: on the treads, ROLLING through their stance (a bounded forward drift
+## and a heel that comes up; the earlier contract locked each planted foot at one point, which still holds with the stance motion switched off and is verified below), clearing the risers going up and down, reachable,
+## deterministic, and following the contact policy.
 var failures := 0
 var checks := 0
 
@@ -62,6 +63,8 @@ func _run() -> void:
 				var last_position := [Vector3.INF, Vector3.INF]
 				var last_hold := [-1, -1]
 				var slide := 0.0
+				var stance_span := {}
+				var stance_lift := {}
 				var worst_step := 0.0
 				var penetration := 0
 				var off_tread := 0
@@ -93,6 +96,13 @@ func _run() -> void:
 									off_tread += 1
 							if last_hold[foot] == result.hold and last_position[foot] != Vector3.INF:
 								slide = maxf(slide, (result.position as Vector3).distance_to(last_position[foot]))
+							var key := "%d:%d" % [foot, result.hold]
+							var along := stair.progress_of(result.position)
+							var lift: float = result.position.y - profile.ankle_height - float(hold_info.height)
+							var span: Vector2 = stance_span.get(key, Vector2(along, along))
+							stance_span[key] = Vector2(minf(span.x, along), maxf(span.y, along))
+							var lifts: Vector2 = stance_lift.get(key, Vector2(lift, lift))
+							stance_lift[key] = Vector2(minf(lifts.x, lift), maxf(lifts.y, lift))
 						if last_position[foot] != Vector3.INF:
 							worst_step = maxf(worst_step, (result.position as Vector3).distance_to(last_position[foot]))
 						last_position[foot] = result.position
@@ -119,7 +129,14 @@ func _run() -> void:
 					s += 0.002
 				print("  %s: planted tread heights %s, worst foot step %.3f m per 2 mm, stance slide %.4f m, worst hip-to-ankle %.2f m, tightest knee %.0f deg, unreachable %d, swing foot pulled in by at most %.3f m" % [label, heights_planted.keys(), worst_step, slide, worst_reach, min_interior, unreachable, worst_clamp])
 				check(penetration == 0, "%s: no sole goes below the tread or through a riser (%d samples)" % [label, penetration])
-				check(slide < 0.0001, "%s: a planted foot does not slide (%.5f m)" % [label, slide])
+				var worst_roll := 0.0
+				var worst_heel := 0.0
+				for key in stance_span:
+					worst_roll = maxf(worst_roll, (stance_span[key] as Vector2).y - (stance_span[key] as Vector2).x)
+					worst_heel = maxf(worst_heel, (stance_lift[key] as Vector2).y - (stance_lift[key] as Vector2).x)
+				check(slide < 0.0015, "%s: a planted foot rolls smoothly, it never skates (%.5f m per 2 mm of body travel)" % [label, slide])
+				check(worst_roll <= profile.stance_roll + 0.002 and worst_roll >= profile.stance_roll * 0.8 and worst_heel <= profile.heel_lift + 0.002 and worst_heel >= profile.heel_lift * 0.8,
+					"%s: through its stance a foot drifts forward by %.3f m (limit %.3f) and its heel comes up %.3f m (limit %.3f)" % [label, worst_roll, profile.stance_roll, worst_heel, profile.heel_lift])
 				check(worst_step < 0.025, "%s: the feet never jump (worst %.3f m per 2 mm of body travel)" % [label, worst_step])
 				check(both_on_one == 0, "%s: the feet are never on the same hold" % label)
 				check(off_tread == 0, "%s: stance feet are on their treads (%d off)" % [label, off_tread])
@@ -133,6 +150,44 @@ func _run() -> void:
 						if tread >= 1 and tread <= stair.count and tread % 2 != 0:
 							only_even = false
 					check(only_even, "%s: only every second tread (counted from the top) is stepped on" % label)
+
+	# ---- The earlier contract, with the stance motion switched off: each planted foot is locked at one point and the pelvis does not shift.
+	var locked := StairProfile.new()
+	locked.stance_motion_enabled = false
+	for ascending in [true, false]:
+		var locked_holds := StairFootPlanner.holds(model, ascending, 1)
+		var locked_slide := 0.0
+		var previous := [Vector3.INF, Vector3.INF]
+		var previous_hold := [-1, -1]
+		var s_lock := -1.0
+		while s_lock <= model.end_s() + 1.2:
+			for foot in 2:
+				var result := StairFootPlanner.foot_at(model, locked, locked_holds, ascending, s_lock, foot)
+				if result.planted and previous_hold[foot] == result.hold and previous[foot] != Vector3.INF:
+					locked_slide = maxf(locked_slide, (result.position as Vector3).distance_to(previous[foot]))
+				previous[foot] = result.position
+				previous_hold[foot] = result.hold if result.planted else -1
+			s_lock += 0.002
+		check(locked_slide < 0.0001, "Stance motion off, %s: a planted foot does not slide (%.5f m)" % ["up" if ascending else "down", locked_slide])
+		check(StairFootPlanner.sway_at(model, locked, locked_holds, ascending, 1.2) == Vector3.ZERO, "Stance motion off: no pelvis shift")
+
+	# ---- The stance motion itself: the pelvis shifts toward the supporting foot, the landing varies between treads but is the same every time, and a landing stays on its tread.
+	var shift_holds := StairFootPlanner.holds(model, true, 1)
+	var biggest_sway := 0.0
+	var shifts_both_ways := [false, false]
+	var s_sway := 0.0
+	while s_sway <= model.end_s():
+		var sway := StairFootPlanner.sway_at(model, profile, shift_holds, true, s_sway)
+		biggest_sway = maxf(biggest_sway, sway.length())
+		var left := Vector3.UP.cross(model.direction).normalized()
+		shifts_both_ways[0] = shifts_both_ways[0] or sway.dot(left) > profile.pelvis_sway * 0.5
+		shifts_both_ways[1] = shifts_both_ways[1] or sway.dot(left) < -profile.pelvis_sway * 0.5
+		s_sway += 0.01
+	check(biggest_sway <= profile.pelvis_sway + 0.0001 and shifts_both_ways[0] and shifts_both_ways[1], "The pelvis shifts toward whichever foot carries the weight, at most %.3f m (%.3f)" % [profile.pelvis_sway, biggest_sway])
+	var landing_a: Vector3 = StairFootPlanner.foot_at(model, profile, shift_holds, true, 1.0, 0).position
+	var landing_b: Vector3 = StairFootPlanner.foot_at(model, profile, shift_holds, true, 2.0, 0).position
+	var landing_again: Vector3 = StairFootPlanner.foot_at(model, profile, shift_holds, true, 1.0, 0).position
+	check(landing_a == landing_again and absf((landing_a.x - model.low.x) - (landing_b.x - model.low.x)) > 0.0005, "Where a foot lands differs between treads but is the same every time")
 
 	# ---- Determinism and ordinary-ground hand-over.
 	var holds_a := StairFootPlanner.holds(model, true, 1)
