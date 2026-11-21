@@ -40,9 +40,9 @@ func get_camera_height() -> float:
 	return maxf(0.2, camera_body_height * global_basis.y.length())
 
 var tactical_unit: TacticalUnit
-var _locomotion_speed := 0.0
-var _locomotion_heading_rate := 0.0
-var _locomotion_age := 1.0
+## The shared presentation state of this character: presentation time, reported velocity, velocity-following facing and the moving decision (Task 07 package 2).
+## This node is still the rig, so the presenter is a bound component that this node ticks once per frame from `_process`.
+var presenter := CharacterPresenter.new(self)
 ## Where the rescued actor lies, while the carrier is still walking to it (see present_pickup); INF when no pickup is waiting.
 var _pending_pickup_world := Vector3.INF
 var _pending_lying_basis = null
@@ -181,7 +181,10 @@ const ATTACK_SOURCE := &"attack"
 var attack_phase := AttackPhase.NONE
 ## Record of the latest attack: times (presentation seconds), phases, aim blend and muzzle error at the shot.
 var attack_timeline: Dictionary = {}
-var _presentation_clock := 0.0
+## Presentation seconds: owned by the presenter; this accessor keeps existing readers (attack timelines, tests) working.
+var _presentation_clock: float:
+	get: return presenter.time
+	set(value): presenter.time = value
 var _attack_shot_state := &"shoot"
 var _recover_left := 0.0
 var _return_generation := 0
@@ -295,6 +298,7 @@ func _apply_team_accent() -> void:
 	_team_accent.material_override = material
 
 func _exit_tree() -> void:
+	presenter.teardown()
 	# Skeleton modifiers can emit once more while their hierarchy is being
 	# removed. Disconnect before descendants lose legal global transforms.
 	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
@@ -351,7 +355,7 @@ func is_ladder_active() -> bool:
 func _tick_traversal(delta: float) -> void:
 	if not stair_state.is_empty() and is_instance_valid(tactical_unit):
 		var floor_position := tactical_unit.global_position - Vector3.UP * tactical_unit.standing_height
-		set_stair_progress((stair_state.model as StairModel).progress_of(floor_position), _locomotion_speed)
+		set_stair_progress((stair_state.model as StairModel).progress_of(floor_position), presenter.speed)
 	if _ladder.is_empty() or not is_instance_valid(tactical_unit):
 		return
 	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
@@ -626,16 +630,8 @@ func present_idle() -> void:
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
 
 func update_locomotion(world_velocity: Vector3, delta: float) -> void:
-	var flat := Vector3(world_velocity.x, 0.0, world_velocity.z)
-	if flat.length_squared() < 0.000001:
-		return
-	var desired_yaw := atan2(flat.x, flat.z)
-	var yaw_before := global_rotation.y
-	global_rotation.y = rotate_toward(global_rotation.y, desired_yaw, deg_to_rad(turn_speed_degrees) * delta)
-	# The tactical layer owns speed and heading. This only reports them: the presentation derives its gait, cadence and lean from them every frame.
-	_locomotion_speed = flat.length()
-	_locomotion_age = 0.0
-	_locomotion_heading_rate = angle_difference(yaw_before, global_rotation.y) / maxf(delta, 0.0001)
+	# The tactical layer owns speed and heading. This only reports them: the presenter turns the body toward the velocity and the presentation derives its gait, cadence and lean from them every frame.
+	presenter.report_velocity(world_velocity, delta, turn_speed_degrees)
 	# Tactical paths mean "turn and advance": the clip family is always the forward one (see the movement coordinate contract in the
 	# animation builder); the speed decides walk, jog or run.
 
@@ -798,8 +794,8 @@ func get_presentation_state() -> StringName:
 func _process(delta: float) -> void:
 	if not is_inside_tree() or not is_instance_valid(skeleton) or not skeleton.is_inside_tree():
 		return
-	_presentation_clock += delta
-	_tick_locomotion(delta)
+	_sync_movement_authority()
+	presenter.tick(delta)
 	_sync_aim_hold(delta)
 	_advance_readiness(delta)
 	_sync_cover_crouch(delta)
@@ -808,18 +804,12 @@ func _process(delta: float) -> void:
 	_update_weapon_pose()
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
-## The speed and heading rate the tactical unit reports while it moves; zero otherwise (which is what settles the gait to a stop).
-func _tick_locomotion(delta: float) -> void:
-	if _locomotion_fed_frame == Engine.get_process_frames():
-		return   # a tool or test already fed this frame's speed directly
-	_locomotion_age += delta
-	# A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities.
-	var moving := tactical_unit.is_moving if is_instance_valid(tactical_unit) else _locomotion_age < 0.15
-	var speed := _locomotion_speed if moving else 0.0
-	update_locomotion_presentation(speed, _locomotion_heading_rate if moving else 0.0, delta)
-	if not moving:
-		_locomotion_speed = 0.0
-		_locomotion_heading_rate = 0.0
+## A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities (the presenter infers that).
+func _sync_movement_authority() -> void:
+	if is_instance_valid(tactical_unit):
+		presenter.set_movement_authority(tactical_unit.is_moving)
+	else:
+		presenter.clear_movement_authority()
 
 func _loaded_locomotion() -> bool:
 	return _carrying()

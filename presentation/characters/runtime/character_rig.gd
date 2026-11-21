@@ -773,6 +773,11 @@ func _loaded_locomotion() -> bool:
 ## Once per frame: the speed the character is ACTUALLY moving at (the tactical layer's, or the workbench's preview) and how fast its heading is changing,
 ## in, the legs' cadence, gait blend and the body's lean out. The speed the legs respond to follows the real speed with the profile's rise and fall
 ## limits; it never drives movement. Idle is a speed of zero: this is also what settles the gait to a stop.
+## True when the locomotion presentation was already fed on this engine frame (a tool or test drove it directly), so a second feed would advance the smoothing twice.
+func locomotion_fed_this_frame() -> bool:
+	return _locomotion_fed_frame == Engine.get_process_frames()
+
+
 func update_locomotion_presentation(speed: float, heading_rate: float, delta: float) -> void:
 	if not is_instance_valid(animation_controller) or not is_instance_valid(animation_controller.animation_tree) or delta <= 0.0:
 		return
@@ -821,11 +826,14 @@ func _update_body_adjustments(delta: float) -> void:
 		steps[1 - first] = p.turn_step_lift * sin(PI * clampf((progress - 0.45) / 0.55, 0.0, 1.0))
 	if absf(_twist) < 0.01:
 		_twist_start = 0.0
-	locomotion_modifier.twist_degrees = _twist
-	locomotion_modifier.step_lift = steps
-	locomotion_modifier.bank_degrees = _bank_target
+	var input := RigInput.new()
+	input.twist_degrees = _twist
+	input.step_lift_left = steps[0]
+	input.step_lift_right = steps[1]
+	input.bank_degrees = _bank_target
 	var pitch := 0.0 if _loaded_locomotion() else clampf(_speed_accel * p.accel_lean_gain, -p.accel_lean_max, p.accel_lean_max)
-	locomotion_modifier.pitch_degrees = pitch
+	input.pitch_degrees = pitch
+	locomotion_modifier.apply_input(input)
 
 
 ## Starts the STEADY carry presentation at once (no lift): the passenger across the shoulders, the weapon slung and the wrists on

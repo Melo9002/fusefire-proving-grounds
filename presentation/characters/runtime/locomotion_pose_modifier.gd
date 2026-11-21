@@ -17,6 +17,14 @@ var pitch_degrees := 0.0
 ## Knee flexion of the left and right foot-lifting steps, degrees (0 = planted).
 var step_lift := [0.0, 0.0]
 
+## The typed way in (RigInput): the presentation hands a RigInput and the modifier takes its locomotion fields. The four public fields above stay readable and writable for existing
+## readers and tests; apply_input is the only writer the rig uses.
+func apply_input(input: RigInput) -> void:
+	twist_degrees = input.twist_degrees
+	bank_degrees = input.bank_degrees
+	pitch_degrees = input.pitch_degrees
+	step_lift = [input.step_lift_left, input.step_lift_right]
+
 var _up := Vector3.UP
 var _forward := Vector3.BACK
 var _hinge := Vector3.RIGHT
