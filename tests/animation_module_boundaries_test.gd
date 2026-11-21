@@ -92,5 +92,17 @@ func _run() -> void:
 			check(ramp_writer.search(code) == null, "%s writes the crouch depth or kneel directly: only CharacterRig applies the posture ramps" % path)
 		if path != "presentation/characters/runtime/character_rig.gd" and path != "presentation/characters/presenter/character_presenter.gd":
 			check(feed_caller.search(code) == null, "%s calls the locomotion feed directly: it goes through CharacterPresenter.tick" % path)
+	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
+	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
+	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")
+	for path in ["cover_crouch_modifier", "hand_grip_modifier", "locomotion_pose_modifier", "traversal_pose_modifier", "weapon_pose_modifier"]:
+		var file := "presentation/characters/runtime/%s.gd" % path
+		var code := _code(file)
+		var accesses := dynamic_access.search_all(code)
+		var hit: String = accesses[0].get_string() if not accesses.is_empty() else ""
+		check(accesses.is_empty(), "%s looks something up by name in another object (%s): modifiers use typed inputs" % [file, hit])
+		check(not code.contains("_process_modification()"), "%s still uses the deprecated _process_modification() callback" % file)
+		check(code.contains("func _process_modification_with_delta("), "%s does not implement the supported modifier callback" % file)
+		check(owner_types.search(code) == null, "%s depends on the rig, the presenter or gameplay: a modifier consumes typed inputs only" % file)
 	print("Animation module boundaries: %d checks, %d failure(s); %d known gameplay importer(s) remain" % [checks, failures, importers.size()])
 	quit(1 if failures else 0)

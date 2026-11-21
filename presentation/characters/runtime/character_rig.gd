@@ -138,14 +138,22 @@ var support_ik_target: Marker3D
 @export var left_elbow_ready := Vector3(0.27, 0.94, 0.10)
 @export var left_elbow_aim := Vector3(0.38, 1.03, 0.08)
 @export_group("Weapon Pose")
+## The support arm's live limits, shared by reference with WeaponPoseModifier (see WeaponPoseSettings). The properties below read and write this one object.
+var weapon_pose_settings := WeaponPoseSettings.new()
 ## Most the support shoulder may be protracted in total (base reach plus what a target needs), degrees. The base is
 ## SUPPORT_REACH_DEGREES. Conservative: about half of the sternoclavicular joint's ~35 degree protraction-retraction
 ## range (StatPearls, Kenhub, GPnotebook). Set per character; see WeaponPoseModifier.
-@export_range(0.0, 45.0, 0.5, "suffix:°") var support_protraction_limit_degrees := 18.0
+@export_range(0.0, 45.0, 0.5, "suffix:°") var support_protraction_limit_degrees: float = 18.0:
+	get: return weapon_pose_settings.protraction_limit_degrees
+	set(value): weapon_pose_settings.protraction_limit_degrees = value
 ## Elbow bend (interior angle, degrees) the support arm is eased toward when its target is nearly out of reach.
 ## 180 is a locked elbow.
-@export_range(120.0, 180.0, 1.0, "suffix:°") var support_elbow_comfort_degrees := 165.0
-@export_range(2, 16, 1) var support_solve_iterations := 8
+@export_range(120.0, 180.0, 1.0, "suffix:°") var support_elbow_comfort_degrees: float = 165.0:
+	get: return weapon_pose_settings.elbow_comfort_degrees
+	set(value): weapon_pose_settings.elbow_comfort_degrees = value
+@export_range(2, 16, 1) var support_solve_iterations: int = 8:
+	get: return weapon_pose_settings.solve_iterations
+	set(value): weapon_pose_settings.solve_iterations = value
 ## Torso-relative weapon frame. While the chest kicks (a shot) the aimed weapon turns with the chest, about the
 ## stock, instead of keeping the character root's orientation: the weapon and both shoulders then move as one body and
 ## the support hand keeps its grip. Off restores the root-frame weapon (used for before/after comparisons).
@@ -395,12 +403,44 @@ func _place_hands_on_weapon() -> void:
 
 
 ## Runs after the crouch layer and before the arm IK, so the targets are placed from the final procedural shoulder.
+## The rig's side of the PoseTargetPlacer contract: the weapon-pose modifier asks, the rig places its own targets with its own formulas.
+class RigPoseTargets extends PoseTargetPlacer:
+	var _rig: CharacterRig
+	func _init(owner_rig: CharacterRig) -> void:
+		_rig = owner_rig
+	func carrying() -> bool:
+		return _rig.carry_contacts_active()
+	func holding_traversal() -> bool:
+		return _rig.traversal_contacts_active()
+	func place_carry_targets(right_shoulder: Vector3, left_shoulder: Vector3) -> void:
+		_rig.apply_carry_targets([right_shoulder, left_shoulder], _rig.carry_passenger.anchor_world())
+	func observe_torso_frame(chest_in_root: Basis, delta: float) -> void:
+		_rig.update_torso_frame(chest_in_root, delta)
+	func place_weapon_targets(right_shoulder: Vector3) -> void:
+		_rig.apply_weapon_targets(right_shoulder)
+	func place_traversal_hand_targets() -> void:
+		_rig.apply_traversal_hand_targets()
+	func guide_elbows(right_shoulder: Vector3, left_shoulder: Vector3, chest_world: Basis, carrying_now: bool) -> void:
+		_rig.apply_elbow_guidance([right_shoulder, left_shoulder], chest_world, carrying_now)
+
+
 func _build_weapon_pose_modifier() -> void:
 	var modifier := WeaponPoseModifier.new()
 	modifier.name = "WeaponPose"
 	torso_bone_name = &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
 	neck_bone_name = &"mixamorig_Neck" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Neck"
-	if not modifier.setup(self):
+	var binding := WeaponPoseBinding.new()
+	binding.skeleton = skeleton
+	binding.right_shoulder_bone = right_arm_bones[0]
+	binding.left_arm_bones.assign(left_arm_bones)
+	binding.chest_bone = torso_bone_name
+	binding.character_root = character_root
+	binding.arm_ik = arm_ik
+	binding.support_target = support_ik_target
+	binding.crouch = crouch_modifier
+	binding.settings = weapon_pose_settings
+	binding.placer = RigPoseTargets.new(self)
+	if not modifier.setup(binding):
 		return
 	skeleton.add_child(modifier)
 	if is_instance_valid(arm_ik):
@@ -457,7 +497,7 @@ func _build_traversal_modifier() -> void:
 	]
 	traversal_modifier = TraversalPoseModifier.new()
 	traversal_modifier.name = "Traversal"
-	if not traversal_modifier.setup(self, skeleton, &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips"):
+	if not traversal_modifier.setup(skeleton, &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips", character_root):
 		traversal_modifier = null
 		return
 	leg_ik = TwoBoneIK3D.new()
@@ -480,16 +520,43 @@ func _build_traversal_modifier() -> void:
 		leg_ik.set_target_node(side, leg_ik.get_path_to(foot))
 		leg_ik.set_pole_node(side, leg_ik.get_path_to(knee))
 	leg_ik.active = false
+	traversal_modifier.bind_legs(leg_ik, foot_targets, knee_poles)
 	# Just before the arm IK, after whatever was built before (Locomotion, CoverCrouch).
 	if is_instance_valid(arm_ik):
 		skeleton.move_child(traversal_modifier, arm_ik.get_index())
 		skeleton.move_child(leg_ik, arm_ik.get_index())
 
 
+## Translates the traversal and stair state into the typed pose the Traversal modifier applies (TraversalPoseInput). Called wherever that state changes, so the modifier always has the current pose and
+## reads nothing of the rig. A ladder takes precedence over stairs, exactly as before. `traversal`, `traversal_pose`, `stair_state` and `stair_pose` stay the rig's own state (read by tests and tools).
+func _publish_traversal_input() -> void:
+	if traversal_modifier == null:
+		return
+	var input := traversal_modifier.input
+	if not traversal.is_empty():
+		input.mode = TraversalPoseInput.Mode.LADDER
+		input.solved = not traversal_pose.is_empty()
+		if input.solved:
+			input.weight = float(traversal_pose.weight)
+			input.hips_local = traversal_pose.hips
+			input.feet_local = [traversal_pose.feet[0], traversal_pose.feet[1]]
+	elif not stair_pose.is_empty():
+		input.mode = TraversalPoseInput.Mode.STAIRS
+		input.solved = true
+		input.weight = float(stair_pose.weight)
+		input.pelvis_height = float(stair_pose.pelvis.height)
+		input.ankles_world = [stair_pose.feet[0].position, stair_pose.feet[1].position]
+		input.planted = [bool(stair_pose.feet[0].planted), bool(stair_pose.feet[1].planted)]
+		input.stair_profile = stair_profile
+	else:
+		input.clear()
+
+
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
 func begin_traversal(kind: StringName, length: float, direction: int) -> void:
 	traversal = {"kind": kind, "climbed": 0.0, "length": length, "direction": direction}
 	traversal_pose = {}
+	_publish_traversal_input()
 
 
 ## The height of the character's floor level above the ladder's bottom floor. Solves the pose now (pure function of this height), asks the trunk to lean, and sets
@@ -499,6 +566,7 @@ func set_traversal_progress(climbed: float) -> void:
 		return
 	traversal.climbed = climbed
 	traversal_pose = TraversalSolver.ladder_pose(traversal_profile, climbed, float(traversal.length), int(traversal.direction))
+	_publish_traversal_input()
 	var weight: float = traversal_pose.weight
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = float(traversal_pose.lean_degrees) * weight
@@ -517,6 +585,7 @@ func begin_stairs(model: StairModel, ascending: bool, enter := 0.0, exit := -1.0
 		return
 	stair_state = {"model": model, "ascending": ascending, "step": 0, "holds": [], "enter": enter, "exit": exit if exit >= 0.0 else model.riser_s(model.count)}
 	stair_pose = {}
+	_publish_traversal_input()
 
 
 ## The body's place along the stair (distance from the lower cell centre) and its speed: plans the feet and the pelvis now (a pure function of these two numbers).
@@ -536,6 +605,7 @@ func set_stair_progress(s: float, unit_speed: float) -> void:
 	var body := character_root.global_position
 	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body)
 	stair_pose = {"feet": feet, "pelvis": solved, "weight": StairFootPlanner.weight_at(s, float(stair_state.enter), float(stair_state.exit), model.tread_depth * 1.5), "s": s, "step": step}
+	_publish_traversal_input()
 
 
 func end_stairs() -> void:
@@ -543,6 +613,7 @@ func end_stairs() -> void:
 		return
 	stair_state = {}
 	stair_pose = {}
+	_publish_traversal_input()
 	if is_instance_valid(leg_ik) and traversal.is_empty():
 		leg_ik.active = false
 
@@ -553,6 +624,7 @@ func end_traversal() -> void:
 		return
 	traversal = {}
 	traversal_pose = {}
+	_publish_traversal_input()
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = 0.0
 	if is_instance_valid(leg_ik):

@@ -237,7 +237,7 @@ func current_lean_degrees() -> float:
 func lean_degrees(for_depth: float) -> float:
 	return minf(for_depth * LEAN_DEGREES_PER_METRE, MAX_LEAN_DEGREES)
 
-func _process_modification() -> void:
+func _process_modification_with_delta(_delta: float) -> void:
 	var target := get_skeleton()
 	if target == null or _hips < 0:
 		return

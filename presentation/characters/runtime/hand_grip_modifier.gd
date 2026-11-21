@@ -108,7 +108,7 @@ func _orient_hands(target: Skeleton3D) -> void:
 		var current := target.get_bone_pose_rotation(_hands[hand])
 		target.set_bone_pose_rotation(_hands[hand], current.slerp(local, clampf(weight, 0.0, 1.0)))
 
-func _process_modification() -> void:
+func _process_modification_with_delta(_delta: float) -> void:
 	var target := get_skeleton()
 	if target == null or _fingers[0].is_empty():
 		return

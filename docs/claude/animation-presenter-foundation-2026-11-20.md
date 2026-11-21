@@ -87,3 +87,44 @@ Inventory of string-keyed accesses still left (modifier to rig): `TraversalPoseM
 
 **Measured.** Idle adapter `_process` 0.018 to 0.020 ms per character against the Package 2 numbers (the per-frame request bookkeeping); modifier stack unchanged. Rendered cover poses (low 0.9 m, full 2.0 m, kneel 0.4 m, standing) are pixel-identical to the previous commit's; the aiming and idle captures differ from run to run on the same code, so they could not be compared.
 
+## Package 4 update: typed modifier inputs, supported callback, pose ownership
+
+**Measured before and after** (actual counts, not estimates)
+
+| | Before | After |
+| --- | --- | --- |
+| String-keyed modifier-to-rig accesses | 32 (11 in Traversal, 13 `rig.get` and 7 `rig.call` in WeaponPose, plus one nested `anchor_world` call on the passenger) | 0 (a text ratchet in `animation_module_boundaries_test` fails if one returns) |
+| Modifiers using the deprecated `_process_modification()` | 5 | 0 (all five implement `_process_modification_with_delta`) |
+| Modifiers that know `CharacterRig`, the presenter or gameplay | 2 (held a `rig` reference) | 0 (ratchet) |
+| Declared pose-write overlaps / undeclared conflicts | none declared (unknown) / not detectable | 4 declared / 0 (validated; see `PoseOwnership`) |
+| Pose-trace difference against the previous commit | n/a | 0.000000 m on every bone and IK target and 0.064 degrees of rotation noise (the run-to-run floor of the comparison) over 9 scenarios, 1,350 frames |
+| Idle cost per character (adapter / stack) | 0.018 to 0.020 ms / 0.010 ms | 0.019 to 0.020 ms / 0.010 ms (unchanged) |
+
+**The boundary.** Each access was classified and given the interface that fits it, instead of one large input object:
+
+| Kind | Examples | Now |
+| --- | --- | --- |
+| Persistent configuration | skeleton, bone names, character root, arm IK, support target, crouch modifier | `WeaponPoseBinding` (built once; wiring, never per-frame) and `TraversalPoseModifier.setup` / `bind_legs` arguments |
+| Live tuning | support protraction limit, comfort angle, solve iterations | `WeaponPoseSettings`, shared by reference; the rig's inspector properties read and write it (tests that retune them keep working, nothing is copied) |
+| Per-frame presentation input | the traversal and stair pose | `TraversalPoseInput`, published by the rig whenever the traversal or stair state changes (ladder over stairs, exactly as before) |
+| Operations needing the same-pass shoulder and chest | place carry, weapon and traversal-hand targets, torso frame, elbow guidance | `PoseTargetPlacer` (7 typed methods). The modifier owns WHEN and supplies the same-pass poses; the rig (`RigPoseTargets`) owns the formulas and the targets. A recording fake replaces it in `modifier_boundary_test`, so the weapon-pose modifier is now testable without a rig |
+| Contact or IK target nodes | foot targets, knee poles | injected once (`bind_legs`), written by the modifier |
+| Derived skeletal information | chest-in-root, same-pass shoulder | measured inside the pass by the modifier and passed as arguments |
+
+Why this is simpler than before: a modifier names exactly what it needs in one typed place; renaming a rig member no longer silently breaks a string at run time; the dependency points one way (the rig builds and feeds modifiers; modifiers import neither the rig nor the presenter). The new types are small and single-purpose, and `RigInput` was not grown.
+
+**Callbacks (Godot 4.7.2).** All five modifiers now use `_process_modification_with_delta(delta)`. Verified by tests: the delta handed on is exactly the engine's frame delta, also under `Engine.time_scale = 0.5` (a mutation that scaled it again was caught); influence is applied once by the engine (the locomotion twist at influence 0.5 is half the turn at 1.0); every modifier runs at delta 0; the modifier order and update-order tests are unchanged. WeaponPose is the only stage that used the delta; it now gets it as an argument instead of `get_process_delta_time()`.
+
+**Pose ownership.** `PoseOwnership` (`presentation/characters/rig/pose_ownership.gd`) declares the stage order, each stage's writes (ADD, REPLACE_COMPONENT, OVERRIDE, TARGET) and the four intended ordered overrides (pelvis position CoverCrouch then Traversal; thigh and shin Locomotion, CoverCrouch, leg IK; support clavicle CoverCrouch then WeaponPose). `validate()` fails on an undeclared conflict, a declared overlap out of modifier order, a stale overlap, an IK target with no later solver, or a table that disagrees with the skeleton's real modifier order. The runtime half of `pose_ownership_test` runs each stage alone against a control and fails on any bone the stage has not declared (a deliberate undeclaration was caught). It is not a one-writer rule: additive writes, the F-04 component replacement and declared overrides are allowed. Locomotion twist plus crouch (spine: additive twist, replaced flexion) and traversal hips plus posture are declared cases.
+
+**Remaining legacy inventory, with removal points**
+
+| Item | Where | Removal point |
+| --- | --- | --- |
+| Rescue and carry write the crouch directly (`end_carry` reset and the carry sample at pickup) | `character_rig.gd` (4 assignments) | **An ownership violation, recorded:** the rescue/action package should route them through `presenter.postures` (an ACTION-priority source) and delete the writes |
+| `traversal`, `traversal_pose`, `stair_state` and `stair_pose` dictionaries stay the rig's own state (the modifier no longer reads them) | `character_rig.gd`; read by `animation_cleanup_test`, the traversal and stair tests, the workbench | typed state objects when the traversal lifecycle moves into the presenter |
+| `CoverCrouchModifier.setup(bones: Dictionary, ...)` and `LocomotionPoseModifier.setup(..., axes: Dictionary)` take dictionaries; `crouch_pose` is a solver-result dictionary | the two modifiers (3 `Dictionary.get` reads) | typed bone and axes configuration from `ResolvedRig` when the rig profile starts driving configuration |
+| Modifier public fields (`twist_degrees`, `depth`, `kneel`, ...) stay writable | modifiers | tests and tools write them; convert with the private-state test migration |
+| `AnimationTree.set("parameters/...")` string paths | `character_animation_controller.gd` (5) | Godot's own AnimationTree API, not rig reflection; keep |
+| `RigPoseTargets` delegates to rig methods | `character_rig.gd` | the formulas stay in the rig by design (they need weapon, carry and torso state); revisit when equipment becomes data |
+| Bone names still literal in the rig and in the weapon binding | rig | `ResolvedRig` roles (rig-profile adoption) |

@@ -49,7 +49,7 @@ func setup(target: Skeleton3D, axes: Dictionary) -> bool:
 	return _hips >= 0 and not _spine.is_empty() and left[0] >= 0 and right[0] >= 0
 
 
-func _process_modification() -> void:
+func _process_modification_with_delta(_delta: float) -> void:
 	var target := get_skeleton()
 	if target == null or _hips < 0:
 		return

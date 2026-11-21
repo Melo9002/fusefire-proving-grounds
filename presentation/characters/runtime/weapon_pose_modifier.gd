@@ -20,7 +20,9 @@ extends SkeletonModifier3D
 ## straight, this node adds the least extra protraction that brings the elbow down to `support_elbow_comfort_degrees`,
 ## never beyond `support_protraction_limit_degrees` in total. It does not move the target, stretch a bone or change
 ## a length. When the limit is reached it stops and REPORTS what is still missing (`report`), instead of hiding it.
-## Both limits are properties of the CharacterRig, so another character or weapon can set its own.
+## The limits are the rig's (WeaponPoseSettings, shared by reference), so another character or weapon can set its own.
+##
+## Wiring (Task 07 package 4): everything this node touches comes through its WeaponPoseBinding and the PoseTargetPlacer in it; it reads nothing else of the rig and looks nothing up by name.
 ##
 ## The default limit, 18 degrees in total, is deliberately conservative. Anatomy sources (StatPearls, Kenhub,
 ## GPnotebook, Wikimsk) give about 30 to 35 degrees for the whole protraction-retraction range of the sternoclavicular
@@ -28,7 +30,7 @@ extends SkeletonModifier3D
 ## the limit allows. The scapula glides on the ribs as well, so real shoulders can protract further, but that
 ## contribution is not claimed here. The existing base of 14 degrees leaves 4 degrees of headroom.
 
-var rig: Node3D
+var binding: WeaponPoseBinding
 ## What the last pass did: base/extra/total/limit protraction (degrees), whether the limit was hit, the support arm's
 ## distance to its target, its length, the remaining deficit (metres, 0 when reachable) and the elbow bend at that distance.
 var report: Dictionary = {}
@@ -44,16 +46,14 @@ var _left_hand := -1
 var _upper_length := 0.0
 var _fore_length := 0.0
 
-func setup(p_rig: Node3D) -> bool:
-	rig = p_rig
-	var skeleton: Skeleton3D = rig.get("skeleton")
-	var right_bones: Array = rig.get("right_arm_bones")
-	var left_bones: Array = rig.get("left_arm_bones")
-	_right_shoulder = skeleton.find_bone(right_bones[0])
-	_chest = skeleton.find_bone(rig.get("torso_bone_name"))
-	_left_upper = skeleton.find_bone(left_bones[0])
-	_left_fore = skeleton.find_bone(left_bones[1])
-	_left_hand = skeleton.find_bone(left_bones[2])
+func setup(wiring: WeaponPoseBinding) -> bool:
+	binding = wiring
+	var skeleton := binding.skeleton
+	_right_shoulder = skeleton.find_bone(binding.right_shoulder_bone)
+	_chest = skeleton.find_bone(binding.chest_bone)
+	_left_upper = skeleton.find_bone(binding.left_arm_bones[0])
+	_left_fore = skeleton.find_bone(binding.left_arm_bones[1])
+	_left_hand = skeleton.find_bone(binding.left_arm_bones[2])
 	if _right_shoulder < 0 or _left_upper < 0 or _left_fore < 0 or _left_hand < 0:
 		return false
 	measure_arms(skeleton)
@@ -71,63 +71,61 @@ func measure_arms(skeleton: Skeleton3D) -> void:
 	_upper_length = upper.distance_to(fore) * skeleton_scale
 	_fore_length = fore.distance_to(hand) * skeleton_scale
 
-func _process_modification() -> void:
+func _process_modification_with_delta(delta: float) -> void:
 	var skeleton := get_skeleton()
-	if skeleton == null or rig == null or _right_shoulder < 0:
+	if skeleton == null or binding == null or _right_shoulder < 0:
 		return
+	var placer := binding.placer
 	# Carrying someone (or IK switched off): the weapon targets are not used, so leave the pose alone.
-	var arm_ik: Node = rig.get("arm_ik")
+	var arm_ik := binding.arm_ik
 	if arm_ik == null or not arm_ik.active:
 		return
 	passes += 1
 	last_shoulder_world = skeleton.global_transform * skeleton.get_bone_global_pose(_right_shoulder).origin
 	# Carrying: the wrists belong to the carry contacts, not to the weapon. The weapon targets, the torso frame and the support
 	# reach are skipped; the same arm IK, elbow guidance and hand grip then run on the contact targets.
-	if bool(rig.call("carry_contacts_active")):
+	if placer.carrying():
 		var left_shoulder: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin
-		rig.call("apply_carry_targets", [last_shoulder_world, left_shoulder], (rig.get("carry_passenger") as Node3D).call("anchor_world"))
+		placer.place_carry_targets(last_shoulder_world, left_shoulder)
 		report = {"available": false}
 		_guide_elbows(skeleton, true)
 		return
 	# The torso frame is read from the chest in this same pass, before any target is placed, so the stock, both
 	# grips and (after the pass) the weapon itself are built from one frame.
 	if _chest >= 0:
-		var root_node: Node3D = rig.get("character_root")
-		var chest_in_root: Basis = root_node.global_basis.orthonormalized().inverse() * skeleton.global_basis.orthonormalized() * skeleton.get_bone_global_pose(_chest).basis.orthonormalized()
-		rig.call("update_torso_frame", chest_in_root, get_process_delta_time())
-	rig.call("apply_weapon_targets", last_shoulder_world)
+		var chest_in_root: Basis = binding.character_root.global_basis.orthonormalized().inverse() * skeleton.global_basis.orthonormalized() * skeleton.get_bone_global_pose(_chest).basis.orthonormalized()
+		placer.observe_torso_frame(chest_in_root, delta)
+	placer.place_weapon_targets(last_shoulder_world)
 	_adjust_support_reach(skeleton)
 	# A ladder (or obstacle) climbed: the hands go to its contacts over the weapon's targets.
-	var holding := bool(rig.call("traversal_contacts_active"))
+	var holding := placer.holding_traversal()
 	if holding:
-		rig.call("apply_traversal_hand_targets")
+		placer.place_traversal_hand_targets()
 	_guide_elbows(skeleton, holding)
 
 ## Elbow poles from the final shoulders and hand targets of this pass (see CharacterRig.apply_elbow_guidance).
 func _guide_elbows(skeleton: Skeleton3D, carrying := false) -> void:
 	if _chest < 0:
 		return
-	var root_node: Node3D = rig.get("character_root")
 	var skeleton_basis := skeleton.global_basis.orthonormalized()
 	var deviation := skeleton.get_bone_global_pose(_chest).basis.orthonormalized() * skeleton.get_bone_global_rest(_chest).basis.orthonormalized().inverse()
-	var chest_world := skeleton_basis * deviation * skeleton_basis.inverse() * root_node.global_basis.orthonormalized()
-	var shoulders := [last_shoulder_world, skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin]
-	rig.call("apply_elbow_guidance", shoulders, chest_world, carrying)
+	var chest_world := skeleton_basis * deviation * skeleton_basis.inverse() * binding.character_root.global_basis.orthonormalized()
+	binding.placer.guide_elbows(last_shoulder_world, skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin, chest_world, carrying)
 
 func _support_distance(skeleton: Skeleton3D, target: Vector3) -> float:
 	return (skeleton.global_transform * skeleton.get_bone_global_pose(_left_upper).origin).distance_to(target)
 
 func _adjust_support_reach(skeleton: Skeleton3D) -> void:
-	var crouch: CoverCrouchModifier = rig.get("crouch_modifier") as CoverCrouchModifier
-	var target_node: Node3D = rig.get("support_ik_target") as Node3D
+	var crouch := binding.crouch
+	var target_node := binding.support_target
 	if crouch == null or not crouch.has_support_clavicle() or not is_instance_valid(target_node):
 		report = {"available": false}
 		return
 	var target := target_node.global_position
 	var arm_length := _upper_length + _fore_length
 	var base: float = crouch.support_reach_degrees if crouch.support_reach_degrees > 0.05 else 0.0
-	var limit := float(rig.get("support_protraction_limit_degrees"))
-	var comfort := deg_to_rad(float(rig.get("support_elbow_comfort_degrees")))
+	var limit := binding.settings.protraction_limit_degrees
+	var comfort := deg_to_rad(binding.settings.elbow_comfort_degrees)
 	# Distance at which the elbow bend equals the comfort angle (law of cosines on the two segments).
 	var comfort_distance := sqrt(maxf(0.0, _upper_length * _upper_length + _fore_length * _fore_length - 2.0 * _upper_length * _fore_length * cos(comfort)))
 	comfort_distance = minf(comfort_distance, arm_length)
@@ -146,7 +144,7 @@ func _adjust_support_reach(skeleton: Skeleton3D) -> void:
 		else:
 			var low := 0.0
 			var high := headroom
-			for iteration in int(rig.get("support_solve_iterations")):
+			for iteration in binding.settings.solve_iterations:
 				var middle := (low + high) * 0.5
 				crouch.set_support_reach(skeleton, base + middle)
 				if _support_distance(skeleton, target) > comfort_distance:
