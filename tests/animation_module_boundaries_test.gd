@@ -172,6 +172,12 @@ func _run() -> void:
 	for scene_path in ["art/characters/mira_0/runtime/mira_0_unit_visual.tscn", "art/characters/mira_0/demo/mira_0_pose_workbench.tscn"]:
 		var scene_text := FileAccess.get_file_as_string("res://" + scene_path)
 		check(scene_text.contains('[node name="Rig" type="Node3D" parent="."]') and scene_text.contains("character_rig.gd"), "%s hosts its CharacterRig as the Rig child" % scene_path)
+	# Cover (Task 07 package 10): the reusable body-motion parameters (CoverPostureProfile) are separate from the tactical edge-selection policy (CoverEdgePolicy, read by CoverEdgeSelector).
+	var cover_profile_code := _code("presentation/characters/runtime/cover_posture_profile.gd")
+	var edge_fields := RegEx.create_from_string("var (edge_reach|tie_tolerance|tie_side|hysteresis|wall_scan_limit|open_side_threshold|straight_ahead_threshold|attack_side_hysteresis)\\b")
+	check(edge_fields.search(cover_profile_code) == null, "CoverPostureProfile carries no edge-selection numbers: they are the tactical host's CoverEdgePolicy")
+	check(not _code("presentation/characters/runtime/cover_edge_selector.gd").contains("CoverPostureProfile") and _code("presentation/tactical/cover_edge_policy.gd").contains("extends Resource"),
+		"CoverEdgeSelector reads a CoverEdgePolicy, never the body's CoverPostureProfile")
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")

@@ -32,8 +32,8 @@ func check(ok: bool, message: String) -> void:
 func _found(left_ok := true, right_ok := true, left_d := 1.5, right_d := 1.5) -> Dictionary:
 	return {"left": {"distance": left_d, "usable": left_ok}, "right": {"distance": right_d, "usable": right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
 
-func _plan(to_target: Vector3, found := _found(), full := true, previous := 0, passive := 1, profile: CoverPostureProfile = null) -> Dictionary:
-	return CoverEdgeSelector.plan_attack(found, full, to_target, previous, passive, 0.5, profile if profile != null else CoverPostureProfile.new())
+func _plan(to_target: Vector3, found := _found(), full := true, previous := 0, passive := 1, profile: CoverEdgePolicy = null) -> Dictionary:
+	return CoverEdgeSelector.plan_attack(found, full, to_target, previous, passive, 0.5, profile if profile != null else CoverEdgePolicy.new())
 
 func _run_pure() -> void:
 	var Mode := CoverEdgeSelector.FiringMode
@@ -67,7 +67,7 @@ func _run_pure() -> void:
 	var again := _plan(Vector3(4, 0, 2), _found(), true, Side.NONE, Side.RIGHT)
 	check(again.hash() == left_plan.hash(), "The same inputs give the same plan")
 	# Tuning comes from the profile: a wider straight-ahead band turns a mild lateral into the passive choice.
-	var wide := CoverPostureProfile.new()
+	var wide := CoverEdgePolicy.new()
 	wide.straight_ahead_threshold = 0.5
 	check(_plan(Vector3(2, 0, 4), _found(), true, 0, Side.RIGHT, wide).side == Side.RIGHT, "The straight-ahead band is a profile parameter")
 	check(CoverPostureProfile.new().attack_aim_yaw_degrees == 0.0, "By default the aimed attack stance is square to the target (the rifle points where the facing does)")

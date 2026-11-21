@@ -12,7 +12,7 @@ extends SkeletonModifier3D
 ## Evaluation order of the skeleton's modifiers (child order, set by CharacterRig):
 ##   CoverCrouch -> WeaponPose -> WeaponArmIK -> HandGrip
 ##
-## The target FORMULAS are CharacterRig.apply_weapon_targets (one place, also used by the legacy path); this
+## The target FORMULAS are CharacterRig.apply_weapon_targets (one place, also used by the editor-preview path); this
 ## node only supplies the shoulder and then adjusts the support shoulder.
 ##
 ## SUPPORT-REACH ADJUSTMENT. CoverCrouch applies a base support-shoulder protraction (CharacterRig's

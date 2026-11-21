@@ -60,8 +60,8 @@ var _cover_yaw: float:
 const KNEEL_BLEND_RANGE := 0.08
 ## Places the weapon's hand targets from the shoulder of the current skeleton pass (see WeaponPoseModifier).
 var weapon_pose_modifier: WeaponPoseModifier
-## False falls back to the legacy path: targets computed in `_process` from the shoulder as the animation leaves it,
-## before the skeleton's modifiers. Kept for the editor preview, for comparison, and as a switch back.
+## False places the hand targets from the shoulder as the animation leaves it, before the skeleton's modifiers (`update_weapon_pose`), by the same formulas (`apply_weapon_targets`). It is the EDITOR-PREVIEW path
+## (the modifier does not run in the editor) and the comparison the weapon-pose tests make; the game always runs the modifier.
 var weapon_pose_modifier_enabled := true:
 	set(value):
 		weapon_pose_modifier_enabled = value
@@ -108,9 +108,6 @@ var readiness := WeaponReadiness.new()
 var recoil := 0.0
 var _pose_tween: Tween
 var _recoil_tween: Tween
-const GRIP_OFFSET := Vector3(0.0, -0.035, 0.025)
-# Approximate center of the AUG optic in weapon coordinates, checked in the demo.
-const SIGHT_OFFSET := Vector3(0.0, 0.13, -0.10)
 @export_group("Animation Clips")
 ## Edit this shared library through animations/animation_workbench.tscn. Missing clips use generated defaults.
 ## Optional authored clips. When empty, the controller builds the tested prototype fallbacks.
@@ -125,7 +122,6 @@ const SIGHT_OFFSET := Vector3(0.0, 0.13, -0.10)
 ## to the firing wrist, the stock point and the support wrist, all in character metres.
 var grip_offset := Vector3.ZERO
 var stock_contact_offset := Vector3.ZERO
-var sight_offset := SIGHT_OFFSET
 var support_wrist := Vector3.ZERO
 var stock_marker: Marker3D
 var shoulder_marker: Marker3D
@@ -728,7 +724,7 @@ func update_weapon_pose() -> void:
 	_update_weapon_pose_inputs()
 	if weapon_pose_modifier_controls_targets():
 		return   # the WeaponPose modifier places the targets in the skeleton pass, from the real shoulder
-	# Legacy path (editor preview, or the modifier switched off): the shoulder as the animation leaves it, which
+	# Editor-preview path (or the modifier switched off): the shoulder as the animation leaves it, which
 	# does not include what the skeleton's modifiers do to it.
 	var shoulder_index := skeleton.find_bone(right_arm_bones[0])
 	apply_weapon_targets(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder_index).origin)
@@ -772,7 +768,7 @@ func _update_weapon_pose_inputs() -> void:
 
 ## The shoulder-dependent half of the weapon pose: the stock pocket, both hand targets and the elbow poles, given
 ## the right shoulder's world position. One place for the formulas; the WeaponPose modifier calls it with the
-## shoulder of the current skeleton pass, the legacy path with the animation-only shoulder.
+## shoulder of the current skeleton pass, the editor-preview path with the animation-only shoulder.
 ## `chest_in_root` is the chest bone's orientation in the character-root frame, in THIS skeleton pass. The settled
 ## reference follows the chest every pass except while the chest kicks, when it is held: the weapon then turns by the
 ## chest's rotation since it settled. Standing, crouching and kneeling all share this; cover yaw and facing turn the

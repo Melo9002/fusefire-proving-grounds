@@ -40,7 +40,7 @@ func _clear_wall(f, z: int, x_from: int, x_to: int) -> void:
 		f.set_cover(Vector3i(x, 0, z), MapCellData.CoverType.NONE, 0.0)
 		f.grid.get_cell_data(Vector3i(x, 0, z)).walkable = true
 
-func _side(f, profile: CoverPostureProfile, x: int, z: int, previous := 0) -> int:
+func _side(f, profile: CoverEdgePolicy, x: int, z: int, previous := 0) -> int:
 	var stand: Vector3 = f.grid.grid_to_world(Vector3i(x, 0, z))
 	var found := CoverEdgeSelector.edges(f.grid, stand, _contact(Vector3(0, 0, 1)), profile)
 	return CoverEdgeSelector.choose(found, previous, profile)
@@ -49,7 +49,7 @@ func _run() -> void:
 	var f := Fixture.new()
 	await f.setup(self, 1, 1, 0, null, AIDifficultyPolicy.Tier.HARD)
 	f.battle.set_debug_enemy_control(true)
-	var profile := CoverPostureProfile.new()
+	var profile := CoverEdgePolicy.new()
 	check(profile.tie_side == 1 and profile.hysteresis > 0.0, "Default profile prefers the right on a tie and has hysteresis")
 
 	# ---- Pure geometry. The unit stands at z=11 facing +z toward a FULL wall at z=12; its right is -x.
@@ -59,13 +59,13 @@ func _run() -> void:
 	check(_side(f, profile, 7, 11) == CoverEdgeSelector.Side.LEFT, "Near the left end of the wall (the +x end): the nearer LEFT edge")
 	var tie_found := CoverEdgeSelector.edges(f.grid, f.grid.grid_to_world(Vector3i(6, 0, 11)), _contact(Vector3(0, 0, 1)), profile)
 	check(absf(float(tie_found.right.distance) - float(tie_found.left.distance)) < 0.01 and tie_found.right.usable and tie_found.left.usable, "The tie case really has two usable edges at equal distance")
-	var four := CoverPostureProfile.new()
+	var four := CoverEdgePolicy.new()
 	four.edge_reach = 3.5
 	_wall(f, 12, 5, 8)
 	check(_side(f, four, 7, 11) == CoverEdgeSelector.Side.LEFT, "Wall of four, one cell from the left end: the nearer (left) edge wins over a farther right one")
 	check(_side(f, four, 6, 11) == CoverEdgeSelector.Side.RIGHT, "...and from the right end side the right edge wins")
 	# Hysteresis: nearly-equal choices do not flip with a small difference.
-	var sticky := CoverPostureProfile.new()
+	var sticky := CoverEdgePolicy.new()
 	sticky.edge_reach = 3.5
 	sticky.hysteresis = 1.5
 	check(_side(f, sticky, 6, 11, CoverEdgeSelector.Side.LEFT) == CoverEdgeSelector.Side.LEFT, "A chosen side is kept when the other edge is only slightly nearer (hysteresis)")
@@ -84,7 +84,7 @@ func _run() -> void:
 	var enemy: TacticalUnit = f.turns.enemy_units[0]
 	var blocker_cell := Vector3i(4, 0, 11)
 	f.place(enemy, blocker_cell)
-	var reach := CoverPostureProfile.new()
+	var reach := CoverEdgePolicy.new()
 	reach.edge_reach = 3.5
 	check(_side(f, reach, 5, 11) == CoverEdgeSelector.Side.LEFT, "The nearest edge is skipped when the ground to it is occupied (the farther usable edge is chosen)")
 	check(_side(f, profile, 5, 11) == CoverEdgeSelector.Side.NONE, "...and no side at all when the only other edge is out of reach")

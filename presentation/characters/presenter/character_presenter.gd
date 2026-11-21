@@ -89,9 +89,6 @@ func set_scripted_motion(scripted_speed: float, scripted_heading_rate: float) ->
 	speed = scripted_speed
 	heading_rate = scripted_heading_rate
 
-func clear_scripted_motion() -> void:
-	_scripted = false
-
 ## The latest report of how the character is moving (world metres per second). Facing follows it: the character turns toward the velocity at `turn_speed_degrees`, and the heading rate
 ## that results (which banks the body into the turn) is remembered for the gait. A near-zero velocity changes nothing (the previous facing and report stand until tick() settles them).
 func report_velocity(world_velocity: Vector3, delta: float, turn_speed_degrees: float) -> void:

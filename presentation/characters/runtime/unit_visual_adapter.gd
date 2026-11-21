@@ -525,7 +525,8 @@ func _on_aim_hold_changed(_transition: AimHold.Transition, settling: bool) -> vo
 ## High cover (standing behind a full wall): a slight wary bend of the knees with the back to the
 ## wall, turning side-on to peek along it when aiming. In both, the rifle stays in its relaxed carry
 ## until she aims or shoots. Presentation only.
-## All cover numbers (crouch depths, clearances, turn rate, peek and protected yaw, edge selection) are CoverPostureProfile's (`cover_profile`).
+## The body's cover numbers (crouch depths, clearances, turn rate, peek and protected yaw) are CoverPostureProfile's (`rig.cover_profile`); this host's own edge-selection policy is `cover_policy` (CoverEdgePolicy).
+@export var cover_policy: CoverEdgePolicy = CoverEdgePolicy.new()
 ## The posture source this unit's cover policy requests under (see CharacterPresenter.postures); the applied ramps (`_crouch_depth`, `_kneel`, `_cover_yaw`) live in the rig.
 const COVER_POSTURE_SOURCE := &"tactical/cover"
 ## Which wall edge the unit would peek around (CoverEdgeSelector.Side), kept stable by hysteresis; NONE when there is no usable edge or no cover.
@@ -609,8 +610,8 @@ func _update_cover_side() -> void:
 		_cover_side_key = cell
 		_last_attack_side = CoverEdgeSelector.Side.NONE
 		cover_side = CoverEdgeSelector.Side.NONE   # a new place: choose afresh (hysteresis only holds within one cell's cover)
-	cover_edges = CoverEdgeSelector.edges(presentation_grid, rig.global_position, last_cover_contact, rig.cover_profile)
-	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, rig.cover_profile)
+	cover_edges = CoverEdgeSelector.edges(presentation_grid, rig.global_position, last_cover_contact, cover_policy)
+	cover_side = CoverEdgeSelector.choose(cover_edges, cover_side, cover_policy)
 
 func _settle_aim_pose(state: StringName) -> void:
 	if state in [&"cover_low", &"cover_high"]:
@@ -665,9 +666,9 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:
 	if int(cover.type) == MapCellData.CoverType.NONE or not is_instance_valid(presentation_grid):
 		return {}
-	var edges := CoverEdgeSelector.edges(presentation_grid, rig.global_position, cover, rig.cover_profile)
+	var edges := CoverEdgeSelector.edges(presentation_grid, rig.global_position, cover, cover_policy)
 	var face_distance := float(cover.get("distance", presentation_grid.cell_size * 0.5))
-	var plan := CoverEdgeSelector.plan_attack(edges, int(cover.type) == MapCellData.CoverType.FULL, target_world_position - rig.global_position, _last_attack_side, cover_side, face_distance, rig.cover_profile)
+	var plan := CoverEdgeSelector.plan_attack(edges, int(cover.type) == MapCellData.CoverType.FULL, target_world_position - rig.global_position, _last_attack_side, cover_side, face_distance, cover_policy)
 	if int(plan.mode) in [CoverEdgeSelector.FiringMode.AROUND_LEFT, CoverEdgeSelector.FiringMode.AROUND_RIGHT]:
 		_last_attack_side = int(plan.side)
 	attack_plan_log.append(plan)

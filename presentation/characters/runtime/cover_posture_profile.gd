@@ -1,7 +1,7 @@
 class_name CoverPostureProfile
 extends Resource
-## Everything that shapes how a humanoid stands, crouches, turns and leans behind cover, in one editable place. PRESENTATION ONLY: cover eligibility,
-## protection, visibility and facing rules belong to the tactical layer; this decides what the pose looks like once the tactical state says "in cover".
+## Everything that shapes how a humanoid stands, crouches, turns and leans behind cover, in one editable place: REUSABLE BODY-MOTION PARAMETERS. PRESENTATION ONLY: cover eligibility,
+## protection, visibility and facing rules belong to the tactical layer, and which wall edge to peek around is the tactical host's CoverEdgePolicy; this decides what the pose looks like once a host says "in cover".
 ##
 ## FACING CONTRACT. The unit's facing (the rig node's yaw) is the tactical/observation facing: toward the cover wall while idle, toward the target
 ## while attacking. It is never rewritten here. The cover pose is a yaw OFFSET of the body relative to that facing (`CharacterRig.character_root`).
@@ -12,31 +12,12 @@ extends Resource
 ## A facing change that arrives at once (a shot's `face_world_position`) is absorbed into the offset, so the body never snaps: it eases at
 ## `turn_degrees_per_second`.
 
-@export_group("Edge selection")
-## How far along the wall (metres) an edge may be and still count as a usable peek position.
-@export_range(0.5, 6.0, 0.05, "suffix:m") var edge_reach := 2.2
-## When the two usable edges are within this many metres of each other, `tie_side` wins.
-@export_range(0.0, 1.0, 0.01, "suffix:m") var tie_tolerance := 0.25
-## +1 right, -1 left.
-@export_range(-1, 1, 2) var tie_side := 1
-## The current side is kept unless the other edge is nearer by more than this (stops flicker from tiny position changes).
-@export_range(0.0, 1.5, 0.01, "suffix:m") var hysteresis := 0.35
-## How many extra wall cells along the wall are scanned for its end (tile maps).
-@export_range(1, 12) var wall_scan_limit := 6
-
 @export_group("Body orientation")
 @export_range(0.0, 90.0, 1.0, "suffix:°") var protected_yaw_degrees := 45.0
 @export_range(0.0, 60.0, 1.0, "suffix:°") var peek_yaw_degrees := 20.0
 @export_range(60.0, 720.0, 5.0, "suffix:°/s") var turn_degrees_per_second := 320.0
 
 @export_group("Attack posture")
-## Target-aware firing (an authorized attack is being presented). `along` below is the cosine between the direction to the target and the wall's normal.
-## At or below this the wall is not between the unit and the target (it is behind or beside): an ordinary firing posture, no peeking.
-@export_range(-1.0, 1.0, 0.01) var open_side_threshold := -0.1
-## Target's lateral component (cosine against the wall's tangent) below which it is "straight ahead": no side is better, the passive choice stands.
-@export_range(0.0, 0.5, 0.01) var straight_ahead_threshold := 0.12
-## A side chosen for a previous attack is kept while the target's lateral component stays within this of straight ahead.
-@export_range(0.0, 0.6, 0.01) var attack_side_hysteresis := 0.25
 ## Body yaw offset toward the firing edge while aiming at a target. 0 = square to the target (the facing already points at it, so the rifle does too); the
 ## lean toward the edge comes from the shoot_left / shoot_right clips.
 @export_range(0.0, 45.0, 1.0, "suffix:°") var attack_aim_yaw_degrees := 0.0

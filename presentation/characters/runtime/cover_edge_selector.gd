@@ -3,7 +3,7 @@ extends RefCounted
 ## Chooses which side of a wall a unit would peek around, from the wall's real extent. PURE geometry: it reads the grid and the cover contact the pose
 ## code already has and returns a side. It never touches tactical state, visibility or protection, and knows nothing about enemies.
 ##
-## SELECTION RULES (CoverPostureProfile holds the numbers):
+## SELECTION RULES (CoverEdgePolicy holds the numbers):
 ##  1. Each end of the wall (left and right as the unit faces the wall) is a candidate edge with a distance along the wall from the unit.
 ##  2. An edge is USABLE when it is within `edge_reach` and the open ground just past the wall's end, and every cell between the unit and it, is
 ##     walkable, not cover and not occupied. An obstructed or unreachable edge is never chosen however near it is.
@@ -19,7 +19,7 @@ enum FiringMode { PROTECTED, OVER_COVER, AROUND_LEFT, AROUND_RIGHT, ORDINARY }
 
 
 ## {"left": {"distance": m, "usable": bool}, "right": {...}, "normal": Vector3 (unit to wall), "tangent": Vector3 (toward the unit's right)}
-static func edges(grid: GridManager, stand: Vector3, contact: Dictionary, profile: CoverPostureProfile) -> Dictionary:
+static func edges(grid: GridManager, stand: Vector3, contact: Dictionary, policy: CoverEdgePolicy) -> Dictionary:
 	var result := {"left": {"distance": INF, "usable": false}, "right": {"distance": INF, "usable": false}, "normal": Vector3.ZERO, "tangent": Vector3.ZERO}
 	var direction: Vector3 = contact.get("direction", Vector3.ZERO)
 	direction.y = 0.0
@@ -41,27 +41,27 @@ static func edges(grid: GridManager, stand: Vector3, contact: Dictionary, profil
 			low = minf(low, p.dot(right))
 			high = maxf(high, p.dot(right))
 		var at := stand.dot(right)
-		result.right = _surface_edge(grid, stand, right, high - at, profile)
-		result.left = _surface_edge(grid, stand, -right, at - low, profile)
+		result.right = _surface_edge(grid, stand, right, high - at, policy)
+		result.left = _surface_edge(grid, stand, -right, at - low, policy)
 		return result
 	var cell := grid.world_to_grid(stand)
 	var step := Vector3i(roundi(right.x), 0, roundi(right.z))
 	var toward := Vector3i(roundi(direction.x), 0, roundi(direction.z))
 	var wall_cell := cell + toward
-	result.right = _tile_edge(grid, cell, wall_cell, step, profile)
-	result.left = _tile_edge(grid, cell, wall_cell, -step, profile)
+	result.right = _tile_edge(grid, cell, wall_cell, step, policy)
+	result.left = _tile_edge(grid, cell, wall_cell, -step, policy)
 	return result
 
 
-static func _tile_edge(grid: GridManager, cell: Vector3i, wall_cell: Vector3i, step: Vector3i, profile: CoverPostureProfile) -> Dictionary:
+static func _tile_edge(grid: GridManager, cell: Vector3i, wall_cell: Vector3i, step: Vector3i, policy: CoverEdgePolicy) -> Dictionary:
 	var along := 0
-	while along < profile.wall_scan_limit:
+	while along < policy.wall_scan_limit:
 		var next := grid.get_cell_data(wall_cell + step * (along + 1))
 		if next == null or next.cover_height <= 0.0 or next.cover_type == MapCellData.CoverType.NONE:
 			break
 		along += 1
 	var distance := (along + 0.5) * grid.cell_size
-	var usable := distance <= profile.edge_reach
+	var usable := distance <= policy.edge_reach
 	if usable:
 		# The ground the unit would walk over to look past the end: from its own cell to just past the wall.
 		for k in range(1, along + 2):
@@ -71,8 +71,8 @@ static func _tile_edge(grid: GridManager, cell: Vector3i, wall_cell: Vector3i, s
 	return {"distance": distance, "usable": usable}
 
 
-static func _surface_edge(grid: GridManager, stand: Vector3, along_dir: Vector3, distance: float, profile: CoverPostureProfile) -> Dictionary:
-	var usable := distance <= profile.edge_reach and distance >= 0.0
+static func _surface_edge(grid: GridManager, stand: Vector3, along_dir: Vector3, distance: float, policy: CoverEdgePolicy) -> Dictionary:
+	var usable := distance <= policy.edge_reach and distance >= 0.0
 	if usable:
 		var own := grid.world_to_grid(stand)
 		var probe := 0.0
@@ -91,7 +91,7 @@ static func _open(grid: GridManager, data: MapCellData) -> bool:
 
 
 ## The side to peek around, with hysteresis from the `previous` side (NONE when there was none).
-static func choose(found: Dictionary, previous: int, profile: CoverPostureProfile) -> int:
+static func choose(found: Dictionary, previous: int, policy: CoverEdgePolicy) -> int:
 	var right: Dictionary = found.right
 	var left: Dictionary = found.left
 	var right_ok: bool = right.usable
@@ -101,14 +101,14 @@ static func choose(found: Dictionary, previous: int, profile: CoverPostureProfil
 	if right_ok != left_ok:
 		return Side.RIGHT if right_ok else Side.LEFT
 	var wanted: int
-	if absf(float(right.distance) - float(left.distance)) <= profile.tie_tolerance:
-		wanted = profile.tie_side
+	if absf(float(right.distance) - float(left.distance)) <= policy.tie_tolerance:
+		wanted = policy.tie_side
 	else:
 		wanted = Side.RIGHT if float(right.distance) < float(left.distance) else Side.LEFT
 	if previous != Side.NONE and previous != wanted:
 		var kept: Dictionary = right if previous == Side.RIGHT else left
 		var other: Dictionary = left if previous == Side.RIGHT else right
-		if kept.usable and float(kept.distance) - float(other.distance) <= profile.hysteresis:
+		if kept.usable and float(kept.distance) - float(other.distance) <= policy.hysteresis:
 			return previous
 	return wanted
 
@@ -135,7 +135,7 @@ static func shot_state(full_cover: bool, plan: Dictionary, passive_side: int) ->
 		FiringMode.ORDINARY: return &"shoot"
 	return &"shoot_left" if passive_side < 0 else &"shoot_right"   # no honest peek: the passive lean side (right on a tie or none)
 
-static func plan_attack(found: Dictionary, full_cover: bool, to_target: Vector3, previous: int, passive: int, face_distance: float, profile: CoverPostureProfile) -> Dictionary:
+static func plan_attack(found: Dictionary, full_cover: bool, to_target: Vector3, previous: int, passive: int, face_distance: float, policy: CoverEdgePolicy) -> Dictionary:
 	var result := {"mode": FiringMode.ORDINARY, "side": Side.NONE, "mismatch": "", "along": 0.0, "lateral": 0.0, "crossing": INF}
 	var flat := Vector3(to_target.x, 0.0, to_target.z)
 	var normal: Vector3 = found.get("normal", Vector3.ZERO)
@@ -147,18 +147,18 @@ static func plan_attack(found: Dictionary, full_cover: bool, to_target: Vector3,
 	var lateral := flat.dot(tangent)
 	result.along = along
 	result.lateral = lateral
-	if along <= profile.open_side_threshold:
+	if along <= policy.open_side_threshold:
 		return result
 	if not full_cover:
 		result.mode = FiringMode.OVER_COVER
 		return result
 	var side: int
-	if absf(lateral) <= profile.straight_ahead_threshold:
+	if absf(lateral) <= policy.straight_ahead_threshold:
 		side = passive
 		result.mismatch = "" if side != Side.NONE else "target_ahead_no_usable_edge"
 	else:
 		var wanted: int = Side.RIGHT if lateral > 0.0 else Side.LEFT
-		if previous != Side.NONE and previous != wanted and absf(lateral) < profile.straight_ahead_threshold + profile.attack_side_hysteresis:
+		if previous != Side.NONE and previous != wanted and absf(lateral) < policy.straight_ahead_threshold + policy.attack_side_hysteresis:
 			var kept: Dictionary = found.right if previous == Side.RIGHT else found.left
 			if kept.usable:
 				wanted = previous

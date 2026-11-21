@@ -36,6 +36,8 @@ var cover_demo := {}
 const COVER_DEMO_SOURCE := &"workbench/cover"
 const POSE_PRESET_SOURCE := &"workbench/pose_preset"
 var cover_side := 0
+## The edge-selection policy the bench stands in for the tactical host with (the same CoverEdgePolicy resource the game uses).
+var cover_policy := CoverEdgePolicy.new()
 ## Target-aware firing in the bench: the scripted AUTHORIZED target (a position relative to the unit, in the unit's own frame at rest: +z toward the wall, -x its right) and
 ## the plan the production CoverEdgeSelector.plan_attack makes from it. Empty = passive cover. (In the game the same plan comes from the attack result's target position.)
 var cover_target: Variant = null
@@ -370,7 +372,7 @@ func set_cover_demo(spec: Dictionary) -> void:
 	rig.presenter.face_yaw(0.0, false, false)   # square to the wall again, at once: no hips catching up, no absorption
 	_bench_heading = 0.0
 	_cover_found = {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
-	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, rig.cover_profile)
+	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, cover_policy)
 	rig.animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
 	_build_cover_visuals()
 
@@ -386,7 +388,7 @@ func set_cover_target(target: Variant) -> void:
 		_turn_to_heading(0.0)
 		rig.animation_controller.play(&"aim" if cover_demo.aim else &"rifle_idle")
 		return
-	cover_plan = CoverEdgeSelector.plan_attack(_cover_found, bool(cover_demo.full), target as Vector3, int(cover_plan.get("side", 0)), cover_side, 0.5, rig.cover_profile)
+	cover_plan = CoverEdgeSelector.plan_attack(_cover_found, bool(cover_demo.full), target as Vector3, int(cover_plan.get("side", 0)), cover_side, 0.5, cover_policy)
 	_turn_to_heading(atan2((target as Vector3).x, (target as Vector3).z))
 	rig.animation_controller.play(&"aim")
 

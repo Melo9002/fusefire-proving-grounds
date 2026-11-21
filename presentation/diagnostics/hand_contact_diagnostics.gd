@@ -256,7 +256,7 @@ func format_readout(result: Dictionary) -> String:
 	if meta.has("protraction_total_deg"):
 		lines.append("SUPPORT SHOULDER reach %.1f deg (base %.1f + %.1f added, limit %.0f)%s | still short of the arm's length: %s | short of the comfortable bend: %s" % [meta.protraction_total_deg, meta.protraction_base_deg, meta.protraction_extra_deg, meta.protraction_limit_deg, " LIMIT REACHED" if meta.protraction_limited else "", _mm(float(meta.support_deficit_mm) / 1000.0), _mm(float(meta.support_comfort_deficit_mm) / 1000.0)])
 	elif not bool(meta.get("weapon_pose_modifier", false)):
-		lines.append("WeaponPose modifier off: legacy targets from the animation-only shoulder")
+		lines.append("WeaponPose modifier off: editor-preview targets from the animation-only shoulder")
 	if meta.has("weapon_basis_error_deg"):
 		lines.append("weapon vs rig expectation %s | ~ = approximation from bones (no palm bone); no mesh contact is measured" % _deg(float(meta.weapon_basis_error_deg)))
 	lines.append("colours: orange/yellow dominant IK target/wrist, blue/cyan support, magenta palm~, green intended palm, red palm error")
