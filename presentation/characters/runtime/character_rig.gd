@@ -226,8 +226,12 @@ var _twist_start := 0.0
 @export_subgroup("")
 ## Leave the passenger lying where a release set it down (workbench), instead of freeing it when the release ends.
 var keep_released_passenger := false
-## Emitted when a pickup or release runs out, before the release frees the passenger (RescueInteraction.Kind).
-signal rescue_interaction_finished(kind: int)
+## The presentation handle of the rescue operation in progress (a pickup or a release), or null. It describes the VISUAL operation only: it settles COMPLETED when the timeline runs out, SKIPPED when it is
+## run to its end at once, INTERRUPTED when something ends the carry under it (the carrier falls, is defeated or is freed) and CANCELLED when the requester withdraws it. The gameplay outcome of a rescue is
+## decided elsewhere and never depends on it.
+var _rescue_handle: ActionHandle
+## The posture source a rescue lift requests under (an ACTION-priority request: it wins over the cover policy for its duration and the cover request is untouched underneath).
+const RESCUE_POSTURE_SOURCE := &"presentation/rescue"
 var _interaction_sample := {}
 var _reach_hands: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var _reach_poles: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
@@ -861,18 +865,28 @@ func _loaded_locomotion() -> bool:
 ## limits; it never drives movement. Idle is a speed of zero: this is also what settles the gait to a stop.
 func _exit_tree() -> void:
 	presenter.teardown()
+	if _rescue_handle != null:
+		# Nothing waits on a character that is gone: the timeline stops and whoever observes the handle is told it was interrupted.
+		rescue_interaction.stop()
+		_settle_rescue(PresentationTypes.Outcome.INTERRUPTED)
 
 
-## Follows the resolved posture request one frame: the crouch depth and the kneel blend ease toward what the request needs (profile speeds), and when `drive_yaw` the body yaw eases to the
+## Follows the resolved posture request one frame: the crouch depth and the kneel blend ease toward what the request needs (profile speeds; an `exact` request is followed as given), and when `drive_yaw` the body yaw eases to the
 ## requested offset by the shortest way. This is the ONLY writer of the posture ramps. `depth_request` is the unclamped lowering the request asks for: up to the deepest natural crouch it is a
 ## crouch, beyond it the character goes down on one knee.
-func apply_posture_target(depth_request: float, yaw_goal: float, delta: float, profile: CoverPostureProfile, drive_yaw := true) -> void:
+func apply_posture_target(depth_request: float, yaw_goal: float, delta: float, profile: CoverPostureProfile, drive_yaw := true, kneel_request := -1.0, exact := false) -> void:
 	if crouch_modifier == null:
 		return
-	_crouch_depth = move_toward(_crouch_depth, crouch_modifier.clamp_depth(depth_request), profile.crouch_speed * delta)
+	var depth_target := crouch_modifier.clamp_depth(depth_request)
+	var kneel_target := kneel_request if kneel_request >= 0.0 else clampf((depth_request - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
+	if exact:
+		# An authored timeline (the rescue lift) already shapes the motion: follow it as it is, and keep the ramps where it left them so the next ordinary request eases from there.
+		_crouch_depth = depth_target
+		_kneel = clampf(kneel_target, 0.0, 1.0)
+	else:
+		_crouch_depth = move_toward(_crouch_depth, depth_target, profile.crouch_speed * delta)
+		_kneel = move_toward(_kneel, kneel_target, profile.kneel_speed * delta)
 	crouch_modifier.depth = _crouch_depth
-	var kneel_target := clampf((depth_request - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
-	_kneel = move_toward(_kneel, kneel_target, profile.kneel_speed * delta)
 	crouch_modifier.kneel = _kneel
 	if drive_yaw:
 		# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
@@ -957,8 +971,13 @@ func begin_carry() -> void:
 ## The pickup: the passenger lies on the floor at `passenger_world` (where the rescued actor was) and the shared timeline lifts
 ## it into the carry while the carrier turns, steps in, kneels, takes hold, rises and steps back. Facing the passenger is the
 ## caller's business (the adapter turns the carrier first); the lift is built in the carrier's own frame.
-func begin_pickup(passenger_world: Vector3, lying_basis = null) -> void:
+func begin_pickup(passenger_world: Vector3, lying_basis = null) -> ActionHandle:
+	if rescue_interaction.kind == RescueInteraction.Kind.PICKUP:
+		return _rescue_handle   # already lifting: a repeated request is the same operation, not a second pickup
+	if rescue_interaction.kind == RescueInteraction.Kind.RELEASE:
+		_halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)   # a new pickup supersedes a release still running
 	_discard_passenger()
+	var handle := reserve_rescue_handle()
 	var interaction := rescue_interaction
 	interaction.start(RescueInteraction.Kind.PICKUP)
 	_root_rest_position = position
@@ -982,13 +1001,17 @@ func begin_pickup(passenger_world: Vector3, lying_basis = null) -> void:
 	_hands_to_contacts()
 	carry_passenger.refresh()
 	_interaction_sample = interaction.sample()
+	return handle
 
 
 ## The release: the carrier steps in, kneels, lowers the passenger to the floor in front of it, lets go and rises, taking the
 ## rifle back. The passenger is freed when it ends (or left lying: `keep_released_passenger`). Needs a carried passenger.
-func begin_release() -> void:
+func begin_release() -> ActionHandle:
+	if rescue_interaction.kind == RescueInteraction.Kind.RELEASE:
+		return _rescue_handle   # already lowering: the same operation
 	if not is_instance_valid(carry_passenger) or rescue_interaction.active():
-		return
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)   # nobody to put down, or a pickup still running: nothing was presented
+	var handle := reserve_rescue_handle()
 	var interaction := rescue_interaction
 	interaction.start(RescueInteraction.Kind.RELEASE)
 	_root_rest_position = position
@@ -1002,6 +1025,57 @@ func begin_release() -> void:
 	carry_passenger.ground_origin = Vector3(ahead.x, character_root.global_position.y + interaction.ground_height, ahead.z)
 	carry_passenger.waypoint_local = interaction.lift_waypoint
 	_interaction_sample = interaction.sample()
+	return handle
+
+
+## The handle of the rescue operation that is RUNNING now (its timeline is advancing), else null. A pickup still waiting for its carrier to arrive is not running.
+func rescue_presentation() -> ActionHandle:
+	return _rescue_handle if _rescue_handle != null and not _rescue_handle.is_done() and rescue_interaction.active() else null
+
+
+## The handle for the rescue operation about to start (or already pending/running): one operation, one handle. A host that has to hold a pickup back until the carrier arrives reserves it early so
+## whoever observes the rescue has something to wait on; the rig settles it.
+func reserve_rescue_handle() -> ActionHandle:
+	if _rescue_handle != null and not _rescue_handle.is_done():
+		return _rescue_handle
+	_rescue_handle = ActionHandle.new()
+	_rescue_handle.finished.connect(_on_rescue_handle_settled.bind(_rescue_handle))
+	return _rescue_handle
+
+
+## Settles the current rescue handle with `outcome` and forgets it. The slot is cleared BEFORE observers run, so one that starts or ends a rescue in its callback finds a clean rig.
+func _settle_rescue(outcome: PresentationTypes.Outcome) -> void:
+	var handle := _rescue_handle
+	_rescue_handle = null
+	if handle != null:
+		handle.settle(outcome)
+
+
+## The requester withdrew the operation (handle.cancel()). Only a cancel of the CURRENT handle acts; every other settlement was made by this rig and has already cleaned up.
+func _on_rescue_handle_settled(outcome: PresentationTypes.Outcome, handle: ActionHandle) -> void:
+	if handle != _rescue_handle or outcome != PresentationTypes.Outcome.CANCELLED:
+		return
+	_rescue_handle = null
+	if rescue_interaction.kind == RescueInteraction.Kind.PICKUP:
+		end_carry()   # a pickup that never finished leaves nothing of the lift: no passenger, the rifle back in hand
+	elif rescue_interaction.kind == RescueInteraction.Kind.RELEASE:
+		_halt_interaction(PresentationTypes.Outcome.CANCELLED, true)   # a release withdrawn midway leaves the passenger carried, as before it began
+
+
+## Stops the running timeline where it is and puts back what it moved (the step toward the passenger, the posture request); the passenger stays, steady across the shoulders when `restore_carry`.
+func _halt_interaction(outcome: PresentationTypes.Outcome, restore_carry: bool) -> void:
+	rescue_interaction.stop()
+	position = _root_rest_position
+	_step_vector = Vector3.ZERO
+	_carry_reach = 1.0
+	_interaction_sample = rescue_interaction.sample()
+	_release_rescue_posture()
+	_snap_posture_to_requests()
+	if restore_carry and is_instance_valid(carry_passenger):
+		carry_passenger.lift = 1.0
+		carry_passenger.pose_blend = 1.0
+		carry_passenger.refresh()
+	_settle_rescue(outcome)
 
 
 ## True from the start of a pickup or release until it runs out.
@@ -1016,7 +1090,7 @@ func finish_interaction_now() -> void:
 		return
 	rescue_interaction.scrub(rescue_interaction.duration())
 	_interaction_sample = rescue_interaction.sample()
-	_complete_interaction()
+	_complete_interaction(PresentationTypes.Outcome.SKIPPED)
 
 
 ## Ends it: the passenger is freed (or, with `leave_passenger`, left lying where it is), the weapon returns to the hand, and
@@ -1037,15 +1111,16 @@ func end_carry(leave_passenger := false) -> void:
 	carry_passenger = null
 	carry_contact_report = []
 	_carry_lean = 0.0
+	_release_rescue_posture()   # the posture is the arbiter's: whatever else is requested (cover) takes the body back
+	_snap_posture_to_requests()   # a carry that ends under the carrier (hit, freed, cancelled) does not ease out of its lift pose: the body is where the remaining requests put it
 	if crouch_modifier != null:
-		crouch_modifier.depth = 0.0
-		crouch_modifier.kneel = 0.0
 		crouch_modifier.aim_lean_degrees = 0.0
 	if grip_modifier != null:
 		grip_modifier.contact_weight = [0.0, 0.0]
 		grip_modifier.curl = [0.0, 0.0]
 	unstow_weapon()
 	arm_ik.active = true
+	_settle_rescue(PresentationTypes.Outcome.INTERRUPTED)   # last, once the rig is clean; a no-op when the operation had already settled
 
 
 func carry_contacts_active() -> bool:
@@ -1107,13 +1182,13 @@ func _apply_carry_posture() -> void:
 	if crouch_modifier != null:
 		if interacting:
 			_carry_lean = float(sample.carry)
-			crouch_modifier.depth = crouch_modifier.clamp_depth(float(sample.crouch) * rescue_interaction.crouch_depth)
-			crouch_modifier.kneel = float(sample.kneel)
+			_request_rescue_posture(sample)
 			crouch_modifier.aim_lean_degrees = CARRY_LEAN_DEGREES * _carry_lean
 			var parent_node := get_parent_node_3d()
 			var parent_basis := parent_node.global_basis.orthonormalized() if parent_node != null else Basis.IDENTITY
 			position = _root_rest_position + parent_basis.inverse() * (character_root.global_basis.orthonormalized() * _step_vector) * float(sample.step)
 		else:
+			_release_rescue_posture()
 			var loaded: bool = is_instance_valid(animation_controller) and animation_controller.current_state in [&"carry_idle", &"carry_move"]
 			_carry_lean = move_toward(_carry_lean, 1.0 if loaded else 0.0, delta / CARRY_LEAN_SECONDS)
 			crouch_modifier.aim_lean_degrees = CARRY_LEAN_DEGREES * _carry_lean
@@ -1122,9 +1197,12 @@ func _apply_carry_posture() -> void:
 
 ## The timeline has run out: pickup leaves the steady carry (the sample at its end IS the steady carry), release gives the
 ## passenger up. `rescue_interaction_finished` is emitted first, so a listener can show the real actor where it was set down.
-func _complete_interaction() -> void:
+func _complete_interaction(outcome := PresentationTypes.Outcome.COMPLETED) -> void:
 	var kind := rescue_interaction.kind
+	var handle := _rescue_handle
+	_rescue_handle = null   # settled below, after the carry is cleaned up; end_carry must not settle it as interrupted first
 	rescue_interaction.stop()
+	_release_rescue_posture()
 	position = _root_rest_position
 	_step_vector = Vector3.ZERO
 	_carry_reach = 1.0
@@ -1133,11 +1211,31 @@ func _complete_interaction() -> void:
 		carry_passenger.lift = 1.0   # the steady carry, without waiting for the next skeleton pass to say so
 		carry_passenger.pose_blend = 1.0
 		carry_passenger.refresh()
-	rescue_interaction_finished.emit(kind)
 	if kind == RescueInteraction.Kind.RELEASE:
 		end_carry(keep_released_passenger)
 		if is_instance_valid(animation_controller):
 			animation_controller.play(&"rifle_idle")
+	if handle != null:
+		handle.settle(outcome)   # observers see the finished state (a released passenger is already gone)
+
+
+## The rescue lift's posture: an ACTION-priority request (the cover request beneath it is untouched and takes the body back when this is released). The timeline already shapes the motion, so the
+## request is `exact`; the depth and the half-kneel blend are the timeline's own, as they always were. Applied at once (delta 0 moves no ramp), so the pose this frame is this frame's sample.
+func _request_rescue_posture(sample: Dictionary) -> void:
+	var kneel_blend := float(sample.kneel)
+	var posture := PresentationTypes.Posture.KNEEL if kneel_blend > 0.5 else PresentationTypes.Posture.CROUCH
+	presenter.postures.set_posture(RESCUE_POSTURE_SOURCE, posture, PresentationTypes.PRIORITY_ACTION, 0.0, float(sample.crouch) * rescue_interaction.crouch_depth, kneel_blend, true)
+	presenter.apply_posture(0.0, cover_profile, false)
+
+
+## Puts the applied posture where the requests that remain resolve to, at once (the rig applies; the arbiter still decides). For the hard end of a rescue, not for ordinary changes.
+func _snap_posture_to_requests() -> void:
+	var requests := presenter.postures
+	apply_posture_target(requests.resolved_depth(), requests.resolved_yaw_offset(), 0.0, cover_profile, false, requests.resolved_kneel(), true)
+
+
+func _release_rescue_posture() -> void:
+	presenter.postures.release(RESCUE_POSTURE_SOURCE)
 
 
 ## Places both wrists on the passenger's contacts for this skeleton pass (called by the WeaponPose modifier, with the carrier's

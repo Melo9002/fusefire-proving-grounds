@@ -216,6 +216,7 @@
   "rescue_interaction_test": {"sub": ["actions", "combat", "missions", "rescue"], "scope": "integration"},
   "rescue_lifecycle_test": {"sub": ["missions", "rescue"], "scope": "battle", "crit": "critical", "contracts": ["mission"]},
   "rescue_passenger_visual_test": {"sub": ["animation", "missions", "rescue"], "scope": "integration"},
+  "rescue_presentation_handle_test": {"sub": ["animation", "missions", "rescue"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync"]},
   "resource_references_test": {"sub": ["tooling", "assets"], "scope": "integration", "fast": true},
   "retired_tactical_metadata_test": {"sub": ["generation"], "scope": "component", "fast": true},
   "reusable_occupant_test": {"sub": ["generation", "persistence"], "scope": "component", "fast": true},

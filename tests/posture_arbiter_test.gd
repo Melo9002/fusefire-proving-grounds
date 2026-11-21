@@ -95,5 +95,19 @@ func _run() -> void:
 	o.teardown()
 	check(o.request_count() == 0 and not o.is_overridden() and o.resolved() == Posture.STAND, "teardown() clears every request and every override")
 
+	# ---- The explicit kneel blend and the exact flag (Task 07 package 5) are carried with the winner, defaulting to "derive it" and "ease it", and are part of what makes a repeat identical.
+	var k := PostureArbiter.new()
+	k.set_posture(&"cover", Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, 0.3)
+	check(is_equal_approx(k.resolved_kneel(), -1.0) and not k.resolved_exact(), "A request that says nothing about kneel or exactness leaves both for the applier to derive")
+	k.set_posture(&"lift", Posture.KNEEL, PresentationTypes.PRIORITY_ACTION, 0.0, 0.5, 0.6, true)
+	check(k.resolved_source() == &"lift" and is_equal_approx(k.resolved_kneel(), 0.6) and k.resolved_exact() and is_equal_approx(k.resolved_depth(), 0.5), "The winner's explicit kneel and exact flag are what resolve")
+	var order_before: int = k.report()[1].sequence
+	k.set_posture(&"lift", Posture.KNEEL, PresentationTypes.PRIORITY_ACTION, 0.0, 0.5, 0.6, true)
+	check(k.report()[1].sequence == order_before, "Repeating the identical request, kneel and exactness included, is still a no-op")
+	k.set_posture(&"lift", Posture.KNEEL, PresentationTypes.PRIORITY_ACTION, 0.0, 0.5, 0.7, true)
+	check(k.report()[1].sequence > order_before and is_equal_approx(k.resolved_kneel(), 0.7), "A changed kneel blend is a real change")
+	k.release(&"lift")
+	check(k.resolved_source() == &"cover" and is_equal_approx(k.resolved_kneel(), -1.0) and not k.resolved_exact(), "Releasing the action hands the body back to the cover request, and its (absent) kneel and exactness with it")
+
 	print("PostureArbiter: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

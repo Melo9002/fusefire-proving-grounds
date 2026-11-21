@@ -83,7 +83,7 @@ Inventory of string-keyed accesses still left (modifier to rig): `TraversalPoseM
 
 **Removed.** The adapter's `_crouch_depth`/`_kneel`/`_cover_yaw` ramp writer and constants (`CROUCH_SPEED`, `KNEEL_SPEED`), the unused `_cover_crouch_target`, and the workbench's direct ramps and locomotion call. The ramp state (`_crouch_depth`, `_kneel`, and `_cover_yaw` as an accessor of the visual root's yaw) now lives in the rig under the same names, so existing tests that read them are unchanged.
 
-**Still outside the presenter** (compatibility paths for later packages): facing set by `face_world_position`, `begin_turn` and the cover yaw absorption; cover side selection, the attack plan and the held cover kind; aim hold, readiness, attack/recover timelines; rescue and carry, which still write the crouch directly (`character_rig.gd` `end_carry` and the carry sample); traversal state; the workbench's turn preview, which still writes the visual root's yaw itself. Whole-body overrides (the arbiter's override layer) are implemented but not used by production yet.
+**Still outside the presenter** (compatibility paths for later packages): facing set by `face_world_position`, `begin_turn` and the cover yaw absorption; cover side selection, the attack plan and the held cover kind; aim hold, readiness, attack/recover timelines; rescue and carry (they requested posture from the arbiter from Package 5 on; see below); traversal state; the workbench's turn preview, which still writes the visual root's yaw itself. Whole-body overrides (the arbiter's override layer) are implemented but not used by production yet.
 
 **Measured.** Idle adapter `_process` 0.018 to 0.020 ms per character against the Package 2 numbers (the per-frame request bookkeeping); modifier stack unchanged. Rendered cover poses (low 0.9 m, full 2.0 m, kneel 0.4 m, standing) are pixel-identical to the previous commit's; the aiming and idle captures differ from run to run on the same code, so they could not be compared.
 
@@ -121,10 +121,69 @@ Why this is simpler than before: a modifier names exactly what it needs in one t
 
 | Item | Where | Removal point |
 | --- | --- | --- |
-| Rescue and carry write the crouch directly (`end_carry` reset and the carry sample at pickup) | `character_rig.gd` (4 assignments) | **An ownership violation, recorded:** the rescue/action package should route them through `presenter.postures` (an ACTION-priority source) and delete the writes |
+| ~~Rescue and carry write the crouch directly (`end_carry` reset and the carry sample at pickup)~~ | `character_rig.gd` (4 assignments) | **Resolved in Package 5:** they request posture from `presenter.postures` at ACTION priority and the writes are deleted |
 | `traversal`, `traversal_pose`, `stair_state` and `stair_pose` dictionaries stay the rig's own state (the modifier no longer reads them) | `character_rig.gd`; read by `animation_cleanup_test`, the traversal and stair tests, the workbench | typed state objects when the traversal lifecycle moves into the presenter |
 | `CoverCrouchModifier.setup(bones: Dictionary, ...)` and `LocomotionPoseModifier.setup(..., axes: Dictionary)` take dictionaries; `crouch_pose` is a solver-result dictionary | the two modifiers (3 `Dictionary.get` reads) | typed bone and axes configuration from `ResolvedRig` when the rig profile starts driving configuration |
 | Modifier public fields (`twist_degrees`, `depth`, `kneel`, ...) stay writable | modifiers | tests and tools write them; convert with the private-state test migration |
 | `AnimationTree.set("parameters/...")` string paths | `character_animation_controller.gd` (5) | Godot's own AnimationTree API, not rig reflection; keep |
 | `RigPoseTargets` delegates to rig methods | `character_rig.gd` | the formulas stay in the rig by design (they need weapon, carry and torso state); revisit when equipment becomes data |
 | Bone names still literal in the rig and in the weapon binding | rig | `ResolvedRig` roles (rig-profile adoption) |
+
+
+## Package 5 update: rescue posture ownership and the first production ActionHandle
+
+**What changed, in one paragraph.** The rescue lift (pickup, carry, release) no longer writes the crouch. It asks the posture arbiter for a body through an ACTION-priority request, and the rig applies whatever the arbiter resolves. The lift is also the first production user of `ActionHandle`: `begin_pickup`, `begin_release` and `UnitVisualAdapter.present_pickup` return one, it settles exactly once, and the tactical action presenter waits on it instead of polling the timeline. The existing `RescueInteraction` timeline, the passenger components and every offset, depth and timing were kept; nothing about the gameplay rescue (legality, occupancy, AP, objective state) was touched.
+
+**Measured before and after**
+
+| | Before | After |
+| --- | --- | --- |
+| Direct rescue crouch writers (`crouch_modifier.depth`/`kneel`) | 4 (`end_carry` reset 2, carry sample 2) | 0 (the only writers left are the two assignments in `apply_posture_target`; a ratchet in `animation_module_boundaries_test` fails on a third) |
+| Independently advancing rescue timelines | 1 (`RescueInteraction`, advanced once per frame by the rig) | 1 (unchanged: no second clock was added; the presenter and adapter do not run one) |
+| `ActionHandle` production integration points | 0 | producers: `begin_pickup`, `begin_release`, `present_pickup`, `reserve_rescue_handle`; observers: the adapter's post-pickup reaction, the adapter's pending-pickup cancel, `TacticalActionPresenter._wait_for_rescue_interaction` |
+| Legacy rescue completion signals | 2 (`rescue_interaction_finished`: 1 production and 2 test consumers; the unused `RescueInteraction.finished`) | 0 (both removed; a ratchet fails if the name returns) |
+| Duplicated rescue state | the crouch depth lived in the modifier, the rig's ramp and the rescue sample | one request (arbiter), one applied state (rig ramps); the modifier only receives it |
+| Pose-trace difference against `2fdb665` | n/a | 0.000000 m on every bone, IK target and passenger anchor (passenger 0.00005 m, rotation 0.067 degrees: the run-to-run noise floor, see Equivalence) over 13 scenarios including the 4 rescue ones |
+
+**The four writers, classified.**
+
+| Where | What it did | Now |
+| --- | --- | --- |
+| `_apply_carry_posture`, 2 lines | set depth and kneel from the lift sample every frame | `_request_rescue_posture(sample)`: one ACTION request (`presentation/rescue`), exact, carrying the sample's depth and kneel blend |
+| `end_carry`, 2 lines | zeroed depth and kneel when a carry ended | release of that request, then `_snap_posture_to_requests()` (the rig applies where the REMAINING requests resolve, at once) |
+
+**Arbiter extension (shared, not rescue-specific).** A request may now carry an explicit `kneel` blend (-1 keeps the derive-from-depth behaviour cover relies on) and an `exact` flag meaning "the requester already shapes the motion; follow it without easing". Both are carried with the winner and never interpreted by the arbiter; both take part in the idempotency comparison. The rig's `apply_posture_target` follows an exact request as given and keeps its ramps where it left them, so the next ordinary request eases from there. This is what lets an authored timeline (whose crouch and kneel are independent curves) be expressed as a request without changing a single value. Priorities were not invented for the lift: it uses the existing `PRIORITY_ACTION` tier, above cover (`PRIORITY_CONTEXT`) and below `PRIORITY_FORCED`.
+
+**Why the request is applied inside the carry update.** The host applies the resolved posture before the weapon-pose update, and the lift's sample for THIS frame is computed after it. `_request_rescue_posture` therefore applies once more with a delta of 0 (an exact request moves no ramp), so the pose this frame is this frame's sample, as before, and no ramp advances twice.
+
+**The handle.** One handle per rescue operation (a pickup or a release); it describes the visual operation, never the gameplay result.
+
+| Outcome | When |
+| --- | --- |
+| COMPLETED | the timeline ran out |
+| SKIPPED | the timeline was run to its end at once (`finish_interaction_now`: the carrier walks off or boards), a release that was rejected (nobody carried, or a pickup still running) and a pickup with no place to lift from (the passenger just appears) |
+| INTERRUPTED | something ended the carry under it: `end_carry` (carrier fell, hit, freed), defeat, a new pickup that supersedes a release, the character leaving the tree |
+| CANCELLED | the requester called `cancel()`: a pickup leaves no passenger and the rifle back in hand, a release leaves the passenger carried |
+
+State is derived, not mirrored: `RescueInteraction.kind` plus the handle slot give "idle / lifting / carrying / lowering / reserved". A repeated pickup or release returns the running handle (no restart); a release during a pickup is rejected. The slot is cleared BEFORE observers run, so an observer that starts a release in its callback finds a clean rig (tested), and a release's passenger is freed before its handle settles. A pickup that has to wait for its carrier to arrive reserves its handle immediately (`reserve_rescue_handle`), which the lift takes over on arrival; losing the carrier or boarding interrupts it, and a cancel stops the lift from starting. The rig settles INTERRUPTED when it leaves the tree, so a wait never outlives the character.
+
+**Commit first, present afterwards.** Unchanged. `TacticalActionPresenter._wait_for_rescue_interaction` now takes the running handle (`rescue_presentation()`; a pickup still waiting for its carrier is not running, as before) and waits for it to settle within the same bound (lift length plus half a second). Cancelling or interrupting the handle returns the action at once and changes no result (tested through the production mission: a cancelled lift still returns `true`, the carrier still carries).
+
+**Equivalence.** `tools/quality/pose_trace.gd` gained four rescue scenarios (pickup with the carrier then walking, a release, a pickup interrupted over a cover posture, a pickup cancelled by `end_carry`) and records the passenger's transform, the lift phase and time, and the carrier's position, so pickup start, contact, attachment, carrying, release start and completion are all compared frame by frame against `2fdb665`. Result: no bone, IK target, passenger, phase, crouch, kneel or position difference above the noise floor (two runs of unchanged code differ by 0.067 degrees and 0.00005 m on the passenger). This is a numerical result; no rendered capture was made for this package, so visual equivalence is not claimed.
+
+**Intentional behaviour differences.** None observed in the traces. Two are by construction and covered by tests rather than traces: (1) a lift ending over a cover request now hands the body to the cover request at once instead of to standing then easing to cover (the arbiter, not the rescue, decides what follows); (2) a defeat during a lift stops the timeline and interrupts the handle (before, the lift kept running on a defeated carrier until the tactical layer's release freed the passenger).
+
+**Temporary compatibility, with removal points**
+
+| Mechanism | Removal point |
+| --- | --- |
+| The adapter holds `_pending_pickup_world`/`_pending_lying_basis` for a pickup awaiting arrival (the handle is reserved in the rig) | when movement completion becomes a presenter action the pending state is the action's own |
+| `_apply_carry_posture` is still called by the adapter's and the workbench's weapon-pose update and advances the lift clock | when the presenter owns action ticking (the presenter will tick the clock; the rig keeps applying) |
+| `rig.preview_carrying` (hosts without a tactical unit) | the rig-composition package |
+| The no-place pickup still returns to idle with `_return_to_idle_after` (a timer shared with the hit clip) | the attack/hit timeline package |
+
+**Remaining cleanup and interruption hazards.** The tactical wait polls `handle.is_done()` once per frame (it needs a deadline; `ActionHandle.wait()` has none). A character re-added to the tree after being removed mid-lift has had its operation interrupted. The passenger node itself is still freed by `end_carry`, not by the handle. Attack, aim, hit and defeat timelines are not migrated.
+
+**Tests.** `rescue_presentation_handle_test` (47 checks; production visual and a production mission): normal pickup and release, repeated requests, cancellation before attachment, mid-lift and mid-release, interruption after attachment, defeat during a lift and while carrying, teardown with a pending `wait()`, skipped, several observers, a re-entrant observer, cover restored when the rescue releases and the cover request never cleared by it, unrelated sources untouched, no leaked request or passenger, and the authoritative result independent of the handle (three mutations were caught: a posture never released, teardown not settling, a repeated pickup restarting). `posture_arbiter_test` gained the kneel and exact checks; `rescue_interaction_test` observes the handles instead of the retired signal; the boundary test ratchets the writer count and the retired signal.
+
+**Validation status and caveats (Package 5).** Passed: changed-file selection 60/60; wide targeted batch 22 passed and 1 skipped (`hand_contact_capture`, an explicit-only rendered capture that was not run); animation FAST tier 22/22; catalog check. The full regression tier was not run. The warning audit (`tools/scan_script_warnings.gd`) is NOT clean: it scanned 540 scripts and printed parse errors, all from `artifacts/ai-audit-probe.gd`, a gitignored, untracked disposable probe dated 2026-11-17 (referenced in `docs/quality/ai-audit-2026-11-17.md`) that predates this package, is not loaded by production or any test, and fails to parse on an `evaluate()` argument type. No warning or error was reported for any file this package touched. The probe was left as it is.

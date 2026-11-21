@@ -81,7 +81,7 @@ func _run() -> void:
 		var base := RegEx.create_from_string("(?m)^extends\\s+(\\w+)").search(code)
 		check(base != null and base.get_string(1) in ["RefCounted", "Resource", "Object"], "%s must stay a pure RefCounted/Resource solver (extends %s)" % [path, base.get_string(1) if base else "nothing"])
 		check(RegEx.create_from_string("\\bget_tree\\(|\\bget_node\\(|\\badd_child\\(|\\$[A-Za-z]").search(code) == null, "%s touches the scene tree; solvers take numbers and return data" % path)
-	# Single writers (Task 07 package 3): the posture ramps and the locomotion feed have ONE owner. Only the rig applies the crouch/kneel (plus the rescue carry, which still writes them directly),
+	# Single writers (Task 07 package 3): the posture ramps and the locomotion feed have ONE owner. Only the rig applies the crouch/kneel (rescue requests its posture like everyone else, see below),
 	# and only the presenter and the rig reach the locomotion feed; no host (adapter, workbench, panels) bypasses them.
 	var ramp_writer := RegEx.create_from_string("crouch_modifier\\.(depth|kneel)\\s*=[^=]")
 	var feed_caller := RegEx.create_from_string("update_locomotion_presentation\\(")
@@ -92,7 +92,19 @@ func _run() -> void:
 			check(ramp_writer.search(code) == null, "%s writes the crouch depth or kneel directly: only CharacterRig applies the posture ramps" % path)
 		if path != "presentation/characters/runtime/character_rig.gd" and path != "presentation/characters/presenter/character_presenter.gd":
 			check(feed_caller.search(code) == null, "%s calls the locomotion feed directly: it goes through CharacterPresenter.tick" % path)
-	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
+	# Rescue posture ownership (Task 07 package 5): the rescue lift and the carry's reset used to write the crouch directly. They request posture from the arbiter now, so inside the rig only
+	# apply_posture_target writes the modifier's depth and kneel (the two assignments of the applied ramps), and the retired completion signal and polling are gone everywhere.
+	var rig_code := _code("presentation/characters/runtime/character_rig.gd")
+	var rig_writes := ramp_writer.search_all(rig_code)
+	check(rig_writes.size() == 2, "CharacterRig writes the crouch depth/kneel in %d places: only apply_posture_target (2 assignments) may; rescue and carry request posture instead" % rig_writes.size())
+	check(rig_code.contains("PRIORITY_ACTION") and rig_code.contains("RESCUE_POSTURE_SOURCE"), "The rescue lift requests its posture from the arbiter at ACTION priority")
+	var retired := RegEx.create_from_string("rescue_interaction_finished|_on_rescue_interaction_finished")
+	var sources: Array[String] = _scripts("presentation") + _scripts("art/characters") + _scripts("units") + _scripts("systems") + _scripts("levels") + _scripts("tests")
+	for path in sources:
+		if path == "tests/animation_module_boundaries_test.gd":
+			continue
+		check(retired.search(_code(path)) == null, "%s still uses the retired rescue_interaction_finished signal: observe the ActionHandle that begin_pickup/begin_release/present_pickup return" % path)
+		# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")
 	for path in ["cover_crouch_modifier", "hand_grip_modifier", "locomotion_pose_modifier", "traversal_pose_modifier", "weapon_pose_modifier"]:

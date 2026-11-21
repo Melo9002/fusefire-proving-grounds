@@ -23,7 +23,7 @@ var speed := 0.0
 var heading_rate := 0.0
 ## The latest reported velocity, horizontal (world m/s); zero once the character settles.
 var velocity := Vector3.ZERO
-## Persistent posture requests. Cover policy is not migrated yet, so production does not write here; the arbiter is owned and tested now.
+## Persistent posture requests: the cover policy (CONTEXT) and the rescue lift (ACTION) write here in production; tools write their own sources.
 var postures := PostureArbiter.new()
 
 var _age := 1.0
@@ -92,7 +92,7 @@ func tick(delta: float) -> void:
 ## host that moves the body yaw itself. The rig does the posing; this only chooses what it should follow.
 func apply_posture(delta: float, profile: CoverPostureProfile, drive_yaw := true) -> void:
 	if is_instance_valid(rig):
-		rig.apply_posture_target(postures.resolved_depth(), postures.resolved_yaw_offset(), delta, profile, drive_yaw)
+		rig.apply_posture_target(postures.resolved_depth(), postures.resolved_yaw_offset(), delta, profile, drive_yaw, postures.resolved_kneel(), postures.resolved_exact())
 
 ## The persistent state as a snapshot. Velocity and yaw are derived from what the presenter reported and the rig shows, not stored twice; readiness is the rig's own WeaponReadiness.
 func intent() -> PresentationIntent:

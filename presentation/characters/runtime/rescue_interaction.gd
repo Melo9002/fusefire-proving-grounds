@@ -15,8 +15,6 @@ extends Resource
 
 enum Kind { NONE, PICKUP, RELEASE }
 
-signal finished(kind: Kind)
-
 @export_group("Pickup timing")
 ## Carrier turns to the passenger and steps in.
 @export_range(0.05, 3.0, 0.01, "suffix:s") var align_seconds := 0.5
@@ -79,7 +77,7 @@ func stop() -> void:
 	time = 0.0
 
 
-## Moves the clock on and returns true when the timeline has just run out (and emits `finished`). The state stays at its end
+## Moves the clock on and returns true when the timeline has just run out. The state stays at its end
 ## until `stop()`; the owner stops it after reading the final sample.
 func advance(delta: float) -> bool:
 	if kind == Kind.NONE or paused:
@@ -87,7 +85,6 @@ func advance(delta: float) -> bool:
 	var before := time
 	time = minf(time + delta, duration())
 	if before < duration() and time >= duration():
-		finished.emit(kind)
 		return true
 	return false
 

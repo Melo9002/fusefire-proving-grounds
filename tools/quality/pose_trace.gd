@@ -32,8 +32,14 @@ func _snapshot(v: UnitVisualAdapter) -> Dictionary:
 		if node != null and is_instance_valid(node):
 			var p: Vector3 = root_inverse * node.global_position
 			targets[pair[0]] = [p.x, p.y, p.z]
+	var passenger := []
+	if is_instance_valid(v.carry_passenger):
+		var pt: Transform3D = root_inverse * v.carry_passenger.global_transform
+		var pq := pt.basis.orthonormalized().get_rotation_quaternion()
+		passenger = [pt.origin.x, pt.origin.y, pt.origin.z, pq.x, pq.y, pq.z, pq.w]
 	return {"bones": bones, "targets": targets, "leg_ik": v.leg_ik.active if is_instance_valid(v.leg_ik) else false, "arm_ik": v.arm_ik.active, "stowed": v.is_weapon_stowed(),
-		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y}
+		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y,
+		"passenger": passenger, "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z]}
 
 func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) -> void:
 	var stage := Node3D.new()
@@ -101,6 +107,22 @@ func _run() -> void:
 		if i == 20: v.begin_carry()
 		if i >= 20 and i < 100: v.update_locomotion(Vector3(0, 0, 1.0), DT)
 		if i == 110: v.end_carry())
+	# Rescue (Task 07 package 5): a whole pickup (start, contact, attachment, settle), the carry walking, and a whole release. 3.0 s pickup, 3.0 s release at 60 fps.
+	await _scenario("rescue_pickup", 260, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 10: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
+		if i >= 200 and i < 250: v.update_locomotion(Vector3(0, 0, 1.0), DT))
+	await _scenario("rescue_release", 360, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: v.begin_carry()
+		if i >= 5 and i < 60: v.update_locomotion(Vector3(0, 0, 1.0), DT)
+		if i == 90: v.begin_release())
+	await _scenario("rescue_cover_return", 330, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 0: _cover(v, 1.1)
+		if i == 30: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
+		if i == 100: v.end_carry()
+		if i == 101: _cover(v, 1.1))
+	await _scenario("rescue_cancel", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 10: v.begin_pickup(v.character_root.global_position + v.character_root.global_basis.orthonormalized().z * 1.0)
+		if i == 90: v.end_carry())
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(traces))
 	file.close()

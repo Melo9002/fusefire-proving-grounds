@@ -43,6 +43,8 @@ var tactical_unit: TacticalUnit
 ## Where the rescued actor lies, while the carrier is still walking to it (see present_pickup); INF when no pickup is waiting.
 var _pending_pickup_world := Vector3.INF
 var _pending_lying_basis = null
+## The rescue handle reserved while that pickup waits for its carrier to arrive (the rig settles it once the lift runs; see present_pickup).
+var _pending_handle: ActionHandle
 var _lying_body: Node3D
 ## The way an incapacitated unit lies, degrees about the vertical from the way it faces (across its facing, head to its right).
 const INCAPACITATED_YAW_DEGREES := 90.0
@@ -63,45 +65,68 @@ var _segment_to := Vector3.ZERO
 ## The carrier has just taken `passenger_world` (the rescued actor's place, which the tactical layer has hidden the actor at).
 ## The carrier faces it and the shared timeline (RescueInteraction) lifts a visual passenger from there into the carry. Without a
 ## place there is nothing to lift from: the passenger appears across the shoulders as before.
-func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> void:
+## Returns the handle of the visual lift: it settles when the lift ends (see CharacterRig.rescue_presentation). A pickup that has to wait for the carrier to arrive returns the reserved handle at once and the
+## same handle is the one the lift settles later; a pickup without a place has no timeline to run (the passenger just appears across the shoulders), so nothing was presented and it is SKIPPED.
+func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> ActionHandle:
 	_cancel_attack_sequence()
 	_return_generation += 1
-	if not rescue_interaction_finished.is_connected(_on_rescue_interaction_finished):
-		rescue_interaction_finished.connect(_on_rescue_interaction_finished)
 	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rescue_interaction.max_step + rescue_interaction.stand_off + 0.3):
 		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
 		# its shoulders. Otherwise the passenger would "fly" to a carrier still metres away.
 		_pending_pickup_world = passenger_world
 		_pending_lying_basis = lying_orientation
-		return
+		if _pending_handle == null or _pending_handle.is_done():
+			_pending_handle = reserve_rescue_handle()
+			_pending_handle.finished.connect(_on_pending_pickup_settled.bind(_pending_handle), CONNECT_ONE_SHOT)
+		return _pending_handle
 	if passenger_world.is_finite():
+		_pending_handle = null   # the lift takes the reserved handle over from here
 		face_world_position(passenger_world)
-		begin_pickup(passenger_world, lying_orientation)
-		return
+		var handle := begin_pickup(passenger_world, lying_orientation)
+		if not handle.finished.is_connected(_on_pickup_presented):
+			handle.finished.connect(_on_pickup_presented, CONNECT_ONE_SHOT)
+		return handle
 	begin_carry()
 	_play(&"pickup")
 	_return_to_idle_after(pickup_return_seconds)
+	return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 
-## A pickup or release has run out: carry on in whichever loaded state the unit is in.
-func _on_rescue_interaction_finished(kind: int) -> void:
-	if kind == RescueInteraction.Kind.PICKUP:
+## A pickup's lift has run out (or was run to its end at once): carry on in whichever loaded state the unit is in. An interrupted or cancelled lift is not carried on from: whoever ended it owns what follows.
+func _on_pickup_presented(outcome: PresentationTypes.Outcome) -> void:
+	if outcome == PresentationTypes.Outcome.COMPLETED or outcome == PresentationTypes.Outcome.SKIPPED:
 		if is_instance_valid(tactical_unit) and tactical_unit.is_moving:
 			_play(&"carry_move")
 		else:
 			present_idle()
 
+## The requester cancelled a pickup that was still waiting for its carrier: it is not started on arrival. (Settlements made by the rig itself have already cleared the pending state.)
+func _on_pending_pickup_settled(outcome: PresentationTypes.Outcome, handle: ActionHandle) -> void:
+	if handle == _pending_handle and outcome == PresentationTypes.Outcome.CANCELLED:
+		_pending_pickup_world = Vector3.INF
+		_pending_lying_basis = null
+		_pending_handle = null
+
+## A pickup that was still waiting for its carrier is withdrawn: nothing is pending and whoever waits on the reserved handle is told the presentation will not happen.
+func _clear_pending_pickup(outcome: PresentationTypes.Outcome) -> void:
+	_pending_pickup_world = Vector3.INF
+	_pending_lying_basis = null
+	var handle := _pending_handle
+	_pending_handle = null
+	if handle != null and not handle.is_done() and not interaction_active():
+		_settle_rescue(outcome)
+
 ## The tactical layer has put the passenger down (the carrier fell): drop the visual one at once, take the rifle back and leave
 ## the rest to the revealed actor. Safe in any phase of a pickup or release.
 func present_carry_released() -> void:
-	_pending_pickup_world = Vector3.INF
+	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	_return_generation += 1
 	end_carry()
 	if is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
 func present_boarding() -> void:
-	_pending_pickup_world = Vector3.INF
+	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	_cancel_attack_sequence()
 	finish_interaction_now()
 	_return_generation += 1
@@ -123,7 +148,7 @@ func present_incapacitated(on: bool) -> void:
 	if on:
 		_cancel_attack_sequence()
 		_return_generation += 1
-		_pending_pickup_world = Vector3.INF
+		_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 		character_root.visible = false
 		_lying_body = RESCUE_PASSENGER.new()
 		_lying_body.name = "IncapacitatedBody"
@@ -398,7 +423,7 @@ func present_movement_end() -> void:
 	if pickup_pending():
 		var world := _pending_pickup_world
 		_pending_pickup_world = Vector3.INF
-		present_pickup(world, _pending_lying_basis)
+		present_pickup(world, _pending_lying_basis)   # the reserved handle is taken over by the lift it starts
 		return
 	if _segment_state in TRAVERSAL_STATES:
 		_play(&"land")
@@ -756,6 +781,10 @@ func present_hit() -> void:
 	_return_to_idle_after(hit_return_seconds)
 
 func present_defeat() -> void:
+	# A rescue under way cannot continue on a defeated carrier: its visual operation is interrupted here (the tactical layer puts the passenger down, which frees the carried body).
+	_clear_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
+	if interaction_active():
+		_halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
 	_end_ladder()
 	end_stairs()
 	_cancel_attack_sequence()

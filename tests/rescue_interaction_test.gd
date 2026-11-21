@@ -150,13 +150,13 @@ func _run() -> void:
 	check(swing_loaded < swing_plain - 4.0 and swing_plain > 20.0, "The loaded gait takes a shorter step (%.0f deg of hip swing against %.0f unloaded) and the unloaded walk is its own clip" % [swing_loaded, swing_plain])
 
 	var interaction_finished: Array = []
-	rig.rescue_interaction_finished.connect(func(kind: int) -> void: interaction_finished.append(kind))
 	rig.preview_carrying = true
 	rig.skeleton.skeleton_updated.connect(_on_carrier_updated)
 	var weapon_start := rig.weapon.global_position
 	var hand_before_pickup: Vector3 = rig.right_hand_target.global_position
-	rig.present_pickup(passenger_world)
-	check(rig.interaction_active() and is_instance_valid(rig.carry_passenger), "Pickup begins an interaction with one passenger")
+	var pickup_handle: ActionHandle = rig.present_pickup(passenger_world)
+	pickup_handle.when_done(func(outcome: int) -> void: interaction_finished.append(outcome))
+	check(rig.interaction_active() and is_instance_valid(rig.carry_passenger) and not pickup_handle.is_done() and rig.rescue_presentation() == pickup_handle, "Pickup begins an interaction with one passenger, and a pending handle for it")
 	var passenger = rig.carry_passenger
 	check(passenger.lift == 0.0 and passenger.global_position.distance_to(passenger.ground_origin) < 0.001, "The passenger starts lying at the rescued actor's place (%.1f mm)" % (passenger.global_position.distance_to(passenger.ground_origin) * 1000.0))
 	check(absf(passenger.ground_origin.x - passenger_world.x) < 0.001 and absf(passenger.ground_origin.z - passenger_world.z) < 0.001, "...at the actor's own position on the floor, not at the carrier")
@@ -237,16 +237,16 @@ func _run() -> void:
 	rig.rescue_interaction.paused = false
 	rig.rescue_interaction.scrub(seconds - 0.05)
 	await create_timer(0.3).timeout
-	check(not rig.interaction_active() and interaction_finished == [RescueInteraction.Kind.PICKUP], "The pickup ends once, and says so: %s" % str(interaction_finished))
+	check(not rig.interaction_active() and interaction_finished == [PresentationTypes.Outcome.COMPLETED] and pickup_handle.is_done(), "The pickup ends once, and says so: %s" % str(interaction_finished))
 	check(rig.position.distance_to(Vector3.ZERO) < 0.001 and rig.crouch_modifier.depth < 0.01, "The carrier is back upright at its own place")
 	check(passenger.lift == 1.0 and rig.carry_contacts_active() and rig.grip_modifier.contact_weight == [1.0, 1.0], "The passenger lies across the shoulders with both hands on their contacts")
 	check(rig.get_presentation_state() == &"carry_idle", "The carrier settles into the carry idle (%s)" % rig.get_presentation_state())
 
 	# ---- Release: the reverse.
 	var release_finished: Array = []
-	rig.rescue_interaction_finished.connect(func(kind: int) -> void: release_finished.append(kind))
 	rig.keep_released_passenger = true
-	rig.begin_release()
+	var release_handle: ActionHandle = rig.begin_release()
+	release_handle.when_done(func(outcome: int) -> void: release_finished.append(outcome))
 	rig.rescue_interaction.paused = true
 	var released_jump := 0.0
 	var hands_free_before_grounded := false
@@ -266,7 +266,7 @@ func _run() -> void:
 	rig.rescue_interaction.paused = false
 	rig.rescue_interaction.scrub(seconds_out - 0.05)
 	await create_timer(0.3).timeout
-	check(release_finished == [RescueInteraction.Kind.RELEASE] and not rig.interaction_active(), "The release ends once")
+	check(release_finished == [PresentationTypes.Outcome.COMPLETED] and not rig.interaction_active(), "The release ends once")
 	check(rig.carry_passenger == null and rig.weapon.get_parent() == rig.weapon_attachment and not rig.is_weapon_stowed() and rig.arm_ik.active, "After the release the carrier holds its rifle again and carries no one")
 	check(rig.get_presentation_state() == &"rifle_idle" and rig.grip_modifier.contact_weight == [0.0, 0.0], "...and is back in the ordinary stance with its grips released")
 	var left_lying := stage.find_children("RescuePassenger", "", true, false)
