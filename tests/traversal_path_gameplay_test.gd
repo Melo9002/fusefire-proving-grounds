@@ -57,7 +57,7 @@ func _run() -> void:
 	actor.path_presentation.enabled = true
 	actor.move_along_path(tactical, [&"move", &"move", &"move", &"move"])
 	var smooth := actor.current_path.duplicate()
-	var report: Dictionary = actor.last_path_report.duplicate()
+	var report: Dictionary = actor.route.report.duplicate()
 	actor.is_moving = false
 	check(plain.size() == 4 and smooth.size() > plain.size(), "With it on the corner gains curve points (%d -> %d waypoints)" % [plain.size(), smooth.size()])
 	check(smooth[0].is_equal_approx(plain[0]) and smooth[smooth.size() - 1].is_equal_approx(plain[plain.size() - 1]), "The start and the end are exactly the tactical ones")
@@ -83,7 +83,7 @@ func _run() -> void:
 	var through := _floor_path(f, actor, [Vector3i(2, 0, 5), Vector3i(3, 0, 5), Vector3i(4, 0, 5), Vector3i(5, 0, 5)])
 	actor.move_along_path(through, [&"move", &"move", &"move", &"move"])
 	var kept := actor.current_path.duplicate()
-	var bad_report: Dictionary = actor.last_path_report.duplicate()
+	var bad_report: Dictionary = actor.route.report.duplicate()
 	actor.is_moving = false
 	check(not bad_report.mismatches.is_empty(), "A route through the column is reported as a geometry/tactical mismatch (%d)" % bad_report.mismatches.size())
 	check(kept.size() == 4 and kept[0].is_equal_approx(through[0]) and kept[3].is_equal_approx(through[3]), "...and the walk is exactly the tactical route (no reroute, no teleport)")
@@ -135,8 +135,8 @@ func _run() -> void:
 			actor.path_presentation.enabled = true
 			actor.move_along_path(presentation, segments)
 			var walk := actor.current_path.duplicate()
-			var walk_kinds := actor._leg_kinds.duplicate()
-			var walk_report: Dictionary = actor.last_path_report.duplicate()
+			var walk_kinds := actor.route.kinds.duplicate()
+			var walk_report: Dictionary = actor.route.report.duplicate()
 			actor.is_moving = false
 			if not walk_report.get("mismatches", []).is_empty():
 				mismatching += 1

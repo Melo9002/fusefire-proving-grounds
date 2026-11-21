@@ -357,7 +357,7 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 
 
 func note_stairs(model: StairModel, ascending: bool, enter: float, exit: float) -> void:
-	if not stair_state.is_empty() and stair_state.model == model:
+	if stairs != null and stairs.model == model:
 		return
 	end_stairs()
 	begin_stairs(model, ascending, enter, exit)
@@ -369,22 +369,22 @@ func is_ladder_active() -> bool:
 
 ## Once per frame: while a ladder segment is walked, the character faces the ladder and the pose follows the unit's height up it.
 func _tick_traversal(delta: float) -> void:
-	if not stair_state.is_empty() and is_instance_valid(tactical_unit):
+	if stairs != null and is_instance_valid(tactical_unit):
 		var floor_position := tactical_unit.global_position - Vector3.UP * tactical_unit.standing_height
-		set_stair_progress((stair_state.model as StairModel).progress_of(floor_position), presenter.speed)
+		set_stair_progress(stairs.model.progress_of(floor_position), presenter.speed)
 	if _ladder.is_empty() or not is_instance_valid(tactical_unit):
 		return
 	var climbed := clampf(tactical_unit.global_position.y - float(_ladder.low_y), 0.0, float(_ladder.length))
 	if get_presentation_state() != &"rifle_idle" and get_presentation_state() != &"aim":
 		_play(&"rifle_idle")
 	presenter.turn_toward_yaw(float(_ladder.yaw), turn_speed_degrees, delta)
-	if traversal.is_empty():
+	if ladder == null:
 		begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
 	set_traversal_progress(climbed)
 
 
 func _end_ladder() -> void:
-	if _ladder.is_empty() and traversal.is_empty():
+	if _ladder.is_empty() and ladder == null:
 		return
 	_ladder = {}
 	end_traversal()

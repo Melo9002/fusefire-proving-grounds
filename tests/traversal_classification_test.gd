@@ -34,7 +34,7 @@ func _walk_ramp(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination:
 		# steps between the two, so those frames are not judged.
 		if absf(floor_position.z - (-3.0)) > 0.07:
 			worst = maxf(worst, absf(floor_position.y - (-0.5 - floor_position.z if floor_position.z > -3.0 else 3.0)))
-		stairs_seen = stairs_seen or not adapter.stair_state.is_empty()
+		stairs_seen = stairs_seen or adapter.stairs != null
 		ladder_seen = ladder_seen or adapter.is_ladder_active()
 	adapter.presentation_state_changed.disconnect(on_state)
 	return {"ok": bool(done[0]) if not done.is_empty() else false, "worst": worst, "poses": poses, "stairs": stairs_seen, "ladder": ladder_seen}

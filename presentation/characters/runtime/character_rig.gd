@@ -30,15 +30,13 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 
 var skeleton: Skeleton3D
 var arm_ik: TwoBoneIK3D
-## Environmental traversal (see TraversalSolver / TraversalPoseModifier). `traversal` is {} when none; while a ladder is climbed it holds {kind, climbed, length, direction}
-## and `traversal_pose` is the solved pose of that progress. Legs go through `leg_ik` to `foot_targets`, knees toward `knee_poles`.
+## Environmental traversal (see TraversalSolver / TraversalPoseModifier). `ladder` is null when none; while a ladder is climbed it is the climb (LadderClimb) and `ladder.pose` the typed pose solved for its
+## progress (LadderPose). Legs go through `leg_ik` to `foot_targets`, knees toward `knee_poles`.
 @export var traversal_profile: TraversalProfile = TraversalProfile.new()
-var traversal := {}
-## Stair walking (see StairModel / StairFootPlanner / StairProfile): {} when none; while on a stair {model, ascending, step, holds}; `stair_pose` is the solved feet and pelvis.
+var ladder: LadderClimb
+## Stair walking (see StairModel / StairFootPlanner / StairProfile): `stairs` is null when none; while on a stair it is the walk (StairWalk) and `stairs.pose` the typed feet and pelvis solved for the current place (StairPose).
 @export var stair_profile: StairProfile = StairProfile.new()
-var stair_state := {}
-var stair_pose := {}
-var traversal_pose := {}
+var stairs: StairWalk
 var traversal_modifier: TraversalPoseModifier
 var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
@@ -532,25 +530,25 @@ func _build_traversal_modifier() -> void:
 
 
 ## Translates the traversal and stair state into the typed pose the Traversal modifier applies (TraversalPoseInput). Called wherever that state changes, so the modifier always has the current pose and
-## reads nothing of the rig. A ladder takes precedence over stairs, exactly as before. `traversal`, `traversal_pose`, `stair_state` and `stair_pose` stay the rig's own state (read by tests and tools).
+## reads nothing of the rig. A ladder takes precedence over stairs, exactly as before. `ladder` and `stairs` are the rig's own typed state (read by tests and tools).
 func _publish_traversal_input() -> void:
 	if traversal_modifier == null:
 		return
 	var input := traversal_modifier.input
-	if not traversal.is_empty():
+	if ladder != null:
 		input.mode = TraversalPoseInput.Mode.LADDER
-		input.solved = not traversal_pose.is_empty()
+		input.solved = ladder.pose != null
 		if input.solved:
-			input.weight = float(traversal_pose.weight)
-			input.hips_local = traversal_pose.hips
-			input.feet_local = [traversal_pose.feet[0], traversal_pose.feet[1]]
-	elif not stair_pose.is_empty():
+			input.weight = ladder.pose.weight
+			input.hips_local = ladder.pose.hips
+			input.feet_local = [ladder.pose.feet[0], ladder.pose.feet[1]]
+	elif stairs != null and stairs.pose != null:
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
-		input.weight = float(stair_pose.weight)
-		input.pelvis_height = float(stair_pose.pelvis.height)
-		input.ankles_world = [stair_pose.feet[0].position, stair_pose.feet[1].position]
-		input.planted = [bool(stair_pose.feet[0].planted), bool(stair_pose.feet[1].planted)]
+		input.weight = stairs.pose.weight
+		input.pelvis_height = stairs.pose.pelvis_height
+		input.ankles_world = [stairs.pose.feet[0].position, stairs.pose.feet[1].position]
+		input.planted = [stairs.pose.feet[0].planted, stairs.pose.feet[1].planted]
 		input.stair_profile = stair_profile
 	else:
 		input.clear()
@@ -558,22 +556,21 @@ func _publish_traversal_input() -> void:
 
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
 func begin_traversal(kind: StringName, length: float, direction: int) -> void:
-	traversal = {"kind": kind, "climbed": 0.0, "length": length, "direction": direction}
-	traversal_pose = {}
+	ladder = LadderClimb.new(kind, length, direction)
 	_publish_traversal_input()
 
 
 ## The height of the character's floor level above the ladder's bottom floor. Solves the pose now (pure function of this height), asks the trunk to lean, and sets
 ## how far the rifle is slung (the weapon travels to the sling as the climber mounts and back as they leave; the pose is released again at the ends).
 func set_traversal_progress(climbed: float) -> void:
-	if traversal.is_empty():
+	if ladder == null:
 		return
-	traversal.climbed = climbed
-	traversal_pose = TraversalSolver.ladder_pose(traversal_profile, climbed, float(traversal.length), int(traversal.direction))
+	ladder.climbed = climbed
+	ladder.pose = LadderPose.from_solver(TraversalSolver.ladder_pose(traversal_profile, climbed, ladder.length, ladder.direction))
 	_publish_traversal_input()
-	var weight: float = traversal_pose.weight
+	var weight: float = ladder.pose.weight
 	if crouch_modifier != null:
-		crouch_modifier.aim_lean_degrees = float(traversal_pose.lean_degrees) * weight
+		crouch_modifier.aim_lean_degrees = ladder.pose.lean_degrees * weight
 	if weight > 0.001:
 		if not is_weapon_stowed():
 			stow_weapon()
@@ -587,47 +584,44 @@ func set_traversal_progress(climbed: float) -> void:
 func begin_stairs(model: StairModel, ascending: bool, enter := 0.0, exit := -1.0) -> void:
 	if model == null or not stair_profile.enabled or is_instance_valid(carry_passenger):
 		return
-	stair_state = {"model": model, "ascending": ascending, "step": 0, "holds": [], "enter": enter, "exit": exit if exit >= 0.0 else model.riser_s(model.count)}
-	stair_pose = {}
+	stairs = StairWalk.new(model, ascending, enter, exit if exit >= 0.0 else model.riser_s(model.count))
 	_publish_traversal_input()
 
 
 ## The body's place along the stair (distance from the lower cell centre) and its speed: plans the feet and the pelvis now (a pure function of these two numbers).
 func set_stair_progress(s: float, unit_speed: float) -> void:
-	if stair_state.is_empty():
+	if stairs == null:
 		return
-	var model: StairModel = stair_state.model
-	var ascending: bool = stair_state.ascending
+	var model := stairs.model
+	var ascending := stairs.ascending
 	var step := stair_profile.step_treads(unit_speed, false, model.tread_rise)
-	if step != int(stair_state.step):
-		stair_state.step = step
-		stair_state.holds = StairFootPlanner.holds(model, ascending, step)
-	var holds: Array = stair_state.holds
+	if step != stairs.step:
+		stairs.step = step
+		stairs.holds = StairFootPlanner.holds(model, ascending, step)
+	var holds: Array = stairs.holds
 	var feet: Array = []
 	for foot in 2:
 		feet.append(StairFootPlanner.foot_at(model, stair_profile, holds, ascending, s, foot))
 	var body := character_root.global_position
 	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body)
-	stair_pose = {"feet": feet, "pelvis": solved, "weight": StairFootPlanner.weight_at(s, float(stair_state.enter), float(stair_state.exit), model.tread_depth * 1.5), "s": s, "step": step}
+	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step)
 	_publish_traversal_input()
 
 
 func end_stairs() -> void:
-	if stair_state.is_empty():
+	if stairs == null:
 		return
-	stair_state = {}
-	stair_pose = {}
+	stairs = null
 	_publish_traversal_input()
-	if is_instance_valid(leg_ik) and traversal.is_empty():
+	if is_instance_valid(leg_ik) and ladder == null:
 		leg_ik.active = false
 
 
 ## Ends the traversal and leaves nothing of it: the legs, lean, hands and rifle go back to the ordinary pose layers.
 func end_traversal() -> void:
-	if traversal.is_empty():
+	if ladder == null:
 		return
-	traversal = {}
-	traversal_pose = {}
+	ladder = null
 	_publish_traversal_input()
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = 0.0
@@ -641,7 +635,7 @@ func end_traversal() -> void:
 
 
 func traversal_contacts_active() -> bool:
-	return not traversal.is_empty() and not traversal_pose.is_empty() and (float(traversal_pose.hand_weight[0]) > 0.001 or float(traversal_pose.hand_weight[1]) > 0.001)
+	return ladder != null and ladder.pose != null and (ladder.pose.hand_weight[0] > 0.001 or ladder.pose.hand_weight[1] > 0.001)
 
 
 ## Puts the hands on the rungs (or the deck edge), by the traversal's weight, over wherever the weapon pose placed them. Runs inside the WeaponPose pass, after the weapon
@@ -655,9 +649,9 @@ func apply_traversal_hand_targets() -> void:
 	var normals := [toward, toward]
 	var nodes := [support_ik_target, right_hand_target]   # left, right
 	for side in 2:
-		var contact := character_root.to_global(traversal_pose.hands[side])
+		var contact := character_root.to_global(ladder.pose.hands[side])
 		var node: Node3D = nodes[side]
-		var hold: float = traversal_pose.hand_weight[side]   # the hands let go of the ladder before the body does (short arms)
+		var hold: float = ladder.pose.hand_weight[side]   # the hands let go of the ladder before the body does (short arms)
 		node.global_position = node.global_position.lerp(contact, hold)
 		weights[side] = hold
 	if grip_modifier != null:
@@ -730,9 +724,9 @@ func _update_weapon_pose_inputs() -> void:
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = AIM_LEAN_DEGREES * weapon_blend()
 		crouch_modifier.support_reach_degrees = SUPPORT_REACH_DEGREES * weapon_blend()
-		if not traversal.is_empty() and not traversal_pose.is_empty():
+		if ladder != null and ladder.pose != null:
 			# A ladder climbed: the trunk leans into it by the traversal's weight (set_traversal_progress), not into the rifle.
-			crouch_modifier.aim_lean_degrees = lerpf(crouch_modifier.aim_lean_degrees, float(traversal_pose.lean_degrees), float(traversal_pose.weight))
+			crouch_modifier.aim_lean_degrees = lerpf(crouch_modifier.aim_lean_degrees, ladder.pose.lean_degrees, ladder.pose.weight)
 	if grip_modifier != null:
 		var holding: bool = not (is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"boarding", &"carry_idle", &"carry_move"])
 		grip_modifier.curl = [SUPPORT_GRIP_CURL if holding else 0.0, TRIGGER_HAND_CURL if holding else 0.0]

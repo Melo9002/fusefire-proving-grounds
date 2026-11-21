@@ -220,6 +220,34 @@ func _run() -> void:
 		var heading := Vector3(0, 0, 1) if i < 60 else (Vector3(1, 0, 0) if i < 120 else Vector3(-1, 0, -1).normalized())
 		if i < 180: v.update_locomotion(heading * 2.5, DT)
 		if i == 200: v.face_world_position(east.call(v)))
+	# Traversal transitions (Task 07 package 8): a descent, a ladder and a stair walk ended midway, a ladder taking precedence over a stair walk, and stairs descended.
+	await _scenario("ladder_down", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.begin_traversal(&"ladder", 3.0, -1)
+		if i >= 5 and i < 160: v.set_traversal_progress(clampf(2.6 - float(i - 5) * 0.017, 0.0, 3.0))
+		if i == 160: v.end_traversal())
+	await _scenario("ladder_interrupted", 160, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.begin_traversal(&"ladder", 3.0, 1)
+		if i >= 5 and i < 70: v.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))
+		if i == 70: v.end_traversal())
+	await _scenario("stairs_interrupted", 160, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.begin_stairs(model, true)
+		if i >= 5 and i < 70:
+			v.update_locomotion(Vector3(0, 0, 1.2), DT)
+			v.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
+		if i == 70: v.end_stairs())
+	await _scenario("stairs_down", 180, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.begin_stairs(model, false)
+		if i >= 5 and i < 150:
+			v.update_locomotion(Vector3(0, 0, 1.2), DT)
+			v.set_stair_progress(clampf(model.end_s() - float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
+		if i == 150: v.end_stairs())
+	await _scenario("ladder_over_stairs", 200, func(v: UnitVisualAdapter, i: int) -> void:
+		if i == 5: v.begin_traversal(&"ladder", 3.0, 1)
+		if i == 30: v.begin_stairs(model, true)
+		if i >= 5 and i < 100: v.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))
+		if i >= 30 and i < 160: v.set_stair_progress(clampf(float(i - 30) * 0.012, 0.0, model.end_s()), 1.2)
+		if i == 100: v.end_traversal()
+		if i == 160: v.end_stairs())
 	# Timelines the code under test recorded for the attacks (phases and times in presentation seconds): the shot and release timing the frame-by-frame rows cannot show on their own.
 	traces["__meta"] = meta
 	var file := FileAccess.open(path, FileAccess.WRITE)

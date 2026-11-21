@@ -26,7 +26,7 @@ func _run() -> void:
 	rig.skeleton.skeleton_updated.connect(func() -> void: _grab(rig))
 	var names: Array = rig.skeleton.get_children().filter(func(c: Node) -> bool: return c is SkeletonModifier3D).map(func(c: Node) -> String: return str(c.name))
 	check(names == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "The traversal layers sit after Locomotion and CoverCrouch and before WeaponPose: %s" % [names])
-	check(rig.traversal.is_empty() and not rig.leg_ik.active, "Idle: no traversal, the leg IK is off")
+	check(rig.ladder == null and not rig.leg_ik.active, "Idle: no traversal, the leg IK is off")
 	check(not rig.is_weapon_stowed(), "Idle: the rifle is in the hand")
 
 	rig.begin_traversal(&"ladder", 4.0, 1)
@@ -58,17 +58,17 @@ func _run() -> void:
 	# Mounting at the bottom: the pose is released at the floor and arrives over the mount length.
 	rig.set_traversal_progress(0.0)
 	for i in 3: await process_frame
-	check(float(rig.traversal_pose.weight) == 0.0 and not rig.is_weapon_stowed() and not rig.leg_ik.active, "At the floor the pose is released and the rifle is back in the hand")
+	check(rig.ladder.pose.weight == 0.0 and not rig.is_weapon_stowed() and not rig.leg_ik.active, "At the floor the pose is released and the rifle is back in the hand")
 	rig.set_traversal_progress(0.25)
 	for i in 3: await process_frame
-	check(float(rig.traversal_pose.weight) > 0.1 and float(rig.traversal_pose.weight) < 0.9 and rig.is_weapon_stowed(), "Mounting: partly on the ladder, the rifle already travelling to the sling")
+	check(rig.ladder.pose.weight > 0.1 and rig.ladder.pose.weight < 0.9 and rig.is_weapon_stowed(), "Mounting: partly on the ladder, the rifle already travelling to the sling")
 
 	# Interruption: ending the traversal anywhere leaves nothing behind.
 	rig.set_traversal_progress(2.0)
 	for i in 3: await process_frame
 	rig.end_traversal()
 	for i in 3: await process_frame
-	check(rig.traversal.is_empty() and rig.traversal_pose.is_empty() and not rig.leg_ik.active, "Interrupted mid-ladder: no traversal state, the leg IK is off")
+	check(rig.ladder == null and not rig.leg_ik.active, "Interrupted mid-ladder: no traversal state, the leg IK is off")
 	check(rig.crouch_modifier.aim_lean_degrees == 0.0 and not rig.is_weapon_stowed() and is_equal_approx(float(rig.grip_modifier.contact_weight[0]) + float(rig.grip_modifier.contact_weight[1]), 0.0), "...no trunk lean, no ladder grip, the rifle back in the hand")
 	var after: Vector3 = rl * snap.Hips
 	check(absf(after.y - 0.93) < 0.04 and absf(after.z) < 0.05, "...and the pelvis is back at its ordinary place (y %.2f z %.2f)" % [after.y, after.z])

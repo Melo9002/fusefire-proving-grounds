@@ -20,9 +20,9 @@ func _spawn() -> UnitVisualAdapter:
 	return v
 
 func _clean(v: UnitVisualAdapter, label: String) -> void:
-	check(v.traversal.is_empty(), "%s: traversal state released" % label)
-	check(v.traversal_pose.is_empty(), "%s: traversal pose released" % label)
-	check(v.stair_state.is_empty() and v.stair_pose.is_empty(), "%s: stair state and pose released" % label)
+	check(v.ladder == null, "%s: traversal state released" % label)
+	check(v.ladder == null or v.ladder.pose == null, "%s: traversal pose released" % label)
+	check(v.stairs == null, "%s: stair state and pose released" % label)
 	check(not v.is_ladder_active(), "%s: ladder inactive" % label)
 	check(not is_instance_valid(v.leg_ik) or not v.leg_ik.active, "%s: leg IK inactive" % label)
 	check(not v.is_weapon_stowed(), "%s: weapon not left stowed" % label)
@@ -36,7 +36,7 @@ func _run() -> void:
 	a.begin_traversal(&"ladder", 3.0, 1)
 	a.set_traversal_progress(1.2)
 	await process_frame
-	check(not a.traversal.is_empty(), "Setup: a ladder traversal is active")
+	check(a.ladder != null, "Setup: a ladder traversal is active")
 	a.present_movement_end()
 	_clean(a, "ladder -> movement end")
 	# Ladder interrupted by defeat.
@@ -56,7 +56,7 @@ func _run() -> void:
 		c.begin_stairs(model, true)
 		c.set_stair_progress(1.0, 1.5)
 		await process_frame
-		check(not c.stair_state.is_empty(), "Setup: stairs are active (%s)" % label)
+		check(c.stairs != null, "Setup: stairs are active (%s)" % label)
 		if label == "defeat":
 			c.present_defeat()
 		else:

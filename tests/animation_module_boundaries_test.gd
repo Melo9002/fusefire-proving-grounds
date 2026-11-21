@@ -132,6 +132,18 @@ func _run() -> void:
 	check(found_retired == null, "The adapter still holds retired pending-pickup or aim-hold state (%s)" % [found_retired.get_string() if found_retired else ""])
 	check(_code("units/tactical_unit.gd").count("create_timer(") == 1, "TacticalUnit keeps exactly one timer: the floor for a unit whose visual does not process (the presenter's removal handle covers every other defeat)")
 	check(not _code("systems/replay/battle_replay_player.gd").contains("visual_adapter.global_basis"), "The replay player does not read the adapter's transform")
+	# Route and traversal ownership (Task 07 package 8): TacticalUnit executes the walk and keeps no route-construction algorithm (TacticalRouteBuilder, in presentation/tactical, is the only one, and it
+	# reaches into no unit, adapter or node); the rig's ladder climb and stair walk are typed objects, not dictionaries.
+	var unit_code := _code("units/tactical_unit.gd")
+	var route_algorithms := RegEx.create_from_string("PathRefiner|StairModel|SurfaceNavigation|_stair_run_end|_refine_flat_runs|_stair_model|VAULT_KIND|_leg_kind|_stair_ids|_stair_runs|_leg_kinds|last_path_report|_visual_segments|_ladder_toward_deck")
+	var found_route := route_algorithms.search(unit_code)
+	check(found_route == null, "TacticalUnit still holds route-construction code or state (%s): it belongs to TacticalRouteBuilder" % [found_route.get_string() if found_route else ""])
+	check(unit_code.contains("TacticalRouteBuilder.expand(") and unit_code.contains("TacticalRouteBuilder.passthrough("), "TacticalUnit builds its presented route through TacticalRouteBuilder")
+	var route_builder_code := _code("presentation/tactical/tactical_route_builder.gd")
+	check(route_builder_code.contains("extends RefCounted") and RegEx.create_from_string("TacticalUnit|visual_adapter|UnitVisualAdapter|get_node|get_tree|add_child").search(route_builder_code) == null, "TacticalRouteBuilder is pure: no unit, adapter, node or scene-tree access")
+	var traversal_dicts := RegEx.create_from_string("var (traversal|traversal_pose|stair_state|stair_pose)\\b")
+	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/characters/runtime/unit_visual_adapter.gd") + _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd")) == null,
+		"The rig, the adapter and the workbench keep no traversal or stair dictionary: the state is LadderClimb and StairWalk (typed)")
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")

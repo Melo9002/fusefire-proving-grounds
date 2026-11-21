@@ -128,10 +128,10 @@ func _run() -> void:
 		while done.is_empty() and guard < 3500:
 			guard += 1
 			await process_frame
-			if adapter.stair_pose.is_empty() or float(adapter.stair_pose.weight) < 0.99:
+			if adapter.stairs == null or adapter.stairs.pose == null or adapter.stairs.pose.weight < 0.99:
 				continue
 			for foot in 2:
-				var info: Dictionary = adapter.stair_pose.feet[foot]
+				var info: StairPose.Foot = adapter.stairs.pose.feet[foot]
 				if not info.planted:
 					continue
 				var target: Vector3 = info.position

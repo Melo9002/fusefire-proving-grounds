@@ -601,11 +601,11 @@ func _build_ladder_visuals() -> void:
 
 ## Optional diagnostics: the four contact targets (left hand red, right hand blue, left foot orange, right foot cyan).
 func _update_ladder_markers() -> void:
-	if _ladder_markers.size() < 4 or traversal_pose.is_empty():
+	if _ladder_markers.size() < 4 or ladder == null or ladder.pose == null:
 		return
 	for side in 2:
-		_ladder_markers[side].global_position = character_root.to_global(traversal_pose.hands[side])
-		_ladder_markers[2 + side].global_position = character_root.to_global(traversal_pose.feet[side])
+		_ladder_markers[side].global_position = character_root.to_global(ladder.pose.hands[side])
+		_ladder_markers[2 + side].global_position = character_root.to_global(ladder.pose.feet[side])
 
 
 ## ---- Stair bench: the production StairModel / StairFootPlanner / leg IK / pelvis, driven by the progress the game would supply (the unit's place along the stair). The character
@@ -670,10 +670,10 @@ func _set_stair_state(s: float) -> void:
 	shifted.tread_rise = base.tread_rise
 	shifted.first_riser = base.first_riser
 	shifted.count = base.count
-	if stair_state.is_empty():
+	if stairs == null:
 		begin_stairs(shifted, bool(stair_demo.ascending), float(stair_demo.enter), float(stair_demo.exit))
-	stair_state.model = shifted
-	stair_state.step = 0   # re-plan the holds against the shifted model
+	stairs.model = shifted
+	stairs.step = 0   # re-plan the holds against the shifted model
 	set_stair_progress(s, float(stair_demo.rate) if float(stair_demo.rate) > 0.0 else 1.0)
 	if is_instance_valid(_stair_group):
 		_stair_group.position = -travel
@@ -693,9 +693,9 @@ func _advance_stair_demo(delta: float) -> void:
 		stair_demo.s = next
 		stair_demo.step_once = false
 	_set_stair_state(float(stair_demo.s))
-	if not stair_pose.is_empty() and _stair_markers.size() == 4:
+	if stairs != null and stairs.pose != null and _stair_markers.size() == 4:
 		for foot in 2:
-			_stair_markers[foot].global_position = (stair_pose.feet[foot] as Dictionary).position
+			_stair_markers[foot].global_position = stairs.pose.feet[foot].position
 			_stair_markers[foot].visible = stair_diagnostics
 			_stair_markers[2 + foot].visible = stair_diagnostics
 			_stair_markers[2 + foot].global_position = _stair_actual[foot]

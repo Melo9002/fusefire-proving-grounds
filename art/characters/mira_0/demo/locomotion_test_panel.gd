@@ -289,15 +289,15 @@ func _process(delta: float) -> void:
 	var r: Dictionary = bench.locomotion_report
 	var modifier = bench.locomotion_modifier
 	var cover_line := "" if bench.cover_demo.is_empty() else "\ncover side %d (+1 right), yaw offset %.0f deg, crouch %.2f" % [bench.cover_side, rad_to_deg(bench.character_root.rotation.y), bench.crouch_modifier.depth]
-	if not bench.stair_demo.is_empty() and not bench.stair_pose.is_empty():
-		var sp: Dictionary = bench.stair_pose
-		cover_line += "\nstair s %.2f / %.2f m  weight %.2f  step every %d tread(s)  pelvis %.2f m%s  feet planted %s/%s" % [float(bench.stair_demo.s), float(bench.stair_demo.exit), float(sp.weight), int(sp.step), float(sp.pelvis.height), "" if bool(sp.pelvis.ok) else " UNREACHABLE", (sp.feet[0] as Dictionary).planted, (sp.feet[1] as Dictionary).planted]
+	if not bench.stair_demo.is_empty() and bench.stairs != null and bench.stairs.pose != null:
+		var sp: StairPose = bench.stairs.pose
+		cover_line += "\nstair s %.2f / %.2f m  weight %.2f  step every %d tread(s)  pelvis %.2f m%s  feet planted %s/%s" % [float(bench.stair_demo.s), float(bench.stair_demo.exit), sp.weight, sp.step, sp.pelvis_height, "" if sp.pelvis_ok else " UNREACHABLE", sp.feet[0].planted, sp.feet[1].planted]
 	if not bench.path_demo.is_empty():
 		var pr: Dictionary = bench.path_demo.result
 		cover_line += "\npath %s: rounded %d, min clearance %s m%s" % [bench.path_demo.kind, int(pr.rounded), "none near" if is_inf(float(pr.min_clearance)) else "%.3f" % float(pr.min_clearance), ("  MISMATCH: " + str(pr.mismatches[0])) if not pr.mismatches.is_empty() else ""]
-	if not bench.ladder_demo.is_empty() and not bench.traversal_pose.is_empty():
-		var tp: Dictionary = bench.traversal_pose
-		cover_line += "\nladder %.2f / %.2f m  weight %.2f  hand rungs %s  foot rungs %s" % [float(bench.ladder_demo.climbed), float(bench.ladder_demo.length), float(tp.weight), tp.hand_rung, tp.foot_rung]
+	if not bench.ladder_demo.is_empty() and bench.ladder != null and bench.ladder.pose != null:
+		var tp: LadderPose = bench.ladder.pose
+		cover_line += "\nladder %.2f / %.2f m  weight %.2f  hand rungs %s  foot rungs %s" % [float(bench.ladder_demo.climbed), float(bench.ladder_demo.length), tp.weight, tp.hand_rung, tp.foot_rung]
 	if not bench.cover_demo.is_empty():
 		var plan: Dictionary = bench.cover_plan
 		cover_line += "\nintent: %s" % ("none (passive cover)" if plan.is_empty() else "authorized attack  mode %s  side %d  along %.2f lateral %.2f%s" % [CoverEdgeSelector.FiringMode.keys()[int(plan.mode)], int(plan.side), float(plan.along), float(plan.lateral), ("  MISMATCH " + str(plan.mismatch)) if not str(plan.mismatch).is_empty() else ""])

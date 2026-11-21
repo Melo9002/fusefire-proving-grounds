@@ -27,8 +27,8 @@ func _carry_walk(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination
 		guard += 1
 		await process_frame
 		log.frames += 1
-		log.stairs = bool(log.stairs) or not adapter.stair_state.is_empty()
-		log.ladder = bool(log.ladder) or adapter.is_ladder_active() or not adapter.traversal.is_empty()
+		log.stairs = bool(log.stairs) or adapter.stairs != null
+		log.ladder = bool(log.ladder) or adapter.is_ladder_active() or adapter.ladder != null
 		log.leg_ik = bool(log.leg_ik) or adapter.leg_ik.active
 		log.stowed_always = bool(log.stowed_always) and adapter.is_weapon_stowed()
 		if is_instance_valid(adapter.carry_passenger):
@@ -96,7 +96,7 @@ func _run() -> void:
 	check(float(ladder.drift_max) - float(ladder.drift_min) < 0.05 and bool(ladder.stowed_always), "The passenger does not detach or clip away from the carrier during the placeholder climb (drift %.3f m)" % (float(ladder.drift_max) - float(ladder.drift_min)))
 	check(float(ladder.seconds) < 2.0, "The unsupported climb runs at the route speed (%.1f s), not the slow ladder presentation" % ladder.seconds)
 	await create_timer(0.4).timeout
-	check(adapter.stair_state.is_empty() and adapter.traversal.is_empty() and not adapter.leg_ik.active and is_instance_valid(adapter.carry_passenger), "Afterwards nothing of stairs or ladder is left and the carry is intact")
+	check(adapter.stairs == null and adapter.ladder == null and not adapter.leg_ik.active and is_instance_valid(adapter.carry_passenger), "Afterwards nothing of stairs or ladder is left and the carry is intact")
 
 	await f.dispose(self)
 	print("Traversal loaded carrier: %d checks, %d failure(s)" % [checks, failures])
