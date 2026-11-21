@@ -1,5 +1,7 @@
 # Procedural animation layer: approach and next steps
 
+> **Superseded (Task 07, 2026-11-21).** The current architecture and paths are in [docs/animation.md](../animation.md). This dated report is kept as history; its paths and class names (`UnitVisualAdapter`, `presentation/characters/runtime/`) no longer exist.
+
 Status 2026-11-18. This records how the procedural pass on MIRA Zero and the AUG was built, how it was checked, what it does not do, and the order in which to continue. It is **presentation only**: nothing here reads or writes tactical state, replay data or pathing. The result was reviewed by the project owner, who judged it considerably better than the previous placeholders and far from finished.
 
 ## What it does today

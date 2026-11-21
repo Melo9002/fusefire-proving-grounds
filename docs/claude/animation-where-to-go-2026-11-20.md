@@ -1,5 +1,7 @@
 # Animation: where do I go to change X?
 
+> **Superseded (Task 07, 2026-11-21).** The current architecture and paths are in [docs/animation.md](../animation.md). This dated report is kept as history; its paths and class names (`UnitVisualAdapter`, `presentation/characters/runtime/`) no longer exist.
+
 A short navigation guide for character animation. It has two kinds of paths and they must not be confused: **Today** paths exist in the repository right now (each was checked); **After Task 07** paths are the *proposed* homes from [the module organisation design](animation-module-organization-2026-11-20.md) and do **not** exist yet. Until the migration, use the "Today" column. Deeper reading: [ownership and contracts](animation-ownership-contracts-2026-11-20.md), [rig profiles](animation-rig-profiles-2026-11-20.md), [testing guide](testing-developer-guide-2026-11-20.md).
 
 Maintained animation documentation will live under `docs/` (owner decision, 2026-11-20); this dated guide is the starting point for it and the research reports stay in `docs/claude/`.

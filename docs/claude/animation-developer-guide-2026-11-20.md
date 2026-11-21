@@ -1,5 +1,7 @@
 # Animation developer guide: "If I want to change X, where do I go?"
 
+> **Superseded (Task 07, 2026-11-21).** The current architecture and paths are in [docs/animation.md](../animation.md). This dated report is kept as history; its paths and class names (`UnitVisualAdapter`, `presentation/characters/runtime/`) no longer exist.
+
 Explanatory only (companion to [animation-architecture-audit-2026-11-20.md](animation-architecture-audit-2026-11-20.md)). Paths are real as of 2026-11-20; `RT` = `presentation/characters/runtime/`. Items marked *(uncommitted)* exist in the working tree but not yet in `main`.
 
 ## The 60-second picture

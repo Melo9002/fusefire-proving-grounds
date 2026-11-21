@@ -6,7 +6,8 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 
 | Document | What it is |
 | --- | --- |
-| [Procedural animation layer](animation-procedural-layer.md) | The cover crouch, kneel and weapon-grip approach, how it was measured and checked, its limits and the ordered next steps. |
+| [Character animation (current guide)](../animation.md) | The maintained architecture and developer guide (Task 07 final). |
+| [Procedural animation layer](animation-procedural-layer.md) (superseded) | The cover crouch, kneel and weapon-grip approach, how it was measured and checked, its limits and the ordered next steps. |
 | [AI decision pipeline](ai-decision-pipeline.md) | How one AI decision flows from the battle to a committed action and who owns each stage (milestone 05 step 4). |
 | [AI baseline, step 2](ai-baseline-2026-11-18.md) | The 48-match baseline: metrics, classifications, planning time. |
 | [AI controlled scenarios, step 3](ai-scenarios-2026-11-18.md) | Fixed decision scenarios with legal options and reasoned expectations. |
@@ -37,7 +38,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [movement-foundations-02-2026-11-20.md](movement-foundations-02-2026-11-20.md) | Prototype: opt-in corridor path refinement and stair foot placement (model, planner, policy, pelvis, leg IK), measurements, findings (0.5 m risers), tests, limitations |
 | [movement-foundations-03-2026-11-20.md](movement-foundations-03-2026-11-20.md) | Traversal hardening: timing contract (tactical first, barrier, deadline), explicit ladder/stairs/ramp classification, stair and ramp geometry assessment, path-refiner scan of 120 routes, round-object investigation, loaded-carrier findings |
 | [animation-architecture-audit-2026-11-20.md](animation-architecture-audit-2026-11-20.md) | Task 02 audit: component inventory, diagrams, ownership matrix, dependency analysis, reusability (contexts, rigs, non-humanoids), ranked findings (incl. confirmed spine-twist defect), strengths, tests and performance |
-| [animation-developer-guide-2026-11-20.md](animation-developer-guide-2026-11-20.md) | "If I want to change X, where do I go?" for gait, turning, weapon, cover, rescue, ladder, stairs, rig proportions |
+| [animation-developer-guide-2026-11-20.md](animation-developer-guide-2026-11-20.md) | (superseded by [animation.md](../animation.md)) "If I want to change X, where do I go?" for gait, turning, weapon, cover, rescue, ladder, stairs, rig proportions |
 | [foundation-closure-2026-11-20.md](foundation-closure-2026-11-20.md) | Closure of Movement Foundations 01-03 and audit F-04: final ramp contract, stair alignment correction, spine composition fix, validation results, checkpoint inventory |
 | [test-suite-efficiency-2026-11-20.md](test-suite-efficiency-2026-11-20.md) | Task 02.5: where the 37-minute full run goes, the test catalog and classification, FAST/SMOKE/changed selection, stale and flaky findings, retirement ledger, validation and recommendations |
 | [testing-developer-guide-2026-11-20.md](testing-developer-guide-2026-11-20.md) | "I changed X, which tests do I run?": verified commands, recipes per kind of change, registering a new test |
