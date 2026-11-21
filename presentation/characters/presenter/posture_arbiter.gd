@@ -1,7 +1,8 @@
 class_name PostureArbiter
 extends RefCounted
 ## Source-keyed posture arbitration (Task 04, section 6.4). Pure shared policy: it knows nothing about cover, tactical units or any particular posture.
-##  * A request is (source, posture, priority, yaw offset). The same source replaces its own request.
+##  * A request is (source, posture, priority, yaw offset, depth). `depth` is how far into the posture the requester wants the body, in metres of lowering (0 when it does not care);
+##    the arbiter only carries it with the winning request, it never interprets it. The same source replaces its own request.
 ##  * The winner has the highest priority; equal priorities go to the MOST RECENTLY CHANGED request (a call-order counter, so replays are deterministic).
 ##  * An identical repeated request is a no-op and does NOT refresh the order, so per-frame idempotent calls cannot reorder anything.
 ##  * release(source), release_prefix(prefix) and teardown() withdraw requests. With none, the posture is STAND.
@@ -12,15 +13,16 @@ class Request extends RefCounted:
 	var posture: int
 	var priority: int
 	var yaw_offset: float
+	var depth: float
 	var sequence: int
 
 var _requests: Dictionary = {}   # source -> Request
 var _overrides: Dictionary = {}  # override source -> true
 var _sequence := 0
 
-func set_posture(source: StringName, posture: PresentationTypes.Posture, priority: int, yaw_offset := 0.0) -> void:
+func set_posture(source: StringName, posture: PresentationTypes.Posture, priority: int, yaw_offset := 0.0, depth := 0.0) -> void:
 	var existing: Request = _requests.get(source)
-	if existing != null and existing.posture == posture and existing.priority == priority and is_equal_approx(existing.yaw_offset, yaw_offset):
+	if existing != null and existing.posture == posture and existing.priority == priority and is_equal_approx(existing.yaw_offset, yaw_offset) and is_equal_approx(existing.depth, depth):
 		return
 	_sequence += 1
 	var request := Request.new()
@@ -28,6 +30,7 @@ func set_posture(source: StringName, posture: PresentationTypes.Posture, priorit
 	request.posture = posture
 	request.priority = priority
 	request.yaw_offset = yaw_offset
+	request.depth = depth
 	request.sequence = _sequence
 	_requests[source] = request
 
@@ -62,6 +65,10 @@ func resolved_yaw_offset() -> float:
 	var best := _winner()
 	return 0.0 if best == null else best.yaw_offset
 
+func resolved_depth() -> float:
+	var best := _winner()
+	return 0.0 if best == null else best.depth
+
 func resolved_source() -> StringName:
 	var best := _winner()
 	return &"" if best == null else best.source
@@ -87,7 +94,7 @@ func report() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for request: Request in _requests.values():
 		var tied := winner != null and request != winner and request.priority == winner.priority
-		rows.append({"source": request.source, "posture": request.posture, "priority": request.priority, "sequence": request.sequence,
+		rows.append({"source": request.source, "posture": request.posture, "priority": request.priority, "depth": request.depth, "sequence": request.sequence,
 			"winner": request == winner, "tied_with_winner": tied, "overridden": is_overridden()})
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.sequence) < int(b.sequence))
 	return rows

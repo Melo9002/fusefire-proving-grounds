@@ -44,6 +44,20 @@ var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
 var knee_poles: Array[Marker3D] = []
 var crouch_modifier: CoverCrouchModifier
+## The shared presentation state of this character (time, reported velocity, facing, the moving decision, posture requests). Every host of a rig (the tactical adapter, the workbench)
+## ticks it once per frame from its own `_process`; while hosts inherit the rig it is a bound component, afterwards it becomes the node that ticks.
+var presenter := CharacterPresenter.new(self)
+## The posture the body has actually reached (the ramps below), so a posture request is followed over time and never snaps. Owned here because the rig applies poses; the REQUEST is the
+## presenter's (PostureArbiter). `_cover_yaw` is the visual root's yaw, which is the posture's yaw offset once reached.
+var _crouch_depth := 0.0
+var _kneel := 0.0
+var _cover_yaw: float:
+	get: return character_root.rotation.y if is_instance_valid(character_root) else 0.0
+	set(value):
+		if is_instance_valid(character_root):
+			character_root.rotation.y = value
+## Width of the depth range over which the crouch gives way to kneeling (metres past the deepest natural crouch).
+const KNEEL_BLEND_RANGE := 0.08
 ## Places the weapon's hand targets from the shoulder of the current skeleton pass (see WeaponPoseModifier).
 var weapon_pose_modifier: WeaponPoseModifier
 ## False falls back to the legacy path: targets computed in `_process` from the shoulder as the animation leaves it,
@@ -773,6 +787,27 @@ func _loaded_locomotion() -> bool:
 ## Once per frame: the speed the character is ACTUALLY moving at (the tactical layer's, or the workbench's preview) and how fast its heading is changing,
 ## in, the legs' cadence, gait blend and the body's lean out. The speed the legs respond to follows the real speed with the profile's rise and fall
 ## limits; it never drives movement. Idle is a speed of zero: this is also what settles the gait to a stop.
+func _exit_tree() -> void:
+	presenter.teardown()
+
+
+## Follows the resolved posture request one frame: the crouch depth and the kneel blend ease toward what the request needs (profile speeds), and when `drive_yaw` the body yaw eases to the
+## requested offset by the shortest way. This is the ONLY writer of the posture ramps. `depth_request` is the unclamped lowering the request asks for: up to the deepest natural crouch it is a
+## crouch, beyond it the character goes down on one knee.
+func apply_posture_target(depth_request: float, yaw_goal: float, delta: float, profile: CoverPostureProfile, drive_yaw := true) -> void:
+	if crouch_modifier == null:
+		return
+	_crouch_depth = move_toward(_crouch_depth, crouch_modifier.clamp_depth(depth_request), profile.crouch_speed * delta)
+	crouch_modifier.depth = _crouch_depth
+	var kneel_target := clampf((depth_request - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
+	_kneel = move_toward(_kneel, kneel_target, profile.kneel_speed * delta)
+	crouch_modifier.kneel = _kneel
+	if drive_yaw:
+		# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
+		var step := deg_to_rad(profile.turn_degrees_per_second) * delta
+		_cover_yaw = wrapf(_cover_yaw + clampf(angle_difference(_cover_yaw, yaw_goal), -step, step), -PI, PI)
+
+
 ## True when the locomotion presentation was already fed on this engine frame (a tool or test drove it directly), so a second feed would advance the smoothing twice.
 func locomotion_fed_this_frame() -> bool:
 	return _locomotion_fed_frame == Engine.get_process_frames()

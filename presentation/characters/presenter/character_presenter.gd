@@ -29,6 +29,7 @@ var postures := PostureArbiter.new()
 var _age := 1.0
 var _authority_known := false
 var _authority_moving := false
+var _scripted := false
 
 ## A character with no movement authority (tools, tests, a workbench) counts as moving for this long after its last report.
 const UNAUTHORIZED_MOVING_SECONDS := 0.15
@@ -43,6 +44,16 @@ func set_movement_authority(moving: bool) -> void:
 
 func clear_movement_authority() -> void:
 	_authority_known = false
+
+## Scripted motion for a host that authors its own movement (the animation workbench's preview): the given speed and heading rate are fed to the gait EXACTLY as given every tick, including a
+## heading rate while the speed is zero. It replaces the movement inference and any authority until cleared.
+func set_scripted_motion(scripted_speed: float, scripted_heading_rate: float) -> void:
+	_scripted = true
+	speed = scripted_speed
+	heading_rate = scripted_heading_rate
+
+func clear_scripted_motion() -> void:
+	_scripted = false
 
 ## The latest report of how the character is moving (world metres per second). Facing follows it: the character turns toward the velocity at `turn_speed_degrees`, and the heading rate
 ## that results (which banks the body into the turn) is remembered for the gait. A near-zero velocity changes nothing (the previous facing and report stand until tick() settles them).
@@ -66,6 +77,9 @@ func tick(delta: float) -> void:
 	last_tick_frame = Engine.get_process_frames()
 	if not is_instance_valid(rig) or rig.locomotion_fed_this_frame():
 		return
+	if _scripted:
+		rig.update_locomotion_presentation(speed, heading_rate, delta)
+		return
 	_age += delta
 	var moving := _authority_moving if _authority_known else _age < UNAUTHORIZED_MOVING_SECONDS
 	rig.update_locomotion_presentation(speed if moving else 0.0, heading_rate if moving else 0.0, delta)
@@ -73,6 +87,12 @@ func tick(delta: float) -> void:
 		speed = 0.0
 		heading_rate = 0.0
 		velocity = Vector3.ZERO
+
+## Resolves the persistent posture request (`postures`) and has the rig follow it for one frame. Call once per frame, after the host has set or released its requests. `drive_yaw` is false for a
+## host that moves the body yaw itself. The rig does the posing; this only chooses what it should follow.
+func apply_posture(delta: float, profile: CoverPostureProfile, drive_yaw := true) -> void:
+	if is_instance_valid(rig):
+		rig.apply_posture_target(postures.resolved_depth(), postures.resolved_yaw_offset(), delta, profile, drive_yaw)
 
 ## The persistent state as a snapshot. Velocity and yaw are derived from what the presenter reported and the rig shows, not stored twice; readiness is the rig's own WeaponReadiness.
 func intent() -> PresentationIntent:
@@ -85,6 +105,7 @@ func intent() -> PresentationIntent:
 	snapshot.facing_mode = PresentationTypes.FacingMode.FOLLOW_VELOCITY if speed > 0.0 else PresentationTypes.FacingMode.HOLD
 	snapshot.posture = postures.resolved()
 	snapshot.posture_yaw_offset = postures.resolved_yaw_offset()
+	snapshot.posture_depth = postures.resolved_depth()
 	return snapshot
 
 ## Releases everything the presenter holds: no posture request outlives the character.
@@ -94,3 +115,4 @@ func teardown() -> void:
 	heading_rate = 0.0
 	velocity = Vector3.ZERO
 	_authority_known = false
+	_scripted = false

@@ -40,9 +40,6 @@ func get_camera_height() -> float:
 	return maxf(0.2, camera_body_height * global_basis.y.length())
 
 var tactical_unit: TacticalUnit
-## The shared presentation state of this character: presentation time, reported velocity, velocity-following facing and the moving decision (Task 07 package 2).
-## This node is still the rig, so the presenter is a bound component that this node ticks once per frame from `_process`.
-var presenter := CharacterPresenter.new(self)
 ## Where the rescued actor lies, while the carrier is still walking to it (see present_pickup); INF when no pickup is waiting.
 var _pending_pickup_world := Vector3.INF
 var _pending_lying_basis = null
@@ -298,7 +295,7 @@ func _apply_team_accent() -> void:
 	_team_accent.material_override = material
 
 func _exit_tree() -> void:
-	presenter.teardown()
+	super()   # the rig releases the presenter (no posture request outlives the character)
 	# Skeleton modifiers can emit once more while their hierarchy is being
 	# removed. Disconnect before descendants lose legal global transforms.
 	if is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_align_weapon_to_aim):
@@ -517,12 +514,8 @@ func _sync_aim_hold(delta: float) -> void:
 ## wall, turning side-on to peek along it when aiming. In both, the rifle stays in its relaxed carry
 ## until she aims or shoots. Presentation only.
 ## All cover numbers (crouch depths, clearances, turn rate, peek and protected yaw, edge selection) are CoverPostureProfile's (`cover_profile`).
-const CROUCH_SPEED := 1.1
-const KNEEL_BLEND_RANGE := 0.08
-const KNEEL_SPEED := 2.5
-var _crouch_depth := 0.0
-var _kneel := 0.0
-var _cover_yaw := 0.0
+## The posture source this unit's cover policy requests under (see CharacterPresenter.postures); the applied ramps (`_crouch_depth`, `_kneel`, `_cover_yaw`) live in the rig.
+const COVER_POSTURE_SOURCE := &"tactical/cover"
 ## Which wall edge the unit would peek around (CoverEdgeSelector.Side), kept stable by hysteresis; NONE when there is no usable edge or no cover.
 var cover_side := 0
 ## The plan for the attack being presented (CoverEdgeSelector.plan_attack): {} when none. Built from the authorized attack's target position only, held until the
@@ -566,23 +559,20 @@ func _cover_crouch_request() -> float:
 		return 0.0
 	return cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), aim_blend, crouch_modifier.standing_head_height)
 
-func _cover_crouch_target() -> float:
-	return crouch_modifier.clamp_depth(_cover_crouch_request()) if crouch_modifier != null else 0.0
-
+## Cover POLICY, once per frame: what the cover the unit is in asks of the body, handed to the presenter as a persistent posture request (released when there is no cover pose), and then
+## the presenter resolves and the rig applies it. Nothing here writes the crouch, kneel or body yaw any more.
 func _sync_cover_crouch(delta: float) -> void:
 	if crouch_modifier == null:
 		return
 	_update_cover_side()
-	_crouch_depth = move_toward(_crouch_depth, _cover_crouch_target(), cover_profile.crouch_speed * delta)
-	crouch_modifier.depth = _crouch_depth
-	# Cover lower than the deepest natural crouch can hide behind: go down on one knee.
-	var kneel_target := clampf((_cover_crouch_request() - crouch_modifier.max_depth) / KNEEL_BLEND_RANGE, 0.0, 1.0)
-	_kneel = move_toward(_kneel, kneel_target, cover_profile.kneel_speed * delta)
-	crouch_modifier.kneel = _kneel
-	# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
-	var step := deg_to_rad(cover_profile.turn_degrees_per_second) * delta
-	_cover_yaw = wrapf(_cover_yaw + clampf(angle_difference(_cover_yaw, _cover_yaw_target(aim_blend)), -step, step), -PI, PI)
-	character_root.rotation.y = _cover_yaw
+	var request := _cover_crouch_request()
+	if _cover_kind() == MapCellData.CoverType.NONE:
+		presenter.postures.release(COVER_POSTURE_SOURCE)
+	else:
+		# The posture KIND is the classification (a kneel once the kneel blend is past halfway); the rig derives the continuous blend from the depth itself.
+		var posture := PresentationTypes.Posture.KNEEL if request > crouch_modifier.max_depth + KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
+		presenter.postures.set_posture(COVER_POSTURE_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, _cover_yaw_target(aim_blend), request)
+	presenter.apply_posture(delta, cover_profile)
 
 ## Body yaw OFFSET (relative to the unit's tactical facing) the cover pose asks for at a given weapon blend (see CoverPostureProfile, "facing contract"):
 ## protected, the body turns toward the chosen peek edge; aiming over low cover it faces the target squarely; aiming around full cover it turns slightly

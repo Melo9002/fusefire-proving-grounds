@@ -12,6 +12,8 @@ var turn_goal := NAN
 ## Cover bench (the test panel's Cover row): a synthetic wall with chosen edge distances. The side comes from the production CoverEdgeSelector.choose and the pose
 ## from the production CoverPostureProfile (yaw_offset, crouch_request), exactly what UnitVisualAdapter uses in the game. Empty = no cover scenario.
 var cover_demo := {}
+const COVER_DEMO_SOURCE := &"workbench/cover"
+const POSE_PRESET_SOURCE := &"workbench/pose_preset"
 var cover_side := 0
 ## Target-aware firing in the bench: the scripted AUTHORIZED target (a position relative to the unit, in the unit's own frame at rest: +z toward the wall, -x its right) and
 ## the plan the production CoverEdgeSelector.plan_attack makes from it. Empty = passive cover. (In the game the same plan comes from the attack result's target position.)
@@ -243,7 +245,8 @@ func _process(_delta: float) -> void:
 		heading_rate = angle_difference(yaw_before, character_root.rotation.y) / maxf(_delta, 0.0001)
 		if is_equal_approx(character_root.rotation.y, turn_goal):
 			turn_goal = NAN
-	update_locomotion_presentation(preview_speed if walking else 0.0, heading_rate, _delta)
+	presenter.set_scripted_motion(preview_speed if walking else 0.0, heading_rate)   # authored preview motion, fed as given (a turn preview keeps its heading rate while idle)
+	presenter.tick(_delta)
 	_apply_cover_demo(_delta)
 	_advance_ladder_demo(_delta)
 	_advance_stair_demo(_delta)
@@ -307,8 +310,15 @@ func _pose_preset_depth() -> float:
 func _ramp_pose_preset(delta: float) -> void:
 	if crouch_modifier == null or Engine.is_editor_hint() or not cover_demo.is_empty():
 		return
-	crouch_modifier.depth = move_toward(crouch_modifier.depth, _pose_preset_depth(), UnitVisualAdapter.CROUCH_SPEED * delta)
-	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, 1.0 if _pose_preset == 2 else 0.0, UnitVisualAdapter.KNEEL_SPEED * delta)
+	# A diagnostic preset is a BASE-priority posture request: a cover demo (CONTEXT) wins over it, and releasing the preset returns to standing.
+	if _pose_preset == 0:
+		presenter.postures.release(POSE_PRESET_SOURCE)
+	else:
+		var posture := PresentationTypes.Posture.KNEEL if _pose_preset == 2 else PresentationTypes.Posture.CROUCH
+		# A kneel is asked for as one blend range past the deepest crouch.
+		var request := _pose_preset_depth() + (KNEEL_BLEND_RANGE if _pose_preset == 2 else 0.0)
+		presenter.postures.set_posture(POSE_PRESET_SOURCE, posture, PresentationTypes.PRIORITY_BASE, 0.0, request)
+	presenter.apply_posture(delta, cover_profile, false)
 
 ## X: cycles fixed diagnostic camera views. The close-ups follow the hands as the pose changes.
 func _cycle_diagnostic_view() -> void:
@@ -355,6 +365,7 @@ func set_cover_demo(spec: Dictionary) -> void:
 	_cover_group = null
 	if spec.is_empty():
 		cover_side = 0
+		presenter.postures.release(COVER_DEMO_SOURCE)
 		animation_controller.play(&"rifle_idle")
 		return
 	cover_target = null
@@ -457,13 +468,13 @@ func _apply_cover_demo(delta: float) -> void:
 	var spec := cover_demo
 	var blend := weapon_blend()
 	var request := cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, crouch_modifier.standing_head_height)
-	crouch_modifier.depth = move_toward(crouch_modifier.depth, crouch_modifier.clamp_depth(request), cover_profile.crouch_speed * delta)
-	var kneel_target := clampf((request - crouch_modifier.max_depth) / 0.08, 0.0, 1.0)
-	crouch_modifier.kneel = move_toward(crouch_modifier.kneel, kneel_target, cover_profile.kneel_speed * delta)
 	var yaw_goal := cover_profile.yaw_offset(bool(spec.full), cover_side, blend)
 	if not cover_plan.is_empty():
 		yaw_goal = cover_profile.attack_yaw_offset(cover_side, int(cover_plan.side), blend)
-	character_root.rotation.y = rotate_toward(character_root.rotation.y, yaw_goal, deg_to_rad(cover_profile.turn_degrees_per_second) * delta)
+	# The demo is a CONTEXT-priority posture request, followed by the same shared ramp the tactical unit uses.
+	var posture := PresentationTypes.Posture.KNEEL if request > crouch_modifier.max_depth + KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
+	presenter.postures.set_posture(COVER_DEMO_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, yaw_goal, request)
+	presenter.apply_posture(delta, cover_profile, true)
 	if is_instance_valid(_cover_group):
 		for edge in ["Edge_left", "Edge_right"]:
 			var marker := _cover_group.get_node_or_null(edge) as Node3D

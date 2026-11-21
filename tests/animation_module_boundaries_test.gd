@@ -81,5 +81,16 @@ func _run() -> void:
 		var base := RegEx.create_from_string("(?m)^extends\\s+(\\w+)").search(code)
 		check(base != null and base.get_string(1) in ["RefCounted", "Resource", "Object"], "%s must stay a pure RefCounted/Resource solver (extends %s)" % [path, base.get_string(1) if base else "nothing"])
 		check(RegEx.create_from_string("\\bget_tree\\(|\\bget_node\\(|\\badd_child\\(|\\$[A-Za-z]").search(code) == null, "%s touches the scene tree; solvers take numbers and return data" % path)
+	# Single writers (Task 07 package 3): the posture ramps and the locomotion feed have ONE owner. Only the rig applies the crouch/kneel (plus the rescue carry, which still writes them directly),
+	# and only the presenter and the rig reach the locomotion feed; no host (adapter, workbench, panels) bypasses them.
+	var ramp_writer := RegEx.create_from_string("crouch_modifier\\.(depth|kneel)\\s*=[^=]")
+	var feed_caller := RegEx.create_from_string("update_locomotion_presentation\\(")
+	var hosts := _scripts("presentation") + _scripts("art/characters")
+	for path in hosts:
+		var code := _code(path)
+		if path != "presentation/characters/runtime/character_rig.gd":
+			check(ramp_writer.search(code) == null, "%s writes the crouch depth or kneel directly: only CharacterRig applies the posture ramps" % path)
+		if path != "presentation/characters/runtime/character_rig.gd" and path != "presentation/characters/presenter/character_presenter.gd":
+			check(feed_caller.search(code) == null, "%s calls the locomotion feed directly: it goes through CharacterPresenter.tick" % path)
 	print("Animation module boundaries: %d checks, %d failure(s); %d known gameplay importer(s) remain" % [checks, failures, importers.size()])
 	quit(1 if failures else 0)

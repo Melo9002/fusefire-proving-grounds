@@ -199,6 +199,8 @@
   "portrait_bar_smoke": {"sub": ["ui"], "scope": "battle", "fast": true},
   "pose_review_capture": {"sub": ["animation", "assets"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "posture_arbiter_test": {"sub": ["animation"], "scope": "unit", "fast": true},
+  "posture_ownership_test": {"sub": ["animation"], "scope": "integration", "fast": true},
+  "presentation_frame_driver_test": {"sub": ["animation"], "scope": "integration", "fast": true},
   "protect_rescue_ai_smoke": {"sub": ["ai", "missions", "rescue"], "scope": "battle"},
   "prototype_1_milestone": {"sub": ["tooling"], "scope": "e2e", "run": "explicit", "kind": "batch"},
   "replay_actor_continuity_test": {"sub": ["replay"], "scope": "unit", "crit": "critical", "contracts": ["replay"], "smoke": true, "fast": true},

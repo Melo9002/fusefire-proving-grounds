@@ -9,5 +9,6 @@ var facing_point := Vector3.ZERO                              ## FACE_POINT: a w
 var facing_yaw := 0.0                                         ## FACE_YAW: radians, world
 var posture: PresentationTypes.Posture = PresentationTypes.Posture.STAND
 var posture_yaw_offset := 0.0                                 ## a body offset the context wants held, radians
+var posture_depth := 0.0                                      ## how far into the posture, metres of lowering the winning request asked for
 var readiness: WeaponReadiness.Level = WeaponReadiness.Level.LOWERED
 var equipment: PresentationTypes.EquipmentState = PresentationTypes.EquipmentState.HELD
