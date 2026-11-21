@@ -28,7 +28,7 @@ func _run() -> void:
 		await _scenario(directory, String(args[index]), images)
 	quit(0)
 
-func _views(rig: UnitVisualAdapter, focus_y: float) -> Array:
+func _views(rig: TacticalCharacterAdapter, focus_y: float) -> Array:
 	var basis := rig.rig.character_root.global_basis.orthonormalized()
 	var origin := rig.global_position + Vector3.UP * focus_y
 	return [

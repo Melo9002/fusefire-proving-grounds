@@ -29,7 +29,7 @@ func _round3(value: Vector3) -> Array:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO  # the scene hangs 1 m below the unit centre; stand it on the floor here
 	for i in 20: await process_frame

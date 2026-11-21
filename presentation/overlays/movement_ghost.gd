@@ -2,7 +2,7 @@ class_name MovementGhost
 extends Node3D
 ## Same presentation rig/clips and destination cover rules; no TacticalUnit or actions.
 const FallbackVisual := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
-var model: UnitVisualAdapter
+var model: TacticalCharacterAdapter
 var source_id := 0
 var destination := Vector3.ZERO
 
@@ -15,7 +15,7 @@ func show_destination(actor: TacticalUnit, cell: Vector3i, grid: GridManager) ->
 		clear()
 		source_id = actor.get_instance_id()
 		var scene: PackedScene = load(source.scene_file_path) if not source.scene_file_path.is_empty() else FallbackVisual
-		model = scene.instantiate() as UnitVisualAdapter
+		model = scene.instantiate() as TacticalCharacterAdapter
 		# Share authored assets/calibration; never clone the live unit or its stats.
 		for property in source.get_property_list():
 			if property.usage & PROPERTY_USAGE_STORAGE and property.usage & PROPERTY_USAGE_EDITOR and property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:

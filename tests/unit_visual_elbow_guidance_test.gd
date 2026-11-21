@@ -2,12 +2,12 @@ extends SceneTree
 ## Swivel-preserving elbow guidance (animation improvement 05B). While aiming, the elbow poles are built each pass from the
 ## shoulder, the wrist target and the chest's down, with the bend-plane swivel the standing aim has. Compared with the
 ## fixed standing-space guides (`elbow_guidance_enabled = false`, the A/B reference) the right elbow keeps its direction
-## relative to the torso when the body drops, without moving a hand target. Production UnitVisualAdapter path, sampled
+## relative to the torso when the body drops, without moving a hand target. Production TacticalCharacterAdapter path, sampled
 ## after the skeleton's modifiers.
 
 var failures := 0
 var checks := 0
-var rig: UnitVisualAdapter
+var rig: TacticalCharacterAdapter
 var skeleton: Skeleton3D
 var diagnostics: HandContactDiagnostics
 var latest := {}
@@ -104,7 +104,7 @@ func _transition(from_pose: Array, to_pose: Array) -> Dictionary:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	rig = load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	rig = load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	for i in 30: await process_frame
 	skeleton = rig.rig.skeleton

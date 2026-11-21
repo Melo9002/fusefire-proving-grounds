@@ -4,7 +4,7 @@ extends SceneTree
 ## An attack from a relaxed carry visibly raises the weapon, shows the shot only once the weapon is in its firing
 ## configuration, recovers and releases; from an already aimed pose there is no raise; the target reacts after the
 ## shot; higher-priority presentations cancel the sequence cleanly; the tactical result is untouched. Runs on the
-## production UnitVisualAdapter, standalone and inside a real battle fixture (cover).
+## production TacticalCharacterAdapter, standalone and inside a real battle fixture (cover).
 const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
 
 var failures := 0
@@ -22,7 +22,7 @@ func check(ok: bool, message: String) -> void:
 func _new_rig() -> Array:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 30: await process_frame
@@ -32,7 +32,7 @@ func _new_rig() -> Array:
 	return [stage, rig, diagnostics]
 
 ## Runs one attack to the end of its sequence, one record per frame.
-func _sequence(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, target: Vector3, max_seconds := 3.0) -> Array:
+func _sequence(rig: TacticalCharacterAdapter, diagnostics: HandContactDiagnostics, target: Vector3, max_seconds := 3.0) -> Array:
 	var rows: Array = []
 	rig.present_attack(target)
 	var started: float = rig.presenter.time
@@ -44,7 +44,7 @@ func _sequence(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, targ
 	rows.append(_row(rig, diagnostics, started))
 	return rows
 
-func _row(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, started: float) -> Dictionary:
+func _row(rig: TacticalCharacterAdapter, diagnostics: HandContactDiagnostics, started: float) -> Dictionary:
 	var sample: Dictionary = diagnostics.latest
 	var row := {
 		"t": rig.presenter.time - started, "phase": rig.presenter.attack.phase, "state": rig.get_presentation_state(),
@@ -58,7 +58,7 @@ func _row(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, started: 
 		row["elbow_support"] = float(sample.hands[1].elbow_angle_deg)
 	return row
 
-func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
+func _stock_error(rig: TacticalCharacterAdapter, sample: Dictionary) -> float:
 	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
@@ -83,7 +83,7 @@ func _until_release(rows: Array) -> Array:
 		kept.append(row)
 	return kept
 
-func _quiet(rig: UnitVisualAdapter) -> void:
+func _quiet(rig: TacticalCharacterAdapter) -> void:
 	for i in 30: await process_frame
 	await create_timer(0.8).timeout
 	for i in 3: await process_frame
@@ -110,7 +110,7 @@ func _run() -> void:
 	check(profile.lowered_angles_degrees == Vector3(35, 40, -8) and profile.lowered_grip == Vector3(-0.08, 1.16, 0.15) and is_equal_approx(profile.scale, 0.82), "The AUG's carry values and scale moved into the profile unchanged")
 
 	var made: Array = await _new_rig()
-	var rig: UnitVisualAdapter = made[1]
+	var rig: TacticalCharacterAdapter = made[1]
 	var diagnostics: HandContactDiagnostics = made[2]
 	check(rig.get_presentation_state() == &"rifle_idle" and rig.rig.aim_blend < 0.01 and rig.readiness_level() == WeaponReadiness.Level.LOWERED, "A fresh unit carries the weapon lowered")
 	var forward := rig.global_basis.z
@@ -248,7 +248,7 @@ func _run() -> void:
 
 	# 8. A carrier holds nothing, never raises, and attack requests do not break the carry.
 	var carry_made: Array = await _new_rig()
-	var carrier: UnitVisualAdapter = carry_made[1]
+	var carrier: TacticalCharacterAdapter = carry_made[1]
 	carrier.preview_carrying = true
 	carrier.present_idle()
 	await create_timer(0.5).timeout

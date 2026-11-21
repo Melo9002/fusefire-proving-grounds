@@ -1,6 +1,6 @@
 extends SceneTree
 ## Hand-contact diagnostic captures (explicit-only; images need a display, the numbers do not).
-## Drives the production UnitVisualAdapter through the same states and cover contexts the game uses, with
+## Drives the production TacticalCharacterAdapter through the same states and cover contexts the game uses, with
 ## HandContactDiagnostics attached, and writes for every pose: a full-body sheet, a hands close-up sheet
 ## and the measurements, so before/after comparisons are made on fixed cameras and fixed numbers.
 ##   godot_console --path . --script res://tests/hand_contact_capture.gd -- <directory> <tag> [poses] [legacy]
@@ -25,7 +25,7 @@ var _images := true
 func _initialize() -> void:
 	_run.call_deferred()
 
-func _facing(rig: UnitVisualAdapter) -> Basis:
+func _facing(rig: TacticalCharacterAdapter) -> Basis:
 	return rig.rig.character_root.global_basis.orthonormalized()
 
 func _snap(camera: Camera3D, position_value: Vector3, look_at_value: Vector3, fov: float, tile: Vector2i) -> Image:
@@ -49,7 +49,7 @@ func _sheet(tiles: Array[Image], tile: Vector2i) -> Image:
 		sheet.blit_rect(tiles[index], Rect2i(Vector2i.ZERO, tile), Vector2i(index * tile.x, 0))
 	return sheet
 
-func _apply(rig: UnitVisualAdapter, entry: String) -> void:
+func _apply(rig: TacticalCharacterAdapter, entry: String) -> void:
 	var state := entry.split("@")[0].replace("+aim", "")
 	rig.presenter.aim.held = entry.ends_with("+aim")
 	rig.presenter.aim.release_left = 1000000.0
@@ -110,7 +110,7 @@ func _run() -> void:
 	floor_material.albedo_color = Color(0.11, 0.14, 0.18)
 	floor_mesh.material_override = floor_material
 	stage.add_child(floor_mesh)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO  # the scene hangs 1 m below the unit centre; stand it on the floor here
 	var camera := Camera3D.new()

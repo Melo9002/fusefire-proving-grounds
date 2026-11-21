@@ -223,7 +223,7 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 ## Runs one production attack to completion, sampling the muzzle per frame and the presentation states passed through.
-func _fire_and_measure(f, adapter: UnitVisualAdapter, actor: TacticalUnit, enemy: TacticalUnit, observed: Dictionary) -> void:
+func _fire_and_measure(f, adapter: TacticalCharacterAdapter, actor: TacticalUnit, enemy: TacticalUnit, observed: Dictionary) -> void:
 	var done: Array = []
 	var attack := func() -> void:
 		await f.battle.try_attack(actor, enemy)

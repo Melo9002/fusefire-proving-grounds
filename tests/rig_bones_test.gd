@@ -81,7 +81,7 @@ func _run() -> void:
 	# ---- The production visual runs from its profile, with nothing missing, and no skeleton name is left in generic production code.
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var visual: UnitVisualAdapter = VISUAL.instantiate()
+	var visual: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(visual)
 	for i in 10:
 		await process_frame

@@ -2,7 +2,7 @@ extends SceneTree
 ## Torso-relative weapon frame (animation improvement 05A). While the chest kicks (a shot, a hit) the aimed weapon
 ## turns with the chest about the stock, so the weapon and both shoulders move as one body: the support hand keeps its
 ## grip. Settled poses, relaxed handling, turning and cover yaw are untouched. `torso_frame_enabled = false` restores the
-## root-frame weapon and is the A/B reference here. Production UnitVisualAdapter path, sampled after the skeleton's
+## root-frame weapon and is the A/B reference here. Production TacticalCharacterAdapter path, sampled after the skeleton's
 ## modifiers.
 
 var failures := 0
@@ -23,7 +23,7 @@ const POSES := [
 	["half-kneel", "cover_low", 0.5],
 ]
 
-func _set_pose(rig: UnitVisualAdapter, state: String, cover: float, aimed: bool) -> void:
+func _set_pose(rig: TacticalCharacterAdapter, state: String, cover: float, aimed: bool) -> void:
 	rig.presenter.aim.held = aimed
 	rig.presenter.aim.release_left = 1000000.0
 	if cover > 0.0:
@@ -37,7 +37,7 @@ func _settle() -> void:
 	await create_timer(1.6).timeout
 	for i in 3: await process_frame
 
-func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
+func _stock_error(rig: TacticalCharacterAdapter, sample: Dictionary) -> float:
 	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
@@ -45,7 +45,7 @@ func _angle(basis: Basis) -> float:
 	return rad_to_deg(basis.get_rotation_quaternion().get_angle())
 
 ## Plays `kick` ("shoot" or "hit") from a settled aimed pose and returns the worst values over the next 0.5 s.
-func _kick(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, kick: StringName) -> Dictionary:
+func _kick(rig: TacticalCharacterAdapter, diagnostics: HandContactDiagnostics, kick: StringName) -> Dictionary:
 	var base: Dictionary = diagnostics.latest
 	var base_support: Vector3 = base.hands[1].palm_in_weapon_frame
 	var base_dominant: Vector3 = base.hands[0].palm_in_weapon_frame
@@ -70,7 +70,7 @@ func _kick(rig: UnitVisualAdapter, diagnostics: HandContactDiagnostics, kick: St
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 30: await process_frame

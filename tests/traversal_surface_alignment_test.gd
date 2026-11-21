@@ -79,7 +79,7 @@ func _run() -> void:
 	f.place(actor, Vector3i(11, 0, 15))
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	adapter.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(adapter))
 	for i in 20: await process_frame
 	for leg in [[Vector3i(11, 3, 12), "up"], [Vector3i(11, 0, 15), "down"]]:

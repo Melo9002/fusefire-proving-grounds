@@ -177,12 +177,12 @@ func _run() -> void:
 func _visual() -> Array:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 	return [stage, v]
 
-func _target(v: UnitVisualAdapter) -> Vector3:
+func _target(v: TacticalCharacterAdapter) -> Vector3:
 	return v.global_position + v.global_basis.z * 6.0
 
 func _drop(stage: Node) -> void:
@@ -192,7 +192,7 @@ func _drop(stage: Node) -> void:
 func _production_visual() -> void:
 	var pair := await _visual()
 	var stage: Node3D = pair[0]
-	var v: UnitVisualAdapter = pair[1]
+	var v: TacticalCharacterAdapter = pair[1]
 	var p := v.presenter
 
 	# A normal attack: the shot handle settles first (the shot is shown), the attack when the release is over; nothing is left behind.
@@ -323,7 +323,7 @@ func _rescue_through_the_presenter() -> void:
 	# The presenter advances the rescue clock, once per frame, and the tactical visual no longer does it from its weapon-pose update.
 	var pair := await _visual()
 	var stage: Node3D = pair[0]
-	var v: UnitVisualAdapter = pair[1]
+	var v: TacticalCharacterAdapter = pair[1]
 	v.preview_carrying = true
 	v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z)
 	var t0 := v.rig.rescue_interaction.time

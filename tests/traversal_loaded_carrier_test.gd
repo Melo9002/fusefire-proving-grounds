@@ -15,7 +15,7 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func _carry_walk(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination: Vector3i, surface: Callable) -> Dictionary:
+func _carry_walk(f, actor: TacticalUnit, adapter: TacticalCharacterAdapter, destination: Vector3i, surface: Callable) -> Dictionary:
 	var done := []
 	var go := func() -> void:
 		done.append(await f.battle.try_move(actor, destination))
@@ -52,7 +52,7 @@ func _run() -> void:
 	f.place(actor, Vector3i(6, 0, 15))
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	for i in 20: await process_frame
 	adapter.preview_carrying = true
 	adapter.rig.begin_carry()

@@ -1,14 +1,14 @@
 extends SceneTree
 ## Enforceable module boundaries for character animation (Task 06 rules, Task 07 safety net). A ratchet: today's known violations are listed and may only shrink, so a NEW dependency fails here.
 ##   1. Shared character presentation (presentation/characters) must not import gameplay (units/, systems/, levels/, ui/, TacticalUnit). Known violators are allowlisted until they move to presentation/tactical.
-##   2. The rig-profile data layer must not depend on runtime nodes (CharacterRig, UnitVisualAdapter, modifiers) or gameplay.
+##   2. The rig-profile data layer must not depend on runtime nodes (CharacterRig, TacticalCharacterAdapter, modifiers) or gameplay.
 ##   3. Pure solvers stay pure: no Node base class and no scene-tree access.
 ## Text-based on purpose: it needs no scene tree and fails with the file and the offending token.
 const GAMEPLAY_PATTERN := "res://(units|systems|levels|ui)/|\\bTacticalUnit\\b|\\bTacticalAction"
 ## Shared character presentation (presentation/characters/) imports no gameplay. The tactical adapter and its policy live in presentation/tactical/ and may.
 const KNOWN_GAMEPLAY_IMPORTERS: Array[String] = []
 const RIG_PROFILE_DIRECTORIES := ["presentation/characters/rig_profile", "presentation/characters/equipment"]
-const RUNTIME_NODE_PATTERN := "\\b(CharacterRig|UnitVisualAdapter|CoverCrouchModifier|LocomotionPoseModifier|WeaponPoseModifier|HandGripModifier|TraversalPoseModifier)\\b"
+const RUNTIME_NODE_PATTERN := "\\b(CharacterRig|TacticalCharacterAdapter|CoverCrouchModifier|LocomotionPoseModifier|WeaponPoseModifier|HandGripModifier|TraversalPoseModifier)\\b"
 const PURE_SOLVER_FILES := [
 	"presentation/characters/motion/stair_foot_planner.gd",
 	"presentation/characters/motion/stair_model.gd",
@@ -105,11 +105,11 @@ func _run() -> void:
 		# Combat presentation ownership (Task 07 package 6): the attack, the aim hold, the timed hit return and the rescue clock live in the presenter. The adapter, the rig and the workbench keep no clock,
 	# timer or lifecycle state of their own for them, and nothing observes the retired signals or polls the retired "pending" accessor.
 	var retired_state := RegEx.create_from_string("_return_generation|_return_to_idle_after|\battack_phase\b|\bAttackPhase\b|_aim_held|_aim_release_left|_presentation_clock|_attack_shot_state|_recover_left|\bshot_fired\b|attack_sequence_ended|is_attack_pending|_retarget_aim_blend|ATTACK_SOURCE|AIM_RELEASE_GRACE")
-	for path in ["presentation/tactical/unit_visual_adapter.gd", "presentation/characters/rig/character_rig.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
+	for path in ["presentation/tactical/tactical_character_adapter.gd", "presentation/characters/rig/character_rig.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
 		var found := retired_state.search(_code(path))
 		check(found == null, "%s still uses retired combat-presentation state (%s): it belongs to CharacterPresenter now" % [path, found.get_string() if found else ""])
-	check(not _code("presentation/tactical/unit_visual_adapter.gd").contains("create_timer("), "The adapter starts no scene-tree timer: timed states are the presenter's (begin_hold)")
-	var advances := RegEx.create_from_string("rescue_interaction\\.advance\\(").search_all(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd"))
+	check(not _code("presentation/tactical/tactical_character_adapter.gd").contains("create_timer("), "The adapter starts no scene-tree timer: timed states are the presenter's (begin_hold)")
+	var advances := RegEx.create_from_string("rescue_interaction\\.advance\\(").search_all(rig_code + _code("presentation/tactical/tactical_character_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd"))
 	check(advances.size() == 1 and rig_code.contains("func advance_rescue_clock("), "The rescue clock is advanced in exactly one place (%d), CharacterRig.advance_rescue_clock, which only the presenter's action stage calls" % advances.size())
 	var stage_callers := RegEx.create_from_string("advance_rescue_clock\\(")
 	for path in _scripts("presentation") + _scripts("art/characters"):
@@ -118,7 +118,7 @@ func _run() -> void:
 	# Facing and persistent-action ownership (Task 07 package 7): the presenter decides facing and the rig applies it. Only the rig writes a yaw (its three appliers and the cover-yaw ramp); no host, adapter or
 	# tactical unit writes the visual root yaw or the cover yaw; the committed Aim's progression and the pending pickup are the presenter's; TacticalUnit keeps no defeat timer for a character that has a lifecycle.
 	var yaw_writer := RegEx.create_from_string("(^|[^_A-Za-z.])rotation\\.y\\s*=[^=]|character_root\\.rotation\\.y\\s*=[^=]|global_rotation\\.y\\s*=[^=]|_cover_yaw\\s*=[^=]")
-	for path in ["presentation/tactical/unit_visual_adapter.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
+	for path in ["presentation/tactical/tactical_character_adapter.gd", "tools/animation_workbench/pose_workbench.gd", "units/tactical_unit.gd", "presentation/tactical/tactical_action_presenter.gd"]:
 		var found_yaw := yaw_writer.search(_code(path))
 		check(found_yaw == null, "%s writes a yaw itself (%s): facing goes through CharacterPresenter and is applied by the rig" % [path, found_yaw.get_string() if found_yaw else ""])
 	check(yaw_writer.search_all(rig_code).size() == 5, "CharacterRig writes a yaw in %d places: the cover-yaw setter, the ramp, apply_facing_yaw, apply_root_yaw and absorb_facing_change are the only ones (5)" % yaw_writer.search_all(rig_code).size())
@@ -126,7 +126,7 @@ func _run() -> void:
 	check(yaw_writer.search_all(presenter_code).size() == 1, "The presenter writes a yaw directly only to follow velocity (everything else goes through the rig's appliers)")
 	check(RegEx.create_from_string("tactical_state|TacticalUnit|TacticalAction").search(presenter_code + _code("presentation/characters/presenter/aim_hold.gd")) == null, "The presenter reads no tactical state: the committed Aim arrives as a typed input")
 	var retired_adapter := RegEx.create_from_string("_pending_pickup_world|_pending_lying_basis|_pending_handle|_sync_aim_hold|_on_pending_pickup_settled|_clear_pending_pickup")
-	var found_retired := retired_adapter.search(_code("presentation/tactical/unit_visual_adapter.gd"))
+	var found_retired := retired_adapter.search(_code("presentation/tactical/tactical_character_adapter.gd"))
 	check(found_retired == null, "The adapter still holds retired pending-pickup or aim-hold state (%s)" % [found_retired.get_string() if found_retired else ""])
 	check(_code("units/tactical_unit.gd").count("create_timer(") == 1, "TacticalUnit keeps exactly one timer: the floor for a unit whose visual does not process (the presenter's removal handle covers every other defeat)")
 	check(not _code("systems/replay/battle_replay_player.gd").contains("visual_adapter.global_basis"), "The replay player does not read the adapter's transform")
@@ -138,9 +138,9 @@ func _run() -> void:
 	check(found_route == null, "TacticalUnit still holds route-construction code or state (%s): it belongs to TacticalRouteBuilder" % [found_route.get_string() if found_route else ""])
 	check(unit_code.contains("TacticalRouteBuilder.expand(") and unit_code.contains("TacticalRouteBuilder.passthrough("), "TacticalUnit builds its presented route through TacticalRouteBuilder")
 	var route_builder_code := _code("presentation/tactical/tactical_route_builder.gd")
-	check(route_builder_code.contains("extends RefCounted") and RegEx.create_from_string("TacticalUnit|visual_adapter|UnitVisualAdapter|get_node|get_tree|add_child").search(route_builder_code) == null, "TacticalRouteBuilder is pure: no unit, adapter, node or scene-tree access")
+	check(route_builder_code.contains("extends RefCounted") and RegEx.create_from_string("TacticalUnit|visual_adapter|TacticalCharacterAdapter|get_node|get_tree|add_child").search(route_builder_code) == null, "TacticalRouteBuilder is pure: no unit, adapter, node or scene-tree access")
 	var traversal_dicts := RegEx.create_from_string("var (traversal|traversal_pose|stair_state|stair_pose)\\b")
-	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/tactical/unit_visual_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd")) == null,
+	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/tactical/tactical_character_adapter.gd") + _code("tools/animation_workbench/pose_workbench.gd")) == null,
 		"The rig, the adapter and the workbench keep no traversal or stair dictionary: the state is LadderClimb and StairWalk (typed)")
 	# Rig independence (Task 07 package 9): no skeleton bone name in production code (the rig profile holds them), no required weapon, no dictionary-configured modifier, and the foot-point convention in the
 	# composition: the visual scene has no origin offset and TacticalUnit places it.
@@ -158,11 +158,11 @@ func _run() -> void:
 		"The character visual scene has no origin offset (feet at its origin) and TacticalUnit composes it standing_height below the unit's origin")
 	# Composition (Task 07 package 10): the tactical adapter and the workbench are HOSTS of a CharacterRig, not CharacterRigs. A host owns its context (tactical reads, workbench controls) and drives its rig child
 	# and that rig's presenter once per frame; the rig owns the skeleton, the modifiers, the targets and the poses and has no frame callback of its own.
-	var adapter_code := _code("presentation/tactical/unit_visual_adapter.gd")
+	var adapter_code := _code("presentation/tactical/tactical_character_adapter.gd")
 	var workbench_code := _code("tools/animation_workbench/pose_workbench.gd")
 	check(adapter_code.contains("extends Node3D") and workbench_code.contains("extends Node3D"), "The tactical adapter and the workbench are plain Node3D hosts of a CharacterRig")
 	for path in _scripts("presentation") + _scripts("art") + _scripts("units") + _scripts("tools") + _scripts("research"):
-		check(RegEx.create_from_string("(?m)^extends\\s+(CharacterRig|UnitVisualAdapter)\\b").search(_code(path)) == null, "%s inherits the rig or the adapter: hosts compose a CharacterRig" % path)
+		check(RegEx.create_from_string("(?m)^extends\\s+(CharacterRig|TacticalCharacterAdapter)\\b").search(_code(path)) == null, "%s inherits the rig or the adapter: hosts compose a CharacterRig" % path)
 	check(RegEx.create_from_string("(?m)^func _(physics_)?process\\(").search(rig_code) == null, "CharacterRig has no frame callback: its host advances it (the presenter tick and update_weapon_pose) exactly once per frame")
 	for builder in ["_build_character", "_build_weapon_attachment", "_build_arm_ik", "_build_animation_controller"]:
 		check(not adapter_code.contains(builder) and not workbench_code.contains(builder), "A host does not build the skeleton (%s): the rig builds itself" % builder)
@@ -178,7 +178,7 @@ func _run() -> void:
 		"CoverEdgeSelector reads a CoverEdgePolicy, never the body's CoverPostureProfile")
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
-	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")
+	var owner_types := RegEx.create_from_string("\\b(CharacterRig|TacticalCharacterAdapter|CharacterPresenter|TacticalUnit)\\b")
 	for path in ["cover_crouch_modifier", "hand_grip_modifier", "locomotion_pose_modifier", "traversal_pose_modifier", "weapon_pose_modifier"]:
 		var file := "presentation/characters/rig/modifiers/%s.gd" % path
 		var code := _code(file)

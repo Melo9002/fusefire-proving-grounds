@@ -69,11 +69,11 @@ func _initialize() -> void:
 	await create_timer(1.35).timeout
 	_assert(not is_instance_valid(unit), "defeated unit exits cleanly after its presentation")
 	if not failed:
-		print("[UnitVisualAdapter] PASS — move, shoot, hit, defeat, and teardown follow TacticalUnit without changing tactical authority")
+		print("[TacticalCharacterAdapter] PASS — move, shoot, hit, defeat, and teardown follow TacticalUnit without changing tactical authority")
 	quit(1 if failed else 0)
 
 func _assert(condition: bool, message: String) -> void:
 	if condition:
 		return
 	failed = true
-	push_error("[UnitVisualAdapter] FAIL — %s" % message)
+	push_error("[TacticalCharacterAdapter] FAIL — %s" % message)

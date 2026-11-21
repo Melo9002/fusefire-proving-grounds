@@ -19,7 +19,7 @@ stats = NodePath("UnitStats")
 mission_actor = NodePath("MissionActor")
 tactical_state = NodePath("TacticalState")
 conditions = NodePath("Conditions")
-visual_adapter = NodePath("UnitVisualAdapter")
+visual_adapter = NodePath("TacticalCharacterAdapter")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1078393390]
 visible = false
@@ -40,4 +40,4 @@ script = ExtResource("5_tactical_state")
 [node name="Conditions" type="Node" parent="."]
 script = ExtResource("6_conditions")
 
-[node name="UnitVisualAdapter" parent="." instance=ExtResource("4_visual")]
+[node name="TacticalCharacterAdapter" parent="." instance=ExtResource("4_visual")]

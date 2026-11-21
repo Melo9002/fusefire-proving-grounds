@@ -1,11 +1,11 @@
 extends SceneTree
 ## The coordinated rescue interaction (animation 06C-06D): pickup, release, loaded gait, interruption and boarding, through the
-## production UnitVisualAdapter and the shared RescueInteraction timeline. Geometric relations and continuity, not coordinates.
+## production TacticalCharacterAdapter and the shared RescueInteraction timeline. Geometric relations and continuity, not coordinates.
 ## The timeline is a function of time only, so most checks scrub it to chosen times and read the result (no wall clock).
 
 var failures := 0
 var checks := 0
-var _rig: UnitVisualAdapter
+var _rig: TacticalCharacterAdapter
 var _arm_lengths := []   # [[upper, fore] right, left] read inside the carrier's skeleton pass
 
 func _initialize() -> void:
@@ -26,8 +26,8 @@ func _on_carrier_updated() -> void:
 		var hand := sk.get_bone_global_pose(sk.find_bone("mixamorig_%sHand" % side)).origin
 		_arm_lengths.append([upper.distance_to(fore), fore.distance_to(hand)])
 
-func _new_rig(stage: Node3D, at := Vector3.ZERO) -> UnitVisualAdapter:
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+func _new_rig(stage: Node3D, at := Vector3.ZERO) -> TacticalCharacterAdapter:
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = at
 	return rig

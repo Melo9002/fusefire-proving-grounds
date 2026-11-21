@@ -10,7 +10,7 @@ The [asset-edge/hybrid workflow](asset-edge-placement.md) adds physical contacts
 | --- | --- |
 | Model, scale, skeleton mapping, hand targets, and camera anchors | `art/characters/mira_0/runtime/mira_0_unit_visual.tscn` |
 | Pose and action preview | `tools/animation_workbench/pose_workbench.tscn` |
-| Gameplay-to-animation requests and return timing | `presentation/tactical/unit_visual_adapter.gd` |
+| Gameplay-to-animation requests and return timing | `presentation/tactical/tactical_character_adapter.gd` |
 | Blend states and fallback clips | `presentation/characters/rig/character_animation_controller.gd` and `character_fallback_animation_builder.gd` |
 | Weapon sockets, IK, recoil, carry offsets, and model validation | `presentation/characters/rig/character_rig.gd` |
 | Cover and traversal pose selection | `presentation/tactical/tactical_pose_context.gd` |
@@ -21,7 +21,7 @@ Run `tests/unit_visual_adapter_test.gd`, `tests/locomotion_foundation_test.gd`, 
 
 ## Held Aim pose
 
-A committed Aim keeps the sights up for as long as it lasts: until its attack, an action that cancels it (a Move), a Reload, or the next activation. `UnitVisualAdapter` follows the committed `tactical_state.is_aiming` flag each frame and never writes it, so replays and AI units behave the same. The Aim presenter also calls `present_aim()` so the sights come up the moment the action commits.
+A committed Aim keeps the sights up for as long as it lasts: until its attack, an action that cancels it (a Move), a Reload, or the next activation. `TacticalCharacterAdapter` follows the committed `tactical_state.is_aiming` flag each frame and never writes it, so replays and AI units behave the same. The Aim presenter also calls `present_aim()` so the sights come up the moment the action commits.
 
 - The pose is the existing `aim` state. In cover the cover pose stays and only the weapon comes up. A carrying unit never raises a rifle. A shot, hit, defeat, move or traversal is never interrupted.
 - After the flag clears the sights stay up for `AIM_RELEASE_GRACE` (1 s) so the rifle does not dip while the attack camera moves in before the shot. The shot or any other action takes over sooner.

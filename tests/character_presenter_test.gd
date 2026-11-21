@@ -16,8 +16,8 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func _spawn() -> UnitVisualAdapter:
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+func _spawn() -> TacticalCharacterAdapter:
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	root.add_child(v)
 	return v
 

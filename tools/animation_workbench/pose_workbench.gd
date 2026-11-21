@@ -31,7 +31,7 @@ var preview_speed := 1.3
 ## Yaw (radians) the character is turning toward at the game's turn rate while moving, or NAN. Set by the test panel's moving turns.
 var turn_goal := NAN
 ## Cover bench (the test panel's Cover row): a synthetic wall with chosen edge distances. The side comes from the production CoverEdgeSelector.choose and the pose
-## from the production CoverPostureProfile (yaw_offset, crouch_request), exactly what UnitVisualAdapter uses in the game. Empty = no cover scenario.
+## from the production CoverPostureProfile (yaw_offset, crouch_request), exactly what TacticalCharacterAdapter uses in the game. Empty = no cover scenario.
 var cover_demo := {}
 const COVER_DEMO_SOURCE := &"workbench/cover"
 const POSE_PRESET_SOURCE := &"workbench/pose_preset"
@@ -59,7 +59,7 @@ var _diagnostics: HandContactDiagnostics
 ## Diagnostic camera views: 0 is the workbench's own camera (orbit and C still work there).
 const DIAGNOSTIC_VIEW_NAMES := ["workbench camera", "full body", "dominant hand close-up", "support hand close-up", "both hands and weapon"]
 var _diagnostic_view := 0
-## Crouch presets drive the existing CoverCrouchModifier the way UnitVisualAdapter does, with its ramp speeds.
+## Crouch presets drive the existing CoverCrouchModifier the way TacticalCharacterAdapter does, with its ramp speeds.
 ## They exist so crouch, kneel and aim-while-crouched can be inspected here; there is no cover yaw.
 const POSE_PRESET_NAMES := ["standing", "crouch", "half-kneel"]
 var _pose_preset := 0
@@ -378,7 +378,7 @@ func set_cover_demo(spec: Dictionary) -> void:
 
 
 ## Authorizes (a position) or ends (null) an attack from the current cover scenario. The body turns to face the target (the facing change is absorbed into the cover
-## yaw offset exactly as UnitVisualAdapter does, so nothing snaps), the plan picks the posture, and ending it returns to the passive cover pose.
+## yaw offset exactly as TacticalCharacterAdapter does, so nothing snaps), the plan picks the posture, and ending it returns to the passive cover pose.
 func set_cover_target(target: Variant) -> void:
 	if cover_demo.is_empty():
 		return

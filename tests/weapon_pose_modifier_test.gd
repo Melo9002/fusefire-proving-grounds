@@ -2,7 +2,7 @@ extends SceneTree
 ## The WeaponPose modifier (animation improvement 02): weapon targets come from the shoulder of the SAME skeleton
 ## pass (after CoverCrouch, before the arm IK), the stock sits in the real shoulder pocket, the support arm is eased
 ## into reach within explicit protraction limits, the remaining deficit is reported, and unrelated states do not change.
-## Runs on the production UnitVisualAdapter path. `weapon_pose_modifier_enabled = false` is the legacy behaviour
+## Runs on the production TacticalCharacterAdapter path. `weapon_pose_modifier_enabled = false` is the legacy behaviour
 ## (targets from the animation-only shoulder), used here for A/B comparisons.
 
 var failures := 0
@@ -25,7 +25,7 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func _apply(rig: UnitVisualAdapter, entry: String) -> void:
+func _apply(rig: TacticalCharacterAdapter, entry: String) -> void:
 	var state := entry.split("@")[0].replace("+aim", "")
 	rig.presenter.aim.held = entry.ends_with("+aim")
 	rig.presenter.aim.release_left = 1000000.0
@@ -44,7 +44,7 @@ func _settle(frames := 40, seconds := 1.6) -> void:
 func _new_rig() -> Array:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame
@@ -53,14 +53,14 @@ func _new_rig() -> Array:
 	diagnostics.set_enabled(true)
 	return [stage, rig, diagnostics]
 
-func _stock_error(rig: UnitVisualAdapter, sample: Dictionary) -> float:
+func _stock_error(rig: TacticalCharacterAdapter, sample: Dictionary) -> float:
 	var pocket: Vector3 = (sample.hands[0].shoulder as Vector3) + rig.rig.character_root.global_basis * rig.rig.shoulder_contact_offset
 	return (sample.points.stock as Vector3).distance_to(pocket)
 
 func _run() -> void:
 	var made: Array = await _new_rig()
 	var stage: Node3D = made[0]
-	var rig: UnitVisualAdapter = made[1]
+	var rig: TacticalCharacterAdapter = made[1]
 	var diagnostics: HandContactDiagnostics = made[2]
 	var modifier: WeaponPoseModifier = rig.rig.weapon_pose_modifier
 	if modifier == null:

@@ -17,7 +17,7 @@ The grid can still identify the occupied tile and keep existing turn/AP structur
 | `systems/grid/surface_placement.gd` | Pure, bounded body-fit search against supplied world-space boxes; returns a proposed point and a clear failure reason. Separately returns surface contact, outward direction and desired body clearance. No map, actor or occupancy mutation. |
 | Existing `tactical_pose_context.gd` | Authored-pose selection now reads actual nearby part bounds and exposes contact hints. An empty label alone no longer supplies a pose. |
 | `systems/grid/surface_navigation.gd` | Resolves supported cell points, checks swept body clearance, neighboring bodies and actual nearby cover contacts. One shared prototype body profile; deterministic box geometry. |
-| Existing `UnitVisualAdapter` | Reads the committed standing point/contact, chooses the existing low/high-cover clips and retains weapon-grip IK. It does not invent a separate cosmetic root offset. |
+| Existing `TacticalCharacterAdapter` | Reads the committed standing point/contact, chooses the existing low/high-cover clips and retains weapon-grip IK. It does not invent a separate cosmetic root offset. |
 | Surface Fit Lab | Isolated slider demo with a MIRA placeholder, body-fit/contact markers and a diagnostic LOS ray from the resolved point. |
 | Surface Fit Range | Small editable container/truck/building example for focused checks; the same system now runs on the other current maps. |
 | All current maps / editor | Standing-point rules are automatic in new compilation. No per-map or per-asset opt-in is required. Historical compilers retain recorded behavior. |

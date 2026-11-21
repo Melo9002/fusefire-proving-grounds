@@ -267,7 +267,7 @@ func _apply_visual_root_state(state_name: StringName) -> void:
 		_visual_tween.parallel().tween_property(visual_root, "position", Vector3(0.02, 0.035, 0.0), 1.05)
 	else:
 		_visual_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		# Only the lean axes return to zero. The visual root's YAW belongs to the character's cover posture (UnitVisualAdapter._cover_yaw, written
+		# Only the lean axes return to zero. The visual root's YAW belongs to the character's cover posture (TacticalCharacterAdapter._cover_yaw, written
 		# every frame); resetting it here fought that posture for as long as play() kept being called, then released it with a jump.
 		_visual_tween.parallel().tween_property(visual_root, "rotation:x", 0.0, 0.14)
 		_visual_tween.parallel().tween_property(visual_root, "rotation:z", 0.0, 0.14)

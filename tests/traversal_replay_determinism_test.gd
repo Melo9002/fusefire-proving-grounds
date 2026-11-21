@@ -22,7 +22,7 @@ func _run_script(presentation: bool) -> Dictionary:
 	var actor: TacticalUnit = f.turns.player_units[0]
 	f.place(actor, Vector3i(8, 0, 9))
 	f.act_as(actor)
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	actor.stair_profile.enabled = presentation
 	actor.stair_profile.slow_stairs_enabled = presentation
 	actor.path_presentation.enabled = presentation

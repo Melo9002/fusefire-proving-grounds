@@ -6,7 +6,7 @@ extends SceneTree
 
 var failures := 0
 var checks := 0
-var _rig: UnitVisualAdapter
+var _rig: TacticalCharacterAdapter
 var _live_lengths: Array = []
 
 func _initialize() -> void:
@@ -57,7 +57,7 @@ func _on_updated() -> void:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	await _frames(20)
 	_rig = rig

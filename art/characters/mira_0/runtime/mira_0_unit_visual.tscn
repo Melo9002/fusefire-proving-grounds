@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://25dujwsjlfdo"]
 
-[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://presentation/tactical/unit_visual_adapter.gd" id="1_adapter"]
+[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://presentation/tactical/tactical_character_adapter.gd" id="1_adapter"]
 [ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://presentation/characters/rig/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 [ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]

@@ -2,7 +2,7 @@ class_name AttackSequence
 extends RefCounted
 ## The attack presentation lifecycle of one character (Task 04 section 14, Task 07 package 6): RAISE, ALIGN, FIRE, RECOVER, RELEASE. The tactical attack is already resolved when this runs; this only stages
 ## that outcome. It is the ONLY clock of an attack: the presenter advances it once per frame with the engine's delta (never scaled again), and it reads time from the presenter, never from the wall.
-## One attack at a time: a newer attack, a hit, a defeat or the character's removal ends the running one (INTERRUPTED). The lifecycle was moved here from UnitVisualAdapter without changing a rule.
+## One attack at a time: a newer attack, a hit, a defeat or the character's removal ends the running one (INTERRUPTED). The lifecycle was moved here from TacticalCharacterAdapter without changing a rule.
 
 signal shot_released(timeline: Dictionary)
 

@@ -26,18 +26,18 @@ func _frames(count: int) -> void:
 func _visual() -> Array:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 	return [stage, v]
 
-func _world_yaw(v: UnitVisualAdapter) -> float:
+func _world_yaw(v: TacticalCharacterAdapter) -> float:
 	return v.rig.character_root.global_rotation.y
 
 func _run() -> void:
 	var pair := await _visual()
 	var stage: Node3D = pair[0]
-	var v: UnitVisualAdapter = pair[1]
+	var v: TacticalCharacterAdapter = pair[1]
 	var p := v.presenter
 
 	# ---- A world point: the node turns at once to it; the same point again changes nothing; a point on the vertical axis is ignored.
@@ -127,7 +127,7 @@ func _run() -> void:
 	check(CoverEdgeSelector.shot_state(true, plan_protected, -1) == &"shoot_left" and CoverEdgeSelector.shot_state(true, plan_protected, 1) == &"shoot_right" and CoverEdgeSelector.shot_state(true, {}, 0) == &"shoot_right",
 		"Full cover with no honest peek: the passive lean side (right on a tie or none)")
 	check(CoverEdgeSelector.shot_state(false, plan_left, -1) == &"shoot", "Low cover always shows the ordinary shot")
-	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
+	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/tactical_character_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)
 		check(not text.contains("FiringMode.AROUND_LEFT: shot") and not text.contains("&\"shoot_left\" if cover_side"), "%s does not repeat the shot decision" % path.get_file())
 

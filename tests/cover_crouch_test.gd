@@ -18,7 +18,7 @@ func check(ok: bool, message: String) -> void:
 func _p(bone: StringName) -> Vector3:
 	return (_attachments[bone] as BoneAttachment3D).global_position
 
-func _settle(rig: UnitVisualAdapter, height: float, aiming: bool, type := MapCellData.CoverType.LOW) -> void:
+func _settle(rig: TacticalCharacterAdapter, height: float, aiming: bool, type := MapCellData.CoverType.LOW) -> void:
 	rig.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
 	rig.presenter.aim.held = aiming
 	rig.presenter.aim.release_left = 1000000.0
@@ -27,7 +27,7 @@ func _settle(rig: UnitVisualAdapter, height: float, aiming: bool, type := MapCel
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame

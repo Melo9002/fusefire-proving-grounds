@@ -160,7 +160,7 @@ func _defeat_removal() -> void:
 func _precedence() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 	var p := v.presenter

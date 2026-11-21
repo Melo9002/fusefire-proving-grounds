@@ -51,7 +51,7 @@ func _run() -> void:
 	# ---- The lifecycle on the production visual.
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 	var input: TraversalPoseInput = v.rig.traversal_modifier.input

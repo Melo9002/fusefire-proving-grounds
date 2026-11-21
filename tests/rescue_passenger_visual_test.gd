@@ -1,7 +1,7 @@
 extends SceneTree
 ## The carried rescue passenger is a second, separately rigged humanoid draped over the carrier's shoulders in a fireman's
 ## carry (animation improvements 06 and 06A). It is presentation only: no tactical actor, no weapon, no animation
-## controller, no IK. Production UnitVisualAdapter path. Assertions are geometric relations, not pose coordinates.
+## controller, no IK. Production TacticalCharacterAdapter path. Assertions are geometric relations, not pose coordinates.
 
 var failures := 0
 var checks := 0
@@ -18,13 +18,13 @@ func check(ok: bool, message: String) -> void:
 func _bone_position(rig_root: Node3D, skeleton: Skeleton3D, bone_name: String) -> Vector3:
 	return rig_root.global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(bone_name)).origin
 
-func _in_root(rig: UnitVisualAdapter, skeleton: Skeleton3D, bone_name: String) -> Vector3:
+func _in_root(rig: TacticalCharacterAdapter, skeleton: Skeleton3D, bone_name: String) -> Vector3:
 	return rig.rig.character_root.global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(bone_name)).origin
 
 ## The carrier is read INSIDE its skeleton pass (skeleton_updated): outside it, bone poses lack what the modifiers (the
 ## carry lean) did. The passenger follows in the same signal, so its transform is read there too.
 var carrier_state := {"pos": {}, "relation": Transform3D.IDENTITY, "weapon_relation": Transform3D.IDENTITY}
-var _rig: UnitVisualAdapter
+var _rig: TacticalCharacterAdapter
 var _passenger_node: Node3D
 var _diagnostics: HandContactDiagnostics
 
@@ -55,11 +55,11 @@ func _carrier(bone_name: String) -> Vector3:
 	return carrier_state.pos[bone_name]
 
 ## Forward lean of the carrier's trunk (hips to neck, in the carrier's own frame): positive leans toward the way it faces.
-func _lean_degrees(_unused: UnitVisualAdapter) -> float:
+func _lean_degrees(_unused: TacticalCharacterAdapter) -> float:
 	var trunk := _carrier("mixamorig_Neck") - _carrier("mixamorig_Hips")
 	return rad_to_deg(atan2(trunk.z, trunk.y))
 
-func _world_to_root(rig: UnitVisualAdapter, world: Vector3) -> Vector3:
+func _world_to_root(rig: TacticalCharacterAdapter, world: Vector3) -> Vector3:
 	return rig.rig.character_root.global_transform.affine_inverse() * world
 
 func _angle_at(a: Vector3, b: Vector3, c: Vector3) -> float:
@@ -74,7 +74,7 @@ func _pose_signature(skeleton: Skeleton3D) -> Array:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	for i in 20: await process_frame
 	_rig = rig
@@ -338,7 +338,7 @@ func _run() -> void:
 	check(not rig.rig.carry_contacts_active() and rig.rig.carry_contact_report.is_empty() and rig.rig.grip_modifier.contact_weight == [0.0, 0.0] and rig.rig.grip_modifier.curl == [0.0, 0.0], "Ending the carry releases the contacts and the grip")
 	check(rig.rig.weapon.get_parent() == rig.rig.weapon_attachment and not rig.rig.is_weapon_stowed() and rig.rig.arm_ik.active, "The weapon is back in the hand and the arm IK belongs to it again")
 	rig.preview_carrying = false
-	var reference := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var reference := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	root.add_child(reference)
 	reference.position = Vector3(3.0, 0.0, 0.0)
 	for r in [rig, reference]:
@@ -346,7 +346,7 @@ func _run() -> void:
 		r.presenter.aim.release_left = 1000000.0
 		r.rig.animation_controller.play(&"aim")
 	await create_timer(1.8).timeout
-	var local_of := func(r: UnitVisualAdapter, node: Node3D) -> Vector3: return r.rig.character_root.global_transform.affine_inverse() * node.global_position
+	var local_of := func(r: TacticalCharacterAdapter, node: Node3D) -> Vector3: return r.rig.character_root.global_transform.affine_inverse() * node.global_position
 	var worst_residual := 0.0
 	for pair in [[rig.rig.right_hand_target, reference.rig.right_hand_target], [rig.rig.support_ik_target, reference.rig.support_ik_target], [rig.rig.right_elbow_pole, reference.rig.right_elbow_pole], [rig.rig.left_elbow_pole, reference.rig.left_elbow_pole]]:
 		worst_residual = maxf(worst_residual, (local_of.call(rig, pair[0]) as Vector3).distance_to(local_of.call(reference, pair[1])))
@@ -358,7 +358,7 @@ func _run() -> void:
 	await process_frame
 
 	# Boarding shrinks the passenger with the existing tween, and the passenger is freed with the carrier's presentation.
-	var carrier := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var carrier := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	root.add_child(carrier)
 	carrier.position = Vector3(-3.0, 0.0, 0.0)
 	for r in 20: await process_frame

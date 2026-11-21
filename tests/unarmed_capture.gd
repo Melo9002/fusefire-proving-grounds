@@ -24,8 +24,8 @@ func _snap(camera: Camera3D, position_value: Vector3, look_at_value: Vector3, fe
 	image.convert(Image.FORMAT_RGBA8)
 	_tiles.append(image)
 
-func _character(stage: Node3D, armed: bool) -> UnitVisualAdapter:
-	var v := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+func _character(stage: Node3D, armed: bool) -> TacticalCharacterAdapter:
+	var v := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	if not armed:
 		v.rig.weapon_scene = null
 	stage.add_child(v)

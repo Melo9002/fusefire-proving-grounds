@@ -1,5 +1,5 @@
 extends SceneTree
-## One shared frame driver (Task 07 package 3): the tactical visual (UnitVisualAdapter) and the animation workbench both advance presentation through their rig's CharacterPresenter, exactly
+## One shared frame driver (Task 07 package 3): the tactical visual (TacticalCharacterAdapter) and the animation workbench both advance presentation through their rig's CharacterPresenter, exactly
 ## once per frame and before that frame's modifiers, with no second path to the locomotion feed. The workbench feeds authored preview motion through the same presenter and keeps its idle
 ## heading-rate behaviour. This does NOT claim the inheritance-to-composition conversion: both hosts still ARE the rig.
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
@@ -35,7 +35,7 @@ func _verify_driver(label: String, samples: Array) -> void:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var adapter: UnitVisualAdapter = VISUAL.instantiate()
+	var adapter: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(adapter)
 	var bench: Node3D = WORKBENCH.instantiate()
 	root.add_child(bench)
@@ -76,7 +76,7 @@ func _run() -> void:
 	check(saw_idle_heading, "While idle, a turn preview still feeds its heading rate (speed 0, heading %.2f rad/s at some frame): the workbench behaviour is preserved" % bench.presenter.heading_rate)
 
 	# ---- No second path: neither host calls the locomotion feed or writes the posture ramps itself.
-	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/unit_visual_adapter.gd"]:
+	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/tactical_character_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)
 		check(not text.contains("update_locomotion_presentation("), "%s no longer drives the locomotion feed directly" % path.get_file())
 		check(not text.contains("crouch_modifier.depth =") and not text.contains("crouch_modifier.kneel ="), "%s no longer writes the crouch depth or kneel directly" % path.get_file())

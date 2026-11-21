@@ -23,7 +23,7 @@ func _run() -> void:
 	f.place(actor, bottom)
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	for i in 20: await process_frame
 	var query := f.battle.query_move(actor, top) if f.battle.has_method("query_move") else null
 	var ap_before := actor.stats.current_ap
@@ -74,7 +74,7 @@ func _run() -> void:
 	print("Traversal ladder gameplay: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
-func _move_and_watch(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination: Vector3i, log: Dictionary) -> bool:
+func _move_and_watch(f, actor: TacticalUnit, adapter: TacticalCharacterAdapter, destination: Vector3i, log: Dictionary) -> bool:
 	var done := []
 	var go := func() -> void:
 		done.append(await f.battle.try_move(actor, destination))

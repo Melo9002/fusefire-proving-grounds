@@ -28,7 +28,7 @@ func _frames(count: int) -> void:
 func _unarmed() -> Array:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	v.rig.weapon_scene = null   # before the tree: the character is built without a weapon
 	stage.add_child(v)
 	_hook(v)
@@ -38,14 +38,14 @@ func _unarmed() -> Array:
 ## Bone positions and rotations are read where the finished pose is valid (the skeleton's update): between updates the solved IK is not what a read returns.
 var _pose := {}   # bone name -> {"world": Vector3, "rotation": Quaternion}
 
-func _hook(v: UnitVisualAdapter) -> void:
+func _hook(v: TacticalCharacterAdapter) -> void:
 	var names: Array[StringName] = [v.rig.bones.right_arm[0], v.rig.bones.right_arm[2], v.rig.bones.left_arm[0], v.rig.bones.left_arm[2], v.rig.bones.left_leg[0]]
 	v.rig.skeleton.skeleton_updated.connect(func() -> void:
 		for bone_name in names:
 			var index := v.rig.skeleton.find_bone(bone_name)
 			_pose[bone_name] = {"world": v.rig.skeleton.global_transform * v.rig.skeleton.get_bone_global_pose(index).origin, "rotation": v.rig.skeleton.get_bone_pose_rotation(index)})
 
-func _world(_v: UnitVisualAdapter, bone: StringName) -> Vector3:
+func _world(_v: TacticalCharacterAdapter, bone: StringName) -> Vector3:
 	return _pose[bone].world
 
 func _watch(handle: ActionHandle) -> Array:
@@ -56,7 +56,7 @@ func _watch(handle: ActionHandle) -> Array:
 func _run() -> void:
 	var pair := await _unarmed()
 	var stage: Node3D = pair[0]
-	var v: UnitVisualAdapter = pair[1]
+	var v: TacticalCharacterAdapter = pair[1]
 
 	# ---- It initialises with nothing missing, and says what it holds.
 	var stages := v.rig.skeleton.get_children().filter(func(c): return c is SkeletonModifier3D).map(func(c): return String(c.name))
@@ -183,7 +183,7 @@ func _run() -> void:
 func _equipped_states() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 	check(v.rig.has_weapon() and v.rig.equipment_state() == PresentationTypes.EquipmentState.HELD and v.presenter.intent().equipment == PresentationTypes.EquipmentState.HELD, "Equipped MIRA: the rifle is HELD")

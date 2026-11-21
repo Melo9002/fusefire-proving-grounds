@@ -48,7 +48,7 @@ func _run() -> void:
 	floor_material.albedo_color = Color(0.45, 0.47, 0.5)
 	floor_mesh.material_override = floor_material
 	stage.add_child(floor_mesh)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO  # the scene hangs 1 m below the unit centre; stand it on the floor here
 	var camera := Camera3D.new()

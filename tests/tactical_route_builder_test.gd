@@ -32,7 +32,7 @@ func _run() -> void:
 		code_lines.append(line if cut < 0 else line.substr(0, cut))
 	var text := "
 ".join(code_lines)   # comments describe what the builder does not touch; only code counts
-	var forbidden := RegEx.create_from_string("TacticalUnit|visual_adapter|UnitVisualAdapter|get_node|get_tree|add_child|extends Node|\\.new\\(\\)\\s*#\\s*node")
+	var forbidden := RegEx.create_from_string("TacticalUnit|visual_adapter|TacticalCharacterAdapter|get_node|get_tree|add_child|extends Node|\\.new\\(\\)\\s*#\\s*node")
 	check(text.contains("extends RefCounted") and forbidden.search(text) == null, "The builder is a RefCounted of pure functions: no unit, adapter or scene-tree access")
 
 	# ---- Presented speeds: a segment speed slows the walk only; replay playback scales it with the movement speed; no segment speed means the ordinary walk.

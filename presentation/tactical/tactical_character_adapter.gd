@@ -1,6 +1,6 @@
 @tool
 extends Node3D
-class_name UnitVisualAdapter
+class_name TacticalCharacterAdapter
 
 signal presentation_state_changed(state_name: StringName)
 
@@ -187,8 +187,8 @@ var _team_accent: MeshInstance3D
 
 ## What the attack sequence asks of this body (see AttackHost): the firing configuration, the clips, the readiness request and the cover plan.
 class AdapterAttackHost extends AttackHost:
-	var adapter: UnitVisualAdapter
-	func _init(owner_adapter: UnitVisualAdapter) -> void:
+	var adapter: TacticalCharacterAdapter
+	func _init(owner_adapter: TacticalCharacterAdapter) -> void:
 		adapter = owner_adapter
 	func sequence_available() -> bool:
 		return not adapter._carrying() and adapter.can_process() and is_instance_valid(adapter.rig.muzzle_socket)
@@ -241,7 +241,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if not is_inside_tree(): return
 	for problem in presenter.foot_point_problems():
-		push_error("[UnitVisualAdapter] %s" % problem)
+		push_error("[TacticalCharacterAdapter] %s" % problem)
 
 func setup(unit: TacticalUnit) -> void:
 	tactical_unit = unit

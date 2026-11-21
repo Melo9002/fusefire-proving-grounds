@@ -45,7 +45,7 @@ var handling: WeaponHandlingProfile
 var _hands: Array[Dictionary] = [{}, {}]
 var setup_issues: Array[String] = []
 
-## `p_rig` is a CharacterRig (or a subclass such as UnitVisualAdapter or the pose workbench).
+## `p_rig` is a CharacterRig (or a subclass such as TacticalCharacterAdapter or the pose workbench).
 func setup(p_rig: Node3D) -> bool:
 	setup_issues.clear()
 	rig = p_rig

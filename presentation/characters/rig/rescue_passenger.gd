@@ -4,7 +4,7 @@ extends Node3D
 ## animation controller and no IK, and is created and freed with the carrier's presentation, so it cannot change the
 ## rescued actor's lifecycle (the hidden mission actor stays what it was).
 ##
-## Ownership: UnitVisualAdapter creates and frees this node and tells it which carrier bones to follow. This node owns the
+## Ownership: TacticalCharacterAdapter creates and frees this node and tells it which carrier bones to follow. This node owns the
 ## passenger's skeleton and its pose (PassivePassengerPose) and nothing of the carrier's.
 ##
 ## Reference frames:

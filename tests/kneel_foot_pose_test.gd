@@ -18,7 +18,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 ## Bone positions relative to the character's floor point, in the character's own frame (x right, y up, z forward).
-func _measure(rig: UnitVisualAdapter, attachments: Dictionary, side: String) -> Dictionary:
+func _measure(rig: TacticalCharacterAdapter, attachments: Dictionary, side: String) -> Dictionary:
 	var forward := rig.rig.character_root.global_basis.z.slide(Vector3.UP).normalized()
 	var frame := Basis(Vector3.UP.cross(forward).normalized(), Vector3.UP, forward)
 	var result := {}
@@ -31,7 +31,7 @@ func _pose(elevation: float, rear: int) -> Dictionary:
 	var stage := Node3D.new()
 	stage.position = Vector3(0.0, elevation, 0.0)
 	root.add_child(stage)
-	var rig: UnitVisualAdapter = VISUAL.instantiate()
+	var rig: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 15:

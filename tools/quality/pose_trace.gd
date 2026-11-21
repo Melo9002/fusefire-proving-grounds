@@ -16,17 +16,17 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 ## Attack bookkeeping is read through whichever owner the code under test has (the adapter before Task 07 package 6, the presenter after), so one trace compares both.
-func _attack_phase(v: UnitVisualAdapter) -> int:
+func _attack_phase(v: TacticalCharacterAdapter) -> int:
 	if v.presenter.get("attack") != null:
 		return int(v.presenter.attack.phase)
 	return int(v.get("attack_phase"))
 
-func _attack_timeline(v: UnitVisualAdapter) -> Dictionary:
+func _attack_timeline(v: TacticalCharacterAdapter) -> Dictionary:
 	if v.presenter.get("attack") != null:
 		return v.presenter.attack.timeline
 	return v.get("attack_timeline")
 
-func _snapshot(v: UnitVisualAdapter) -> Dictionary:
+func _snapshot(v: TacticalCharacterAdapter) -> Dictionary:
 	var to_root: Transform3D = v.rig.character_root.global_transform.affine_inverse() * v.rig.skeleton.global_transform
 	var bones := {}
 	for name in BONES:
@@ -59,7 +59,7 @@ func _v(v: Vector3) -> Array:
 
 ## World-space positions (Task 07 package 9, the foot-point convention): the visual, the character root, the hips and both feet, the weapon when there is one. Compared only for the unit-hosted scenarios,
 ## where the unit's own placement fixes the floor; a bare visual's world position depends on where its test stage puts it.
-func _world(v: UnitVisualAdapter) -> Dictionary:
+func _world(v: TacticalCharacterAdapter) -> Dictionary:
 	var result := {"visual": _v(v.global_position), "root": _v(v.rig.character_root.global_position)}
 	for pair in [["hips", "Hips"], ["left_foot", "LeftFoot"], ["right_foot", "RightFoot"], ["left_hand", "LeftHand"], ["right_hand", "RightHand"]]:
 		var index := v.rig.skeleton.find_bone("mixamorig_" + pair[1])
@@ -79,7 +79,7 @@ func _unit_scenario(tag: String, frames: int, step: Callable) -> void:
 	unit.position = Vector3(0.0, unit.standing_height, 0.0)
 	for i in 20:
 		await process_frame
-	var v: UnitVisualAdapter = unit.visual_adapter
+	var v: TacticalCharacterAdapter = unit.visual_adapter
 	_frame_record = {}
 	var capture := func() -> void: _frame_record = _snapshot(v)
 	v.rig.skeleton.skeleton_updated.connect(capture)
@@ -99,7 +99,7 @@ func _unit_scenario(tag: String, frames: int, step: Callable) -> void:
 func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	v.position = Vector3(0.0, -1.0, 0.0)   # the stage puts the feet at y = -1, as the scene itself used to: the trace must not depend on where the scene's own origin is
 	for i in 20:
@@ -125,167 +125,167 @@ func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) ->
 	stage.queue_free()
 	await process_frame
 
-func _place(v: UnitVisualAdapter) -> Vector3:
+func _place(v: TacticalCharacterAdapter) -> Vector3:
 	return v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0
 
-func _cover(v: UnitVisualAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
+func _cover(v: TacticalCharacterAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
 	v.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
 	v.rig.animation_controller.play(&"cover_low" if type == MapCellData.CoverType.LOW else &"cover_high")
 
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var path := args[0] if args.size() > 0 else "pose_trace.json"
-	await _scenario("locomotion", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("locomotion", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		var speed := 1.3 if i < 70 else (4.0 if i < 130 else 0.0)
 		var heading := Vector3(0, 0, 1) if i < 100 else Vector3(1, 0, 1).normalized()
 		if speed > 0.0:
 			v.update_locomotion(heading * speed, DT))
-	await _scenario("cover_twist_aim", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("cover_twist_aim", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 1.1)
 		if i == 20: v.rig.begin_turn(deg_to_rad(70.0))
 		if i == 70: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED)
 		if i == 130: v.release_readiness(&"trace"))
-	await _scenario("kneel_aim", 140, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("kneel_aim", 140, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 0.4)
 		if i == 50: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED))
-	await _scenario("full_cover_aim", 140, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("full_cover_aim", 140, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 2.0, MapCellData.CoverType.FULL)
 		if i == 50: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED))
-	await _scenario("aim_hold", 150, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("aim_hold", 150, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 10: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED)
 		if i == 100: v.release_readiness(&"trace"))
-	await _scenario("stow", 120, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("stow", 120, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.rig.stow_weapon()
 		if i == 80: v.rig.unstow_weapon())
 	var model := StairModel.from_links(Vector3.ZERO, Vector3(0, 0, 1), 1.0, 1.0, 2, 3)
-	await _scenario("stairs", 180, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("stairs", 180, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_stairs(model, true)
 		if i >= 5 and i < 150:
 			v.update_locomotion(Vector3(0, 0, 1.2), DT)
 			v.rig.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
 		if i == 150: v.rig.end_stairs())
-	await _scenario("ladder", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("ladder", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, 1)
 		if i >= 5 and i < 160: v.rig.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))
 		if i == 160: v.rig.end_traversal())
-	await _scenario("carry", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("carry", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true
 		if i == 20: v.rig.begin_carry()
 		if i >= 20 and i < 100: v.update_locomotion(Vector3(0, 0, 1.0), DT)
 		if i == 110: v.rig.end_carry())
 	# Rescue (Task 07 package 5): a whole pickup (start, contact, attachment, settle), the carry walking, and a whole release. 3.0 s pickup, 3.0 s release at 60 fps.
-	await _scenario("rescue_pickup", 260, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_pickup", 260, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 10: v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0)
 		if i >= 200 and i < 250: v.update_locomotion(Vector3(0, 0, 1.0), DT))
-	await _scenario("rescue_release", 360, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_release", 360, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 0: v.rig.begin_carry()
 		if i >= 5 and i < 60: v.update_locomotion(Vector3(0, 0, 1.0), DT)
 		if i == 90: v.rig.begin_release())
-	await _scenario("rescue_cover_return", 330, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_cover_return", 330, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 0: _cover(v, 1.1)
 		if i == 30: v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0)
 		if i == 100: v.rig.end_carry()
 		if i == 101: _cover(v, 1.1))
-	await _scenario("rescue_cancel", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_cancel", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true   # without it the lift clock never advances (the adapter only runs it for a carrier)
 		if i == 10: v.rig.begin_pickup(v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0)
 		if i == 90: v.rig.end_carry())
 	# Combat presentation (Task 07 package 6): attack from several starting poses, repeated and interrupted attacks, aim hold and release, hit and defeat in the middle of other actions.
-	var ahead := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + v.global_basis.z * 6.0
-	var side := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + v.global_basis.x * 5.0 + v.global_basis.z * 2.0
-	await _scenario("attack_standing", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	var ahead := func(v: TacticalCharacterAdapter) -> Vector3: return v.global_position + v.global_basis.z * 6.0
+	var side := func(v: TacticalCharacterAdapter) -> Vector3: return v.global_position + v.global_basis.x * 5.0 + v.global_basis.z * 2.0
+	await _scenario("attack_standing", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_attack(ahead.call(v)))
-	await _scenario("attack_aimed", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("attack_aimed", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.present_aim()
 		if i == 60: v.present_attack(ahead.call(v)))
-	await _scenario("attack_cover_low", 220, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("attack_cover_low", 220, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 1.1)
 		if i == 30: v.present_attack(side.call(v)))
-	await _scenario("attack_full_cover", 220, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("attack_full_cover", 220, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 2.0, MapCellData.CoverType.FULL)
 		if i == 30: v.present_attack(side.call(v)))
-	await _scenario("attack_repeat", 260, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("attack_repeat", 260, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_attack(ahead.call(v))
 		if i == 24: v.present_attack(ahead.call(v))
 		if i == 140: v.present_attack(side.call(v)))
-	await _scenario("hit_idle", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("hit_idle", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_hit()
 		if i == 90: v.present_hit())
-	await _scenario("hit_during_aim", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("hit_during_aim", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.present_aim()
 		if i == 40: v.present_hit())
-	await _scenario("hit_during_attack", 220, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("hit_during_attack", 220, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_attack(ahead.call(v))
 		if i == 32: v.present_hit())
-	await _scenario("defeat_during_attack", 180, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("defeat_during_attack", 180, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_attack(ahead.call(v))
 		if i == 31: v.present_defeat()
 		if i == 50: v.present_defeat())
-	await _scenario("defeat_during_aim", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("defeat_during_aim", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.present_aim()
 		if i == 40: v.present_defeat())
-	await _scenario("aim_release", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("aim_release", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 10: v.present_aim()
 		if i == 150: v.present_hit())
-	await _scenario("rescue_defeat", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_defeat", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true
 		if i == 10: v.rig.begin_pickup(_place(v))
 		if i == 70: v.present_defeat()
 		if i == 72: v.present_carry_released())
-	await _scenario("rescue_hit_idle_timer", 260, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("rescue_hit_idle_timer", 260, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: v.preview_carrying = true
 		if i == 10: v.present_pickup()
 		if i == 40: v.present_hit())
 	# Facing (Task 07 package 7): a facing change toward a world point from idle and from cover (absorbed into the cover yaw), explicit repeats, a facing change while an attack is staged and while a
 	# hit reaction holds, and the velocity-follow turn of a walk (the "locomotion" scenario). The node yaw and the visual root yaw are both recorded.
-	var east := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + Vector3(5.0, 0.0, 1.0)
-	var west := func(v: UnitVisualAdapter) -> Vector3: return v.global_position + Vector3(-4.0, 0.0, -3.0)
-	await _scenario("face_idle", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	var east := func(v: TacticalCharacterAdapter) -> Vector3: return v.global_position + Vector3(5.0, 0.0, 1.0)
+	var west := func(v: TacticalCharacterAdapter) -> Vector3: return v.global_position + Vector3(-4.0, 0.0, -3.0)
+	await _scenario("face_idle", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.face_world_position(east.call(v))
 		if i == 24: v.face_world_position(east.call(v))
 		if i == 70: v.face_world_position(west.call(v))
 		if i == 71: v.face_world_position(v.global_position))
-	await _scenario("face_cover_low", 220, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("face_cover_low", 220, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 1.1)
 		if i == 30: v.face_world_position(east.call(v))
 		if i == 90: v.face_world_position(west.call(v)))
-	await _scenario("face_cover_aimed", 240, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("face_cover_aimed", 240, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 2.0, MapCellData.CoverType.FULL)
 		if i == 20: v.request_readiness(&"trace", WeaponReadiness.Level.AIMED)
 		if i == 50: v.face_world_position(east.call(v))
 		if i == 120: v.present_attack(west.call(v)))
-	await _scenario("face_during_hit", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("face_during_hit", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.present_hit()
 		if i == 30: v.face_world_position(east.call(v)))
-	await _scenario("walk_turn", 240, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("walk_turn", 240, func(v: TacticalCharacterAdapter, i: int) -> void:
 		var heading := Vector3(0, 0, 1) if i < 60 else (Vector3(1, 0, 0) if i < 120 else Vector3(-1, 0, -1).normalized())
 		if i < 180: v.update_locomotion(heading * 2.5, DT)
 		if i == 200: v.face_world_position(east.call(v)))
 	# Traversal transitions (Task 07 package 8): a descent, a ladder and a stair walk ended midway, a ladder taking precedence over a stair walk, and stairs descended.
-	await _scenario("ladder_down", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("ladder_down", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, -1)
 		if i >= 5 and i < 160: v.rig.set_traversal_progress(clampf(2.6 - float(i - 5) * 0.017, 0.0, 3.0))
 		if i == 160: v.rig.end_traversal())
-	await _scenario("ladder_interrupted", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("ladder_interrupted", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, 1)
 		if i >= 5 and i < 70: v.rig.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))
 		if i == 70: v.rig.end_traversal())
-	await _scenario("stairs_interrupted", 160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("stairs_interrupted", 160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_stairs(model, true)
 		if i >= 5 and i < 70:
 			v.update_locomotion(Vector3(0, 0, 1.2), DT)
 			v.rig.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
 		if i == 70: v.rig.end_stairs())
-	await _scenario("stairs_down", 180, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("stairs_down", 180, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_stairs(model, false)
 		if i >= 5 and i < 150:
 			v.update_locomotion(Vector3(0, 0, 1.2), DT)
 			v.rig.set_stair_progress(clampf(model.end_s() - float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
 		if i == 150: v.rig.end_stairs())
-	await _scenario("ladder_over_stairs", 200, func(v: UnitVisualAdapter, i: int) -> void:
+	await _scenario("ladder_over_stairs", 200, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, 1)
 		if i == 30: v.rig.begin_stairs(model, true)
 		if i >= 5 and i < 100: v.rig.set_traversal_progress(clampf(float(i - 5) * 0.017, 0.0, 2.6))

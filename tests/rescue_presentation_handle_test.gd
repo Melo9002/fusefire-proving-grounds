@@ -23,20 +23,20 @@ func _frames(count: int) -> void:
 	for i in count:
 		await process_frame
 
-func _new_visual() -> UnitVisualAdapter:
+func _new_visual() -> TacticalCharacterAdapter:
 	_stage = Node3D.new()
 	root.add_child(_stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	_stage.add_child(v)
 	v.preview_carrying = true   # a bare visual has no tactical unit: this is what makes it a loaded carrier (the timeline only advances while carrying)
 	await _frames(12)
 	return v
 
-func _drop(v: UnitVisualAdapter) -> void:
+func _drop(v: TacticalCharacterAdapter) -> void:
 	_stage.queue_free()
 	await _frames(2)
 
-func _place(v: UnitVisualAdapter) -> Vector3:
+func _place(v: TacticalCharacterAdapter) -> Vector3:
 	return v.rig.character_root.global_position + v.rig.character_root.global_basis.orthonormalized().z * 1.0
 
 func _passengers(node: Node) -> int:

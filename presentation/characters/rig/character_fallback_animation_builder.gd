@@ -98,7 +98,7 @@ func _make_rescue_pose(pose: StringName) -> Animation:
 		angles = [-10.0, -30.0, -5.0]
 	if pose == &"carry_idle" or pose == &"carry_move":
 		# Pitching the chest about its own x axis leaned the carrier sideways on this rig. The carry's forward lean comes from
-		# CoverCrouchModifier's measured forward axis instead (UnitVisualAdapter, CARRY_LEAN_DEGREES).
+		# CoverCrouchModifier's measured forward axis instead (TacticalCharacterAdapter, CARRY_LEAN_DEGREES).
 		angles = [0.0, 0.0, 0.0]
 	if moving:
 		times = [0.0, 0.5, 1.0]
@@ -128,7 +128,7 @@ func make_forward_clip(kind: StringName) -> Animation:
 ## MOVEMENT COORDINATE CONTRACT
 ##  * The humanoid's anatomical forward is the way its TOES point; measured from the rest pose (ankle to toe base, vertical removed), in
 ##    skeleton space. Up is hips to head. The hip hinge axis is forward x up.
-##  * The visual root (the rig's Character node) faces +Z, the tactical unit turns the rig to its travel direction (UnitVisualAdapter
+##  * The visual root (the rig's Character node) faces +Z, the tactical unit turns the rig to its travel direction (TacticalCharacterAdapter
 ##    .update_locomotion), so for ordinary tactical movement the travel direction IS the anatomical forward.
 ##  * Locomotion direction is a Vector2 in the character's own frame: x = toward the character's LEFT, y = forward. (0, 1) forward,
 ##    (0, -1) backward, (1, 0) side-step left, (-1, 0) side-step right.

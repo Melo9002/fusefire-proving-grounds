@@ -19,7 +19,7 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func _enter_cover(rig: UnitVisualAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
+func _enter_cover(rig: TacticalCharacterAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
 	rig.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
 	rig.rig.animation_controller.play(&"cover_low" if type == MapCellData.CoverType.LOW else &"cover_high")
 
@@ -27,7 +27,7 @@ func _frames(count: int) -> void:
 	for i in count:
 		await process_frame
 
-func _winner_row(rig: UnitVisualAdapter) -> Dictionary:
+func _winner_row(rig: TacticalCharacterAdapter) -> Dictionary:
 	for row in rig.presenter.postures.report():
 		if row.winner:
 			return row
@@ -36,7 +36,7 @@ func _winner_row(rig: UnitVisualAdapter) -> Dictionary:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig: UnitVisualAdapter = VISUAL.instantiate()
+	var rig: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(rig)
 	await _frames(20)
 	var posture := rig.presenter.postures
@@ -97,7 +97,7 @@ func _run() -> void:
 	check(not posture.has_request(SOURCE), "Defeat releases the cover request")
 
 	# ---- Release on teardown: nothing outlives the character, even a request that was never released.
-	var doomed: UnitVisualAdapter = VISUAL.instantiate()
+	var doomed: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(doomed)
 	await _frames(10)
 	_enter_cover(doomed, 1.1)
@@ -110,7 +110,7 @@ func _run() -> void:
 	doomed.free()
 
 	# ---- Superseded writers are gone: the cover policy no longer touches the ramps (text-level ratchet lives in animation_module_boundaries_test).
-	var adapter_text := FileAccess.get_file_as_string("res://presentation/tactical/unit_visual_adapter.gd")
+	var adapter_text := FileAccess.get_file_as_string("res://presentation/tactical/tactical_character_adapter.gd")
 	check(not adapter_text.contains("crouch_modifier.depth =") and not adapter_text.contains("crouch_modifier.kneel ="), "The adapter has no direct writer of the crouch depth or kneel any more")
 
 	# ---- The workbench uses the same shared calls: a diagnostic preset (BASE) and a cover demo (CONTEXT) arbitrate through the presenter.

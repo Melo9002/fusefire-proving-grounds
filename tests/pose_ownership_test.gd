@@ -32,10 +32,10 @@ func _locals(sk: Skeleton3D) -> Array:
 func _drive(frames: int, step: Callable) -> void:
 	var stage_node := Node3D.new()
 	root.add_child(stage_node)
-	var rigs: Array[UnitVisualAdapter] = []
+	var rigs: Array[TacticalCharacterAdapter] = []
 	var latest: Array = []
 	for index in PoseOwnership.STAGE_ORDER.size() + 1:
-		var v: UnitVisualAdapter = VISUAL.instantiate()
+		var v: TacticalCharacterAdapter = VISUAL.instantiate()
 		v.position = Vector3(index * 3.0, 0, 0)
 		stage_node.add_child(v)
 		rigs.append(v)
@@ -81,7 +81,7 @@ func _drive(frames: int, step: Callable) -> void:
 	stage_node.queue_free()
 	await process_frame
 
-func _cover(v: UnitVisualAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
+func _cover(v: TacticalCharacterAdapter, height: float, type := MapCellData.CoverType.LOW) -> void:
 	v.last_cover_contact = {"type": type, "height": height, "direction": Vector3.FORWARD}
 	v.rig.animation_controller.play(&"cover_low" if type == MapCellData.CoverType.LOW else &"cover_high")
 
@@ -94,7 +94,7 @@ func _run() -> void:
 	var broken: Array[StringName] = [&"CoverCrouch", &"Locomotion"]
 	check(not PoseOwnership.validate(broken).is_empty(), "A modifier order that differs from the declared order is reported")
 	var production_order: Array[StringName] = []
-	var probe: UnitVisualAdapter = VISUAL.instantiate()
+	var probe: TacticalCharacterAdapter = VISUAL.instantiate()
 	root.add_child(probe)
 	for i in 3:
 		await process_frame
@@ -114,28 +114,28 @@ func _run() -> void:
 	check(table_has_undeclared and saved_overlaps.size() == 4, "Setup: the table has its four declared overlaps")
 
 	# ---- Part 2: what the stages really write stays inside what they declare.
-	await _drive(150, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(150, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 10: v.rig.begin_turn(deg_to_rad(80.0))
 		if i > 20 and i < 100: v.update_locomotion(Vector3(0, 0, 3.0), 1.0 / 60.0))
-	await _drive(130, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(130, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 0.4)
 		if i == 50: v.request_readiness(&"own", WeaponReadiness.Level.AIMED))
-	await _drive(130, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(130, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 0: _cover(v, 1.1)
 		if i == 40: v.rig.begin_turn(deg_to_rad(60.0))
 		if i == 50: v.request_readiness(&"own", WeaponReadiness.Level.AIMED))
-	await _drive(160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_traversal(&"ladder", 3.0, 1)
 		if i >= 5 and i < 130: v.rig.set_traversal_progress(clampf(float(i - 5) * 0.02, 0.0, 2.6))
 		if i == 130: v.rig.end_traversal())
 	var model := StairModel.from_links(Vector3.ZERO, Vector3(0, 0, 1), 1.0, 1.0, 2, 3)
-	await _drive(160, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(160, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 5: v.rig.begin_stairs(model, true)
 		if i >= 5 and i < 130:
 			v.update_locomotion(Vector3(0, 0, 1.2), 1.0 / 60.0)
 			v.rig.set_stair_progress(clampf(float(i - 5) * 0.012, 0.0, model.end_s()), 1.2)
 		if i == 130: v.rig.end_stairs())
-	await _drive(120, func(v: UnitVisualAdapter, i: int) -> void:
+	await _drive(120, func(v: TacticalCharacterAdapter, i: int) -> void:
 		if i == 20: v.rig.begin_carry()
 		if i >= 20 and i < 90: v.update_locomotion(Vector3(0, 0, 1.0), 1.0 / 60.0)
 		if i == 100: v.rig.end_carry())

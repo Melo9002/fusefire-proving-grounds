@@ -9,7 +9,7 @@ extends RefCounted
 ## settled through ActionHandles and all advanced here, once per frame, and it exposes the persistent state as a PresentationIntent snapshot. It does NOT own animation mathematics: gait, cadence, bank and twist stay in CharacterRig, which this
 ## calls. It has no `_process`: the host node ticks it once per frame (see TRANSITION), so nothing can advance twice.
 ##
-## TRANSITION (documented, not hidden): today UnitVisualAdapter and the workbench ARE the CharacterRig, so the presenter is a component of that node and bound to it, and the host
+## TRANSITION (documented, not hidden): today TacticalCharacterAdapter and the workbench ARE the CharacterRig, so the presenter is a component of that node and bound to it, and the host
 ## calls `tick(delta)` from its own `_process`, in its existing order. When the rig is composed instead of inherited, the presenter becomes the node that ticks. Not yet owned
 ## here: attack/aim/cover/rescue sequencing, the traversal state, weapon readiness requests (the readiness object stays the rig's; the presenter only reads it), equipment changes.
 
@@ -221,7 +221,7 @@ func cancel_hold() -> void:
 func is_holding() -> bool:
 	return _hold_handle != null
 
-## A defeat: the one-shot defeat clip runs for `seconds` and its end state stays. Everything else the character was presenting is ended by the caller (see UnitVisualAdapter.present_defeat); this only
+## A defeat: the one-shot defeat clip runs for `seconds` and its end state stays. Everything else the character was presenting is ended by the caller (see TacticalCharacterAdapter.present_defeat); this only
 ## settles the defeat itself. A repeated request while the clip is still running is the same defeat (the same handle, no restart).
 func begin_defeat(seconds: float) -> ActionHandle:
 	if _defeat_handle != null:

@@ -49,7 +49,7 @@ signal attack_presented(target_world_position: Vector3)
 ## Disable for isolated presentation tools or fixtures that intentionally have no battle UI layer.
 @export var show_world_hud := true
 @export var unit_hud_scene: PackedScene = preload("res://ui/unit_world_bar.tscn")
-@export var visual_adapter: UnitVisualAdapter
+@export var visual_adapter: TacticalCharacterAdapter
 ## Show the original Prototype 1 Bean instead of the current character rig.
 ## Kept as a debug fallback and a tiny piece of FuseFire archaeology.
 @export var use_legacy_bean := false

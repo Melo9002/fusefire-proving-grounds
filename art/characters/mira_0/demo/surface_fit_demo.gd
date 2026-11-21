@@ -3,7 +3,7 @@ extends Node3D
 const Fit = preload("res://systems/grid/surface_placement.gd")
 var grid: GridManager
 var wall: MeshInstance3D
-var visual: UnitVisualAdapter
+var visual: TacticalCharacterAdapter
 var ghost: MeshInstance3D
 var contact_marker: MeshInstance3D
 var ray: MeshInstance3D
@@ -62,7 +62,7 @@ func _ready() -> void:
 	_dot(Color.RED).position = Vector3(0, 0.05, 0)
 	ghost = _dot(Color.CYAN)
 	contact_marker = _dot(Color.GOLD)
-	visual = preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	visual = preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	add_child(visual)
 	var camera := Camera3D.new()
 	camera.position = Vector3(-4, 4, 5)

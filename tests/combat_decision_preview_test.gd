@@ -146,7 +146,7 @@ func _run() -> void:
 	check(battle.movement_ghost.model.rig.animation_controller.animation_tree.active and battle.movement_ghost.model.rig.animation_controller.playback.get_current_play_position() != animation_time, "Hologram plays the shared animation rather than displaying a frozen pose")
 	check(actor.visual_adapter.get_presentation_state() == live_pose, "Animating the hologram does not change the live unit's animation state")
 	battle.movement_ghost.show_destination(actor, destination, grid)
-	check(battle.movement_ghost.model is UnitVisualAdapter and battle.movement_ghost.model.tactical_unit == null and battle.movement_ghost.model.rig.clip_library == actor.visual_adapter.rig.clip_library, "Ghost uses the same animation rig/assets without a gameplay actor")
+	check(battle.movement_ghost.model is TacticalCharacterAdapter and battle.movement_ghost.model.tactical_unit == null and battle.movement_ghost.model.rig.clip_library == actor.visual_adapter.rig.clip_library, "Ghost uses the same animation rig/assets without a gameplay actor")
 	check(battle.shot_trajectory_visualizer.destination_lines.size() == 1 and battle.shot_trajectory_visualizer.destination_lines[0].last_origin.is_equal_approx(grid.grid_to_world(destination) + Vector3.UP * actor.standing_height), "Outgoing line starts at the same proposed firing point")
 	check(fingerprint == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager) and rng_before == service.get_combat_rng_state(), "Ghost, text and lines change no authoritative state or RNG")
 	await _capture("destination-ghost", level)

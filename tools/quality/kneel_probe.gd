@@ -4,18 +4,18 @@ const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.
 func _initialize() -> void:
 	_run.call_deferred()
 var _att := {}
-func _attach(v: UnitVisualAdapter, bone: String) -> void:
+func _attach(v: TacticalCharacterAdapter, bone: String) -> void:
 	if _att.has(bone):
 		return
 	var a := BoneAttachment3D.new()
 	a.bone_name = bone
 	v.rig.skeleton.add_child(a)
 	_att[bone] = a
-func _p(v: UnitVisualAdapter, bone: String) -> Vector3:
+func _p(v: TacticalCharacterAdapter, bone: String) -> Vector3:
 	var frame := Basis(Vector3.UP.cross(v.rig.character_root.global_basis.z).normalized(), Vector3.UP, v.rig.character_root.global_basis.z.slide(Vector3.UP).normalized())
 	return frame.inverse() * ((_att[bone] as BoneAttachment3D).global_position - (_att["mixamorig_Hips"] as BoneAttachment3D).global_position)
 func _run() -> void:
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	root.add_child(v)
 	for i in 20: await process_frame
 	for side in ["Left", "Right"]:

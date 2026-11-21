@@ -19,7 +19,7 @@ func _attach(skeleton: Skeleton3D, bone: StringName) -> void:
 	skeleton.add_child(attachment)
 	_attachments[bone] = attachment
 
-func _w(rig: UnitVisualAdapter, point: Vector3) -> Vector3:
+func _w(rig: TacticalCharacterAdapter, point: Vector3) -> Vector3:
 	return rig.rig.weapon.global_transform.affine_inverse() * point
 
 func _bone(bone: StringName) -> Vector3:
@@ -48,7 +48,7 @@ func _run() -> void:
 
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame

@@ -26,7 +26,7 @@ func _run() -> void:
 	fill.rotation_degrees = Vector3(-20, 150, 0)
 	fill.light_energy = 0.6
 	stage.add_child(fill)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	var camera := Camera3D.new()

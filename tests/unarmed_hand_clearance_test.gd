@@ -7,7 +7,7 @@ const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.
 const MAX_DEPTH := 0.01   # metres of allowed overlap: contact and the skinned surface's own rounding
 var failures := 0
 var checks := 0
-var v: UnitVisualAdapter
+var v: TacticalCharacterAdapter
 var pending := ""
 var _results := {}
 var _control_inward := 0.0   # metres the hand vertices are moved toward the body's midline (the negative control)

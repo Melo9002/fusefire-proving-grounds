@@ -13,7 +13,7 @@ func _p(bone: StringName) -> Vector3:
 	return (_attachments[bone] as BoneAttachment3D).global_position
 
 ## Bone positions in the character's own frame (x right/left, y up, z forward) relative to the floor point.
-func _dump(rig: UnitVisualAdapter, label: String) -> void:
+func _dump(rig: TacticalCharacterAdapter, label: String) -> void:
 	var inverse := rig.rig.character_root.global_basis.inverse()
 	var out := "CROUCH-DUMP %s" % label
 	for bone in [&"mixamorig_Hips", &"mixamorig_Spine2", &"mixamorig_HeadTop_End", &"mixamorig_LeftUpLeg", &"mixamorig_LeftLeg", &"mixamorig_LeftFoot", &"mixamorig_RightUpLeg", &"mixamorig_RightLeg", &"mixamorig_RightFoot"]:
@@ -24,7 +24,7 @@ func _dump(rig: UnitVisualAdapter, label: String) -> void:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame

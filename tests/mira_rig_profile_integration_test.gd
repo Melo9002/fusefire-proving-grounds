@@ -15,7 +15,7 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 
 func _run() -> void:
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	root.add_child(v)
 	await process_frame
 	check(v.rig.rig_profile != null, "The production MIRA scene assigns her rig profile")

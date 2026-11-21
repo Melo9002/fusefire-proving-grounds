@@ -48,7 +48,7 @@ func _all_finite(value: Variant) -> bool:
 func _production_rig() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	check(rig.find_children("*", "HandContactDiagnostics", true, false).is_empty() and rig.find_children("*", "HandContactOverlay", true, false).is_empty(), "The gameplay unit scene contains no diagnostics")
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO

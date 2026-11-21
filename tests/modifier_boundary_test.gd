@@ -42,7 +42,7 @@ func _locals(sk: Skeleton3D, bone: int) -> Transform3D:
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var v: UnitVisualAdapter = VISUAL.instantiate()
+	var v: TacticalCharacterAdapter = VISUAL.instantiate()
 	stage.add_child(v)
 	await _frames(15)
 

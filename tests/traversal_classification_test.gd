@@ -14,7 +14,7 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func _walk_ramp(f, actor: TacticalUnit, adapter: UnitVisualAdapter, destination: Vector3i) -> Dictionary:
+func _walk_ramp(f, actor: TacticalUnit, adapter: TacticalCharacterAdapter, destination: Vector3i) -> Dictionary:
 	var poses: Array[StringName] = []
 	var on_state := func(pose: StringName) -> void: poses.append(pose)
 	adapter.presentation_state_changed.connect(on_state)
@@ -59,7 +59,7 @@ func _run() -> void:
 	f.place(actor, Vector3i(11, 0, 15))
 	f.ready_actor(actor, 6, 4)
 	f.act_as(actor)
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	for i in 20: await process_frame
 	var ap_before := actor.stats.current_ap
 

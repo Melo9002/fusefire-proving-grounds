@@ -16,7 +16,7 @@ func _run() -> void:
 		root.add_child(holder)
 		var visuals: Array = []
 		for i in count:
-			var v: UnitVisualAdapter = VISUAL.instantiate()
+			var v: TacticalCharacterAdapter = VISUAL.instantiate()
 			holder.add_child(v)
 			v.position = Vector3(i % 6 * 1.5, 0, i / 6 * 1.5)
 			visuals.append(v)

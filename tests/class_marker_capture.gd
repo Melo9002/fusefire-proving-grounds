@@ -21,7 +21,7 @@ func _run() -> void:
 	environment.environment.ambient_light_color = Color(0.8, 0.8, 0.85)
 	stage.add_child(environment)
 	var definition := TacticalArchetypeCatalog.get_definition(&"bulwark")
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	var camera := Camera3D.new()
 	camera.fov = 40.0

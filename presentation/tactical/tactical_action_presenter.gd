@@ -242,7 +242,7 @@ func present_mission(result: MissionActionResult, actor: TacticalUnit, _target: 
 func _wait_for_rescue_interaction(actor: TacticalUnit) -> void:
 	if not is_inside_tree() or not is_instance_valid(actor) or not is_instance_valid(actor.visual_adapter):
 		return
-	var adapter: UnitVisualAdapter = actor.visual_adapter
+	var adapter: TacticalCharacterAdapter = actor.visual_adapter
 	var handle: ActionHandle = adapter.rig.rescue_presentation()
 	if handle == null:
 		return

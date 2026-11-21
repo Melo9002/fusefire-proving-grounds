@@ -15,13 +15,13 @@ var _attachments := {}
 func _initialize() -> void:
 	_run.call_deferred()
 
-func _local(rig: UnitVisualAdapter, bone: StringName) -> Vector3:
+func _local(rig: TacticalCharacterAdapter, bone: StringName) -> Vector3:
 	return rig.rig.character_root.global_basis.inverse() * ((_attachments[bone] as BoneAttachment3D).global_position - rig.rig.character_root.global_position)
 
 func _run() -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
-	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as UnitVisualAdapter
+	var rig := load("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").instantiate() as TacticalCharacterAdapter
 	stage.add_child(rig)
 	rig.position = Vector3.ZERO
 	for i in 20: await process_frame
