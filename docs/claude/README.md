@@ -47,6 +47,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 | [animation-rig-profiles-2026-11-20.md](animation-rig-profiles-2026-11-20.md) | Task 05: rig profile and character capability design (Godot BoneMap/SkeletonProfileHumanoid reuse, anatomy vs style vs equipment vs role), a validated two-humanoid prototype, measurements, capability model, migration inventory |
 | [animation-module-organization-2026-11-20.md](animation-module-organization-2026-11-20.md) | Task 06: module and directory organisation for the reusable animation architecture: strategy, annotated target tree, module boundaries and dependency rules, naming, Godot reference hazards, 55-row file mapping, migration sequence, checkpoint plan |
 | [animation-where-to-go-2026-11-20.md](animation-where-to-go-2026-11-20.md) | "Where do I change X?" quick reference for character animation: today's paths versus the proposed ones, with tests |
+| [animation-task07-remaining-work.md](animation-task07-remaining-work.md) | Task 07 completion assessment: requirement status with evidence, remaining legacy paths, the four remaining batches and the final validation plan |
 | [test-inventory-2026-11-20.md](test-inventory-2026-11-20.md) | Generated table of every test script: subsystems, scope, flags, last measured cost, static counts |
 
 ## Project documents these build on
