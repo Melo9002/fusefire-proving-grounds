@@ -44,12 +44,13 @@ var _hand_parents := [-1, -1]
 var _hand_rest_basis := [Basis.IDENTITY, Basis.IDENTITY]
 var _finger_rest_direction := [Vector3.RIGHT, Vector3.LEFT]
 
-func setup(target: Skeleton3D, prefix: String) -> bool:
+func setup(target: Skeleton3D, bones: RigBones) -> bool:
 	var scale_y := target.global_basis.get_scale().y if target.is_inside_tree() else 1.0
 	for hand in 2:
 		var side := "Left" if hand == 0 else "Right"
-		_hands[hand] = target.find_bone("%s%sHand" % [prefix, side])
-		var middle := target.find_bone("%s%sHandMiddle1" % [prefix, side])
+		var arm := bones.left_arm if hand == 0 else bones.right_arm
+		_hands[hand] = target.find_bone(arm[2])
+		var middle := target.find_bone(bones.finger(side, "Middle", 1))
 		if _hands[hand] < 0 or middle < 0:
 			return false
 		_hand_parents[hand] = target.get_bone_parent(_hands[hand])
@@ -57,11 +58,9 @@ func setup(target: Skeleton3D, prefix: String) -> bool:
 		var along: Vector3 = target.get_bone_global_rest(middle).origin - target.get_bone_global_rest(_hands[hand]).origin
 		_finger_rest_direction[hand] = along.normalized()
 		palm_length = along.length() * scale_y
-		for finger in ["Thumb", "Index", "Middle", "Ring", "Pinky"]:
-			var joints: Array[int] = []
-			for joint in [1, 2, 3, 4]:
-				joints.append(target.find_bone("%s%sHand%s%d" % [prefix, side, finger, joint]))
-			if joints.has(-1):
+		for finger_name in RigBones.FINGERS:
+			var joints := bones.finger_chain(target, side, finger_name)
+			if joints.is_empty():
 				return false
 			_fingers[hand].append(joints)
 			for index in 3:

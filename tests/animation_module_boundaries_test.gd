@@ -144,6 +144,20 @@ func _run() -> void:
 	var traversal_dicts := RegEx.create_from_string("var (traversal|traversal_pose|stair_state|stair_pose)\\b")
 	check(traversal_dicts.search(rig_code) == null and RegEx.create_from_string("\\b(traversal_pose|stair_state|stair_pose)\\b").search(rig_code + _code("presentation/characters/runtime/unit_visual_adapter.gd") + _code("art/characters/mira_0/demo/mira_0_pose_workbench.gd")) == null,
 		"The rig, the adapter and the workbench keep no traversal or stair dictionary: the state is LadderClimb and StairWalk (typed)")
+	# Rig independence (Task 07 package 9): no skeleton bone name in production code (the rig profile holds them), no required weapon, no dictionary-configured modifier, and the foot-point convention in the
+	# composition: the visual scene has no origin offset and TacticalUnit places it.
+	var skeleton_names := RegEx.create_from_string("mixamorig|J_Bip")
+	for directory in ["presentation", "units", "systems", "art/characters"]:
+		for path in _scripts(directory):
+			var literal := skeleton_names.search(_code(path))
+			check(literal == null, "%s names a skeleton bone (%s): asset-specific names belong in the rig profile (RigBones)" % [path, literal.get_string() if literal else ""])
+	check(not rig_code.contains('preload("res://art/weapons') and not rig_code.contains("assert(weapon_scene") and not rig_code.contains("@export var right_arm_bones") and not rig_code.contains("@export var left_arm_bones"),
+		"CharacterRig carries no default weapon, no weapon assertion and no exported bone names")
+	for modifier_path in ["cover_crouch_modifier", "locomotion_pose_modifier", "hand_grip_modifier"]:
+		var setup_line := RegEx.create_from_string("func setup\\([^)]*\\)").search(_code("presentation/characters/runtime/%s.gd" % modifier_path))
+		check(setup_line != null and not setup_line.get_string().contains("Dictionary"), "%s is configured with typed inputs, not a dictionary" % modifier_path)
+	check(not FileAccess.get_file_as_string("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn").contains("Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)") and unit_code.contains("func _place_visual()"),
+		"The character visual scene has no origin offset (feet at its origin) and TacticalUnit composes it standing_height below the unit's origin")
 	# The skeleton modifiers (Task 07 package 4): no lookup by name into any other object, the supported callback only, and no knowledge of the rig, the presenter or gameplay.
 	var dynamic_access := RegEx.create_from_string("\\b(rig|owner|host|binding)\\.(get|set|call|callv)\\(|has_method\\(|get_indexed\\(")
 	var owner_types := RegEx.create_from_string("\\b(CharacterRig|UnitVisualAdapter|CharacterPresenter|TacticalUnit)\\b")

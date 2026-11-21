@@ -74,7 +74,7 @@ func _drive(frames: int, step: Callable) -> void:
 				var a: Transform3D = mine[bone]
 				var b: Transform3D = control[bone]
 				if a.origin.distance_to(b.origin) > 0.0001 or a.basis.get_rotation_quaternion().angle_to(b.basis.get_rotation_quaternion()) > 0.001:
-					var role := PoseOwnership.role_of(sk.get_bone_name(bone))
+					var role := PoseOwnership.role_of(rigs[index].bones, sk.get_bone_name(bone))
 					if not observed.has(stage):
 						observed[stage] = {}
 					observed[stage][role if role != &"" else StringName("UNMAPPED:" + sk.get_bone_name(bone))] = true
@@ -102,9 +102,10 @@ func _run() -> void:
 		if child is SkeletonModifier3D:
 			production_order.append(StringName(child.name))
 	check(production_order == PoseOwnership.STAGE_ORDER, "The production skeleton's modifier children are exactly the declared stages, in order: %s" % [production_order])
+	var probe_bones: RigBones = probe.bones
 	probe.queue_free()
 	await process_frame
-	check(PoseOwnership.role_of("mixamorig_LeftShoulder") == &"support_clavicle" and PoseOwnership.role_of("mixamorig_RightHandIndex1") == &"fingers" and PoseOwnership.role_of("mixamorig_LeftLeg") == &"shin" and PoseOwnership.role_of("mixamorig_LeftUpLeg") == &"thigh", "Bone names map to the declared roles")
+	check(PoseOwnership.role_of(probe_bones, "mixamorig_LeftShoulder") == &"support_clavicle" and PoseOwnership.role_of(probe_bones, "mixamorig_RightHandIndex1") == &"fingers" and PoseOwnership.role_of(probe_bones, "mixamorig_LeftLeg") == &"shin" and PoseOwnership.role_of(probe_bones, "mixamorig_LeftUpLeg") == &"thigh", "Bone names map to the declared roles")
 	# An undeclared conflict is found: two stages overriding the same bone with no declaration.
 	var table_has_undeclared := false
 	for write in PoseOwnership.WRITES:

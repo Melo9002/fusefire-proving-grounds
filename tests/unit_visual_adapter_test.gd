@@ -24,8 +24,8 @@ func _initialize() -> void:
 	await process_frame
 	# A carried rifle points diagonally; measure body facing from rest toes.
 	var rig: Skeleton3D = adapter.skeleton
-	var foot_name := &"mixamorig_RightFoot" if rig.find_bone(&"mixamorig_RightFoot") >= 0 else &"J_Bip_R_Foot"
-	var toe_name := &"mixamorig_RightToeBase" if rig.find_bone(&"mixamorig_RightToeBase") >= 0 else &"J_Bip_R_ToeBase"
+	var foot_name: StringName = adapter.bones.right_leg[2]
+	var toe_name: StringName = adapter.bones.right_toes
 	var foot := rig.get_bone_global_rest(rig.find_bone(foot_name)).origin
 	var toe := rig.get_bone_global_rest(rig.find_bone(toe_name)).origin
 	var visual_forward := rig.global_basis * (toe - foot)

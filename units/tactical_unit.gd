@@ -10,8 +10,12 @@ signal attack_presented(target_world_position: Vector3)
 @export_group("Gameplay")
 ## Presentation speed in world metres per second. Movement range is UnitStats.speed.
 @export_range(0.1, 30.0, 0.1, "suffix:m/s") var movement_speed: float = 5.0
-## Feet-to-origin offset used when placing the unit on a grid cell.
-@export_range(0.0, 5.0, 0.01, "suffix:m") var standing_height: float = 1.0
+## Height of the unit's origin (its body centre) above the floor: the tactical origin that cells, shots and the camera are measured from. The FOOT-POINT CONVENTION: a character visual's own origin is at its FEET
+## (nothing in the visual scene is offset), and this unit places the visual that far below its origin, so the feet stand on the floor of the cell whatever the height. This is the one place that composes the two.
+@export_range(0.0, 5.0, 0.01, "suffix:m") var standing_height: float = 1.0:
+	set(value):
+		standing_height = value
+		_place_visual()
 ## Presentation of the walk between authorized cells (never legality): smoothing corners within the body clearance (off by default, experimental) and stairs followed on
 ## their physical treads (stair links the authored scene declares). See PathRefiner and StairModel.
 @export var path_presentation: PathPresentationProfile = PathPresentationProfile.new()
@@ -123,7 +127,13 @@ func get_mission_actor_kind() -> MissionActor.Kind:
 func can_extract_others() -> bool:
 	return mission_actor != null and mission_actor.can_extract_others()
 
+## Puts the visual's feet on the floor under the unit's origin (see standing_height).
+func _place_visual() -> void:
+	if visual_adapter != null and is_instance_valid(visual_adapter):
+		visual_adapter.position = Vector3.DOWN * standing_height
+
 func _ready() -> void:
+	_place_visual()
 	_apply_character_presentation()
 	if stats:
 		stats.defeated.connect(_on_stats_defeated)

@@ -347,7 +347,7 @@ func intent() -> PresentationIntent:
 	if is_instance_valid(rig):
 		snapshot.facing_yaw = rig.global_rotation.y
 		snapshot.readiness = rig.readiness.requested()
-		snapshot.equipment = PresentationTypes.EquipmentState.SLUNG if rig.is_weapon_stowed() else PresentationTypes.EquipmentState.HELD
+		snapshot.equipment = rig.equipment_state()
 	snapshot.velocity = velocity
 	if _facing_hold:
 		snapshot.facing_mode = PresentationTypes.FacingMode.HOLD
@@ -359,6 +359,20 @@ func intent() -> PresentationIntent:
 	snapshot.posture_yaw_offset = postures.resolved_yaw_offset()
 	snapshot.posture_depth = postures.resolved_depth()
 	return snapshot
+
+## The foot-point convention, as the visual is composed into its host (Task 04 section 8, Task 07 package 9): the character's origin is at its feet, so its basis must be a pure rotation about the vertical at
+## scale one (a host that scales or tilts it moves the feet). Returns the problems found (empty when the composition is right). The host places the position; this checks only what must hold whatever it is.
+func foot_point_problems() -> Array[String]:
+	var problems: Array[String] = []
+	if not is_instance_valid(rig) or not rig.is_inside_tree():
+		return problems
+	var basis := rig.global_basis
+	for axis in 3:
+		if not is_equal_approx(basis[axis].length(), 1.0):
+			problems.append("The character's scale is %.3f on axis %d: the visual composes at scale one (the model's own scale is character_scale)" % [basis[axis].length(), axis])
+	if basis.y.normalized().dot(Vector3.UP) < 0.9999:
+		problems.append("The character is tilted (its up axis is %s): only a rotation about the vertical keeps the feet on the floor" % [basis.y.normalized()])
+	return problems
 
 ## Releases everything the presenter holds: no posture request outlives the character.
 func teardown() -> void:

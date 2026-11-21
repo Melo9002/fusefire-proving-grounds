@@ -55,37 +55,25 @@ const OVERLAPS: Array[Dictionary] = [
 		"rule": "CoverCrouch sets the base protraction; WeaponPose is later and may only ADD to that base (never below it), up to the rig's limit; with nothing to add it restores the base."},
 ]
 
-## The role a bone plays, from its (Mixamo or VRM-style) name. Side-agnostic except the support (left) clavicle. Returns &"" for a bone no stage is expected to write.
-static func role_of(bone_name: String) -> StringName:
-	var name := bone_name.trim_prefix("mixamorig_")
-	if name == "Hips" or name == "J_Bip_C_Hips":
-		return &"hips"
-	if name.begins_with("Spine") or name.begins_with("J_Bip_C_Spine") or name == "J_Bip_C_Chest" or name == "J_Bip_C_UpperChest":
-		return &"spine"
-	if name.ends_with("UpLeg") or name.ends_with("UpperLeg"):
-		return &"thigh"
-	if name.ends_with("Leg") and not name.ends_with("UpLeg"):
-		return &"shin"
-	if name.ends_with("LowerLeg"):
-		return &"shin"
-	if name.ends_with("Foot"):
-		return &"foot"
-	if name.contains("Toe"):
-		return &"toes"
-	if name == "LeftShoulder" or name == "J_Bip_L_Shoulder":
-		return &"support_clavicle"
-	if name.ends_with("Shoulder"):
-		return &"clavicle"
-	if name.ends_with("ForeArm") or name.ends_with("LowerArm"):
-		return &"forearm"
-	if name.ends_with("Arm") or name.ends_with("UpperArm"):
-		return &"upper_arm"
-	if name.ends_with("Hand"):
-		return &"wrist"
-	if name.contains("Hand"):
+## The ownership role a bone plays in this rig (&"" for a bone no stage is expected to write): the bone's anatomical role (RigBones) mapped to the vocabulary of the table. Side-agnostic except the support
+## (left) clavicle. The names of the bones are the rig profile's; nothing here knows one.
+static func role_of(bones: RigBones, bone_name: String) -> StringName:
+	var anatomical := bones.role_of_bone(StringName(bone_name))
+	match String(anatomical):
+		"Hips": return &"hips"
+		"Spine", "Chest", "UpperChest": return &"spine"
+		"LeftUpperLeg", "RightUpperLeg": return &"thigh"
+		"LeftLowerLeg", "RightLowerLeg": return &"shin"
+		"LeftFoot", "RightFoot": return &"foot"
+		"LeftToes", "RightToes": return &"toes"
+		"LeftShoulder": return &"support_clavicle"
+		"RightShoulder": return &"clavicle"
+		"LeftLowerArm", "RightLowerArm": return &"forearm"
+		"LeftUpperArm", "RightUpperArm": return &"upper_arm"
+		"LeftHand", "RightHand": return &"wrist"
+		"Neck", "Head": return &"head"
+	if String(anatomical).contains("Thumb") or String(anatomical).contains("Index") or String(anatomical).contains("Middle") or String(anatomical).contains("Ring") or String(anatomical).contains("Little"):
 		return &"fingers"
-	if name == "Neck" or name == "Head":
-		return &"head"
 	return &""
 
 static func stages_writing(role: StringName, domain: StringName) -> Array[StringName]:

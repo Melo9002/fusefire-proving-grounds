@@ -157,7 +157,7 @@ func _run() -> void:
 	var lean_carrying := _lean_degrees(rig)
 	check(lean_carrying > lean_before + 8.0 and lean_carrying < lean_before + 25.0, "The carrier leans forward under the load (%.1f deg, was %.1f)" % [lean_carrying, lean_before])
 	var carry_clip: Animation = rig.animation_controller.animation_player.get_animation(&"carry_idle")
-	var builder := CharacterFallbackAnimationBuilder.new(rig.skeleton)
+	var builder := CharacterFallbackAnimationBuilder.new(rig.skeleton, rig.bones)
 	for state in [&"rifle_idle", &"aim", &"move", &"pickup", &"boarding"]:
 		var clip: Animation = builder._make_rescue_pose(state) if state in [&"pickup", &"boarding"] else rig.animation_controller.animation_player.get_animation(state)
 		var track := clip.find_track(NodePath(".:%s" % builder.head), Animation.TYPE_ROTATION_3D)

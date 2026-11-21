@@ -13,11 +13,10 @@ extends RefCounted
 ##   legs:   thighs hang ~80 degrees from the body's vertical, knees slightly bent so the lower legs hang a little less
 ##   arms:   dangle down past the head, slightly apart, elbows loose
 ##
-## Only Mixamo-named skeletons are posed (the MIRA rig). Other skeletons are left in rest pose.
+## The table names ANATOMICAL ROLES (RigBones), not bones: the skeleton's rig profile says which bone plays each, so any humanoid whose profile maps the roles is posed. A skeleton that lacks them is left in rest pose.
 
-const PREFIX := "mixamorig_"
-## The bone the passenger is attached by: the abdomen, which is what lies on the carrier's shoulder.
-const ATTACH_BONE := "Spine"
+## The role of the bone the passenger is attached by: the abdomen, which is what lies on the carrier's shoulder.
+const ATTACH_ROLE := &"Spine"
 
 
 ## Direction in the body frame for a segment folded `degrees` forward from the spine's up direction (+y toward +z).
@@ -80,35 +79,39 @@ static func chain(overrides := {}) -> Array:
 	var fold: Array = p.fold
 	return [
 		["Hips", "Spine", _fold(fold[0])],
-		["Spine", "Spine1", _fold(fold[1])],
-		["Spine1", "Spine2", _fold(fold[2])],
-		["Spine2", "Neck", _fold(fold[3])],
+		["Spine", "Chest", _fold(fold[1])],
+		["Chest", "UpperChest", _fold(fold[2])],
+		["UpperChest", "Neck", _fold(fold[3])],
 		["Neck", "Head", _fold(fold[4])],
-		["Head", "HeadTop_End", _fold(fold[5])],
-		["%sArm", "%sForeArm", p.held_upper, p.free_upper],
-		["%sForeArm", "%sHand", p.held_fore, p.free_fore],
-		["%sUpLeg", "%sLeg", _leg(p.thigh, p.thigh_spread), _leg(p.thigh, -p.thigh_spread)],
-		["%sLeg", "%sFoot", _leg(p.shin, p.shin_spread), _leg(p.shin, -p.shin_spread)],
-		["%sFoot", "%sToeBase", _leg(p.foot, 0.02), _leg(p.foot, -0.02)],
+		["Head", "HeadTop", _fold(fold[5])],
+		["%sUpperArm", "%sLowerArm", p.held_upper, p.free_upper],
+		["%sLowerArm", "%sHand", p.held_fore, p.free_fore],
+		["%sUpperLeg", "%sLowerLeg", _leg(p.thigh, p.thigh_spread), _leg(p.thigh, -p.thigh_spread)],
+		["%sLowerLeg", "%sFoot", _leg(p.shin, p.shin_spread), _leg(p.shin, -p.shin_spread)],
+		["%sFoot", "%sToes", _leg(p.foot, 0.02), _leg(p.foot, -0.02)],
 	]
 
 
 ## True when the skeleton has the bones this pose needs.
-static func supports(skeleton: Skeleton3D) -> bool:
-	return skeleton.find_bone(PREFIX + "Hips") >= 0 and skeleton.find_bone(PREFIX + "LeftArm") >= 0 and skeleton.find_bone(PREFIX + "LeftUpLeg") >= 0
+static func supports(bones: RigBones) -> bool:
+	return bones.has_role(&"Hips") and bones.has_role(&"LeftUpperArm") and bones.has_role(&"LeftUpperLeg")
+
+## The bone a table token names: a role of the rig, or the top of the head.
+static func bone_of(bones: RigBones, token: String) -> StringName:
+	return bones.head_top if token == "HeadTop" else bones.role(StringName(token))
 
 
 ## Poses the skeleton from rest. `body_to_skeleton` turns a body-frame direction into the skeleton's space (identity
 ## when the model is not rotated inside its skeleton).
-static func apply(skeleton: Skeleton3D, body_to_skeleton := Basis.IDENTITY, overrides := {}) -> bool:
-	if not supports(skeleton):
+static func apply(skeleton: Skeleton3D, bones: RigBones, body_to_skeleton := Basis.IDENTITY, overrides := {}) -> bool:
+	if not supports(bones):
 		return false
 	skeleton.reset_bone_poses()
 	for entry in chain(overrides):
 		var sided: bool = entry.size() > 3
 		for side in ["Left", "Right"] if sided else [""]:
-			var bone := skeleton.find_bone(PREFIX + (String(entry[0]) % side if sided else String(entry[0])))
-			var child := skeleton.find_bone(PREFIX + (String(entry[1]) % side if sided else String(entry[1])))
+			var bone := skeleton.find_bone(bone_of(bones, String(entry[0]) % side if sided else String(entry[0])))
+			var child := skeleton.find_bone(bone_of(bones, String(entry[1]) % side if sided else String(entry[1])))
 			if bone < 0 or child < 0:
 				continue
 			var direction: Vector3 = entry[3] if side == "Right" else entry[2]

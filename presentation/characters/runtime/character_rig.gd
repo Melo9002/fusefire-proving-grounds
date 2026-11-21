@@ -14,14 +14,16 @@ const ANIMATION_CONTROLLER_FALLBACK := preload("res://presentation/characters/ru
 @export var rig_profile: Resource
 ## Uniform correction applied to imported models whose source units are not metres.
 @export_range(0.1, 4.0, 0.01) var character_scale := 1.0
-## Weapon model to attach. It must contain SupportHandTarget and MuzzleSocket nodes.
-@export var weapon_scene: PackedScene = preload("res://art/weapons/aug/models/aug_runtime_socketed.glb")
+## The weapon this character carries (a model with SupportHandTarget and MuzzleSocket nodes), or null for an unarmed character. Equipment is chosen by the scene or the context: the rig requires none.
+@export var weapon_scene: PackedScene
 
-@export_group("Skeleton Bone Map")
-## Upper arm, forearm, and hand used by the firing-hand IK chain.
-@export var right_arm_bones: Array[StringName] = [&"J_Bip_R_UpperArm", &"J_Bip_R_LowerArm", &"J_Bip_R_Hand"]
-## Upper arm, forearm, and hand used by the support-hand IK chain.
-@export var left_arm_bones: Array[StringName] = [&"J_Bip_L_UpperArm", &"J_Bip_L_LowerArm", &"J_Bip_L_Hand"]
+## The skeleton configuration the whole stack runs on: which bone plays which anatomical role, derived from `rig_profile` (see RigBones). No code in the stack names a bone.
+var bones: RigBones
+## Upper arm, forearm and hand of the firing-hand and the support-hand IK chains: read-only views of `bones`.
+var right_arm_bones: Array[StringName]:
+	get: return bones.right_arm if bones != null else []
+var left_arm_bones: Array[StringName]:
+	get: return bones.left_arm if bones != null else []
 
 @onready var character_root: Node3D = $Character
 @onready var right_hand_target: Marker3D = $Character/IKTargets/RightHandTarget
@@ -156,10 +158,11 @@ var weapon_pose_settings := WeaponPoseSettings.new()
 ## stock, instead of keeping the character root's orientation: the weapon and both shoulders then move as one body and
 ## the support hand keeps its grip. Off restores the root-frame weapon (used for before/after comparisons).
 @export var torso_frame_enabled := true
-## Bone whose orientation defines the torso (the chest). Set automatically for known skeletons.
-var torso_bone_name := &""
-## Bone the carried passenger is measured from (the base of the neck).
-var neck_bone_name := &""
+## Bone whose orientation defines the torso (the chest), and the bone the carried passenger is measured from (the base of the neck): read-only views of `bones`.
+var torso_bone_name: StringName:
+	get: return bones.torso if bones != null else &""
+var neck_bone_name: StringName:
+	get: return bones.neck if bones != null else &""
 var _stow_anchor: ChestAnchor
 var _carry_lean := 0.0
 ## Swivel-preserving elbow guidance (animation improvement 05B). While aiming, each elbow pole is built every pass from
@@ -277,8 +280,10 @@ func _build_character() -> void:
 	character_root.add_child(model)
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	assert(skeleton != null, "Character model must contain Skeleton3D")
+	assert(rig_profile != null, "A character needs a rig profile: it names the skeleton's bones (see RigBones)")
 	_resolve_rig_profile()
-	assert(right_arm_bones.size() == 3 and left_arm_bones.size() == 3, "Arm bone maps require upper arm, forearm, and hand")
+	bones = RigBones.from_profile(rig_profile, skeleton)
+	assert(not right_arm_bones.has(&"") and not left_arm_bones.has(&""), "The rig profile must map both arms (upper arm, lower arm, hand) to bones of this skeleton")
 
 
 ## The profile resolved against this character's skeleton (a RigResolver.Resolved), or null without a profile. Read-only information: roles, measurements, capabilities, diagnostics.
@@ -290,13 +295,26 @@ func _resolve_rig_profile() -> void:
 		resolved_rig = RigResolver.resolve(rig_profile, skeleton)
 
 
+## Whether this character carries a weapon at all. Every weapon-specific pose, readiness and IK assumption is conditional on it.
+func has_weapon() -> bool:
+	return is_instance_valid(weapon)
+
+
+## What the body physically holds: NONE (no weapon), HELD (in the hands) or SLUNG (carried, not held). It is what is true, not an inference from the weapon pose.
+func equipment_state() -> PresentationTypes.EquipmentState:
+	if not has_weapon():
+		return PresentationTypes.EquipmentState.NONE
+	return PresentationTypes.EquipmentState.SLUNG if is_weapon_stowed() else PresentationTypes.EquipmentState.HELD
+
+
 func _build_weapon_attachment() -> void:
+	if weapon_scene == null:
+		return   # unarmed: no weapon, no socket, no markers and no muzzle flash. The arms hang relaxed (apply_relaxed_hand_targets) and nothing here assumes a rifle.
 	weapon_attachment = BoneAttachment3D.new()
 	weapon_attachment.name = "RightHandWeaponSocket"
 	weapon_attachment.bone_name = right_arm_bones[2]
 	skeleton.add_child(weapon_attachment)
 
-	assert(weapon_scene != null, "Weapon scene is required")
 	weapon = weapon_scene.instantiate() as Node3D
 	weapon.name = "AUG"
 	weapon.scale = Vector3.ONE * handling.scale
@@ -366,7 +384,7 @@ func _build_animation_controller() -> void:
 	animation_controller.clip_library = clip_library
 	animation_controller.locomotion_profile = locomotion_profile
 	animation_controller.state_changed.connect(_on_animation_state_changed)
-	animation_controller.setup(skeleton, character_root)
+	animation_controller.setup(skeleton, character_root, bones)
 	_build_crouch_modifier()
 	_build_traversal_modifier()
 	_build_weapon_pose_modifier()
@@ -377,16 +395,15 @@ func _build_animation_controller() -> void:
 ## Procedural crouch layer: runs after the animation and before the arm IK, so the arms and
 ## the weapon follow the lowered body.
 func _build_grip_modifier() -> void:
-	var prefix := "mixamorig_" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else ""
-	if prefix.is_empty():
-		return
 	grip_modifier = HandGripModifier.new()
 	grip_modifier.name = "HandGrip"
-	if not grip_modifier.setup(skeleton, prefix):
+	if not grip_modifier.setup(skeleton, bones):
 		grip_modifier = null
+		bones.degrade("HandGrip", bones.missing_of([&"LeftHand", &"RightHand", &"LeftMiddleProximal", &"RightMiddleProximal"]))
 		return
 	skeleton.add_child(grip_modifier)
-	_place_hands_on_weapon()
+	if has_weapon():
+		_place_hands_on_weapon()
 
 
 ## Derives the weapon placement from the handling profile and the real hand size: the palm centre
@@ -405,7 +422,9 @@ func _place_hands_on_weapon() -> void:
 
 
 ## Runs after the crouch layer and before the arm IK, so the targets are placed from the final procedural shoulder.
-## The rig's side of the PoseTargetPlacer contract: the weapon-pose modifier asks, the rig places its own targets with its own formulas.
+## The rig's side of the PoseTargetPlacer contract: the weapon-pose modifier asks, the rig places its own targets with its own formulas. KEPT in Task 07 package 9 as the typed boundary for same-pass skeletal
+## operations: it is not about weapons (place_weapon_targets places the rifle's hands for an armed character and the relaxed hanging hands for an unarmed one, decided inside the rig), and removing it would put
+## the rig back inside the modifier. The modifier decides WHEN; every formula stays here.
 class RigPoseTargets extends PoseTargetPlacer:
 	var _rig: CharacterRig
 	func _init(owner_rig: CharacterRig) -> void:
@@ -429,13 +448,11 @@ class RigPoseTargets extends PoseTargetPlacer:
 func _build_weapon_pose_modifier() -> void:
 	var modifier := WeaponPoseModifier.new()
 	modifier.name = "WeaponPose"
-	torso_bone_name = &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
-	neck_bone_name = &"mixamorig_Neck" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Neck"
 	var binding := WeaponPoseBinding.new()
 	binding.skeleton = skeleton
-	binding.right_shoulder_bone = right_arm_bones[0]
-	binding.left_arm_bones.assign(left_arm_bones)
-	binding.chest_bone = torso_bone_name
+	binding.right_shoulder_bone = bones.right_arm[0]
+	binding.left_arm_bones.assign(bones.left_arm)
+	binding.chest_bone = bones.torso
 	binding.character_root = character_root
 	binding.arm_ik = arm_ik
 	binding.support_target = support_ik_target
@@ -455,8 +472,9 @@ func _build_weapon_pose_modifier() -> void:
 func _build_locomotion_modifier() -> void:
 	locomotion_modifier = LocomotionPoseModifier.new()
 	locomotion_modifier.name = "Locomotion"
-	if not locomotion_modifier.setup(skeleton, animation_controller.locomotion_axes()):
+	if not locomotion_modifier.setup(skeleton, bones, animation_controller.locomotion_axes()):
 		locomotion_modifier = null
+		bones.degrade("Locomotion", bones.missing_of([&"Hips", &"Spine", &"LeftUpperLeg", &"RightUpperLeg"]))
 		return
 	skeleton.add_child(locomotion_modifier)
 	for child in skeleton.get_children():
@@ -466,24 +484,11 @@ func _build_locomotion_modifier() -> void:
 
 
 func _build_crouch_modifier() -> void:
-	var mixamo := skeleton.find_bone(&"mixamorig_Hips") >= 0
-	var bones := {
-		"hips": &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips",
-		"left_upper": &"mixamorig_LeftUpLeg" if mixamo else &"J_Bip_L_UpperLeg",
-		"left_lower": &"mixamorig_LeftLeg" if mixamo else &"J_Bip_L_LowerLeg",
-		"left_foot": &"mixamorig_LeftFoot" if mixamo else &"J_Bip_L_Foot",
-		"right_upper": &"mixamorig_RightUpLeg" if mixamo else &"J_Bip_R_UpperLeg",
-		"right_lower": &"mixamorig_RightLeg" if mixamo else &"J_Bip_R_LowerLeg",
-		"right_foot": &"mixamorig_RightFoot" if mixamo else &"J_Bip_R_Foot",
-		"spine": [&"mixamorig_Spine", &"mixamorig_Spine1"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest"],
-		"head_top": &"mixamorig_HeadTop_End" if mixamo else &"J_Bip_C_Head",
-		"support_clavicle": &"mixamorig_LeftShoulder" if mixamo else &"J_Bip_L_Shoulder",
-		"support_arm": &"mixamorig_LeftArm" if mixamo else &"J_Bip_L_UpperArm",
-	}
 	crouch_modifier = CoverCrouchModifier.new()
 	crouch_modifier.name = "CoverCrouch"
 	if not crouch_modifier.setup(skeleton, bones, character_root.global_basis.z):
 		crouch_modifier = null
+		bones.degrade("CoverCrouch", bones.missing_of([&"Hips", &"Spine", &"LeftUpperLeg", &"LeftLowerLeg", &"LeftFoot", &"RightUpperLeg", &"RightLowerLeg", &"RightFoot"]))
 		return
 	skeleton.add_child(crouch_modifier)
 	if is_instance_valid(arm_ik):
@@ -492,15 +497,12 @@ func _build_crouch_modifier() -> void:
 
 ## The body layer for ladders and obstacles: a pelvis/trunk pose and a two-bone leg IK, after Locomotion and CoverCrouch and before WeaponPose (see TraversalPoseModifier).
 func _build_traversal_modifier() -> void:
-	var mixamo := skeleton.find_bone(&"mixamorig_Hips") >= 0
-	var legs := [
-		[&"mixamorig_LeftUpLeg", &"mixamorig_LeftLeg", &"mixamorig_LeftFoot"] if mixamo else [&"J_Bip_L_UpperLeg", &"J_Bip_L_LowerLeg", &"J_Bip_L_Foot"],
-		[&"mixamorig_RightUpLeg", &"mixamorig_RightLeg", &"mixamorig_RightFoot"] if mixamo else [&"J_Bip_R_UpperLeg", &"J_Bip_R_LowerLeg", &"J_Bip_R_Foot"],
-	]
+	var legs := [bones.left_leg, bones.right_leg]
 	traversal_modifier = TraversalPoseModifier.new()
 	traversal_modifier.name = "Traversal"
-	if not traversal_modifier.setup(skeleton, &"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips", character_root):
+	if not traversal_modifier.setup(skeleton, bones.hips, character_root):
 		traversal_modifier = null
+		bones.degrade("Traversal", bones.missing_of([&"Hips"]))
 		return
 	leg_ik = TwoBoneIK3D.new()
 	leg_ik.name = "TraversalLegIK"
@@ -664,13 +666,13 @@ func apply_traversal_hand_targets() -> void:
 
 func _configure_chain(
 	index: int,
-	bones: Array,
+	chain: Array,
 	target: Node3D,
 	pole: Node3D,
 ) -> void:
-	arm_ik.set_root_bone_name(index, bones[0])
-	arm_ik.set_middle_bone_name(index, bones[1])
-	arm_ik.set_end_bone_name(index, bones[2])
+	arm_ik.set_root_bone_name(index, chain[0])
+	arm_ik.set_middle_bone_name(index, chain[1])
+	arm_ik.set_end_bone_name(index, chain[2])
 	arm_ik.set_target_node(index, arm_ik.get_path_to(target))
 	arm_ik.set_pole_node(index, arm_ik.get_path_to(pole))
 
@@ -709,6 +711,9 @@ func weapon_pose_modifier_controls_targets() -> bool:
 ## Everything the weapon pose needs that does not depend on where the shoulder is: the carry sway, and what the
 ## crouch and grip layers are told about the weapon.
 func _update_weapon_pose_inputs() -> void:
+	if not has_weapon():
+		_update_unarmed_pose_inputs()
+		return
 	stock_marker.position = handling.stock_rear
 	var moving := false
 	# Non-tool animation controllers intentionally do not expose runtime state
@@ -743,7 +748,7 @@ func _update_weapon_pose_inputs() -> void:
 ## chest's rotation since it settled. Standing, crouching and kneeling all share this; cover yaw and facing turn the
 ## root, so they never appear in it.
 func update_torso_frame(chest_in_root: Basis, delta: float) -> void:
-	if not torso_frame_enabled or Engine.is_editor_hint():
+	if not has_weapon() or not torso_frame_enabled or Engine.is_editor_hint():
 		torso_frame = Basis.IDENTITY
 		_torso_offset = Quaternion.IDENTITY
 		return
@@ -761,6 +766,9 @@ func update_torso_frame(chest_in_root: Basis, delta: float) -> void:
 
 
 func apply_weapon_targets(shoulder_world: Vector3) -> void:
+	if not has_weapon():
+		apply_relaxed_hand_targets(shoulder_world)
+		return
 	shoulder_marker.position = character_root.to_local(shoulder_world) + shoulder_contact_offset
 	var aimed_grip := shoulder_marker.position - torso_frame * (stock_contact_offset + grip_offset)
 	# While crouched, the low-ready grip and the elbows travel with the chest: the shoulder moved
@@ -839,6 +847,96 @@ func apply_elbow_guidance(shoulders: Array, chest_world: Basis, carrying := fals
 			poles[i].position = parent.to_local(character_root.to_global(_reach_poles[i]).lerp(aimed_world, _carry_reach) if _carry_reach < 1.0 else aimed_world)
 		else:
 			poles[i].position = _pole_ready[i].lerp(parent.to_local(aimed_world), blend)
+
+
+## The unarmed character's per-frame inputs: no rifle sway, no aim lean, no support reach; the hands rest open (and close on a ladder's rungs as it is climbed).
+const UNARMED_HAND_CURL := 0.25
+## How much of its length the hanging arm keeps (a slight bend at the elbow).
+const RELAXED_ARM_BEND := 0.93
+
+func _update_unarmed_pose_inputs() -> void:
+	carry_motion_blend = 0.0
+	var climbing := ladder != null and ladder.pose != null
+	if crouch_modifier != null:
+		crouch_modifier.aim_lean_degrees = lerpf(0.0, ladder.pose.lean_degrees, ladder.pose.weight) if climbing else 0.0
+		crouch_modifier.support_reach_degrees = 0.0
+	if grip_modifier != null:
+		var grip := lerpf(UNARMED_HAND_CURL, CARRY_GRIP_CURL, ladder.pose.weight) if climbing else UNARMED_HAND_CURL
+		grip_modifier.curl = [grip, grip]
+		grip_modifier.orient_weight = 0.0
+		grip_modifier.trigger_pull = 0.0
+
+
+## The unarmed hands: each hangs under its shoulder at the arm's own length (slightly bent), the elbow pole behind and outward. Runs where the weapon targets would, from the same-pass shoulder, so a crouch,
+## a kneel or a lean carries the arms with the body. A ladder or a carried passenger then takes the hands from here, exactly as it takes them from the weapon's.
+func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
+	var left_shoulder_world := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(bones.left_arm[0])).origin
+	var frame := character_root.global_basis.orthonormalized()
+	var shoulders: Array[Vector3] = [right_shoulder_world, left_shoulder_world]
+	var targets: Array[Node3D] = [right_hand_target, support_ik_target]
+	var poles: Array[Node3D] = [right_elbow_pole, left_elbow_pole]
+	for side in 2:
+		var hang: Vector3 = shoulders[side] + frame * Vector3(0.0, -_arm_length(side) * RELAXED_ARM_BEND, 0.03)
+		hang = _clear_of_thigh(hang, side, frame, _arm_length(side))
+		targets[side].global_position = hang
+		_hang_hand(1 - side, (hang - shoulders[side]).normalized(), frame * Vector3(1.0 if side == 0 else -1.0, 0.0, 0.0))
+		var outward := -1.0 if side == 0 else 1.0   # the character's right hand is on -X
+		poles[side].global_position = (shoulders[side] + hang) * 0.5 + frame * Vector3(outward * 0.30, 0.0, -0.30)
+
+
+## How far a resting hand keeps from the thigh's axis, as a fraction of the thigh's length: the thigh's own thickness plus the hand's. Body-relative, so it scales with the character and needs no rig-specific number.
+## How fully the hanging hand takes the neutral-wrist orientation over the animation's rotation.
+const HANGING_HAND_WEIGHT := 1.0
+const HAND_THIGH_CLEARANCE := 0.30
+## The most a resting hand may be pushed out from straight under its shoulder, as a fraction of the arm's length: enough to clear the hip, never a held-out arm.
+const MAX_HAND_ABDUCTION := 0.28
+
+## A resting hand's wrist is neutral: the fingers continue the arm's line and the palm faces the thigh. Without this the hand keeps the animation's rest rotation, which points it inward across the leg (the rest pose is a T-pose
+## with the palms down). `grip_hand` is the grip modifier's hand index (0 left, 1 right). A ladder or a carried body writes its own contact orientation after this, in the same pass, and takes the hand over.
+func _hang_hand(grip_hand: int, along_arm: Vector3, palm_toward_body: Vector3) -> void:
+	if grip_modifier == null:
+		return
+	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
+	grip_modifier.contact_weight[grip_hand] = HANGING_HAND_WEIGHT
+	grip_modifier.contact_forward[grip_hand] = to_skeleton * along_arm
+	grip_modifier.contact_normal[grip_hand] = to_skeleton * palm_toward_body
+
+
+## The hand's resting point moved outward (never inward) until it clears this side's thigh (hip to knee, as posed this pass), so a hand hangs beside the leg instead of in it. Not a collision system: one segment, one direction.
+func _clear_of_thigh(hand: Vector3, side: int, frame: Basis, arm_length: float) -> Vector3:
+	var leg: Array[StringName] = bones.right_leg if side == 0 else bones.left_leg
+	var hip := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[0])).origin
+	var knee := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[1])).origin
+	var thigh := knee - hip
+	if thigh.length_squared() < 0.000001:
+		return hand
+	var clearance := thigh.length() * HAND_THIGH_CLEARANCE
+	var outward: Vector3 = frame.x * (-1.0 if side == 0 else 1.0)   # the character's right side is -X
+	var origin := hand
+	for step in 4:   # the thigh's closest point moves with the hand: a few passes settle it
+		var t := clampf((hand - hip).dot(thigh) / thigh.length_squared(), 0.0, 1.0)
+		var away := hand - (hip + thigh * t)
+		var lateral := away.dot(outward)
+		var gap := away.length()
+		if gap >= clearance:
+			break
+		# push along the outward axis by what the remaining clearance needs (solved on the lateral part of the gap)
+		var vertical_part := maxf(gap * gap - lateral * lateral, 0.0)
+		var needed := sqrt(maxf(clearance * clearance - vertical_part, 0.0)) - lateral
+		hand += outward * maxf(needed, 0.0)
+	var shift := (hand - origin).dot(outward)
+	if shift > arm_length * MAX_HAND_ABDUCTION:
+		hand = origin + outward * arm_length * MAX_HAND_ABDUCTION
+	return hand
+
+
+## The length of an arm (upper arm plus forearm) as the character is scaled, from the rest pose.
+func _arm_length(side: int) -> float:
+	var chain: Array[StringName] = bones.right_arm if side == 0 else bones.left_arm
+	var shoulder := skeleton.get_bone_global_rest(skeleton.find_bone(chain[0])).origin
+	var elbow := skeleton.get_bone_global_rest(skeleton.find_bone(chain[1])).origin
+	var wrist := skeleton.get_bone_global_rest(skeleton.find_bone(chain[2])).origin
+	return (shoulder.distance_to(elbow) + elbow.distance_to(wrist)) * skeleton.global_basis.get_scale().y
 
 
 ## Where the hands and elbows rest, in the character's frame, when no rifle holds them (right, left): the release lets go to
@@ -1149,7 +1247,7 @@ func _ensure_passenger(lift: float, pose: float) -> void:
 	carry_passenger.waypoint_local = rescue_interaction.lift_waypoint
 	carry_passenger.lift = lift
 	carry_passenger.pose_blend = pose
-	carry_passenger.build(character_scene, character_scale)
+	carry_passenger.build(character_scene, character_scale, rig_profile)
 	carry_passenger.update_presentation(lift, pose, carry_passenger.global_transform, 0.0)
 	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck)
 
@@ -1306,6 +1404,8 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 ## Hangs the weapon on the carrier's chest at the handling profile's stowage place (a provisional sling carry, nothing drawn):
 ## it follows the torso from then on. Presentation only; readiness and aim code are not involved while it is stowed.
 func stow_weapon() -> void:
+	if not has_weapon():
+		return   # nothing to sling
 	if weapon.get_parent() != character_root:
 		_weapon_hand_local = weapon_attachment.global_transform.affine_inverse() * weapon.global_transform
 		weapon.reparent(character_root)
@@ -1320,7 +1420,8 @@ func stow_weapon() -> void:
 ## Takes the weapon off the chest and back to the right hand's socket.
 func unstow_weapon() -> void:
 	_stow_anchor = null
-	weapon.reparent(weapon_attachment)
+	if has_weapon():
+		weapon.reparent(weapon_attachment)
 
 
 func is_weapon_stowed() -> bool:
@@ -1342,6 +1443,8 @@ func _follow_stowed_weapon() -> void:
 
 
 func _play_shot_feedback() -> void:
+	if muzzle_flash == null:
+		return   # unarmed: there is no shot to show
 	_shot_feedback_generation += 1
 	var generation := _shot_feedback_generation
 	if _recoil_tween != null and _recoil_tween.is_valid():

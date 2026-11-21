@@ -62,7 +62,7 @@ func _run() -> void:
 	root.add_child(visual)
 	for i in 20:
 		await process_frame
-	var axes: Dictionary = visual.animation_controller.locomotion_axes()
+	var axes: RigAxes = visual.animation_controller.locomotion_axes()
 	var up_error := rad_to_deg(ma.up.angle_to(axes.up))
 	var forward_error := rad_to_deg(ma.forward.angle_to(axes.forward))
 	print("  production vs profile: up %.2f deg, forward %.2f deg, standing head height %.3f vs %.3f" % [up_error, forward_error, visual.crouch_modifier.standing_head_height, ma.standing_height - ma.ankle_height])

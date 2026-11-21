@@ -4,21 +4,20 @@
 [ext_resource type="Script" uid="uid://b4ib1isyr0geh" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" uid="uid://cufevspxxfu3h" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
 [ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
 
 [sub_resource type="SphereMesh" id="Sphere_target"]
 radius = 0.018
 height = 0.036
 
 [node name="Mira0UnitVisual" type="Node3D" unique_id=1680858322]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 script = ExtResource("1_adapter")
 camera_focus_anchor = Vector3(0, 0.98, 0)
 camera_eye_anchor = Vector3(0, 1.48, 0)
 character_scene = ExtResource("3_model")
 character_scale = 1.6
 rig_profile = ExtResource("4_profile")
-right_arm_bones = Array[StringName]([&"mixamorig_RightArm", &"mixamorig_RightForeArm", &"mixamorig_RightHand"])
-left_arm_bones = Array[StringName]([&"mixamorig_LeftArm", &"mixamorig_LeftForeArm", &"mixamorig_LeftHand"])
+weapon_scene = ExtResource("5_weapon")
 clip_library = null
 
 [node name="VerticalSliceController" type="Node" parent="." unique_id=1993812038]

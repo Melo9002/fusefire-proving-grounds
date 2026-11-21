@@ -125,7 +125,7 @@ func present_incapacitated(on: bool) -> void:
 		_lying_body = RESCUE_PASSENGER.new()
 		_lying_body.name = "IncapacitatedBody"
 		add_child(_lying_body)
-		_lying_body.build(character_scene, character_scale)
+		_lying_body.build(character_scene, character_scale, rig_profile)
 		_lying_body.lie_on_ground(Vector3(0.0, _lying_ground_height(), 0.0), deg_to_rad(INCAPACITATED_YAW_DEGREES))
 	else:
 		remove_child(_lying_body)
@@ -219,6 +219,8 @@ func _ready() -> void:
 	if not is_inside_tree(): return
 	await get_tree().process_frame
 	if not is_inside_tree(): return
+	for problem in presenter.foot_point_problems():
+		push_error("[UnitVisualAdapter] %s" % problem)
 	_align_weapon_to_aim()
 
 func setup(unit: TacticalUnit) -> void:
@@ -251,7 +253,7 @@ func set_class_marker(color: Color) -> void:
 		existing.queue_free()
 	if color.a <= 0.0:
 		return
-	var bone_name := &"mixamorig_Spine2" if skeleton.find_bone(&"mixamorig_Hips") >= 0 else &"J_Bip_C_Chest"
+	var bone_name := bones.torso
 	if skeleton.find_bone(bone_name) < 0:
 		return
 	var attachment := BoneAttachment3D.new()
@@ -433,7 +435,7 @@ func _cover_context() -> Dictionary:
 ## The Aim action committed: bring the sights up now. The pose then follows the committed
 ## is_aiming flag (see _process and CharacterPresenter.aim_committed), so replays and AI units behave the same.
 func present_aim() -> void:
-	if _carrying(): return
+	if _carrying() or not has_weapon(): return   # nothing to raise
 	presenter.aim.engage()
 	present_idle()
 
@@ -448,8 +450,8 @@ func _aim_target(state_name: StringName) -> float:
 ## The level the unit is asking for: the highest of any request (an attack, later a Guard), the aim
 ## stance, and a held Aim. A carrier holds nothing.
 func requested_readiness(state_name: StringName = &"") -> WeaponReadiness.Level:
-	if _carrying():
-		return WeaponReadiness.Level.STOWED
+	if _carrying() or not has_weapon():
+		return WeaponReadiness.Level.STOWED   # a carrier holds nothing, and neither does a character with no weapon
 	if state_name == &"":
 		state_name = get_presentation_state()
 	var level := readiness.requested()
@@ -474,7 +476,7 @@ func _settle_readiness_pose() -> void:
 
 ## The level the weapon is actually at (derived from the aim blend it has reached).
 func readiness_level() -> WeaponReadiness.Level:
-	if _carrying():
+	if _carrying() or not has_weapon():
 		return WeaponReadiness.Level.STOWED
 	return WeaponReadiness.level_for_blend(aim_blend, handling)
 
@@ -610,7 +612,7 @@ func present_idle() -> void:
 		return
 	var cover := _cover_context()
 	if cover.type == MapCellData.CoverType.NONE:
-		_play(&"aim" if (presenter.aim.held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED) else &"rifle_idle")
+		_play(&"aim" if (has_weapon() and (presenter.aim.held or _aim_should_hold() or readiness.requested() == WeaponReadiness.Level.AIMED)) else &"rifle_idle")
 	else:
 		face_world_position(global_position + cover.direction)
 		_play(&"cover_low" if cover.type == MapCellData.CoverType.LOW else &"cover_high")
@@ -631,6 +633,11 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 		refused.shot.settle(PresentationTypes.Outcome.CANCELLED)
 		refused.settle(PresentationTypes.Outcome.CANCELLED)
 		return refused
+	if not has_weapon():
+		var unarmed := AttackHandle.new()   # no weapon, no shot to show: nothing was presented (the attack's result is gameplay's)
+		unarmed.shot.settle(PresentationTypes.Outcome.SKIPPED)
+		unarmed.settle(PresentationTypes.Outcome.SKIPPED)
+		return unarmed
 	var cover := _cover_context()
 	# The firing posture comes from the authorized shot's direction and the wall geometry only (CoverEdgeSelector.plan_attack); a visual pose never creates a shot.
 	var plan := _plan_attack_posture(cover, target_world_position)

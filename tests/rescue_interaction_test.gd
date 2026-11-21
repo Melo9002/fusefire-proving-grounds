@@ -144,7 +144,7 @@ func _run() -> void:
 	# ---- Pickup through the production path: the carrier takes the rescued actor's place and lifts it.
 	var loaded_move: Animation = rig.animation_controller.animation_player.get_animation(&"carry_move")
 	var plain_move: Animation = rig.animation_controller.animation_player.get_animation(&"move")
-	var builder := CharacterFallbackAnimationBuilder.new(rig.skeleton)
+	var builder := CharacterFallbackAnimationBuilder.new(rig.skeleton, rig.bones)
 	var swing_loaded := _largest_thigh_swing(loaded_move, builder, rig.skeleton)
 	var swing_plain := _largest_thigh_swing(plain_move, builder, rig.skeleton)
 	check(swing_loaded < swing_plain - 4.0 and swing_plain > 20.0, "The loaded gait takes a shorter step (%.0f deg of hip swing against %.0f unloaded) and the unloaded walk is its own clip" % [swing_loaded, swing_plain])

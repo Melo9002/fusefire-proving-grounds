@@ -84,12 +84,12 @@ var _kneel_front := {}
 var _scale := 1.0
 
 ## `forward_world` is the character's facing direction in world space.
-func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> bool:
+func setup(target: Skeleton3D, bones: RigBones, forward_world: Vector3) -> bool:
 	_hips = target.find_bone(bones.hips)
-	for side in ["left", "right"]:
-		_upper.append(target.find_bone(bones[side + "_upper"]))
-		_lower.append(target.find_bone(bones[side + "_lower"]))
-		_foot.append(target.find_bone(bones[side + "_foot"]))
+	for leg: Array[StringName] in [bones.left_leg, bones.right_leg]:
+		_upper.append(target.find_bone(leg[0]))
+		_lower.append(target.find_bone(leg[1]))
+		_foot.append(target.find_bone(leg[2]))
 		var toe_children := target.get_bone_children(_foot[-1]) if _foot[-1] >= 0 else PackedInt32Array()
 		_toe.append(toe_children[0] if not toe_children.is_empty() else -1)
 		var tip := _toe[-1]
@@ -97,13 +97,13 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 			tip = target.get_bone_children(tip)[0]
 		var foot_rest := target.get_bone_global_rest(_foot[-1]) if _foot[-1] >= 0 else Transform3D.IDENTITY
 		_foot_tip_local.append(foot_rest.basis.orthonormalized().inverse() * (target.get_bone_global_rest(tip).origin - foot_rest.origin) if tip >= 0 else Vector3.ZERO)
-	for bone_name in bones.spine:
+	for bone_name in bones.lower_spine():
 		_spine.append(target.find_bone(bone_name))
 	var top := target.find_bone(bones.head_top)
 	if _hips < 0 or top < 0 or _upper.has(-1) or _lower.has(-1) or _foot.has(-1) or _spine.has(-1):
 		return false
 	_refresh_scale(target)
-	_support_clavicle = target.find_bone(bones.get("support_clavicle", &""))
+	_support_clavicle = target.find_bone(bones.left_shoulder)
 	_forward_skeleton = (target.global_basis.inverse() * forward_world).normalized()
 	var chain: Array[int] = []
 	chain.append_array(_upper)
@@ -118,7 +118,7 @@ func setup(target: Skeleton3D, bones: Dictionary, forward_world: Vector3) -> boo
 		var next := _spine[index + 1] if index + 1 < _spine.size() else target.find_bone(bones.head_top)
 		_forward_axis[_spine[index]] = _measure_axis(target, _spine[index], next)
 	if _support_clavicle >= 0:
-		_forward_axis[_support_clavicle] = _measure_axis(target, _support_clavicle, target.find_bone(bones.get("support_arm", &"")))
+		_forward_axis[_support_clavicle] = _measure_axis(target, _support_clavicle, target.find_bone(bones.left_arm[0]))
 	var hip := target.get_bone_global_rest(_upper[0]).origin
 	var knee := target.get_bone_global_rest(_lower[0]).origin
 	var ankle := target.get_bone_global_rest(_foot[0]).origin

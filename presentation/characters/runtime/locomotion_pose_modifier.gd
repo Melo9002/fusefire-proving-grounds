@@ -33,15 +33,14 @@ var _spine: Array[int] = []
 var _legs := []   # per side: [upper, lower]
 
 
-func setup(target: Skeleton3D, axes: Dictionary) -> bool:
-	var mixamo := target.find_bone(&"mixamorig_Hips") >= 0
-	_hips = target.find_bone(&"mixamorig_Hips" if mixamo else &"J_Bip_C_Hips")
-	for bone_name in ([&"mixamorig_Spine", &"mixamorig_Spine1", &"mixamorig_Spine2"] if mixamo else [&"J_Bip_C_Spine", &"J_Bip_C_Chest", &"J_Bip_C_UpperChest"]):
+func setup(target: Skeleton3D, bones: RigBones, axes: RigAxes) -> bool:
+	_hips = target.find_bone(bones.hips)
+	for bone_name in bones.spine_chain():
 		var index := target.find_bone(bone_name)
 		if index >= 0:
 			_spine.append(index)
-	var left := [target.find_bone(&"mixamorig_LeftUpLeg" if mixamo else &"J_Bip_L_UpperLeg"), target.find_bone(&"mixamorig_LeftLeg" if mixamo else &"J_Bip_L_LowerLeg")]
-	var right := [target.find_bone(&"mixamorig_RightUpLeg" if mixamo else &"J_Bip_R_UpperLeg"), target.find_bone(&"mixamorig_RightLeg" if mixamo else &"J_Bip_R_LowerLeg")]
+	var left := [target.find_bone(bones.left_leg[0]), target.find_bone(bones.left_leg[1])]
+	var right := [target.find_bone(bones.right_leg[0]), target.find_bone(bones.right_leg[1])]
 	_legs = [left, right]
 	_up = axes.up
 	_forward = axes.forward

@@ -6,7 +6,7 @@ extends SceneTree
 var failures := 0
 var checks := 0
 var snap := {}
-var axes := {}
+var axes: RigAxes
 var base := {}
 
 func _initialize() -> void:

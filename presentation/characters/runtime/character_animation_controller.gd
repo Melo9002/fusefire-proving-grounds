@@ -19,18 +19,6 @@ const STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
 	&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land",
 	&"pickup", &"carry_idle", &"carry_move", &"boarding"]
 
-const HIPS := &"J_Bip_C_Hips"
-const SPINE := &"J_Bip_C_Spine"
-const CHEST := &"J_Bip_C_Chest"
-const UPPER_CHEST := &"J_Bip_C_UpperChest"
-const NECK := &"J_Bip_C_Neck"
-const HEAD := &"J_Bip_C_Head"
-const LEFT_UPPER_LEG := &"J_Bip_L_UpperLeg"
-const LEFT_LOWER_LEG := &"J_Bip_L_LowerLeg"
-const LEFT_FOOT := &"J_Bip_L_Foot"
-const RIGHT_UPPER_LEG := &"J_Bip_R_UpperLeg"
-const RIGHT_LOWER_LEG := &"J_Bip_R_LowerLeg"
-const RIGHT_FOOT := &"J_Bip_R_Foot"
 
 var skeleton: Skeleton3D
 var visual_root: Node3D
@@ -47,9 +35,9 @@ var locomotion_profile: LocomotionProfile
 var _fallbacks: RefCounted
 
 
-func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D) -> void:
+func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D, rig_bones: RigBones) -> void:
 	skeleton = target_skeleton
-	_fallbacks = FALLBACK_BUILDER.new(skeleton)
+	_fallbacks = FALLBACK_BUILDER.new(skeleton, rig_bones)
 	if locomotion_profile != null:
 		_fallbacks.profile = locomotion_profile
 	visual_root = target_visual_root
@@ -59,8 +47,8 @@ func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D) -> void:
 
 
 ## The anatomical axes (skeleton space) the procedural clips are built on: up, forward (the way the toes point) and the hip hinge.
-func locomotion_axes() -> Dictionary:
-	return {"up": _fallbacks.anatomical_up(), "forward": _fallbacks.anatomical_forward(), "hinge": _fallbacks.hip_hinge()}
+func locomotion_axes() -> RigAxes:
+	return RigAxes.new(_fallbacks.anatomical_up(), _fallbacks.anatomical_forward(), _fallbacks.hip_hinge())
 
 
 ## How long the clip of a state is, seconds (0 when it has none). The one-shot states (hit, defeat) report their own length so a finite presentation does not repeat it as a constant.

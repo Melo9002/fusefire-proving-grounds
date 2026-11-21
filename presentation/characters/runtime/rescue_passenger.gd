@@ -28,6 +28,8 @@ var carry_yaw_degrees := -8.0
 ## Overrides for PassivePassengerPose.DEFAULTS. Set before build.
 var pose_params := {}
 var skeleton: Skeleton3D
+## The passenger's own bone roles, from the rig profile of its model (see RigBones).
+var bones: RigBones
 var posed := false
 ## 1 = full size. The boarding presentation shrinks the passenger by tweening this (the node's own scale is derived from the
 ## carrier's chest every update, so it is not the place to animate size).
@@ -80,14 +82,14 @@ var _skeleton_in_node := Transform3D.IDENTITY
 ## limb's radius, metres. They follow the passenger's own skeleton, so a different pose or proportion moves them.
 ## `wrist`: the forearm just short of the hand (the carrier holds the wrist). `thigh`: above the knee (the carrier supports it).
 const CONTACTS := {
-	&"wrist": {"bone": "LeftForeArm", "child": "LeftHand", "fraction": 0.85, "radius": 0.03},
-	&"thigh": {"bone": "LeftUpLeg", "child": "LeftLeg", "fraction": 0.9, "radius": 0.075},
+	&"wrist": {"bone": &"LeftLowerArm", "child": &"LeftHand", "fraction": 0.85, "radius": 0.03},
+	&"thigh": {"bone": &"LeftUpperLeg", "child": &"LeftLowerLeg", "fraction": 0.9, "radius": 0.075},
 }
 
 
 ## Builds the passenger from `model_scene` (a humanoid with a Skeleton3D), scaled like the carrier's model, posed and with
 ## its abdomen at this node's origin. Call after the node is in the tree.
-func build(model_scene: PackedScene, model_scale: float) -> void:
+func build(model_scene: PackedScene, model_scale: float, rig_profile: Resource) -> void:
 	_body = Node3D.new()
 	_body.name = "Body"
 	_body.basis = Basis(Vector3.UP, deg_to_rad(carry_yaw_degrees)) * BODY_TO_CARRY
@@ -104,6 +106,7 @@ func build(model_scene: PackedScene, model_scale: float) -> void:
 	for simulator in skeleton.find_children("*", "PhysicalBoneSimulator3D", true, false):
 		simulator.get_parent().remove_child(simulator)
 		simulator.free()
+	bones = RigBones.from_profile(rig_profile, skeleton)
 	_body_to_skeleton = (_body.global_basis.orthonormalized().inverse() * skeleton.global_basis.orthonormalized()).inverse()
 	_carried_params = PoseTable.DEFAULTS.duplicate()
 	_carried_params.merge(pose_params, true)
@@ -126,14 +129,14 @@ func _repose(blend: float, swing: float) -> void:
 		var free_fore: Vector3 = params.free_fore
 		params.free_upper = Vector3(free_upper.x, free_upper.y - swing * 0.05, free_upper.z)
 		params.free_fore = Vector3(free_fore.x, free_fore.y - swing * 0.08, free_fore.z)
-	posed = PoseTable.apply(skeleton, _body_to_skeleton, params)
+	posed = PoseTable.apply(skeleton, bones, _body_to_skeleton, params)
 	_place_abdomen_on_origin()
 	_skeleton_in_node = global_transform.affine_inverse() * skeleton.global_transform
 
 
 ## Moves the body so the abdomen (the attach bone) is at this node's origin.
 func _place_abdomen_on_origin() -> void:
-	var bone := skeleton.find_bone(PoseTable.PREFIX + PoseTable.ATTACH_BONE)
+	var bone := skeleton.find_bone(bones.role(PoseTable.ATTACH_ROLE))
 	if bone < 0:
 		return
 	var in_body := _body.global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
@@ -256,7 +259,7 @@ func _update_motion(anchor: Transform3D, delta: float) -> void:
 func anchor_point() -> Vector3:
 	if skeleton == null:
 		return Vector3.ZERO
-	var bone := skeleton.find_bone(PoseTable.PREFIX + PoseTable.ATTACH_BONE)
+	var bone := skeleton.find_bone(bones.role(PoseTable.ATTACH_ROLE))
 	if bone < 0:
 		return Vector3.ZERO
 	return global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
@@ -274,8 +277,8 @@ func anchor_world() -> Transform3D:
 func contact_frame(contact: StringName, at_anchor: Transform3D, from_point: Vector3, approach := Vector3.ZERO) -> Dictionary:
 	var definition: Dictionary = CONTACTS[contact]
 	var to_world := placement(at_anchor) * _skeleton_in_node
-	var bone := skeleton.find_bone(PoseTable.PREFIX + String(definition.bone))
-	var child := skeleton.find_bone(PoseTable.PREFIX + String(definition.child))
+	var bone := skeleton.find_bone(bones.role(definition.bone))
+	var child := skeleton.find_bone(bones.role(definition.child))
 	var start: Vector3 = to_world * skeleton.get_bone_global_pose(bone).origin
 	var end: Vector3 = to_world * skeleton.get_bone_global_pose(child).origin
 	var axis := (end - start).normalized()

@@ -1,8 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://art/characters/mira_0/demo/mira_0_pose_workbench.gd" id="1_script"]
 [ext_resource type="Script" path="res://presentation/characters/runtime/character_animation_controller.gd" id="2_animation"]
 [ext_resource type="PackedScene" path="res://art/characters/mira_0/models/mira_0_prototype.glb" id="3_model"]
+[ext_resource type="Resource" path="res://art/characters/mira_0/mira_0_rig_profile.tres" id="4_profile"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
 
 [sub_resource type="Environment" id="Environment_demo"]
 background_mode = 1
@@ -33,9 +35,9 @@ emission_energy_multiplier = 1.8
 [node name="Mira0PoseWorkbench" type="Node3D"]
 script = ExtResource("1_script")
 character_scene = ExtResource("3_model")
+rig_profile = ExtResource("4_profile")
+weapon_scene = ExtResource("5_weapon")
 character_scale = 1.6
-right_arm_bones = Array[StringName]([&"mixamorig_RightArm", &"mixamorig_RightForeArm", &"mixamorig_RightHand"])
-left_arm_bones = Array[StringName]([&"mixamorig_LeftArm", &"mixamorig_LeftForeArm", &"mixamorig_LeftHand"])
 clip_library = null
 
 [node name="VerticalSliceController" type="Node" parent="."]

@@ -4,6 +4,7 @@ extends SceneTree
 ## Run with a fixed frame rate so every delta is identical:
 ##   godot_console --headless --fixed-fps 60 --path . --script res://tools/quality/pose_trace.gd -- <output.json>
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
+const UNIT_SCENE := preload("res://units/tactical_unit.tscn")
 const BONES := ["Hips", "Spine", "Spine2", "Neck", "Head", "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightShoulder", "RightArm", "RightForeArm", "RightHand",
 	"LeftUpLeg", "LeftLeg", "LeftFoot", "RightUpLeg", "RightLeg", "RightFoot", "RightHandIndex1", "RightHandThumb1", "LeftHandIndex1", "LeftHandThumb1"]
 const DT := 1.0 / 60.0
@@ -51,13 +52,56 @@ func _snapshot(v: UnitVisualAdapter) -> Dictionary:
 		passenger = [pt.origin.x, pt.origin.y, pt.origin.z, pq.x, pq.y, pq.z, pq.w]
 	return {"bones": bones, "targets": targets, "leg_ik": v.leg_ik.active if is_instance_valid(v.leg_ik) else false, "arm_ik": v.arm_ik.active, "stowed": v.is_weapon_stowed(),
 		"crouch": v.crouch_modifier.depth, "kneel": v.crouch_modifier.kneel, "yaw": v.character_root.rotation.y, "node_yaw": v.rotation.y,
-		"passenger": passenger, "state": String(v.get_presentation_state()), "attack_phase": _attack_phase(v), "aim_blend": v.aim_blend, "readiness": int(v.readiness_level()), "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z]}
+		"passenger": passenger, "state": String(v.get_presentation_state()), "attack_phase": _attack_phase(v), "aim_blend": v.aim_blend, "readiness": int(v.readiness_level()), "phase": String(v.rescue_interaction.phase_name()), "rescue_time": v.rescue_interaction.time, "position": [v.position.x, v.position.y, v.position.z], "world": _world(v)}
+
+func _v(v: Vector3) -> Array:
+	return [snappedf(v.x, 0.000001), snappedf(v.y, 0.000001), snappedf(v.z, 0.000001)]
+
+## World-space positions (Task 07 package 9, the foot-point convention): the visual, the character root, the hips and both feet, the weapon when there is one. Compared only for the unit-hosted scenarios,
+## where the unit's own placement fixes the floor; a bare visual's world position depends on where its test stage puts it.
+func _world(v: UnitVisualAdapter) -> Dictionary:
+	var result := {"visual": _v(v.global_position), "root": _v(v.character_root.global_position)}
+	for pair in [["hips", "Hips"], ["left_foot", "LeftFoot"], ["right_foot", "RightFoot"], ["left_hand", "LeftHand"], ["right_hand", "RightHand"]]:
+		var index := v.skeleton.find_bone("mixamorig_" + pair[1])
+		if index >= 0:
+			result[pair[0]] = _v(v.skeleton.global_transform * v.skeleton.get_bone_global_pose(index).origin)
+	if is_instance_valid(v.weapon):
+		result["weapon"] = _v(v.weapon.global_position)
+	return result
+
+## A scenario hosted by a production TacticalUnit standing on a floor at y = 0 (its body centre one metre above), driven by the engine's own frames.
+func _unit_scenario(tag: String, frames: int, step: Callable) -> void:
+	var stage := Node3D.new()
+	root.add_child(stage)
+	var unit := UNIT_SCENE.instantiate() as TacticalUnit
+	unit.show_world_hud = false
+	stage.add_child(unit)
+	unit.position = Vector3(0.0, unit.standing_height, 0.0)
+	for i in 20:
+		await process_frame
+	var v: UnitVisualAdapter = unit.visual_adapter
+	_frame_record = {}
+	var capture := func() -> void: _frame_record = _snapshot(v)
+	v.skeleton.skeleton_updated.connect(capture)
+	var rows: Array = []
+	for i in frames:
+		step.call(unit, i)
+		await process_frame
+		var row := _frame_record.duplicate(true)
+		row["unit"] = _v(unit.global_position)
+		rows.append(row)
+	v.skeleton.skeleton_updated.disconnect(capture)
+	traces[tag] = rows
+	meta[tag] = {"fired": false, "forced": false, "cancelled": false, "fire_t": -1.0, "end_t": -1.0, "phases": []}
+	stage.queue_free()
+	await process_frame
 
 func _scenario(tag: String, frames: int, step: Callable, setup := Callable()) -> void:
 	var stage := Node3D.new()
 	root.add_child(stage)
 	var v: UnitVisualAdapter = VISUAL.instantiate()
 	stage.add_child(v)
+	v.position = Vector3(0.0, -1.0, 0.0)   # the stage puts the feet at y = -1, as the scene itself used to: the trace must not depend on where the scene's own origin is
 	for i in 20:
 		await process_frame
 	if setup.is_valid():
@@ -248,6 +292,19 @@ func _run() -> void:
 		if i >= 30 and i < 160: v.set_stair_progress(clampf(float(i - 30) * 0.012, 0.0, model.end_s()), 1.2)
 		if i == 100: v.end_traversal()
 		if i == 160: v.end_stairs())
+	# Unit-hosted scenarios (Task 07 package 9): the foot-point. A tactical unit stands on a floor at y = 0 idle, walks, faces and defeats; the world positions of its visual, hips, feet, hands and weapon are
+	# compared across the foot-point migration, and the unit's own world position shows nothing moved.
+	await _unit_scenario("unit_idle_walk", 200, func(unit: TacticalUnit, i: int) -> void:
+		if i == 60: unit.move_along_path(PackedVector3Array([unit.global_position, unit.global_position + Vector3(0, 0, 2.5), unit.global_position + Vector3(2.0, 0, 2.5)]))
+		if i == 150: unit.visual_adapter.face_world_position(unit.global_position + Vector3(-3, 0, 1)))
+	await _unit_scenario("unit_aim_defeat", 200, func(unit: TacticalUnit, i: int) -> void:
+		if i == 10: unit.visual_adapter.present_aim()
+		if i == 60: unit.present_attack(unit.global_position + Vector3(0, 0, 6))
+		if i == 140: unit.visual_adapter.present_defeat())
+	await _unit_scenario("unit_carry", 240, func(unit: TacticalUnit, i: int) -> void:
+		if i == 0: unit.visual_adapter.preview_carrying = true
+		if i == 10: unit.visual_adapter.begin_pickup(unit.visual_adapter.character_root.global_position + unit.visual_adapter.character_root.global_basis.orthonormalized().z)
+		if i == 130: unit.visual_adapter.begin_release())
 	# Timelines the code under test recorded for the attacks (phases and times in presentation seconds): the shot and release timing the frame-by-frame rows cannot show on their own.
 	traces["__meta"] = meta
 	var file := FileAccess.open(path, FileAccess.WRITE)

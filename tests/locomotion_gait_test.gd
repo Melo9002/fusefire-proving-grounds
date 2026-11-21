@@ -63,7 +63,7 @@ func _run() -> void:
 	_rig = rig
 	var sk := rig.skeleton
 	var player: AnimationPlayer = rig.animation_controller.animation_player
-	var builder := CharacterFallbackAnimationBuilder.new(sk)
+	var builder := CharacterFallbackAnimationBuilder.new(sk, rig.bones)
 
 	# ---- Coordinate contract: the measured anatomical axes against the rig's visual root.
 	var to_root_basis := rig.character_root.global_basis.orthonormalized().inverse() * sk.global_basis.orthonormalized()

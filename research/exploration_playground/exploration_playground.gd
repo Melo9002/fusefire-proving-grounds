@@ -8,7 +8,7 @@ extends Node3D
 ##
 ## Controls: WASD move, mouse look, wheel zoom, right mouse button recenters behind MIRA, E interact, Esc release the mouse and show the menu.
 ## Known limitations of the existing presentation (deliberately not worked around): the rifle is always built (no unarmed state), crouching exists only as a cover
-## function, there is no sitting or interaction animation, and the production scene's 1 m tactical-origin offset is undone here by placing the visual at the feet.
+## function, there is no sitting or interaction animation, and the visual is composed at its feet (a character visual has no origin offset of its own), so a standalone host just places it on the floor.
 
 ## Walking speed in metres per second. The walk gait applies up to the locomotion profile's `walk_until` (1.6 m/s); above it the jog starts to blend in.
 const MOVE_SPEED := 1.4

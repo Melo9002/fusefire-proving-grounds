@@ -14,21 +14,26 @@ var left_foot: StringName
 var right_upper_leg: StringName
 var right_lower_leg: StringName
 var right_foot: StringName
-var _mixamo := false
+var left_toes: StringName
+var right_toes: StringName
+var _bones: RigBones
 
-func _init(target_skeleton: Skeleton3D) -> void:
+## The bones come from the rig's profile (RigBones): the builder names none.
+func _init(target_skeleton: Skeleton3D, rig_bones: RigBones) -> void:
 	skeleton = target_skeleton
-	_mixamo = skeleton.find_bone(&"mixamorig_Hips") >= 0
-	hips = &"mixamorig_Hips" if _mixamo else &"J_Bip_C_Hips"
-	spine = &"mixamorig_Spine" if _mixamo else &"J_Bip_C_Spine"
-	chest = &"mixamorig_Spine2" if _mixamo else &"J_Bip_C_Chest"
-	head = &"mixamorig_Head" if _mixamo else &"J_Bip_C_Head"
-	left_upper_leg = &"mixamorig_LeftUpLeg" if _mixamo else &"J_Bip_L_UpperLeg"
-	left_lower_leg = &"mixamorig_LeftLeg" if _mixamo else &"J_Bip_L_LowerLeg"
-	left_foot = &"mixamorig_LeftFoot" if _mixamo else &"J_Bip_L_Foot"
-	right_upper_leg = &"mixamorig_RightUpLeg" if _mixamo else &"J_Bip_R_UpperLeg"
-	right_lower_leg = &"mixamorig_RightLeg" if _mixamo else &"J_Bip_R_LowerLeg"
-	right_foot = &"mixamorig_RightFoot" if _mixamo else &"J_Bip_R_Foot"
+	_bones = rig_bones
+	hips = rig_bones.hips
+	spine = rig_bones.spine
+	chest = rig_bones.torso
+	head = rig_bones.head
+	left_upper_leg = rig_bones.left_leg[0]
+	left_lower_leg = rig_bones.left_leg[1]
+	left_foot = rig_bones.left_leg[2]
+	right_upper_leg = rig_bones.right_leg[0]
+	right_lower_leg = rig_bones.right_leg[1]
+	right_foot = rig_bones.right_leg[2]
+	left_toes = rig_bones.left_toes
+	right_toes = rig_bones.right_toes
 
 
 func _make_directional_move(direction: Vector2) -> Animation:
@@ -101,8 +106,8 @@ func _make_rescue_pose(pose: StringName) -> Animation:
 	if not moving:
 		_add_grip(animation)
 	for side in ["L", "R"]:
-		var sign_value := -1.0 if side == "L" else 1.0
-		_add_rotation(animation, _arm_bone(side, "UpperArm"), [0.0], [_rotation(-20, 0, 45 * sign_value)])
+		# The upper-arm track this clip once carried ((-20, 0, 45) degrees) never reached a MIRA bone: it named "mixamorig_%sUpperArm", and the bone is "mixamorig_%sArm". Resolving the role correctly would
+		# have changed the carried pose, so the dead track was dropped to keep the shown pose exactly as it was. Restoring it is an animation decision.
 		_add_rotation(animation, _arm_bone(side, "LowerArm"), [0.0], [_rotation(-65, 0, 0)])
 	return animation
 
@@ -142,7 +147,7 @@ func measure_axes() -> void:
 	var hips_i := skeleton.find_bone(hips)
 	var head_i := skeleton.find_bone(head)
 	var foot_i := skeleton.find_bone(left_foot)
-	var toe_i := skeleton.find_bone(&"mixamorig_LeftToeBase" if _mixamo else &"J_Bip_L_ToeBase")
+	var toe_i := skeleton.find_bone(left_toes)
 	_axes_measured = true
 	if hips_i < 0 or head_i < 0:
 		return
@@ -338,18 +343,12 @@ func _add_grip(animation: Animation) -> void:
 
 
 func _arm_bone(side: String, part: String) -> StringName:
-	if _mixamo:
-		var full_side := "Left" if side == "L" else "Right"
-		var mixamo_part := "ForeArm" if part == "LowerArm" else part
-		return StringName("mixamorig_%s%s" % [full_side, mixamo_part])
-	return StringName("J_Bip_%s_%s" % [side, part])
+	var arm := _bones.left_arm if side == "L" else _bones.right_arm
+	return arm[0] if part == "UpperArm" else (arm[1] if part == "LowerArm" else arm[2])
 
 
-func _finger_bone(side: String, finger: String, joint: int) -> StringName:
-	if _mixamo:
-		var full_side := "Left" if side == "L" else "Right"
-		return StringName("mixamorig_%sHand%s%d" % [full_side, finger, joint])
-	return StringName("J_Bip_%s_%s%d" % [side, finger, joint])
+func _finger_bone(side: String, finger_name: String, joint: int) -> StringName:
+	return _bones.finger("Left" if side == "L" else "Right", "Little" if finger_name == "Pinky" else finger_name, joint)
 
 
 func _new_animation(length: float, looping: bool) -> Animation:

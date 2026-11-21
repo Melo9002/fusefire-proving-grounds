@@ -752,7 +752,7 @@ func _record_stair_ankles() -> void:
 	if stair_demo.is_empty():
 		return
 	for foot in 2:
-		var bone := skeleton.find_bone("mixamorig_LeftFoot" if foot == 0 else "mixamorig_RightFoot")
+		var bone := skeleton.find_bone(bones.left_leg[2] if foot == 0 else bones.right_leg[2])
 		if bone >= 0:
 			_stair_actual[foot] = skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
 
