@@ -25,7 +25,7 @@ func _run() -> void:
 	for i in 30: await process_frame
 	rig.rig.skeleton.skeleton_updated.connect(func() -> void: _grab(rig))
 	var names: Array = rig.rig.skeleton.get_children().filter(func(c: Node) -> bool: return c is SkeletonModifier3D).map(func(c: Node) -> String: return str(c.name))
-	check(names == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "The traversal layers sit after Locomotion and CoverCrouch and before WeaponPose: %s" % [names])
+	check(names == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "TraversalFoot", "WeaponPose", "WeaponArmIK", "HandGrip"], "The traversal layers sit after Locomotion and CoverCrouch and before WeaponPose: %s" % [names])
 	check(rig.rig.ladder == null and not rig.rig.leg_ik.active, "Idle: no traversal, the leg IK is off")
 	check(not rig.rig.is_weapon_stowed(), "Idle: the rifle is in the hand")
 

@@ -61,7 +61,7 @@ func _run() -> void:
 	# ---- It initialises with nothing missing, and says what it holds.
 	var stages := v.rig.skeleton.get_children().filter(func(c): return c is SkeletonModifier3D).map(func(c): return String(c.name))
 	check(not v.rig.has_weapon() and v.rig.weapon == null and v.rig.muzzle_socket == null and v.rig.weapon_attachment == null and v.rig.muzzle_flash == null, "Built with no weapon: no weapon node, no socket, no muzzle")
-	check(stages == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"] and v.rig.bones.degraded.is_empty(), "...and every stage of the stack still builds (%s)" % [stages])
+	check(stages == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "TraversalFoot", "WeaponPose", "WeaponArmIK", "HandGrip"] and v.rig.bones.degraded.is_empty(), "...and every stage of the stack still builds (%s)" % [stages])
 	check(v.rig.equipment_state() == PresentationTypes.EquipmentState.NONE and v.presenter.intent().equipment == PresentationTypes.EquipmentState.NONE and not v.rig.is_weapon_stowed(), "The equipment state is NONE, in the rig and in the presenter's snapshot")
 	check(PoseOwnership.validate().is_empty(), "The pose-ownership declarations are unchanged and consistent")
 

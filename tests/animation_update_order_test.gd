@@ -3,7 +3,7 @@ extends SceneTree
 ## the modifiers run in their declared child order, and skeleton_updated comes after the last modifier. The presenter migration must not change this order; this test fails if it does.
 const NODE := preload("res://research/animation_update_order_probe/order_node.gd")
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
-const EXPECTED_MODIFIER_ORDER := ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"]
+const EXPECTED_MODIFIER_ORDER := ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "TraversalFoot", "WeaponPose", "WeaponArmIK", "HandGrip"]
 var sink: Array = []
 var failures := 0
 var checks := 0

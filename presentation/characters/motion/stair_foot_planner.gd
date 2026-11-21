@@ -8,6 +8,8 @@ extends RefCounted
 ## while the body's continuous hold index M is within half a hold of j (a 50% stance), and swings between its two neighbouring holds otherwise: it lifts first and travels after
 ## (StairProfile.lift_phase / travel_start), so it clears the riser, and it is locked (the same world point) for the whole stance.
 
+## How far a pelvis window may be narrower than empty before it counts as unreachable: the extension and knee limits are comfort margins, and 1.5 cm is below the legs' real slack (3% of 0.77 m = 2.3 cm).
+const REACH_TOLERANCE := 0.015
 const LEFT := 0
 const RIGHT := 1
 
@@ -45,7 +47,7 @@ static func hold_index(hold_list: Array, s: float) -> float:
 
 
 ## Where foot `foot` (LEFT / RIGHT) is for a body at distance `s`: {position (the ankle target in world), planted, hold, swing, tread_top}.
-static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float, foot: int) -> Dictionary:
+static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float, foot: int, lateral := 0.0) -> Dictionary:
 	var last := hold_list.size() - 1
 	var index := hold_index(hold_list, s)
 	var nearest := foot + 2 * int(round((index - float(foot)) / 2.0))
@@ -61,10 +63,10 @@ static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, 
 		swing = clampf(index - (float(nearest) - 1.5), 0.0, 1.0)
 	# A planted foot ROLLS through its stance (phase -0.5 at heel strike to +0.5 at toe-off); the swing leaves from the toe-off state and arrives at the next heel-strike state, so nothing jumps.
 	var phase := clampf(index - float(nearest), -0.5, 0.5)
-	var from_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, 0.5)
-	var to_point := _hold_point(model, profile, hold_list[hold_b], ascending, foot, hold_b, -0.5)
+	var from_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, 0.5, lateral)
+	var to_point := _hold_point(model, profile, hold_list[hold_b], ascending, foot, hold_b, -0.5, lateral)
 	if swing <= 0.0 or hold_a == hold_b:
-		var planted_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, phase)
+		var planted_point := _hold_point(model, profile, hold_list[hold_a], ascending, foot, hold_a, phase, lateral)
 		return {"position": planted_point, "planted": true, "hold": hold_a, "swing": 0.0, "tread_top": float(hold_list[hold_a].height), "phase": phase}
 	var going_up := to_point.y >= from_point.y
 	# Up: lift first, travel after, so the foot clears the riser. Down: travel first (out over the nosing), drop after: the foot never goes down through the tread it left.
@@ -77,20 +79,29 @@ static func foot_at(model: StairModel, profile: StairProfile, hold_list: Array, 
 
 
 ## The ankle target for a foot on `hold` (index `hold_id` in the list) at stance `phase` (-0.5 heel strike .. +0.5 toe-off). With the stance motion off this is one fixed point per hold.
-static func _hold_point(model: StairModel, profile: StairProfile, hold: Dictionary, ascending: bool, foot: int, hold_id := -1, phase := 0.0) -> Vector3:
+static func _hold_point(model: StairModel, profile: StairProfile, hold: Dictionary, ascending: bool, foot: int, hold_id := -1, phase := 0.0, lateral := 0.0) -> Vector3:
 	var facing := model.direction if ascending else -model.direction
 	var left := Vector3.UP.cross(facing).normalized()
 	var side := profile.foot_half_spread * (1.0 if foot == LEFT else -1.0)
 	var forward := -profile.ankle_setback
 	var lift := 0.0
+	var on_tread := float(hold.s) >= model.riser_s(1) and float(hold.s) <= model.end_s()
 	if profile.stance_motion_enabled and hold_id >= 0:
 		forward += profile.stance_roll * phase
 		lift = profile.heel_lift * smoothstep(0.05, 0.5, phase)
 		var variation := _variation(hold_id, foot, profile.placement_variation)
 		forward += variation.x
 		side += variation.y
-		var reach := maxf(model.width * 0.5 - 0.1, 0.05)
-		side = clampf(side, -reach, reach)
+	if profile.lateral_follow_enabled:
+		side += lateral * (1.0 if facing == model.direction else -1.0)   # the stair's left is the travel's left going up and its right coming down
+	if profile.tread_clamp_enabled:
+		# The foot stays wholly on its tread: its heel and toe inside the tread's depth (on a tread; the ground and the landing have no riser to stop at) and the foot inside the stair's width.
+		if on_tread:
+			var half_depth := model.tread_depth * 0.5
+			forward = clampf(forward, -(half_depth - profile.foot_back - profile.tread_margin), half_depth - profile.foot_front - profile.tread_margin) if half_depth > profile.foot_back + profile.foot_front * 0.5 else clampf(forward, -half_depth * 0.5, 0.0)
+		var lateral_reach := maxf(model.width * 0.5 - profile.foot_half_width - profile.tread_margin, 0.0)
+		var lateral_axis_sign := 1.0 if facing == model.direction else -1.0
+		side = clampf(side * lateral_axis_sign, -lateral_reach, lateral_reach) * lateral_axis_sign
 	var along := model.low + model.direction * float(hold.s) + facing * forward + left * side
 	return Vector3(along.x, float(hold.height) + profile.ankle_height + lift, along.z)
 
@@ -102,6 +113,78 @@ static func _variation(hold_id: int, foot: int, amount: float) -> Vector2:
 	var a := sin(float(hold_id) * 12.9898 + float(foot) * 78.233) * 43758.5453
 	var b := sin(float(hold_id) * 39.3468 + float(foot) * 11.135) * 24634.6345
 	return Vector2((a - floorf(a)) * 2.0 - 1.0, (b - floorf(b)) * 2.0 - 1.0) * amount
+
+
+## How far the body is across the stair: the signed distance of `body` from the stair's centre line, along the stair's left (positive to the left looking up the stair).
+static func lateral_of(model: StairModel, body: Vector3) -> float:
+	return (body - model.low).dot(Vector3.UP.cross(model.direction).normalized())
+
+
+## Where each hip JOINT is for a pelvis at `pelvis_world` facing `forward` (the pelvis origin is not the joint: the joints are sideways of it and a little below). `foot` LEFT or RIGHT.
+static func hip_joint(profile: StairProfile, pelvis_world: Vector3, forward: Vector3, foot: int) -> Vector3:
+	var flat := Vector3(forward.x, 0.0, forward.z)
+	flat = flat.normalized() if flat.length() > 0.001 else Vector3.BACK
+	var left := Vector3.UP.cross(flat).normalized()
+	return pelvis_world + left * profile.hip_joint_offset.x * (1.0 if foot == LEFT else -1.0) + flat * profile.hip_joint_offset.z + Vector3.DOWN * profile.hip_joint_offset.y
+
+
+## A foot standing on whatever surface is under it (terrain contact for a body at rest): the ankle target for foot `foot` of a body at `body` facing `forward`. The foot goes where the foot would be (under the
+## body, to its side, pointing the way the body faces), onto the tread under it, moved just enough that heel and toe are inside that tread and the foot is inside the stair's width. Left and right can therefore be
+## on different treads (a body turned across the stair, a body on a riser line). Pure: a function of the stair and the body.
+static func stance_foot(model: StairModel, profile: StairProfile, foot: int, body: Vector3, forward: Vector3) -> Dictionary:
+	var flat := Vector3(forward.x, 0.0, forward.z)
+	flat = flat.normalized() if flat.length() > 0.001 else model.direction
+	var left := Vector3.UP.cross(flat).normalized()
+	var desired := body + left * profile.foot_half_spread * (1.0 if foot == LEFT else -1.0)
+	var stair_left := Vector3.UP.cross(model.direction).normalized()
+	var along := flat.dot(model.direction)
+	var across := flat.dot(stair_left)
+	var front := profile.foot_front * absf(along) + profile.foot_half_width * absf(across)
+	var back := profile.foot_back * absf(along) + profile.foot_half_width * absf(across)
+	var half_across := profile.foot_front * absf(across) + profile.foot_half_width * absf(along)
+	var s_foot := model.progress_of(desired)
+	var lateral := (desired - model.low).dot(stair_left)
+	var tread := 0
+	if s_foot >= model.riser_s(1):
+		tread = mini(model.count + 1, int(floor((s_foot - model.riser_s(1)) / model.tread_depth)) + 1)
+	var height := model.low.y if tread == 0 else (model.top() if tread > model.count else model.tread_top(tread))
+	if tread >= 1 and tread <= model.count:
+		var span := model.tread_span(tread)
+		var low := span.x + back + profile.tread_margin
+		var high := span.y - front - profile.tread_margin
+		s_foot = clampf(s_foot, low, high) if low <= high else (span.x + span.y) * 0.5
+	elif tread == 0:
+		s_foot = minf(s_foot, model.riser_s(1) - front - profile.tread_margin)
+	else:
+		s_foot = maxf(s_foot, model.end_s() + back + profile.tread_margin)
+	var reach := maxf(model.width * 0.5 - half_across - profile.tread_margin, 0.0)
+	lateral = clampf(lateral, -reach, reach)
+	var point := model.low + model.direction * s_foot + stair_left * lateral
+	return {"position": Vector3(point.x, height + profile.ankle_height, point.z), "planted": true, "hold": -1, "swing": 0.0, "tread_top": height}
+
+
+## The foot as the pose shows it: the gait's foot (feet follow the body across the stair), blended into the terrain stance as the body slows (`settle`), so a stop settles onto valid treads
+## smoothly instead of freezing the stride. `body` is the root, `forward` its facing, `speed` its speed along the stair.
+static func contact_foot(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float, foot: int, body: Vector3, forward: Vector3, speed: float) -> Dictionary:
+	var lateral := lateral_of(model, body) if profile.lateral_follow_enabled else 0.0
+	var gait := foot_at(model, profile, hold_list, ascending, s, foot, lateral)
+	var settle := settle_weight(profile, speed)
+	if settle <= 0.0:
+		return gait
+	var stance := stance_foot(model, profile, foot, body, forward)
+	var result := gait.duplicate()
+	result["position"] = (gait.position as Vector3).lerp(stance.position, settle)
+	result["planted"] = bool(gait.planted) or settle >= 0.5
+	result["settle"] = settle
+	result["tread_top"] = lerpf(float(gait.tread_top), float(stance.tread_top), settle)
+	return result
+
+
+## 1 when the body is at rest, 0 when it is walking: the weight of the terrain stance.
+static func settle_weight(profile: StairProfile, speed: float) -> float:
+	if not profile.settle_enabled:
+		return 0.0
+	return 1.0 - smoothstep(profile.settle_speed_low, profile.settle_speed_high, speed)
 
 
 ## The sideways shift of the pelvis toward the foot that carries the weight (world, horizontal): zero in double support, a full `pelvis_sway` toward the planted foot while the other swings.
@@ -121,23 +204,29 @@ static func sway_at(model: StairModel, profile: StairProfile, hold_list: Array, 
 ## ways (the leg may not overreach and the knee may not fold past `min_knee_interior_degrees`); a swinging foot only may not be overreached (it can fold freely: it is in the
 ## air). Returns {height, ok, low, high}: `ok` false means no height satisfies the planted legs (the stair is too steep for this body at this stride): the height is then
 ## the reachable one (legs never overreach) and it is a mismatch to report, not hide.
-static func pelvis(profile: StairProfile, body_xz: Vector3, feet: Array, smooth_floor := NAN) -> Dictionary:
+static func pelvis(profile: StairProfile, body_xz: Vector3, feet: Array, smooth_floor := NAN, forward := Vector3.BACK) -> Dictionary:
 	var min_chord := profile.leg_length * sin(deg_to_rad(profile.min_knee_interior_degrees) * 0.5)   # thigh = shin = leg/2: the chord across the knee angle
 	var max_chord := profile.leg_length * profile.max_leg_extension
 	var low := -INF
 	var high := INF
-	for foot: Dictionary in feet:
+	for index in feet.size():
+		var foot: Dictionary = feet[index]
 		var ankle: Vector3 = foot.position
-		var horizontal := Vector2(ankle.x - body_xz.x, ankle.z - body_xz.z).length()
+		# The leg hangs from its hip JOINT (sideways of the pelvis origin and below it), not from the origin: reach and knee fold are measured from there.
+		var joint := hip_joint(profile, Vector3(body_xz.x, 0.0, body_xz.z), forward, index)
+		var horizontal := Vector2(ankle.x - joint.x, ankle.z - joint.z).length()
 		var vertical_max := sqrt(maxf(max_chord * max_chord - horizontal * horizontal, 0.0))
-		high = minf(high, ankle.y + vertical_max)
+		high = minf(high, ankle.y + vertical_max + profile.hip_joint_offset.y)
 		if bool(foot.planted):
-			low = maxf(low, ankle.y + sqrt(maxf(min_chord * min_chord - horizontal * horizontal, 0.0)))
+			low = maxf(low, ankle.y + sqrt(maxf(min_chord * min_chord - horizontal * horizontal, 0.0)) + profile.hip_joint_offset.y)
 	if low == -INF:
 		low = high - 0.2
-	var ok := low <= high
+	# The extension limit (97% of the leg) and the knee limit are comfort margins, not the leg's real limits, so a window narrower than REACH_TOLERANCE is met in the middle instead of being reported as unreachable.
+	var ok := low <= high + REACH_TOLERANCE
 	if not ok:
 		return {"height": high, "ok": false, "low": low, "high": high}
+	if low > high:
+		return {"height": (low + high) * 0.5, "ok": true, "low": low, "high": high}
 	if not is_nan(smooth_floor):
 		# The smooth standing height, pushed only as far as the planted legs require.
 		return {"height": clampf(smooth_floor + profile.pelvis_standing_height, low, high), "ok": true, "low": low, "high": high}
@@ -161,9 +250,9 @@ static func floor_reference(model: StairModel, profile: StairProfile, s: float) 
 ## The pelvis height actually used: the stair's smoothed SURFACE (floor_reference) plus the standing height, pushed only as far as the legs demand right now (pelvis: the planted legs
 ## may neither overreach nor fold past the knee limit). The reference is smooth, so the pelvis moves smoothly and only leaves it when a planted leg requires. (An earlier version
 ## averaged per-moment solutions over a window: it stepped by one sample's share at every footfall and cost 0.5 ms per call; measured in the architecture audit.)
-static func pelvis_smoothed(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float, body_xz: Vector3) -> Dictionary:
-	var feet_now := [foot_at(model, profile, hold_list, ascending, s, LEFT), foot_at(model, profile, hold_list, ascending, s, RIGHT)]
-	return pelvis(profile, body_xz, feet_now, floor_reference(model, profile, s))
+static func pelvis_smoothed(model: StairModel, profile: StairProfile, hold_list: Array, ascending: bool, s: float, body_xz: Vector3, feet := [], forward := Vector3.BACK) -> Dictionary:
+	var feet_now: Array = feet if feet.size() == 2 else [foot_at(model, profile, hold_list, ascending, s, LEFT), foot_at(model, profile, hold_list, ascending, s, RIGHT)]
+	return pelvis(profile, body_xz, feet_now, floor_reference(model, profile, s), forward)
 
 
 ## An ankle target held inside what the leg can do from `hip`: never farther than the legs reach, never closer than a knee folded to `min_knee_interior_degrees` allows. A planted foot

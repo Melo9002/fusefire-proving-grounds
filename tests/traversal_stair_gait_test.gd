@@ -51,15 +51,16 @@ func _measure(model: StairModel, profile: StairProfile, ascending: bool, step: i
 		result.weight_jump = maxf(result.weight_jump, absf(weight - last_weight))
 		last_weight = weight
 		var root := model.point_at(s, model.low.y)
-		var solved := StairFootPlanner.pelvis_smoothed(model, profile, holds, ascending, s, root)
+		var facing: Vector3 = model.direction if ascending else -model.direction
+		var solved := StairFootPlanner.pelvis_smoothed(model, profile, holds, ascending, s, root, [], facing)
 		if weight > 0.5:
 			result.samples += 1
 			if not solved.ok:
 				result.unreachable += 1
-			var hip := Vector3(root.x, solved.height, root.z)
 			for foot in 2:
+				var hip := StairFootPlanner.hip_joint(profile, Vector3(root.x, solved.height, root.z), facing, foot)   # each leg hangs from its hip joint
 				var limited := StairFootPlanner.limit_ankle(profile, hip, feet[foot].position)
-				if feet[foot].planted and limited.distance_to(feet[foot].position) > 0.001:
+				if feet[foot].planted and limited.distance_to(feet[foot].position) > StairFootPlanner.REACH_TOLERANCE:
 					result.planted_moved += 1
 				if not feet[foot].planted:
 					result.worst_clamp = maxf(result.worst_clamp, limited.distance_to(feet[foot].position))
@@ -94,7 +95,9 @@ func _run() -> void:
 			check(measured.penetration == 0, "%s: no sole goes below a tread (%d)" % [label, measured.penetration])
 			check(float(measured.pelvis_jump) < 0.012, "%s: the pelvis height is continuous: no step larger than %.4f m per 2 mm of travel, i.e. at most %.1f m/s of vertical pelvis speed at the %.1f m/s stair walk" % [label, measured.pelvis_jump, float(measured.pelvis_jump) / 0.002 * profile_speed, profile_speed])
 			check(float(measured.weight_jump) < 0.01 and is_equal_approx(float(measured.end_weights[0]), 0.0) and is_equal_approx(float(measured.end_weights[1]), 0.0), "%s: flat-to-stair and stair-to-flat hand-over is smooth and exactly zero at both ends (jump %.4f)" % [label, measured.weight_jump])
-			check(float(measured.worst_clamp) < 0.08, "%s: the swing foot needs at most %.3f m of correction" % [label, measured.worst_clamp])
+			# The measured leg (0.767 m from the hip joint) is shorter than the 0.84 the planner used to assume, so the 0.5 m risers pull the swing foot in more (a deliberately extreme stair).
+			var clamp_limit := 0.08 if model.tread_rise < 0.3 else 0.12
+			check(float(measured.worst_clamp) < clamp_limit, "%s: the swing foot needs at most %.3f m of correction (limit %.2f)" % [label, measured.worst_clamp, clamp_limit])
 
 	# ---- The pelvis follows the stair (it is placed from the feet, so it rises with them).
 	var up := _measure(realistic, profile, true, 1)

@@ -14,7 +14,7 @@ extends RefCounted
 enum Op { ADD, REPLACE_COMPONENT, OVERRIDE, TARGET, POST }
 
 ## The skeleton's modifier child order (names are the node names CharacterRig gives them).
-const STAGE_ORDER: Array[StringName] = [&"Locomotion", &"CoverCrouch", &"Traversal", &"TraversalLegIK", &"WeaponPose", &"WeaponArmIK", &"HandGrip"]
+const STAGE_ORDER: Array[StringName] = [&"Locomotion", &"CoverCrouch", &"Traversal", &"TraversalLegIK", &"TraversalFoot", &"WeaponPose", &"WeaponArmIK", &"HandGrip"]
 
 ## Body roles (side-agnostic except the support clavicle, which is the one the weapon pose and posture both reach with). See role_of().
 ## A write: stage, role, domain (&"rotation" or &"position"), component (&"whole" or a named part), op.
@@ -34,6 +34,7 @@ const WRITES: Array[Dictionary] = [
 	{"stage": &"Traversal", "role": &"shin", "domain": &"ik_target", "component": &"whole", "op": Op.TARGET},
 	{"stage": &"TraversalLegIK", "role": &"thigh", "domain": &"rotation", "component": &"whole", "op": Op.OVERRIDE},
 	{"stage": &"TraversalLegIK", "role": &"shin", "domain": &"rotation", "component": &"whole", "op": Op.OVERRIDE},
+	{"stage": &"TraversalFoot", "role": &"foot", "domain": &"rotation", "component": &"whole", "op": Op.OVERRIDE},
 	{"stage": &"WeaponPose", "role": &"upper_arm", "domain": &"ik_target", "component": &"whole", "op": Op.TARGET},
 	{"stage": &"WeaponPose", "role": &"forearm", "domain": &"ik_target", "component": &"whole", "op": Op.TARGET},
 	{"stage": &"WeaponPose", "role": &"support_clavicle", "domain": &"rotation", "component": &"whole", "op": Op.OVERRIDE},
@@ -51,6 +52,8 @@ const OVERLAPS: Array[Dictionary] = [
 		"rule": "Locomotion only ADDS a step lift; CoverCrouch replaces the leg bones while crouched or kneeling; the leg IK takes them by its influence while a traversal is active. Crouch and traversal do not coexist today."},
 	{"role": &"shin", "domain": &"rotation", "stages": [&"Locomotion", &"CoverCrouch", &"TraversalLegIK"],
 		"rule": "As for the thigh."},
+	{"role": &"foot", "domain": &"rotation", "stages": [&"CoverCrouch", &"TraversalFoot"],
+		"rule": "CoverCrouch sets the foot while crouched or kneeling; TraversalFoot is later and levels it only while a stair pose is active (a crouch is suspended on stairs), by the stair weight."},
 	{"role": &"support_clavicle", "domain": &"rotation", "stages": [&"CoverCrouch", &"WeaponPose"],
 		"rule": "CoverCrouch sets the base protraction; WeaponPose is later and may only ADD to that base (never below it), up to the rig's limit; with nothing to add it restores the base."},
 ]

@@ -40,6 +40,7 @@ var ladder: LadderClimb
 @export var stair_profile: StairProfile = StairProfile.new()
 var stairs: StairWalk
 var traversal_modifier: TraversalPoseModifier
+var foot_modifier: TraversalFootModifier
 var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
 var knee_poles: Array[Marker3D] = []
@@ -275,6 +276,7 @@ func _ready() -> void:
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
+	_measure_stair_anatomy()
 	if Engine.is_editor_hint():
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -290,6 +292,35 @@ func _ready() -> void:
 	if not is_inside_tree():
 		return
 	_align_weapon_to_aim()
+
+
+## The stair planner's anatomy, measured from THIS rig's skeleton in its rest pose through the typed bone roles (no bone names, no assumed proportions): the leg's straight length (thigh plus shin), how high
+## the ankle sits above the sole, where the hip joint is relative to the pelvis origin, and the foot's extent (from the ankle-to-ball distance). The profile is copied first so a shared resource is not
+## changed. A role the skeleton lacks keeps the profile's value.
+func _measure_stair_anatomy() -> void:
+	if stair_profile == null or not is_instance_valid(skeleton):
+		return
+	stair_profile = stair_profile.duplicate() as StairProfile
+	var frame := character_root.global_transform.affine_inverse() * skeleton.global_transform
+	var rest := func(bone_name: StringName) -> Vector3:
+		var index := skeleton.find_bone(bone_name)
+		return (frame * skeleton.get_bone_global_rest(index).origin) if index >= 0 else Vector3(NAN, NAN, NAN)
+	var hips: Vector3 = rest.call(bones.hips)
+	var joint: Vector3 = rest.call(bones.left_leg[0])
+	var knee: Vector3 = rest.call(bones.left_leg[1])
+	var ankle: Vector3 = rest.call(bones.left_leg[2])
+	if is_nan(hips.x) or is_nan(joint.x) or is_nan(knee.x) or is_nan(ankle.x):
+		return
+	stair_profile.leg_length = joint.distance_to(knee) + knee.distance_to(ankle)
+	stair_profile.ankle_height = ankle.y
+	stair_profile.hip_joint_offset = Vector3(absf(joint.x - hips.x), hips.y - joint.y, joint.z - hips.z)
+	var toe: Vector3 = rest.call(bones.left_toes) if bones.left_toes != &"" else Vector3(NAN, NAN, NAN)
+	if not is_nan(toe.x):
+		var ball := Vector2(toe.x - ankle.x, toe.z - ankle.z).length()
+		if ball > 0.02:
+			stair_profile.foot_front = ball * 1.6
+			stair_profile.foot_back = ball * 0.55
+			stair_profile.foot_half_width = ball * 0.4
 
 
 func _build_character() -> void:
@@ -544,10 +575,27 @@ func _build_traversal_modifier() -> void:
 		leg_ik.set_pole_node(side, leg_ik.get_path_to(knee))
 	leg_ik.active = false
 	traversal_modifier.bind_legs(leg_ik, foot_targets, knee_poles)
+	# The feet's orientation, right after the leg IK (which places the ankles but not the feet's rotation).
+	foot_modifier = TraversalFootModifier.new()
+	foot_modifier.name = "TraversalFoot"
+	var foot_bones: Array[StringName] = [bones.left_leg[2], bones.right_leg[2]]
+	var ball := 0.113
+	if bones.left_toes != &"" and skeleton.find_bone(bones.left_toes) >= 0:
+		var ankle_rest := skeleton.get_bone_global_rest(skeleton.find_bone(bones.left_leg[2])).origin
+		var toe_rest := skeleton.get_bone_global_rest(skeleton.find_bone(bones.left_toes)).origin
+		ball = Vector2(toe_rest.x - ankle_rest.x, toe_rest.z - ankle_rest.z).length() * skeleton.global_basis.get_scale().y
+	if foot_modifier.setup(skeleton, foot_bones, character_root, ball):
+		foot_modifier.input = traversal_modifier.input
+		skeleton.add_child(foot_modifier)
+	else:
+		foot_modifier = null
+		bones.degrade("TraversalFoot", [])
 	# Just before the arm IK, after whatever was built before (Locomotion, CoverCrouch).
 	if is_instance_valid(arm_ik):
 		skeleton.move_child(traversal_modifier, arm_ik.get_index())
 		skeleton.move_child(leg_ik, arm_ik.get_index())
+		if foot_modifier != null:
+			skeleton.move_child(foot_modifier, arm_ik.get_index())
 
 
 ## Translates the traversal and stair state into the typed pose the Traversal modifier applies (TraversalPoseInput). Called wherever that state changes, so the modifier always has the current pose and
@@ -569,8 +617,10 @@ func _publish_traversal_input() -> void:
 		input.weight = stairs.pose.weight
 		input.pelvis_height = stairs.pose.pelvis_height
 		input.pelvis_offset = stairs.pose.pelvis_offset
+		input.smooth_floor = stairs.pose.smooth_floor
 		input.ankles_world = [stairs.pose.feet[0].position, stairs.pose.feet[1].position]
 		input.planted = [stairs.pose.feet[0].planted, stairs.pose.feet[1].planted]
+		input.foot_lift = [maxf(stairs.pose.feet[0].position.y - stairs.pose.feet[0].tread_top - stair_profile.ankle_height, 0.0), maxf(stairs.pose.feet[1].position.y - stairs.pose.feet[1].tread_top - stair_profile.ankle_height, 0.0)]
 		input.stair_profile = stair_profile
 	else:
 		input.clear()
@@ -621,13 +671,15 @@ func set_stair_progress(s: float, unit_speed: float) -> void:
 		stairs.step = step
 		stairs.holds = StairFootPlanner.holds(model, ascending, step)
 	var holds: Array = stairs.holds
+	var body_root := character_root.global_position
+	var facing := character_root.global_basis.orthonormalized().z
 	var feet: Array = []
 	for foot in 2:
-		feet.append(StairFootPlanner.foot_at(model, stair_profile, holds, ascending, s, foot))
-	var shift := StairFootPlanner.sway_at(model, stair_profile, holds, ascending, s)
-	var body := character_root.global_position + shift   # the legs are solved for the pelvis where it will actually be
-	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body)
-	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step, shift)
+		feet.append(StairFootPlanner.contact_foot(model, stair_profile, holds, ascending, s, foot, body_root, facing, unit_speed))
+	var shift := StairFootPlanner.sway_at(model, stair_profile, holds, ascending, s) * (1.0 - StairFootPlanner.settle_weight(stair_profile, unit_speed))
+	var body := body_root + shift   # the legs are solved for the pelvis where it will actually be
+	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body, feet, facing)
+	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step, shift, StairFootPlanner.floor_reference(model, stair_profile, s))
 	_publish_traversal_input()
 
 

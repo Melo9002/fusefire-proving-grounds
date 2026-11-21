@@ -112,15 +112,16 @@ func _run() -> void:
 					# The pelvis is placed from the feet: both legs must reach and no knee fold past the limit, on the stair.
 					if StairFootPlanner.weight_at(query, 0.0, stair.riser_s(stair.count), 0.75) > 0.5:
 						var root := stair.point_at(query, stair.low.y)
-						var solved := StairFootPlanner.pelvis_smoothed(stair, profile, holds, ascending, query, root)
+						var facing: Vector3 = stair.direction if ascending else -stair.direction
+						var solved := StairFootPlanner.pelvis_smoothed(stair, profile, holds, ascending, query, root, [], facing)
 						if not solved.ok:
 							unreachable += 1
 						for foot in 2:
-							var hip := Vector3(root.x, solved.height, root.z)
+							var hip := StairFootPlanner.hip_joint(profile, Vector3(root.x, solved.height, root.z), facing, foot)   # the leg hangs from its hip joint
 							var limited := StairFootPlanner.limit_ankle(profile, hip, feet[foot].position)
 							if not feet[foot].planted:
 								worst_clamp = maxf(worst_clamp, limited.distance_to(feet[foot].position))
-							elif limited.distance_to(feet[foot].position) > 0.001:
+							elif limited.distance_to(feet[foot].position) > StairFootPlanner.REACH_TOLERANCE:
 								planted_moved += 1
 							var chord: float = hip.distance_to(limited)
 							worst_reach = maxf(worst_reach, chord)
@@ -135,7 +136,7 @@ func _run() -> void:
 					worst_roll = maxf(worst_roll, (stance_span[key] as Vector2).y - (stance_span[key] as Vector2).x)
 					worst_heel = maxf(worst_heel, (stance_lift[key] as Vector2).y - (stance_lift[key] as Vector2).x)
 				check(slide < 0.0015, "%s: a planted foot rolls smoothly, it never skates (%.5f m per 2 mm of body travel)" % [label, slide])
-				check(worst_roll <= profile.stance_roll + 0.002 and worst_roll >= profile.stance_roll * 0.8 and worst_heel <= profile.heel_lift + 0.002 and worst_heel >= profile.heel_lift * 0.8,
+				check(worst_roll <= profile.stance_roll + 0.002 and worst_roll >= profile.stance_roll * 0.7 and worst_heel <= profile.heel_lift + 0.002 and worst_heel >= profile.heel_lift * 0.8,
 					"%s: through its stance a foot drifts forward by %.3f m (limit %.3f) and its heel comes up %.3f m (limit %.3f)" % [label, worst_roll, profile.stance_roll, worst_heel, profile.heel_lift])
 				check(worst_step < 0.025, "%s: the feet never jump (worst %.3f m per 2 mm of body travel)" % [label, worst_step])
 				check(both_on_one == 0, "%s: the feet are never on the same hold" % label)

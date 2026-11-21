@@ -78,16 +78,25 @@ func _apply_stairs() -> void:
 	weight = input.weight
 	var current := skeleton.get_bone_pose_position(_hips)
 	var current_world: Vector3 = skeleton.global_transform * current
-	var hips_world := Vector3(current_world.x + input.pelvis_offset.x, input.pelvis_height, current_world.z + input.pelvis_offset.z)
+	var forward := character_frame.global_basis.orthonormalized().z
+	var hips_xz := Vector3(current_world.x + input.pelvis_offset.x, 0.0, current_world.z + input.pelvis_offset.z)
+	var height := input.pelvis_height
+	if input.stair_profile != null and not is_nan(input.smooth_floor):
+		# The pelvis height was planned for the root; the hips are where the gait left them, so the legs' limits are applied there.
+		var feet: Array = []
+		for side in 2:
+			feet.append({"position": input.ankles_world[side], "planted": input.planted[side]})
+		var solved := StairFootPlanner.pelvis(input.stair_profile, hips_xz, feet, input.smooth_floor, forward)
+		height = float(solved.height)
+	var hips_world := Vector3(hips_xz.x, height, hips_xz.z)
 	var target := skeleton.global_transform.affine_inverse() * hips_world
 	skeleton.set_bone_pose_position(_hips, current.lerp(target, weight))
 	if not is_instance_valid(leg_ik):
 		return
-	var forward := character_frame.global_basis.orthonormalized().z
 	for side in 2:
 		var ankle := input.ankles_world[side]
 		if not input.planted[side]:
-			ankle = StairFootPlanner.limit_ankle(input.stair_profile, hips_world, ankle)
+			ankle = StairFootPlanner.limit_ankle(input.stair_profile, StairFootPlanner.hip_joint(input.stair_profile, hips_world, forward, side), ankle)
 		foot_targets[side].global_position = ankle
 		knee_poles[side].global_position = ankle + forward * 0.55 + Vector3.UP * 0.45
 	leg_ik.influence = weight

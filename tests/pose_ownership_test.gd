@@ -111,7 +111,7 @@ func _run() -> void:
 	for write in PoseOwnership.WRITES:
 		if write.stage == &"HandGrip" and write.role == &"wrist":
 			table_has_undeclared = true
-	check(table_has_undeclared and saved_overlaps.size() == 4, "Setup: the table has its four declared overlaps")
+	check(table_has_undeclared and saved_overlaps.size() == 5, "Setup: the table has its five declared overlaps")
 
 	# ---- Part 2: what the stages really write stays inside what they declare.
 	await _drive(150, func(v: TacticalCharacterAdapter, i: int) -> void:

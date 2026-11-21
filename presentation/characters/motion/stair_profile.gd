@@ -6,6 +6,26 @@ extends Resource
 enum ContactPolicy { EVERY_TREAD, ALTERNATE, AUTO }
 
 @export var enabled := true
+## The contact corrections (each can be switched off to compare with the earlier behaviour; the negative controls of the stair contact tests use them).
+@export_group("Contact")
+## The feet follow the body across the stair instead of staying on its centre line (a body near an edge has its feet under it, within the tread).
+@export var lateral_follow_enabled := true
+## A foot is kept wholly on its tread: heel and toe inside the tread's depth and the foot inside its width (the roll and the landing variation are limited by it).
+@export var tread_clamp_enabled := true
+## When the body slows down the feet settle onto the treads under them (both feet planted on valid surfaces, facing the way the body faces) instead of freezing wherever the stride was.
+@export var settle_enabled := true
+## The speed band over which the settle blends in (below `settle_speed_low` it is complete, above `settle_speed_high` it is off).
+@export_range(0.0, 1.0, 0.01, "suffix:m/s") var settle_speed_low := 0.05
+@export_range(0.05, 2.0, 0.01, "suffix:m/s") var settle_speed_high := 0.35
+## Clearance kept between the foot and the tread edge it must not cross.
+@export_range(0.0, 0.05, 0.001, "suffix:m") var tread_margin := 0.01
+@export_group("Anatomy (measured from the rig at build; these are MIRA's)")
+## Hip joint relative to the pelvis origin: sideways (each side), down, forward.
+@export var hip_joint_offset := Vector3(0.10, 0.056, 0.0)
+## The foot's extent from the ankle: forward to the toe tip, back to the heel, and half its width.
+@export_range(0.05, 0.4, 0.005, "suffix:m") var foot_front := 0.18
+@export_range(0.0, 0.2, 0.005, "suffix:m") var foot_back := 0.062
+@export_range(0.02, 0.12, 0.005, "suffix:m") var foot_half_width := 0.045
 @export var policy: ContactPolicy = ContactPolicy.AUTO
 @export_group("Auto policy")
 ## AUTO puts a foot on every tread unless the unit is moving at least this fast (jog / run), when it puts one on every second tread (the stride is longer than the tread).
@@ -21,7 +41,7 @@ enum ContactPolicy { EVERY_TREAD, ALTERNATE, AUTO }
 @export_range(0.0, 0.8, 0.01) var lift_phase := 0.6
 @export_range(0.0, 0.8, 0.01) var travel_start := 0.3
 ## Ankle height above the tread when the sole is flat on it.
-@export_range(0.0, 0.2, 0.005, "suffix:m") var ankle_height := 0.09
+@export_range(0.0, 0.2, 0.005, "suffix:m") var ankle_height := 0.109
 ## Toe-in of the foot target on the tread (the ankle is this far back from the tread centre toward the heel).
 @export_range(0.0, 0.2, 0.005, "suffix:m") var ankle_setback := 0.03
 ## Half the distance between the feet across the stair.
@@ -42,7 +62,7 @@ enum ContactPolicy { EVERY_TREAD, ALTERNATE, AUTO }
 @export_group("Pelvis")
 ## The pelvis is placed from the FEET (not from the floor under the root): high enough that no knee flexes past the limit, low enough that no leg overreaches. Leg length is the
 ## hip-to-ankle distance of the rig (CharacterRig measures it); the defaults are MIRA's.
-@export_range(0.4, 1.4, 0.01, "suffix:m") var leg_length := 0.84
+@export_range(0.4, 1.4, 0.001, "suffix:m") var leg_length := 0.767
 @export_range(0.5, 1.0, 0.01) var max_leg_extension := 0.97
 @export_range(10.0, 90.0, 1.0, "suffix:°") var min_knee_interior_degrees := 45.0
 ## Where in its allowed range the pelvis sits: 0 = as low (bent) as allowed, 1 = as high as the legs reach.

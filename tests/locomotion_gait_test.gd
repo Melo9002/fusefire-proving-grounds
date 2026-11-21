@@ -143,7 +143,7 @@ func _run() -> void:
 	for child in sk.get_children():
 		if child is SkeletonModifier3D:
 			order.append(String(child.name))
-	check(order == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
+	check(order == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "TraversalFoot", "WeaponPose", "WeaponArmIK", "HandGrip"], "Modifier order is unchanged: %s" % str(order))
 	check(rig.get_presentation_state() == &"move" and not rig.rig.carry_contacts_active() and rig.rig.arm_ik.active, "Walking with the rifle keeps the weapon pose and arm IK in charge of the arms")
 	var hand_to_weapon := rig.rig.right_hand_target.global_position.distance_to(rig.rig.weapon.to_global(rig.rig.handling.firing_grip))
 	check(hand_to_weapon < 0.15, "While walking the right hand stays on the rifle's grip (%.0f mm)" % (hand_to_weapon * 1000.0))

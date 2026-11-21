@@ -129,7 +129,7 @@ func _run() -> void:
 	for sample in samples:
 		ordered = ordered and sample[1] == sample[2]   # this frame's tick had already run when the modifier ran
 	check(ordered, "The presenter's tick precedes the modifier pass of the same frame (%d samples)" % samples.size())
-	check(_stage_names(host) == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "WeaponPose", "WeaponArmIK", "HandGrip"] and PoseOwnership.validate().is_empty(), "The modifier stack and its ownership declarations are the same ordered set (%s)" % [_stage_names(host)])
+	check(_stage_names(host) == ["Locomotion", "CoverCrouch", "Traversal", "TraversalLegIK", "TraversalFoot", "WeaponPose", "WeaponArmIK", "HandGrip"] and PoseOwnership.validate().is_empty(), "The modifier stack and its ownership declarations are the same ordered set (%s)" % [_stage_names(host)])
 	check(host.find_children("*", "AnimationTree", true, false).size() == 1 and host.find_children("*", "Skeleton3D", true, false).size() == 1, "One AnimationTree and one skeleton: no parallel animation driver")
 	var controllers := host.find_children("*", "Node", true, false).filter(func(n): return n.get_script() == host.rig.animation_controller.get_script())
 	check(controllers.size() == 1 and controllers[0] == host.rig.animation_controller, "One animation controller, owned by the rig")

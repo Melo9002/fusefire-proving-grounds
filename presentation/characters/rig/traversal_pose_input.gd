@@ -17,8 +17,12 @@ var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var pelvis_height := 0.0
 ## The pelvis's sideways shift over the supporting foot (world, horizontal).
 var pelvis_offset := Vector3.ZERO
+## The smoothed floor under the pelvis (NAN: use the planner's height as it is).
+var smooth_floor := NAN
 var ankles_world: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var planted: Array[bool] = [false, false]
+## How far each ankle is lifted above its flat-on-the-tread height (the heel coming up toward toe-off), metres.
+var foot_lift: Array[float] = [0.0, 0.0]
 var stair_profile: StairProfile
 
 func clear() -> void:

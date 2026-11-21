@@ -24,7 +24,7 @@ class Measurements extends RefCounted:
 	var thigh_length := NAN
 	var shin_length := NAN
 	var leg_length := NAN                  # thigh + shin (the hip JOINT to the ankle along the bones)
-	var hips_to_ankle := NAN               # the Hips bone origin to the ankle: what the stair planner's `leg_length` actually spans
+	var hips_to_ankle := NAN               # the Hips bone origin to the ankle (the legs hang from the hip joints, so the stair planner uses `leg_length`)
 	var upper_arm_length := NAN
 	var forearm_length := NAN
 	var shoulder_width := NAN              # between the two upper-arm joints

@@ -31,8 +31,10 @@ var s := 0.0
 var step := 0
 ## The sideways shift of the pelvis over the supporting foot (world, horizontal); zero with the stance motion off.
 var pelvis_offset := Vector3.ZERO
+## The smoothed floor the pelvis stands over (see StairFootPlanner.floor_reference): the modifier re-solves the pelvis height with the hips where they actually are.
+var smooth_floor := NAN
 
-static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: float, along: float, tread_step: int, shift := Vector3.ZERO) -> StairPose:
+static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: float, along: float, tread_step: int, shift := Vector3.ZERO, floor_reference := NAN) -> StairPose:
 	var pose := StairPose.new()
 	for result: Dictionary in foot_results:
 		pose.feet.append(Foot.from_planner(result))
@@ -44,4 +46,5 @@ static func from_planner(foot_results: Array, pelvis: Dictionary, pose_weight: f
 	pose.s = along
 	pose.step = tread_step
 	pose.pelvis_offset = shift
+	pose.smooth_floor = floor_reference
 	return pose
