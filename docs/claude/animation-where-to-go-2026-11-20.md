@@ -35,7 +35,7 @@ Gameplay (tactical today; exploration and base later) decides what happens and o
 | Exploration movement | experimental only: `research/exploration_playground/exploration_playground.gd` (Match Setup, Exploration) | an exploration adapter in `presentation/exploration/` (future) | `tests/exploration_playground_test.gd` |
 | The animation workbench | `art/characters/mira_0/demo/mira_0_pose_workbench.tscn` and `.gd` | `tools/animation_workbench/` | capture scripts are explicit-only (`*_capture.gd`) |
 | MIRA's scene or model | `art/characters/mira_0/runtime/mira_0_unit_visual.tscn`, `art/characters/mira_0/models/mira_0_prototype.glb` | same paths (they are referenced widely and do not move) | any test that instantiates the visual |
-| Safety nets for moves | `resource_references_test` (every res:// path and uid resolves), `animation_update_order_test`, `animation_cleanup_test`, `animation_module_boundaries_test`; perf baseline `tools/quality/animation_perf_baseline.gd` | same | `.	oolsun_tests.ps1 fast -Subsystem animation` |
+| Safety nets for moves | `resource_references_test` (every res:// path and uid resolves), `animation_update_order_test`, `animation_cleanup_test`, `animation_module_boundaries_test`; perf baseline `tools/quality/animation_perf_baseline.gd` | same | `.\tools\run_tests.ps1 fast -Subsystem animation` |
 | Add a test | `tests/` (flat) and register it in `tests/catalog.json` | same | `.\tools\run_tests.ps1 check`, then `select -Test <name>` |
 
 ## Rules a contributor should know
