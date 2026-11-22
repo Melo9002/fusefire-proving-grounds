@@ -347,6 +347,8 @@ func _process(frame_delta: float) -> void:
 	rig.update_weapon_pose()
 	if is_instance_valid(rig.carry_passenger) and rig.interaction_active():
 		_update_status()
+	if sim_paused and diagnostics != null:
+		diagnostics.record_step(_delta)
 	_update_camera_offset()
 
 
@@ -426,6 +428,8 @@ func diagnostics_for_contacts() -> void:
 func set_sim_paused(on: bool) -> void:
 	sim_paused = on
 	_step_requests = 0
+	if diagnostics != null:
+		diagnostics.set_paused(on)
 	var tree: AnimationTree = rig.animation_controller.animation_tree
 	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if on else AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
 
