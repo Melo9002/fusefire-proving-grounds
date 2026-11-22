@@ -17,6 +17,15 @@ var view_scale := 1.0
 ## The CharacterRig this host drives and the presenter it owns: plain variables (resolved as soon as the scene is instantiated, before it enters the tree), because a host reads them every frame.
 var rig: CharacterRig
 var presenter: CharacterPresenter
+## Optional read-only diagnostics (state monitor, contact error, trail, highlight), the scenario script and the pause state. See workbench_diagnostics.gd, scenario_runner.gd.
+var diagnostics: WorkbenchDiagnostics
+var scenario_runner := WorkbenchScenarioRunner.new()
+var sim_paused := false
+var _step_requests := 0
+## The length of one paused step (seconds of presentation time); one frame at 60 fps by default.
+var step_seconds := 1.0 / 60.0
+var panel: WorkbenchPanel
+const INSPECT_SOURCE := &"workbench/inspect"
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_SCENE_INSTANTIATED:
@@ -36,20 +45,22 @@ func _resolve_rig() -> void:
 func _swap_character() -> void:
 	if Engine.is_editor_hint():
 		return
-	var key := character
-	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with("--character="):
-			key = StringName(argument.trim_prefix("--character="))
-	if key == &"" or not CHARACTER_RIGS.has(key):
-		return
+	WorkbenchSession.read_arguments()
+	var key := character if WorkbenchSession.character == &"" else WorkbenchSession.character
 	var old := get_node_or_null(rig_path)
 	if old == null:
+		return
+	if not WorkbenchSession.armed and "weapon_scene" in old:
+		old.weapon_scene = null   # an unarmed configuration: the rig builds without its weapon (set before it builds)
+	if key == &"" or not CHARACTER_RIGS.has(key):
 		return
 	var replacement: Node = (load(CHARACTER_RIGS[key]) as PackedScene).instantiate()
 	var name_kept := old.name
 	remove_child(old)
 	old.free()
 	replacement.name = name_kept
+	if not WorkbenchSession.armed and "weapon_scene" in replacement:
+		replacement.weapon_scene = null
 	add_child(replacement)
 	move_child(replacement, 0)
 
@@ -119,10 +130,18 @@ func _ready() -> void:
 	camera.position = _view(camera.position)
 	camera.look_at(_view(Vector3(0.42, 0.72, 0.0)), Vector3.UP)
 	_update_status()
-	# The interactive locomotion test bench (speed slider, gaits, turns, transitions, views, readout) drives this same rig.
-	var test_panel := LocomotionTestPanel.new()
-	get_node("UI").add_child(test_panel)
-	test_panel.setup(self)
+	diagnostics = WorkbenchDiagnostics.new(rig)
+	diagnostics.ensure_monitor()
+	# The workbench panel (Character, Scenario, Diagnostics, Evidence) drives this same rig; the interactive locomotion bench lives in its Scenario tab.
+	panel = WorkbenchPanel.new()
+	get_node("UI").add_child(panel)
+	panel.setup(self)
+	if is_instance_valid(status_label):
+		status_label.add_theme_font_size_override("font_size", 16)
+	var title := get_node_or_null("UI/Title") as Label
+	if title != null:
+		title.text = "%s - ANIMATION WORKBENCH" % (String(rig.rig_profile.display_name) if rig.rig_profile != null else "character")
+	_update_status()   # the compact status line replaces the long key list now that the panel exists
 	await get_tree().process_frame   # the rig aligns its own weapon once the skeleton has posed (its _ready)
 	await get_tree().process_frame
 	if "--side-view" in OS.get_cmdline_user_args():
@@ -130,6 +149,8 @@ func _ready() -> void:
 		camera.look_at(_view(Vector3(0, 0.85, 0)), Vector3.UP)
 	if "--auto-sequence" in OS.get_cmdline_user_args():
 		rig.animation_controller.play_sequence()
+	if WorkbenchSession.autostart_scenario != &"":
+		start_scenario(WorkbenchSession.autostart_scenario)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -272,6 +293,14 @@ func _update_status() -> void:
 		return
 	var state_name: StringName = rig.animation_controller.current_state if is_instance_valid(rig.animation_controller) else &"setup"
 	# Keep controls in the demo so individual poses are easy to inspect.
+	if is_instance_valid(panel):
+		# With the panel the long key list lives in the Scenario tab; the status keeps the facts that change (the same vocabulary as before).
+		var diagnostics_text := "ON" if is_instance_valid(_diagnostics) and _diagnostics.enabled else "off"
+		status_label.text = "STATE: %s    IK: %s%s%s
+pace %.1f m/s    direction %s
+hand diagnostics %s    pose %s    view %s" % [state_name, "ON" if rig.ik_enabled else "OFF", "    PAUSED" if sim_paused else "",
+			("    scenario: " + String(scenario_runner.scenario.get("id", ""))) if scenario_runner.running else "", preview_speed, "turning" if preview_turning else str(preview_direction), diagnostics_text, POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
+		return
 	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if rig.ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
 	status_label.text += "\nR: pickup    P: carry idle    M: carry move    E: boarding    Q: release    K: carrier-death drop"
@@ -280,9 +309,19 @@ func _update_status() -> void:
 	status_label.text += "\nH: hand diagnostics %s    J: labels    G: mark contact    Z: pose %s    X: view %s" % ["ON" if diagnostics_on else "off", POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
 
 
-func _process(_delta: float) -> void:
+func _process(frame_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	var _delta := frame_delta
+	if sim_paused:
+		# Paused: nothing advances (the animation tree is manual, the presenter is not ticked). A requested step runs the whole frame once at `step_seconds`.
+		if _step_requests <= 0:
+			_update_camera_offset()
+			return
+		_step_requests -= 1
+		_delta = step_seconds
+		rig.animation_controller.animation_tree.advance(_delta)
+	scenario_runner.advance(_delta)
 	if preview_turning and rig.animation_controller.current_state == &"move":
 		_preview_turn_time += _delta
 		var target_yaw := PI if int(_preview_turn_time / 2.0) % 2 == 0 else 0.0
@@ -308,6 +347,122 @@ func _process(_delta: float) -> void:
 	rig.update_weapon_pose()
 	if is_instance_valid(rig.carry_passenger) and rig.interaction_active():
 		_update_status()
+	_update_camera_offset()
+
+
+## Shifts the 3D view sideways by half the panel's width so the character is centred in the part of the window the panel does not cover (a parallel shift of the camera: no rotation, no change to any pose).
+func _update_camera_offset() -> void:
+	if not is_instance_valid(panel) or not is_instance_valid(camera):
+		return
+	var window := get_viewport().get_visible_rect().size
+	var distance := camera.global_position.distance_to(_view(ORBIT_FOCUS))
+	var visible_width := 2.0 * distance * tan(deg_to_rad(camera.fov) * 0.5) * window.x / maxf(window.y, 1.0)
+	camera.h_offset = visible_width * (panel.occupied_width() * 0.5) / maxf(window.x, 1.0)
+
+
+# ---- Public controls for scenarios, the panel and tests (everything below calls only public APIs of the rig and presenter).
+
+## Places the 3D camera at `from` looking at `focus`, both given for the reference body (they scale with the character, like every workbench view).
+func look_from(from: Vector3, focus: Vector3) -> void:
+	_diagnostic_view = 0
+	camera.position = _view(from)
+	camera.look_at(_view(focus), Vector3.UP)
+
+## Starts or ends a walk at `speed` m/s (the production locomotion presentation, fed a preview speed).
+func command_move(speed: float) -> void:
+	preview_speed = speed
+	_preview_locomotion(Vector2(0, 1))
+	_update_status()
+
+func command_stop() -> void:
+	preview_speed = 0.0
+	turn_goal = NAN
+	if rig.animation_controller.current_state in [&"move", &"carry_move"]:
+		rig.animation_controller.play(&"rifle_idle")
+	_update_status()
+
+## A gradual turn at the game's turn rate (moving turn); a positive angle is to the character's left.
+func turn_by(degrees: float) -> void:
+	if preview_speed < 1.0:
+		command_move(2.4)
+	turn_goal = rig.character_root.rotation.y + deg_to_rad(degrees)
+
+func set_pose_preset(index: int) -> void:
+	_pose_preset = clampi(index, 0, POSE_PRESET_NAMES.size() - 1)
+	_update_status()
+
+## The shared gesture request, as a host makes it; its handle is watched by the monitor so the outcome shows in the history.
+func request_gesture(clip: StringName) -> ActionHandle:
+	var handle := rig.presenter.begin_gesture(clip, func() -> void: rig.animation_controller.play(&"rifle_idle"))
+	if is_instance_valid(diagnostics) and is_instance_valid(diagnostics.monitor):
+		diagnostics.monitor.watch(handle, "gesture %s" % clip)
+	return handle
+
+## An inspection the way an exploration host presents one: a crouch request for the interaction's duration and an INTERACTION-rank hold. The posture request is released whatever the outcome of the hold.
+func request_inspect(seconds: float) -> ActionHandle:
+	var depth := rig.crouch_modifier.clamp_depth(0.3) if rig.crouch_modifier != null else 0.0
+	rig.presenter.postures.set_posture(INSPECT_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_ACTION, 0.0, depth)
+	var handle := rig.presenter.begin_hold(seconds, Callable(), PresentationTypes.HOLD_INTERACTION)
+	handle.when_done(func(_outcome: PresentationTypes.Outcome) -> void: rig.presenter.postures.release(INSPECT_SOURCE))
+	if is_instance_valid(diagnostics) and is_instance_valid(diagnostics.monitor):
+		diagnostics.monitor.watch(handle, "inspect")
+	return handle
+
+## A reaction-rank hold (what a hit does): it outranks and ends a running gesture.
+func request_reaction(seconds: float) -> ActionHandle:
+	var handle := rig.presenter.begin_hold(seconds, func() -> void: rig.animation_controller.play(&"rifle_idle"), PresentationTypes.HOLD_REACTION)
+	if not handle.is_done():
+		rig.animation_controller.play(&"hit")
+	if is_instance_valid(diagnostics) and is_instance_valid(diagnostics.monitor):
+		diagnostics.monitor.watch(handle, "reaction")
+	return handle
+
+## Switches the contact diagnostics on (a scenario about contacts wants them).
+func diagnostics_for_contacts() -> void:
+	diagnostics.set_contacts(true)
+	if is_instance_valid(panel):
+		panel.sync_toggles()
+
+func set_sim_paused(on: bool) -> void:
+	sim_paused = on
+	_step_requests = 0
+	var tree: AnimationTree = rig.animation_controller.animation_tree
+	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if on else AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+
+func step_sim(frames := 1) -> void:
+	if sim_paused:
+		_step_requests += frames
+
+func start_scenario(id: StringName) -> bool:
+	var definition := WorkbenchScenarios.find(id)
+	if definition.is_empty() or not WorkbenchScenarios.supported(definition, rig).ok:
+		return false
+	set_sim_paused(false)
+	scenario_runner.start(self, definition)
+	return true
+
+## Returns the workbench to a neutral state: every bench ended, no hold, no posture request of its own, the walk stopped, the body square. Safe to call at any time, including mid-scenario and while paused.
+func reset_scene() -> void:
+	turn_goal = NAN
+	preview_turning = false
+	preview_speed = 0.0
+	set_cover_demo({})
+	end_ladder_demo()
+	end_stair_demo()
+	hide_path_demo()
+	rig.presenter.cancel_hold()
+	rig.finish_interaction_now()
+	rig.end_carry()
+	rig.presenter.postures.release(INSPECT_SOURCE)
+	rig.presenter.postures.release(POSE_PRESET_SOURCE)
+	_pose_preset = 0
+	rig.presenter.face_yaw(0.0, false, false)
+	rig.animation_controller.play(&"rifle_idle")
+	_update_status()
+
+func _exit_tree() -> void:
+	if diagnostics != null:
+		diagnostics.shutdown()
 
 
 ## The workbench's own response to the clip that plays: a rescue pose takes the carry (the same passenger, contacts, lean and slung weapon the game uses); anything else lets it go.

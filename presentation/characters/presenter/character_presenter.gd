@@ -296,6 +296,10 @@ func cancel_hold() -> void:
 func is_holding() -> bool:
 	return _hold_handle != null
 
+## Read-only view of the running hold for diagnostics: whether one runs, its rank (PresentationTypes.HOLD_*), the seconds left and, for a gesture, its length. Changes nothing.
+func hold_report() -> Dictionary:
+	return {"active": _hold_handle != null, "rank": _hold_rank, "left": _hold_left, "gesture_length": _gesture_length if _hold_rank == PresentationTypes.HOLD_GESTURE else 0.0}
+
 ## A defeat: the one-shot defeat clip runs for `seconds` and its end state stays. Everything else the character was presenting is ended by the caller (see TacticalCharacterAdapter.present_defeat); this only
 ## settles the defeat itself. A repeated request while the clip is still running is the same defeat (the same handle, no restart).
 func begin_defeat(seconds: float) -> ActionHandle:

@@ -158,7 +158,9 @@ func _run() -> void:
 	var tuned := StairProfile.new()
 	var traversal_tuned := TraversalProfile.new()
 	print("  MIRA measured vs production-tuned: hips-to-ankle %.3f vs leg_length %.2f; ankle %.3f vs %.2f; hip half-width %.3f vs foot_half_spread %.2f; hip height %.3f vs traversal hips_height %.2f and stair pelvis_standing_height %.2f" % [ma.hips_to_ankle, tuned.leg_length, ma.ankle_height, tuned.ankle_height, ma.hip_width * 0.5, tuned.foot_half_spread, ma.hip_height, traversal_tuned.hips_height, tuned.pelvis_standing_height])
-	check(absf(ma.hips_to_ankle - tuned.leg_length) / tuned.leg_length < 0.03, "MIRA's measured hips-to-ankle length (%.3f m) is within 3%% of the stair planner's tuned leg_length (%.2f): that constant is anatomy, derivable from the skeleton" % [ma.hips_to_ankle, tuned.leg_length])
+	# The planner's `leg_length` is the length of the legs from the hip JOINT (thigh + shin), which is what the resolver measures as `leg_length`; `hips_to_ankle` starts at the Hips bone, not the joint, and is a different
+	# quantity (the resolver says so). The invariant is unchanged: the tuned constant is anatomy, derivable from the skeleton, within 3%.
+	check(absf(ma.leg_length - tuned.leg_length) / tuned.leg_length < 0.03, "MIRA's measured leg length from the hip joint (%.3f m) is within 3%% of the stair planner's tuned leg_length (%.2f): that constant is anatomy, derivable from the skeleton" % [ma.leg_length, tuned.leg_length])
 	check(solver_ok, "StairFootPlanner finds valid pelvis heights along the stair for both profile-derived bodies")
 	check(heights[0] - heights[1] > 0.04 and heights[0] - heights[1] < 0.2, "The same solver puts the shorter body's pelvis lower (%.3f m): the difference comes from profile data, not code" % (heights[0] - heights[1]))
 

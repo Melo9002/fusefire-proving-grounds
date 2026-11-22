@@ -1,5 +1,77 @@
 # Animation workbench
 
-`pose_workbench.tscn` is a context host (a `Node3D` with a `CharacterRig` child) for inspecting the production character without the game: poses, locomotion, cover, ladder, stair and path benches, rescue carry, and hand-contact diagnostics. Open it in Godot and press F6. `locomotion_test_panel.gd` is the on-screen control panel.
+`pose_workbench.tscn` is a **host** of the shared character stack, like the tactical adapter and the exploration host, built for inspection: it drives a `CharacterRig` and its `CharacterPresenter` exactly as the game does (presenter tick, action stage, weapon pose), with no tactical unit, match or mission. Architecture: [`docs/animation.md`](../../docs/animation.md).
 
-Keys: `H` hand diagnostics, `J` labels, `G` mark contact, `Z` crouch/kneel preset, `X` diagnostic view, `T` turning preview, `[` `]` preview speed. It drives the rig exactly as the tactical adapter does (presenter tick, action stage, weapon pose). See [`docs/animation.md`](../../docs/animation.md).
+## Quick start
+
+Open `tools/animation_workbench/pose_workbench.tscn` in Godot and press F6, or from a shell:
+
+```powershell
+godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=small_mira_0 --unarmed --scenario=contacts
+```
+
+| Argument | Meaning |
+|---|---|
+| `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
+| `--unarmed` | build the character without its weapon |
+| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts` |
+| `--tab=<0-3>` | open on a tab |
+| `--side-view`, `--auto-sequence` | as before |
+
+The **Evidence** tab prints the exact command for the current configuration.
+
+## The panel: four tabs, four questions
+
+The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
+
+| Tab | Question | What it holds |
+|---|---|---|
+| **Character** | What am I inspecting? | rig identity and body proportions; semantic roles and the bones they resolved to (required `*` and optional); capabilities with the resolver's reason (supported, fallback, unsupported, not implemented); degraded stages; equipment state; a character and armed/unarmed switch; a compatibility check |
+| **Scenario** | What am I asking it to do? | three scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
+| **Diagnostics** | What is the animation system doing? | live presentation state; the measured contacts; a bounded event history; overlay switches; the pose stages in execution order with declared writes and live weights; "why is this bone moving" |
+| **Evidence** | How do I reproduce and show it? | screenshot, JSON report, the relaunch command |
+
+### Scenarios
+
+Each preset is data in `workbench_scenarios.gd`: timed steps calling the workbench's public controls. They compose existing capabilities; none sets up a match.
+
+| Id | Shows | Needs | Context |
+|---|---|---|---|
+| `tactical` | move, turn while moving, low cover, aim at an authorised target, fire, recover | a weapon | **synthetic** tactical context (a wall and a target position); cover side, posture and shot choice use the production `CoverEdgeSelector` and `CoverPostureProfile` |
+| `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
+| `contacts` | a 12-tread stair, then a 4 m ladder, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
+
+An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
+
+### Diagnostics, and what each one can and cannot tell you
+
+All are read-only, rig-only tools in `presentation/diagnostics/` (usable from any host), created when switched on and freed when switched off.
+
+* **Live presentation and events** (`PresentationMonitor`): runtime values from the presenter's public accessors (state and the one before, speed, facing, posture, readiness, hold and its rank, which contexts own the body). The history says *what changed and when* on the presenter's own clock; it never says *why*, except through an `ActionHandle` outcome (COMPLETED, CANCELLED, INTERRUPTED, SKIPPED), which the presenter itself reports.
+* **Pose stages** (`PoseStageReport`): the stages in the order the skeleton really runs them, checked against `PoseOwnership.STAGE_ORDER`, with each stage's DECLARED writes and its live weight. *Declared ownership and live weights are not a measured bone change.* To measure what a stage really writes, use the isolation method in `tests/pose_ownership_test.gd`. Highlighting a stage or a bone marks the bones on the body.
+* **Contact error** (`ContactErrorDiagnostics`): for each hand, the intended target (diamond), the final wrist (cross), the error between them, the shoulder's reach against the arm's length and the margin; for each foot, the stair or ladder plan against the final ankle. It samples **only** in the skeleton's `skeleton_updated` callback, after every modifier has run. A reading taken anywhere else in the frame is a different pose (the test measures it up to several centimetres off), which is why there is no other entry point. A contact farther than 97% of the arm's length from the shoulder is called UNREACHABLE: that fraction is a display convention shared with `hand_contact_test`, not a limit the rig enforces. Nothing here fixes an unreachable contact. It does not measure mesh contact or penetration (no surfaces exist).
+* **Weapon-grip contacts** (`H`, the existing `HandContactDiagnostics`): palms, wrists and grips against the weapon's profile; needs a weapon.
+* **Root trail** (`MotionTrail`): where the root went, coloured by speed. Position-driven benches (ladder, stairs) can be scrubbed; stateful behaviour (gestures, holds, attacks) is replayed by resetting and playing the scenario again, because rewinding it would need the presenter's state, which the workbench does not own.
+
+## Keys
+
+Unchanged except F1: `1`-`6` idle/move/aim/shoot/hit/defeat, arrows, `T`, `[` `]`, `I`, `C`, `Space`, `7`-`0`, `V B N L`, `F`, `R P M E Q K`, `O , . Y`, `H J G Z X`, `Esc`. The full list is in *Scenario > Keyboard shortcuts*.
+
+## Introducing and inspecting a new humanoid
+
+1. Import the model, make a `RigProfile` (a `BoneMap` of Godot's humanoid roles, anatomy, sockets): `art/characters/<name>/<name>_rig_profile.tres`. See *How to add or configure a humanoid rig* in `docs/animation.md`.
+2. Make `<name>_rig.tscn` (a `CharacterRig` with the model, profile, optional weapon and handling) and add a key to `CHARACTER_RIGS` in `pose_workbench.gd`.
+3. Launch with `--character=<key>`. **Character tab**: required roles must show a bone; every capability you expect must be `SUPPORTED` or a stated `FALLBACK`. If a skeleton or profile does not fit, *Compatibility check* resolves a profile against the skeleton without building a rig and explains what to fix (`E_BONE_NOT_FOUND [LeftHand]: mapped to 'X', which this skeleton does not have -> correct the BoneMap entry`). *Break the mapping* shows what an error looks like.
+4. **Scenario tab**: run `exploration` and `contacts` armed and unarmed; the stair and ladder tell you whether the body's proportions work. **Diagnostics** shows any contact the arm cannot reach.
+5. A new animation or capability: add it as `docs/animation.md` describes, then watch it in **Diagnostics** (the state and history, the stage that should engage, the hold and its outcome).
+
+## A diagnosis you can reproduce (issue 55)
+
+*Does Small MIRA reach the ladder?* Launch with `--character=small_mira_0 --unarmed --scenario=contacts --tab=2`, and let the ladder start (about 5.5 s in; pause there). *Contact measurement* shows each hand's `target->wrist` error, its reach against the arm length and, when the rung is beyond the arm, `UNREACHABLE by n cm`; the green reach line turns red past the arm's length. On MIRA the same scenario flags a few samples, on Small MIRA about half of them. It is the ladder solver's rung windows, authored for MIRA's arms; the diagnostic shows it and does not change it (tracked as #55). `Record contacts` then `Stop and summarise` counts the unreachable frames and the worst deficit.
+
+## Known limits
+
+* Switching character reloads the scene (the one clean reset), so any non-default workbench state is lost.
+* The status line and the panel are laid out in canvas units; below about 1280 px of window width the 11-12 pt tables are small.
+* The root trail follows the root; the ladder and stair benches slide the world past a fixed character, so their trail is a point (their contact readouts are the useful measurement).
+* The monitor cannot see a state set by bypassing the controller's signal (the live snapshot would show it; the history would not).

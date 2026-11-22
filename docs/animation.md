@@ -50,7 +50,7 @@ presentation/exploration/       the non-tactical host: ExplorationCharacterHost 
 presentation/tactical/          the tactical host and its policy: TacticalCharacterAdapter, TacticalActionPresenter, CoverEdgeSelector,
                                 CoverEdgePolicy, TacticalPoseContext, TacticalRouteBuilder
 presentation/diagnostics/       hand-contact diagnostics (read the rig, never write it)
-tools/animation_workbench/      the pose workbench (pose_workbench.tscn) and its locomotion test panel
+tools/animation_workbench/      the animation workbench: pose_workbench.tscn, its panel tabs (ui/), scenarios, locomotion test panel
 tools/quality/                  pose_trace, route_trace, animation_perf_baseline and probes
 art/characters/mira_0/          model, rig profile (mira_0_rig_profile.tres), runtime/mira_0_unit_visual.tscn (the production character)
 tests/                          flat; tagged in tests/catalog.json
@@ -168,6 +168,48 @@ For the **hands** (the one body part with several producers) there is one typed 
 5. **Interruption**: the contact lives only while its producer claims it each pass. End the interaction by stopping the claim (and call `release_hand_contacts()` if the producer's end must be immediate); the next pass restores the weapon or the hang. Cover cleanup in a test: interrupt mid-contact, enter and leave repeatedly, check the final pose at `skeleton_updated`, and run it on both MIRA and Small MIRA.
 6. **Unreachable contacts** are the planner's to handle (clamp or report); the arm only stretches toward a target. Measure how often it happens on the smaller body before shipping (the Small MIRA ladder is the known example).
 
+## Diagnostics and the workbench (Task 12)
+
+The workbench (`tools/animation_workbench/`, see its README for the panel and scenarios) is a host that inspects the shared stack. Its diagnostics live in `presentation/diagnostics/`, are **read-only, rig-only and opt-in** (nothing in the game creates them), and are usable from any host: `RigInspection` (identity, roles, measurements, capabilities, a compatibility check that does not build a rig), `PoseStageReport` (the stages in real order with declared writes and live weights), `PresentationMonitor` (a live snapshot and a bounded event history from the presenter's public accessors), `ContactErrorDiagnostics` (target against final wrist or ankle, reach margin), `MotionTrail`, `BoneHighlight`, and the older `HandContactDiagnostics`.
+
+```mermaid
+flowchart LR
+    Host["Host: tactical adapter, exploration host, workbench"] -->|intent, requests| Presenter["CharacterPresenter<br/>time, intent, holds, ActionHandles"]
+    Presenter -->|poses via| Rig["CharacterRig<br/>skeleton, targets, modifiers"]
+    Rig --> Tree["AnimationTree clips"] --> Stages["Modifier stack<br/>(order below)"] --> Sig(("skeleton_updated<br/>final pose"))
+    Presenter -. "intent(), hold_report(), handle outcomes" .-> Monitor["PresentationMonitor"]
+    Rig -. "RigBones, resolved_rig" .-> Inspect["RigInspection"]
+    Rig -. "stage nodes, weights" .-> StageRep["PoseStageReport"]
+    Sig -. "ONLY observation point for poses" .-> Contact["ContactErrorDiagnostics<br/>HandContactDiagnostics<br/>BoneHighlight"]
+```
+
+Solid arrows are production data flow; dotted ones are the diagnostics' observation points. **Poses are measured only in `skeleton_updated`**: before it, `get_bone_global_pose` is the animation pose without the modifiers. Diagnostics never write, keep no clock (the presenter's `time` is the timestamp), and leave no node or signal connection behind when switched off (`tests/workbench_diagnostics_test.gd`).
+
+### Modifier order and bone ownership
+
+The skeleton's modifier children are the schedule; `PoseOwnership` declares what each may write (`PoseStageReport` shows both, and checks that the order agrees). *Declared* is not *measured*: `tests/pose_ownership_test.gd` is what measures real bone changes.
+
+| # | Stage | Declared writes (role: op) | Engaged when |
+|---|---|---|---|
+| 1 | Locomotion | hips, spine, thighs, shins: add (twist, bank, pitch, step lift) | any twist, bank, pitch or step lift |
+| 2 | CoverCrouch | hips position, thighs, shins, feet: override; spine flexion: replace component; support clavicle: override | crouch depth or kneel above zero |
+| 3 | Traversal | hips position: override; thigh and shin: IK targets | traversal weight above zero (ladder, stairs) |
+| 4 | TraversalLegIK | thighs, shins: override (solves stage 3's targets) | with Traversal |
+| 5 | TraversalFoot | feet: override | stair weight above zero |
+| 6 | WeaponPose | upper and forearm: IK targets; support clavicle: override (adds to the posture's base only) | armed and enabled |
+| 7 | WeaponArmIK | upper arm, forearm: override (solves stage 6's targets, and the ladder, carry and hang targets) | `ik_enabled` |
+| 8 | HandGrip | wrist, fingers: override (a claimed contact replaces the weapon grip's orientation) | weapon grip or a claimed contact above zero |
+
+Intended overlaps (`PoseOwnership.OVERLAPS`): hips position (CoverCrouch then Traversal), thighs and shins (Locomotion adds, CoverCrouch replaces, TraversalLegIK takes by influence), feet (CoverCrouch then TraversalFoot), support clavicle (CoverCrouch sets the base, WeaponPose only adds). The "engaged" column is read from the stage's own weight or request; it is an interpretation, shown as such.
+
+### Adding a diagnostic
+
+Operate on a `CharacterRig` or `CharacterPresenter` only; read through public accessors (add a small read-only accessor to the owner, as `hold_report()` was, rather than reaching into a private field); take any pose reading in `skeleton_updated`; create nodes and connections only when switched on and remove them when off (`is_clean()`); give it a negative control (the thing it must notice). Scenario or tactical policy belongs in the workbench, not in `presentation/diagnostics/`.
+
+### Toward a standalone animation framework (assessment, not a plan)
+
+Usable outside tactical gameplay today: everything in `presentation/characters/` (the stack imports no gameplay code; the only tactical names are in comments), the rig profile and resolver, and all of `presentation/diagnostics/`. Meaningful FuseFire-specific dependencies: `CharacterRig`'s default `character_scene` is MIRA's model; `PresentationTypes`, the cover and hold vocabularies carry FuseFire's actions (cover, rescue, ladder, stairs); `CoverPostureProfile`, `StairFootPlanner` and the rescue pose are game-shaped specialisations; the workbench's character list and the tactical selectors (`CoverEdgeSelector`) live in the game. Helpful before any extraction: a rig-scene or profile-only way to name a character (no default model), the capability list as the declared interface of a stage, and the diagnostics' read-only accessors kept as the public observation surface. Deliberately FuseFire-specific: the tactical adapter, route building, cover edge policy, the rescue carry. No extraction is planned or started.
+
 ## Running and testing
 
 Run from the repository root (`godot_console` is the console build of Godot 4.7):
@@ -188,10 +230,10 @@ godot_console --headless --path . --script res://tools/quality/animation_perf_ba
 godot_console --headless --path . --script res://tools/quality/script_warning_audit.gd
 ```
 
-The workbench: open `tools/animation_workbench/pose_workbench.tscn` and press F6 (it shows MIRA with the locomotion test panel, the cover, ladder and stair benches, hand diagnostics on `H`, pose presets on `Z`). Rendered evidence scripts need a display: `tests/unarmed_capture.gd`, `tests/pose_review_capture.gd`, `tests/weapon_readiness_capture.gd` (see each script's header). Headless success does not establish visual correctness: inspect a render after pose changes.
+The workbench: open `tools/animation_workbench/pose_workbench.tscn` and press F6 (four tabs: Character, Scenario, Diagnostics, Evidence; scenario presets; the cover, ladder and stair benches; contact, state and stage diagnostics; hand diagnostics on `H`, pose presets on `Z`; see its README). Rendered evidence scripts need a display: `tests/unarmed_capture.gd`, `tests/pose_review_capture.gd`, `tests/weapon_readiness_capture.gd` (see each script's header). Headless success does not establish visual correctness: inspect a render after pose changes.
 
 Contracts to know before editing: `animation_module_boundaries_test` (module and composition ratchets), `pose_ownership_test`, `animation_cleanup_test` and `action_handle_test` (teardown and handle settling), `presentation_frame_driver_test` (once per frame), `modifier_boundary_test`, `traversal_*` tests, `rescue_*` tests.
 
 ## Known limits and future work
 
-Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); an armed character's gesture is only a head and torso nod (the weapon owns the hands); the tactical adapter does not call `begin_gesture` yet; the Small MIRA ladder (51 of 88 sampled hand contacts are beyond the arm's reach: the rung windows are authored for MIRA's arms; measured in Task 11, tracked as #55 for the stabilization milestone); no shared unreachable-contact diagnostic for ladders; workbench diagnostics work (Task 12).
+Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); an armed character's gesture is only a head and torso nod (the weapon owns the hands); the tactical adapter does not call `begin_gesture` yet; the Small MIRA ladder (51 of 88 sampled hand contacts are beyond the arm's reach: the rung windows are authored for MIRA's arms; measured in Task 11, tracked as #55 for the stabilization milestone); the unreachable ladder contacts are now visible in the workbench (`ContactErrorDiagnostics`, Task 12) but still not solved (#55).

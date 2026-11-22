@@ -1,5 +1,5 @@
 class_name LocomotionTestPanel
-extends PanelContainer
+extends VBoxContainer
 ## An on-screen test bench for locomotion, built into the animation workbench so the production rig can be driven by hand: a speed slider with the gait
 ## it selects, gait presets, direction, loaded carry, turns in place, moving turns and reversals, scripted transitions, slow motion, camera views and a
 ## live readout. It only calls the workbench's public controls (which feed the same LocomotionProfile presentation the game uses); nothing here is a
@@ -32,10 +32,9 @@ const VIEWS := {
 func setup(workbench: Node3D) -> void:
 	bench = workbench
 	name = "LocomotionTestPanel"
-	custom_minimum_size = Vector2(320, 0)
-	var box := VBoxContainer.new()
-	add_child(box)
-	box.add_child(_label("LOCOMOTION TEST BENCH  (production rig)", true))
+	add_theme_constant_override("separation", 3)
+	# The same controls as ever, grouped into folding sections (the Scenario tab's "Manual controls" holds this whole panel).
+	var box := WorkbenchUI.section(self, "Locomotion")
 	_speed_label = _label("")
 	box.add_child(_speed_label)
 	_speed_slider = HSlider.new()
@@ -59,13 +58,15 @@ func setup(workbench: Node3D) -> void:
 	box.add_child(_row([["Start-Run-Stop", func() -> void: _start_scenario(&"run_stop")], ["Ramp 0-6 m/s", func() -> void: _start_scenario(&"ramp")], ["Walk-Jog-Run", func() -> void: _start_scenario(&"steps")]]))
 	_scenario_label = _label("")
 	box.add_child(_scenario_label)
-	box.add_child(_label("Cover (synthetic wall; side from CoverEdgeSelector, pose from CoverPostureProfile)"))
+	box = WorkbenchUI.section(self, "Cover and authorised attack", true)
+	box.add_child(_label("Synthetic wall; side from CoverEdgeSelector, pose from CoverPostureProfile"))
 	box.add_child(_row([["Low", func() -> void: _cover(false, 0.9, 1.5, 1.5, true, true, false)], ["Low aim", func() -> void: _cover(false, 0.9, 1.5, 1.5, true, true, true)], ["Left edge", func() -> void: _cover(true, 2.2, 0.5, 2.0, true, true, false)], ["Right edge", func() -> void: _cover(true, 2.2, 2.0, 0.5, true, true, false)]]))
 	box.add_child(_row([["Tie (right)", func() -> void: _cover(true, 2.2, 1.5, 1.5, true, true, false)], ["No edge", func() -> void: _cover(true, 2.2, 3.5, 3.5, false, false, false)], ["Peek aim", func() -> void: _cover(true, 2.2, 0.5, 2.0, true, true, true)], ["Leave", func() -> void: bench.set_cover_demo({})]]))
 	box.add_child(_label("Authorized attack (bench target; the plan is the production CoverEdgeSelector.plan_attack)"))
 	box.add_child(_row([["Target left", func() -> void: bench.set_cover_target(Vector3(5, 0, 1.5))], ["Target right", func() -> void: bench.set_cover_target(Vector3(-5, 0, 1.5))], ["Target ahead", func() -> void: bench.set_cover_target(Vector3(0, 0, 5))], ["Open side", func() -> void: bench.set_cover_target(Vector3(2, 0, -5))]]))
 	box.add_child(_row([["Fire", func() -> void: bench.fire_cover_shot()], ["End attack", func() -> void: bench.set_cover_target(null)], ["Left usable only", func() -> void: _cover(true, 2.2, 0.5, 3.5, true, false, false)], ["Right usable only", func() -> void: _cover(true, 2.2, 3.5, 0.5, false, true, false)]]))
-	box.add_child(_label("Environmental traversal: ladder (production solver; the bench supplies the height the game would)"))
+	box = WorkbenchUI.section(self, "Ladder", true)
+	box.add_child(_label("Production solver; the bench supplies the height the game would"))
 	box.add_child(_row([["Climb 4 m", func() -> void: _ladder(4.0, 1, 0.85)], ["Descend 4 m", func() -> void: _ladder(4.0, -1, 0.75)], ["Climb 3 m", func() -> void: _ladder(3.0, 1, 0.85)], ["Stop", func() -> void: bench.end_ladder_demo()]]))
 	box.add_child(_row([["Pause / play", func() -> void: _ladder_toggle()], ["Mount (hold)", func() -> void: _ladder_hold(0.25)], ["Top-out (hold)", func() -> void: _ladder_hold(3.6)], ["Mid (hold)", func() -> void: _ladder_hold(2.0)]]))
 	_ladder_slider = HSlider.new()
@@ -82,10 +83,11 @@ func setup(workbench: Node3D) -> void:
 	ladder_markers.toggled.connect(func(on: bool) -> void: bench.traversal_diagnostics = on)
 	box.add_child(ladder_markers)
 	box.add_child(_label("Vault / step-over / mantle: solver prototype only (TraversalSolver.vault_pose); not driven here and not in gameplay"))
-	box.add_child(_label("Stairs (production planner + leg IK; the bench supplies the progress the game would)"))
+	box = WorkbenchUI.section(self, "Stairs", true)
+	box.add_child(_label("Production planner + leg IK; the bench supplies the progress the game would"))
 	box.add_child(_row([["Up 0.5/0.5", func() -> void: _stairs(0.5, 0.5, 6, true)], ["Down 0.5/0.5", func() -> void: _stairs(0.5, 0.5, 6, false)], ["Up 0.17/0.33", func() -> void: _stairs(0.1667, 0.3333, 12, true)], ["Down 0.17/0.33", func() -> void: _stairs(0.1667, 0.3333, 12, false)]]))
 	box.add_child(_row([["Pause/play", func() -> void: _stairs_toggle()], ["Step frame", func() -> void: bench.step_stair_demo_frame()], ["Mid stair", func() -> void: _stairs_hold(2.2)], ["Stop", func() -> void: bench.end_stair_demo()]]))
-	box.add_child(_label("Stair rise / tread depth (m) for the custom stair, speed (m/s)"))
+	box.add_child(_label("Stair rise / tread depth (m) for the custom stair"))
 	_stair_rise = HSlider.new()
 	_stair_rise.min_value = 0.1
 	_stair_rise.max_value = 0.6
@@ -103,14 +105,15 @@ func setup(workbench: Node3D) -> void:
 	stair_markers.text = "Foot markers (planned green/teal, actual red/orange)"
 	stair_markers.toggled.connect(func(on: bool) -> void: bench.stair_diagnostics = on)
 	box.add_child(stair_markers)
-	box.add_child(_label("Path corridor (PathRefiner on synthetic obstacles: route white, smoothed cyan, footprints green)"))
+	box = WorkbenchUI.section(self, "Path corridor", true)
+	box.add_child(_label("PathRefiner on synthetic obstacles: route white, smoothed cyan, footprints green"))
 	box.add_child(_row([["Open", func() -> void: bench.show_path_demo("open")], ["Wall", func() -> void: bench.show_path_demo("wall")], ["Corner", func() -> void: bench.show_path_demo("corner")], ["Column", func() -> void: bench.show_path_demo("column")]]))
 	box.add_child(_row([["Narrow ok", func() -> void: bench.show_path_demo("narrow")], ["Too narrow", func() -> void: bench.show_path_demo("too_narrow")], ["Hide", func() -> void: bench.hide_path_demo()]]))
 	var overlay := CheckButton.new()
 	overlay.text = "Cover diagnostics overlay"
 	overlay.toggled.connect(func(on: bool) -> void: bench.cover_diagnostics = on)
 	box.add_child(overlay)
-	box.add_child(_label("Camera"))
+	box = WorkbenchUI.section(self, "Camera and time", true)
 	var views := []
 	for view_name in VIEWS:
 		views.append([view_name, func() -> void: _view(view_name)])
@@ -123,7 +126,8 @@ func setup(workbench: Node3D) -> void:
 	_slow.value = 1.0
 	_slow.value_changed.connect(func(v: float) -> void: Engine.time_scale = v)
 	box.add_child(_slow)
-	_readout = _label("")
+	box = WorkbenchUI.section(self, "Scenario readout (stair, ladder, path, cover, locomotion)")
+	_readout = WorkbenchUI.mono("", 11)
 	box.add_child(_readout)
 	_set_speed(bench.preview_speed, false)   # showing the slider's value must not set the character walking
 
@@ -263,8 +267,6 @@ func _view(view_name: String) -> void:
 
 
 func _process(delta: float) -> void:
-	# Pinned to the top right of the window (the parent is a CanvasLayer, so there are no anchors to lean on).
-	position = Vector2(get_viewport_rect().size.x - size.x - 10.0, 10.0)
 	if _scenario != &"":
 		# Real time, so slow motion does not stretch the script's own clock out of step with the slider.
 		_scenario_time += delta / maxf(Engine.time_scale, 0.01)
