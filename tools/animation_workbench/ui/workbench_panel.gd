@@ -7,9 +7,9 @@ extends PanelContainer
 ##   Evidence     how do I reproduce, measure and communicate?  screenshot, JSON report, recording, repro command
 ## Each tab is its own script (ui/*_tab.gd). F1 hides or shows the panel. It only calls the workbench's public controls and the read-only diagnostics.
 
-const MAX_WIDTH := 460.0
+const MAX_WIDTH := 520.0
 const MIN_WIDTH := 300.0
-const WINDOW_FRACTION := 0.40
+const WINDOW_FRACTION := 0.44
 
 var bench: Node3D
 var tabs: TabContainer
