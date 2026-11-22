@@ -12,7 +12,7 @@ const BAD := Color(1.0, 0.4, 0.35)
 static func label(text: String, size := 13, colour := TEXT) -> Label:
 	var node := Label.new()
 	node.text = text
-	node.add_theme_font_size_override("font_size", size)
+	node.add_theme_font_size_override("font_size", maxi(size, 14))
 	node.add_theme_color_override("font_color", colour)
 	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -20,7 +20,7 @@ static func label(text: String, size := 13, colour := TEXT) -> Label:
 
 ## A fixed-width-font label for tables and live readouts (columns line up).
 static func mono(text := "", size := 12) -> Label:
-	var node := label(text, size)
+	var node := label(text, maxi(size, 14))
 	var font := SystemFont.new()
 	font.font_names = PackedStringArray(["Consolas", "Cascadia Mono", "Courier New", "monospace"])
 	node.add_theme_font_override("font", font)
@@ -49,7 +49,7 @@ static func check(text: String, on: bool, callback: Callable, tooltip := "") -> 
 	node.button_pressed = on
 	node.focus_mode = Control.FOCUS_NONE
 	node.tooltip_text = tooltip
-	node.add_theme_font_size_override("font_size", 13)
+	node.add_theme_font_size_override("font_size", 14)
 	node.toggled.connect(callback)
 	return node
 
