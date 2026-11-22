@@ -125,6 +125,7 @@ func _run() -> void:
 		var samples := 0
 		var worst_ankle := 0.0
 		var worst_lift := 0.0
+		var worst_plan := 0.0
 		var guard := 0
 		while done.is_empty() and guard < 3500:
 			guard += 1
@@ -137,17 +138,22 @@ func _run() -> void:
 					continue
 				var target: Vector3 = info.position
 				var surface := _surface(target.x, target.z)
-				# A planted foot's heel comes up toward toe-off by the planner's own lift (StairProfile.heel_lift, on purpose since the toes stopped sinking into the treads): the sole is on the tread EXCEPT
-				# for that lift, which is measured and bounded separately below.
-				var lift := maxf(target.y - info.tread_top - adapter.rig.stair_profile.ankle_height, 0.0)
-				worst_lift = maxf(worst_lift, lift)
-				worst_sole = maxf(worst_sole, absf((target.y - adapter.rig.stair_profile.ankle_height - lift) - surface))
+				# A planted foot's heel comes up toward toe-off by the planner's own lift (StairProfile.heel_lift, on purpose since the toes stopped sinking into the treads). The EXPECTED foot comes from an
+				# independent call of the planner for the same place, root, facing and speed, NOT from the pose's own ankle: an ankle that is off by an unplanned amount cannot absorb it into the lift.
+				var walk: StairWalk = adapter.rig.stairs
+				var root: Node3D = adapter.rig.character_root
+				var expected := StairFootPlanner.contact_foot(walk.model, adapter.rig.stair_profile, walk.holds, walk.ascending, adapter.rig.stairs.pose.s, foot, root.global_position, root.global_basis.orthonormalized().z, adapter.presenter.speed)
+				var expected_lift := maxf((expected.position as Vector3).y - float(expected.tread_top) - adapter.rig.stair_profile.ankle_height, 0.0)
+				worst_lift = maxf(worst_lift, expected_lift)
+				worst_plan = maxf(worst_plan, absf(target.y - (expected.position as Vector3).y))
+				worst_sole = maxf(worst_sole, absf((target.y - adapter.rig.stair_profile.ankle_height - expected_lift) - surface))
 				worst_ankle = maxf(worst_ankle, (snap.LeftFoot if foot == 0 else snap.RightFoot).distance_to(target))
 				samples += 1
 		print("  stairs %s: %d planted samples, sole-to-physical-tread difference %.4f m, ankle error %.4f m" % [leg[1], samples, worst_sole, worst_ankle])
 		check(bool(done[0]) and actor.grid_position == leg[0], "Stairs %s: the move completes on its committed cell" % leg[1])
 		check(samples > 100 and worst_sole < 0.02, "Stairs %s: every planted sole is on the physical tread beneath it, apart from the planned heel lift (%d samples, worst %.4f m)" % [leg[1], samples, worst_sole])
-		check(worst_lift <= adapter.rig.stair_profile.heel_lift + 0.002, "Stairs %s: the planted heel lift stays within the profile's limit (%.4f m of %.4f m)" % [leg[1], worst_lift, adapter.rig.stair_profile.heel_lift])
+		check(worst_lift <= adapter.rig.stair_profile.heel_lift + 0.002, "Stairs %s: the planner's planted heel lift stays within the profile's limit (%.4f m of %.4f m)" % [leg[1], worst_lift, adapter.rig.stair_profile.heel_lift])
+		check(worst_plan < 0.003, "Stairs %s: every planted ankle's height is the planner's own for that place, lift included (worst difference %.4f m)" % [leg[1], worst_plan])
 		check(worst_ankle < 0.05, "Stairs %s: the ankle bones reach those footholds (worst %.4f m)" % [leg[1], worst_ankle])
 
 	await f.dispose(self)
