@@ -24,7 +24,7 @@ static func mono(text := "", size := 12) -> Label:
 	var font := SystemFont.new()
 	font.font_names = PackedStringArray(["Consolas", "Cascadia Mono", "Courier New", "monospace"])
 	node.add_theme_font_override("font", font)
-	node.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY   # a long line wraps instead of widening the panel
+	node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long line wraps at a word (never mid-word unless one word is wider than the panel) instead of widening the panel
 	return node
 
 static func button(text: String, callback: Callable, tooltip := "") -> Button:

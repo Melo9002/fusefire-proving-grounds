@@ -462,6 +462,8 @@ func reset_scene() -> void:
 	_pose_preset = 0
 	rig.presenter.face_yaw(0.0, false, false)
 	rig.animation_controller.play(&"rifle_idle")
+	if diagnostics != null:
+		diagnostics.clear_trail()
 	_update_status()
 
 func _exit_tree() -> void:
@@ -779,7 +781,8 @@ func _build_ladder_visuals() -> void:
 	deck_mesh.size = Vector3(3.0, 0.2, 3.0)
 	deck.mesh = deck_mesh
 	var deck_material := StandardMaterial3D.new()
-	deck_material.albedo_color = Color(0.45, 0.47, 0.5)
+	deck_material.albedo_color = Color(0.45, 0.47, 0.5, 0.3)   # translucent: from an inspection camera the deck must not hide the climber's head
+	deck_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	deck.material_override = deck_material
 	deck.position = Vector3(0.0, length - 0.1, plane + 1.5)
 	_ladder_group.add_child(deck)

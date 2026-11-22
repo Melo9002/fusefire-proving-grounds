@@ -331,6 +331,22 @@ func _trail_checks(stage: Node3D) -> void:
 	trail.set_sampling_paused(false)
 	await _frames(3)
 	check(trail.points.size() > count_before + 1, "automatic sampling resumes when unpaused")
+	# Off and on again: a root that moved while the trail was off must not show as a speed spike (the first sample has no step).
+	trail.set_enabled(false)
+	host.rig.character_root.position.x += 5.0
+	await _frames(3)
+	trail.set_enabled(true)
+	await _frames(3)
+	var worst_after := 0.0
+	for index in range(summary.points + 1, trail.points.size()):
+		worst_after = maxf(worst_after, float(trail.points[index].speed))
+	trail.set_sampling_paused(true)
+	host.rig.character_root.position.x += 5.0   # moved while paused, outside any step
+	trail.set_sampling_paused(false)
+	await _frames(3)
+	for index in range(trail.points.size() - 2, trail.points.size()):
+		worst_after = maxf(worst_after, float(trail.points[index].speed))
+	check(worst_after < 1.0, "re-enabling or resuming never shows a speed spike for motion the trail did not watch (worst %.1f m/s)" % worst_after)
 	trail.clear()
 	check(trail.points.is_empty(), "clearing the trail empties it")
 	trail.set_enabled(false)

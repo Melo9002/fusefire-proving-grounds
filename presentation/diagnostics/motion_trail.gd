@@ -32,6 +32,7 @@ func set_enabled(on: bool) -> void:
 		return
 	enabled = on
 	set_process(on and not sampling_paused)
+	_last_position = Vector3.INF   # the root may have moved while the trail was off: the first sample has no step, never a speed spike
 	if on:
 		_lines = MeshInstance3D.new()
 		_lines.name = "MotionTrailLines"
@@ -61,6 +62,8 @@ func _ready() -> void:
 
 ## A manual-clock host pauses background sampling, avoiding duplicate/stationary points while its simulation is stopped.
 func set_sampling_paused(on: bool) -> void:
+	if on != sampling_paused:
+		_last_position = Vector3.INF   # whatever moved the root while sampling was paused is not a step of the next sample
 	sampling_paused = on
 	set_process(enabled and not on)
 

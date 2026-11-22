@@ -87,6 +87,7 @@ func _run() -> void:
 		var panel: WorkbenchPanel = bench.panel
 		check(panel.size.x <= WorkbenchPanel.MAX_WIDTH + 1.0 and panel.size.x >= WorkbenchPanel.MIN_WIDTH - 1.0 and panel.position.x + panel.size.x <= canvas.x and panel.position.y >= 0.0 and panel.position.y + panel.size.y <= canvas.y + 0.5,
 			"the panel fits a %dx%d window (canvas %.0fx%.0f: x %.0f w %.0f y %.0f h %.0f)" % [size.x, size.y, canvas.x, canvas.y, panel.position.x, panel.size.x, panel.position.y, panel.size.y])
+		_panel_readability(panel, "%dx%d" % [size.x, size.y])
 		check(panel.size.x <= canvas.x * 0.5 and bench.camera.h_offset > 0.0, "%dx%d: the panel leaves at least half the canvas and the 3D view is shifted clear of it (h_offset %.2f)" % [size.x, size.y, bench.camera.h_offset])
 	root.size = Vector2i(1152, 648)
 	await _frames(2)
@@ -94,27 +95,7 @@ func _run() -> void:
 	check(not bench.panel.visible and bench.panel.occupied_width() == 0.0, "F1 hides the panel and the view is no longer shifted for it")
 	bench.panel._unhandled_key_input(_key(KEY_F1))
 	check(bench.panel.visible, "F1 shows it again")
-	# Small-window readability: even compact diagnostic tables have a legible font size.
-	var sample_font := WorkbenchUI.mono("legibility", 11)
-	check(sample_font.get_theme_font_size("font_size") >= 14, "diagnostic tables have a readable minimum font size")
-	sample_font.free()
-	# Root trail uses the WORKBENCH simulation clock, not rendered frames while paused.
-	bench.diagnostics.set_trail(true)
-	await _frames(3)
-	var trail: MotionTrail = bench.diagnostics.trail
-	bench.set_sim_paused(true)
-	await _frames(2)
-	var trail_before := trail.points.size()
-	var trail_time_before: float = float(trail.points.back().t)
-	await _frames(4)
-	check(trail.points.size() == trail_before and is_equal_approx(float(trail.points.back().t), trail_time_before), "pause adds no stationary trail points or elapsed time")
-	bench.step_sim()
-	await _frames(2)
-	check(trail.points.size() == trail_before + 1 and absf(float(trail.points.back().t) - trail_time_before - bench.step_seconds) < 0.0001, "one frame step adds exactly one trajectory sample with simulation delta")
-	bench.set_sim_paused(false)
-	await _frames(3)
-	check(trail.points.size() > trail_before + 1, "resuming restarts ordinary trail sampling")
-	bench.diagnostics.set_trail(false)
+	await _trail_clock_checks(bench)
 	# Evidence: the report is complete and serialises; the repro command names character, weapon state and scenario.
 	var evidence: EvidenceTab = bench.panel.tab_nodes[3]
 	var report := evidence.report()
@@ -266,6 +247,77 @@ func _run() -> void:
 	WorkbenchSession.armed = true
 	print("workbench_scenarios_test: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+## The panel's real controls, not a sample label: every text control in every tab is at least 14 pt, and no tab's content is wider than the panel can show (a wide table would be clipped at the window edge).
+func _panel_readability(panel: WorkbenchPanel, label: String) -> void:
+	var smallest := 99
+	var widest_excess := 0.0
+	for index in panel.tabs.get_tab_count():
+		var scroll := panel.tabs.get_child(index) as ScrollContainer
+		var content := scroll.get_child(0) as Control
+		widest_excess = maxf(widest_excess, content.get_combined_minimum_size().x - scroll.size.x)
+		for node in content.find_children("*", "Control", true, false):
+			if node is RichTextLabel:
+				smallest = mini(smallest, (node as RichTextLabel).get_theme_font_size("normal_font_size"))
+			elif node is Label or node is CheckBox:
+				smallest = mini(smallest, node.get_theme_font_size("font_size"))
+	check(smallest >= 14, "%s: every text control in the panel is at least 14 pt (smallest %d)" % [label, smallest])
+	check(widest_excess <= 1.0, "%s: no tab's content is wider than the panel shows (excess %.0f px)" % [label, widest_excess])
+
+## The root trail and the workbench pause: a paused workbench records nothing by itself, one step records exactly one sample timed by the step, resuming restores automatic sampling, and the trail survives toggling,
+## a reset and teardown coherently. The workbench root walks in place, so every speed is zero: a spike would be a bug.
+func _trail_clock_checks(bench: Node3D) -> void:
+	var suite: WorkbenchDiagnostics = bench.diagnostics
+	suite.set_trail(true)
+	await _frames(3)
+	var trail: MotionTrail = suite.trail
+	check(trail.points.size() >= 2 and not trail.sampling_paused, "unpaused, the trail samples rendered frames")
+	bench.set_sim_paused(true)
+	await _frames(2)
+	var count := trail.points.size()
+	var elapsed: float = float(trail.points.back().t)
+	await _frames(6)
+	check(trail.points.size() == count and trail.points.back().t == elapsed, "paused: no sample and no elapsed time accumulate over rendered frames")
+	suite.record_step(0.5)
+	check(trail.points.size() == count + 1 and is_equal_approx(float(trail.points.back().t), elapsed + 0.5), "(control) a diagnostics-level record_step records exactly what it is handed")
+	count = trail.points.size()
+	elapsed = float(trail.points.back().t)
+	for step in 5:
+		bench.step_sim()
+		await _frames(2)
+	check(trail.points.size() == count + 5 and absf(float(trail.points.back().t) - elapsed - 5.0 * bench.step_seconds) < 0.0001, "five steps record exactly five samples, together exactly five step lengths (%d samples)" % (trail.points.size() - count))
+	var worst := 0.0
+	for point in trail.points:
+		worst = maxf(worst, float(point.speed))
+	check(worst < 0.01, "no speed spike in the trail (worst %.3f m/s)" % worst)
+	bench.set_sim_paused(false)
+	await _frames(2)
+	count = trail.points.size()
+	trail.record_step(1.0)
+	check(trail.points.size() == count and not trail.sampling_paused, "resumed: automatic sampling is back and a stray record_step adds nothing")
+	await _frames(3)
+	check(trail.points.size() > count, "resumed: rendered frames add samples again")
+	suite.set_trail(false)
+	bench.set_sim_paused(true)
+	suite.set_trail(true)
+	count = trail.points.size()
+	await _frames(4)
+	check(trail.sampling_paused and trail.points.size() == count, "a trail switched on while paused does not sample by itself")
+	bench.step_sim()
+	await _frames(2)
+	check(trail.points.size() == count + 1, "and records one sample for one step")
+	bench.reset_scene()
+	check(trail.points.is_empty(), "a reset empties the trail")
+	bench.set_sim_paused(false)
+	suite.set_trail(false)
+	bench.set_sim_paused(true)
+	suite.set_trail(true)
+	suite.shutdown()
+	await _frames(3)
+	check(suite.is_clean(), "shutting the diagnostics down while paused leaves no trail")
+	bench.diagnostics = WorkbenchDiagnostics.new(bench.rig)   # the bench frees its own on exit: give it a fresh one
+	bench.diagnostics.ensure_monitor()
+	bench.set_sim_paused(false)
 
 func _key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()

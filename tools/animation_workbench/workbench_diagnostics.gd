@@ -52,6 +52,11 @@ func record_step(delta: float) -> void:
 	if is_instance_valid(trail) and paused:
 		trail.record_step(delta)
 
+## Empties the root trail (a new run should not continue the old one's line).
+func clear_trail() -> void:
+	if is_instance_valid(trail):
+		trail.clear()
+
 func contacts_on() -> bool:
 	return is_instance_valid(contacts) and contacts.enabled
 

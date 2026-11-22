@@ -90,7 +90,7 @@ func _run() -> void:
 		await _scrub(WorkbenchScenarios.CONTACTS, 2.4)
 		await _shot(entry[2] + "-stairs")
 		await _scrub(WorkbenchScenarios.CONTACTS, 8.3)
-		bench.look_from(Vector3(3.2, 1.7, 0.6), Vector3(0, 1.3, 0.3))   # the ladder slides past the fixed character: look at the upper body
+		# The scenario's own ladder camera is what is being shown (no override here).
 		await _shot(entry[2] + "-ladder")
 		await _close()
 	# Evidence tab.

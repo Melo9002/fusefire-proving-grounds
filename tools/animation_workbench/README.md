@@ -72,6 +72,6 @@ Unchanged except F1: `1`-`6` idle/move/aim/shoot/hit/defeat, arrows, `T`, `[` `]
 ## Known limits
 
 * Switching character reloads the scene (the one clean reset), so any non-default workbench state is lost.
-* The status line and the panel are laid out in canvas units; below about 1280 px of window width the 11-12 pt tables are small.
+* The status line and the panel are laid out in canvas units; text is 14 pt or larger in canvas units, so it scales down with the window; 1280x720 is comfortable, smaller is not recommended.
 * The root trail follows the root; the ladder and stair benches slide the world past a fixed character, so their trail is a point (their contact readouts are the useful measurement). While the workbench is paused, the trail records neither time nor stationary frames; stepping records exactly one sample at the stepped simulation delta.
 * The monitor cannot see a state set by bypassing the controller's signal (the live snapshot would show it; the history would not).
