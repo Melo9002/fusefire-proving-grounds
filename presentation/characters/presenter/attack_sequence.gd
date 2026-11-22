@@ -31,6 +31,12 @@ func is_active() -> bool:
 ## Starts an attack. Any attack still running is ended first (INTERRUPTED). `time` is the presenter's clock. From a character that cannot sequence the shot is shown at once.
 func begin(host: AttackHost, time: float, shot: StringName, from_state: StringName, from_blend: float) -> AttackHandle:
 	cancel()
+	# An observer of the attack just interrupted may start an attack of its own while it is told (it runs inside cancel()). This request is the newest, so it wins: that observer's attack is ended too
+	# (INTERRUPTED, both handles settled) instead of being overwritten live and left pending forever. The bound only guards an observer that keeps starting attacks.
+	var reentered := 0
+	while phase != Phase.NONE and reentered < 16:
+		cancel()
+		reentered += 1
 	_host = host
 	_time = time
 	_skipped = false

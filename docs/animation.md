@@ -1,6 +1,6 @@
 # Character animation: architecture and developer guide
 
-The maintained guide to FuseFire's humanoid presentation. It describes the code as it is after Task 07. The dated reports in [`docs/claude/`](claude/README.md) (audits, the Task 02 to 06 designs, the Package 1 to 10 migration reports) are history; read this page for the current shape.
+The maintained guide to FuseFire's character presentation. It describes the code as it is at the end of the fourteen-task animation roadmap (Task 14): the humanoid stack built in Tasks 07 to 11, the diagnostics and workbench (Task 12), the non-humanoid motion contract (Task 13) and the validation and quality gates (Task 14). Start with [The architecture at completion](#the-architecture-at-completion-task-14) for the one-page summary, the gates and the extension procedures. The dated reports in [`docs/claude/`](claude/README.md) (audits, the Task 02 to 06 designs, the Package 1 to 10 migration reports) are history; read this page for the current shape.
 
 ## The picture
 
@@ -278,6 +278,124 @@ Families: **humanoid** keeps everything above (skeleton, clips, IK, contacts, we
 
 **AniLab:** the contract, `ActionHandle`, the facing vocabulary and the read-only diagnostics are the portable core and now have a second and third consumer that prove they do not need a skeleton. They do not make AniLab four families: only the humanoid is a real system, wheeled and drone are demonstrations, quadruped and tracked are descriptions. Extraction obstacles recorded: the shared types' location, `PresentationTypes` mixing neutral and humanoid enums, `MotionTrail` and the workbench tabs coupled to a rig.
 
+## The architecture at completion (Task 14)
+
+The fourteen-task roadmap ends here. This section is the one-page summary and the decision record; the sections above and below are the detail. Evidence for every claim, with what was and was not executed, is in [`docs/claude/task14-architecture-validation-2026-11-22.md`](claude/task14-architecture-validation-2026-11-22.md).
+
+### Layers and dependency direction
+
+```mermaid
+flowchart TB
+    subgraph Authority["Gameplay and contexts (authority)"]
+        G["systems/, units/, levels/: AP, cells, occupancy, legality, damage, replay"]
+        X["Exploration controller (research/exploration_playground)"]
+    end
+    subgraph Hosts["Hosts (translate context state into requests; own context policy)"]
+        T["TacticalCharacterAdapter + presentation/tactical/"]
+        E["ExplorationCharacterHost"]
+        W["PoseWorkbench (tools/animation_workbench)"]
+    end
+    subgraph Humanoid["Shared humanoid presentation: presentation/characters/ (imports no gameplay)"]
+        P["CharacterPresenter: time, intent, holds, ActionHandles"]
+        R["CharacterRig: skeleton, RigBones, modifier stack, IK targets, attachments"]
+        PR["rig_profile/ (data), motion/ (solvers), equipment/ (handling)"]
+    end
+    subgraph Neutral["Family-neutral contract: presentation/motion/"]
+        MR["MotionRequest / MotionPresenter"]
+    end
+    subgraph Families["Other families (research/ until promoted)"]
+        F["WheeledPresenter, DronePresenter; quadruped, tracked = designs"]
+    end
+    D["presentation/diagnostics/ (read-only, opt-in)"]
+    G --> T
+    X --> E
+    T --> P
+    E --> P
+    W --> P
+    P --> R
+    R --> PR
+    G -. "never reached by" .-> Humanoid
+    X --> MR
+    MR --> F
+    P -. "HumanoidMotionBridge (opt-in)" .-> MR
+    D -. "reads" .-> Humanoid
+    D -. "reads" .-> MR
+```
+
+Arrows are the only allowed direction of knowledge: authority knows nothing of presentation's internals; hosts know the presenter and rig through public members; the shared stack knows no host and no gameplay; the contract knows no family and no skeleton; families know only the contract; diagnostics read and never drive. Each arrow that matters is enforced (table below).
+
+### One humanoid frame, in order
+
+1. The host decides (from its own context) and feeds the presenter: motion (`report_velocity` / `set_scripted_motion`), facing, posture and action requests. It never writes a pose or a yaw.
+2. `presenter.tick(delta)` advances presentation time once, counts holds down (a hold is not counted down in the engine frame that armed it), settles finished actions (each `ActionHandle` exactly once) and decides facing and the persistent intent.
+3. `presenter.advance_actions(delta)` advances the attack sequence and the rescue clock; `rig.update_weapon_pose()` places the weapon targets.
+4. The engine evaluates the AnimationTree (clips and speed blends), then the skeleton's modifier children in `PoseOwnership.STAGE_ORDER`, then emits `skeleton_updated`. **Only after that signal is a pose final.** Equipment and attachments follow the final pose. Diagnostics sample here.
+5. Nothing in 1 to 4 can change gameplay: the host's inputs are values, and every result the game depends on (AP, cells, occupancy, replay records) is produced before or beside this chain (`presentation_authority_test`).
+
+Owners: **time** is the presenter's (`time`, advanced in `tick`); no host, rig or modifier keeps a second clock (ratcheted). **Completion** is the presenter's `ActionHandle`s. **Posture** is arbitrated by `PostureArbiter` (deterministic: highest priority wins, ties go to the most recently changed request by a call-order counter, an identical repeat does not refresh it) and applied by the rig. **Order of bone writes** is `PoseOwnership`. **Facing** is decided by the presenter and applied by the rig only.
+
+### Timing, pause and teardown rules
+
+* One advance per frame per character: the host calls `tick` and `advance_actions` once (`presentation_frame_driver_test`). A second caller is a bug, not a feature.
+* Presentation time is engine time scaled by the host; gameplay never reads it. A paused presentation (workbench: the tree in manual mode and the presenter not ticked) leaves holds and handles pending, never settled; unpausing resumes them.
+* A handle settles once (COMPLETED, SKIPPED, INTERRUPTED, CANCELLED). A newer request supersedes the running one by rank and the older settles INTERRUPTED, including when an observer starts a request while it is being told (`AttackSequence.begin` handles this since Task 14).
+* `teardown()` settles every pending handle INTERRUPTED and releases requests, holds, contacts and diagnostics' nodes (`animation_cleanup_test`, `action_handle_test`).
+* **Duplicate frames:** `MotionPresenter` counts a repeated `frame_id` and still advances. This is a diagnostic by design: the frame number is chosen by the host (a physics tick number is repeated by two rendered frames), so rejecting a repeat would silently drop legitimate motion, and it would not protect the humanoid path, which does not use the contract. Nothing reads the counter except diagnostics. Revisit only if a host starts using `present` for several requests per frame on purpose.
+
+### Test classification and gates
+
+Ironclad's classes (see [`quality/project-ironclad.md`](quality/project-ironclad.md)) applied to the animation architecture. A script may protect several.
+
+| Class | What it protects | Where |
+|---|---|---|
+| **Invariant** | presentation holds no gameplay authority (`presentation_authority_test`; boundary gates A, B); shared modules keep their dependency direction (boundary test rules 1 to 3 and the family gate); one owner advances a presentation lifecycle (`presentation_frame_driver_test`); handles settle exactly once and cleanup leaves nothing (`action_handle_test`, `animation_cleanup_test`, `combat_presentation_lifecycle_test`); a non-humanoid family needs no skeleton (`motion_contract_test`, family gate); diagnostics observe only (gate C); hosts use public members (gate D) | smoke and FAST |
+| **Contract** | stage order and declared overlaps (`pose_ownership_test`); posture arbitration (`posture_ownership_test`, `posture_arbiter_test`); hold ranks and gestures (`gesture_capability_test`); the per-frame host order; rig capability and degraded reporting (`rig_bones_test`, `rig_profile_test`, `humanoid_portability_test`, `unarmed_humanoid_test`); the contact claim rules (`hand_contact_test`) | FAST or subsystem |
+| **Experimental** | the look of the research drone and wheeled platform, provisional non-humanoid movement numbers, art-dependent pose tuning, rendered captures (`*_capture`, explicit only), the Small MIRA ladder (#55) | explicit or not gated |
+
+The gates in `tests/animation_module_boundaries_test.gd` (all text-based, each with a control proving its pattern can fail): the shared stack imports no gameplay; the rig-profile layer imports no runtime nodes; pure solvers stay pure; single owners (posture, locomotion feed, facing, route, rescue, combat lifecycle); no bone name in production code; hosts compose rather than inherit; the motion contract and the families never name the humanoid stack or tactical types; **A** production never depends on `research/`; **B** the contract, diagnostics, families, demo and workbench never reach `systems/`, `units/`, `levels/` or tactical authority types; **C** diagnostics call no driving, posing or writing method; **D** hosts, diagnostics, tools and research use no underscore member of the rig or presenter. The catalog (`tests/catalog.json`, checked by `run_tests.ps1 check`, also on every push) must classify every test, map every source file to an area (a changed file in an unmapped area would not select the suite that guards it), and keep SMOKE headless. The smoke tier includes the cheap architecture invariants (boundaries, motion contract, frame driver, action handles, cleanup, rig bones) so ordinary pushes protect them.
+
+### Procedures
+
+**Add a humanoid rig.** See "How to add or configure a humanoid rig" and "A second humanoid". Then add the character to `humanoid_portability_test` and run `rig_bones_test`, `rig_profile_test`, the workbench with `--character=<name>`, and the pose trace.
+
+**Add a pose stage or modifier.** (1) Put the pure maths in `presentation/characters/motion/` if it is a solver; (2) write the `SkeletonModifier3D` in `rig/modifiers/` taking typed inputs only (no lookups into other objects, `_process_modification_with_delta`; ratcheted); (3) create and add it in `CharacterRig` at its place in the skeleton's children; (4) add the name to `PoseOwnership.STAGE_ORDER`, its writes to `WRITES` and any intended overlap to `OVERLAPS`; (5) run `pose_ownership_test` (it measures real bone changes, so an undeclared write fails), `modifier_boundary_test`, `animation_module_boundaries_test`, then the pose trace and compare with the approved one; (6) look at a render.
+
+**Add a contact-based interaction.** Follow "How to add a new contact-based interaction" (Task 11).
+
+**Add a presentation action.** Humanoid: "Adding an animation capability" (Task 10), one-shot with an `ActionHandle`, a hold rank and a `restore`. Non-humanoid: override `_begin_action` and `_end_action` on your `MotionPresenter`; an action you cannot show is refused, never faked.
+
+**Add a locomotion family.** "Adding a locomotion family" (Task 13). A new folder under `research/` is already mapped to the animation tests; extend the family gate's folder list when it graduates out of `research/`.
+
+**Add a diagnostic.** "Adding a diagnostic" (Task 12); the observation gate (C) and the private-reach gate (D) cover it automatically.
+
+**Write the right Ironclad test.** A rule that must survive redesign (authority, ownership, dependency direction, settle-once): an invariant, text-based when it is about code shape (add to the boundary test with a control) or runtime when it is about behaviour (real rig, real frames). An intentional current agreement (order, ranks, conventions): a contract test with a documented reason for each number. A look: a rendered capture, explicit only, inspected by a person. Always add a negative control (break the code under test or the oracle, see the test fail), put the script in `tests/catalog.json` (the `check` tier fails otherwise), and give it `smoke` only if it is headless, cheap (a few seconds) and an architecture invariant.
+
+### Architecture decision record
+
+| Decision | Choice | Rejected alternative and why |
+|---|---|---|
+| Pipeline | Hybrid: AnimationTree clips, then ordered modifiers for posture, contacts and IK (Task 10) | Tree-only (cannot express contacts, needs per-body clips); procedural-only (loses cheap authored clips) |
+| Time and completion | One owner: `CharacterPresenter` time and `ActionHandle`s | A clock per host or per rig (double advancement, divergent completion) |
+| Hosts | Composition: a host has a `CharacterRig`, the presenter is the single entry | A rig that inherits or runs itself (two drivers, host policy leaking into the rig) |
+| Rig variation | Data: profile (`BoneMap`, anatomy, sockets), measured anatomy, `body_ratio` | Per-character code or per-bone constants |
+| Contacts | The family plans, the rig applies one typed claim, stage order decides who is last (Task 11) | A universal contact solver (feet and hands share only the pipeline order) |
+| Non-humanoid | Separate presenters behind a small contract (Task 13, option A) | A shared coordinator (owns exactly what differs) or extending `CharacterPresenter` (humanoid fields everywhere) |
+| Duplicate frames | Record, do not reject | Reject (drops legitimate motion for host-defined frame ids; no consumer needs it) |
+| Diagnostics | Read-only and opt-in, sampled at `skeleton_updated` | Always-on instrumentation or writes from tools |
+| Gates | Extend the existing boundary test, catalog and runner | A second harness |
+| AniLab | Not extracted; the extraction obstacles are documented | A separate repository or plugin now |
+| Folders | Unchanged: no relocation found that improves ownership or boundaries enough to justify moving `.uid` and resource paths | Moving `ActionHandle` and `PresentationTypes` into a neutral folder (would help detachability; deferred as a named obstacle) |
+
+### Known limitations after Task 14
+
+* The Small MIRA ladder (#55): hands beyond the arm's reach and feet off the rungs in some frames. A body-specific specialisation, deliberately not part of this architecture work.
+* The tactical host reports the route speed, not the slower stair or ladder presentation speed, to the locomotion feed (observed 3.5 m/s reported against 1.0 m/s travelled on stairs); the stair pose owns the legs there, and the effect was not shown to be wrong, so it is recorded, not changed (see the validation report).
+* The exploration host decides "still moving" from wall-clock time, not presentation time (it ignores pause and time scale). It affects only the exploration controller's gait decay.
+* The tactical action presenter's watchdogs are wall-clock deadlines; a long pause can make one expire on resume (the presented effect is only an early end of a visual wait; gameplay does not depend on it).
+* `MotionTrail` and the workbench tabs need a `CharacterRig`; a workbench for other families does not exist. `ActionHandle` and `PresentationTypes` live under `characters/presenter` although most of them are neutral.
+* Quadruped and tracked families are designs. The wheeled and drone examples are demonstrations in `research/`.
+* No screenshot comparison and no automated performance budget (see the report for the measurements and why).
+
 ## Running and testing
 
 Run from the repository root (`godot_console` is the console build of Godot 4.7):
@@ -300,7 +418,7 @@ godot_console --headless --path . --script res://tools/quality/script_warning_au
 
 The workbench: open `tools/animation_workbench/pose_workbench.tscn` and press F6 (four tabs: Character, Scenario, Diagnostics, Evidence; scenario presets; the cover, ladder and stair benches; contact, state and stage diagnostics; hand diagnostics on `H`, pose presets on `Z`; see its README). Rendered evidence scripts need a display: `tests/unarmed_capture.gd`, `tests/pose_review_capture.gd`, `tests/weapon_readiness_capture.gd` (see each script's header). Headless success does not establish visual correctness: inspect a render after pose changes.
 
-Contracts to know before editing: `animation_module_boundaries_test` (module and composition ratchets), `pose_ownership_test`, `animation_cleanup_test` and `action_handle_test` (teardown and handle settling), `presentation_frame_driver_test` (once per frame), `modifier_boundary_test`, `traversal_*` tests, `rescue_*` tests.
+Contracts to know before editing: `animation_module_boundaries_test` (module, composition and authority gates), `presentation_authority_test` (visual timing never changes the simulation), `pose_ownership_test`, `animation_cleanup_test` and `action_handle_test` (teardown and handle settling), `combat_presentation_lifecycle_test`, `presentation_frame_driver_test` (once per frame), `motion_contract_test`, `modifier_boundary_test`, `traversal_*` tests, `rescue_*` tests. The architecture invariants are in the smoke tier (`.	oolsun_tests.ps1 smoke`) so every push runs them.
 
 ## Known limits and future work
 

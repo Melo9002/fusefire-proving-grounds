@@ -513,7 +513,7 @@ func weapon_alignment_error_degrees() -> float:
 func weapon_aligned() -> bool:
 	if weapon_alignment_error_degrees() > rig.handling.alignment_tolerance_degrees:
 		return false
-	return absf(angle_difference(rig._cover_yaw, _cover_yaw_target(1.0))) <= deg_to_rad(rig.handling.alignment_tolerance_degrees)
+	return absf(angle_difference(rig.cover_yaw(), _cover_yaw_target(1.0))) <= deg_to_rad(rig.handling.alignment_tolerance_degrees)
 
 ## The held Aim engaged or ended (the presenter progresses it from the committed-aim input): a quiet pose is re-settled so the weapon comes up or goes down. A shot, hit, defeat, move or traversal is never interrupted.
 func _on_aim_hold_changed(_transition: AimHold.Transition, settling: bool) -> void:
@@ -705,7 +705,7 @@ func present_defeat() -> ActionHandle:
 	# A rescue under way cannot continue on a defeated carrier: its visual operation is interrupted here (the tactical layer puts the passenger down, which frees the carried body).
 	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	if rig.interaction_active():
-		rig._halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
+		rig.halt_interaction(PresentationTypes.Outcome.INTERRUPTED, false)
 	_end_ladder()
 	rig.end_stairs()
 	presenter.attack.cancel()

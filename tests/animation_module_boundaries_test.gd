@@ -225,5 +225,37 @@ func _run() -> void:
 	check(contract_and_presenter == ["presentation/characters/presenter/humanoid_motion_bridge.gd"], "only the humanoid bridge knows both the motion contract and CharacterPresenter (%s)" % [contract_and_presenter])
 	for path in ["presentation/characters/presenter/character_presenter.gd", "presentation/characters/rig/character_rig.gd", "presentation/exploration/exploration_character_host.gd", "presentation/tactical/tactical_character_adapter.gd", "tools/animation_workbench/pose_workbench.gd"]:
 		check(RegEx.create_from_string("\\b(MotionRequest|MotionPresenter|HumanoidMotionBridge)\\b").search(_code(path)) == null, "%s does not route through the motion contract: the humanoid per-frame path has no extra indirection" % path)
+	# Architecture gates (Task 14). INVARIANTS, each with a control proving the pattern can fail.
+	# A. Production never depends on research: research/ is evidence and sandboxes. The one allowed mention is Match Setup OPENING the playground by path string (it never loads a research class).
+	var research_ref := RegEx.create_from_string("res://research/|\\b(WheeledPresenter|DronePresenter|PrimitiveBodies|MotionFamiliesDemo|ExplorationPlayground\\w*|Playground[A-Z]\\w*)\\b")
+	check(research_ref.search("const X := \"res:" + "//research/a.tscn\"") != null and research_ref.search("var d: DronePresenter") != null and research_ref.search("var r: CharacterRig") == null, "(control) the production-isolation pattern matches research paths and families")
+	var research_users: Array[String] = []
+	for root in ["systems", "units", "presentation", "ui", "levels", "art", "content"]:
+		for path in _scripts(root):
+			if research_ref.search(_code(path)) != null:
+				research_users.append(path)
+	check(research_users == ["ui/match_setup.gd"], "production code must not depend on research/ (only ui/match_setup.gd may open the playground by path): %s" % [research_users])
+	# B. Authority: the contract, the diagnostics, the family examples and the workbench read and draw; they never import gameplay or its authoritative state.
+	var gameplay_ref := RegEx.create_from_string("res://(systems|units|levels)/|\\b(TacticalUnit|TacticalActionService|BattleController|ActionPointPool)\\b")
+	check(gameplay_ref.search("preload(\"res:" + "//units/tactical_unit.gd\")") != null and gameplay_ref.search("var u: TacticalUnit") != null and gameplay_ref.search("var h: ActionHandle") == null, "(control) the authority pattern matches gameplay imports and lets the shared vocabulary through")
+	var authority_scripts := _scripts("presentation/motion") + _scripts("presentation/diagnostics") + _scripts("research/motion_families") + _scripts("research/motion_families_demo") + _scripts("tools/animation_workbench")
+	check(authority_scripts.size() >= 25, "the authority gate scans the contract, diagnostics, families, demo and workbench (%d scripts)" % authority_scripts.size())
+	for path in authority_scripts:
+		var gameplay_hit := gameplay_ref.search(_code(path))
+		check(gameplay_hit == null, "%s reaches gameplay (%s): presentation and tools never read or change authoritative state" % [path, gameplay_hit.get_string() if gameplay_hit else ""])
+	# C. Diagnostics are observational: they call no method that advances, drives, poses or tears down what they inspect, and write no bone.
+	var driving_call := RegEx.create_from_string("\\.(apply_posture|begin_hold|begin_gesture|cancel_hold|cancel_gesture|report_velocity|set_scripted_motion|set_movement_authority|claim_hand_contact|release_hand_contacts|advance_actions|update_weapon_pose|teardown|tick|present|set_bone_pose\\w*|set_bone_global_pose\\w*|request_action)\\(")
+	check(driving_call.search("rig.presenter.tick(delta)") != null and driving_call.search("skeleton.set_bone_pose_rotation(0, q)") != null and driving_call.search("presenter.hold_report()") == null, "(control) the observation pattern matches driving calls and lets read accessors through")
+	for path in _scripts("presentation/diagnostics"):
+		var driving := driving_call.search(_code(path))
+		check(driving == null, "%s calls a driving or writing method (%s): diagnostics observe through read accessors only" % [path, driving.get_string() if driving else ""])
+	# D. Hosts, diagnostics and tools use the rig and the presenter through PUBLIC members: a leading underscore is the owner's private state (Task 14 found two reaches in the tactical adapter and gave them public faces).
+	var private_reach := RegEx.create_from_string("\\b(rig|presenter|character_rig)\\._[a-z]")
+	check(private_reach.search("rig._cover_yaw") != null and private_reach.search("presenter._holds") != null and private_reach.search("rig.cover_yaw()") == null and private_reach.search("rig_scene._ready()") == null, "(control) the private-reach pattern matches underscore members and lets public ones through")
+	var host_scripts := _scripts("presentation/tactical") + _scripts("presentation/exploration") + _scripts("presentation/diagnostics") + _scripts("tools/animation_workbench") + _scripts("research")
+	check(host_scripts.size() >= 40, "the private-reach gate scans hosts, diagnostics, the workbench and research (%d scripts)" % host_scripts.size())
+	for path in host_scripts:
+		var reach := private_reach.search(_code(path))
+		check(reach == null, "%s reaches into private state of the rig or presenter (%s): ask the owner for a public accessor" % [path, reach.get_string() if reach else ""])
 	print("Animation module boundaries: %d checks, %d failure(s); %d known gameplay importer(s) remain" % [checks, failures, importers.size()])
 	quit(1 if failures else 0)

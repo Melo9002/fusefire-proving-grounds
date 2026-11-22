@@ -26,9 +26,9 @@ Rendered capture scripts require an ordinary graphics run and, where documented,
 Run from the repository root in PowerShell. Every test is described in `tests/catalog.json` (subsystems, scope, criticality, FAST/SMOKE membership, explicit-only status); the runner selects from it. Day-to-day guidance: [testing developer guide](../claude/testing-developer-guide-2026-11-20.md).
 
 ```powershell
-.\tools\run_tests.ps1 fast                                # cheap headless tests (80)
+.\tools\run_tests.ps1 fast                                # cheap headless tests (about 100)
 .\tools\run_tests.ps1 fast -Subsystem animation           # FAST tests of one subsystem
-.\tools\run_tests.ps1 smoke                               # 18 critical boundary tests (what CI runs)
+.\tools\run_tests.ps1 smoke                               # 24 critical boundary tests (what CI runs)
 .\tools\run_tests.ps1 subsystem -Subsystem combat         # every ordinary test of a subsystem
 .\tools\run_tests.ps1 subsystem -Contract replay -Critical
 .\tools\run_tests.ps1 select -Test traversal_*,path_refiner_test
@@ -39,7 +39,7 @@ Run from the repository root in PowerShell. Every test is described in `tests/ca
 
 Subsystems: `core`, `actions`, `combat`, `equipment`, `movement`, `animation`, `ai`, `missions`, `rescue`, `generation`, `replay`, `persistence`, `ui`, `assets`, `tooling` (the older eight names keep selecting at least what they selected before). `-List` shows what would run without executing, `-Why` adds the reason for each test, `-TimeoutSeconds` (default 900) bounds each test, and `-Godot C:\path\to\godot_console.exe` names the executable when it is not on `PATH`.
 
-FAST, SMOKE and the subsystem selections complement the full tier; they never replace it. Full discovers every top-level `tests/*.gd` except the explicit-only scripts. A script missing from the catalog still runs in the full tier and is reported as UNCLASSIFIED; `check` (also run by CI) fails on an unclassified script, a stale entry, an unknown value, or an explicit-only test marked FAST/SMOKE.
+FAST, SMOKE and the subsystem selections complement the full tier; they never replace it. Full discovers every top-level `tests/*.gd` except the explicit-only scripts. A script missing from the catalog still runs in the full tier and is reported as UNCLASSIFIED; `check` (also run by CI) fails on an unclassified script, a stale entry, an unknown value, an explicit-only or rendering test marked FAST/SMOKE, an area path that does not exist, and (Task 14) any `.gd` or `.tscn` under the source roots (`systems`, `units`, `presentation`, `research`, `ui`, `levels`, `tools`, `content`, `art`) that no area covers: an unmapped file would make `changed` fall back to the critical tests only and never select the suite that guards it (this happened to `presentation/motion/` and `research/` after Task 13).
 
 Each run prints suite-level pass/fail/skip totals, the time split between the Godot processes and the runner, and the slowest tests. A selection that is not the full tier ends by saying how many ordinary tests it did not run. Detailed stdout, stderr, engine logs and a machine-readable `results.json` are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. Results are `PASS`, `FAIL`, `TIMEOUT` (the process tree is killed; counted as a failure) and, for selected tests that need rendering, `NOT-RUN`. The runner supplies a writable isolated test-output directory (`FUSEFIRE_TEST_OUTPUT_DIR`) for tests that serialize reports. Unexpected `SCRIPT ERROR:`, `Parse Error:` and `Compile Error:` output fails the entry even when the process exits zero. `-ProbeFailureHandling` adds three probes (a nonzero exit, a zero-exit script error and a process that never ends) and must report three failures, one of them a timeout. Application-level negative-test diagnostics are not blanket-rejected. Exit codes: 0 all passed, 1 a failure or timeout, 2 a usage or catalog problem or a test that could not run as requested.
 
@@ -108,6 +108,12 @@ A wildcard in `-Test` never selects an explicit-only script; an exact name does.
 After the first hosted smoke run, the next useful milestones are optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
 
 Retired map-specific suites are preserved in the outside-project quarantine recorded in [Generation 2.0](../generation-2.md). Shared parcel/deployment/population checks now use Service Depot, and `current_generation_test.gd` protects the one-map menu and standalone generator boundary. Mechanics fixtures live under `tests/fixtures/`; the runner discovers only top-level suite scripts. No assertion was removed merely to make a failure pass.
+
+## Animation architecture gates (Task 14)
+
+The animation architecture's rules are protected by the existing tiers, not a separate harness. See [the animation guide](../animation.md#test-classification-and-gates) for the Invariant, Contract and Experimental classification. In the smoke tier (headless, a few seconds each, so every push runs them): `animation_module_boundaries_test` (dependency direction, single owners, authority and observation gates, production-versus-research isolation, no private reaches), `motion_contract_test` (a non-humanoid family needs no skeleton), `presentation_frame_driver_test` (one advance per frame), `action_handle_test` and `animation_cleanup_test` (settle once, teardown), `rig_bones_test` (portability and degraded reporting). `presentation_authority_test` (the same scripted moves under different presentation speeds and with diagnostics attached produce identical action records and state fingerprints) is critical but not smoke: it runs a real battle (about 20 s). Changed-file selection maps `presentation/motion/`, `presentation/diagnostics/` and `research/` to the animation subsystem.
+
+Performance is measured, not gated: `tools/quality/animation_perf_baseline.gd`, `diagnostics_overhead_probe.gd` and `motion_contract_overhead_probe.gd` print numbers that depend on the machine and its load; the Task 14 report records them with the observed run-to-run variation. A fixed millisecond budget would fail on a loaded CI runner without meaning a regression.
 
 ## GitHub smoke automation
 

@@ -126,6 +126,20 @@ func _run() -> void:
 	seq.cancel()
 	check(chain == [[INTERRUPTED, true]] and seq.is_pending(), "An observer may start the next attack from its callback: it finds a clean sequence")
 	seq.cancel()
+	# Replacement with a re-entrant observer (found by the Task 13 Codex review, fixed in Task 14): attack A is running, its observer starts attack C while A is being interrupted BY a newer attack B.
+	# B is the newest request and wins; C, begun inside that interruption, is itself interrupted: every superseded attack settles both of its handles, and nothing is left pending after B is withdrawn.
+	host = FakeHost.new()
+	seq = AttackSequence.new()
+	var reent_first := seq.begin(host, 0.0, &"shoot", &"rifle_idle", 0.0)
+	var reent_nested: Array[AttackHandle] = []
+	reent_first.when_done(func(_outcome: int) -> void: reent_nested.append(seq.begin(host, 0.1, &"shoot", &"rifle_idle", 0.0)))
+	var reent_winner := seq.begin(host, 0.2, &"shoot", &"rifle_idle", 0.0)
+	check(reent_first.is_done() and reent_nested.size() == 1 and seq.handle == reent_winner and not reent_winner.is_done(), "The newest attack wins a reent_winner that re-enters from an observer")
+	check(reent_nested[0].is_done() and reent_nested[0].outcome == INTERRUPTED and reent_nested[0].shot.is_done(), "The attack an observer started inside the interruption is itself interrupted (both handles settled), not overwritten live")
+	var reent_winner_seen := _watch(reent_winner)
+	reent_winner.cancel()
+	check(reent_winner_seen == [CANCELLED] and seq.phase == Phase.NONE and reent_nested[0].outcome == INTERRUPTED, "Withdrawing the winner leaves no attack pending")
+	seq.cancel()
 
 	# The aim hold is persistent state, never an action.
 	var hold := AimHold.new()

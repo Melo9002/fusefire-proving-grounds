@@ -1292,6 +1292,14 @@ func _on_rescue_handle_settled(outcome: PresentationTypes.Outcome, handle: Actio
 		_halt_interaction(PresentationTypes.Outcome.CANCELLED, true)   # a release withdrawn midway leaves the passenger carried, as before it began
 
 
+## The yaw the visual root currently shows (the posture's yaw offset once reached): a read-only view for hosts, so none reaches for the private property.
+func cover_yaw() -> float:
+	return _cover_yaw
+
+## A host ends the running rescue interaction (a carrier defeated mid-lift): the public face of `_halt_interaction`.
+func halt_interaction(outcome: PresentationTypes.Outcome, restore_carry := false) -> void:
+	_halt_interaction(outcome, restore_carry)
+
 ## Stops the running timeline where it is and puts back what it moved (the step toward the passenger, the posture request); the passenger stays, steady across the shoulders when `restore_carry`.
 func _halt_interaction(outcome: PresentationTypes.Outcome, restore_carry: bool) -> void:
 	rescue_interaction.stop()

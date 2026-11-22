@@ -125,6 +125,19 @@ foreach ($name in $discovered) {
 }
 foreach ($area in $catalog.areas) {
     foreach ($s in $area.sub) { if ($s -notin $validSubsystems) { $catalogProblems.Add("INVALID: area '$($area.path)' has unknown subsystem '$s'") } }
+    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $area.path))) { $catalogProblems.Add("STALE: area '$($area.path)' names a path that does not exist") }
+}
+# Changed-file selection is only as good as the area table: a source file no area covers is "unmapped" and falls back to every critical test, which does NOT include the
+# non-critical suite that guards it (Task 14 found this for presentation/motion and research/). Every script and scene under the source roots must match an area.
+foreach ($sourceRoot in @("systems", "units", "presentation", "research", "ui", "levels", "tools", "content", "art")) {
+    $rootPath = Join-Path $repoRoot $sourceRoot
+    if (-not (Test-Path -LiteralPath $rootPath)) { continue }
+    foreach ($file in (Get-ChildItem -LiteralPath $rootPath -Recurse -File | Where-Object { $_.Extension -in @(".gd", ".tscn") })) {
+        $relative = $file.FullName.Substring($repoRoot.Length + 1).Replace("\", "/")
+        $covered = $false
+        foreach ($area in $catalog.areas) { if ($relative.StartsWith($area.path)) { $covered = $true; break } }
+        if (-not $covered) { $catalogProblems.Add("UNMAPPED: $relative is covered by no area in tests/catalog.json (changed-file selection would not know which tests guard it)") }
+    }
 }
 
 function Show-CatalogProblems {
