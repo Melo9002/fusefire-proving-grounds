@@ -66,7 +66,7 @@ No folder was moved. Candidates examined: `ActionHandle` and `PresentationTypes`
 | `fast -Subsystem animation` | 29 PASS (28 tests and the parse), 0 FAIL on the final tree. One earlier execution failed `pose_ownership_test` (below) |
 | `changed -Since 0c0b8ff` | 73 selected, 73 PASS |
 | `-ProbeFailureHandling` | three failures reported as designed (exit 7, a zero-exit script error rejected, a timeout killed); the runner behaved correctly |
-| `full` | one run on the tree before two small test corrections: 245 PASS, 2 FAIL, 34 explicit-only skipped, 2605 s. The failures: `resource_references_test` (a defect in my new gate's control string, which named a path that does not exist; fixed and re-run green) and `pose_ownership_test` (intermittent, see below; green on every later run). A clean full on the final tree: see "Final state" |
+| `full` | one run on the tree before two small test corrections: 245 PASS, 2 FAIL, 34 explicit-only skipped, 2605 s. The failures: `resource_references_test` (a defect in my new gate's control string, which named a path that does not exist; fixed and re-run green) and `pose_ownership_test` (intermittent, see below; green on every later run). A second full run on the final tree (`artifacts/test-results/20261122-191239-full`): **247 PASS, 0 FAIL, 34 explicit-only skipped, 2549 s**, including `pose_ownership_test` and `resource_references_test` |
 | Pose trace (39 scenarios) | byte-identical (parsed JSON equal) to the Task 12 approved trace; it differs from the original Task 07 baseline by the visual changes approved in Tasks 10 and 11 |
 | Route trace (853 routes) | identical to the Task 12 trace and to the original baseline |
 | Captures with the real renderer (GPU) | MIRA and Small MIRA equipped, unarmed contacts, exploration actions, the workbench (diagnostics on stairs, Small MIRA ladder), tactical cover firing, the ladder sheet, the wheeled and drone examples: all inspected, in `docs/claude/images/task14/`. Nothing new looked wrong; the Small MIRA ladder shows the known #55 reach problem. The Task 12 four-tab workbench was not hand-driven interactively |
@@ -100,8 +100,8 @@ A first measurement taken while another Godot process ran was about 10 to 20 per
 
 ## Independent audit
 
-Status: see "Codex audit" below (appended after it ran).
+**Status: PENDING. The independent audit did not happen.** Codex was launched non-interactively with the brief (`codex exec`, workspace-write sandbox) at the Task 14 commit and returned only a usage-limit error: "You've hit your usage limit ... try again at 9:59 PM" (Nov 22). It read nothing and produced no findings. Nothing in this report is an independent verification; every result above is Claude's own execution. The complete audit instructions are in [`task14-codex-audit-brief-2026-11-22.md`](task14-codex-audit-brief-2026-11-22.md) (what to read, the rules, nine questions, the changed files since `0c0b8ff`). To run it later: start Codex in the repository with that file as the prompt, or ask Pixie to. Findings should be classified by evidence, severity, reproducibility, affected contract and recommended disposition, then fixed, deferred or rejected, and the affected tests re-run.
 
 ## Final state
 
-See the Task 14 issue and the commit message for the final commit, the full-suite run on the final tree and the sign-off checkpoint.
+The full suite is green on the final tree (above). The pending items are the independent Codex audit, the intermittent `pose_ownership_test`, and the owner's sign-off of the architectural milestone (the Task 14 issue stays open for it).
