@@ -320,6 +320,17 @@ func _trail_checks(stage: Node3D) -> void:
 		await process_frame
 	var summary := trail.summary()
 	check(summary.points >= 25 and summary.peak_speed > 0.5, "the trail records the root's motion (%d points, peak %.1f m/s)" % [summary.points, summary.peak_speed])
+	# A host with its own clock may pause automatic recording, then supply a single frame manually.
+	trail.set_sampling_paused(true)
+	var count_before := trail.points.size()
+	var time_before: float = float(trail.points.back().t)
+	await _frames(4)
+	check(trail.points.size() == count_before, "a paused diagnostic trail does not sample unrelated rendered frames")
+	trail.record_step(1.0 / 60.0)
+	check(trail.points.size() == count_before + 1 and absf(float(trail.points.back().t) - time_before - 1.0 / 60.0) < 0.0001, "a manual step records one sample at its supplied simulation delta")
+	trail.set_sampling_paused(false)
+	await _frames(3)
+	check(trail.points.size() > count_before + 1, "automatic sampling resumes when unpaused")
 	trail.clear()
 	check(trail.points.is_empty(), "clearing the trail empties it")
 	trail.set_enabled(false)
