@@ -1,8 +1,8 @@
 class_name MotionTrail
 extends Node
 ## Optional, read-only trajectory of a character's ROOT over time: a drawn trail in the world (colour = speed) and a bounded speed/facing history for readouts. Created by diagnostic hosts only, freed when switched off.
-## It samples the root's own world transform once per rendered frame; it keeps no clock of its own (the timestamp is the sum of the frame deltas it was shown, which a host that pauses its presenter also stops, since
-## a paused host's character does not move). It does not move, time or steer anything.
+## Ordinary hosts sample once per rendered frame. Hosts with a manual/pauseable presentation clock may pause automatic sampling and explicitly record a single stepped frame after advancing their character.
+## The elapsed value sums ONLY sampled frame deltas; paused wall-clock time is excluded. It does not move, time or steer the character.
 
 const MAX_POINTS := 600
 const SLOW := Color(0.3, 0.6, 1.0)
@@ -10,6 +10,7 @@ const FAST := Color(1.0, 0.45, 0.15)
 
 var rig: CharacterRig
 var enabled := false
+var sampling_paused := false
 var points: Array[Dictionary] = []   # {position, speed, yaw_deg, t}
 var _lines: MeshInstance3D
 var _mesh: ImmediateMesh
@@ -30,7 +31,8 @@ func set_enabled(on: bool) -> void:
 	if on == enabled:
 		return
 	enabled = on
-	set_process(on)
+	set_process(on and not sampling_paused)
+	_last_position = Vector3.INF   # the root may have moved while the trail was off: the first sample has no step, never a speed spike
 	if on:
 		_lines = MeshInstance3D.new()
 		_lines.name = "MotionTrailLines"
@@ -58,7 +60,23 @@ func clear() -> void:
 func _ready() -> void:
 	set_process(false)
 
+## A manual-clock host pauses background sampling, avoiding duplicate/stationary points while its simulation is stopped.
+func set_sampling_paused(on: bool) -> void:
+	if on != sampling_paused:
+		_last_position = Vector3.INF   # whatever moved the root while sampling was paused is not a step of the next sample
+	sampling_paused = on
+	set_process(enabled and not on)
+
+## Called by a manual-clock host AFTER it has advanced one complete simulation step.
+func record_step(delta: float) -> void:
+	if enabled and sampling_paused:
+		_record(delta)
+
 func _process(delta: float) -> void:
+	if enabled and not sampling_paused:
+		_record(delta)
+
+func _record(delta: float) -> void:
 	if not enabled or not is_instance_valid(rig):
 		return
 	var position := rig.character_root.global_position

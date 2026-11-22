@@ -22,7 +22,7 @@ The **Evidence** tab prints the exact command for the current configuration.
 
 ## The panel: four tabs, four questions
 
-The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
+The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. Compact tables use a 14-point minimum and the panel can occupy up to 44% of the viewport to improve readability at 1280×720. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
 
 | Tab | Question | What it holds |
 |---|---|---|
@@ -39,7 +39,7 @@ Each preset is data in `workbench_scenarios.gd`: timed steps calling the workben
 |---|---|---|---|
 | `tactical` | move, turn while moving, low cover, aim at an authorised target, fire, recover | a weapon | **synthetic** tactical context (a wall and a target position); cover side, posture and shot choice use the production `CoverEdgeSelector` and `CoverPostureProfile` |
 | `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
-| `contacts` | a 12-tread stair, then a 4 m ladder, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
+| `contacts` | a 12-tread stair, then a 4 m ladder shown from a three-quarter inspection camera, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
 
 An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
 
@@ -72,6 +72,6 @@ Unchanged except F1: `1`-`6` idle/move/aim/shoot/hit/defeat, arrows, `T`, `[` `]
 ## Known limits
 
 * Switching character reloads the scene (the one clean reset), so any non-default workbench state is lost.
-* The status line and the panel are laid out in canvas units; below about 1280 px of window width the 11-12 pt tables are small.
-* The root trail follows the root; the ladder and stair benches slide the world past a fixed character, so their trail is a point (their contact readouts are the useful measurement).
+* The status line and the panel are laid out in canvas units; text is 14 pt or larger in canvas units, so it scales down with the window; 1280x720 is comfortable, smaller is not recommended.
+* The root trail follows the root; the ladder and stair benches slide the world past a fixed character, so their trail is a point (their contact readouts are the useful measurement). While the workbench is paused, the trail records neither time nor stationary frames; stepping records exactly one sample at the stepped simulation delta.
 * The monitor cannot see a state set by bypassing the controller's signal (the live snapshot would show it; the history would not).

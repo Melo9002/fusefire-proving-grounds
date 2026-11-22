@@ -139,7 +139,7 @@ func _exit_tree() -> void:
 func _label(text: String, bold := false) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 13 if not bold else 14)
+	label.add_theme_font_size_override("font_size", 14)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
 

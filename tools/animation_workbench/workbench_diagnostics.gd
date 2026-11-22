@@ -9,6 +9,7 @@ var monitor: PresentationMonitor
 var contacts: ContactErrorDiagnostics
 var trail: MotionTrail
 var highlight: BoneHighlight
+var paused := false
 
 func _init(p_rig: CharacterRig) -> void:
 	rig = p_rig
@@ -29,6 +30,7 @@ func set_trail(on: bool) -> void:
 	if on and not is_instance_valid(trail):
 		trail = MotionTrail.attach(rig)
 	if is_instance_valid(trail):
+		trail.set_sampling_paused(paused)
 		trail.set_enabled(on)
 
 ## Highlights bones (empty clears it).
@@ -39,6 +41,21 @@ func highlight_bones(names: Array[String], colour := Color(1.0, 0.35, 0.95)) -> 
 		highlight = BoneHighlight.attach(rig)
 	if is_instance_valid(highlight):
 		highlight.set_bones(names, colour)
+
+## A workbench pause stops diagnostic sampling as well as animation; single steps are recorded explicitly.
+func set_paused(on: bool) -> void:
+	paused = on
+	if is_instance_valid(trail):
+		trail.set_sampling_paused(on)
+
+func record_step(delta: float) -> void:
+	if is_instance_valid(trail) and paused:
+		trail.record_step(delta)
+
+## Empties the root trail (a new run should not continue the old one's line).
+func clear_trail() -> void:
+	if is_instance_valid(trail):
+		trail.clear()
 
 func contacts_on() -> bool:
 	return is_instance_valid(contacts) and contacts.enabled
