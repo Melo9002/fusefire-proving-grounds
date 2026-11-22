@@ -290,6 +290,8 @@
   "contact_ladder_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "gesture_capability_test": {"sub": ["animation"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_capture": {"sub": ["animation", "tooling"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
+  "motion_families_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
+  "motion_contract_test": {"sub": ["animation"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_diagnostics_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_scenarios_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "hand_contact_test": {"sub": ["animation", "equipment", "rescue"], "scope": "integration", "contracts": ["presentation-sync"]},

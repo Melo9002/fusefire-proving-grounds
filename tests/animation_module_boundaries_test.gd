@@ -205,5 +205,25 @@ func _run() -> void:
 		check(not code.contains("_process_modification()"), "%s still uses the deprecated _process_modification() callback" % file)
 		check(code.contains("func _process_modification_with_delta("), "%s does not implement the supported modifier callback" % file)
 		check(owner_types.search(code) == null, "%s depends on the rig, the presenter or gameplay: a modifier consumes typed inputs only" % file)
+	# Motion families (Task 13): the shared contract (presentation/motion) and the non-humanoid examples (research/motion_families) must not depend on the humanoid stack or on tactical gameplay. The rule is for THESE
+	# modules only: the humanoid implementation keeps all of those dependencies. The humanoid bridge is the one file that knows both the contract and the presenter.
+	var humanoid_only := RegEx.create_from_string("\\b(CharacterRig|CharacterPresenter|CharacterAnimationController|Skeleton3D|SkeletonModifier3D|BoneAttachment3D|AnimationTree|TwoBoneIK3D|RigBones|RigProfile|RigResolver|PoseOwnership|HandContact|HandGripModifier|LocomotionPoseModifier|CoverCrouchModifier|TraversalPoseModifier|TraversalFootModifier|WeaponPoseModifier|StairFootPlanner|PostureArbiter|WeaponReadiness|AttackSequence|RescueInteraction|ExplorationCharacterHost|TacticalUnit|TacticalCharacterAdapter|TacticalAction\\w*)\\b")
+	check(humanoid_only.search("var s: Skeleton3D") != null and humanoid_only.search("var r: CharacterRig") != null and humanoid_only.search("var o: PresentationTypes.Outcome") == null and humanoid_only.search("var h: ActionHandle") == null,
+		"(control) the family gate matches humanoid and tactical types and lets the shared vocabulary through")
+	var family_scripts := _scripts("presentation/motion") + _scripts("research/motion_families")
+	check(family_scripts.size() >= 5, "the contract and the family examples are scanned (%d scripts)" % family_scripts.size())
+	for path in family_scripts:
+		var found_dependency := humanoid_only.search(_code(path))
+		check(found_dependency == null, "%s depends on the humanoid stack or tactical gameplay (%s): a body family reaches the contract only" % [path, found_dependency.get_string() if found_dependency else ""])
+	for path in _scripts("presentation/motion"):
+		check(RegEx.create_from_string("\\b(WheeledPresenter|DronePresenter|PrimitiveBodies|HumanoidMotionBridge)\\b").search(_code(path)) == null, "%s (the shared contract) names a particular family: families extend it, it does not know them" % path)
+	var contract_and_presenter: Array[String] = []
+	for path in _scripts("presentation") + _scripts("research") + _scripts("units"):
+		var text := _code(path)
+		if RegEx.create_from_string("\\b(MotionRequest|MotionPresenter)\\b").search(text) != null and RegEx.create_from_string("\\bCharacterPresenter\\b").search(text) != null:
+			contract_and_presenter.append(path)
+	check(contract_and_presenter == ["presentation/characters/presenter/humanoid_motion_bridge.gd"], "only the humanoid bridge knows both the motion contract and CharacterPresenter (%s)" % [contract_and_presenter])
+	for path in ["presentation/characters/presenter/character_presenter.gd", "presentation/characters/rig/character_rig.gd", "presentation/exploration/exploration_character_host.gd", "presentation/tactical/tactical_character_adapter.gd", "tools/animation_workbench/pose_workbench.gd"]:
+		check(RegEx.create_from_string("\\b(MotionRequest|MotionPresenter|HumanoidMotionBridge)\\b").search(_code(path)) == null, "%s does not route through the motion contract: the humanoid per-frame path has no extra indirection" % path)
 	print("Animation module boundaries: %d checks, %d failure(s); %d known gameplay importer(s) remain" % [checks, failures, importers.size()])
 	quit(1 if failures else 0)

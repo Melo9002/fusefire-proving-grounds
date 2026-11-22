@@ -210,6 +210,74 @@ Operate on a `CharacterRig` or `CharacterPresenter` only; read through public ac
 
 Usable outside tactical gameplay today: everything in `presentation/characters/` (the stack imports no gameplay code; the only tactical names are in comments), the rig profile and resolver, and all of `presentation/diagnostics/`. Meaningful FuseFire-specific dependencies: `CharacterRig`'s default `character_scene` is MIRA's model; `PresentationTypes`, the cover and hold vocabularies carry FuseFire's actions (cover, rescue, ladder, stairs); `CoverPostureProfile`, `StairFootPlanner` and the rescue pose are game-shaped specialisations; the workbench's character list and the tactical selectors (`CoverEdgeSelector`) live in the game. Helpful before any extraction: a rig-scene or profile-only way to name a character (no default model), the capability list as the declared interface of a stage, and the diagnostics' read-only accessors kept as the public observation surface. Deliberately FuseFire-specific: the tactical adapter, route building, cover edge policy, the rescue carry. No extraction is planned or started.
 
+## Movement families and the presentation boundary (Task 13)
+
+`CharacterPresenter` is a humanoid presenter: it binds a `CharacterRig`, flattens velocity to the ground plane (`report_velocity` keeps only x and z), turns the body toward that velocity about the vertical, owns humanoid postures, weapon readiness and rescue holds, and feeds a gait. That is right for the humanoid family and wrong to stretch over a drone. Task 13 keeps it as it is and adds a small **motion contract** beside it that a different family can implement without a rig, a skeleton or a leg.
+
+```mermaid
+flowchart LR
+    Ctx["Context (authority): tactical unit, exploration controller, scripted demo<br/>decides where and how fast; moves the entity's own node"] -->|"MotionRequest: actual and intended velocity (3D), facing request, authoritative transform as a value, delta"| Fam
+    subgraph Fam["Family presenters (each extends MotionPresenter)"]
+        H["Humanoid: HumanoidMotionBridge -> CharacterPresenter -> CharacterRig<br/>(opt-in; existing hosts call the presenter directly)"]
+        W["Wheeled: WheeledPresenter (research)"]
+        D["Drone: DronePresenter (research)"]
+        Q["Quadruped / tracked: design only"]
+    end
+    Fam -->|"writes only its own visual nodes"| Vis["Visual body"]
+    Fam -. "ActionHandle (COMPLETED, CANCELLED, INTERRUPTED, SKIPPED)" .-> Ctx
+    Fam -. "snapshot(), supports(capability)" .-> Diag["MotionReadout, diagnostics"]
+```
+
+### What is shared, what is specialised, what is the context's
+
+| Concept | Where it lives today | Family-neutral? | Decision |
+|---|---|---|---|
+| Presentation clock advanced once per frame | `CharacterPresenter.tick`, `time` | yes | `MotionPresenter.present`: `time += delta`, duplicate frame numbers counted |
+| `ActionHandle` and its four outcomes | `presenter/action_handle.gd`, `PresentationTypes.Outcome` | yes (no rig, no tactical import) | reused as is |
+| Facing vocabulary (FOLLOW_VELOCITY, FACE_POINT, FACE_YAW, HOLD) | `PresentationTypes.FacingMode` | yes | reused in `MotionRequest` |
+| Velocity input | `report_velocity(Vector3, delta, turn_speed)` flattens y | no: discards vertical motion | `MotionRequest.velocity` keeps all three axes; a family chooses what to use |
+| Actual vs intended velocity | not carried (hosts pass the actual one) | needed by any family | `MotionRequest.intended_velocity` + `has_intent` |
+| Authoritative transform | the host node; the presenter writes the rig's yaw | the boundary | passed as a **value**; a presenter holds no reference through which it could move the entity |
+| One-shot actions | `begin_hold`, `begin_gesture`, attack, rescue | only the hit reaction is shared | `MotionPresenter.request_action(&"reaction")`; unsupported returns SKIPPED and records why |
+| Posture (crouch, kneel), weapon readiness, aim, rescue, traversal contacts | presenter, rig, modifiers | humanoid (legged-body concepts) | stay humanoid; only named in the capability list |
+| `PresentationIntent` snapshot | posture, readiness, equipment are humanoid fields | partly | left alone (changing it would touch every humanoid test); non-humanoid state goes through `MotionPresenter.snapshot()` |
+| Skeleton profile, IK, gait clips, contact claims, weapon handling | rig, modifiers | humanoid | unchanged |
+| Movement legality, AP, paths, collision, replay | tactical and exploration contexts | context | never presentation |
+
+Families: **humanoid** keeps everything above (skeleton, clips, IK, contacts, weapons, traversal, rescue). **Quadruped** (design): a family anatomy profile (leg chains per limb), a gait with phase offsets between four feet, per-foot ground contacts, body pitch and balance from the contacts, terrain adaptation, all driven by the same `MotionRequest`; it would reuse the humanoid's ideas (profile, contact claims) but not its code. **Wheeled and tracked** (wheeled implemented as an example): wheel spin and track scroll from the observed forward speed, steering from the observed turn rate, equipment mounts static or articulated; no stride, no foot planting. **Drone** (implemented as an example): 3D motion, yaw, pitch and bank, rotors from vertical and horizontal speed, hover; equipment orientation would follow the body's shown attitude.
+
+### The contract
+
+`presentation/motion/motion_request.gd` (`MotionRequest`) and `motion_presenter.gd` (`MotionPresenter`). **Frames:** world space is Godot's (+Y up); yaw is about +Y with +Z forward at zero; in an entity's own frame forward is +Z, up +Y, left +X; pitch is positive nose up, bank positive right side down; velocities are world m/s with the vertical component kept. A request carries `delta`, an optional `frame_id`, the actual `velocity`, an optional `intended_velocity`, the authoritative `transform` (read-only), and a facing request (`facing_mode`, `facing_yaw`, `facing_point`; a request that says nothing holds the facing, and every current humanoid host means FOLLOW_VELOCITY). A presenter's `present(request)` is called exactly once per frame. `supports(capability)` answers one of six names (motion, facing, reaction, posture, aiming, traversal); `request_action(&"reaction", seconds)` returns an `ActionHandle`; a request the family cannot honour is refused with a recorded reason, never faked; `snapshot()` is the read-only state for diagnostics; `teardown()` ends everything the presenter shows. **Authority:** the presentation draws; it never moves the entity, decides whether it may move, or reads gameplay state. One honest caveat: the humanoid presenter counts a hold down only on a later engine frame than the one it was armed in, so a humanoid reaction needs real frames to pass, which a stepped test must provide.
+
+### Choosing the design
+
+| | A: separate presenters, small common contract | B: shared coordinator with family drivers | C: extend `CharacterPresenter` |
+|---|---|---|---|
+| Dependency direction | families depend on a tiny contract | families depend on a coordinator that owns time, intent and actions | everything depends on the humanoid presenter and its rig |
+| Humanoid impact | none (opt-in bridge) | every humanoid call goes through the coordinator | optional fields everywhere, risk to 2 humanoids and 3 hosts |
+| Determinism and cost | one clock per presenter, about 2 to 9 us per call (measured) | extra indirection per frame | unchanged for humanoids, unclear for others |
+| New family | extend `MotionPresenter` | write a driver and register it | grow the humanoid class |
+| Detachability | contract plus shared types can move together | the coordinator drags humanoid-shaped intent along | not detachable |
+
+**Chosen: A.** B's coordinator would own exactly what the examples show differs (what intent means, which actions exist), and C turns every humanoid field optional while a drone still needs a rig-free time and action model. A shares only what has the same meaning: the clock, the facing vocabulary, `ActionHandle` and its outcomes, the capability question and the snapshot.
+
+### Adding a locomotion family
+
+1. Extend `MotionPresenter` in your own folder; override `family()`, `_capabilities()` (only what you implement) and `_present(request)`; write only to your own visual nodes.
+2. If you have a one-shot, override `_begin_action` and `_end_action` and use the base handle; do not add actions you cannot show.
+3. Expose your state through `_snapshot_extra()` (scalar values show up in `MotionReadout` with no other work).
+4. The context builds a `MotionRequest` per frame (velocity, transform, facing request), calls `present`, and keeps its own movement authority.
+5. Add the folder to the boundary test's family rule, and a contract test: motion reaches you, unsupported things are refused, nothing moves the entity, teardown leaves nothing running.
+
+### What the examples prove, and what they do not
+
+**Proven (tests and renders):** a wheeled platform and a drone, built from primitives with no skeleton, are driven by the same request type; the drone's vertical velocity reaches the presentation and drives its rotors (and a variant that flattens it is detected); facing is independent of travel (a drone faces +X while flying along +Z and banks sideways); the entity's authoritative transform is untouched; unsupported actions are refused with a reason; a humanoid, through the opt-in bridge, behaves like the direct presenter calls (same facing, speed and time), ticks once per request, and shows a hit reaction through its own hold. Boundary tests keep `presentation/motion` and `research/motion_families` free of the rig, skeleton, humanoid solvers and tactical types, and keep the humanoid hot path free of the contract. Run `research/motion_families_demo/motion_families_demo.tscn` (renders: `tests/motion_families_capture.gd`).
+
+**Not proven or not built:** a quadruped, a tracked platform, suspension, vehicle or flight mechanics, equipment orientation on a drone, a workbench that hosts several families (the workbench is a humanoid host; a family adapter that supplies a `MotionPresenter` to the Diagnostics tab's live view is the small first step, the skeletal tabs stay humanoid), a generalised `MotionTrail` (it takes a rig today; it needs only a node), and moving `ActionHandle` and `PresentationTypes` out of `characters/presenter` (they are family-neutral but live under characters, and `PresentationTypes` also holds humanoid enums).
+
+**AniLab:** the contract, `ActionHandle`, the facing vocabulary and the read-only diagnostics are the portable core and now have a second and third consumer that prove they do not need a skeleton. They do not make AniLab four families: only the humanoid is a real system, wheeled and drone are demonstrations, quadruped and tracked are descriptions. Extraction obstacles recorded: the shared types' location, `PresentationTypes` mixing neutral and humanoid enums, `MotionTrail` and the workbench tabs coupled to a rig.
+
 ## Running and testing
 
 Run from the repository root (`godot_console` is the console build of Godot 4.7):
