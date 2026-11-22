@@ -74,7 +74,9 @@ static func contacts() -> Dictionary:
 				b.diagnostics_for_contacts()
 				b.start_stair_demo(0.1667, 0.3333, 12, true, 1.4)),
 			_step(5.0, "stairs end", func(b: Node3D) -> void: b.end_stair_demo()),
-			_step(5.4, "ladder climb 4 m", func(b: Node3D) -> void: b.start_ladder_demo(4.0, 1, 0.85)),
+			_step(5.4, "ladder climb 4 m (three-quarter inspection view)", func(b: Node3D) -> void:
+				b.look_from(Vector3(3.5, 1.6, 3.1), Vector3(0.0, 0.85, 0.05))
+				b.start_ladder_demo(4.0, 1, 0.85)),
 			_step(9.4, "interrupt the climb (release hands)", func(b: Node3D) -> void: b.end_ladder_demo()),
 			_step(11.0, "free again", func(b: Node3D) -> void: b.command_stop()),
 		]}
