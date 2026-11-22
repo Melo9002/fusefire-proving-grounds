@@ -124,6 +124,7 @@ func _run() -> void:
 		var worst_sole := 0.0
 		var samples := 0
 		var worst_ankle := 0.0
+		var worst_lift := 0.0
 		var guard := 0
 		while done.is_empty() and guard < 3500:
 			guard += 1
@@ -136,12 +137,17 @@ func _run() -> void:
 					continue
 				var target: Vector3 = info.position
 				var surface := _surface(target.x, target.z)
-				worst_sole = maxf(worst_sole, absf((target.y - adapter.rig.stair_profile.ankle_height) - surface))
+				# A planted foot's heel comes up toward toe-off by the planner's own lift (StairProfile.heel_lift, on purpose since the toes stopped sinking into the treads): the sole is on the tread EXCEPT
+				# for that lift, which is measured and bounded separately below.
+				var lift := maxf(target.y - info.tread_top - adapter.rig.stair_profile.ankle_height, 0.0)
+				worst_lift = maxf(worst_lift, lift)
+				worst_sole = maxf(worst_sole, absf((target.y - adapter.rig.stair_profile.ankle_height - lift) - surface))
 				worst_ankle = maxf(worst_ankle, (snap.LeftFoot if foot == 0 else snap.RightFoot).distance_to(target))
 				samples += 1
 		print("  stairs %s: %d planted samples, sole-to-physical-tread difference %.4f m, ankle error %.4f m" % [leg[1], samples, worst_sole, worst_ankle])
 		check(bool(done[0]) and actor.grid_position == leg[0], "Stairs %s: the move completes on its committed cell" % leg[1])
-		check(samples > 100 and worst_sole < 0.02, "Stairs %s: every planted sole is on the physical tread beneath it (%d samples, worst %.4f m)" % [leg[1], samples, worst_sole])
+		check(samples > 100 and worst_sole < 0.02, "Stairs %s: every planted sole is on the physical tread beneath it, apart from the planned heel lift (%d samples, worst %.4f m)" % [leg[1], samples, worst_sole])
+		check(worst_lift <= adapter.rig.stair_profile.heel_lift + 0.002, "Stairs %s: the planted heel lift stays within the profile's limit (%.4f m of %.4f m)" % [leg[1], worst_lift, adapter.rig.stair_profile.heel_lift])
 		check(worst_ankle < 0.05, "Stairs %s: the ankle bones reach those footholds (worst %.4f m)" % [leg[1], worst_ankle])
 
 	await f.dispose(self)

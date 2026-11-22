@@ -149,6 +149,25 @@ Two kinds exist and keep their separation. **Persistent** state (movement, facin
 
 Not wired on purpose: the tactical adapter (the rule is the presenter's, so a tactical use is one call with its `_return_from_hold`), and any combat or AP rule.
 
+## Contacts: who plans, who owns, who applies (Task 11)
+
+Full audit and matrix: `docs/claude/contact-audit-2026-11-22.md`. The rule in one line: **a family plans its own contacts in its own frame; the rig applies a contact to a limb through one typed claim; the modifier order decides who is last.** The stair planner, the ladder solver, the weapon pose and the rescue interaction stay specialised; nothing is shared between feet and hands except the pipeline order (`PoseOwnership.STAGE_ORDER`).
+
+For the **hands** (the one body part with several producers) there is one typed value and one writer:
+
+* `HandContact` (`presentation/characters/rig/hand_contact.gd`): hand (the grip modifier's convention, 0 left, 1 right: the only one), world point, world finger direction, world palm normal, orientation weight, optional closure.
+* `CharacterRig.claim_hand_contact(contact)`: moves the wrist target and fills the grip modifier's slot, converting to skeleton space. Nothing else writes `contact_weight`, `contact_forward`, `contact_normal` or a contact's `curl`.
+* `CharacterRig.release_hand_contacts()`: runs at the start of every pass that places the hands and when a ladder or carry ends. A hand nobody claims in a pass is the weapon's or the animation's again, so a contact weight can never outlive its producer. (Before this, the last ladder weight stayed on the grip after the hands let go and replaced the rifle's orientation.) The last claim of a pass wins; the producers (ladder, carry, relaxed hang) are mutually exclusive and placed in the existing pass order.
+
+### How to add a new contact-based interaction
+
+1. **Geometry** comes from the environment or the other body (a model, a profile, a contact frame), never from the rig's tactical state. Legality is the tactical layer's; the rig only presents what it is given.
+2. **Planning** is a pure function in the family (like `StairFootPlanner` or `TraversalSolver.ladder_pose`): inputs in, positions, weights and phases out, in one stated frame. Convert to a typed pose (`LadderPose`, `StairPose`) once, in the rig, never index a dictionary downstream.
+3. **Presentation ownership**: decide which stage owns the limb and add its writes to `PoseOwnership.WRITES` (and an `OVERLAPS` entry if it overlaps another stage). Prefer an existing stage; a new stage needs a reason.
+4. **IK application**: for a hand, build a `HandContact` in world space and `claim_hand_contact` it from the pass that places the hands (the placer's methods). For a foot or the pelvis, extend `TraversalPoseInput` and the traversal modifiers. Never write the grip modifier's contact slots directly.
+5. **Interruption**: the contact lives only while its producer claims it each pass. End the interaction by stopping the claim (and call `release_hand_contacts()` if the producer's end must be immediate); the next pass restores the weapon or the hang. Cover cleanup in a test: interrupt mid-contact, enter and leave repeatedly, check the final pose at `skeleton_updated`, and run it on both MIRA and Small MIRA.
+6. **Unreachable contacts** are the planner's to handle (clamp or report); the arm only stretches toward a target. Measure how often it happens on the smaller body before shipping (the Small MIRA ladder is the known example).
+
 ## Running and testing
 
 Run from the repository root (`godot_console` is the console build of Godot 4.7):
@@ -175,4 +194,4 @@ Contracts to know before editing: `animation_module_boundaries_test` (module and
 
 ## Known limits and future work
 
-Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); an armed character's gesture is only a head and torso nod (the weapon owns the hands); the tactical adapter does not call `begin_gesture` yet; broader contact, traversal and workbench-diagnostics work (Tasks 11 and 12).
+Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); an armed character's gesture is only a head and torso nod (the weapon owns the hands); the tactical adapter does not call `begin_gesture` yet; the Small MIRA ladder (51 of 88 sampled hand contacts are beyond the arm's reach: the rung windows are authored for MIRA's arms; measured in Task 11, deferred to the stabilization milestone); no shared unreachable-contact diagnostic for ladders; workbench diagnostics work (Task 12).

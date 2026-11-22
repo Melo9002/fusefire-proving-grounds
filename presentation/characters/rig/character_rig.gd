@@ -708,8 +708,7 @@ func end_traversal() -> void:
 		crouch_modifier.aim_lean_degrees = 0.0
 	if is_instance_valid(leg_ik):
 		leg_ik.active = false
-	if grip_modifier != null:
-		grip_modifier.contact_weight = [0.0, 0.0]
+	release_hand_contacts()
 	if is_weapon_stowed() and not carry_contacts_active():
 		unstow_weapon()
 	_stow_blend = 1.0
@@ -722,25 +721,38 @@ func traversal_contacts_active() -> bool:
 ## Puts the hands on the rungs (or the deck edge), by the traversal's weight, over wherever the weapon pose placed them. Runs inside the WeaponPose pass, after the weapon
 ## targets, so ladder contacts take priority over the rifle grip for as long as they hold (the rifle is slung, so nothing competes for the hands).
 func apply_traversal_hand_targets() -> void:
-	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
-	var up := to_skeleton * Vector3.UP
-	var toward := to_skeleton * character_root.global_basis.orthonormalized().z
-	var weights := [0.0, 0.0]
-	var forwards := [up, up]
-	var normals := [toward, toward]
-	var nodes := [support_ik_target, right_hand_target]   # left, right
-	for side in 2:
-		var contact := character_root.to_global(ladder.pose.hands[side])
-		var node: Node3D = nodes[side]
+	var up := Vector3.UP
+	var toward := character_root.global_basis.orthonormalized().z
+	for side in 2:   # the ladder's own order: 0 left, 1 right
+		var hand := HandContact.Hand.LEFT if side == 0 else HandContact.Hand.RIGHT
+		var node: Node3D = support_ik_target if side == 0 else right_hand_target
 		var hold: float = ladder.pose.hand_weight[side]   # the hands let go of the ladder before the body does (short arms)
-		node.global_position = node.global_position.lerp(contact, hold)
-		weights[side] = hold
+		var point := node.global_position.lerp(character_root.to_global(ladder.pose.hands[side]), hold)
+		claim_hand_contact(HandContact.make(hand, point, up, toward, hold, 0.6 * hold))
+
+
+## The ONE writer of a hand contact (HandContact): the wrist target goes to its point and the grip modifier takes its orientation, weight and closure, converted to skeleton space here and nowhere else. Every
+## producer (a ladder's rungs, the carried body, the relaxed hang) plans in world space and claims through this; none of them touches the grip modifier's contact slots.
+func claim_hand_contact(contact: HandContact) -> void:
+	var node: Node3D = right_hand_target if contact.hand == HandContact.Hand.RIGHT else support_ik_target
+	node.global_position = contact.point
+	if grip_modifier == null:
+		return
+	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
+	var index := int(contact.hand)
+	grip_modifier.orient_weight = 0.0
+	grip_modifier.contact_weight[index] = contact.weight
+	grip_modifier.contact_forward[index] = to_skeleton * contact.finger_direction
+	grip_modifier.contact_normal[index] = to_skeleton * contact.palm_normal
+	if contact.curl != HandContact.NO_CURL:
+		grip_modifier.curl[index] = contact.curl
+
+
+## Lets go of every hand contact. Run at the start of each pass that places the hands (a hand nobody claims this pass is the weapon's or the animation's again) and when a traversal or a carry ends, so a
+## contact's weight can never outlive the producer that set it.
+func release_hand_contacts() -> void:
 	if grip_modifier != null:
-		grip_modifier.orient_weight = 0.0
-		grip_modifier.contact_weight = weights
-		grip_modifier.contact_forward = forwards
-		grip_modifier.contact_normal = normals
-		grip_modifier.curl = [0.6 * weights[0], 0.6 * weights[1]]
+		grip_modifier.contact_weight = [0.0, 0.0]
 
 
 func _configure_chain(
@@ -852,6 +864,7 @@ func update_torso_frame(chest_in_root: Basis, delta: float) -> void:
 
 
 func apply_weapon_targets(shoulder_world: Vector3) -> void:
+	release_hand_contacts()   # a new pass: only a contact claimed again below still owns a hand
 	if not has_weapon():
 		apply_relaxed_hand_targets(shoulder_world)
 		return
@@ -966,8 +979,8 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 		hang = _clear_of_thigh(hang, side, frame, _arm_length(side))
 		if side == 0 and presenter != null:
 			hang = _raised_by_gesture(hang, shoulders[side], frame)
-		targets[side].global_position = hang
-		_hang_hand(1 - side, (hang - shoulders[side]).normalized(), frame * Vector3(1.0 if side == 0 else -1.0, 0.0, 0.0))
+		var palm_toward_body: Vector3 = frame * Vector3(1.0 if side == 0 else -1.0, 0.0, 0.0)
+		claim_hand_contact(HandContact.make(HandContact.Hand.RIGHT if side == 0 else HandContact.Hand.LEFT, hang, (hang - shoulders[side]).normalized(), palm_toward_body, HANGING_HAND_WEIGHT))
 		var outward := -1.0 if side == 0 else 1.0   # the character's right hand is on -X
 		poles[side].global_position = (shoulders[side] + hang) * 0.5 + frame * Vector3(outward * 0.30, 0.0, -0.30)
 
@@ -990,16 +1003,8 @@ const HAND_THIGH_CLEARANCE := 0.30
 ## The most a resting hand may be pushed out from straight under its shoulder, as a fraction of the arm's length: enough to clear the hip, never a held-out arm.
 const MAX_HAND_ABDUCTION := 0.28
 
-## A resting hand's wrist is neutral: the fingers continue the arm's line and the palm faces the thigh. Without this the hand keeps the animation's rest rotation, which points it inward across the leg (the rest pose is a T-pose
-## with the palms down). `grip_hand` is the grip modifier's hand index (0 left, 1 right). A ladder or a carried body writes its own contact orientation after this, in the same pass, and takes the hand over.
-func _hang_hand(grip_hand: int, along_arm: Vector3, palm_toward_body: Vector3) -> void:
-	if grip_modifier == null:
-		return
-	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
-	grip_modifier.contact_weight[grip_hand] = HANGING_HAND_WEIGHT
-	grip_modifier.contact_forward[grip_hand] = to_skeleton * along_arm
-	grip_modifier.contact_normal[grip_hand] = to_skeleton * palm_toward_body
-
+## A resting hand's wrist is neutral: the fingers continue the arm's line and the palm faces the thigh (claimed as a HandContact above). Without it the hand keeps the animation's rest rotation, which points it
+## inward across the leg (the rest pose is a T-pose with the palms down). A ladder or a carried body claims the hand after this, in the same pass, and takes it over.
 
 ## The hand's resting point moved outward (never inward) until it clears this side's thigh (hip to knee, as posed this pass), so a hand hangs beside the leg instead of in it. Not a collision system: one segment, one direction.
 func _clear_of_thigh(hand: Vector3, side: int, frame: Basis, arm_length: float) -> Vector3:
@@ -1340,8 +1345,8 @@ func end_carry(leave_passenger := false) -> void:
 	_snap_posture_to_requests()   # a carry that ends under the carrier (hit, freed, cancelled) does not ease out of its lift pose: the body is where the remaining requests put it
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = 0.0
+	release_hand_contacts()
 	if grip_modifier != null:
-		grip_modifier.contact_weight = [0.0, 0.0]
 		grip_modifier.curl = [0.0, 0.0]
 	unstow_weapon()
 	arm_ik.active = true
@@ -1487,20 +1492,16 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 	carry_passenger.motion_response = passenger_motion_response
 	carry_passenger.motion_swing_degrees = passenger_motion_swing_degrees
 	carry_passenger.update_presentation(float(sample.lift), float(sample.pose), anchor, get_process_delta_time())
-	var hands := {&"right": [right_hand_target, 1, 0], &"left": [support_ik_target, 0, 1]}   # target, grip index, shoulder index
-	var to_skeleton := skeleton.global_basis.orthonormalized().inverse()
+	var shoulder_of := {&"right": 0, &"left": 1}   # the index into `shoulders`
 	var report: Array = [{}, {}]
-	var weights := [0.0, 0.0]
-	var forwards := [Vector3.FORWARD, Vector3.FORWARD]
-	var normals := [Vector3.DOWN, Vector3.DOWN]
+	var curl := lerpf(_reach_curl, CARRY_GRIP_CURL, reach)
 	for assignment in CARRY_CONTACTS:
-		var info: Array = hands[assignment[0]]
 		var approach := Vector3.ZERO
 		if assignment.size() > 2:
 			# Lying, a hand takes the limb from above; as the passenger comes up it moves round to the carry's own side.
 			var carried_side := character_root.global_basis.orthonormalized() * (assignment[2] as Vector3).normalized()
 			approach = Vector3.UP.lerp(carried_side, clampf(float(sample.lift) * 1.2, 0.0, 1.0)).normalized()
-		var frame: Dictionary = carry_passenger.contact_frame(assignment[1], anchor, shoulders[info[2]], approach)
+		var frame: Dictionary = carry_passenger.contact_frame(assignment[1], anchor, shoulders[shoulder_of[assignment[0]]], approach)
 		var wrap_direction: Vector3 = (frame.axis as Vector3).cross(frame.side).normalized()
 		var fingers: Vector3 = wrap_direction * (1.0 if assignment[0] == &"left" else -1.0)
 		var normal: Vector3 = -(frame.side as Vector3)
@@ -1509,19 +1510,10 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 		var on_contact := palm - fingers * half_palm
 		var side_index := 0 if assignment[0] == &"right" else 1
 		# Before the hands have reached, they are where they were (carried with the body); `reach` brings them onto the contact.
-		(info[0] as Node3D).global_position = character_root.to_global(_reach_hands[side_index]).lerp(on_contact, reach) if reach < 1.0 else on_contact
-		weights[info[1]] = reach
-		forwards[info[1]] = to_skeleton * fingers
-		normals[info[1]] = to_skeleton * normal
+		var point: Vector3 = character_root.to_global(_reach_hands[side_index]).lerp(on_contact, reach) if reach < 1.0 else on_contact
+		claim_hand_contact(HandContact.make(HandContact.Hand.RIGHT if assignment[0] == &"right" else HandContact.Hand.LEFT, point, fingers, normal, reach, curl))
 		report[side_index] = {"contact": assignment[1], "point": frame.point, "intended_palm": palm, "intended_finger_direction": fingers, "intended_palm_normal": normal, "reach": reach}
 	carry_contact_report = report
-	if grip_modifier != null:
-		grip_modifier.orient_weight = 0.0
-		grip_modifier.contact_weight = weights
-		grip_modifier.contact_forward = forwards
-		grip_modifier.contact_normal = normals
-		var curl := lerpf(_reach_curl, CARRY_GRIP_CURL, reach)
-		grip_modifier.curl = [curl, curl]
 
 
 ## Hangs the weapon on the carrier's chest at the handling profile's stowage place (a provisional sling carry, nothing drawn):
