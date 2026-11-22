@@ -17,3 +17,9 @@ const PRIORITY_BASE := 0        ## a context's ordinary posture
 const PRIORITY_CONTEXT := 100   ## a context policy such as cover
 const PRIORITY_ACTION := 200    ## a posture an action needs for its duration
 const PRIORITY_FORCED := 300    ## a scripted or debug override
+
+## Rank of a timed hold (CharacterPresenter.begin_hold): a hold is refused (SKIPPED) while a higher-ranked one runs, and supersedes an equal or lower one (the older settles INTERRUPTED).
+## Defeat is not a hold: it is terminal and outranks all of these. The default for a hold is REACTION, so a request that names no rank supersedes any other, as every hold did before ranks existed.
+const HOLD_GESTURE := 10        ## a free expressive gesture (acknowledge): yields to anything else
+const HOLD_INTERACTION := 20    ## a context interaction (an inspection)
+const HOLD_REACTION := 30       ## a reaction or a state the body is put into (a hit, a landing, a pickup clip)

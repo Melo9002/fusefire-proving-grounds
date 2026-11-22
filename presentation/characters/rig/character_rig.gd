@@ -964,10 +964,23 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 	for side in 2:
 		var hang: Vector3 = shoulders[side] + frame * Vector3(0.0, -_arm_length(side) * RELAXED_ARM_BEND, 0.03)
 		hang = _clear_of_thigh(hang, side, frame, _arm_length(side))
+		if side == 0 and presenter != null:
+			hang = _raised_by_gesture(hang, shoulders[side], frame)
 		targets[side].global_position = hang
 		_hang_hand(1 - side, (hang - shoulders[side]).normalized(), frame * Vector3(1.0 if side == 0 else -1.0, 0.0, 0.0))
 		var outward := -1.0 if side == 0 else 1.0   # the character's right hand is on -X
 		poles[side].global_position = (shoulders[side] + hang) * 0.5 + frame * Vector3(outward * 0.30, 0.0, -0.30)
+
+
+## The right hand while a gesture asks for it (CharacterPresenter.gesture_hand): raised out beside the head at the arm's own length, with a small wave, blended from where it hangs. The point is in the body's own
+## frame and scales with the arm, so it fits any humanoid.
+func _raised_by_gesture(hang: Vector3, shoulder: Vector3, frame: Basis) -> Vector3:
+	var hand := presenter.gesture_hand()
+	if hand.x <= 0.0:
+		return hang
+	var length := _arm_length(0)
+	var raised := shoulder + frame * Vector3(-0.36 * length + 0.12 * length * hand.y, 0.50 * length, 0.34 * length)   # the character's right is -X
+	return hang.lerp(raised, hand.x)
 
 
 ## How far a resting hand keeps from the thigh's axis, as a fraction of the thigh's length: the thigh's own thickness plus the hand's. Body-relative, so it scales with the character and needs no rig-specific number.

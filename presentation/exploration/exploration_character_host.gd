@@ -34,7 +34,8 @@ var presenter: CharacterPresenter
 var _crouched := false
 var _last_report_time := -1000.0
 var _state: StringName = &""
-var _interaction: ActionHandle
+var _interaction: ActionHandle   # the inspection, while one runs
+var _gesture: ActionHandle       # the gesture, while one runs
 
 var _aiming := false
 var _attack_raise := false
@@ -106,13 +107,22 @@ func is_crouched() -> bool:
 ## handle settles COMPLETED when the interaction has finished, INTERRUPTED when the controller walks away or asks for another, CANCELLED if the character cannot begin it (it is already doing one).
 ## It describes the PRESENTATION only: what inspecting does in the game is the controller's business.
 func inspect(world_point: Vector3, seconds := -1.0) -> ActionHandle:
-	if is_interacting():
+	if (_interaction != null and not _interaction.is_done()) or not presenter.hold_allowed(PresentationTypes.HOLD_INTERACTION):
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	presenter.face_point(world_point)
 	_set_interaction_posture(true)
-	var handle := presenter.begin_hold(seconds if seconds > 0.0 else inspect_seconds, func() -> void: pass)
+	var handle := presenter.begin_hold(seconds if seconds > 0.0 else inspect_seconds, func() -> void: _state = &"", PresentationTypes.HOLD_INTERACTION)
 	handle.when_done(func(_outcome: PresentationTypes.Outcome) -> void: _set_interaction_posture(false))   # standing back up, however it ended
 	_interaction = handle
+	return handle
+
+
+## A gesture (CharacterAnimationController.GESTURES, e.g. &"acknowledge"): the presenter's one rule decides whether it shows (see CharacterPresenter.begin_gesture) and this host only gives the persistent state
+## back when it ends. Walking away, a hit, another interaction or the character's removal ends it INTERRUPTED; the handle settles COMPLETED when it has played out.
+func gesture(clip: StringName, seconds := -1.0) -> ActionHandle:
+	var handle := presenter.begin_gesture(clip, func() -> void: _state = &"", seconds)
+	if not handle.is_done():
+		_gesture = handle
 	return handle
 
 
@@ -131,8 +141,9 @@ func reset_motion(yaw := NAN) -> void:
 		presenter.face_yaw(yaw, false, false)
 
 
+## True while a one-shot of this host runs (an inspection or a gesture).
 func is_interacting() -> bool:
-	return _interaction != null and not _interaction.is_done()
+	return (_interaction != null and not _interaction.is_done()) or (_gesture != null and not _gesture.is_done())
 
 
 func get_presentation_state() -> StringName:

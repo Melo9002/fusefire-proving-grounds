@@ -58,6 +58,8 @@ var _hold_left := -1.0
 var _hold_due: Callable
 var _hold_handle: ActionHandle
 var _hold_armed_frame := -1
+var _hold_rank := 0
+var _gesture_length := 0.0
 var _defeat_left := -1.0
 var _defeat_handle: ActionHandle
 var _defeat_armed_frame := -1
@@ -199,15 +201,52 @@ func tick(delta: float) -> void:
 		velocity = Vector3.ZERO
 
 ## Starts a finite state that holds for `seconds` of presentation time and then runs `due` (a hit reaction returning to idle, a pickup's clip returning to idle). It replaces a scene-tree timer: the
-## countdown runs in tick(), so it follows the engine's own delta and pauses with the character. One hold at a time: a new one (or cancel_hold) ends the previous with INTERRUPTED. The handle
-## settles COMPLETED after `due` has run, INTERRUPTED if the hold was superseded or the character removed.
-func begin_hold(seconds: float, due: Callable) -> ActionHandle:
+## countdown runs in tick(), so it follows the engine's own delta and pauses with the character. One hold at a time: a new one (or cancel_hold) ends the previous with INTERRUPTED, unless the running one
+## outranks it (PresentationTypes.HOLD_*): then the request is refused and its handle is already settled SKIPPED, and the running hold is untouched. The handle settles COMPLETED after `due` has run,
+## INTERRUPTED if the hold was superseded or the character removed.
+func begin_hold(seconds: float, due: Callable, rank := PresentationTypes.HOLD_REACTION) -> ActionHandle:
+	if _hold_handle != null and rank < _hold_rank:
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 	cancel_hold()
 	_hold_left = maxf(seconds, 0.0)
 	_hold_due = due
+	_hold_rank = rank
 	_hold_armed_frame = Engine.get_process_frames()
 	_hold_handle = ActionHandle.new()
 	return _hold_handle
+
+## Whether a hold of `rank` would start now (nothing runs, or what runs does not outrank it).
+func hold_allowed(rank: int) -> bool:
+	return _hold_handle == null or rank >= _hold_rank
+
+## A GESTURE: a one-shot clip of the shared animation controller (see CharacterAnimationController.GESTURES) that plays over the persistent state and then gives the body back to it. ONE rule for every context:
+##  * a defeated character shows nothing (CANCELLED); a rescue lift, a traversal, a carried body or a running attack own the body (SKIPPED); any other hold outranks a gesture (SKIPPED); another gesture is replaced (the
+##    older settles INTERRUPTED);
+##  * otherwise the clip plays for its own length (`seconds` overrides it), and `restore` runs when it ends, to put the body back into the persistent state the context wants (it is not run when the gesture is
+##    interrupted: whoever interrupted it owns what follows);
+##  * the handle settles COMPLETED then, INTERRUPTED if movement, another action, a cancel_hold() or the character's removal ended it. The posture, readiness and aim requests are untouched: they are persistent.
+## The hands: a held weapon owns them (the arm stages place them for it), so an armed character shows the gesture in its head and torso only; an UNARMED character's hand is raised by the rig from `gesture_hand()`.
+func begin_gesture(clip: StringName, restore: Callable, seconds := -1.0) -> ActionHandle:
+	if not is_instance_valid(rig) or not is_instance_valid(rig.animation_controller) or clip not in rig.animation_controller.GESTURES:
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
+	if is_defeated():
+		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
+	if rig.interaction_active() or rig.ladder != null or rig.stairs != null or is_instance_valid(rig.carry_passenger) or attack.is_active() or not hold_allowed(PresentationTypes.HOLD_GESTURE):
+		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
+	rig.animation_controller.play(clip)
+	var length: float = seconds if seconds > 0.0 else float(rig.animation_controller.state_length(clip))
+	var handle := begin_hold(length, restore, PresentationTypes.HOLD_GESTURE)
+	_gesture_length = length
+	return handle
+
+## The raised hand of the running gesture, for the rig's hand targets: x is how far up the hand is (0 hanging, 1 raised, eased in and out over the first and last fifth of the gesture) and y the small wave
+## (-1..1) while it is up. (0, 0) when no gesture runs. A pure function of the hold's own clock: nothing else advances it.
+func gesture_hand() -> Vector2:
+	if _hold_handle == null or _hold_rank != PresentationTypes.HOLD_GESTURE or _gesture_length <= 0.0:
+		return Vector2.ZERO
+	var progress := clampf(1.0 - _hold_left / _gesture_length, 0.0, 1.0)
+	var weight := smoothstep(0.0, 0.2, progress) * smoothstep(1.0, 0.8, progress)
+	return Vector2(weight, sin(progress * _gesture_length * TAU * 1.6) * weight)
 
 ## Ends a running hold (a newer presentation took over). A no-op when none runs.
 func cancel_hold() -> void:
@@ -215,6 +254,7 @@ func cancel_hold() -> void:
 	_hold_handle = null
 	_hold_left = -1.0
 	_hold_due = Callable()
+	_hold_rank = 0
 	if handle != null:
 		handle.settle(PresentationTypes.Outcome.INTERRUPTED)
 
@@ -306,6 +346,7 @@ func _advance_timed_states(delta: float) -> void:
 			var due := _hold_due
 			_hold_handle = null   # the slot is clear before `due` runs: it may start the next hold or cancel nothing
 			_hold_left = -1.0
+			_hold_rank = 0
 			_hold_due = Callable()
 			if due.is_valid():
 				due.call()

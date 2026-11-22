@@ -148,7 +148,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode in [KEY_1, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_V, KEY_B, KEY_N, KEY_L, KEY_R, KEY_P, KEY_M, KEY_E, KEY_Q, KEY_K, KEY_SPACE]:
+		if event.keycode in [KEY_1, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_V, KEY_B, KEY_N, KEY_L, KEY_R, KEY_P, KEY_M, KEY_E, KEY_Q, KEY_K, KEY_F, KEY_SPACE]:
 			preview_turning = false
 			if is_instance_valid(_preview_pivot):
 				_preview_pivot.rotation.y = 0.0
@@ -242,6 +242,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				rig.ik_enabled = not rig.ik_enabled
 				rig.arm_ik.active = rig.ik_enabled
 				_update_status()
+			KEY_F:
+				# The shared gesture (the presenter's rule, the controller's clip): the same call an exploration host makes. The bench returns to the idle clip when it ends.
+				rig.presenter.begin_gesture(&"acknowledge", func() -> void: rig.animation_controller.play(&"rifle_idle"))
 			KEY_C:
 				side_view = not side_view
 				camera.position = _view(Vector3(3.4, 1.3, 0.1) if side_view else Vector3(2.8, 1.65, 3.55))

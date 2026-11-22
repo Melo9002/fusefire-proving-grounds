@@ -115,6 +115,40 @@ These are deliberate and stay outside `CharacterPresenter`'s lifecycles because 
 
 A committed Aim keeps the sights up for as long as it lasts: until its attack, an action that cancels it (a Move), a Reload, or the next activation. `TacticalCharacterAdapter` follows the committed `tactical_state.is_aiming` flag (translated into `presenter.aim_committed`) and the presenter's `AimHold` keeps a short release grace so the rifle does not dip while the attack camera moves in. A carrying unit never raises a rifle; a shot, hit, defeat, move or traversal is never interrupted. Test: `aim_hold_presentation_test`.
 
+## The pipeline decision (Task 10): the hybrid stays
+
+Per frame, in order: the host feeds the presenter, the presenter advances time and one-shots, the **AnimationTree** evaluates clips and speed blends (the walk, jog and run are phase-synchronised blend spaces), then the **modifier stack** (`PoseOwnership.STAGE_ORDER`) adds posture, contact and IK, and the weapon and attachments follow the final pose. This was compared with an AnimationTree-centric design (clips and blends only) and a procedural-centric one (everything in modifiers) against FuseFire's needs, and the hybrid is kept:
+
+| Need | Verdict |
+| --- | --- |
+| Different humanoid proportions | Clips are authored as directions in the body's frame and the modifiers use measured anatomy (`body_ratio`, rig profile): the second humanoid needed no clip or graph change (Task 09). A tree-only design would need per-body clips; procedural-only would lose cheap authored or baked clips. |
+| Contacts and equipment (hands on a weapon, feet on stairs, a carried body) | Only possible after the clip, as IK and attachments; the tree cannot express them. |
+| Interruption and determinism | The presenter owns time and every one-shot's lifetime (`ActionHandle`); the tree only crossfades (0.12 s) between states and never decides when anything ends. One owner of time, one of completion. |
+| Shared tactical, exploration, workbench | The tree and the modifiers are context-free; hosts only choose states and requests. |
+| Cost and debugging | One tree, a small fixed modifier order, a table of who writes what (`PoseOwnership`, tested). No second pipeline. |
+
+Known property worth remembering: between skeleton updates the skeleton reports the clip pose; the modifiers' result (the arms, IK, crouch) exists only at `skeleton_updated`. Read final poses there (see `gesture_capability_test`, `exploration_host_test`), and do not expect a clip track on an arm bone to survive the arm stage: arms are placed from IK targets (a held weapon's, or the unarmed hands' from `apply_relaxed_hand_targets`).
+
+## Adding an animation capability (Task 10)
+
+Two kinds exist and keep their separation. **Persistent** state (movement, facing, posture, aim, equipment) is an idempotent request, arbitrated (`PostureArbiter`, readiness, facing) and read back through `presenter.intent()`. A **one-shot** (hit, attack, inspection, rescue lift, defeat, a gesture) has a start, an end and an `ActionHandle` (COMPLETED, CANCELLED, INTERRUPTED, SKIPPED; settles once). Do not add another completion mechanism or a second clock.
+
+**The worked example: `&"acknowledge"`, a nod with a raised, waving hand.** Ask for it with `ExplorationCharacterHost.gesture(&"acknowledge")` (the workbench's `F` key calls the same `presenter.begin_gesture`). It works on MIRA and the small robot, armed (head and torso only, the weapon keeps the hands) and unarmed (the right hand rises), and composes with crouch and aim.
+
+1. **Where it belongs.** The clip's name in `CharacterAnimationController.GESTURES` and its recipe in `CharacterFallbackAnimationBuilder.make_gesture` (a saved clip of the same name overrides the recipe). Recipes use the body's own directions (`_about(bone, axis, degrees)` with the measured up, forward and hinge), never per-bone euler angles, so they fit every humanoid. A procedural part that needs the arms goes through the rig's hand targets (`CharacterPresenter.gesture_hand()` read by `CharacterRig._raised_by_gesture`), because the arm stage runs after the clip.
+2. **How a host requests it.** `presenter.begin_gesture(clip, restore, seconds)` returns an `ActionHandle`. The host supplies `restore`: a callable that puts the persistent state back (the exploration host clears its selected state so the next frame re-picks walk, aim or idle). That is all a host writes (`gesture()` is a few lines).
+3. **Lifetime.** The presenter owns it as a timed hold (`begin_hold`): it counts down in `tick()` on presentation time, is cancelled by `cancel_hold`, and is settled INTERRUPTED by `teardown()`. `restore` runs only on normal completion; whoever interrupts owns what follows.
+4. **Priority and interruption.** Holds have ranks, `PresentationTypes.HOLD_GESTURE < HOLD_INTERACTION < HOLD_REACTION`. A request below the running rank is refused (handle already settled SKIPPED, the running hold untouched); equal or higher supersedes (the older settles INTERRUPTED). A request that names no rank is REACTION, so everything that existed before ranks behaves as before. A gesture is also SKIPPED during a rescue lift, a ladder or stairs, a carried body or an attack, and CANCELLED after defeat (terminal). Movement reported to the exploration host ends any one-shot (INTERRUPTED) and the walk is what follows. Persistent requests (crouch, aim) are untouched by a gesture.
+5. **Clips and blending.** A gesture is a state of the graph; every state crossfades to every other (0.12 s). The clip ends at rest so the fade back is short. Nothing else advances time: the tree plays the clip, the presenter decides it is over.
+6. **Procedural parts.** No stage changes: `PoseOwnership` is untouched. Spine and head are ADD-composed on top of posture, so a gesture while crouched nods without disturbing the crouch.
+7. **Per-character configuration.** None needed: the recipe is directional and the hand target is a fraction of the measured arm length. A character that needs a different look supplies a saved clip under the gesture's name, or per-rig numbers in its profile.
+8. **Observing it.** `await handle.wait()` or `handle.when_done(cb)`; both work on an already-settled (refused) handle.
+9. **Testing and visual check.** `tests/gesture_capability_test.gd` (lifecycle, ranks, refusals, restore, both rigs, armed and unarmed, once per frame, negative controls) and the rendered `tests/gesture_capture.gd` (`docs/claude/images/task10/gesture-sheet.png`). Sample poses at `skeleton_updated`, not between updates, and look at a render.
+
+**What the next simple gesture costs.** A gesture that needs no hand touches two production files: the name in `GESTURES` and a recipe in the builder. Task 10's `acknowledge` also needed the presenter (`begin_gesture`, hold ranks, `gesture_hand`), `presentation_types.gd` (ranks), the rig (the hand target) and one host method, because the architecture had no named one-shot entry, no hold priority and no way to ask the arm stage for a hand. Those extension points now exist.
+
+Not wired on purpose: the tactical adapter (the rule is the presenter's, so a tactical use is one call with its `_return_from_hold`), and any combat or AP rule.
+
 ## Running and testing
 
 Run from the repository root (`godot_console` is the console build of Godot 4.7):
@@ -141,4 +175,4 @@ Contracts to know before editing: `animation_module_boundaries_test` (module and
 
 ## Known limits and future work
 
-Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); broader capability, traversal and workbench-diagnostics work (Tasks 10 to 12).
+Not done and not required by the current architecture: an arm swing for unarmed walking; general body self-collision (the unarmed hands only clear the thigh); the carry clip's upper-arm track (removed because it never applied; restoring it is an animation decision); a second humanoid's own art polish and gait style (the robot reuses MIRA's angle tables, only stride and pelvis motion scale; its baked Tripo clips are unused); an inspection that reaches with a hand (the exploration inspect is a turn-and-bend, no hand IK); an armed character's gesture is only a head and torso nod (the weapon owns the hands); the tactical adapter does not call `begin_gesture` yet; broader contact, traversal and workbench-diagnostics work (Tasks 11 and 12).

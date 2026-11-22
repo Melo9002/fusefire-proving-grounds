@@ -15,7 +15,10 @@ const SHOOT := &"shoot"
 const HIT := &"hit"
 const DEFEAT := &"defeat"
 const FORWARD_GAIT_PARAMETER := "parameters/move/Direction/move/blend_position"
-const STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
+## One-shot expressive clips a host asks for through CharacterPresenter.begin_gesture. Adding one: its name here and its recipe in CharacterFallbackAnimationBuilder.make_gesture (a saved clip of the same name in
+## the clip library replaces the recipe). Each gesture is a state of the graph. Nothing else changes.
+const GESTURES: Array[StringName] = [&"acknowledge"]
+const BASE_STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
 	&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land",
 	&"pickup", &"carry_idle", &"carry_move", &"boarding"]
 
@@ -25,6 +28,8 @@ var visual_root: Node3D
 var animation_player: AnimationPlayer
 var animation_tree: AnimationTree
 var playback: AnimationNodeStateMachinePlayback
+## Every state of the graph: the base states and the gestures.
+var states: Array[StringName] = []
 var current_state := IDLE
 var sequence_running := false
 var _sequence_generation := 0
@@ -37,6 +42,8 @@ var _fallbacks: RefCounted
 
 func setup(target_skeleton: Skeleton3D, target_visual_root: Node3D, rig_bones: RigBones) -> void:
 	skeleton = target_skeleton
+	states = BASE_STATES.duplicate()
+	states.append_array(GESTURES)
 	_fallbacks = FALLBACK_BUILDER.new(skeleton, rig_bones)
 	if locomotion_profile != null:
 		_fallbacks.profile = locomotion_profile
@@ -59,7 +66,7 @@ func state_length(state_name: StringName) -> float:
 
 
 func play(state_name: StringName) -> void:
-	if state_name not in STATES or playback == null:
+	if state_name not in states or playback == null:
 		return
 	_sequence_generation += 1
 	sequence_running = false
@@ -123,6 +130,8 @@ func _build_animation_player() -> void:
 		library.add_animation(pose, _fallbacks._make_rescue_pose(pose))
 	for pose in [&"cover_low", &"cover_high", &"vault", &"climb", &"descend", &"land"]:
 		library.add_animation(pose, _fallbacks._make_tactical_pose(pose))
+	for gesture in GESTURES:
+		library.add_animation(gesture, _fallbacks.make_gesture(gesture))
 	for side in [-1, 1]:
 		var shot: Animation = _fallbacks.make_lean_shot(side)
 		library.add_animation(&"shoot_left" if side < 0 else &"shoot_right", shot)
@@ -172,7 +181,7 @@ func _build_animation_tree() -> void:
 	animation_tree.anim_player = animation_tree.get_path_to(animation_player)
 
 	var state_machine := AnimationNodeStateMachine.new()
-	for state_name: StringName in STATES:
+	for state_name: StringName in states:
 		if state_name == &"carry_move":
 			var carry_tree := AnimationNodeBlendTree.new()
 			var carry_gaits := AnimationNodeBlendSpace1D.new()
@@ -197,8 +206,8 @@ func _build_animation_tree() -> void:
 	var transition := AnimationNodeStateMachineTransition.new()
 	transition.xfade_time = 0.14
 	state_machine.add_transition(&"Start", IDLE, transition)
-	for from_state: StringName in STATES:
-		for to_state: StringName in STATES:
+	for from_state: StringName in states:
+		for to_state: StringName in states:
 			if from_state == to_state:
 				continue
 			var crossfade := AnimationNodeStateMachineTransition.new()

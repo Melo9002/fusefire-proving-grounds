@@ -333,8 +333,34 @@ func _make_defeat() -> Animation:
 	return animation
 
 
-func _add_grip(animation: Animation) -> void:
-	for side in ["L", "R"]:
+## A one-shot gesture (CharacterAnimationController.GESTURES). Gestures are authored as DIRECTIONS in the body's own frame (up, forward, the hip hinge), never as per-bone euler angles, so one recipe fits every humanoid
+## whatever its rest pose and bone axes. They start and end at rest, so the crossfades in and out are short. The ARMS are not in a clip: the rig's arm stage places them from IK targets after the clip (see
+## CharacterRig.apply_relaxed_hand_targets and CharacterPresenter.gesture_hand), so a gesture that needs a hand asks for it there.
+func make_gesture(gesture: StringName) -> Animation:
+	match gesture:
+		&"acknowledge":
+			return _make_acknowledge()
+	push_warning("No recipe for the gesture %s" % gesture)
+	return _new_animation(0.5, false)
+
+
+const ACKNOWLEDGE_SECONDS := 1.7
+
+
+## A nod and a settling of the torso (the raised hand of an unarmed character is the rig's: it comes from the hand target while this plays).
+func _make_acknowledge() -> Animation:
+	if not _axes_measured:
+		measure_axes()
+	var animation := _new_animation(ACKNOWLEDGE_SECONDS, false)
+	var times := [0.0, 0.35, 0.7, 1.0, 1.35, ACKNOWLEDGE_SECONDS]
+	_add_rotation(animation, head, times, [Quaternion.IDENTITY, _about(head, _hinge, 9.0), _about(head, _hinge, -3.0), _about(head, _hinge, 6.0), _about(head, _hinge, -2.0), Quaternion.IDENTITY])
+	_add_rotation(animation, chest, times, [Quaternion.IDENTITY, _about(chest, _hinge, 3.0), _about(chest, _hinge, 1.5), _about(chest, _hinge, 3.0), _about(chest, _hinge, 1.5), Quaternion.IDENTITY])
+	_add_grip(animation)
+	return animation
+
+
+func _add_grip(animation: Animation, sides: Array = ["L", "R"]) -> void:
+	for side in sides:
 		var direction := -1.0 if side == "L" else 1.0
 		for finger in ["Index", "Middle", "Ring", "Little"]:
 			for joint in [1, 2, 3]:
