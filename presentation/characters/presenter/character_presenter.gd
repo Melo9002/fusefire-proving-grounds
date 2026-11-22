@@ -201,7 +201,7 @@ func tick(delta: float) -> void:
 		velocity = Vector3.ZERO
 
 ## Starts a finite state that holds for `seconds` of presentation time and then runs `due` (a hit reaction returning to idle, a pickup's clip returning to idle). It replaces a scene-tree timer: the
-## countdown runs in tick(), so it follows the engine's own delta and pauses with the character. One hold at a time: a new one (or cancel_hold) ends the previous with INTERRUPTED, unless the running one
+## countdown runs in tick(), so it follows the engine's own delta and pauses with the character. One hold at a time: a new one (or cancel_hold) ends the previous with INTERRUPTED, and cancelling the handle ends the hold (CANCELLED, `due` runs), unless the running one
 ## outranks it (PresentationTypes.HOLD_*): then the request is refused and its handle is already settled SKIPPED, and the running hold is untouched. The handle settles COMPLETED after `due` has run,
 ## INTERRUPTED if the hold was superseded or the character removed.
 func begin_hold(seconds: float, due: Callable, rank := PresentationTypes.HOLD_REACTION) -> ActionHandle:
@@ -212,8 +212,23 @@ func begin_hold(seconds: float, due: Callable, rank := PresentationTypes.HOLD_RE
 	_hold_due = due
 	_hold_rank = rank
 	_hold_armed_frame = Engine.get_process_frames()
-	_hold_handle = ActionHandle.new()
-	return _hold_handle
+	var handle := ActionHandle.new()
+	_hold_handle = handle
+	handle.finished.connect(_on_hold_settled.bind(handle))
+	return handle
+
+## The requester withdrew the running hold (`handle.cancel()`): the hold ends now and `due` runs, so the body goes back to the persistent state (nobody else took over, unlike an interruption, which leaves what
+## follows to whoever interrupted). A handle that is no longer the running hold (superseded, completed, removed) is ignored, so an obsolete cancel cannot touch a newer action.
+func _on_hold_settled(outcome: PresentationTypes.Outcome, handle: ActionHandle) -> void:
+	if outcome != PresentationTypes.Outcome.CANCELLED or handle != _hold_handle:
+		return
+	var due := _hold_due
+	_hold_handle = null
+	_hold_left = -1.0
+	_hold_due = Callable()
+	_hold_rank = 0
+	if due.is_valid():
+		due.call()
 
 ## Whether a hold of `rank` would start now (nothing runs, or what runs does not outrank it).
 func hold_allowed(rank: int) -> bool:

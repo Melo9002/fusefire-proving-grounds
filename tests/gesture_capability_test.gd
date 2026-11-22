@@ -141,11 +141,21 @@ func _contract_checks(stage: Node3D) -> void:
 	var unknown := host.gesture(&"not_a_gesture")
 	check(unknown.is_done() and unknown.outcome == PresentationTypes.Outcome.SKIPPED and not newer.is_done(), "An unknown gesture is refused at once (SKIPPED) and disturbs nothing")
 
-	# Cancellation by the requester.
+	# Cancellation by the requester, through the handle alone: the hold is freed, the persistent state returns, it settles once, and an obsolete handle cannot touch a newer gesture.
+	var cancel_settles := []
+	newer.finished.connect(func(outcome: int) -> void: cancel_settles.append(outcome))
 	newer.cancel()
-	check(newer.outcome == PresentationTypes.Outcome.CANCELLED, "The requester can cancel a gesture (CANCELLED)")
-	host.cancel_interaction()
+	newer.cancel()
+	check(cancel_settles == [PresentationTypes.Outcome.CANCELLED] and not host.presenter.is_holding() and not host.is_interacting(), "Cancelling the handle ends the gesture and frees the hold, settling once (CANCELLED)")
+	await _frames(3)
+	check(host.get_presentation_state() == &"rifle_idle" and host.presenter.gesture_hand() == Vector2.ZERO, "...and the character is back in its persistent state (state %s)" % host.get_presentation_state())
+	var stale := host.gesture(&"acknowledge")
 	await _frames(5)
+	var current := host.gesture(&"acknowledge")
+	stale.cancel()
+	check(stale.outcome == PresentationTypes.Outcome.INTERRUPTED and not current.is_done() and host.presenter.is_holding() and host.get_presentation_state() == &"acknowledge", "Cancelling an obsolete handle does not touch the newer gesture")
+	current.cancel()
+	await _frames(3)
 
 	# Ranks: a gesture yields to an interaction and to a hit; an interaction and a hit take over a gesture; a hit during a gesture is not refused.
 	var inspect := host.inspect(Vector3(0, 0, 3), 1.0)
