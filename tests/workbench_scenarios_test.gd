@@ -94,6 +94,27 @@ func _run() -> void:
 	check(not bench.panel.visible and bench.panel.occupied_width() == 0.0, "F1 hides the panel and the view is no longer shifted for it")
 	bench.panel._unhandled_key_input(_key(KEY_F1))
 	check(bench.panel.visible, "F1 shows it again")
+	# Small-window readability: even compact diagnostic tables have a legible font size.
+	var sample_font := WorkbenchUI.mono("legibility", 11)
+	check(sample_font.get_theme_font_size("font_size") >= 14, "diagnostic tables have a readable minimum font size")
+	sample_font.free()
+	# Root trail uses the WORKBENCH simulation clock, not rendered frames while paused.
+	bench.diagnostics.set_trail(true)
+	await _frames(3)
+	var trail: MotionTrail = bench.diagnostics.trail
+	bench.set_sim_paused(true)
+	await _frames(2)
+	var trail_before := trail.points.size()
+	var trail_time_before: float = float(trail.points.back().t)
+	await _frames(4)
+	check(trail.points.size() == trail_before and is_equal_approx(float(trail.points.back().t), trail_time_before), "pause adds no stationary trail points or elapsed time")
+	bench.step_sim()
+	await _frames(2)
+	check(trail.points.size() == trail_before + 1 and absf(float(trail.points.back().t) - trail_time_before - bench.step_seconds) < 0.0001, "one frame step adds exactly one trajectory sample with simulation delta")
+	bench.set_sim_paused(false)
+	await _frames(3)
+	check(trail.points.size() > trail_before + 1, "resuming restarts ordinary trail sampling")
+	bench.diagnostics.set_trail(false)
 	# Evidence: the report is complete and serialises; the repro command names character, weapon state and scenario.
 	var evidence: EvidenceTab = bench.panel.tab_nodes[3]
 	var report := evidence.report()
