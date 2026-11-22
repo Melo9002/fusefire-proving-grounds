@@ -23,7 +23,7 @@ extends Resource
 @export_range(0.0, 45.0, 1.0, "suffix:°") var attack_aim_yaw_degrees := 0.0
 
 @export_group("Crouch")
-## Standing behind full cover: how far the knees bend while protected and while aiming (metres of hip drop).
+## Standing behind full cover: how far the knees bend while protected and while aiming (metres of hip drop on the reference body, scaled per body: see crouch_request).
 @export_range(0.0, 0.4, 0.01, "suffix:m") var high_cover_crouch_depth := 0.12
 @export_range(0.0, 0.4, 0.01, "suffix:m") var high_cover_aim_crouch_depth := 0.04
 ## Low cover: clearance of the head when hiding and of the eyes when looking over the top.
@@ -54,10 +54,11 @@ func attack_yaw_offset(protected_side: int, aimed_side: int, blend: float) -> fl
 
 
 ## Hip drop (metres, before the human limit) a cover pose asks for. FULL: a slight wary bend, a little less while aiming. LOW: hide so the head clears the
-## top, rise so the eyes clear it when aiming. `standing_head_height` is the rig's (CoverCrouchModifier).
-func crouch_request(full_cover: bool, cover_height: float, blend: float, standing_head_height: float) -> float:
+## top, rise so the eyes clear it when aiming. `standing_head_height` and `body_ratio` are the rig's (CoverCrouchModifier): the FULL bend is authored in metres for the
+## reference body and scales with the leg; the LOW one already follows from this body's head height.
+func crouch_request(full_cover: bool, cover_height: float, blend: float, standing_head_height: float, body_ratio := 1.0) -> float:
 	if full_cover:
-		return lerpf(high_cover_crouch_depth, high_cover_aim_crouch_depth, blend)
+		return lerpf(high_cover_crouch_depth, high_cover_aim_crouch_depth, blend) * body_ratio
 	var hide := standing_head_height - (cover_height - head_clearance)
 	var peek := standing_head_height - eye_below_head_top - (cover_height + eye_clearance)
 	return maxf(lerpf(hide, peek, blend), 0.0)

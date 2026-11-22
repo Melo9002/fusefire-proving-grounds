@@ -1,0 +1,23 @@
+{
+ "_note": "Island ids come from audit_islands.py traversal order on MIRA-00_source.glb; apply script verifies vert count + centre before using them. Bone names are the source skeleton's (art-side only). Finger islands not listed are rigid to their dominant bone.",
+ "rigid": {
+  "Head": [46,75,137,47,116,78,45,115,76,136],
+  "Spine2": [36,44,69,71,68,72,73,74,133],
+  "RightShoulder": [67], "LeftShoulder": [132],
+  "RightArm": [61,58,59,60], "LeftArm": [128,129,130,131],
+  "RightForeArm": [25], "LeftForeArm": [99],
+  "RightHand": [13], "LeftHand": [97],
+  "Hips": [32,55,33,38,39,64,43,65],
+  "RightUpLeg": [31,29], "LeftUpLeg": [86,87],
+  "RightLeg": [1,4], "LeftLeg": [80,84],
+  "RightFoot": [0,2,3,48], "LeftFoot": [79,81,82,117,118]
+ },
+ "soft": {
+  "Spine2,Neck,Head": [70],
+  "Neck,Head": [77,135],
+  "RightShoulder,RightArm": [34], "LeftShoulder,LeftArm": [114],
+  "RightArm,RightForeArm": [57,56,62], "LeftArm,LeftForeArm": [127,126,134],
+  "RightUpLeg,RightLeg": [30,5], "LeftUpLeg,LeftLeg": [85,83],
+  "Hips,Spine,Spine1": [113,40,112,35,42,66,37,63,111,125,41]
+ }
+}

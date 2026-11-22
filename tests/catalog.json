@@ -207,6 +207,7 @@
   "pose_review_capture": {"sub": ["animation", "assets"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "posture_arbiter_test": {"sub": ["animation"], "scope": "unit", "fast": true},
   "posture_ownership_test": {"sub": ["animation"], "scope": "integration", "fast": true},
+  "posture_body_scale_test": {"sub": ["animation"], "scope": "integration", "fast": true},
   "presentation_frame_driver_test": {"sub": ["animation"], "scope": "integration", "fast": true},
   "presenter_facing_test": {"sub": ["animation", "combat"], "scope": "integration", "crit": "critical", "contracts": ["authority"]},
   "protect_rescue_ai_smoke": {"sub": ["ai", "missions", "rescue"], "scope": "battle"},

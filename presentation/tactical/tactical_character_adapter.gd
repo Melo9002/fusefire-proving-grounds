@@ -570,7 +570,7 @@ func _cover_crouch_request() -> float:
 	var kind := _cover_kind()
 	if kind == MapCellData.CoverType.NONE:
 		return 0.0
-	return rig.cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), rig.aim_blend, rig.crouch_modifier.standing_head_height)
+	return rig.cover_profile.crouch_request(kind == MapCellData.CoverType.FULL, float(last_cover_contact.get("height", 0.0)), rig.aim_blend, rig.crouch_modifier.standing_head_height, rig.crouch_modifier.body_ratio())
 
 ## Cover POLICY, once per frame: what the cover the unit is in asks of the body, handed to the presenter as a persistent posture request (released when there is no cover pose), and then
 ## the presenter resolves and the rig applies it. Nothing here writes the crouch, kneel or body yaw any more.

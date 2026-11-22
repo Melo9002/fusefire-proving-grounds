@@ -230,6 +230,16 @@ func balanced_back(drop: float) -> float:
 func clamp_depth(requested: float) -> float:
 	return clampf(requested, 0.0, max_depth)
 
+## The hip-joint-to-ankle height (metres) that AUTHORED posture depths are tuned for: MIRA as shown in the game. A depth a profile or host states in metres
+## (a wary bend behind full cover, the exploration crouch) means "this much on that body"; multiply it by `body_ratio()` so a shorter or taller body bends by
+## the same proportion of its leg. Depths derived from the world and this body (low cover from the wall height and `standing_head_height`) are already right
+## and must not be scaled again.
+const AUTHORED_HIP_TO_ANKLE := 0.762127745
+
+## This body's leg relative to the one the authored depths were tuned for (1 for MIRA). Valid after setup().
+func body_ratio() -> float:
+	return _hip_to_ankle / AUTHORED_HIP_TO_ANKLE if _hip_to_ankle > 0.0 else 1.0
+
 ## Forward lean of the torso for the current depth, degrees.
 func current_lean_degrees() -> float:
 	return lerpf(lean_degrees(clamp_depth(depth)), KNEEL_LEAN_DEGREES, kneel)

@@ -459,7 +459,7 @@ func _apply_cover_demo(delta: float) -> void:
 		return
 	var spec := cover_demo
 	var blend := rig.weapon_blend()
-	var request := rig.cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, rig.crouch_modifier.standing_head_height)
+	var request := rig.cover_profile.crouch_request(bool(spec.full), float(spec.height), blend, rig.crouch_modifier.standing_head_height, rig.crouch_modifier.body_ratio())
 	var yaw_goal := rig.cover_profile.yaw_offset(bool(spec.full), cover_side, blend)
 	if not cover_plan.is_empty():
 		yaw_goal = rig.cover_profile.attack_yaw_offset(cover_side, int(cover_plan.side), blend)

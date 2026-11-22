@@ -1,0 +1,120 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_joint_spec.gd" id="1_eag2s"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_anatomy.gd" id="2_m2553"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_profile.gd" id="3_amhge"]
+[ext_resource type="Script" path="res://presentation/characters/rig_profile/rig_socket.gd" id="4_lsrja"]
+
+[sub_resource type="Resource" id="Resource_3xcb5"]
+script = ExtResource("1_eag2s")
+role = &"LeftLowerLeg"
+
+[sub_resource type="Resource" id="Resource_focg1"]
+script = ExtResource("1_eag2s")
+role = &"RightLowerLeg"
+
+[sub_resource type="Resource" id="Resource_exssv"]
+script = ExtResource("1_eag2s")
+role = &"LeftLowerArm"
+max_degrees = 145.0
+pole_direction = Vector3(0, 0, -1)
+
+[sub_resource type="Resource" id="Resource_50rff"]
+script = ExtResource("1_eag2s")
+role = &"RightLowerArm"
+max_degrees = 145.0
+pole_direction = Vector3(0, 0, -1)
+
+[sub_resource type="Resource" id="Resource_030eq"]
+script = ExtResource("2_m2553")
+character_scale = 1.0
+head_top_bone = &"mixamorig_HeadTop_End"
+joints = Array[ExtResource("1_eag2s")]([SubResource("Resource_3xcb5"), SubResource("Resource_focg1"), SubResource("Resource_exssv"), SubResource("Resource_50rff")])
+
+[sub_resource type="SkeletonProfileHumanoid" id="SkeletonProfileHumanoid_tnanv"]
+
+[sub_resource type="BoneMap" id="BoneMap_5wtne"]
+profile = SubResource("SkeletonProfileHumanoid_tnanv")
+bone_map/Root = &""
+bone_map/Hips = &"mixamorig_Hips"
+bone_map/Spine = &"mixamorig_Spine"
+bone_map/Chest = &"mixamorig_Spine1"
+bone_map/UpperChest = &"mixamorig_Spine2"
+bone_map/Neck = &"mixamorig_Neck"
+bone_map/Head = &"mixamorig_Head"
+bone_map/LeftEye = &""
+bone_map/RightEye = &""
+bone_map/Jaw = &""
+bone_map/LeftShoulder = &"mixamorig_LeftShoulder"
+bone_map/LeftUpperArm = &"mixamorig_LeftArm"
+bone_map/LeftLowerArm = &"mixamorig_LeftForeArm"
+bone_map/LeftHand = &"mixamorig_LeftHand"
+bone_map/LeftThumbMetacarpal = &"mixamorig_LeftHandThumb1"
+bone_map/LeftThumbProximal = &"mixamorig_LeftHandThumb2"
+bone_map/LeftThumbDistal = &"mixamorig_LeftHandThumb3"
+bone_map/LeftIndexProximal = &"mixamorig_LeftHandIndex1"
+bone_map/LeftIndexIntermediate = &"mixamorig_LeftHandIndex2"
+bone_map/LeftIndexDistal = &"mixamorig_LeftHandIndex3"
+bone_map/LeftMiddleProximal = &"mixamorig_LeftHandMiddle1"
+bone_map/LeftMiddleIntermediate = &"mixamorig_LeftHandMiddle2"
+bone_map/LeftMiddleDistal = &"mixamorig_LeftHandMiddle3"
+bone_map/LeftRingProximal = &"mixamorig_LeftHandRing1"
+bone_map/LeftRingIntermediate = &"mixamorig_LeftHandRing2"
+bone_map/LeftRingDistal = &"mixamorig_LeftHandRing3"
+bone_map/LeftLittleProximal = &"mixamorig_LeftHandPinky1"
+bone_map/LeftLittleIntermediate = &"mixamorig_LeftHandPinky2"
+bone_map/LeftLittleDistal = &"mixamorig_LeftHandPinky3"
+bone_map/RightShoulder = &"mixamorig_RightShoulder"
+bone_map/RightUpperArm = &"mixamorig_RightArm"
+bone_map/RightLowerArm = &"mixamorig_RightForeArm"
+bone_map/RightHand = &"mixamorig_RightHand"
+bone_map/RightThumbMetacarpal = &"mixamorig_RightHandThumb1"
+bone_map/RightThumbProximal = &"mixamorig_RightHandThumb2"
+bone_map/RightThumbDistal = &"mixamorig_RightHandThumb3"
+bone_map/RightIndexProximal = &"mixamorig_RightHandIndex1"
+bone_map/RightIndexIntermediate = &"mixamorig_RightHandIndex2"
+bone_map/RightIndexDistal = &"mixamorig_RightHandIndex3"
+bone_map/RightMiddleProximal = &"mixamorig_RightHandMiddle1"
+bone_map/RightMiddleIntermediate = &"mixamorig_RightHandMiddle2"
+bone_map/RightMiddleDistal = &"mixamorig_RightHandMiddle3"
+bone_map/RightRingProximal = &"mixamorig_RightHandRing1"
+bone_map/RightRingIntermediate = &"mixamorig_RightHandRing2"
+bone_map/RightRingDistal = &"mixamorig_RightHandRing3"
+bone_map/RightLittleProximal = &"mixamorig_RightHandPinky1"
+bone_map/RightLittleIntermediate = &"mixamorig_RightHandPinky2"
+bone_map/RightLittleDistal = &"mixamorig_RightHandPinky3"
+bone_map/LeftUpperLeg = &"mixamorig_LeftUpLeg"
+bone_map/LeftLowerLeg = &"mixamorig_LeftLeg"
+bone_map/LeftFoot = &"mixamorig_LeftFoot"
+bone_map/LeftToes = &"mixamorig_LeftToeBase"
+bone_map/RightUpperLeg = &"mixamorig_RightUpLeg"
+bone_map/RightLowerLeg = &"mixamorig_RightLeg"
+bone_map/RightFoot = &"mixamorig_RightFoot"
+bone_map/RightToes = &"mixamorig_RightToeBase"
+
+[sub_resource type="Resource" id="Resource_dxg7r"]
+script = ExtResource("4_lsrja")
+socket_name = &"weapon_dominant_hand"
+parent_role = &"RightHand"
+
+[sub_resource type="Resource" id="Resource_1j8kx"]
+script = ExtResource("4_lsrja")
+socket_name = &"weapon_support_hand"
+parent_role = &"LeftHand"
+
+[sub_resource type="Resource" id="Resource_s4yf1"]
+script = ExtResource("4_lsrja")
+socket_name = &"sling_chest"
+parent_role = &"UpperChest"
+
+[sub_resource type="Resource" id="Resource_dpg61"]
+script = ExtResource("4_lsrja")
+socket_name = &"carry_shoulder"
+parent_role = &"RightShoulder"
+
+[resource]
+script = ExtResource("3_amhge")
+display_name = "Small MIRA (Tripo auto-rig, Mixamo names)"
+skeleton_map = SubResource("BoneMap_5wtne")
+anatomy = SubResource("Resource_030eq")
+sockets = Array[ExtResource("4_lsrja")]([SubResource("Resource_dxg7r"), SubResource("Resource_1j8kx"), SubResource("Resource_s4yf1"), SubResource("Resource_dpg61")])

@@ -14,7 +14,7 @@ signal presentation_state_changed(state_name: StringName)
 @export var rig_path := NodePath("Rig")
 ## How fast the body turns toward its velocity (degrees per second).
 @export_range(90.0, 1080.0) var turn_speed_degrees := 360.0
-## The hip drop a crouch asks for (metres, before the rig's human limit): about the depth for hiding behind a 1.15 m wall.
+## The hip drop a crouch asks for (metres on the reference body, scaled by the rig's body_ratio, then capped by its human limit): about the depth for hiding behind a 1.15 m wall.
 @export_range(0.0, 0.8, 0.01, "suffix:m") var crouch_depth := 0.41
 ## An interaction's default length, seconds of presentation time.
 @export_range(0.2, 6.0, 0.05, "suffix:s") var inspect_seconds := 1.6
@@ -293,7 +293,7 @@ func is_in_cover() -> bool:
 
 func _sync_cover(delta: float) -> void:
 	if not _cover.is_empty() and rig.crouch_modifier != null:
-		var request: float = rig.cover_profile.crouch_request(bool(_cover.full), float(_cover.height), rig.aim_blend, rig.crouch_modifier.standing_head_height)
+		var request: float = rig.cover_profile.crouch_request(bool(_cover.full), float(_cover.height), rig.aim_blend, rig.crouch_modifier.standing_head_height, rig.crouch_modifier.body_ratio())
 		var posture := PresentationTypes.Posture.KNEEL if request > rig.crouch_modifier.max_depth + rig.KNEEL_BLEND_RANGE * 0.5 else PresentationTypes.Posture.CROUCH
 		presenter.postures.set_posture(COVER_SOURCE, posture, PresentationTypes.PRIORITY_CONTEXT, rig.cover_profile.yaw_offset(bool(_cover.full), int(_cover.side), rig.aim_blend), request)
 	# The body yaw is always driven: leaving cover releases the request, and the yaw it asked for must ease back to square (driving it only while in cover froze the cover turn in place).
@@ -407,13 +407,13 @@ func _select_state() -> void:
 func _sync_posture() -> void:
 	# A crouch is suspended on a staircase or a ladder: the stair and ladder poses own the legs and the pelvis there, and a crouch on top of them sinks the body into the treads.
 	if _crouched and rig.stairs == null and rig.ladder == null:
-		presenter.postures.set_posture(CROUCH_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth))
+		presenter.postures.set_posture(CROUCH_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth * rig.crouch_modifier.body_ratio()))
 	else:
 		presenter.postures.release(CROUCH_SOURCE)
 
 
 func _set_interaction_posture(on: bool) -> void:
 	if on:
-		presenter.postures.set_posture(INSPECT_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth))
+		presenter.postures.set_posture(INSPECT_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth * rig.crouch_modifier.body_ratio()))
 	else:
 		presenter.postures.release(INSPECT_SOURCE)
