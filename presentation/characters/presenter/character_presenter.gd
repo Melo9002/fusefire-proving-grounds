@@ -250,8 +250,8 @@ func hold_allowed(rank: int) -> bool:
 ## A GESTURE: a one-shot clip of the shared animation controller (see CharacterAnimationController.GESTURES) that plays over the persistent state and then gives the body back to it. ONE rule for every context:
 ##  * a defeated character shows nothing (CANCELLED); a rescue lift, a traversal, a carried body or a running attack own the body (SKIPPED); any other hold outranks a gesture (SKIPPED); another gesture is replaced (the
 ##    older settles INTERRUPTED);
-##  * otherwise the clip plays for its own length (`seconds` overrides it), and `restore` runs when it ends, to put the body back into the persistent state the context wants (it is not run when the gesture is
-##    interrupted: whoever interrupted it owns what follows);
+##  * otherwise the clip plays for its own length (`seconds` overrides it), and `restore` runs when it ends, to put the body back into the persistent state the context wants (it runs on COMPLETED and when the
+##    caller cancels the handle; it is not run when the gesture is interrupted: whoever interrupted it owns what follows);
 ##  * the handle settles COMPLETED then, INTERRUPTED if movement, another action, a cancel_hold() or the character's removal ended it. The posture, readiness and aim requests are untouched: they are persistent.
 ## The hands: a held weapon owns them (the arm stages place them for it), so an armed character shows the gesture in its head and torso only; an UNARMED character's hand is raised by the rig from `gesture_hand()`.
 func begin_gesture(clip: StringName, restore: Callable, seconds := -1.0) -> ActionHandle:
@@ -261,10 +261,15 @@ func begin_gesture(clip: StringName, restore: Callable, seconds := -1.0) -> Acti
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if rig.interaction_active() or rig.ladder != null or rig.stairs != null or is_instance_valid(rig.carry_passenger) or attack.is_active() or not hold_allowed(PresentationTypes.HOLD_GESTURE):
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
-	rig.animation_controller.play(clip)
+	# The hold is acquired FIRST: settling a superseded gesture runs its observers, which may start a higher-ranked hold, and then this request is refused. A refused gesture must not have touched the animation
+	# state (it would overwrite the clip that hold just started, and announce a state that never shows).
 	var length: float = seconds if seconds > 0.0 else float(rig.animation_controller.state_length(clip))
 	var handle := begin_hold(length, restore, PresentationTypes.HOLD_GESTURE)
-	if not handle.is_done():
+	if handle.is_done():
+		return handle
+	rig.animation_controller.play(clip)
+	# state_changed observers run inside play(): only a hold that is still this one is a running gesture.
+	if _hold_handle == handle:
 		_gesture_length = length
 		_gesture_hand_wanted = clip in rig.animation_controller.HAND_GESTURES
 	return handle

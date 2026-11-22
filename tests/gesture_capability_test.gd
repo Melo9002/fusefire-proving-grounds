@@ -60,6 +60,7 @@ func _run() -> void:
 		x += 3.0
 	await _contract_checks(stage)
 	await _hardening_checks(stage)
+	await _ordering_checks(stage)
 	stage.queue_free()
 	print("gesture_capability_test: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -336,3 +337,65 @@ func _hardening_checks(stage: Node3D) -> void:
 	await _frames(15)
 	check(not under_cover.is_done(), "Cover is a persistent posture: it coexists with a running gesture")
 	covered.queue_free()
+
+
+## Acquire before playing: a refused gesture never touches the animation state, and callbacks cannot invalidate an accepted one.
+func _ordering_checks(stage: Node3D) -> void:
+	var host := _spawn(stage, "mira", false)
+	host.position.x = -20.0
+	await _frames(30)
+	var controller = host.rig.animation_controller
+	var first := host.gesture(&"acknowledge")
+	await _frames(5)
+	# The superseded gesture's observer starts a higher-ranked hold and plays its own clip.
+	first.when_done(func(_o: int) -> void:
+		host.presenter.begin_hold(5.0, func() -> void: pass, PresentationTypes.HOLD_REACTION)
+		controller.play(&"hit"))
+	var announced: Array[StringName] = []
+	controller.state_changed.connect(func(s: StringName) -> void: announced.append(s))
+	var replacement := host.gesture(&"nod")
+	check(first.outcome == PresentationTypes.Outcome.INTERRUPTED and replacement.is_done() and replacement.outcome == PresentationTypes.Outcome.SKIPPED, "A replacement that yields to the hold its predecessor's observer started is SKIPPED")
+	check(controller.current_state == &"hit" and not announced.has(&"nod") and host.presenter.is_holding() and host.presenter.gesture_hand() == Vector2.ZERO, "...and it never touched the animation state: the higher hold's clip stays, no gesture state was announced")
+	host.presenter.cancel_hold()
+	# A state_changed observer that ends the new hold during play(): the gesture is settled, and no hand is left wanted.
+	var cancelled := []
+	var hook := func(s: StringName) -> void:
+		if s == &"acknowledge" and not cancelled.has(1):
+			cancelled.append(1)
+			host.presenter.cancel_hold()
+	controller.state_changed.connect(hook)
+	var ended := host.gesture(&"acknowledge")
+	check(ended.is_done() and ended.outcome == PresentationTypes.Outcome.INTERRUPTED and not host.presenter.is_holding() and host.presenter.gesture_hand() == Vector2.ZERO, "A state_changed observer that cancels the new gesture settles it and leaves no hand wanted")
+	controller.state_changed.disconnect(hook)
+	# A state_changed observer that replaces the gesture with another one: the newer one owns the hold and the hand.
+	var swap := func(s: StringName) -> void:
+		if s == &"acknowledge" and not cancelled.has(2):
+			cancelled.append(2)
+			host.gesture(&"nod")
+	controller.state_changed.connect(swap)
+	var outer := host.gesture(&"acknowledge")
+	await _frames(20)
+	check(outer.is_done() and outer.outcome == PresentationTypes.Outcome.INTERRUPTED and host.presenter.is_holding() and host.presenter.gesture_hand() == Vector2.ZERO, "A gesture replaced from inside its own state_changed leaves the newer one running and does not claim its hand")
+	controller.state_changed.disconnect(swap)
+	host.presenter.cancel_hold()
+	# Realistic chains terminate: each observer starts one hold; every hold settles exactly once.
+	var p := CharacterPresenter.new()
+	var settled := {}
+	var depth := [0]
+	var box := [Callable()]
+	box[0] = func(handle: ActionHandle) -> void:
+		handle.when_done(func(_o: int) -> void:
+			settled[handle] = settled.get(handle, 0) + 1
+			depth[0] += 1
+			if depth[0] < 6:
+				(box[0] as Callable).call(p.begin_hold(5.0, func() -> void: pass)))
+	var head := p.begin_hold(5.0, func() -> void: pass)
+	(box[0] as Callable).call(head)
+	p.begin_hold(5.0, func() -> void: pass)
+	var once := true
+	for h in settled:
+		once = once and settled[h] == 1
+	check(once and settled.size() == 6 and p.is_holding(), "A chain of observers each starting a hold terminates; every hold settled exactly once (%d settled)" % settled.size())
+	p.teardown()
+	check(not p.is_holding(), "...and teardown leaves nothing")
+	host.queue_free()
