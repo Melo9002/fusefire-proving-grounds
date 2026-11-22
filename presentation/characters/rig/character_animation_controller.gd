@@ -17,7 +17,9 @@ const DEFEAT := &"defeat"
 const FORWARD_GAIT_PARAMETER := "parameters/move/Direction/move/blend_position"
 ## One-shot expressive clips a host asks for through CharacterPresenter.begin_gesture. Adding one: its name here and its recipe in CharacterFallbackAnimationBuilder.make_gesture (a saved clip of the same name in
 ## the clip library replaces the recipe). Each gesture is a state of the graph. Nothing else changes.
-const GESTURES: Array[StringName] = [&"acknowledge"]
+const GESTURES: Array[StringName] = [&"acknowledge", &"nod"]
+## The gestures that also raise the unarmed character's hand (CharacterPresenter.gesture_hand, placed by the rig's hand targets). Any other gesture leaves the arms alone.
+const HAND_GESTURES: Array[StringName] = [&"acknowledge"]
 const BASE_STATES: Array[StringName] = [IDLE, MOVE, AIM, SHOOT, HIT, DEFEAT,
 	&"cover_low", &"cover_high", &"shoot_left", &"shoot_right", &"vault", &"climb", &"descend", &"land",
 	&"pickup", &"carry_idle", &"carry_move", &"boarding"]

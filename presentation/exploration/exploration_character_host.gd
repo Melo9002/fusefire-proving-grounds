@@ -184,6 +184,7 @@ func fire(aim_point := Vector3.INF) -> AttackHandle:
 	var shot: StringName = &"shoot"
 	if not _cover.is_empty() and bool(_cover.full):
 		shot = &"shoot_left" if int(_cover.side) < 0 else &"shoot_right"
+	presenter.cancel_gesture()   # a shot takes the body: a running gesture yields
 	presenter.attack.cancel()
 	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), rig.aim_blend)
 
@@ -315,6 +316,7 @@ func _sync_cover(delta: float) -> void:
 
 ## Start climbing a ladder of `length` metres (the character's origin is at the ladder's foot level; the ladder plane is ahead of it). The controller moves the body up and calls `set_climb_height`.
 func begin_climb(length: float) -> void:
+	presenter.cancel_gesture()
 	rig.begin_traversal(&"ladder", length, 1)
 	_state = &""
 
@@ -334,6 +336,7 @@ func is_climbing() -> bool:
 
 ## Walk a staircase (a StairModel in world space): the feet are planned on the treads and the pelvis rides them. The controller places the body on the stair and reports its distance along it.
 func begin_stairs(model: StairModel, ascending: bool) -> void:
+	presenter.cancel_gesture()
 	rig.end_stairs()
 	rig.begin_stairs(model, ascending, 0.0, model.riser_s(model.count))
 
@@ -358,6 +361,7 @@ func pick_up(world_point: Vector3) -> ActionHandle:
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	_aiming = false
 	leave_cover()
+	presenter.cancel_gesture()   # a lift takes the body
 	presenter.face_point(world_point)
 	_state = &""
 	return rig.begin_pickup(world_point)

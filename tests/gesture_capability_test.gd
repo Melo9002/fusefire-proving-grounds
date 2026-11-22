@@ -59,6 +59,8 @@ func _run() -> void:
 		await _body_checks(stage, key, x)
 		x += 3.0
 	await _contract_checks(stage)
+	await _hardening_checks(stage)
+	stage.queue_free()
 	print("gesture_capability_test: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -247,4 +249,90 @@ func _contract_checks(stage: Node3D) -> void:
 	check(same.is_done() and not unranked.is_done(), "Rank: a request naming no rank supersedes any hold")
 	probe.teardown()
 	check(unranked.is_done() and unranked.outcome == PresentationTypes.Outcome.INTERRUPTED and probe.hold_allowed(PresentationTypes.HOLD_GESTURE), "Rank: teardown clears the hold and its rank")
-	stage.queue_free()
+
+## Shared-contract hardening: reentrant observers, the hand following the gesture, and higher-priority actions ending a gesture.
+func _hardening_checks(stage: Node3D) -> void:
+	# A superseded hold's observer starts a hold of its own: the new request does not orphan it.
+	var p := CharacterPresenter.new()
+	var first := p.begin_hold(5.0, func() -> void: pass)
+	var started := []
+	first.when_done(func(_o: int) -> void: started.append(p.begin_hold(5.0, func() -> void: pass)))
+	var second := p.begin_hold(5.0, func() -> void: pass)
+	var reentrant: ActionHandle = started[0]
+	check(first.outcome == PresentationTypes.Outcome.INTERRUPTED and reentrant.is_done() and reentrant.outcome == PresentationTypes.Outcome.INTERRUPTED and not second.is_done() and p.is_holding(), "A hold started by an observer of the superseded one is settled (INTERRUPTED), not orphaned; the new request runs")
+	# ...and if that hold outranks the new request, the request is the one refused.
+	var q := CharacterPresenter.new()
+	var gesture_hold := q.begin_hold(5.0, func() -> void: pass, PresentationTypes.HOLD_GESTURE)
+	var big := []
+	gesture_hold.when_done(func(_o: int) -> void: big.append(q.begin_hold(5.0, func() -> void: pass, PresentationTypes.HOLD_REACTION)))
+	var late := q.begin_hold(5.0, func() -> void: pass, PresentationTypes.HOLD_GESTURE)   # supersedes the first; the first's observer starts a REACTION
+	check(late.is_done() and late.outcome == PresentationTypes.Outcome.SKIPPED and not (big[0] as ActionHandle).is_done() and q.is_holding(), "A reentrant hold that outranks the request is kept and the request is refused (SKIPPED)")
+	# Removal: an observer of the removed hold cannot leave a hold behind.
+	var r := CharacterPresenter.new()
+	var removed := r.begin_hold(5.0, func() -> void: pass)
+	var survivor := []
+	removed.when_done(func(_o: int) -> void: survivor.append(r.begin_hold(5.0, func() -> void: pass)))
+	r.teardown()
+	check(not r.is_holding() and (survivor[0] as ActionHandle).is_done(), "Nothing outlives the character: a hold an observer started during teardown is settled and gone")
+
+	# The hand follows the GESTURE, not the rank: a head-only gesture leaves an unarmed hand alone, a hand gesture raises it, and a plain gesture-rank hold raises nothing.
+	var bare := _spawn(stage, "mira", false)
+	bare.position.x = -8.0
+	await _frames(30)
+	var rest := _hand_height(bare)
+	var nod := bare.gesture(&"nod")
+	var nod_peak := 0.0
+	var weight := 0.0
+	for i in 40:
+		await process_frame
+		nod_peak = maxf(nod_peak, absf(_hand_height(bare) - rest))
+		weight = maxf(weight, bare.presenter.gesture_hand().x)
+	check(not nod.is_done() and bare.get_presentation_state() == &"nod" and nod_peak < 0.04 and weight == 0.0, "A head-only gesture (nod) does not raise an unarmed hand (hand moved %.3f m, weight %.2f)" % [nod_peak, weight])
+	await create_timer(1.3).timeout
+	check(nod.is_done() and nod.outcome == PresentationTypes.Outcome.COMPLETED, "...and completes")
+	var raised := bare.gesture(&"acknowledge")
+	var raise_weight := 0.0
+	for i in 40:
+		await process_frame
+		raise_weight = maxf(raise_weight, bare.presenter.gesture_hand().x)
+	check(raise_weight > 0.5, "A hand gesture does raise it (weight %.2f)" % raise_weight)
+	raised.cancel()
+	bare.presenter.begin_hold(1.0, func() -> void: pass, PresentationTypes.HOLD_GESTURE)
+	await create_timer(0.4).timeout
+	check(bare.presenter.gesture_hand() == Vector2.ZERO, "A gesture-rank hold that is not a gesture asks nothing of the hand")
+	bare.queue_free()
+
+	# Higher-priority actions end a running gesture (INTERRUPTED) and nothing is left holding; cover is persistent and coexists with it.
+	for action in ["fire", "pick_up", "climb", "stairs", "hit", "inspect"]:
+		var host := _spawn(stage, "mira", action == "fire")
+		host.position.x = -12.0
+		await _frames(30)
+		var running := host.gesture(&"acknowledge")
+		await _frames(15)
+		match action:
+			"fire":
+				host.set_aiming(true)
+				host.fire(Vector3(0, 1.2, 8))
+			"pick_up": host.pick_up(host.global_position + Vector3(0, 0, 0.6))
+			"climb": host.begin_climb(2.0)
+			"stairs":
+				var model := StairModel.new()
+				model.direction = Vector3.BACK
+				model.tread_depth = 0.3
+				model.tread_rise = 0.15
+				model.count = 6
+				model.width = 1.2
+				host.begin_stairs(model, true)
+			"hit": host.react_hit()
+			"inspect": host.inspect(Vector3(0, 0, 3), 1.0)
+		check(running.is_done() and running.outcome == PresentationTypes.Outcome.INTERRUPTED and host.presenter.gesture_hand() == Vector2.ZERO, "%s during a gesture interrupts it (INTERRUPTED) and the hand is released" % action)
+		host.queue_free()
+	var covered := _spawn(stage, "mira", false)
+	covered.position.x = -16.0
+	await _frames(30)
+	var under_cover := covered.gesture(&"acknowledge")
+	await _frames(15)
+	covered.enter_cover(0.0, false, 0.55, 0)
+	await _frames(15)
+	check(not under_cover.is_done(), "Cover is a persistent posture: it coexists with a running gesture")
+	covered.queue_free()

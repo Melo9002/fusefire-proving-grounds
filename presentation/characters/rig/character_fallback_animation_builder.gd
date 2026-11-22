@@ -340,11 +340,23 @@ func make_gesture(gesture: StringName) -> Animation:
 	match gesture:
 		&"acknowledge":
 			return _make_acknowledge()
+		&"nod":
+			return _make_nod()
 	push_warning("No recipe for the gesture %s" % gesture)
 	return _new_animation(0.5, false)
 
 
 const ACKNOWLEDGE_SECONDS := 1.7
+
+
+## A head-only gesture: a short nod. It asks nothing of the arms (it is not in CharacterAnimationController.HAND_GESTURES), so it is the same on an armed and an unarmed body.
+func _make_nod() -> Animation:
+	if not _axes_measured:
+		measure_axes()
+	var animation := _new_animation(0.9, false)
+	_add_rotation(animation, head, [0.0, 0.25, 0.5, 0.9], [Quaternion.IDENTITY, _about(head, _hinge, 11.0), _about(head, _hinge, -2.0), Quaternion.IDENTITY])
+	_add_grip(animation)
+	return animation
 
 
 ## A nod and a settling of the torso (the raised hand of an unarmed character is the rig's: it comes from the hand target while this plays).
