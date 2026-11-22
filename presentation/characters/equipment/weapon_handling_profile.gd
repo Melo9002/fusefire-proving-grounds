@@ -8,7 +8,7 @@ extends Resource
 ## Presentation scale applied to the weapon model. The character's arms are short next to a
 ## full-size rifle: with the stock in the shoulder pocket, the support hand could not reach the
 ## front handle of a full-size AUG (arm length 0.47 m), so the model is drawn slightly smaller.
-@export_range(0.5, 1.2, 0.01) var scale := 0.82
+@export_range(0.2, 1.2, 0.01) var scale := 0.82
 ## Centre of the butt plate: the point that rests in the shoulder pocket.
 @export var stock_rear := Vector3(-0.007, 0.044, -0.395)
 ## Centre of the pistol grip (firing hand).

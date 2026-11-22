@@ -267,6 +267,8 @@
   "traversal_replay_determinism_test": {"sub": ["movement", "replay"], "scope": "integration", "crit": "critical", "contracts": ["replay"]},
   "traversal_rig_test": {"sub": ["animation", "movement"], "scope": "component", "fast": true},
   "traversal_solver_test": {"sub": ["animation", "movement"], "scope": "unit", "fast": true},
+  "humanoid_portability_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
+  "humanoid_portability_test": {"sub": ["animation", "movement"], "scope": "integration"},
   "stair_contact_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "stair_contact_test": {"sub": ["animation", "movement"], "scope": "integration"},
   "traversal_stair_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},

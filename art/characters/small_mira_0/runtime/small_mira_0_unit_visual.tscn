@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://c7bjd0x84rbg6" path="res://presentation/tactical/tactical_character_adapter.gd" id="1_adapter"]
+[ext_resource type="PackedScene" path="res://art/characters/small_mira_0/runtime/small_mira_0_rig.tscn" id="2_rig"]
+
+[node name="SmallMira0UnitVisual" type="Node3D"]
+script = ExtResource("1_adapter")
+camera_focus_anchor = Vector3(0, 0.73, 0)
+camera_eye_anchor = Vector3(0, 1.00, 0)
+
+[node name="Rig" parent="." instance=ExtResource("2_rig")]

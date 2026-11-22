@@ -24,6 +24,8 @@ func _walk(directory: String) -> void:
 	var dir := DirAccess.open("res://" + directory)
 	if dir == null:
 		return
+	if directory != "" and FileAccess.file_exists("res://" + directory + "/.gdignore"):
+		return   # Godot does not import a folder with a .gdignore: its scripts get no .uid and its files no .import (offline tools)
 	for entry in dir.get_directories():
 		if directory == "" and entry in SKIP_DIRECTORIES:
 			continue

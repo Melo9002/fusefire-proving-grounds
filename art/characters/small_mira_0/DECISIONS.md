@@ -55,3 +55,6 @@ On the real rig stack (`tools/rig_capture.gd`, exploration host, unarmed, swappe
 ### Found
 - **Crouch is far too deep.** Posture depths are absolute metres tuned for MIRA (exploration host `crouch_depth` 0.41 m, rescue 0.5 m, cover profile depths). On a 0.54 m hip height that folds her into a ball, thighs through the forearms. Needs depths scaled by the measured hip height (or per-character values) in production code: not changed here.
 - The baked Tripo clips are not used by the rig (it builds its own clips from roles; MIRA imports with `animation/import=false`). If you ever want them: none is flagged to loop, and walk (1.57 m), run (3.07 m), swim, flip, shoot, climb carry root motion on Hips (there is no root bone).
+
+### Scale correction (2026-11-22)
+The robot is meant to stand 1.20 m (mesh, ears included). `character_scale` is 1.2 in the rig profile and the rig scene (the .glb is unchanged, ~1.0 m); the numbers authored for it in the scenes and the handling profile are MIRA's scaled by the leg ratio (0.695).

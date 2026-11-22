@@ -27,7 +27,7 @@ pole_direction = Vector3(0, 0, -1)
 
 [sub_resource type="Resource" id="Resource_030eq"]
 script = ExtResource("2_m2553")
-character_scale = 1.0
+character_scale = 1.2
 head_top_bone = &"mixamorig_HeadTop_End"
 joints = Array[ExtResource("1_eag2s")]([SubResource("Resource_3xcb5"), SubResource("Resource_focg1"), SubResource("Resource_exssv"), SubResource("Resource_50rff")])
 

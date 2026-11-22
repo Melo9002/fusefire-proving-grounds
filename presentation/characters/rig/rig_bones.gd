@@ -98,6 +98,20 @@ func role(role_name: StringName) -> StringName:
 func has_role(role_name: StringName) -> bool:
 	return _by_role.has(role_name)
 
+## The hip-joint-to-ankle height (metres, standing) of the body that every authored length in metres was tuned for: MIRA as shown in the game. A length in metres in a shared profile (a stride, a pelvis bob,
+## an authored crouch depth) means "this much on that body"; `body_ratio` is how much of it another body takes.
+const REFERENCE_HIP_TO_ANKLE := 0.762127745
+
+## This skeleton's leg relative to the reference body (1 for MIRA): the hip joint's height over the ankle at rest, as the model is scaled. 1 when the legs are not mapped.
+func body_ratio(skeleton: Skeleton3D) -> float:
+	var hip := skeleton.find_bone(left_leg[0]) if left_leg.size() > 0 else -1
+	var ankle := skeleton.find_bone(left_leg[2]) if left_leg.size() > 2 else -1
+	if hip < 0 or ankle < 0:
+		return 1.0
+	var unit := skeleton.global_basis.get_scale().y if skeleton.is_inside_tree() else 1.0
+	var height := (skeleton.get_bone_global_rest(hip).origin.y - skeleton.get_bone_global_rest(ankle).origin.y) * unit
+	return height / REFERENCE_HIP_TO_ANKLE if height > 0.01 else 1.0
+
 ## The role a bone plays in this rig (&"" for a bone no role names): the way back from a skeleton bone to the vocabulary.
 func role_of_bone(bone_name: StringName) -> StringName:
 	return _by_name.get(bone_name, &"")

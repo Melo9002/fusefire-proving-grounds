@@ -301,6 +301,12 @@ func _measure_stair_anatomy() -> void:
 	if stair_profile == null or not is_instance_valid(skeleton):
 		return
 	stair_profile = stair_profile.duplicate() as StairProfile
+	# The profile's lengths in metres (stance roll, heel lift, swing lift, margins, step rise, stance width, standing pelvis height) are authored for the reference body (RigBones.REFERENCE_HIP_TO_ANKLE);
+	# a body with a different leg takes its share. The anatomy below is measured, never scaled.
+	var ratio := body_ratio()
+	if absf(ratio - 1.0) > 0.0005:
+		for property in [&"tread_margin", &"max_step_rise", &"swing_lift", &"ankle_setback", &"foot_half_spread", &"stance_roll", &"heel_lift", &"placement_variation", &"pelvis_sway", &"pelvis_standing_height"]:
+			stair_profile.set(property, float(stair_profile.get(property)) * ratio)
 	var frame := character_root.global_transform.affine_inverse() * skeleton.global_transform
 	var rest := func(bone_name: StringName) -> Vector3:
 		var index := skeleton.find_bone(bone_name)
@@ -1078,6 +1084,16 @@ func locomotion_fed_this_frame() -> bool:
 	return _locomotion_fed_frame == Engine.get_process_frames()
 
 
+## This body's leg over the reference body's (RigBones.body_ratio), measured once.
+func body_ratio() -> float:
+	if _body_ratio < 0.0:
+		_body_ratio = bones.body_ratio(skeleton) if bones != null and is_instance_valid(skeleton) else 1.0
+	return _body_ratio
+
+
+var _body_ratio := -1.0
+
+
 func update_locomotion_presentation(speed: float, heading_rate: float, delta: float) -> void:
 	if not is_instance_valid(animation_controller) or not is_instance_valid(animation_controller.animation_tree) or delta <= 0.0:
 		return
@@ -1090,6 +1106,7 @@ func update_locomotion_presentation(speed: float, heading_rate: float, delta: fl
 	_gait_blend = lerpf(_gait_blend, p.gait_blend(_visual_speed), k)
 	_loaded_blend = lerpf(_loaded_blend, p.loaded_blend(_visual_speed), k)
 	var stride := p.loaded_stride_at(_loaded_blend) if is_loaded() else p.stride_at(_gait_blend)
+	stride *= body_ratio()   # a stride is authored in metres for the reference body; a shorter leg takes a shorter step at the same speed (more steps per second)
 	var cadence := p.cadence_for(_visual_speed, stride)
 	animation_controller.set_locomotion(locomotion_direction, cadence)
 	animation_controller.set_gait(_gait_blend, _loaded_blend)

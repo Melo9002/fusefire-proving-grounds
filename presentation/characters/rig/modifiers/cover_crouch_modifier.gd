@@ -16,6 +16,7 @@ const MAX_HIP_FLEXION := deg_to_rad(95.0)
 const MAX_SHIN_LEAN := deg_to_rad(50.0)
 ## Balance: the hips move back until the body's centre of mass is this far ahead of the ankles
 ## (over the middle of the foot), measured along the facing direction.
+## The balance and kneel lengths below (BALANCE_TARGET_AHEAD, MAX_HIPS_BACK, KNEEL_KNEE_HEIGHT, the foot's centre) are metres on the reference body: they scale with body_ratio().
 const BALANCE_TARGET_AHEAD := 0.05
 const MAX_HIPS_BACK := 0.30
 ## Rough mass shares: head + torso + arms + rifle, thighs, shins, feet.
@@ -77,6 +78,15 @@ var _forward_skeleton := Vector3.BACK
 var _upper_length := 0.0
 var _lower_length := 0.0
 var _hip_to_ankle := 0.0
+## Per leg: how far the thigh and the shin lean from the vertical in the rest pose, radians (forward positive), relative to the reference body's. The leg solver reasons about absolute angles from the vertical, but a flexion is a
+## change from the REST pose, so a rest leg that is not plumb (every real rig; one model's shin leans 12 degrees) must be corrected, or the foot lands off the floor. The posture constants below were
+## tuned on the reference body, whose own lean they already absorb, so only a body's DIFFERENCE from the reference lean is corrected (zero for the reference body: its poses are unchanged).
+## Off reproduces the earlier solver that assumed plumb legs (a negative control for the test that the feet reach the floor).
+var rest_lean_enabled := true
+const REFERENCE_THIGH_LEAN := -0.0483494
+const REFERENCE_SHIN_LEAN := -0.0996688
+var _rest_thigh_lean: Array[float] = [0.0, 0.0]
+var _rest_shin_lean: Array[float] = [0.0, 0.0]
 var _ankle_height := 0.0
 var _kneel_drop := 0.0
 var _kneel_back := 0.0
@@ -125,6 +135,7 @@ func setup(target: Skeleton3D, bones: RigBones, forward_world: Vector3) -> bool:
 	_upper_length = hip.distance_to(knee) * _scale
 	_lower_length = knee.distance_to(ankle) * _scale
 	_hip_to_ankle = (hip.y - ankle.y) * _scale
+	_measure_rest_lean(target)
 	standing_head_height = (target.get_bone_global_rest(top).origin.y - ankle.y) * _scale
 	_ankle_height = ankle.y * _scale
 	max_depth = _find_max_depth()
@@ -134,7 +145,7 @@ func setup(target: Skeleton3D, bones: RigBones, forward_world: Vector3) -> bool:
 ## Half-kneel geometry. The rear knee rests on the ground under the hip, so the hip height follows
 ## from the thigh length; the front leg is then solved with its shin leaning slightly forward.
 func _solve_kneel() -> void:
-	var hip_height := _upper_length * cos(KNEEL_REAR_THIGH_BACK) + KNEEL_KNEE_HEIGHT
+	var hip_height := _upper_length * cos(KNEEL_REAR_THIGH_BACK) + KNEEL_KNEE_HEIGHT * body_ratio()
 	_kneel_drop = _hip_to_ankle + _ankle_height - hip_height
 	var best_error := INF
 	var back := 0.0
@@ -147,6 +158,19 @@ func _solve_kneel() -> void:
 				_kneel_back = back
 				_kneel_front = pose
 		back += 0.005
+
+func _measure_rest_lean(target: Skeleton3D) -> void:
+	var up := (target.global_basis.inverse() * Vector3.UP).normalized()
+	var forward := (_forward_skeleton - up * _forward_skeleton.dot(up)).normalized()
+	for side in 2:
+		if _upper[side] < 0 or _lower[side] < 0 or _foot[side] < 0:
+			continue
+		var hip := target.get_bone_global_rest(_upper[side]).origin
+		var knee := target.get_bone_global_rest(_lower[side]).origin
+		var ankle := target.get_bone_global_rest(_foot[side]).origin
+		_rest_thigh_lean[side] = atan2((knee - hip).dot(forward), (hip - knee).dot(up)) - REFERENCE_THIGH_LEAN
+		_rest_shin_lean[side] = atan2((ankle - knee).dot(forward), (knee - ankle).dot(up)) - REFERENCE_SHIN_LEAN
+
 
 func _refresh_scale(target: Skeleton3D) -> void:
 	_scale = target.global_basis.get_scale().y if target.is_inside_tree() else 1.0
@@ -208,19 +232,19 @@ func _com_ahead(drop: float, back: float, lean: float) -> float:
 	var knee := hip + Vector2(sin(pose.thigh), -cos(pose.thigh)) * _upper_length
 	var upper_length := (standing_head_height - _hip_to_ankle) * UPPER_COM_FRACTION
 	var upper := hip + Vector2(sin(lean), cos(lean)) * upper_length
-	return (upper.x * MASS_UPPER + (hip.x + knee.x) * 0.5 * MASS_THIGHS + knee.x * 0.5 * MASS_SHINS + 0.06 * MASS_FEET)
+	return (upper.x * MASS_UPPER + (hip.x + knee.x) * 0.5 * MASS_THIGHS + knee.x * 0.5 * MASS_SHINS + 0.06 * body_ratio() * MASS_FEET)
 
 ## The hip set-back that puts the centre of mass over the feet: a leaning torso needs the hips
 ## further back, an upright one less. Found by bisection.
 func balanced_back(drop: float) -> float:
 	var lean := deg_to_rad(lean_degrees(drop))
-	if _com_ahead(drop, 0.0, lean) <= BALANCE_TARGET_AHEAD:
+	if _com_ahead(drop, 0.0, lean) <= BALANCE_TARGET_AHEAD * body_ratio():
 		return 0.0
 	var low := 0.0
-	var high := MAX_HIPS_BACK
+	var high := MAX_HIPS_BACK * body_ratio()
 	for i in 14:
 		var middle := (low + high) * 0.5
-		if _com_ahead(drop, middle, lean) > BALANCE_TARGET_AHEAD:
+		if _com_ahead(drop, middle, lean) > BALANCE_TARGET_AHEAD * body_ratio():
 			low = middle
 		else:
 			high = middle
@@ -234,7 +258,7 @@ func clamp_depth(requested: float) -> float:
 ## (a wary bend behind full cover, the exploration crouch) means "this much on that body"; multiply it by `body_ratio()` so a shorter or taller body bends by
 ## the same proportion of its leg. Depths derived from the world and this body (low cover from the wall height and `standing_head_height`) are already right
 ## and must not be scaled again.
-const AUTHORED_HIP_TO_ANKLE := 0.762127745
+const AUTHORED_HIP_TO_ANKLE := RigBones.REFERENCE_HIP_TO_ANKLE
 
 ## This body's leg relative to the one the authored depths were tuned for (1 for MIRA). Valid after setup().
 func body_ratio() -> float:
@@ -287,9 +311,12 @@ func _process_modification_with_delta(_delta: float) -> void:
 			thigh = lerpf(thigh, thigh_k, weight)
 			knee = lerpf(knee, knee_k, weight)
 			foot = lerpf(foot, foot_k, weight)
-		_set_flexion(target, _upper[side], thigh)
-		_set_flexion(target, _lower[side], -knee)
-		_set_flexion(target, _foot[side], foot)
+		# The angles above are absolute (from the vertical); a flexion is a change from the rest pose, whose legs lean (see _rest_thigh_lean).
+		var thigh_lean := rad_to_deg(_rest_thigh_lean[side]) if rest_lean_enabled else 0.0
+		var shin_lean := rad_to_deg(_rest_shin_lean[side]) if rest_lean_enabled else 0.0
+		_set_flexion(target, _upper[side], thigh - thigh_lean)
+		_set_flexion(target, _lower[side], -knee - shin_lean + thigh_lean)
+		_set_flexion(target, _foot[side], foot + shin_lean)
 		if side == kneel_leg and weight > 0.0 and not _kneel_front.is_empty():
 			_aim_rear_foot(target, side, weight)
 	_apply_lean(target, current_lean_degrees() + aim_lean_degrees)

@@ -5,6 +5,15 @@ extends Node3D
 
 ## Where this host's CharacterRig child is (the scene's "Rig" node by default).
 @export var rig_path := NodePath("Rig")
+## Which character's rig to inspect: a key of CHARACTER_RIGS, or empty for the rig this scene carries (MIRA). `--character=<key>` on the command line chooses one too. The same host, panel and diagnostics serve every
+## character; only the rig scene differs (its model, rig profile, handling and arm configuration).
+@export var character: StringName = &""
+const CHARACTER_RIGS := {
+	&"mira_0": "res://art/characters/mira_0/runtime/mira_0_rig.tscn",
+	&"small_mira_0": "res://art/characters/small_mira_0/runtime/small_mira_0_rig.tscn",
+}
+## The cameras are framed for the reference body (MIRA); another body's views are scaled by its leg (RigBones.body_ratio) so it fills the frame the same way. Set once the rig is built.
+var view_scale := 1.0
 ## The CharacterRig this host drives and the presenter it owns: plain variables (resolved as soon as the scene is instantiated, before it enters the tree), because a host reads them every frame.
 var rig: CharacterRig
 var presenter: CharacterPresenter
@@ -18,9 +27,37 @@ func _enter_tree() -> void:
 
 func _resolve_rig() -> void:
 	if rig == null:
+		_swap_character()
 		rig = get_node_or_null(rig_path) as CharacterRig
 		if rig != null:
 			presenter = rig.presenter
+
+## Replaces this scene's own rig with the chosen character's rig scene (same node name and place), before anything has built.
+func _swap_character() -> void:
+	if Engine.is_editor_hint():
+		return
+	var key := character
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--character="):
+			key = StringName(argument.trim_prefix("--character="))
+	if key == &"" or not CHARACTER_RIGS.has(key):
+		return
+	var old := get_node_or_null(rig_path)
+	if old == null:
+		return
+	var replacement: Node = (load(CHARACTER_RIGS[key]) as PackedScene).instantiate()
+	var name_kept := old.name
+	remove_child(old)
+	old.free()
+	replacement.name = name_kept
+	add_child(replacement)
+	move_child(replacement, 0)
+
+
+## A reference-body camera position or focus, scaled to this character.
+func _view(point: Vector3) -> Vector3:
+	return point * view_scale
+
 
 @onready var status_label: Label = get_node_or_null("UI/Status") as Label
 @onready var camera: Camera3D = get_node_or_null("Camera3D") as Camera3D
@@ -78,7 +115,9 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return   # the rig poses itself in the editor (its own _ready)
 	rig.animation_controller.state_changed.connect(_on_animation_state_changed)
-	camera.look_at(Vector3(0.42, 0.72, 0.0), Vector3.UP)
+	view_scale = rig.body_ratio()
+	camera.position = _view(camera.position)
+	camera.look_at(_view(Vector3(0.42, 0.72, 0.0)), Vector3.UP)
 	_update_status()
 	# The interactive locomotion test bench (speed slider, gaits, turns, transitions, views, readout) drives this same rig.
 	var test_panel := LocomotionTestPanel.new()
@@ -87,8 +126,8 @@ func _ready() -> void:
 	await get_tree().process_frame   # the rig aligns its own weapon once the skeleton has posed (its _ready)
 	await get_tree().process_frame
 	if "--side-view" in OS.get_cmdline_user_args():
-		camera.position = Vector3(3.4, 1.3, 0.1)
-		camera.look_at(Vector3(0, 0.85, 0), Vector3.UP)
+		camera.position = _view(Vector3(3.4, 1.3, 0.1))
+		camera.look_at(_view(Vector3(0, 0.85, 0)), Vector3.UP)
 	if "--auto-sequence" in OS.get_cmdline_user_args():
 		rig.animation_controller.play_sequence()
 
@@ -100,12 +139,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion and _orbit_dragging:
-		var offset := camera.position - ORBIT_FOCUS
+		var offset := camera.position - _view(ORBIT_FOCUS)
 		var radius := offset.length()
 		var yaw: float = atan2(offset.x, offset.z) - event.relative.x * 0.005
 		var elevation := clampf(asin(offset.y / radius) + event.relative.y * 0.005, -0.15, 1.35)
-		camera.position = ORBIT_FOCUS + Vector3(sin(yaw) * cos(elevation), sin(elevation), cos(yaw) * cos(elevation)) * radius
-		camera.look_at(ORBIT_FOCUS, Vector3.UP)
+		camera.position = _view(ORBIT_FOCUS) + Vector3(sin(yaw) * cos(elevation), sin(elevation), cos(yaw) * cos(elevation)) * radius
+		camera.look_at(_view(ORBIT_FOCUS), Vector3.UP)
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -205,8 +244,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_update_status()
 			KEY_C:
 				side_view = not side_view
-				camera.position = Vector3(3.4, 1.3, 0.1) if side_view else Vector3(2.8, 1.65, 3.55)
-				camera.look_at(Vector3(0, 0.85, 0) if side_view else Vector3(0.42, 0.72, 0), Vector3.UP)
+				camera.position = _view(Vector3(3.4, 1.3, 0.1) if side_view else Vector3(2.8, 1.65, 3.55))
+				camera.look_at(_view(Vector3(0, 0.85, 0) if side_view else Vector3(0.42, 0.72, 0)), Vector3.UP)
 			KEY_ESCAPE:
 				get_tree().quit()
 			KEY_1:
@@ -323,8 +362,8 @@ func _ramp_pose_preset(delta: float) -> void:
 func _cycle_diagnostic_view() -> void:
 	_diagnostic_view = (_diagnostic_view + 1) % DIAGNOSTIC_VIEW_NAMES.size()
 	if _diagnostic_view == 0:
-		camera.position = Vector3(2.8, 1.65, 3.55)
-		camera.look_at(Vector3(0.42, 0.72, 0), Vector3.UP)
+		camera.position = _view(Vector3(2.8, 1.65, 3.55))
+		camera.look_at(_view(Vector3(0.42, 0.72, 0)), Vector3.UP)
 		camera.fov = 34.0
 	_update_status()
 
@@ -334,24 +373,24 @@ func _follow_diagnostic_view() -> void:
 	var facing := rig.character_root.global_basis.orthonormalized()
 	var firing := rig.weapon.to_global(rig.handling.firing_grip)
 	var support := rig.weapon.to_global(rig.handling.support_grip)
-	var focus := ORBIT_FOCUS
+	var focus := _view(ORBIT_FOCUS)
 	var offset := Vector3.ZERO
 	camera.fov = 30.0
 	match _diagnostic_view:
 		1:
-			focus = Vector3(0, 0.82, 0)
-			offset = facing * Vector3(-1.4, 0.55, 2.4)
+			focus = _view(Vector3(0, 0.82, 0))
+			offset = facing * _view(Vector3(-1.4, 0.55, 2.4))
 		2:
 			focus = firing
-			offset = facing * Vector3(-0.50, 0.14, 0.34)
+			offset = facing * _view(Vector3(-0.50, 0.14, 0.34))
 			camera.fov = 26.0
 		3:
 			focus = support
-			offset = facing * Vector3(0.50, 0.14, 0.34)
+			offset = facing * _view(Vector3(0.50, 0.14, 0.34))
 			camera.fov = 26.0
 		4:
 			focus = (firing + support) * 0.5
-			offset = facing * Vector3(-0.85, 0.30, 0.75)
+			offset = facing * _view(Vector3(-0.85, 0.30, 0.75))
 	camera.position = focus + offset
 	camera.look_at(focus, Vector3.UP)
 

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WeaponHandlingProfile" format=3]
+
+[ext_resource type="Script" path="res://presentation/characters/equipment/weapon_handling_profile.gd" id="1_handling"]
+
+[resource]
+script = ExtResource("1_handling")
+scale = 0.570
+lowered_grip = Vector3(-0.0556, 0.806, 0.1042)
+ready_clearance = Vector3(0, 0, 0.0452)
+stowed_offset_from_neck = Vector3(0, -0.2779, 0.139)

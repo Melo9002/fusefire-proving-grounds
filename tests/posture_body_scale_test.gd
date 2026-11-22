@@ -61,7 +61,8 @@ func _run() -> void:
 	check(ref_crouch.depth > 0.1, "The reference body crouches (%.3f m)" % ref_crouch.depth)
 	check(absf(ref_crouch.depth - minf(reference.crouch_depth, ref_crouch.max_depth)) < 0.002, "The reference body's crouch is the authored depth, as before (%.3f m)" % ref_crouch.depth)
 	check(small_share < 0.98, "The smaller body is not clamped into its deepest crouch (%.2f of its limit)" % small_share)
-	check(absf(ref_share - small_share) < 0.03, "Both bodies crouch to the same share of their limit (%.3f vs %.3f)" % [ref_share, small_share])
+	# The deepest crouch follows each body's own balance (its torso against its leg), scaled with the leg (Task 09): 0.60 of the leg for the reference, 0.62 for the robot, so the shares differ by a few percent.
+	check(absf(ref_share - small_share) < 0.05, "Both bodies crouch to about the same share of their limit (%.3f vs %.3f)" % [ref_share, small_share])
 	check(small_crouch.kneel < 0.01, "The exploration crouch never tips the smaller body into a kneel (%.2f)" % small_crouch.kneel)
 
 	reference.queue_free()

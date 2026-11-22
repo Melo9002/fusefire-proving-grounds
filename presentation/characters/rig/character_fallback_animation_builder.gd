@@ -17,11 +17,14 @@ var right_foot: StringName
 var left_toes: StringName
 var right_toes: StringName
 var _bones: RigBones
+## This body's leg over the reference body's (RigBones.body_ratio): the gait's pelvis motion is authored in metres for the reference body and scales with the leg.
+var body_ratio := 1.0
 
 ## The bones come from the rig's profile (RigBones): the builder names none.
 func _init(target_skeleton: Skeleton3D, rig_bones: RigBones) -> void:
 	skeleton = target_skeleton
 	_bones = rig_bones
+	body_ratio = rig_bones.body_ratio(target_skeleton)
 	hips = rig_bones.hips
 	spine = rig_bones.spine
 	chest = rig_bones.torso
@@ -240,8 +243,8 @@ func make_gait(g: LocomotionGait, direction: Vector2) -> Animation:
 	var pelvis_rotations := []
 	var chest_rotations := []
 	for t in times:
-		var bob := g.pelvis_bob * (1.0 + cos(2.0 * TAU * (float(t) - g.bob_peak_phase))) * 0.5
-		var sway := g.pelvis_sway * sin(TAU * float(t))
+		var bob := g.pelvis_bob * body_ratio * (1.0 + cos(2.0 * TAU * (float(t) - g.bob_peak_phase))) * 0.5
+		var sway := g.pelvis_sway * body_ratio * sin(TAU * float(t))
 		hip_positions.append(_local_offset(hips, _up * bob + lateral * sway * forward_weight))
 		var yaw := -g.pelvis_yaw_degrees * cos(TAU * float(t)) * forward_weight * (-1.0 if reverse else 1.0)
 		pelvis_rotations.append(_about(hips, _up, yaw))

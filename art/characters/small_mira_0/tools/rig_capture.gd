@@ -26,7 +26,7 @@ func _host(x: float, use_small: bool) -> ExplorationCharacterHost:
 	rig.weapon_scene = null
 	if use_small:
 		rig.character_scene = load(MODEL)
-		rig.character_scale = 1.0
+		rig.character_scale = 1.2
 		rig.rig_profile = load(PROFILE)
 	h.position = Vector3(x, 0, 0)
 	root.add_child(h)

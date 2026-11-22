@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://presentation/characters/rig/character_rig.gd" id="9_rig"]
+[ext_resource type="Script" path="res://presentation/characters/rig/character_animation_controller.gd" id="2_animation"]
+[ext_resource type="PackedScene" path="res://art/characters/small_mira_0/models/small_mira_0.glb" id="3_model"]
+[ext_resource type="Resource" path="res://art/characters/small_mira_0/small_mira_0_rig_profile.tres" id="4_profile"]
+[ext_resource type="PackedScene" path="res://art/weapons/aug/models/aug_runtime_socketed.glb" id="5_weapon"]
+[ext_resource type="Resource" path="res://art/characters/small_mira_0/small_mira_0_weapon_handling.tres" id="6_handling"]
+
+[sub_resource type="SphereMesh" id="Sphere_target"]
+radius = 0.018
+height = 0.036
+
+[node name="Rig" type="Node3D"]
+script = ExtResource("9_rig")
+character_scene = ExtResource("3_model")
+character_scale = 1.2
+rig_profile = ExtResource("4_profile")
+weapon_scene = ExtResource("5_weapon")
+handling = ExtResource("6_handling")
+shoulder_contact_offset = Vector3(0.0243, 0.0104, 0.0139)
+right_elbow_ready = Vector3(-0.1806, 0.6462, -0.0278)
+right_elbow_aim = Vector3(-0.2918, 0.8199, -0.0556)
+left_elbow_ready = Vector3(0.1876, 0.6531, 0.0695)
+left_elbow_aim = Vector3(0.264, 0.7156, 0.0556)
+clip_library = null
+
+[node name="VerticalSliceController" type="Node" parent="."]
+script = ExtResource("2_animation")
+
+[node name="Character" type="Node3D" parent="."]
+
+[node name="IKTargets" type="Node3D" parent="Character"]
+
+[node name="RightHandTarget" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.132, 0.7782, 0.132)
+
+[node name="TargetPreview" type="MeshInstance3D" parent="Character/IKTargets/RightHandTarget"]
+visible = false
+mesh = SubResource("Sphere_target")
+
+[node name="RightElbowPole" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3335, 0.7156, 0.0139)
+
+[node name="LeftElbowPole" type="Marker3D" parent="Character/IKTargets"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3335, 0.7226, 0.0347)

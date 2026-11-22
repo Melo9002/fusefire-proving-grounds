@@ -18,7 +18,7 @@ extends Resource
 const PHASES: Array[float] = [0.0, 0.12, 0.25, 0.40, 0.50, 0.62, 0.75, 0.88, 1.0]
 
 @export_group("Stride")
-## Ground covered per full cycle (two steps), metres. Cadence is speed / this (capped by LocomotionProfile), so it must equal what the stance
+## Ground covered per full cycle (two steps), metres ON THE REFERENCE BODY (RigBones.REFERENCE_HIP_TO_ANKLE); the rig scales it by the body's leg (RigBones.body_ratio). Cadence is speed / this (capped by LocomotionProfile), so it must equal what the stance
 ## foot actually covers: stance foot travel / stance_fraction. tests/locomotion_speed_test.gd measures it.
 @export_range(0.4, 4.5, 0.01, "suffix:m") var stride_length := 1.1
 ## Fraction of the cycle one foot is on the ground (walk about 0.6, jog 0.45, run 0.36). Drives the foot-flat compensation and the stride test.
