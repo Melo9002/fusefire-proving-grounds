@@ -37,8 +37,8 @@ func _frames(count: int) -> void:
 func _track(host: ExplorationCharacterHost) -> void:
 	var rig := host.rig
 	var sk := rig.skeleton
-	var ids := {"hips": sk.find_bone(rig.bones.hips), "head": sk.find_bone(rig.bones.head), "top": sk.find_bone(rig.bones.head_top), "rh": sk.find_bone(rig.bones.right_arm[2]), "lh": sk.find_bone(rig.bones.left_arm[2]), "ankle": [sk.find_bone(rig.bones.left_leg[2]), sk.find_bone(rig.bones.right_leg[2])]}
-	var rec := {"min_sole": 9.0, "max_sole": -9.0, "hips": 0.0, "head": 0.0, "rh": Vector3.ZERO, "lh": Vector3.ZERO, "top": Vector3.ZERO, "head_world": Vector3.ZERO}
+	var ids := {"hips": sk.find_bone(rig.bones.hips), "head": sk.find_bone(rig.bones.head), "top": sk.find_bone(rig.bones.head_top), "rh": sk.find_bone(rig.bones.right_arm[2]), "lh": sk.find_bone(rig.bones.left_arm[2]), "relb": sk.find_bone(rig.bones.right_arm[1]), "ankle": [sk.find_bone(rig.bones.left_leg[2]), sk.find_bone(rig.bones.right_leg[2])]}
+	var rec := {"min_sole": 9.0, "max_sole": -9.0, "hips": 0.0, "head": 0.0, "rh": Vector3.ZERO, "lh": Vector3.ZERO, "relb": Vector3.ZERO, "top": Vector3.ZERO, "head_world": Vector3.ZERO}
 	_rec[host] = rec
 	sk.skeleton_updated.connect(func() -> void:
 		var gt := sk.global_transform
@@ -52,7 +52,8 @@ func _track(host: ExplorationCharacterHost) -> void:
 		rec.head_world = gt * sk.get_bone_global_pose(ids.head).origin
 		rec.top = gt * sk.get_bone_global_pose(ids.top).origin
 		rec.rh = gt * sk.get_bone_global_pose(ids.rh).origin
-		rec.lh = gt * sk.get_bone_global_pose(ids.lh).origin)
+		rec.lh = gt * sk.get_bone_global_pose(ids.lh).origin
+		rec.relb = gt * sk.get_bone_global_pose(ids.relb).origin)
 
 
 func _reset_sole(host: ExplorationCharacterHost) -> void:
@@ -156,6 +157,26 @@ func _run() -> void:
 		if key == "small":
 			check(worst_unscaled > 0.3, "Negative control: against the unscaled MIRA stride the small robot's stance foot would skate (%.0f%% off)" % [worst_unscaled * 100.0])
 
+	# ---- Cadence: what the rig plays the gait at is the speed over the LEG-SCALED stride, so the feet carry the body at the speed it moves (a shorter leg steps faster, it does not skate).
+	for key in bare:
+		for i in 100:
+			bare[key].report_velocity(Vector3(0, 0, 1.4), DT)
+			if key == "small":
+				bare.mira.report_velocity(Vector3(0, 0, 1.4), DT)
+			await process_frame
+		var rig: CharacterRig = bare[key].rig
+		var gait_report: Dictionary = rig.locomotion_report
+		var stride: float = rig.locomotion_profile.stride_at(float(gait_report.gait)) * rig.body_ratio()
+		var carried_speed: float = float(gait_report.cadence) * stride
+		print("  %s walking 1.4 m/s: cadence %.2f cycles/s x leg-scaled stride %.2f m = %.2f m/s" % [key, gait_report.cadence, stride, carried_speed])
+		check(absf(carried_speed - float(gait_report.speed)) < 0.1 * float(gait_report.speed) and float(gait_report.speed) > 1.2, "%s: cadence x stride carries the body at its speed (%.2f of %.2f m/s)" % [key, carried_speed, gait_report.speed])
+		if key == "small":
+			var unscaled: float = float(gait_report.cadence) * rig.locomotion_profile.stride_at(float(gait_report.gait))
+			check(absf(unscaled - float(gait_report.speed)) > 0.25 * float(gait_report.speed), "Negative control: with MIRA's unscaled stride the robot's feet would carry %.2f m/s, not %.2f" % [unscaled, gait_report.speed])
+	for key in bare:
+		bare[key].report_velocity(Vector3.ZERO, DT)
+	await _frames(60)
+
 	# ---- Postures: the crouch drops the hips the same share of the leg and keeps the feet on the floor; the kneel does too.
 	for key in bare:
 		bare[key].set_crouched(true)
@@ -195,6 +216,7 @@ func _run() -> void:
 		hosts[key].set_aiming(true)
 	await create_timer(1.2).timeout
 	var aim_eye := {}
+	var aim_pole := {}
 	for key in hosts:
 		var rig: CharacterRig = hosts[key].rig
 		var leg := rig.stair_profile.leg_length
@@ -210,11 +232,47 @@ func _run() -> void:
 		check(host_has_weapon(hosts[key]) and hosts[key].is_aiming(), "%s: it holds its weapon and aims" % key)
 		check(rig.stock_marker.global_position.distance_to(rig.shoulder_marker.global_position) < 0.012, "%s aimed: the stock is in the shoulder pocket (%.3f m)" % [key, rig.stock_marker.global_position.distance_to(rig.shoulder_marker.global_position)])
 		check(rh.distance_to(rig.right_hand_target.global_position) < 0.03 * leg / 0.45 and lh.distance_to(rig.support_ik_target.global_position) < 0.05 * leg / 0.45, "%s aimed: the hands reach their contacts (%.3f and %.3f m)" % [key, rh.distance_to(rig.right_hand_target.global_position), lh.distance_to(rig.support_ik_target.global_position)])
+	# ---- Scale is applied exactly once, and the profile, the scene, the measured anatomy, the IK targets and the attachments agree.
+	for key in hosts:
+		var rig: CharacterRig = hosts[key].rig
+		var shown := rig.skeleton.global_basis.get_scale()
+		var declared: float = rig.rig_profile.anatomy.character_scale
+		check(absf(shown.x - rig.character_scale) < 0.002 and absf(shown.y - rig.character_scale) < 0.002 and absf(shown.z - rig.character_scale) < 0.002 and absf(declared - rig.character_scale) < 0.0001,
+			"%s: the model is shown at its character_scale once (skeleton %s, rig scene %.2f, profile %.2f)" % [key, shown, rig.character_scale, declared])
+		check(absf(hosts[key].global_basis.get_scale().y - 1.0) < 0.001 and absf(rig.global_basis.get_scale().y - 1.0) < 0.001 and absf(rig.character_root.global_basis.get_scale().y - 1.0) < 0.001 and rig.presenter.foot_point_problems().is_empty(),
+			"%s: nothing above the model is scaled, so the scale cannot apply twice" % key)
+		var m = rig.resolved_rig.measurements
+		check(absf(m.leg_length - rig.stair_profile.leg_length) < 0.002 and absf(m.ankle_height - rig.stair_profile.ankle_height) < 0.01 * rig.stair_profile.leg_length,
+			"%s: the profile's measured leg (%.3f m) and ankle (%.3f m) are the rig's (%.3f, %.3f)" % [key, m.leg_length, m.ankle_height, rig.stair_profile.leg_length, rig.stair_profile.ankle_height])
+		check(absf(rig.weapon.global_basis.get_scale().y - rig.handling.scale) < 0.002, "%s: the weapon is drawn at its handling scale once (%.3f of %.3f)" % [key, rig.weapon.global_basis.get_scale().y, rig.handling.scale])
+		var socket_ok := true
+		for socket in rig.rig_profile.sockets:
+			var native: Transform3D = rig.resolved_rig.sockets[socket.socket_name]
+			var bone_rest := rig.skeleton.get_bone_global_rest(rig.resolved_rig.bone(socket.parent_role))
+			var metres: float = (native.origin - bone_rest.origin).length() * rig.character_scale
+			socket_ok = socket_ok and absf(metres - socket.offset.origin.length()) < 0.001
+		check(socket_ok, "%s: every socket sits its declared offset (metres) from its bone at this scale" % key)
+		var rec: Dictionary = _rec[hosts[key]]
+		var arm: float = m.upper_arm_length + m.forearm_length
+		var pole_gap: float = (rig.right_elbow_pole.global_position - rec.relb).length() / arm
+		print("  %s aimed: right elbow guide is %.2f of the arm from the elbow" % [key, pole_gap])
+		aim_pole[key] = pole_gap
+	check(aim_pole.mira < 1.0 and aim_pole.small < 1.0, "The elbow guides were scaled with the body: each lies within an arm's length of its elbow, a direction hint rather than a target (%.2f and %.2f of the arm)" % [aim_pole.mira, aim_pole.small])
 	check(absf(aim_eye.mira - aim_eye.small) < 0.08, "The eye sits as far off the sight line on both bodies, relative to the leg (%.2f vs %.2f)" % [aim_eye.mira, aim_eye.small])
 	check(hosts.small.rig.handling.scale < hosts.mira.rig.handling.scale and hosts.small.rig.handling != hosts.mira.rig.handling, "Compatible equipment is configuration: the robot's own handling profile draws the same weapon smaller (%.2f vs %.2f)" % [hosts.small.rig.handling.scale, hosts.mira.rig.handling.scale])
 	for key in hosts:
 		hosts[key].set_aiming(false)
 	await _frames(30)
+
+	# ---- A carried passenger is the same model at the same scale (built once, at the carrier's character_scale).
+	for key in bare:
+		var carrier: ExplorationCharacterHost = bare[key]
+		carrier.pick_up(carrier.global_position + Vector3(0, 0, 0.6))
+		await create_timer(1.2).timeout
+		var passenger = carrier.rig.carry_passenger
+		check(passenger != null and absf(passenger.skeleton.global_basis.get_scale().y - carrier.rig.character_scale) < 0.002, "%s: the carried passenger's model is at the same scale (%s)" % [key, passenger.skeleton.global_basis.get_scale().y if passenger != null else "none"])
+		carrier.put_down()
+		await create_timer(2.0).timeout
 
 	# ---- Lifecycles: an interaction, a shot, a hit, a defeat, with the same handle semantics.
 	for key in hosts:
