@@ -57,7 +57,7 @@ func setup(workbench: Node3D) -> void:
 	_caps.bbcode_enabled = true
 	_caps.fit_content = true
 	_caps.scroll_active = false
-	_caps.add_theme_font_size_override("normal_font_size", 12)
+	_caps.add_theme_font_size_override("normal_font_size", 14)
 	caps.add_child(_caps)
 
 	var compat := WorkbenchUI.section(self, "Compatibility check", true)   # folded until a check is run
@@ -71,7 +71,7 @@ func setup(workbench: Node3D) -> void:
 	_check_result.bbcode_enabled = true
 	_check_result.fit_content = true
 	_check_result.scroll_active = false
-	_check_result.add_theme_font_size_override("normal_font_size", 12)
+	_check_result.add_theme_font_size_override("normal_font_size", 14)
 	compat.add_child(_check_result)
 	_load()
 
