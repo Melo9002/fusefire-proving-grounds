@@ -92,6 +92,7 @@ func _stale_and_outside(host: ExplorationCharacterHost) -> void:
 		await process_frame
 		var outside_pose: Vector3 = rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(bone).origin
 		worst = maxf(worst, outside_pose.distance_to(probe.final_pose))
+	print("  base-vs-final wrist difference while climbing: worst %.3f m" % worst)
 	check(worst > 0.02, "why the contract exists: a bone read outside skeleton_updated differs from the final pose by %.3f m while climbing (more than 2 cm)" % worst)
 	rig.skeleton.skeleton_updated.disconnect(probe_callable)
 	witness.release()
@@ -122,6 +123,8 @@ func _rung_in_leg(host: ExplorationCharacterHost) -> void:
 	geometry.plane_ahead += 0.10
 	check(clean.usable() and through.usable() and int(through.value) > int(clean.value) + 20, "control 3: a rung through the legs reads %s vertices inside bars against %s on the clean ladder" % [str(through.value), str(clean.value)])
 	check(not through.establishes(Measurement.Kind.MESH_INTERSECTION) and through.establishes(Measurement.Kind.VERTEX_OVERLAP), "7: that count establishes a vertex overlap and NOT a mesh intersection")
+	var intersection := clearance.intersection_evidence()
+	check(intersection.status == Measurement.Status.UNSUPPORTED and not intersection.usable() and intersection.kind == Measurement.Kind.MESH_INTERSECTION, "a full mesh intersection is asked for and answered UNSUPPORTED (a vertex count never stands in for it)")
 	clearance.release()
 	rig.end_traversal()
 	host.position.y = 0.0

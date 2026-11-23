@@ -293,6 +293,11 @@ func vertex_evidence(geometry: LadderGeometry, climbed: float, threshold := 0.00
 	return m.with_identity(rig, scenario)
 
 
+## Full triangle-against-bar intersection of the leg mesh: NOT measured by ADDA. Asking says so (UNSUPPORTED) instead of letting a vertex count stand in for it.
+func intersection_evidence() -> Measurement:
+	return Measurement.missing(Measurement.Kind.MESH_INTERSECTION, "leg mesh intersecting ladder bars", Measurement.Status.UNSUPPORTED, "only sampled vertices are measured (vertex_evidence); no triangle test exists yet")
+
+
 func _ensure_surface() -> void:
 	if _surface != null:
 		return

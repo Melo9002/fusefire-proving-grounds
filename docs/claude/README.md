@@ -59,3 +59,4 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 - [Project Ironclad](../quality/project-ironclad.md)
 - [Animation editing guide](../animation-editing-guide.md) and [asset edges and hybrid animation](../asset-edge-placement.md)
 - [Simulation](../simulation.md) and [Replay](../replay.md)
+- [ADDA (AniLab Diagnostic & Debugging Assistant), Assignment 1](adda/01-baseline-and-architecture.md): [inventory](adda/02-capability-inventory.md), [measurement contract](adda/03-measurement-contract.md), [requirements and research](adda/04-requirements-and-research.md), [ADR-0001](adda/05-adr-0001-measurement-architecture.md), [handoff](adda/06-handoff-assignment-2.md)

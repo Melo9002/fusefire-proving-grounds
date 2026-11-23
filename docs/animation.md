@@ -52,7 +52,7 @@ presentation/exploration/       the non-tactical host: ExplorationCharacterHost 
 presentation/tactical/          the tactical host and its policy: TacticalCharacterAdapter, TacticalActionPresenter, CoverEdgeSelector,
                                 CoverEdgePolicy, TacticalPoseContext, TacticalRouteBuilder
 presentation/diagnostics/       hand-contact diagnostics (read the rig, never write it)
-tools/animation_workbench/      the animation workbench: pose_workbench.tscn, its panel tabs (ui/), scenarios, locomotion test panel
+tools/animation_workbench/      ADDA — Workbench (the animation workbench): pose_workbench.tscn, its panel tabs (ui/), scenarios, locomotion test panel
 tools/quality/                  pose_trace, route_trace, animation_perf_baseline and probes
 art/characters/mira_0/          model, rig profile (mira_0_rig_profile.tres), runtime/mira_0_unit_visual.tscn (the production character)
 tests/                          flat; tagged in tests/catalog.json

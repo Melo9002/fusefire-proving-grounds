@@ -1,4 +1,8 @@
-# Animation workbench
+# ADDA — Workbench (the animation workbench)
+
+**ADDA** (AniLab Diagnostic & Debugging Assistant) is the name of AniLab's diagnostic suite: the read-only tools in `presentation/diagnostics/`, this workbench, and the measurement contract (`Measurement`, `PoseWitness`) that says what every reading is and whether it may be trusted. This scene is ADDA's Workbench. Its paths, scene name, command-line arguments, scenarios and tests keep their old names. Start with the **Diagnostics tab > ADDA guide**, and read [`docs/claude/adda/`](../../docs/claude/adda/) for the inventory, the measurement contract and the architecture decision.
+
+Every number the workbench shows is read inside `skeleton_updated` and stamped; a reading that is stale, unsupported or could not be taken says so instead of showing 0. A *vertex* count is not a mesh intersection and a *support claim* is not physical support (see the contract).
 
 `pose_workbench.tscn` is a **host** of the shared character stack, like the tactical adapter and the exploration host, built for inspection: it drives a `CharacterRig` and its `CharacterPresenter` exactly as the game does (presenter tick, action stage, weapon pose), with no tactical unit, match or mission. Architecture: [`docs/animation.md`](../../docs/animation.md).
 
@@ -18,7 +22,7 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 | `--tab=<0-3>` | open on a tab |
 | `--side-view`, `--auto-sequence` | as before |
 
-The **Evidence** tab prints the exact command for the current configuration.
+The **Evidence** tab prints the exact command for the current configuration; its JSON report now carries an `adda` block of measurement records (kind, status, pose, space, what each does not establish).
 
 ## The panel: four tabs, four questions
 
