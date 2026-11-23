@@ -169,3 +169,9 @@ func reach_along(owner_bones: Array[StringName], from_bone: StringName, directio
 func capture() -> void:
 	for bone in _used_bones:
 		_captured[bone] = skeleton.get_bone_global_pose(bone)
+
+
+## True once capture() has run: only then does points() skin with a pose the caller vouched for. Without it points() uses the skeleton's pose AS READ NOW, which outside `skeleton_updated` is the animation pose
+## without the modifiers (the defect behind the ladder investigation's first, void, mesh numbers).
+func has_capture() -> bool:
+	return not _captured.is_empty()

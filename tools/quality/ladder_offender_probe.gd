@@ -33,7 +33,6 @@ func _run() -> void:
 		await process_frame
 	var rig := host.rig
 	var clearance := LadderClearance.new(rig)
-	rig.skeleton.skeleton_updated.connect(func() -> void: clearance.sample())
 	rig.begin_traversal(&"ladder", 4.0, direction)
 	var by_bone := {}
 	var by_height := {}

@@ -68,7 +68,6 @@ func _run() -> void:
 func _controls(host: ExplorationCharacterHost) -> void:
 	var rig := host.rig
 	var clearance := LadderClearance.new(rig)
-	rig.skeleton.skeleton_updated.connect(func() -> void: clearance.sample())
 	rig.begin_traversal(&"ladder", RISE, 1)
 	var geometry := rig.ladder.geometry
 	var centroids: Array[Vector3] = []
@@ -97,8 +96,6 @@ func _controls(host: ExplorationCharacterHost) -> void:
 func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> void:
 	var rig := host.rig
 	var clearance := LadderClearance.new(rig)
-	var handler := func() -> void: clearance.sample()
-	rig.skeleton.skeleton_updated.connect(handler)
 	rig.begin_traversal(&"ladder", RISE, direction)
 	var frames := 0
 	var bad := 0
@@ -120,7 +117,7 @@ func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> vo
 	print("  %s: leg vertices inside bars (over 3 mm): mean %.2f per frame, worst frame %d, five or more in %.0f%% of frames (goal 0; baselines %.1f and %.0f%%)" % [label, mean, worst, share * 100.0, CLIMB_MEAN_BASELINE, CLIMB_BAD_FRAME_SHARE_BASELINE * 100.0])
 	check(mean <= CLIMB_MEAN_BASELINE, "%s: mean vertices inside bars %.2f is within the baseline %.1f (goal 0)" % [label, mean, CLIMB_MEAN_BASELINE])
 	check(share <= CLIMB_BAD_FRAME_SHARE_BASELINE, "%s: frames with five or more vertices inside bars %.0f%% within the baseline %.0f%% (goal 0)" % [label, share * 100.0, CLIMB_BAD_FRAME_SHARE_BASELINE * 100.0])
-	rig.skeleton.skeleton_updated.disconnect(handler)
+	clearance.release()
 	rig.end_traversal()
 	host.position.y = 0.0
 	await _frames(2)
@@ -128,8 +125,6 @@ func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> vo
 func _landing(host: ExplorationCharacterHost, label: String, kind: String, direction: int) -> void:
 	var rig := host.rig
 	var clearance := LadderClearance.new(rig)
-	var handler := func() -> void: clearance.sample()
-	rig.skeleton.skeleton_updated.connect(handler)
 	var geometry := LadderGeometry.for_rise(LANDING_RISE)
 	var landing := LandingFixtures.make(kind, geometry)
 	rig.begin_traversal(&"ladder", LANDING_RISE, direction, landing)
@@ -159,7 +154,7 @@ func _landing(host: ExplorationCharacterHost, label: String, kind: String, direc
 	check(frames > 30, "%s: the landing was exercised (%d frames)" % [label, frames])
 	check(share <= LANDING_BAD_FRAME_SHARE_BASELINE, "%s: landing frames over 10 mm %.0f%% within the baseline %.0f%% (goal 0)" % [label, share * 100.0, LANDING_BAD_FRAME_SHARE_BASELINE * 100.0])
 	check(deck_worst <= LANDING_DECK_BASELINE, "%s: the deepest deck overlap %.0f mm is within the baseline %.0f mm (goal 0)" % [label, deck_worst * 1000.0, LANDING_DECK_BASELINE * 1000.0])
-	rig.skeleton.skeleton_updated.disconnect(handler)
+	clearance.release()
 	rig.end_traversal()
 	host.position.y = 0.0
 	host.position.z = 0.0

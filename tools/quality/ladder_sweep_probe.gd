@@ -32,7 +32,6 @@ func _run() -> void:
 		await process_frame
 	var rig := host.rig
 	var clearance := LadderClearance.new(rig)
-	rig.skeleton.skeleton_updated.connect(func() -> void: clearance.sample())
 	var original := rig.traversal_profile.duplicate()
 	for value in values:
 		rig.traversal_profile = original.duplicate()

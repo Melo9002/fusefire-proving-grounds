@@ -15,6 +15,12 @@ var _landing: Label
 var _recording: Label
 var _layer_checks: Dictionary = {}
 var _master: CheckBox
+const ADDA_GUIDE := "Where is the contact, and how far off is it?  -> Contact measurement (TARGET ERROR, REACH, SUPPORT CLAIM; a claim is not physical support).
+Does the body cross the ladder?  -> Ladder landing and the 'Ladder collisions' overlay (CAPSULE and sampled-VERTEX overlap; neither is a full mesh intersection).
+What is the presenter doing, and since when?  -> Live presentation / Recent events (the presenter's own clock).
+Which stage owns this bone?  -> Pose stages (DECLARED ownership and live weight, not a measured change).
+Where did the root go?  -> Root trail.  Does the weapon grip fit?  -> Weapon-grip contacts.
+Every number is read inside skeleton_updated and stamped; a number that is stale or could not be read says so instead of showing 0."
 var _trail: CheckBox
 var _grip: CheckBox
 var _bones: Array[String] = []
@@ -23,16 +29,18 @@ func setup(workbench: Node3D) -> void:
 	bench = workbench
 	add_theme_constant_override("separation", 5)
 	# What a developer looks at first is first: the live state, then the contact measurement, then what just happened.
+	var guide := WorkbenchUI.section(self, "ADDA guide: which tool answers which question", true)
+	guide.add_child(WorkbenchUI.label(ADDA_GUIDE, 12, WorkbenchUI.DIM))
 	var live := WorkbenchUI.section(self, "Live presentation  (runtime values)")
 	_live = WorkbenchUI.mono("", 12)
 	live.add_child(_live)
-	var measured := WorkbenchUI.section(self, "Contact measurement  (final pose)")
+	var measured := WorkbenchUI.section(self, "Contact measurement  (final pose: target error, reach, support claim)")
 	_contact = WorkbenchUI.mono("", 12)
 	measured.add_child(_contact)
 	measured.add_child(WorkbenchUI.row([["Record contacts", _start_recording], ["Stop and summarise", _stop_recording]]))
 	_recording = WorkbenchUI.mono("", 12)
 	measured.add_child(_recording)
-	var landing := WorkbenchUI.section(self, "Ladder landing  (final pose)")
+	var landing := WorkbenchUI.section(self, "Ladder landing  (final pose: capsules and sampled vertices, not full intersection)")
 	_landing = WorkbenchUI.mono("", 12)
 	landing.add_child(_landing)
 	var events := WorkbenchUI.section(self, "Recent events  (presenter clock)")

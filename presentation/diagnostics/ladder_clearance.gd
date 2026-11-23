@@ -12,11 +12,40 @@ var rig: CharacterRig
 var skeleton: Skeleton3D
 ## Last sample (filled by sample()): joint positions in the character frame.
 var joints := {}
+## The pose witness of the skeleton and the stamp of the last sample. The clearance samples ITSELF from the witness's `final_pose` (the one moment the skeleton's pose is final), so there is no entry point that
+## reads a stale or base pose and calls it a measurement; `status()` says whether the last sample may be used now.
+var witness: PoseWitness
+var stamp := {}
+## Emitted after each sample, inside the final-pose window (overlays draw from it).
+signal sampled
 
 
 func _init(character_rig: CharacterRig) -> void:
 	rig = character_rig
 	skeleton = rig.skeleton
+	witness = PoseWitness.acquire(skeleton)
+	witness.final_pose.connect(_on_final_pose)
+
+
+func _on_final_pose() -> void:
+	sample()
+	sampled.emit()
+
+
+## Stops sampling (disconnects from the witness). The witness itself stays: other tools share it.
+func release() -> void:
+	if witness != null and witness.final_pose.is_connected(_on_final_pose):
+		witness.final_pose.disconnect(_on_final_pose)
+		witness.release()
+
+
+## FRESH when the last sample was taken inside the update the skeleton is at now; STALE, UNAVAILABLE otherwise. Every mesh and joint reading below is valid only while this is FRESH.
+func status() -> Measurement.Status:
+	return witness.judge(stamp).status
+
+
+func status_reason() -> String:
+	return witness.judge(stamp).reason
 
 
 func _bone_local(bone: StringName) -> Vector3:
@@ -25,8 +54,9 @@ func _bone_local(bone: StringName) -> Vector3:
 	return rig.character_root.to_local(world)
 
 
-## Reads the joints now. Call from a `skeleton_updated` handler (or right after the frame the pose was evaluated in).
+## Reads the joints now and stamps the sample. Called by the witness's `final_pose`; called from anywhere else the stamp says "not final" and `status()` reports STALE.
 func sample() -> void:
+	stamp = witness.stamp()
 	var b := rig.bones
 	joints = {
 		"hips": _bone_local(b.hips), "spine": _bone_local(b.spine), "chest": _bone_local(b.chest if b.chest != &"" else b.spine), "head": _bone_local(b.head),
@@ -133,9 +163,9 @@ var _surface_bones: Array[StringName] = []
 ## points: how many vertices were tested}. Vertices of the hands and arms are not tested: a hand ON a bar is the contact, not a defect.
 func mesh_clearance(landing: LadderLanding, geometry: LadderGeometry, climbed: float) -> Dictionary:
 	_ensure_surface()
-	var result := {"rung": 0.0, "rail": 0.0, "deck": 0.0, "where": "", "bone": "", "points": _surface.size()}
+	var result := {"rung": 0.0, "rail": 0.0, "deck": 0.0, "where": "", "bone": "", "points": _surface.size(), "status": status()}
 	var worst := 0.0
-	var points := _surface.points()
+	var points := _final_points()
 	var half := geometry.rail_half_span()
 	for i in points.size():
 		var local := rig.character_root.to_local(skeleton.global_transform * points[i])
@@ -185,7 +215,7 @@ func planted_sole_vs_rung(pose: LadderPose, geometry: LadderGeometry, climbed: f
 	var result: Array[float] = [NAN, NAN]
 	if _surface == null:
 		_ensure_surface()
-	var points := _surface.points()
+	var points := _final_points()
 	for side in 2:
 		if pose.foot_swing[side] != 0.0 or pose.foot_rung[side] < 0:
 			continue
@@ -208,7 +238,7 @@ func offenders(geometry: LadderGeometry, climbed: float, threshold := 0.005, lim
 	if _surface == null:
 		_ensure_surface()
 	var found: Array[Dictionary] = []
-	var points := _surface.points()
+	var points := _final_points()
 	var half := geometry.rail_half_span()
 	for i in points.size():
 		var local := rig.character_root.to_local(skeleton.global_transform * points[i])
@@ -225,6 +255,42 @@ func offenders(geometry: LadderGeometry, climbed: float, threshold := 0.005, lim
 	if found.size() > limit:
 		found.resize(limit)
 	return found
+
+
+## The surface skinned with the captured final pose, or NOTHING when the last sample is not fresh (an empty list reads as "no overlap", so callers that need to tell clean from unknown ask `status()` or use
+## `vertex_evidence()`).
+func _final_points() -> Array[Vector3]:
+	_ensure_surface()
+	if status() != Measurement.Status.FRESH or not _surface.has_capture():
+		var none: Array[Vector3] = []
+		return none
+	return _surface.points()
+
+
+## The sampled-vertex measurement as an envelope: the number of leg vertices more than `threshold` inside a rung or rail, FRESH only when the pose it was skinned from is the current final one. A count of zero
+## from a stale or missing sample is reported as that, never as zero.
+func vertex_evidence(geometry: LadderGeometry, climbed: float, threshold := 0.003, scenario := "") -> Measurement:
+	var verdict := witness.judge(stamp)
+	var m: Measurement
+	if verdict.status != Measurement.Status.FRESH:
+		m = Measurement.missing(Measurement.Kind.VERTEX_OVERLAP, "leg vertices inside ladder bars", verdict.status, verdict.reason)
+	else:
+		_ensure_surface()
+		if not _surface.has_capture():
+			m = Measurement.missing(Measurement.Kind.VERTEX_OVERLAP, "leg vertices inside ladder bars", Measurement.Status.UNAVAILABLE, "the skinned surface has no captured pose")
+		else:
+			m = Measurement.make(Measurement.Kind.VERTEX_OVERLAP, "leg vertices inside ladder bars", offenders(geometry, climbed, threshold, 100000).size(), "vertices")
+			m.status = Measurement.Status.FRESH
+	m.pose = Measurement.Pose.FINAL
+	m.space = "character"
+	m.source = "LadderClearance.vertex_evidence"
+	m.method = "SkinnedSurface (linear blend skinning, poses cached inside skeleton_updated) of the leg and toe bones; vertex tested against rung and rail cylinders"
+	m.tolerance = threshold
+	m.stamped(witness, stamp)
+	if verdict.status != Measurement.Status.FRESH:
+		m.status = verdict.status
+		m.reason = verdict.reason
+	return m.with_identity(rig, scenario)
 
 
 func _ensure_surface() -> void:

@@ -140,7 +140,8 @@ func _ready() -> void:
 		status_label.add_theme_font_size_override("font_size", 16)
 	var title := get_node_or_null("UI/Title") as Label
 	if title != null:
-		title.text = "%s - ANIMATION WORKBENCH" % (String(rig.rig_profile.display_name) if rig.rig_profile != null else "character")
+		get_window().title = WorkbenchSession.PRODUCT_LONG
+		title.text = "%s - ADDA — Workbench" % (String(rig.rig_profile.display_name) if rig.rig_profile != null else "character")
 	_update_status()   # the compact status line replaces the long key list now that the panel exists
 	await get_tree().process_frame   # the rig aligns its own weapon once the skeleton has posed (its _ready)
 	await get_tree().process_frame

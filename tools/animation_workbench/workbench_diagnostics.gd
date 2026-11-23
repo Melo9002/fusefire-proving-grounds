@@ -96,12 +96,11 @@ func is_clean() -> bool:
 func ensure_clearance() -> LadderClearance:
 	if clearance == null:
 		clearance = LadderClearance.new(rig)
-		rig.skeleton.skeleton_updated.connect(_sample_clearance)
+		clearance.sampled.connect(_sample_clearance)
 	return clearance
 
 func _sample_clearance() -> void:
 	if clearance != null and rig.ladder != null:
-		clearance.sample()
 		if is_instance_valid(ladder_overlay):
 			var targets: Array[Vector3] = []
 			if rig.ladder.pose != null:
@@ -118,8 +117,8 @@ func ladder_text() -> String:
 	return tool.readout(rig.ladder.landing_status, rig.ladder.landing, rig.ladder.geometry, rig.ladder.climbed, phase)
 
 func release_clearance() -> void:
-	if clearance != null and is_instance_valid(rig.skeleton) and rig.skeleton.skeleton_updated.is_connected(_sample_clearance):
-		rig.skeleton.skeleton_updated.disconnect(_sample_clearance)
+	if clearance != null:
+		clearance.release()
 	clearance = null
 
 

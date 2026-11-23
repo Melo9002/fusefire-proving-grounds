@@ -115,8 +115,6 @@ func _landing_object_checks() -> void:
 func _transfer(host: ExplorationCharacterHost, label: String, kind: String, direction: int) -> void:
 	var rig: CharacterRig = host.rig
 	var metrics := LadderClearance.new(rig)
-	var handler := func() -> void: metrics.sample()
-	rig.skeleton.skeleton_updated.connect(handler)
 	var geometry := LadderGeometry.for_rise(RISE)
 	var landing := _landing(kind, geometry)
 	var start := TraversalSolver.landing_start(geometry, rig.ladder_body()) - 0.3
@@ -233,7 +231,7 @@ func _transfer(host: ExplorationCharacterHost, label: String, kind: String, dire
 	check(worst_leg <= LEG_DECK_TOLERANCE, "%s: no knee, thigh or shin sinks into the deck or its face by more than %.0f mm (worst %.1f mm: %s)" % [label, LEG_DECK_TOLERANCE * 1000.0, worst_leg * 1000.0, worst_leg_where])
 	check(worst_ladder <= LEG_LADDER_TOLERANCE, "%s: the legs stay out of the rungs and rails (worst %.1f mm)" % [label, worst_ladder * 1000.0])
 	check(rejected == 0, "%s: no held grip was beyond the arm's reach in the plan (%d)" % [label, rejected])
-	rig.skeleton.skeleton_updated.disconnect(handler)
+	metrics.release()
 	rig.end_traversal()
 	host.position.y = 0.0
 	await _frames(3)
