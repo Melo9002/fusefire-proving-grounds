@@ -321,6 +321,9 @@ static func _snap(event: Dictionary, events: Array, rows: Array, config: Diction
 	var context_changes := _near(events, "context_changed", int(event.n0), int(event.n1), 2, "")
 	for change: Dictionary in context_changes:
 		hypotheses.append(_hypothesis("The body's context changed at this frame (%s to %s), so one pose may have been replaced by another at once." % [change.detail.from, change.detail.to], "context_changed event at row %d" % int(change.n0), "Look at the stage weights across the change (Diagnostics tab, pose stages) and whether the exit is blended"))
+	# The animation state (clip) changed in the same frames: a transition between two clips moves bones at once, and which stage happened to engage then is a coincidence until a test says otherwise.
+	for change: Dictionary in _near(events, "state_changed", int(event.n0), int(event.n1), 2, ""):
+		hypotheses.append(_hypothesis("The animation state changed at this frame (%s to %s): a transition between two clips that is not cross-faded can move many bones at once." % [change.detail.from, change.detail.to], "state_changed event at row %d" % int(change.n0), "Replay to this moment (Why? tab) and step across it frame by frame; a stage-off run (--disable=<stage>) does not test this one"))
 	var stage_changes := _near(events, "stage_engaged", int(event.n0), int(event.n1), 2, "") + _near(events, "stage_released", int(event.n0), int(event.n1), 2, "")
 	if not stage_changes.is_empty():
 		hypotheses.append(_hypothesis("A pose stage changed its engagement at about the same frame, which can add or remove an offset at once.", "stage events within 2 rows: %s" % ", ".join(stage_changes.map(func(e: Dictionary) -> String: return "%s %s (row %d)" % [e.subject, String(e.kind).trim_prefix("stage_"), int(e.n0)])), "Diagnostics tab, 'Why is this bone moving', for the bone that moved most"))
