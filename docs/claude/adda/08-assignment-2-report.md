@@ -92,6 +92,9 @@ The recorder is created only when a scenario starts or the tab asks, and stopped
 * **Only the contacts the rig publishes** (grip modifier, stairs, ladder) are known. A carry contact on the casualty is the rig's hand target; the casualty's own surface normal is not available and none is invented.
 * **Camera framing** is a single side-ish view from the camera's current side; close-up presets from Assignment 1 are unchanged. I viewed the three captures (`docs/claude/images/adda/`); I did not exercise every control by hand, and headless success does not establish visual correctness.
 * **Thresholds are conventions**, stated in each finding; they were set on MIRA and Small MIRA and have not been tuned on other bodies.
+* **Selection is by finding and by body part.** A bone or limb is chosen in the part picker (live) or arrives with a finding (with its target, or the bar and rung); there is no free pick of an arbitrary target or surface in the 3D view, and support state is shown in the finding facts and the rows, not as a live overlay.
+* **Experiments are character, weapon state, frame rate and code.** There is no generic "set this animation parameter" override (for example a ladder pitch or a modifier weight) on the command line; that is a recommendation below.
+* **Tactical against exploration hosting is not compared.** Both are synthetic contexts in the Workbench (different scenarios, so `compare` refuses them). The recorder needs only a rig, so a host-driven run could be compared; none was built.
 * Rows are per rendered frame (the last update of a frame): sub-frame behaviour inside one engine frame is not visible.
 
 ## 6. Verification run
@@ -102,7 +105,15 @@ The recorder is created only when a scenario starts or the tab asks, and stopped
 .\tools\run_tests.ps1 changed -Since review/claude-animation
 ```
 
-Inherited, unchanged, deliberate: `ladder_climb_test` and `ladder_landing_test` (capsule checks, plus the 30 fps sample-count check documented in `01-baseline-and-architecture.md`). See the closing message for the actual results of this run.
+Results of the final run on this branch:
+
+| Run | Result |
+|---|---|
+| `check` | catalog complete and consistent (294 scripts) |
+| the five ADDA tests, three Workbench tests and the module boundary test | all pass (`adda_timeline_test` 43 checks, `adda_report_compare_test` 38, `adda_workflow_test` 89, `adda_cli_test` 21, `adda_measurement_integrity_test` 21) |
+| `changed -Since review/claude-animation` | 65 selected, **64 pass, 2 fail**: `ladder_climb_test` (knee, thigh and shin through a rung: 0.039 / 0.023 / 0.019 m) and `ladder_landing_test` (leg through rungs 122 mm on the way down, deck overlap 59 to 64 mm, and the 30 fps hand-grip sample count of 14) |
+
+Both failures are the inherited, deliberate ones recorded in `01-baseline-and-architecture.md` with the same numbers; no threshold was loosened and no test was weakened. Nothing that passed in Assignment 1 fails now.
 
 `workbench_scenarios_test` was updated for an intentional design change: the panel now has five tabs (the contract was "four") and the test lists them in order; the Evidence tab stayed at index 3.
 
@@ -112,6 +123,7 @@ Inherited, unchanged, deliberate: `ladder_climb_test` and `ladder_landing_test` 
 2. **Test the comparison on a real code change**: make a deliberate animation change on a branch, run `run` before and after, and check the verdict agrees with what the capture shows.
 3. **Try to break the instruments:** other bodies (the roster concept lists bigger and embedded-weapon frames), 30/120 fps, scenarios with a root that moves (a unit-hosted run, not the Workbench where the root stays at the origin), a rig whose bones do not map.
 4. **Decide the thresholds with the animator**: the 4 cm snap floor, 20 mm hand line and 15 mm slide were set for these two bodies; make them per-rig data if they should vary.
-5. **Extend the evidence, not the UI**: a free-locomotion foot-lock claim (so foot sliding on flat ground is measurable), an environment-supplied surface for the casualty and for stairs (a normal and a contact patch), and the same recorder driven by a tactical-hosted replay (it only needs a rig).
-6. **Architecture check**: `presentation/diagnostics` now holds the recorder, analysis, findings, report and comparison, all free of `tools/`, `CharacterRig` internals beyond the bones and contact data it already read. Only `ContactErrorDiagnostics.measure`, `LadderClearance`, `PoseStageReport` and the ladder/stairs plan objects are FuseFire-specific inputs; `TimelineAnalysis`, `Findings`, `ReportCompare` and the report format take plain rows and are the natural first extraction candidates (still not done).
-7. Known loose ends: `HandContactDiagnostics`, `BoneHighlight` and `MotionTrail` still do not emit `Measurement` envelopes; saved camera views per finding; a timeline *view* (events are in the report and the tab lists findings, but there is no scrubbing strip).
+5. **Parameter experiments:** a `--set <rig path>=<value>` override on `run` (recorded in `config`) so an agent can vary a modifier or ladder parameter without editing code, and a host-driven run for the tactical-versus-exploration comparison.
+6. **Extend the evidence, not the UI**: a free-locomotion foot-lock claim (so foot sliding on flat ground is measurable), an environment-supplied surface for the casualty and for stairs (a normal and a contact patch), and the same recorder driven by a tactical-hosted replay (it only needs a rig).
+7. **Architecture check**: `presentation/diagnostics` now holds the recorder, analysis, findings, report and comparison, all free of `tools/`, `CharacterRig` internals beyond the bones and contact data it already read. Only `ContactErrorDiagnostics.measure`, `LadderClearance`, `PoseStageReport` and the ladder/stairs plan objects are FuseFire-specific inputs; `TimelineAnalysis`, `Findings`, `ReportCompare` and the report format take plain rows and are the natural first extraction candidates (still not done).
+8. Known loose ends: `HandContactDiagnostics`, `BoneHighlight` and `MotionTrail` still do not emit `Measurement` envelopes; saved camera views per finding; a timeline *view* (events are in the report and the tab lists findings, but there is no scrubbing strip).
