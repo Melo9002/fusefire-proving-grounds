@@ -25,6 +25,9 @@ var plane_ahead := PLANE_AHEAD
 var rail_half_span_m := RAIL_HALF_SPAN
 var rail_radius := RAIL_RADIUS
 var rung_radius := RUNG_RADIUS
+## What-if overrides for experiments and tools (a sweep over pitch or first rung): they default to the authored constants and nothing in production sets them.
+var pitch := SPACING
+var first := FIRST_RUNG
 
 
 static func for_rise(climb_rise: float, plane := PLANE_AHEAD) -> LadderGeometry:
@@ -35,20 +38,20 @@ static func for_rise(climb_rise: float, plane := PLANE_AHEAD) -> LadderGeometry:
 
 
 func first_rung() -> float:
-	return FIRST_RUNG
+	return first
 
 
 func spacing() -> float:
-	return SPACING
+	return pitch
 
 
 func rung_count() -> int:
-	return maxi(0, int(floor((rise - TOP_MARGIN - FIRST_RUNG) / SPACING + 0.0001)) + 1)
+	return maxi(0, int(floor((rise - TOP_MARGIN - first) / pitch + 0.0001)) + 1)
 
 
 ## Height of rung `index` above the ladder's bottom floor.
 func rung_height(index: int) -> float:
-	return FIRST_RUNG + float(index) * SPACING
+	return first + float(index) * pitch
 
 
 func rail_half_span() -> float:
@@ -81,8 +84,8 @@ func penetration(a: Vector3, b: Vector3, radius: float, floor_level: float) -> f
 	var low := minf(a.y, b.y) - radius - rung_radius
 	var high := maxf(a.y, b.y) + radius + rung_radius
 	# Only the rungs near the volume matter (the rest are far).
-	var first_index := maxi(0, int(floor((low + floor_level - FIRST_RUNG) / SPACING)))
-	var last_index := mini(rung_count() - 1, int(ceil((high + floor_level - FIRST_RUNG) / SPACING)))
+	var first_index := maxi(0, int(floor((low + floor_level - first) / pitch)))
+	var last_index := mini(rung_count() - 1, int(ceil((high + floor_level - first) / pitch)))
 	for index in range(first_index, last_index + 1):
 		var y := rung_height(index) - floor_level
 		var d := segments_distance(a, b, Vector3(-half, y, plane_ahead), Vector3(half, y, plane_ahead))

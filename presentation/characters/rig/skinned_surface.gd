@@ -15,6 +15,10 @@ var _bind: Array[Transform3D] = []   # per influence: the inverse bind pose of t
 var _owner_bone: PackedInt32Array = PackedInt32Array()   # the dominant bone of each vertex
 var _rest_points: Array[Vector3] = []   # where the mesh itself puts each vertex, in the skeleton frame
 var _skin_bind_per_vertex: Array = []
+## The bones' global poses AS THE LAST `capture()` SAW THEM. The modifiers' result exists only while `skeleton_updated` is being emitted: read afterwards, `get_bone_global_pose` gives the base animation pose.
+## So the owner calls `capture()` from its `skeleton_updated` handler and `points()` skins with what was captured. Until a capture exists, `points()` reads the live pose (right at rest, wrong under modifiers).
+var _captured := {}
+var _used_bones := {}
 
 
 ## `bone_names` the bones whose surface to follow (a vertex counts when its dominant influence is one of them with at least `min_weight`).
@@ -64,6 +68,8 @@ static func create(character_skeleton: Skeleton3D, bone_names: Array[StringName]
 				surface._weights.append(vertex_weights)
 				surface._skin_bind_per_vertex.append(binds)
 				surface._owner_bone.append(best)
+				for used in skeleton_bones:
+					surface._used_bones[used] = true
 	return surface
 
 
@@ -88,7 +94,7 @@ func points() -> Array[Vector3]:
 				continue
 			var bone := bones[k]
 			if not pose_cache.has(bone):
-				pose_cache[bone] = skeleton.get_bone_global_pose(bone)
+				pose_cache[bone] = _captured[bone] if _captured.has(bone) else skeleton.get_bone_global_pose(bone)
 			accumulated += w * ((pose_cache[bone] as Transform3D) * (binds[k] as Transform3D) * _vertices[i])
 			total += w
 		result[i] = accumulated / maxf(total, 0.0001)
@@ -157,3 +163,9 @@ func reach_along(owner_bones: Array[StringName], from_bone: StringName, directio
 		return 0.0
 	along.sort()
 	return along[int(clampf(percentile, 0.0, 1.0) * float(along.size() - 1))]
+
+
+## Caches the bones' global poses NOW. Call it inside the skeleton's `skeleton_updated` handler (where the modifiers' result is the pose); `points()` then skins with it.
+func capture() -> void:
+	for bone in _used_bones:
+		_captured[bone] = skeleton.get_bone_global_pose(bone)

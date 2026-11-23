@@ -19,6 +19,8 @@ var ball_length := 0.113
 var toe_height := 0.04
 ## How far the boot reaches ahead of the ankle (toe tip), MEASURED from the mesh: with the foot on a rung the toes go this far past it, so a wall nearer than that to the rungs is a wall the boot is in.
 var foot_forward := 0.22
+## How far BELOW the ankle bone the lowest point of the boot is (sole thickness included), MEASURED from the mesh at rest: a foot standing on a rung puts this much under the ankle, not the bare ankle height.
+var sole_below_ankle := -1.0
 ## How much smaller or larger this body is than the one the profile's authored numbers were tuned for (RigBones.body_ratio).
 var ratio := 1.0
 
@@ -75,3 +77,14 @@ func shoulder_leaned(hips: Vector3, side: int, lean_degrees: float) -> Vector3:
 	var angle := deg_to_rad(lean_degrees * LEAN_GAIN)
 	var rest := shoulder_offset
 	return hips + Vector3(rest.x * (1.0 if side == 0 else -1.0), rest.y * cos(angle), rest.z + rest.y * sin(angle))
+
+
+## The ankle-to-sole distance a foot on a rung needs: the measured one when the rig measured it, the bare ankle height otherwise.
+func sole_depth() -> float:
+	return sole_below_ankle if sole_below_ankle > 0.0 else ankle_height
+
+
+## How far behind the rung's axis the ankle stands: the arch of the foot over the bar (`share` of the ankle-to-ball length) unless the SHIN would then cross the bar. The shin's measured radius, the rung's
+## and a small margin put the ankle at least that far behind, so a thick-armored shin keeps off the rung it stands behind. A body-derived rule: no number belongs to one character.
+func ankle_behind(rung_radius: float, share: float) -> float:
+	return maxf(ball_length * share, shin_radius() + rung_radius + 0.01)

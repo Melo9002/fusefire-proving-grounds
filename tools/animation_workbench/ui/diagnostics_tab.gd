@@ -59,6 +59,7 @@ func setup(workbench: Node3D) -> void:
 	for node: CheckBox in [_grip, _trail]:
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(node)
+	overlays.add_child(WorkbenchUI.check("Ladder collisions (leg vertices inside bars)", is_instance_valid(bench.diagnostics.ladder_overlay), func(on: bool) -> void: bench.diagnostics.set_ladder_overlay(on), "Red: skinned leg vertices inside a rung or rail. Yellow: knees. Green: pelvis. Orange: planned feet. Label: the worst one."))
 	for entry in [["Cover lines", bench.cover_diagnostics, func(on: bool) -> void: bench.cover_diagnostics = on, "Facing, weapon direction, wall normal"],
 			["Ladder markers", bench.traversal_diagnostics, func(on: bool) -> void: bench.traversal_diagnostics = on, "Ladder solver's hand and foot targets"],
 			["Stair markers", bench.stair_diagnostics, func(on: bool) -> void: bench.stair_diagnostics = on, "Planned and actual feet"]]:

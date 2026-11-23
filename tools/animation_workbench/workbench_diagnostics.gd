@@ -11,6 +11,8 @@ var trail: MotionTrail
 var highlight: BoneHighlight
 ## Read-only ladder clearance (LadderClearance), sampled at skeleton_updated while a ladder is climbed.
 var clearance: LadderClearance
+## Optional world overlay of the offending vertices (LadderOverlay), off until asked for.
+var ladder_overlay: LadderOverlay
 var paused := false
 
 func _init(p_rig: CharacterRig) -> void:
@@ -67,6 +69,7 @@ func trail_on() -> bool:
 
 ## Switches every optional diagnostic off and frees what they made (the monitor included).
 func shutdown() -> void:
+	set_ladder_overlay(false)
 	release_clearance()
 	for node: Node in [contacts, trail, highlight]:
 		if is_instance_valid(node):
@@ -99,6 +102,12 @@ func ensure_clearance() -> LadderClearance:
 func _sample_clearance() -> void:
 	if clearance != null and rig.ladder != null:
 		clearance.sample()
+		if is_instance_valid(ladder_overlay):
+			var targets: Array[Vector3] = []
+			if rig.ladder.pose != null:
+				targets.append(rig.ladder.pose.feet[0])
+				targets.append(rig.ladder.pose.feet[1])
+			ladder_overlay.show_sample(clearance, rig.ladder.geometry, rig.ladder.climbed, targets)
 
 ## The panel's "Ladder landing" text: the rig's landing status and the measured clearances, or why there is nothing to show.
 func ladder_text() -> String:
@@ -112,3 +121,15 @@ func release_clearance() -> void:
 	if clearance != null and is_instance_valid(rig.skeleton) and rig.skeleton.skeleton_updated.is_connected(_sample_clearance):
 		rig.skeleton.skeleton_updated.disconnect(_sample_clearance)
 	clearance = null
+
+
+## The world overlay that marks every leg vertex inside a rung or rail (red), the knees (yellow), the pelvis (green) and the planned feet (orange), with a label at the worst. Needs the clearance sample, so it
+## creates it. Off by default; `shutdown()` removes it.
+func set_ladder_overlay(on: bool) -> void:
+	if on:
+		ensure_clearance()
+		if not is_instance_valid(ladder_overlay):
+			ladder_overlay = LadderOverlay.attach(rig)
+	elif is_instance_valid(ladder_overlay):
+		ladder_overlay.shutdown()
+		ladder_overlay = null

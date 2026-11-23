@@ -305,6 +305,8 @@
   "ladder_climb_test": {"sub": ["animation", "movement"], "scope": "integration", "fast": true, "contracts": ["presentation-sync"]},
   "workbench_landing_test": {"sub": ["animation", "tooling", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
   "ladder_landing_test": {"sub": ["animation", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
+  "ladder_mesh_clearance_test": {"sub": ["animation", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
+  "workbench_ladder_closeup_capture": {"sub": ["animation", "tooling"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "ladder_review_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_host_test": {"sub": ["animation"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},
   "unarmed_humanoid_test": {"sub": ["animation", "combat", "rescue", "equipment"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},

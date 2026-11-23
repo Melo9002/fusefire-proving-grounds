@@ -634,7 +634,12 @@ func _publish_traversal_input() -> void:
 			input.floor_level = ladder.climbed
 			input.landing = ladder.landing
 			input.deck_planted = [ladder.landing != null and ladder.pose.foot_rung[0] < 0, ladder.landing != null and ladder.pose.foot_rung[1] < 0]
-			input.deck_levelling = ladder.pose.foot_deck
+			# A foot planted on a rung is turned flat to it (the sole on the bar), as it is on a tread or the deck; a swinging foot is levelled less. Without this the foot keeps the pitch the shin gives it
+			# and its sole sinks into the rung (measured on the mesh, up to 17 mm).
+			var levelled: Array[float] = []
+			for side_index in 2:
+				levelled.append(maxf(ladder.pose.foot_deck[side_index], 1.0 - ladder.pose.foot_swing[side_index]))
+			input.deck_levelling = levelled
 	elif stairs != null and stairs.pose != null:
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
@@ -1223,6 +1228,9 @@ func ladder_body() -> LadderBody:
 		# The boot's reach ahead of the ankle, along the character's own forward (in the skeleton frame).
 		var forward := (skeleton.global_basis.inverse() * character_root.global_basis.z).normalized()
 		_ladder_body.foot_forward = surface.reach_along(foot_bones, bones.left_leg[2], forward, 1.0)
+		# The boot's sole thickness: how far below the ankle bone its lowest vertex is (down = the character's own down in the skeleton frame).
+		var down := (skeleton.global_basis.inverse() * -character_root.global_basis.y).normalized()
+		_ladder_body.sole_below_ankle = maxf(surface.reach_along(foot_bones, bones.left_leg[2], down, 1.0), _ladder_body.ankle_height * 0.5)
 	return _ladder_body
 
 

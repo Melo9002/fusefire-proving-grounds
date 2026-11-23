@@ -38,6 +38,9 @@ func sample() -> void:
 		"elbow": [_bone_local(b.left_arm[1]), _bone_local(b.right_arm[1])],
 		"wrist": [_bone_local(b.left_arm[2]), _bone_local(b.right_arm[2])],
 	}
+	# The skinned mesh must be posed from the modifiers' result, which only exists inside this signal.
+	_ensure_surface()
+	_surface.capture()
 
 
 func arm_length(side: int) -> float:
@@ -129,13 +132,7 @@ var _surface_bones: Array[StringName] = []
 ## {rung, rail, deck: deepest vertex inside each kind (metres, 0 when none), where: a readable place for the worst ("shin_l vertex inside rung 12", "thigh_r vertex below the deck top"), bone: its bone name,
 ## points: how many vertices were tested}. Vertices of the hands and arms are not tested: a hand ON a bar is the contact, not a defect.
 func mesh_clearance(landing: LadderLanding, geometry: LadderGeometry, climbed: float) -> Dictionary:
-	if _surface == null:
-		var b := rig.bones
-		_surface_bones = [b.left_leg[0], b.left_leg[1], b.left_leg[2], b.right_leg[0], b.right_leg[1], b.right_leg[2]]
-		for toe in [b.left_toes, b.right_toes]:
-			if toe != &"" and skeleton.find_bone(toe) >= 0:
-				_surface_bones.append(toe)
-		_surface = SkinnedSurface.create(skeleton, _surface_bones)
+	_ensure_surface()
 	var result := {"rung": 0.0, "rail": 0.0, "deck": 0.0, "where": "", "bone": "", "points": _surface.size()}
 	var worst := 0.0
 	var points := _surface.points()
@@ -187,7 +184,7 @@ func mesh_clearance(landing: LadderLanding, geometry: LadderGeometry, climbed: f
 func planted_sole_vs_rung(pose: LadderPose, geometry: LadderGeometry, climbed: float) -> Array[float]:
 	var result: Array[float] = [NAN, NAN]
 	if _surface == null:
-		mesh_clearance(null, geometry, climbed)
+		_ensure_surface()
 	var points := _surface.points()
 	for side in 2:
 		if pose.foot_swing[side] != 0.0 or pose.foot_rung[side] < 0:
@@ -203,3 +200,39 @@ func planted_sole_vs_rung(pose: LadderPose, geometry: LadderGeometry, climbed: f
 		if lowest < INF:
 			result[side] = lowest - rung_top
 	return result
+
+
+## Every skinned leg vertex that is inside a rung or a rail by more than `threshold` metres in the last sample, deepest first (at most `limit`): {bone, bar ("rung 10" / "left rail"), depth, point (character frame), index of the
+## rung}. For a person to see WHERE the surface meets the bar, and for the workbench overlay.
+func offenders(geometry: LadderGeometry, climbed: float, threshold := 0.005, limit := 12) -> Array[Dictionary]:
+	if _surface == null:
+		_ensure_surface()
+	var found: Array[Dictionary] = []
+	var points := _surface.points()
+	var half := geometry.rail_half_span()
+	for i in points.size():
+		var local := rig.character_root.to_local(skeleton.global_transform * points[i])
+		var p := local + Vector3(0.0, climbed, 0.0)
+		var index := clampi(int(round((p.y - geometry.first_rung()) / geometry.spacing())), 0, geometry.rung_count() - 1)
+		var rung_depth := geometry.rung_radius - LadderGeometry.segment_distance(p, Vector3(-half, geometry.rung_height(index), geometry.plane_ahead), Vector3(half, geometry.rung_height(index), geometry.plane_ahead))
+		if rung_depth > threshold:
+			found.append({"bone": String(skeleton.get_bone_name(_surface.bone_of(i))), "bar": "rung %d" % index, "rung": index, "depth": rung_depth, "point": local})
+		for side in [-1.0, 1.0]:
+			var rail_depth := geometry.rail_radius - LadderGeometry.segment_distance(p, Vector3(half * side, 0.0, geometry.plane_ahead), Vector3(half * side, geometry.rise, geometry.plane_ahead))
+			if rail_depth > threshold:
+				found.append({"bone": String(skeleton.get_bone_name(_surface.bone_of(i))), "bar": "%s rail" % ("left" if side > 0.0 else "right"), "rung": -1, "depth": rail_depth, "point": local})
+	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.depth) > float(b.depth))
+	if found.size() > limit:
+		found.resize(limit)
+	return found
+
+
+func _ensure_surface() -> void:
+	if _surface != null:
+		return
+	var b := rig.bones
+	_surface_bones = [b.left_leg[0], b.left_leg[1], b.left_leg[2], b.right_leg[0], b.right_leg[1], b.right_leg[2]]
+	for toe in [b.left_toes, b.right_toes]:
+		if toe != &"" and skeleton.find_bone(toe) >= 0:
+			_surface_bones.append(toe)
+	_surface = SkinnedSurface.create(skeleton, _surface_bones)
