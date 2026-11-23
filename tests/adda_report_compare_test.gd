@@ -99,8 +99,8 @@ func _missing() -> void:
 	check(_row(result, "mesh.worst").verdict == "MISSING" and String(_row(result, "mesh.worst").reason).contains("not measured in B") and _row(result, "mesh.worst").b == null, "a metric only A measured is MISSING in B, with no zero invented")
 	check(int(result.counts.missing) == 1 and result.verdict == "UNCHANGED", "and it neither improves nor regresses the verdict")
 
-func _finding(key: String, severity: String) -> Dictionary:
-	return {"key": key, "severity": severity, "title": "finding %s" % key}
+func _finding(key: String, severity: String, kind := "target_error") -> Dictionary:
+	return {"key": key, "kind": kind, "severity": severity, "title": "finding %s" % key}
 
 func _findings() -> void:
 	var a := _report({"x": _metric(1.0)}, {}, [_finding("a", "high"), _finding("b", "medium")])
@@ -112,6 +112,18 @@ func _findings() -> void:
 	check(regress.verdict == "REGRESSED", "a new high finding is a regression even when every metric is unchanged")
 	var resolved := ReportCompare.compare(_report({"x": _metric(1.0)}, {}, [_finding("n", "high")]), _report({"x": _metric(1.0)}))
 	check(resolved.verdict == "IMPROVED", "a resolved finding is an improvement")
+	# A finding that only one run could have shown is UNVERIFIABLE, not resolved or new.
+	var with_mesh := _report({"x": _metric(1.0)}, {"mesh_sampling": true}, [_finding("m", "high", "mesh_overlap")])
+	var without_mesh := _report({"x": _metric(1.0)}, {"mesh_sampling": false}, [])
+	var unverified := ReportCompare.compare(with_mesh, without_mesh)
+	check((unverified.findings.unverifiable as Array).size() == 1 and (unverified.findings.resolved as Array).is_empty() and unverified.verdict == "UNCHANGED", "a mesh finding the other run could not have shown (it did not sample the leg vertices) is UNVERIFIABLE, never RESOLVED")
+	check(ReportCompare.text(unverified).contains("UNVERIFIABLE") and ReportCompare.text(unverified).contains("did not sample"), "and the text says why")
+	var snap_a := _report({"x": _metric(1.0)}, {}, [_finding("s", "high", "pose_snap")])
+	var snap_b := _report({"x": _metric(1.0)}, {"fps": 30.0, "frame_dt_s": 0.033333}, [])
+	check((ReportCompare.compare(snap_a, snap_b).findings.unverifiable as Array).size() == 1, "a pose snap that the other run (another frame step) did not show is UNVERIFIABLE")
+	check((ReportCompare.compare(snap_a, _report({"x": _metric(1.0)}, {}, [])).findings.resolved as Array).size() == 1, "while at the same frame step it IS resolved")
+	var info_only := ReportCompare.compare(_report({"x": _metric(1.0)}, {}, [_finding("n", "info", "not_measured")]), _report({"x": _metric(1.0)}))
+	check((info_only.findings.resolved as Array).is_empty() and info_only.verdict == "UNCHANGED", "a 'not measured' note is not a finding about the motion")
 	var note := ReportCompare.compare(_report({"x": _metric(1.0)}, {"revision": {"commit": "aaa", "dirty": false}}), _report({"x": _metric(1.0)}, {"revision": {"commit": "bbb", "dirty": true}}))
 	check(note.differences.revision.a == "aaa" and note.differences.revision.b == "bbb+dirty", "the source revisions compared are reported, with the working-tree state")
 

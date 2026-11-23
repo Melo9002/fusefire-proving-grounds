@@ -131,9 +131,9 @@ static func _contacts(rows: Array, events: Array[Dictionary], metrics: Dictionar
 			events.append(_event("target_error", "%s hand" % side, rows, error_from, rows.size() - 1, snappedf(error_worst, 0.1), "mm", _hand_detail(rows[error_worst_at], side), error_worst_at))
 		if _has_side(rows, "hands", side):
 			_metric(metrics, "hand.%s.worst_error_mm" % side, worst_reachable, "mm", "lower", ["length"], 0.5, "%s hand: worst wrist-to-target error while holding a reachable target" % side)
-			_metric(metrics, "hand.%s.unreachable_s" % side, unreachable_s, "s", "lower", ["time"], 0.02, "%s hand: time the target was beyond 97%% of the arm while in contact" % side)
+			_metric(metrics, "hand.%s.unreachable_s" % side, unreachable_s, "s", "lower", ["time"], 0.05, "%s hand: time the target was beyond 97%% of the arm while in contact" % side)
 			_metric(metrics, "hand.%s.worst_deficit_cm" % side, worst_deficit, "cm", "lower", ["length"], 0.2, "%s hand: how far beyond the arm's reach the target was, at worst" % side)
-			_metric(metrics, "hand.%s.held_s" % side, held_s, "s", "none", ["time"], 0.02, "%s hand: time a contact had hold of it" % side)
+			_metric(metrics, "hand.%s.held_s" % side, held_s, "s", "none", ["time"], 0.05, "%s hand: time a contact had hold of it" % side)
 
 static func _hand_detail(row: Dictionary, side: String) -> Dictionary:
 	var hand := _side(row.get("hands", []), side)
@@ -183,9 +183,9 @@ static func _feet(rows: Array, events: Array[Dictionary], metrics: Dictionary) -
 		worst_slide_all = maxf(worst_slide_all, final_closed[0])
 		worst_settle_all = maxf(worst_settle_all, final_closed[1])
 		_metric(metrics, "foot.%s.worst_slide_mm" % side, worst_slide_all, "mm", "lower", ["length"], 1.0, "%s foot: most the ankle moved against its foothold while the plan claimed it planted (not counting settling onto the plan)" % side)
-		_metric(metrics, "foot.%s.worst_settle_mm" % side, worst_settle_all, "mm", "lower", ["length"], 1.0, "%s foot: how far from its foothold the ankle still was when the plan took full hold, before it closed in" % side)
-		_metric(metrics, "foot.%s.worst_error_mm" % side, worst_error, "mm", "lower", ["length"], 0.5, "%s foot: worst ankle-to-foothold error while the plan held the leg" % side)
-		_metric(metrics, "foot.%s.planted_s" % side, planted_s, "s", "none", ["time"], 0.02, "%s foot: time the plan held it planted" % side)
+		_metric(metrics, "foot.%s.worst_settle_mm" % side, worst_settle_all, "mm", "lower", ["length", "frame_rate"], 1.0, "%s foot: how far from its foothold the ankle still was when the plan took full hold, before it closed in" % side)
+		_metric(metrics, "foot.%s.worst_error_mm" % side, worst_error, "mm", "lower", ["length", "frame_rate"], 0.5, "%s foot: worst ankle-to-foothold error while the plan held the leg (the first held frame is sampled, so it depends on the frame step)" % side)
+		_metric(metrics, "foot.%s.planted_s" % side, planted_s, "s", "none", ["time"], 0.05, "%s foot: time the plan held it planted" % side)
 
 ## Ends a planted span: a plant_slide event when the ankle moved against its foothold at a roughly constant error, a plant_settle event when it was off the foothold at the start and closed in (the plan took hold before
 ## the ankle arrived). Returns [slide_mm, settle_mm] for the metrics.
@@ -362,7 +362,7 @@ static func _mesh(rows: Array, events: Array[Dictionary], metrics: Dictionary) -
 		events.append(_event("mesh_overlap", "leg vertices against the ladder", rows, from, rows.size() - 1, span_worst, "vertices", {"top": rows[span_at].mesh.top, "threshold_mm": 3.0, "context": rows[span_at].get("context", ""), "ladder": rows[span_at].get("ladder", {})}, span_at))
 	if sampled:
 		_metric(metrics, "mesh.worst_vertices", float(worst), "vertices", "lower", ["sampled"], 2.0, "most skinned leg vertices inside a ladder bar at once (sampled vertices, not a full intersection)")
-		_metric(metrics, "mesh.overlap_s", overlap_s, "s", "lower", ["time"], 0.02, "time any sampled leg vertex was inside a ladder bar")
+		_metric(metrics, "mesh.overlap_s", overlap_s, "s", "lower", ["time"], 0.05, "time any sampled leg vertex was inside a ladder bar")
 
 # ---- helpers
 

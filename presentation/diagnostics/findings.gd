@@ -22,17 +22,13 @@ const SEVERITY_ORDER := {"high": 0, "medium": 1, "low": 2, "info": 3}
 ## `names` maps a bone name to its plain name ("mixamorig_RightLeg" -> "right shin"); `config` is the report's config block.
 static func build(events: Array, rows: Array, config: Dictionary, names := {}) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	var ordinals := {}
 	for event: Dictionary in events:
 		var finding := _from_event(event, events, rows, config, names)
 		if finding.is_empty():
 			continue
-		var base := "%s|%s" % [event.kind, event.subject]
-		var ordinal := int(ordinals.get(base, 0))
-		ordinals[base] = ordinal + 1
-		finding["key"] = "%s|%d" % [base, ordinal]
 		out.append(finding)
 	out = _collapse(out)
+	_assign_keys(out)
 	_not_measured(out, rows, config)
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var sa := int(SEVERITY_ORDER[a.severity])
@@ -62,11 +58,26 @@ static func _from_event(event: Dictionary, events: Array, rows: Array, config: D
 ## `observation.facts.occurrences` lists every one ({n, st, value}) and the key is that of the first, so it stays stable across runs.
 const COLLAPSE_FROM := 3
 
+## Stable identity for matching findings between two reports: what kind of thing it is and which part it is about (the worst bone of a snap, the body part of a mesh overlap, the hand or foot), numbered in time order
+## among findings of the same identity. It does not depend on how many bones moved or on the numbers, so a defect that gets smaller is still the same finding.
+static func _assign_keys(findings: Array[Dictionary]) -> void:
+	findings.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.observation.frames.n0) < int(b.observation.frames.n0))
+	var ordinals := {}
+	for finding in findings:
+		var base := _group_key(finding)
+		var ordinal := int(ordinals.get(base, 0))
+		ordinals[base] = ordinal + 1
+		finding["key"] = "%s|%d" % [base, ordinal]
+
 static func _group_key(finding: Dictionary) -> String:
 	var subject: Dictionary = finding.subject
 	match String(finding.kind):
-		"mesh_overlap":
-			return "%s|%s" % [finding.kind, subject.get("part", "")]
+		"mesh_overlap":   # the leg, not the exact part: the same crossing is a shin on one body and a toe on another
+			var part := String(subject.get("part", ""))
+			var is_leg := false
+			for word in ["thigh", "shin", "foot", "toes"]:
+				is_leg = is_leg or part.ends_with(word)
+			return "%s|%s" % [finding.kind, ("%s leg" % side_of(part)).strip_edges() if is_leg else part]
 		"pose_snap":
 			return "%s|%s" % [finding.kind, subject.get("text", "")]
 	return "%s|%s" % [finding.kind, subject.get("text", "")]
@@ -98,7 +109,6 @@ static func _collapse(findings: Array[Dictionary]) -> Array[Dictionary]:
 			if value > _magnitude(worst):
 				worst = m
 		var merged: Dictionary = worst.duplicate(true)
-		merged["key"] = String(members[0].key)
 		var severity := "info"
 		for m: Dictionary in members:
 			if int(SEVERITY_ORDER[m.severity]) < int(SEVERITY_ORDER[severity]):

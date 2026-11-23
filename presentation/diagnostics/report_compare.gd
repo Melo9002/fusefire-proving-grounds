@@ -13,7 +13,7 @@ const FPS_TOLERANCE := 0.05
 const SIZE_TOLERANCE := 0.01
 
 static func compare(a: Dictionary, b: Dictionary) -> Dictionary:
-	var result := {"format": "adda.comparison", "version": 1, "comparable": true, "reason": "", "verdict": "UNCHANGED", "differences": {}, "notes": [], "metrics": [], "findings": {"new": [], "resolved": [], "persisting": []},
+	var result := {"format": "adda.comparison", "version": 1, "comparable": true, "reason": "", "verdict": "UNCHANGED", "differences": {}, "notes": [], "metrics": [], "findings": {"new": [], "resolved": [], "persisting": [], "unverifiable": []},
 		"counts": {"improved": 0, "regressed": 0, "unchanged": 0, "incomparable": 0, "missing": 0, "info": 0}}
 	for report in [a, b]:
 		if String(report.get("format", "")) != AddaReport.FORMAT:
@@ -120,21 +120,51 @@ static func _metric(key: String, ma: Variant, mb: Variant, size_differs: bool, r
 			row.reason = "changed; this metric has no better direction"
 	return row
 
+## Findings are matched by their stable key. A finding on one side only is NEW or RESOLVED only when the other run could have shown it; otherwise it is UNVERIFIABLE (the other run did not sample the leg vertices, or ran at
+## a frame rate where a snap is not comparable) and says why. `not_measured` notes are not findings about the motion and are left out.
 static func _findings(a: Dictionary, b: Dictionary, result: Dictionary) -> void:
 	var fa := {}
 	var fb := {}
 	for f: Dictionary in a.get("findings", []):
-		fa[String(f.key)] = f
+		if String(f.kind) != "not_measured":
+			fa[String(f.key)] = f
 	for f: Dictionary in b.get("findings", []):
-		fb[String(f.key)] = f
+		if String(f.kind) != "not_measured":
+			fb[String(f.key)] = f
+	var rate_differs := _rate_differs(a.config, b.config)
 	for key in fb:
-		if not fa.has(key):
-			(result.findings.new as Array).append({"key": key, "severity": fb[key].severity, "title": fb[key].title})
+		var entry := {"key": key, "severity": fb[key].severity, "title": fb[key].title}
+		if fa.has(key):
+			(result.findings.persisting as Array).append(entry)
 		else:
-			(result.findings.persisting as Array).append({"key": key, "severity": fb[key].severity, "title": fb[key].title})
+			var why := _unverifiable(fb[key], a.config, "A", rate_differs)
+			if why != "":
+				entry["reason"] = why
+				(result.findings.unverifiable as Array).append(entry)
+			else:
+				(result.findings.new as Array).append(entry)
 	for key in fa:
 		if not fb.has(key):
-			(result.findings.resolved as Array).append({"key": key, "severity": fa[key].severity, "title": fa[key].title})
+			var entry := {"key": key, "severity": fa[key].severity, "title": fa[key].title}
+			var why := _unverifiable(fa[key], b.config, "B", rate_differs)
+			if why != "":
+				entry["reason"] = why
+				(result.findings.unverifiable as Array).append(entry)
+			else:
+				(result.findings.resolved as Array).append(entry)
+
+static func _rate_differs(ca: Dictionary, cb: Dictionary) -> bool:
+	var dt_a := float(ca.get("frame_dt_s", 0.0))
+	var dt_b := float(cb.get("frame_dt_s", 0.0))
+	return dt_a <= 0.0 or dt_b <= 0.0 or absf(dt_a - dt_b) / dt_a > FPS_TOLERANCE
+
+## Why a finding seen in ONE run cannot be called new or resolved: what the OTHER run (`other`) could not have shown. "" when it could.
+static func _unverifiable(finding: Dictionary, other_config: Dictionary, other: String, rate_differs: bool) -> String:
+	if String(finding.kind) == "mesh_overlap" and not bool(other_config.get("mesh_sampling", false)):
+		return "run %s did not sample the leg vertices" % other
+	if String(finding.kind) == "pose_snap" and rate_differs:
+		return "a snap depends on the frame step, which differs between the runs"
+	return ""
 
 static func _new_serious(result: Dictionary) -> bool:
 	for f: Dictionary in result.findings.new:
@@ -162,4 +192,6 @@ static func text(result: Dictionary) -> String:
 		lines.append("  NEW FINDING [%s] %s" % [f.severity, f.title])
 	for f: Dictionary in result.findings.resolved:
 		lines.append("  RESOLVED     [%s] %s" % [f.severity, f.title])
+	for f: Dictionary in result.findings.unverifiable:
+		lines.append("  UNVERIFIABLE [%s] %s   (%s)" % [f.severity, f.title, f.reason])
 	return "\n".join(lines)
