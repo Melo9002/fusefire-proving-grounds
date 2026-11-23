@@ -56,7 +56,7 @@ Status words used throughout: **Implemented** (exists in code), **Verified** (a 
 | `adda_challenge_test` (new) | 39 pass (about 100 s): six public challenges, two hold-outs, `--disable`, `--set` and its refusals, the reproduction command carries the levers |
 | `ladder_mesh_clearance_test`, `workbench_scenarios_test`, `workbench_diagnostics_test` | pass |
 | Ironclad `check` | catalog complete (297 scripts) |
-| `changed -Since review/claude-animation` | @@CHANGED@@ |
+| `changed -Since review/claude-animation` | 67 selected, **65 pass, 2 fail**, 0 skipped (731 s, run at `7cc2f6c` plus documentation; run before the hold-out challenges and `--set` checks were added, which were then run directly). The two failures are the inherited `ladder_climb_test` and `ladder_landing_test`, with the same capsule numbers as the baseline (e.g. MIRA armed up knee/thigh/shin 39/23/19 mm) |
 
 **Inherited failures, unchanged and separate:** `ladder_climb_test` (capsule checks) and `ladder_landing_test` (capsule checks and the 30 fps hand-grip sample count of 14 against `> 15`) fail exactly as in [01-baseline-and-architecture.md](01-baseline-and-architecture.md). They are a deliberate capsule-against-mesh contract disagreement awaiting an owner decision; **no threshold was loosened and no approved trace overwritten.**
 
@@ -132,7 +132,7 @@ Milestones: **M1** independent validation (hold-outs, a human session) and the t
 | Accessible human instructions | yes ([11](11-human-workflows.md)) | operation tested, not comprehension | no | no | **NOT ESTABLISHED**: needs a human reader |
 | Positive tests and negative controls | yes | each new instrument has one (settle never-settled, isolation no-fault, sampling control, challenge CH06) | | | **Met** |
 | Known and measured performance | yes | probes | yes | no | **Met**, with the A2 figure corrected |
-| AniLab's architectural boundaries | yes | `animation_module_boundaries_test` and the changed tier | | | **Met** (@@BOUNDARY@@) |
+| AniLab's architectural boundaries | yes | `animation_module_boundaries_test` and the changed tier | | | **Met** (`animation_module_boundaries_test` is in the changed tier and passed) |
 
 Overall: **ready for the owner's review. Not a PASS on "agents and humans find it easier"**: it works, it is measured, it found and fixed its own weaknesses, and the independent evidence for that claim is still to be collected.
 
