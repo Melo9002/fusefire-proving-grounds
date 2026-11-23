@@ -2,6 +2,8 @@
 
 The maintained guide to FuseFire's character presentation. It describes the code as it is at the end of the fourteen-task animation roadmap (Task 14): the humanoid stack built in Tasks 07 to 11, the diagnostics and workbench (Task 12), the non-humanoid motion contract (Task 13) and the validation and quality gates (Task 14). Start with [The architecture at completion](#the-architecture-at-completion-task-14) for the one-page summary, the gates and the extension procedures. The dated reports in [`docs/claude/`](claude/README.md) (audits, the Task 02 to 06 designs, the Package 1 to 10 migration reports) are history; read this page for the current shape.
 
+Sign-off corrections (2026-11-23): [lifecycle, successful traversal and verification contracts](quality/task14-signoff-corrections-2026-11-23.md). Teardown is terminal; create a fresh presenter for a new character lifetime.
+
 ## The picture
 
 Gameplay decides what happens and owns authority (AP, cells, occupancy, legality, movement completion, damage, objectives, replay). A **context host** turns the game's (or a tool's) state into presentation requests. One shared **presenter** per character owns presentation time and intent. A **rig** applies poses to the skeleton. Presentation may change transforms, poses, effects and timing; it never changes HP, AP, occupancy, line of sight, legality or replay outcomes.
@@ -442,7 +444,8 @@ godot_console --headless --path . --script res://tools/quality/script_warning_au
 
 The workbench: open `tools/animation_workbench/pose_workbench.tscn` and press F6 (four tabs: Character, Scenario, Diagnostics, Evidence; scenario presets; the cover, ladder and stair benches; contact, state and stage diagnostics; hand diagnostics on `H`, pose presets on `Z`; see its README). Rendered evidence scripts need a display: `tests/unarmed_capture.gd`, `tests/pose_review_capture.gd`, `tests/weapon_readiness_capture.gd` (see each script's header). Headless success does not establish visual correctness: inspect a render after pose changes.
 
-Contracts to know before editing: `animation_module_boundaries_test` (module, composition and authority gates), `presentation_authority_test` (visual timing never changes the simulation), `pose_ownership_test`, `animation_cleanup_test` and `action_handle_test` (teardown and handle settling), `combat_presentation_lifecycle_test`, `presentation_frame_driver_test` (once per frame), `motion_contract_test`, `modifier_boundary_test`, `traversal_*` tests, `rescue_*` tests. The architecture invariants are in the smoke tier (`.	oolsun_tests.ps1 smoke`) so every push runs them.
+Contracts to know before editing: `animation_module_boundaries_test` (module, composition and authority gates), `presentation_authority_test` (visual timing never changes the simulation), `pose_ownership_test`, `animation_cleanup_test` and `action_handle_test` (teardown and handle settling), `combat_presentation_lifecycle_test`, `presentation_frame_driver_test` (once per frame), `motion_contract_test`, `modifier_boundary_test`, `traversal_*` tests, `rescue_*` tests. The architecture invariants are in the smoke tier (`.	ools
+un_tests.ps1 smoke`) so every push runs them.
 
 ## Known limits and future work
 

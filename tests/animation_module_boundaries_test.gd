@@ -246,7 +246,13 @@ func _run() -> void:
 	# C. Diagnostics are observational: they call no method that advances, drives, poses or tears down what they inspect, and write no bone.
 	var driving_call := RegEx.create_from_string("\\.(apply_posture|begin_hold|begin_gesture|cancel_hold|cancel_gesture|report_velocity|set_scripted_motion|set_movement_authority|claim_hand_contact|release_hand_contacts|advance_actions|update_weapon_pose|teardown|tick|present|set_bone_pose\\w*|set_bone_global_pose\\w*|request_action)\\(")
 	check(driving_call.search("rig.presenter.tick(delta)") != null and driving_call.search("skeleton.set_bone_pose_rotation(0, q)") != null and driving_call.search("presenter.hold_report()") == null, "(control) the observation pattern matches driving calls and lets read accessors through")
+	# Deliberately bounded text gate: known owner names and property chains, not alias analysis.
+	var direct_write := RegEx.create_from_string("\\b(?:rig|presenter|character_rig|skeleton)\\.\\w+(?:\\.\\w+|\\[[^\\]\\n]+\\])*\\s*(?:[+\\-*/%&|^]?=(?!=)|<<=|>>=)")
+	check(direct_write.search("rig.aim_blend = 1.0") != null and direct_write.search("presenter.time += delta") != null and direct_write.search("rig.grip_modifier.curl[0] = 0.5") != null, "(control) diagnostics reject direct and compound owner-property writes")
+	check(direct_write.search("var x = rig.aim_blend") == null and direct_write.search("rig.aim_blend == 1.0") == null and direct_write.search("snapshot.value = 1.0") == null, "(control) diagnostics may read owners and write their own snapshots")
 	for path in _scripts("presentation/diagnostics"):
+		var property_write := direct_write.search(_code(path))
+		check(property_write == null, "%s assigns observed owner state (%s): diagnostics are read-only" % [path, property_write.get_string() if property_write else ""])
 		var driving := driving_call.search(_code(path))
 		check(driving == null, "%s calls a driving or writing method (%s): diagnostics observe through read accessors only" % [path, driving.get_string() if driving else ""])
 	# D. Hosts, diagnostics and tools use the rig and the presenter through PUBLIC members: a leading underscore is the owner's private state (Task 14 found two reaches in the tactical adapter and gave them public faces).

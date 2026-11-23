@@ -31,6 +31,9 @@ var _last_frame_id := -1
 var _facing_refused := false
 var _action: ActionHandle
 var _action_left := 0.0
+var _closed := false
+var _ending := false
+const MAX_REPLACEMENT_CANCELLATIONS := 16
 
 ## What kind of body this is ("humanoid", "wheeled", "drone"...). Informational.
 func family() -> StringName:
@@ -54,6 +57,7 @@ func unsupported_reason(capability: StringName) -> String:
 
 ## Presents one frame. Call exactly once per frame with the context's request. The clock advances here and only here.
 func present(request: MotionRequest) -> void:
+	if _closed: return
 	if request.frame_id >= 0 and request.frame_id == _last_frame_id:
 		duplicate_frames += 1
 	_last_frame_id = request.frame_id
@@ -64,7 +68,7 @@ func present(request: MotionRequest) -> void:
 		_facing_refused = true   # reported once, not every frame
 		refusals.append({"action": FACING, "family": family(), "reason": unsupported_reason(FACING)})
 	_advance_action(request.delta)
-	_present(request)
+	if not _closed: _present(request)
 
 ## Override: show this frame.
 func _present(_request: MotionRequest) -> void:
@@ -76,11 +80,14 @@ func request_action(action: StringName, seconds := 0.0) -> ActionHandle:
 		var reason := unsupported_reason(action) if ACTIONS.has(action) else "%s is not a shared one-shot action (a family's own actions use its own API)" % action
 		refusals.append({"action": action, "family": family(), "reason": reason})
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
-	if _action != null:
-		var older := _action
-		_action = null
-		_action_left = 0.0
-		older.settle(PresentationTypes.Outcome.INTERRUPTED)
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
+	if _ending: return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
+	var cancelled := 0
+	while _action != null and cancelled < MAX_REPLACEMENT_CANCELLATIONS:
+		_stop_action(PresentationTypes.Outcome.INTERRUPTED)
+		cancelled += 1
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
+	if _action != null: return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 	_action = ActionHandle.new()
 	_action_left = maxf(seconds, 0.0)
 	var handle := _action
@@ -92,33 +99,37 @@ func _begin_action(_action_name: StringName, _seconds: float) -> void:
 
 ## A running action ended early by the requester (`handle.cancel()`) is noticed here, at the next frame.
 func _advance_action(delta: float) -> void:
-	if _action == null:
-		return
+	if _action == null: return
 	if _action.is_done():
-		_action = null
-		_end_action(PresentationTypes.Outcome.CANCELLED)
+		_stop_action(_action.outcome)
 		return
 	_action_left -= delta
-	if _action_left <= 0.0:
-		var finished := _action
-		_action = null
-		finished.settle(PresentationTypes.Outcome.COMPLETED)
-		_end_action(PresentationTypes.Outcome.COMPLETED)
+	if _action_left <= 0.0: _stop_action(PresentationTypes.Outcome.COMPLETED)
+
+## Clean the old visual before its completion observers can start a new action.
+func _stop_action(outcome: PresentationTypes.Outcome) -> void:
+	var finished := _action
+	_action = null
+	_action_left = 0.0
+	_ending = true
+	_end_action(outcome)
+	_ending = false
+	if finished != null: finished.settle(outcome)
 
 func _end_action(_outcome: PresentationTypes.Outcome) -> void:
 	pass
 
+func is_closed() -> bool:
+	return _closed
+
 func is_acting() -> bool:
 	return _action != null
 
-## Ends everything this presenter is showing (the entity is removed): a running action settles INTERRUPTED and nothing stays active.
+## Terminal and idempotent; observers cannot restart a removed family.
 func teardown() -> void:
-	if _action != null:
-		var running := _action
-		_action = null
-		_action_left = 0.0
-		running.settle(PresentationTypes.Outcome.INTERRUPTED)
-	_end_action(PresentationTypes.Outcome.INTERRUPTED)
+	if _closed: return
+	_closed = true
+	_stop_action(PresentationTypes.Outcome.INTERRUPTED)
 	_teardown()
 
 func _teardown() -> void:

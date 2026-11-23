@@ -1,6 +1,9 @@
 extends SceneTree
 ## Modifier-stack performance baseline (Task 07): CPU time per frame for N production MIRA visuals, headless, idle pose. A BASELINE to compare against after the
 ## presenter migration, not a pass/fail gate (machine dependent). Run: godot_console --headless --path . --script res://tools/quality/animation_perf_baseline.gd
+## Measurement limitation (Task 14 audit): the timed loop repeats within ONE engine frame.
+## Frame-id guards skip some per-frame paths; these are comparative idle microbenchmarks,
+## not complete rendered-frame or active-interaction costs. Measurement repair is deferred.
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
 const COUNTS := [1, 8, 24]
 const WARMUP := 30
@@ -23,7 +26,7 @@ func _run() -> void:
 		for i in WARMUP:
 			await process_frame
 		# Headless frames are paced by the engine and the process monitor is coarse, so the cost is timed directly: the adapter's own per-frame work (_process) and the full modifier stack
-		# (Skeleton3D.advance runs the animation mixer and every modifier) for all characters, many times, with a different time step each iteration so nothing is cached.
+		# (Skeleton3D.advance runs the animation mixer and every modifier) for all characters, many times with different time steps; frame-number guards still apply (see the caveat above).
 		# Take the mixer and the modifiers off the automatic schedule so the timing loop below is the only thing driving them.
 		for v in visuals:
 			v.rig.skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL

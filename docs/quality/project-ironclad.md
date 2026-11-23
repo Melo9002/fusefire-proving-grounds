@@ -28,7 +28,7 @@ Run from the repository root in PowerShell. Every test is described in `tests/ca
 ```powershell
 .\tools\run_tests.ps1 fast                                # cheap headless tests (about 100)
 .\tools\run_tests.ps1 fast -Subsystem animation           # FAST tests of one subsystem
-.\tools\run_tests.ps1 smoke                               # 24 critical boundary tests (what CI runs)
+.\tools\run_tests.ps1 smoke                               # 27 boundary/regression tests (what CI runs)
 .\tools\run_tests.ps1 subsystem -Subsystem combat         # every ordinary test of a subsystem
 .\tools\run_tests.ps1 subsystem -Contract replay -Critical
 .\tools\run_tests.ps1 select -Test traversal_*,path_refiner_test
@@ -153,3 +153,5 @@ The subsequent [parcel UX and live-battle follow-up](parcel-playtest-2026-11-15.
 
 
 The [current content release](current-content-release.md) adds new parcel/site and mixed-vehicle regressions and extends the mission/replay matrix to 48 cases. The former one-menu-map assertion is intentionally replaced by three curated site IDs sharing one generator; retired IDs and legacy-isolation assertions remain.
+
+Task 14 correction evidence and lifecycle admission policy: [2026-11-23 follow-up](task14-signoff-corrections-2026-11-23.md). The two new cheap invariant regressions are included in SMOKE; historical timing/runner optimization remains a separate campaign.

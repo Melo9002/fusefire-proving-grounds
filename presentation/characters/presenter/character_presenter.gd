@@ -9,10 +9,11 @@ extends RefCounted
 ## settled through ActionHandles and all advanced here, once per frame, and it exposes the persistent state as a PresentationIntent snapshot. It does NOT own animation mathematics: gait, cadence, bank and twist stay in CharacterRig, which this
 ## calls. It has no `_process`: the host node ticks it once per frame (see TRANSITION), so nothing can advance twice.
 ##
-## TRANSITION (documented, not hidden): today TacticalCharacterAdapter and the workbench ARE the CharacterRig, so the presenter is a component of that node and bound to it, and the host
-## calls `tick(delta)` from its own `_process`, in its existing order. When the rig is composed instead of inherited, the presenter becomes the node that ticks. Not yet owned
-## here: attack/aim/cover/rescue sequencing, the traversal state, weapon readiness requests (the readiness object stays the rig's; the presenter only reads it), equipment changes.
+## Hosts compose a CharacterRig and drive this presenter once per frame. The rig
+## retains the skeleton, equipment and readiness application; this component owns
+## presentation time and action completion. Teardown ends this presenter lifetime.
 
+var _closed := false
 var rig: CharacterRig
 ## Seconds of presentation time since the presenter was created. Read by attack timelines for their phase times.
 var time := 0.0
@@ -183,6 +184,7 @@ func facing_direction() -> Vector3:
 ## Advances presentation by one frame. Call exactly once per frame, with the delta the engine gave the host's `_process` (already scaled by the engine; never scaled again).
 ## Feeds the rig's locomotion presentation unless something already fed it this frame (a tool or test driving the rig directly).
 func tick(delta: float) -> void:
+	if _closed: return
 	time += delta
 	tick_count += 1
 	last_tick_frame = Engine.get_process_frames()
@@ -206,6 +208,7 @@ func tick(delta: float) -> void:
 ## outranks it (PresentationTypes.HOLD_*): then the request is refused and its handle is already settled SKIPPED, and the running hold is untouched. The handle settles COMPLETED after `due` has run,
 ## INTERRUPTED if the hold was superseded or the character removed.
 func begin_hold(seconds: float, due: Callable, rank := PresentationTypes.HOLD_REACTION) -> ActionHandle:
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if _hold_handle != null and rank < _hold_rank:
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 	cancel_hold()
@@ -215,6 +218,7 @@ func begin_hold(seconds: float, due: Callable, rank := PresentationTypes.HOLD_RE
 		if rank < _hold_rank:
 			return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 		cancel_hold()
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	_hold_left = maxf(seconds, 0.0)
 	_hold_due = due
 	_hold_rank = rank
@@ -255,6 +259,7 @@ func hold_allowed(rank: int) -> bool:
 ##  * the handle settles COMPLETED then, INTERRUPTED if movement, another action, a cancel_hold() or the character's removal ended it. The posture, readiness and aim requests are untouched: they are persistent.
 ## The hands: a held weapon owns them (the arm stages place them for it), so an armed character shows the gesture in its head and torso only; an UNARMED character's hand is raised by the rig from `gesture_hand()`.
 func begin_gesture(clip: StringName, restore: Callable, seconds := -1.0) -> ActionHandle:
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if not is_instance_valid(rig) or not is_instance_valid(rig.animation_controller) or clip not in rig.animation_controller.GESTURES:
 		return ActionHandle.settled(PresentationTypes.Outcome.SKIPPED)
 	if is_defeated():
@@ -303,6 +308,7 @@ func hold_report() -> Dictionary:
 ## A defeat: the one-shot defeat clip runs for `seconds` and its end state stays. Everything else the character was presenting is ended by the caller (see TacticalCharacterAdapter.present_defeat); this only
 ## settles the defeat itself. A repeated request while the clip is still running is the same defeat (the same handle, no restart).
 func begin_defeat(seconds: float) -> ActionHandle:
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if _defeat_handle != null:
 		return _defeat_handle   # the same defeat, running or finished: a repeat never restarts it
 	_defeat_left = maxf(seconds, 0.0)
@@ -321,6 +327,7 @@ func is_defeating() -> bool:
 ## The tactical layer removes a defeated character once its defeat has been readable. The handle settles when the defeat clip has finished AND at least `minimum_seconds` of presentation time have passed since
 ## this request, whichever is later; INTERRUPTED if the character is removed first. One request at a time (a repeat returns the same handle).
 func removal_handle(minimum_seconds: float) -> ActionHandle:
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if _removal_handle != null:
 		return _removal_handle
 	_removal_left = maxf(minimum_seconds, 0.0)
@@ -331,6 +338,7 @@ func removal_handle(minimum_seconds: float) -> ActionHandle:
 ## PENDING PICKUP. A rescue decided while the carrier's body is still walking to the rescued character is held here until the carrier arrives, with the handle reserved for it (the rig settles that handle once
 ## the lift runs). `arrive_pickup` hands the held request to `begin` (the context starts the lift) and forgets it. Cancelling it, a defeat or a teardown settles the reserved handle: nothing waits forever.
 func hold_pickup(world: Vector3, lying_basis: Variant) -> ActionHandle:
+	if _closed: return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	if _pending_pickup != null and not _pending_pickup.handle.is_done():
 		_pending_pickup.world = world
 		_pending_pickup.lying_basis = lying_basis
@@ -404,6 +412,7 @@ func _advance_timed_states(delta: float) -> void:
 ## posture have been followed and before the weapon-pose update that applies the results. Both hosts (the tactical adapter and the workbench) call it from the same place in their update; a second call
 ## in the same engine frame does nothing, so nothing can advance twice.
 func advance_actions(delta: float) -> void:
+	if _closed: return
 	var frame := Engine.get_process_frames()
 	if frame == _actions_frame:
 		return
@@ -453,7 +462,9 @@ func foot_point_problems() -> Array[String]:
 
 ## Releases everything the presenter holds: no posture request outlives the character.
 func teardown() -> void:
-	attack.cancel()
+	if _closed: return
+	_closed = true
+	attack.teardown()
 	aim.clear()
 	cancel_hold()
 	while _hold_handle != null:

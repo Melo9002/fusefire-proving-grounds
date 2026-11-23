@@ -2,6 +2,7 @@ extends SceneTree
 ## Pose ownership (Task 07 package 4). Part 1 validates the declaration table in PoseOwnership against the modifier order: every non-additive overlap must be a DECLARED ordered override, with its
 ## stages in modifier order, and nothing stale. Part 2 checks the declarations against what the stages really do: the pose is snapshotted after the animation mixer and after each stage while the
 ## production character performs motions that exercise every stage, and a stage that changes a bone it has not declared fails. Overlaps are allowed when declared; this is not a one-writer rule.
+const Compare := preload("res://tests/support/pose_comparison.gd")
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
 var failures := 0
 var checks := 0
@@ -34,12 +35,15 @@ func _drive(frames: int, step: Callable) -> void:
 	root.add_child(stage_node)
 	var rigs: Array[TacticalCharacterAdapter] = []
 	var latest: Array = []
+	var sample_frames: Array[int] = []
+	var synchronized := true
 	for index in PoseOwnership.STAGE_ORDER.size() + 1:
 		var v: TacticalCharacterAdapter = VISUAL.instantiate()
 		v.position = Vector3(index * 3.0, 0, 0)
 		stage_node.add_child(v)
 		rigs.append(v)
 		latest.append([])
+		sample_frames.append(-1)
 	for i in 15:
 		await process_frame
 	for index in rigs.size():
@@ -49,7 +53,9 @@ func _drive(frames: int, step: Callable) -> void:
 				var keep := index < PoseOwnership.STAGE_ORDER.size() and StringName(child.name) == PoseOwnership.STAGE_ORDER[index]
 				(child as SkeletonModifier3D).active = keep
 		var slot := index
-		sk.skeleton_updated.connect(func() -> void: latest[slot] = _locals(sk))
+		sk.skeleton_updated.connect(func() -> void:
+			latest[slot] = _locals(sk)
+			sample_frames[slot] = Engine.get_process_frames())
 		# Host code and one stage re-enable others (the traversal stage switches the leg IK on, a carry switches the arm IK on). Keep every stage but the chosen one off, at the mixer and after each stage.
 		var enforce := func() -> void:
 			for child in sk.get_children():
@@ -68,16 +74,20 @@ func _drive(frames: int, step: Callable) -> void:
 			var mine: Array = latest[index]
 			if mine.is_empty() or control.is_empty():
 				continue
+			if sample_frames[index] != sample_frames[rigs.size() - 1]:
+				synchronized = false
+				continue
 			var sk: Skeleton3D = rigs[index].rig.skeleton
 			var stage := PoseOwnership.STAGE_ORDER[index]
 			for bone in mine.size():
 				var a: Transform3D = mine[bone]
 				var b: Transform3D = control[bone]
-				if a.origin.distance_to(b.origin) > 0.0001 or a.basis.get_rotation_quaternion().angle_to(b.basis.get_rotation_quaternion()) > 0.001:
+				if Compare.differs(a, b):
 					var role := PoseOwnership.role_of(rigs[index].rig.bones, sk.get_bone_name(bone))
 					if not observed.has(stage):
 						observed[stage] = {}
 					observed[stage][role if role != &"" else StringName("UNMAPPED:" + sk.get_bone_name(bone))] = true
+	check(synchronized, "Isolated rigs compare final samples from the same engine frame")
 	stage_node.queue_free()
 	await process_frame
 

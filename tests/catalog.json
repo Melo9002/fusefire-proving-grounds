@@ -29,7 +29,6 @@
   {"path": "ui/", "sub": ["ui"], "central": false},
   {"path": "art/characters/", "sub": ["animation", "assets"], "central": false},
   {"path": "art/environments/", "sub": ["generation", "assets"], "central": false},
-  {"path": "content/", "sub": ["generation", "missions"], "central": false},
   {"path": "tests/fixtures/rigs/", "sub": ["animation"], "central": false},
   {"path": "tests/fixtures/legacy_generation/", "sub": ["generation"], "central": false},
   {"path": "tests/support/", "sub": ["ai"], "central": false},
@@ -38,6 +37,8 @@
   {"path": "project.godot", "sub": ["core"], "central": true}
 ],
 "tests": {
+  "presentation_reentry_test": {"sub": ["animation", "combat"], "scope": "integration", "crit": "critical", "contracts": ["lifecycle", "presentation-sync"], "fast": true, "smoke": true},
+  "pose_comparison_test": {"sub": ["animation"], "scope": "unit", "contracts": ["presentation-sync"], "fast": true, "smoke": true},
   "action_camera_director_test": {"sub": ["actions", "combat", "ui"], "scope": "integration", "fast": true},
   "adapter_boundary_test": {"sub": ["animation", "actions", "rescue", "combat"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync"]},
   "animation_update_order_test": {"sub": ["animation"], "scope": "integration", "fast": true},
@@ -108,7 +109,7 @@
   "combat_guard_coverage_cache_test": {"sub": ["combat"], "scope": "battle"},
   "combat_height_range_test": {"sub": ["combat"], "scope": "battle"},
   "combat_prediction_consistency_test": {"sub": ["combat"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},
-  "combat_presentation_lifecycle_test": {"sub": ["animation", "combat", "actions"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync"]},
+  "combat_presentation_lifecycle_test": {"sub": ["animation", "combat", "actions"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync", "lifecycle"]},
   "combat_real_map_closure_test": {"sub": ["actions", "combat", "core"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},
   "combat_reliability_test": {"sub": ["combat"], "scope": "integration", "crit": "critical", "contracts": ["authority"]},
   "combat_roll_endpoint_test": {"sub": ["combat"], "scope": "unit", "fast": true},
