@@ -70,7 +70,7 @@ static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, bod
 	var hips_z := torso_hips_z
 	var hip_rel := Vector3(body.hip_offset.x, body.hip_offset.y, body.hip_offset.z)
 	var ankle_behind := body.ball_length * 0.5
-	var ankle_above := geometry.rung_radius + body.ankle_height * 0.85
+	var ankle_above := geometry.rung_radius + body.ankle_height
 	var foot_step := 1
 	var reach_leg := body.leg_length() * REACH_FRACTION
 	var ankle_z := plane - ankle_behind

@@ -99,3 +99,55 @@ Replay and traces: **route trace re-run on this tree: 853 routes, zero discrete 
 * Normal-speed moving demonstrations and the matching before/after captures were not produced beyond the still sheets (`docs/claude/images/ladder55/landing-*.png`; use `tools/quality/ladder_transfer_demo.gd` for moving review).
 * Top-out reads better with a supported landing, but the unsupported fallback keeps the abrupt exit documented in #55.
 * Full tier not run.
+
+---
+
+# Addendum (same day, LOCAL ONLY, not committed): the clearance investigation Pixie asked for
+
+Baseline for this addendum: committed `6323afb` (pushed earlier at the owner's request, with the landing test as measured ratchets). Everything below is in the working tree only. **No commit, no push.**
+
+## A. The capsule model was wrong in both directions
+
+I measured the real skinned mesh of each leg (90th percentile of vertex distance from the bone axis, `agent-comms/limb_radii.gd`, now done by the rig itself once per character):
+
+| radius (m) | MIRA assumed | MIRA measured | Small MIRA assumed | Small MIRA measured |
+|---|---|---|---|---|
+| thigh | 0.085 | 0.090 | 0.059 | **0.080** |
+| shin | 0.060 | **0.079** | 0.042 | **0.106** |
+| knee armor | 0.070 | **0.106** | 0.049 | **0.095** |
+
+Small MIRA's armor is nearly twice as thick as the proportional guess; MIRA's knee armor is half again. So the earlier "capsule overlap" numbers were not simply conservative: for Small MIRA they were **too small**, and the knee planner was clearing volumes that were not the body's. `CharacterRig.ladder_body()` now measures the radii (`LadderBody.measured_*`, `SkinnedSurface.measured_radius`) and the boot's reach ahead of the ankle (`foot_forward`: MIRA 0.166 m, Small MIRA 0.19 m).
+
+## B. A mesh-level measurement, so "visible penetration" is no longer inferred
+
+New read-only diagnostics: `presentation/characters/rig/skinned_surface.gd` (the leg meshes skinned to the final pose with the engine's linear blend skinning; at rest it matches the mesh's own vertex places to 0.0000 m; about 3 ms per sample) and `LadderClearance.mesh_clearance` (a vertex inside a rung, a rail, the deck top or the deck face, naming the bone, the surface, the phase and the foot rungs). The landing test prints it beside the capsule numbers, with frame counts (how many frames over 10 mm, how many of those with both feet planted).
+
+## C. What the mesh shows
+
+1. **The deck and its face: 0.0 mm for MIRA and 0.0 mm for Small MIRA in all 18 runs** (both bodies, armed and unarmed, posts and rails, up and down, and at 30 fps), once the next two things were fixed. Before, the mesh put MIRA's thigh vertices 63 mm and Small MIRA's boot 133 mm into the tower. The cause was the fixture: the tower face was 8 cm behind the rung plane while a boot reaches 17 to 19 cm ahead of the ankle, so no foot placement could fit. That is an environment error, not an animation error (real ladders stand 15 to 20 cm off the wall for this reason).
+   * `LadderLanding.unsupported_reason` now refuses a wall nearer the rungs than the body's own **measured** boot (`foot_forward`, no per-character number) and a lip beyond what the measured leg can step (45% of it), with the reasons. The sandbox tower now stands 0.22 m off the ladder; the workbench fixtures use the same lip, plus a new "too close" fixture that must fall back.
+   * The foot height now uses the full measured ankle height (was 0.85 of it, putting the sole about 16 mm into the rung).
+2. **Genuine leg-vs-rung intersection remains.** In about a quarter to a half of the landing frames (MIRA 24 to 36 of about 55 frames, 13 to 21 of them with both feet planted; Small MIRA 20 to 29 of about 70, 14 to 18 planted) some leg vertex is inside a rung: with MIRA's feet on rungs 8 and 9, the shin or thigh is inside rung 10, the rung at knee and thigh height. The vertex sits on the rung's axis, so the depth reads as the bar's full radius (22 mm); this is the maximum a single vertex can report, not a smooth depth, and the thin bar means a crossing between vertices can be missed too. **This is real armor crossing a bar and I could not remove it.** Why: with the measured armor, a raised knee needs about 0.18 m of clearance behind the rung plane (0.050 rung centre-line offset, 0.0225 rung, 0.106 knee armor), and the pelvis can only hang back as far as the hands let it (about 0.44 m behind the plane). The 0.25 m pitch leaves no gap the knee armor fits through (0.205 m of gap against a 0.21 m knee). A different pitch, a wider rail span or a different gait would change that; none is a tuning of the pose.
+3. The capsule tests with the calibrated volumes now fail for both bodies (ordinary climb: 36 to 71 mm against the 35 mm goal; Small MIRA's shin is the largest). **They did not become worse animation; they became honest.** The earlier pass of `ladder_climb_test` leaned on undersized volumes.
+
+## D. Pose trace (39 scenarios, fixed 60 fps) against the approved trace
+
+35 of 39 scenarios are identical in bone position (0.000 m) and every non-ladder scenario shows the usual 0.06 degree floor. Differences:
+* `ladder`, `ladder_down`, `ladder_interrupted`, `ladder_over_stairs`: intended (the traversal changes; the pose trace baseline is not replaced).
+* `carry`, `unit_carry`, `rescue_*` (7 scenarios): 4 to 5 mm at a hand or forearm and a finger's curl (up to 41 degrees on one index bone). Cause: **Codex's `e6e251b`** (contact-specific grips: a wrap grasp for a planted hand, the passenger contacts using the actual hand's palm length), documented in `docs/animation/animation-quality-pass-01.md`. Not caused by this work; unchanged by it.
+Route trace: 853 routes, 0 differences (earlier in the day, on the same gameplay code).
+
+## E. Moving demonstrations
+
+Four 605-frame recordings (60 fps, about 10 s, 960x540) from Codex's `tools/quality/ladder_transfer_demo.gd` on the current tree, local in `artifacts/`: armed MIRA (side), unarmed MIRA (front), armed Small MIRA (side), unarmed Small MIRA (three-quarter). Each covers the ascent, the crossing, reverse entry and the descent. The demo's own counters: deck foot error <= 4.2 mm, 0 unreachable braces, 0 unsupported frames, knee below the deck 0.0 mm. **They were produced but I could not view video here**; the stills they write (`docs/claude/images/ladder55/demo-*-sheet.png`) are too small a view to judge contact detail (the character is a few pixels), so the moving evidence is NOT visually reviewed beyond the sequence. One number needs a person's eyes: armed Small MIRA holds a brace for only 8 frames of the transfer against 44 unarmed.
+
+## F. State of the tests, honestly (working tree)
+
+* Regression batch on this tree, all passing: traversal solver 40, state 18, rig 14, hand contact 68, ladder geometry 45, exploration actions 46, workbench landing 60, workbench scenarios 132, workbench diagnostics 221, presentation authority 24, traversal replay determinism 6, module boundaries 1574, pose ownership 20, unarmed humanoid 30, humanoid portability 69, stair gait 49, rig bones 17. Not re-run on this tree: the route trace (clean earlier, gameplay code untouched since), the full tier.
+* `ladder_climb_test` and `ladder_landing_test` **fail locally** on their capsule clearance checks with the calibrated radii; I have not changed their thresholds. The committed copies of these tests are the earlier, undersized-volume versions that pass.
+
+## G. Recommended path (for the owner, not applied)
+
+1. Replace the capsule clearance checks (both tests) with the **mesh** measure: deck and wall overlap must be 0 (it is), and a leg or foot vertex inside a bar must stay under an explicit count of frames until the gait is changed. Record that as a measured baseline: MIRA about 45% of landing frames over 10 mm, Small MIRA about 30%, separately from the goal, which stays "none".
+2. The real fix is geometric: knees cannot clear a 0.25 m pitch with these bodies. Candidates, each a design decision: a larger rung pitch for the two-rung hand step on MIRA (0.30 m), a wider rail span (0.76 m instead of 0.64), a stance with the knees outside the rails (not physical), or smaller knee armor on the model.
+3. Small MIRA's armed brace (8 frames) wants a grip point nearer its shoulder along the rail (a rail is a line, not a point).

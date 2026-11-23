@@ -10,7 +10,7 @@ const SCENES := {
 	"small": "res://art/characters/small_mira_0/runtime/small_mira_0_exploration_visual.tscn",
 }
 const RISE := 3.0
-const LIP := 0.08
+const LIP := LandingFixtures.LIP
 const CLIMB_SPEED := 0.85
 const DESCEND_SPEED := 0.75
 const CROSS_SECONDS := 0.6
@@ -49,6 +49,8 @@ func _landing(kind: String, geometry: LadderGeometry) -> LadderLanding:
 			return LadderLanding.deck_only(LIP, 1.5, 3.0)
 		"too far":
 			return LadderLanding.with_posts(0.6, 1.5, 3.0, 0.24, 0.416)
+		"too close":
+			return LadderLanding.with_posts(0.05, 1.5, 3.0, 0.24, 0.416)
 		"too small":
 			return LadderLanding.with_posts(LIP, 0.1, 0.1, 0.24, 0.416)
 	return null
@@ -71,7 +73,7 @@ func _run() -> void:
 			for kind in ["posts", "rails"]:
 				for direction in [1, -1]:
 					await _transfer(host, "%s %s %s" % [label, kind, "up" if direction > 0 else "down"], kind, direction)
-			for kind in ["deck only", "too far", "too small"]:
+			for kind in ["deck only", "too far", "too close", "too small"]:
 				await _fallback(host, "%s %s" % [label, kind], kind)
 			for phase in [0.2, 0.85]:
 				await _interrupt(host, "%s interrupted at %.2f" % [label, phase], phase, armed)
@@ -99,7 +101,8 @@ func _landing_object_checks() -> void:
 		check(_landing("posts", geometry).unsupported_reason(geometry, body).is_empty(), "posts on a roomy deck are a supported landing")
 		check(_landing("rails", geometry).unsupported_reason(geometry, body).is_empty(), "the ladder's own rails run on above the deck are a supported landing")
 		check(_landing("deck only", geometry).unsupported_reason(geometry, body).contains("handhold"), "a deck with nothing to hold is refused for want of a handhold")
-		check(_landing("too far", geometry).unsupported_reason(geometry, body).contains("reach budget"), "a lip out of the reach budget is refused and says so")
+		check(_landing("too far", geometry).unsupported_reason(geometry, body).contains("leg can step"), "a lip beyond what the leg can step is refused and says so")
+		check(_landing("too close", geometry).unsupported_reason(geometry, body).contains("boot needs"), "a wall nearer the rungs than the boot reaches is refused and says so")
 		check(_landing("too small", geometry).unsupported_reason(geometry, body).contains("deck"), "a deck too small for the body is refused and says so")
 	var one_post := _landing("posts", geometry)
 	one_post.grips = [one_post.grips[0]]
@@ -131,6 +134,16 @@ func _transfer(host: ExplorationCharacterHost, label: String, kind: String, dire
 	var worst_leg_where := ""
 	var worst_ladder := 0.0
 	var worst_ladder_where := ""
+	var mesh_bar := 0.0
+	var mesh_deck := 0.0
+	var mesh_bar_where := ""
+	var mesh_deck_where := ""
+	var frames_bar_over_10 := 0
+	var frames_bar_over_10_planted := 0
+	var frames_deck_over_10 := 0
+	var sole_sink_worst := 0.0
+	var sole_sink_samples := 0
+	var mesh_frames := 0
 	var shoulder_error := 0.0
 	var shoulder_error_where := ""
 	var rejected := 0
@@ -178,6 +191,25 @@ func _transfer(host: ExplorationCharacterHost, label: String, kind: String, dire
 				if deck[part] > worst_leg:
 					worst_leg = deck[part]
 					worst_leg_where = "%s, side %d, phase %.2f" % [part, deck.side, pose.landing_phase]
+			var mesh := metrics.mesh_clearance(landing, rig.ladder.geometry, climbed)
+			for sole in metrics.planted_sole_vs_rung(pose, rig.ladder.geometry, climbed):
+				if not is_nan(sole):
+					sole_sink_samples += 1
+					sole_sink_worst = minf(sole_sink_worst, sole)
+			var mesh_bars := maxf(mesh.rung, mesh.rail)
+			mesh_frames += 1
+			if mesh_bars > 0.010:
+				frames_bar_over_10 += 1
+				if pose.foot_swing[0] == 0.0 and pose.foot_swing[1] == 0.0:
+					frames_bar_over_10_planted += 1
+			if mesh.deck > 0.010:
+				frames_deck_over_10 += 1
+			if mesh_bars > mesh_bar:
+				mesh_bar = mesh_bars
+				mesh_bar_where = "%s at phase %.2f, feet on rungs %s swing %s" % [mesh.where, pose.landing_phase, pose.foot_rung, pose.foot_swing]
+			if mesh.deck > mesh_deck:
+				mesh_deck = mesh.deck
+				mesh_deck_where = "%s at phase %.2f" % [mesh.where, pose.landing_phase]
 			var on_ladder := metrics.clearance(rig.ladder.geometry, climbed)
 			var bar := maxf(on_ladder.knee, maxf(on_ladder.thigh, on_ladder.shin))
 			if bar > worst_ladder:
@@ -192,6 +224,7 @@ func _transfer(host: ExplorationCharacterHost, label: String, kind: String, dire
 					shoulder_error_where = "phase %.2f lean %.0f, hips actual-planned (%.3f %.3f %.3f)" % [pose.landing_phase, pose.lean_degrees, hips_gap.x, hips_gap.y, hips_gap.z]
 		if (direction > 0 and across >= 1.0) or (direction < 0 and across <= 0.0 and climbed <= start):
 			break
+	print("  MESH %s: bars worst %.1f mm (%s), over 10 mm in %d of %d frames (%d with both feet planted); deck worst %.1f mm (%s), over 10 mm in %d frames; planted sole vs rung top, worst %.1f mm (%d samples)" % [label, mesh_bar * 1000.0, mesh_bar_where, frames_bar_over_10, mesh_frames, frames_bar_over_10_planted, mesh_deck * 1000.0, mesh_deck_where, frames_deck_over_10, sole_sink_worst * 1000.0, sole_sink_samples])
 	print("  %s: %d landing samples; %d held grips (wrist worst %.3f m, %d unreachable); %d planted deck feet (ankle worst %.3f m); sole into deck %.3f m; limbs into deck %.3f m (%s); limbs into ladder %.3f m (%s); planned vs actual shoulder %.3f m (%s)" % [label, samples, held, held_worst, rejected, deck_feet, deck_feet_worst, worst_sole, worst_leg, worst_leg_where, worst_ladder, worst_ladder_where, shoulder_error, shoulder_error_where])
 	check(samples > 30, "%s: the landing was actually exercised (%d samples)" % [label, samples])
 	check(held > 15 and held_worst <= WRIST_TOLERANCE, "%s: each hand holds its grip within 3 cm in the final pose (%d samples, worst %.3f m)" % [label, held, held_worst])

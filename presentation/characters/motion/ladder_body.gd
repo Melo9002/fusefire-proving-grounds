@@ -17,6 +17,8 @@ var ankle_height := 0.09
 var ball_length := 0.113
 ## Height of the toe (ball) bone above the sole at rest: the ball of the foot's sole is this far below it.
 var toe_height := 0.04
+## How far the boot reaches ahead of the ankle (toe tip), MEASURED from the mesh: with the foot on a rung the toes go this far past it, so a wall nearer than that to the rungs is a wall the boot is in.
+var foot_forward := 0.22
 ## How much smaller or larger this body is than the one the profile's authored numbers were tuned for (RigBones.body_ratio).
 var ratio := 1.0
 
@@ -30,15 +32,27 @@ func arm_length() -> float:
 
 
 ## Approximate volumes for clearance planning, from the body's own proportions (the reference body's thigh is about 0.085 m in radius, and so on). Not a collision model.
+## Limb volume radii: MEASURED from the character's own mesh by CharacterRig.ladder_body() (the 90th percentile of the skinned vertices' distance from the bone), so a body with armor thicker or thinner than the
+## reference gets its own. The defaults are the reference body's, scaled, and are what a body without a mesh keeps.
+var measured_thigh := -1.0
+var measured_shin := -1.0
+var measured_knee := -1.0
+
 func thigh_radius() -> float:
+	if measured_thigh > 0.0:
+		return measured_thigh
 	return 0.085 * ratio
 
 
 func shin_radius() -> float:
+	if measured_shin > 0.0:
+		return measured_shin
 	return 0.060 * ratio
 
 
 func knee_radius() -> float:
+	if measured_knee > 0.0:
+		return measured_knee
 	return 0.070 * ratio
 
 

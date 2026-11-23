@@ -1209,6 +1209,20 @@ func ladder_body() -> LadderBody:
 		var toe: Vector3 = to_local * (rest.call(bones.left_toes) - ankle)
 		_ladder_body.ball_length = Vector2(toe.x, toe.z).length()
 		_ladder_body.toe_height = maxf((to_local * rest.call(bones.left_toes)).y, 0.0)
+	# The limb volumes as this body's own mesh has them (armor included), not as the reference body would: measured once from the skinned vertices at rest.
+	var legs: Array[StringName] = [bones.left_leg[0], bones.left_leg[1], bones.left_leg[2]]
+	var foot_bones: Array[StringName] = [bones.left_leg[2]]
+	if bones.left_toes != &"" and skeleton.find_bone(bones.left_toes) >= 0:
+		legs.append(bones.left_toes)
+		foot_bones.append(bones.left_toes)
+	var surface := SkinnedSurface.create(skeleton, legs)
+	if surface.size() > 100:
+		_ladder_body.measured_thigh = surface.measured_radius([bones.left_leg[0]], bones.left_leg[0], bones.left_leg[1])
+		_ladder_body.measured_shin = surface.measured_radius([bones.left_leg[1]], bones.left_leg[1], bones.left_leg[2])
+		_ladder_body.measured_knee = surface.measured_radius([bones.left_leg[0], bones.left_leg[1]], bones.left_leg[1], bones.left_leg[1], 0.9, true)
+		# The boot's reach ahead of the ankle, along the character's own forward (in the skeleton frame).
+		var forward := (skeleton.global_basis.inverse() * character_root.global_basis.z).normalized()
+		_ladder_body.foot_forward = surface.reach_along(foot_bones, bones.left_leg[2], forward, 1.0)
 	return _ladder_body
 
 

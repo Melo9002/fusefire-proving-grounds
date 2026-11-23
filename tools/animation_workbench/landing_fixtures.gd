@@ -4,16 +4,17 @@ extends RefCounted
 ## name. Each is a LadderLanding (the shared description the exploration sandbox and, later, a tactical map supply) plus a drawing of the deck and of what the hands hold. The pose comes from the
 ## production solver and rig: nothing here poses a body.
 
-const KINDS := ["posts", "rails", "deck only", "too far", "too small"]
+const KINDS := ["posts", "rails", "deck only", "too far", "too close", "too small"]
 const DECK_HALF_WIDTH := 1.5
 const DECK_DEPTH := 3.0
-const LIP := 0.08
+const LIP := 0.22
 ## What each kind is, for the panel and the report.
 const SUMMARY := {
 	"posts": "A deck with two upright posts at its edge: supported.",
 	"rails": "The ladder's own rails run on 0.9 m above the deck: supported.",
 	"deck only": "A deck with nothing to hold: unsupported, keeps the height-only climb-out.",
-	"too far": "A lip too far from the rungs for the arm: unsupported, keeps the height-only climb-out.",
+	"too far": "A lip too far from the rungs for the leg to step: unsupported, keeps the height-only climb-out.",
+	"too close": "A wall nearer the rungs than the boot reaches: unsupported (the boot would be in the wall), keeps the height-only climb-out.",
 	"too small": "A deck too small for the body's feet: unsupported, keeps the height-only climb-out.",
 }
 
@@ -28,6 +29,8 @@ static func make(kind: String, geometry: LadderGeometry) -> LadderLanding:
 			return LadderLanding.deck_only(LIP, DECK_HALF_WIDTH, DECK_DEPTH)
 		"too far":
 			return LadderLanding.with_posts(0.6, DECK_HALF_WIDTH, DECK_DEPTH, 0.24, 0.416)
+		"too close":
+			return LadderLanding.with_posts(0.05, DECK_HALF_WIDTH, DECK_DEPTH, 0.24, 0.416)
 		"too small":
 			return LadderLanding.with_posts(LIP, 0.1, 0.1, 0.24, 0.416)
 	return null

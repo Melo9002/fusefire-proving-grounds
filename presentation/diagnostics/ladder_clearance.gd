@@ -119,3 +119,87 @@ func readout(landing_status: String, landing: LadderLanding, geometry: LadderGeo
 			("   worst: %s, %s side" % [deck.worst, "left" if deck.side == 0 else "right"]) if String(deck.worst) != "" else ""])
 	lines.append("(approximate: capsules from joints; sole from the ankle and toe bones)")
 	return "\n".join(lines)
+
+
+## ---- Mesh level: the legs' actual skinned surface (SkinnedSurface) against the bars and the deck, in the last sample's pose. This is the VISIBLE overlap (a vertex of the drawn surface inside a bar, or below
+## the deck's top or beyond its face), as opposed to the capsule approximation above, which is conservative in some places and not enough in others (the armor's real radius is measured in `agent-comms`/the report).
+var _surface: SkinnedSurface
+var _surface_bones: Array[StringName] = []
+
+## {rung, rail, deck: deepest vertex inside each kind (metres, 0 when none), where: a readable place for the worst ("shin_l vertex inside rung 12", "thigh_r vertex below the deck top"), bone: its bone name,
+## points: how many vertices were tested}. Vertices of the hands and arms are not tested: a hand ON a bar is the contact, not a defect.
+func mesh_clearance(landing: LadderLanding, geometry: LadderGeometry, climbed: float) -> Dictionary:
+	if _surface == null:
+		var b := rig.bones
+		_surface_bones = [b.left_leg[0], b.left_leg[1], b.left_leg[2], b.right_leg[0], b.right_leg[1], b.right_leg[2]]
+		for toe in [b.left_toes, b.right_toes]:
+			if toe != &"" and skeleton.find_bone(toe) >= 0:
+				_surface_bones.append(toe)
+		_surface = SkinnedSurface.create(skeleton, _surface_bones)
+	var result := {"rung": 0.0, "rail": 0.0, "deck": 0.0, "where": "", "bone": "", "points": _surface.size()}
+	var worst := 0.0
+	var points := _surface.points()
+	var half := geometry.rail_half_span()
+	for i in points.size():
+		var local := rig.character_root.to_local(skeleton.global_transform * points[i])
+		var p := local + Vector3(0.0, climbed, 0.0)   # the ladder's frame: y up from its bottom
+		# Rungs near this height: the nearest one decides.
+		var index := clampi(int(round((p.y - geometry.first_rung()) / geometry.spacing())), 0, geometry.rung_count() - 1)
+		var rung_depth := geometry.rung_radius - LadderGeometry.segment_distance(p, Vector3(-half, geometry.rung_height(index), geometry.plane_ahead), Vector3(half, geometry.rung_height(index), geometry.plane_ahead))
+		var rail_depth := -INF
+		var rail_side := 0
+		for side in [-1.0, 1.0]:
+			var depth := geometry.rail_radius - LadderGeometry.segment_distance(p, Vector3(half * side, 0.0, geometry.plane_ahead), Vector3(half * side, geometry.rise, geometry.plane_ahead))
+			if depth > rail_depth:
+				rail_depth = depth
+				rail_side = int(side)
+		var deck_depth := 0.0
+		var deck_part := ""
+		if landing != null:
+			deck_depth = landing.penetration(p, p, 0.0, geometry)
+			if deck_depth > 0.0:
+				var lip := geometry.plane_ahead + landing.lip_from_rungs
+				deck_part = "below the deck top" if (geometry.rise - p.y) < (p.z - lip) else "beyond the deck face"
+		var bone_name := String(skeleton.get_bone_name(_surface.bone_of(i)))
+		if rung_depth > result.rung:
+			result.rung = rung_depth
+			if rung_depth > worst:
+				worst = rung_depth
+				result.where = "%s vertex inside rung %d" % [bone_name, index]
+				result.bone = bone_name
+		if rail_depth > result.rail:
+			result.rail = rail_depth
+			if rail_depth > worst:
+				worst = rail_depth
+				result.where = "%s vertex inside the %s rail" % [bone_name, "left" if rail_side > 0 else "right"]
+				result.bone = bone_name
+		if deck_depth > result.deck:
+			result.deck = deck_depth
+			if deck_depth > worst:
+				worst = deck_depth
+				result.where = "%s vertex %s" % [bone_name, deck_part]
+				result.bone = bone_name
+	return result
+
+
+## For a PLANTED foot (on a rung): how far its lowest skinned vertex is from the top of that rung (metres; negative = the sole is inside the rung), over the rung's footprint (within 5 cm of the rung plane in
+## z and 9 cm of the ankle in x). One value per side, NAN where the foot is not planted on a rung. This is what the "foot is on the rung" claim means at the surface.
+func planted_sole_vs_rung(pose: LadderPose, geometry: LadderGeometry, climbed: float) -> Array[float]:
+	var result: Array[float] = [NAN, NAN]
+	if _surface == null:
+		mesh_clearance(null, geometry, climbed)
+	var points := _surface.points()
+	for side in 2:
+		if pose.foot_swing[side] != 0.0 or pose.foot_rung[side] < 0:
+			continue
+		var rung_top := geometry.rung_height(pose.foot_rung[side]) + geometry.rung_radius
+		var ankle_x: float = (joints.ankle[side] as Vector3).x
+		var lowest := INF
+		for i in points.size():
+			var local := rig.character_root.to_local(skeleton.global_transform * points[i])
+			if absf(local.x - ankle_x) > 0.09 or absf(local.z - geometry.plane_ahead) > 0.05:
+				continue
+			lowest = minf(lowest, local.y + climbed)
+		if lowest < INF:
+			result[side] = lowest - rung_top
+	return result
