@@ -9,3 +9,11 @@ Real output of `tools/adda.ps1 run` and `compare` on the rescue and carry scenar
 | `rescue-mira-vs-small-mira.comparison.json` | `compare` of the two: lengths per body ratio, which findings persist or resolve |
 
 Read order: `summary.headline`, `findings[0]`, `config`, then `samples.rows` around `worst_frames`. See [../07-usage.md](../07-usage.md).
+
+## Assignment 3: a solved challenge (CH01)
+
+Worked evidence for [10-agent-workflow.md](../10-agent-workflow.md) section 4. CH01 is a public challenge whose answer is in the documents; use CH07 or CH08 for a blind attempt.
+
+* `ch01-compare.txt`: the fault run against the fault-free baseline (`adda compare`).
+* `ch01-finding.txt`: the new finding in full (`adda inspect --finding=F3`): observation, unconfirmed hypotheses, what it does not establish.
+* `ch01-isolation.txt` and `ch01-isolation.json`: the isolation experiment (`adda.isolation` v1): which modifiers move the right hand, one of them not declared in `PoseOwnership`.

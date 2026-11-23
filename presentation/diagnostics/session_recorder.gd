@@ -14,7 +14,7 @@ extends RefCounted
 ##   hands, feet        per side: the contact target or foothold (world), the final wrist or ankle (world), error, reach margin, claimed weight and owner (ContactErrorDiagnostics.measure)
 ##   carry              the carried passenger (world position, distance from the carrier's neck, carry blend), only while carrying
 ##   ladder             climbed height, the rung each foot is planted on, swing, landing status (only on a ladder)
-##   mesh               leg-vertex overlap with the ladder (only when mesh sampling is on: it costs about 3 ms a sample)
+##   mesh               leg-vertex overlap with the ladder (only when mesh sampling is on: it costs about 3.5 ms a sample)
 ## One row per FRAME: the skeleton can update more than once in a frame and only the last update is what is drawn, so a later update replaces the earlier row of the same frame.
 ## It never writes to the rig, a modifier or a target. Costs are in docs/claude/adda/08-assignment-2-report.md.
 
@@ -104,7 +104,7 @@ func watch_bone(bone: StringName) -> void:
 	if rig.skeleton.find_bone(bone) >= 0 and not _bone_names.has(bone) and not _extra.has(bone):
 		_extra.append(bone)
 
-## Samples the leg vertices against the ladder every `every` rows (0 = off). Optional because the skinned-surface capture costs about 3 ms a sample.
+## Samples the leg vertices against the ladder every `every` rows (0 = off). Optional because the skinned-surface capture and the bar test cost about 3.5 ms a sample (measured in Assignment 3).
 func enable_mesh(every := 1) -> void:
 	mesh_every = maxi(every, 1)
 	mesh_used = true

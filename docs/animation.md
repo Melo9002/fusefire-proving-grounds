@@ -172,6 +172,8 @@ For the **hands** (the one body part with several producers) there is one typed 
 
 ## Diagnostics and the workbench (Task 12)
 
+> **ADDA (AniLab Diagnostic & Debugging Assistant)** is the name of this diagnostic suite today: the Workbench below, the measurement contract, the temporal recorder, findings, reports, comparison, the command line `tools/adda.ps1` and the Why? tab. Start at [`docs/claude/adda/README.md`](claude/adda/README.md) for how to investigate an animation problem (as a person or as a coding agent), what ADDA measures and what it does not, the diagnostic challenges and the measured cost. The paragraphs below describe the original Task 12 layer.
+
 The workbench (`tools/animation_workbench/`, see its README for the panel and scenarios) is a host that inspects the shared stack. Its diagnostics live in `presentation/diagnostics/`, are **read-only, rig-only and opt-in** (nothing in the game creates them), and are usable from any host: `RigInspection` (identity, roles, measurements, capabilities, a compatibility check that does not build a rig), `PoseStageReport` (the stages in real order with declared writes and live weights), `PresentationMonitor` (a live snapshot and a bounded event history from the presenter's public accessors), `ContactErrorDiagnostics` (target against final wrist or ankle, reach margin), `MotionTrail`, `BoneHighlight`, and the older `HandContactDiagnostics`.
 
 ```mermaid

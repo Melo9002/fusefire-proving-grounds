@@ -56,6 +56,26 @@
    "armed": false,
    "symptom": "A report that a pop appears on the stairs. Establish whether there is a fault here at all. The right answer may be that the motion is unchanged from the baseline.",
    "hint_level": "none"
+  },
+  {
+   "id": "CH07",
+   "title": "Elbow off in the exploration scenario",
+   "scenario": "exploration",
+   "character": "small_mira_0",
+   "armed": true,
+   "holdout": true,
+   "symptom": "Partway through the exploration scenario an arm no longer sits where the pose pipeline put it. Locate what moves it, from when, and by how much.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH08",
+   "title": "A foot jumps at intervals on the ladder landing",
+   "scenario": "landing",
+   "character": "mira_0",
+   "armed": false,
+   "holdout": true,
+   "symptom": "During the landing a foot joint jumps for single frames. Find which one, what moves it and what kind of fault it is.",
+   "hint_level": "none"
   }
  ]
 }

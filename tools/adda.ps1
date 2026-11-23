@@ -12,7 +12,7 @@
   .\tools\adda.ps1 compare -A artifacts/adda/before.json -B artifacts/adda/after.json
 #>
 param(
-	[Parameter(Mandatory = $true, Position = 0)][ValidateSet("run", "inspect", "compare", "list")][string]$Command,
+	[Parameter(Mandatory = $true, Position = 0)][ValidateSet("run", "inspect", "compare", "list", "isolate", "challenges", "score")][string]$Command,
 	[string]$Scenario,
 	[string]$Character = "mira_0",
 	[switch]$Unarmed,
@@ -27,6 +27,15 @@ param(
 	[string]$Row,
 	[string]$A,
 	[string]$B,
+	[string]$At,
+	[string]$Bones,
+	[string]$Disable,
+	[string]$Set,
+	[string]$Challenge,
+	[string]$Fault,
+	[string]$Stage,
+	[string]$Bone,
+	[string]$Kind,
 	[string]$Godot
 )
 $ErrorActionPreference = "Stop"
@@ -36,7 +45,7 @@ if (-not $Godot) {
 	if ($found) { $Godot = $found.Source } else { throw "godot_console is not on PATH; pass -Godot <path to godot_console.exe>" }
 }
 $arguments = @("--headless")
-if ($Command -eq "run") { $arguments += @("--fixed-fps", "$Fps") }
+if ($Command -in @("run", "isolate")) { $arguments += @("--fixed-fps", "$Fps") }
 $arguments += @("--path", $root, "--script", "res://tools/adda/adda.gd", "--", $Command)
 switch ($Command) {
 	"run" {
@@ -47,6 +56,26 @@ switch ($Command) {
 		if ($Window) { $arguments += "--window=$Window" }
 		if ($Out) { $arguments += "--out=$Out" }
 		if ($FailOn) { $arguments += "--fail-on=$FailOn" }
+		if ($Challenge) { $arguments += "--challenge=$Challenge" }
+		if ($Fault) { $arguments += "--fault=$Fault" }
+		if ($Disable) { $arguments += "--disable=$Disable" }
+		if ($Set) { $arguments += "--set=$Set" }
+	}
+	"isolate" {
+		if (-not $Scenario -or -not $At -or -not $Bones) { throw "isolate needs -Scenario <id> -At <seconds> -Bones <name|@role,...>" }
+		$arguments += "--scenario=$Scenario", "--character=$Character", "--at=$At", "--bones=$Bones"
+		if ($Unarmed) { $arguments += "--unarmed" }
+		if ($Window) { $arguments += "--window=$Window" }
+		if ($Challenge) { $arguments += "--challenge=$Challenge" }
+		if ($Fault) { $arguments += "--fault=$Fault" }
+		if ($Out) { $arguments += "--out=$Out" }
+	}
+	"score" {
+		if (-not $Challenge) { throw "score needs -Challenge <id> and the parts of your answer: -Stage <modifier> -Bone <name|@role> -Kind <offset|pop|drift|yaw|none>" }
+		$arguments += "--challenge=$Challenge"
+		if ($Stage) { $arguments += "--stage=$Stage" }
+		if ($Bone) { $arguments += "--bone=$Bone" }
+		if ($Kind) { $arguments += "--kind=$Kind" }
 	}
 	"inspect" {
 		if (-not $Report) { throw "inspect needs -Report <file>" }

@@ -61,3 +61,4 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 - [Simulation](../simulation.md) and [Replay](../replay.md)
 - [ADDA (AniLab Diagnostic & Debugging Assistant), Assignment 1](adda/01-baseline-and-architecture.md): [inventory](adda/02-capability-inventory.md), [measurement contract](adda/03-measurement-contract.md), [requirements and research](adda/04-requirements-and-research.md), [ADR-0001](adda/05-adr-0001-measurement-architecture.md), [handoff](adda/06-handoff-assignment-2.md)
 - [ADDA, Assignment 2](adda/08-assignment-2-report.md): spatial observability, timelines, comparison, structured reports and the Why? tab; [usage guide for people and agents](adda/07-usage.md)
+- [ADDA, Assignment 3](adda/12-final-report.md): diagnostic challenges and validation, agent and human workflows, performance, final report and acceptance assessment; **start at the [ADDA documentation hub](adda/README.md)**

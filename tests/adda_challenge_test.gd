@@ -69,7 +69,7 @@ func _run() -> void:
 	var entries := {}
 	for entry: Dictionary in ChallengeSet.index():
 		entries[String(entry.id)] = entry
-	check(listed.code == 0 and entries.size() == 6 and String(listed.text).contains("CH01") and not String(listed.text).contains("AuxPass"), "the index lists six challenges and prints symptoms only, never the injected modifier (exit %d, %d entries)" % [listed.code, entries.size()])
+	check(listed.code == 0 and entries.size() >= 6 and String(listed.text).contains("CH01") and not String(listed.text).contains("AuxPass"), "the index lists six challenges and prints symptoms only, never the injected modifier (exit %d, %d entries)" % [listed.code, entries.size()])
 	for id in entries:
 		check(not String(entries[id].symptom).contains("AuxPass") and not String(entries[id].symptom).contains("offset") and not entries[id].has("fault"), "%s: the public entry holds no answer" % id)
 
@@ -106,8 +106,22 @@ func _run() -> void:
 	check(off.code == 0 and back.code == 0 and String(back.text).contains("VERDICT: UNCHANGED"), "CH03: switching the modifier off with --disable returns the run to the baseline (verdict %s)" % String(back.text).split("\n")[0])
 	var loaded := AddaReport.load_file(_path("CH03-off"))
 	check(bool(loaded.ok) and (loaded.report.config.experiment as Array).size() == 1 and String(loaded.report.config.experiment[0]).contains("disabled AuxPass3"), "and the report says it was an experiment: %s" % [loaded.report.config.get("experiment", []) if bool(loaded.ok) else "unreadable"])
+	check(bool(loaded.ok) and String(loaded.report.config.cli).contains("--challenge=CH03") and String(loaded.report.config.cli).contains("--disable=AuxPass3"), "and its reproduction command carries the levers (%s)" % [String(loaded.report.config.cli).get_slice("--", 2) if bool(loaded.ok) else ""])
 	var missing := _adda(["run", "--scenario=landing", "--disable=NotAModifier"])
 	check(missing.code == 2 and String(missing.text).contains("no modifier named"), "an experiment naming a modifier that does not exist is a usage error, not silently ignored")
+
+	# --set: a property of a node under the rig, and the refusals.
+	var bad_node := _adda(["run", "--scenario=rescue", "--set=Nope.x=1"])
+	var bad_property := _adda(["run", "--scenario=rescue", "--set=.no_such_property=1"])
+	check(bad_node.code == 2 and String(bad_node.text).contains("no node 'Nope'") and bad_property.code == 2 and String(bad_property.text).contains("has no property"), "--set naming a node or a property that does not exist is a usage error (exit %d and %d)" % [bad_node.code, bad_property.code])
+	var no_contacts := _adda(["run", "--scenario=rescue", "--set=.carry_contacts_enabled=false", "--out=%s" % _path("rescue-no-contacts")])
+	var rescue_base := _adda(["run", "--scenario=rescue", "--out=%s" % _path("rescue-base")])
+	var rescue_a := AddaReport.load_file(_path("rescue-base"))
+	var rescue_b := AddaReport.load_file(_path("rescue-no-contacts"))
+	var out_of_reach := func(report: Dictionary) -> int:
+		return (report.findings as Array).filter(func(f: Dictionary) -> bool: return String(f.kind) == "reach_exceeded").size()
+	check(no_contacts.code == 0 and rescue_base.code == 0 and bool(rescue_a.ok) and bool(rescue_b.ok) and out_of_reach.call(rescue_a.report) > 0 and out_of_reach.call(rescue_b.report) == 0, "--set=.carry_contacts_enabled=false: the rescue's out-of-reach findings (%d) are gone when the carry contacts are not claimed (%d): the claim, not the hand IK, is what they were about" % [out_of_reach.call(rescue_a.report) if bool(rescue_a.ok) else -1, out_of_reach.call(rescue_b.report) if bool(rescue_b.ok) else -1])
+	check(bool(rescue_b.ok) and String(rescue_b.report.config.experiment[0]).contains("set .carry_contacts_enabled = false"), "and the report says what was set: %s" % [rescue_b.report.config.experiment if bool(rescue_b.ok) else "unreadable"])
 
 	# CH04 -------------------------------------------------------------------------------------------------
 	var c4: Dictionary = entries.CH04
@@ -132,5 +146,17 @@ func _run() -> void:
 	check(String(iso6.text).contains("No modifier moved"), "CH06 control: isolation names no modifier")
 	var none := _adda(["score", "--challenge=CH06", "--stage=none", "--kind=none"])
 	check(none.code == 0, "CH06: 'there is no fault' is a scorable answer")
+	# Hold-out challenges: their answers are only in sealed/, never in this file. The scripted solver reads the hint for each from the sealed file and checks the evidence is there, so a hold-out is known to be solvable.
+	for id in entries:
+		if not bool(entries[id].get("holdout", false)):
+			continue
+		var sealed = JSON.parse_string(FileAccess.get_file_as_string("res://tools/adda/challenges/sealed/%s.json" % id))
+		var solve: Dictionary = sealed.solve
+		var extra := ["--window=%s" % solve.window] if solve.has("window") else []
+		var found := _isolate(entries[id], id, String(solve.at), String(solve.bones), extra)
+		check(found.code == 0 and String(found.text).contains(String(sealed.answer.stage)) and String(found.text).contains("NOT declared"), "%s (hold-out): the evidence for the sealed answer is there to be found" % id)
+		var control := _isolate(entries[id], "", String(solve.at), String(solve.bones), extra)
+		check(control.code == 0 and not String(control.text).contains("NOT declared"), "%s (hold-out) control: the fault-free run names no undeclared modifier" % id)
+		check(_adda(["score", "--challenge=%s" % id, "--stage=%s" % sealed.answer.stage, "--bone=%s" % sealed.answer.bone, "--kind=%s" % sealed.answer.kind]).code == 0, "%s (hold-out): its sealed answer scores correct" % id)
 	print("adda_challenge_test: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

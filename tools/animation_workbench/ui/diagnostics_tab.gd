@@ -21,6 +21,8 @@ Does the body cross the ladder?  -> Ladder landing and the 'Ladder collisions' o
 What is the presenter doing, and since when?  -> Live presentation / Recent events (the presenter's own clock).
 Which stage owns this bone?  -> Pose stages (DECLARED ownership and live weight, not a measured change).
 Where did the root go?  -> Root trail.  Does the weapon grip fit?  -> Weapon-grip contacts.
+Which modifier moves this bone, even one nobody declared?  -> Why? tab, Inspect a body part, 'Which pose stage moves it?' (an experiment: it switches each modifier off in turn and puts it back).
+Full guide: docs/claude/adda/README.md.
 Every number is read inside skeleton_updated and stamped; a number that is stale or could not be read says so instead of showing 0."
 var _trail: CheckBox
 var _grip: CheckBox

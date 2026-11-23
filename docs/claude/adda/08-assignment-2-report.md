@@ -72,7 +72,7 @@ From `tools/quality/adda_overhead_probe.gd` (fixed 60 fps, headless, so frame ti
 | Item | Cost |
 |---|---|
 | recorder | +0.10 ms a frame (0.45 to 0.54 ms) |
-| leg-vertex sampler (optional) | +2.67 ms a frame on a climb (the Assignment 1 figure of about 3 ms) |
+| leg-vertex sampler (optional) | ~~+2.67 ms a frame on a climb~~ **corrected in Assignment 3: +14.3 ms a frame in steady ladder use** (that probe did not include the rung-and-rail test on every sample); after the exact speed-up, +3.5 ms ([12-final-report.md](12-final-report.md) section 7) |
 | analysis of a 13 s run (779 rows) | 138 ms |
 | report build (analysis, findings, serialisation) | about 255 ms |
 | report file | about 267 KB summary for a busy ladder run; 1.6 MB with every row |

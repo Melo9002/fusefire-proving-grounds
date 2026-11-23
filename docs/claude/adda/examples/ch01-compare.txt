@@ -1,0 +1,2 @@
+VERDICT: REGRESSED   (improved 0, regressed 0, unchanged 13, not comparable 0, missing 0)
+  NEW FINDING [medium] Pose snap: 3 bones at once

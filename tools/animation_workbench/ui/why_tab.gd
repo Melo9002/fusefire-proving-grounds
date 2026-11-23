@@ -34,7 +34,7 @@ func setup(workbench: Node3D) -> void:
 	var start := WorkbenchUI.section(self, "Record, then ask")
 	start.add_child(WorkbenchUI.label("Play a scenario (Scenario tab) and it is recorded. Then 'What happened?' lists what stood out. Recording only reads the pose; it changes nothing.", 12, WorkbenchUI.DIM))
 	start.add_child(WorkbenchUI.row([["Record (free play)", _toggle_recording, "Records whatever the character does until you stop"], ["What happened?", _analyze, "Analyse the recording so far"]]))
-	_mesh_check = WorkbenchUI.check("Also sample leg vertices against the ladder (slow, about 3 ms a frame)", false, func(_on: bool) -> void: pass, "Needed to say whether legs cross rungs; off means ADDA says it did not look")
+	_mesh_check = WorkbenchUI.check("Also sample leg vertices against the ladder (slow, about 3.5 ms a frame)", false, func(_on: bool) -> void: pass, "Needed to say whether legs cross rungs; off means ADDA says it did not look")
 	start.add_child(_mesh_check)
 	_status = WorkbenchUI.label("not recording", 12, WorkbenchUI.ACCENT)
 	start.add_child(_status)

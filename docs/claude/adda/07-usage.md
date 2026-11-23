@@ -22,7 +22,7 @@ ADDA answers "why is my robot doing that?" with measurements, and says plainly w
 6. **Compare with an earlier run** (folded): *Save as baseline*, change something, run the same scenario again, *Compare with baseline*: improved, regressed, unchanged, and what cannot validly be compared (see 4).
 7. **Hand it to someone**: *Export report (JSON)* writes the report an agent would get; *Copy agent command* copies the headless command that reproduces it.
 
-Tick *Also sample leg vertices against the ladder* before a ladder scenario if you want to know whether legs cross rungs (costs about 3 ms a frame). With it off, ADDA says it did not look.
+Tick *Also sample leg vertices against the ladder* before a ladder scenario if you want to know whether legs cross rungs (about 3.5 ms a frame; 1 ms if sampled every 4th update). With it off, ADDA says it did not look.
 
 ## 3. For an agent: the command line
 
@@ -42,6 +42,10 @@ Tick *Also sample leg vertices against the ladder* before a ladder scenario if y
 | `inspect` | one finding in full (`-Finding F3` or its stable key), or one recorded row (`-Row 212`); with neither, every finding |
 | `compare` | two reports: verdict and every metric, with `-FailOn regression` for a gate |
 | `list` | scenarios, characters, the report format |
+| `isolate` | an **experiment**: play a scenario to `-At <seconds>`, hold it, switch each pose modifier off in turn and report which move `-Bones "@right_hand,..."` (and which are not declared in `PoseOwnership`). `-Window n` samples n updates per condition to see a fault that fires on some updates only |
+| `challenges`, `score` | the diagnostic challenges (symptoms only) and a scorer for an answer; see [10-agent-workflow.md](10-agent-workflow.md) |
+
+`run` also takes experiment levers, recorded in `config.experiment`: `-Disable <modifier>` (a modifier the rig keeps switching back on is reported `NOT HELD`), `-Set "<NodePath>.<property>=<value>"`, `-Fault <json>` and `-Challenge <id>`. The investigation procedure for agents and the diagnostic challenges are in documents 09 to 12; start at [README.md](README.md).
 
 Exit codes: `0` done, `1` a `-FailOn` condition held, `2` a usage problem or a configuration that cannot run (for example `tactical` unarmed: "needs a weapon", no report is written).
 

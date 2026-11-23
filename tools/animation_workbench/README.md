@@ -6,6 +6,8 @@ Every number the workbench shows is read inside `skeleton_updated` and stamped; 
 
 `pose_workbench.tscn` is a **host** of the shared character stack, like the tactical adapter and the exploration host, built for inspection: it drives a `CharacterRig` and its `CharacterPresenter` exactly as the game does (presenter tick, action stage, weapon pose), with no tactical unit, match or mission. Architecture: [`docs/animation.md`](../../docs/animation.md).
 
+**Documentation.** Everything about ADDA (what it measures and does not, how to investigate a problem as a person or as a coding agent, the diagnostic challenges, performance and limitations) starts at [`docs/claude/adda/README.md`](../../docs/claude/adda/README.md). The command-line interface is `tools/adda.ps1`.
+
 ## Quick start
 
 Open `tools/animation_workbench/pose_workbench.tscn` in Godot and press F6, or from a shell:

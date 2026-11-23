@@ -137,7 +137,7 @@ func _run(flags: Dictionary) -> void:
 		_fail("the scenario did not finish within %d frames" % limit, 1)
 		return
 	var character := String(WorkbenchSession.character) if WorkbenchSession.character != &"" else "mira_0"
-	var cli := "godot_console --headless%s --path . --script res://tools/adda/adda.gd -- run --scenario=%s --character=%s%s%s%s" % [(" --fixed-fps %s" % flags.fps) if flags.has("fps") else "", id, character, "" if WorkbenchSession.armed else " --unarmed", " --mesh" if flags.has("mesh") else "", (" --challenge=%s" % flags.challenge) if flags.has("challenge") else ((" --fault=" + String(flags.fault)) if flags.has("fault") else "")]
+	var cli := "godot_console --headless%s --path . --script res://tools/adda/adda.gd -- run --scenario=%s --character=%s%s%s%s" % [(" --fixed-fps %s" % flags.fps) if flags.has("fps") else "", id, character, "" if WorkbenchSession.armed else " --unarmed", " --mesh" if flags.has("mesh") else "", _lever_text(flags)]
 	var window: Array = []
 	if flags.has("window"):
 		var parts := String(flags.window).split("-")
@@ -210,7 +210,7 @@ func _isolate(flags: Dictionary) -> void:
 			bones.append(resolved)
 	var result := await StageIsolation.new().measure(bench.rig, bones, self, maxi(int(flags.get("window", "1")), 1))
 	result["config"] = {"scenario": String(id), "character": String(WorkbenchSession.character), "armed": WorkbenchSession.armed, "at_s": float(flags.get("at", "0")), "frame_step_s": 1.0 / 60.0,
-		"revision": AddaReport.revision(), "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=%s --at=%s --bones=%s --character=%s%s" % [id, flags.get("at", "0"), flags.get("bones", ""), String(WorkbenchSession.character), "" if WorkbenchSession.armed else " --unarmed"]}
+		"revision": AddaReport.revision(), "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=%s --at=%s --bones=%s --character=%s%s%s%s" % [id, flags.get("at", "0"), flags.get("bones", ""), String(WorkbenchSession.character), "" if WorkbenchSession.armed else " --unarmed", _lever_text(flags), (" --window=%s" % flags.window) if flags.has("window") else ""]}
 	print(StageIsolation.text(result))
 	if flags.has("out"):
 		var file := FileAccess.open(String(flags.out), FileAccess.WRITE)
@@ -259,6 +259,19 @@ func _experiment_text(experiment: Dictionary, switched_back: Dictionary, frames:
 				text += " (NOT HELD: the rig switched it back on in %d of %d frames, so this did not test what it says)" % [int(switched_back[name]), frames]
 		out.append(text)
 	return out
+
+## The levers of a run as command-line text (the challenge or fault that was injected, the modifiers disabled, the values set), so a reproduction command repeats the same run.
+func _lever_text(flags: Dictionary) -> String:
+	var text := ""
+	if flags.has("challenge"):
+		text += " --challenge=%s" % flags.challenge
+	elif flags.has("fault"):
+		text += " --fault=%s" % flags.fault
+	if flags.has("disable"):
+		text += " --disable=%s" % flags.disable
+	if flags.has("set"):
+		text += ' --set="%s"' % flags.set
+	return text
 
 func _print_summary(report: Dictionary, path: String, error: Error) -> void:
 	var config: Dictionary = report.config
