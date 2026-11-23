@@ -96,16 +96,8 @@ func measure(rig: CharacterRig, bone_names: Array, tree: SceneTree, window := DE
 			max_angle = maxf(max_angle, float(angle[bone]))
 			spike[bone] = maxf(float(baseline_spike.get(bone, 0.0)) - float(without_spike.get(bone, 0.0)), 0.0)
 			max_spike = maxf(max_spike, float(spike[bone]))
-		var floor_m := maxf(EFFECT_THRESHOLD, drift * 2.0)
-		var kind := ""
-		if maximum >= floor_m:
-			kind = "steady"
-		elif max_spike >= floor_m:
-			kind = "intermittent"
-		elif max_angle >= ANGLE_THRESHOLD_DEG:
-			kind = "rotation only"
 		result.modifiers.append({"name": String(modifier.name), "declared": declared, "was_active": true, "effect_mm": _mm(effect), "effect_deg": _deg(angle), "spike_mm": _mm(spike),
-			"max_mm": maxf(maximum, max_spike) * 1000.0, "max_deg": max_angle, "moves_bones": kind != "", "kind": kind, "held_off": true})
+			"max_mm": maxf(maximum, max_spike) * 1000.0, "max_deg": max_angle, "max_steady_mm": maximum * 1000.0, "max_spike_mm": max_spike * 1000.0, "moves_bones": false, "kind": "", "held_off": true})
 	# Everything off: how much the modifiers contribute in total (the clip alone is the reference).
 	for modifier in modifiers:
 		modifier.active = false
@@ -117,6 +109,26 @@ func measure(rig: CharacterRig, bone_names: Array, tree: SceneTree, window := DE
 	var restore_error := _distance(baseline, restored.last)
 	result["restored"] = restore_error <= maxf(0.0005, drift * 2.0) or _window > 1
 	result["restore_error_mm"] = restore_error * 1000.0
+	var restore_angle := 0.0
+	for bone in _per_bone_angle(baseline, restored.last):
+		restore_angle = maxf(restore_angle, float(_per_bone_angle(baseline, restored.last)[bone]))
+	# The experiment's own residual (what switching things off and on again left behind, from state some modifier keeps) is the noise floor: an effect no larger than it cannot be attributed.
+	var floor_m := maxf(EFFECT_THRESHOLD, maxf(drift, restore_error) * 2.0)
+	var floor_deg := maxf(ANGLE_THRESHOLD_DEG, restore_angle * 2.0)
+	result["noise_floor_mm"] = floor_m * 1000.0
+	result["noise_floor_deg"] = floor_deg
+	for m: Dictionary in result.modifiers:
+		if not bool(m.get("was_active", false)) or not bool(m.get("held_off", true)):
+			continue
+		var kind := ""
+		if float(m.max_steady_mm) / 1000.0 >= floor_m:
+			kind = "steady"
+		elif float(m.max_spike_mm) / 1000.0 >= floor_m:
+			kind = "intermittent"
+		elif float(m.max_deg) >= floor_deg:
+			kind = "rotation only"
+		m["kind"] = kind
+		m["moves_bones"] = kind != ""
 	if drift > EFFECT_THRESHOLD and _window == 1:
 		result.status = "inconclusive"
 		result.reason = "the pose was still moving by %.1f mm between two samples of the SAME state, so an effect below that cannot be attributed; hold the pose (pause, or step a scenario to a moment) and run again" % (drift * 1000.0)
@@ -238,16 +250,16 @@ static func text(result: Dictionary) -> String:
 	for mover: Dictionary in movers:
 		var detail: Array[String] = []
 		for bone in mover.effect_mm:
-			if float(mover.effect_mm[bone]) >= EFFECT_THRESHOLD * 1000.0:
+			if float(mover.effect_mm[bone]) >= float(result.get("noise_floor_mm", 1.0)):
 				detail.append("%s moves %.1f mm" % [bone, float(mover.effect_mm[bone])])
-			elif float(mover.spike_mm.get(bone, 0.0)) >= EFFECT_THRESHOLD * 1000.0:
+			elif float(mover.spike_mm.get(bone, 0.0)) >= float(result.get("noise_floor_mm", 1.0)):
 				detail.append("%s spikes %.1f mm on some updates" % [bone, float(mover.spike_mm[bone])])
-			if float(mover.effect_deg.get(bone, 0.0)) >= ANGLE_THRESHOLD_DEG:
+			if float(mover.effect_deg.get(bone, 0.0)) >= float(result.get("noise_floor_deg", ANGLE_THRESHOLD_DEG)):
 				detail.append("%s turns %.1f deg" % [bone, float(mover.effect_deg[bone])])
 		lines.append("  %s%s (%s): %s" % [mover.name, "" if bool(mover.declared) else "  (NOT declared in PoseOwnership)", mover.kind, ", ".join(detail)])
 	for m: Dictionary in result.modifiers:
 		if m.has("held_off") and not bool(m.held_off):
 			lines.append("  %s could NOT be tested: %s" % [m.name, m.note])
-	lines.append("  restored: %s (%.2f mm)" % ["yes" if bool(result.get("restored", false)) else "NO", float(result.get("restore_error_mm", 0.0))])
+	lines.append("  restored: %s (%.2f mm); effects below %.1f mm or %.1f deg are inside the experiment's own residual and are not attributed" % ["yes" if bool(result.get("restored", false)) else "NO", float(result.get("restore_error_mm", 0.0)), float(result.get("noise_floor_mm", 0.0)), float(result.get("noise_floor_deg", 0.0))])
 	lines.append("(An effect is what changes when one modifier is switched off; it is not a statement of what the modifier is declared to write.)")
 	return "\n".join(lines)

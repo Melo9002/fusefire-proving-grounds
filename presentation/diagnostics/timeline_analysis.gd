@@ -290,6 +290,12 @@ static func _snaps(rows: Array, events: Array[Dictionary], metrics: Dictionary) 
 			return poles[idx] if poles.size() > idx else null
 		for spike in _spikes(rows, pole_reader):
 			events.append(_event("target_jump", "%s knee pole" % ["left", "right"][idx], rows, int(spike.i), int(spike.i), snappedf(float(spike.step) * 100.0, 0.1), "cm", {"context": rows[int(spike.i)].get("context", ""), "speed_mps": snappedf(float(spike.speed), 0.01)}))
+	# The carried passenger: a body that jumps against the carrier is an attachment break, whatever the carrier's own pose did.
+	var passenger_reader := func(r: Dictionary) -> Variant:
+		var carry: Dictionary = r.get("carry", {})
+		return carry.get("passenger") if not carry.is_empty() else null
+	for spike in _spikes(rows, passenger_reader):
+		events.append(_event("target_jump", "passenger", rows, int(spike.i), int(spike.i), snappedf(float(spike.step) * 100.0, 0.1), "cm", {"context": rows[int(spike.i)].get("context", ""), "speed_mps": snappedf(float(spike.speed), 0.01)}))
 	_metric(metrics, "discontinuity.count", float(groups.size()), "moments", "lower", ["frame_rate"], 0.0, "pose snaps: moments when a bone moved far faster than the frames around it")
 	_metric(metrics, "discontinuity.worst_step_cm", worst_step, "cm", "lower", ["frame_rate", "length"], 0.5, "the largest one-frame step of any bone at a pose snap")
 	_metric(metrics, "discontinuity.worst_speed_mps", worst_speed, "m/s", "lower", ["frame_rate"], 0.2, "the fastest snap")

@@ -30,6 +30,7 @@ func _run() -> void:
 	_retarget()
 	_frame_rate()
 	_findings()
+	_passenger_and_pole()
 	print("adda_timeline_test: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
@@ -280,3 +281,29 @@ func _findings() -> void:
 	check(Findings.headline(none).contains("not proof"), "no findings is not reported as 'fine': the headline says it is not proof")
 	var text := Findings.explain(findings[0], false)
 	check(text.contains("NOT confirmed") or text.contains("unknown"), "the plain text says what is unconfirmed or unknown")
+
+# ---- 8 (Assignment 3): the carried passenger and the knee pole are intended points too
+
+func _carry_rows(jump_at := -1) -> Array:
+	var rows := []
+	for i in 60:
+		var x := 0.01 * float(i) + (0.12 if jump_at >= 0 and i >= jump_at else 0.0)
+		rows.append(_row(i, 1.0 / 60.0, {"context": "carry", "carry": {"passenger": Vector3(x, 1.0, 0.0), "neck_to_passenger_cm": 15.0, "blend": 0.0, "claims": 2}}))
+	return rows
+
+func _pole_rows(jump_at := -1) -> Array:
+	var rows := []
+	for i in 60:
+		var pole := Vector3(-0.5, 0.7 + 0.002 * float(i), 0.0) + (Vector3(0.2, 0.0, 0.1) if i == jump_at else Vector3.ZERO)
+		rows.append(_row(i, 1.0 / 60.0, {"context": "ladder", "ladder": {"climbed": 1.0, "knee_poles": [Vector3(0.5, 0.7, 0.0), pole]}}))
+	return rows
+
+func _passenger_and_pole() -> void:
+	var smooth := TimelineAnalysis.analyze(_carry_rows())
+	var jumped := TimelineAnalysis.analyze(_carry_rows(30))
+	var jump := _first(jumped.events, "target_jump")
+	check(_count(smooth.events, "target_jump") == 0, "normal case: a passenger carried smoothly has no jump")
+	check(not jump.is_empty() and String(jump.subject) == "passenger" and absf(float(jump.value) - 12.0) < 1.0, "a passenger that moves 12 cm in one frame is a target_jump of 12 cm named 'passenger' (got %s)" % [jump.get("value")])
+	check(_count(TimelineAnalysis.analyze(_pole_rows()).events, "target_jump") == 0, "normal case: a knee pole that moves slowly has no jump")
+	var pole := _first(TimelineAnalysis.analyze(_pole_rows(30)).events, "target_jump")
+	check(not pole.is_empty() and String(pole.subject) == "right knee pole", "a right knee pole that pops for one frame is a target_jump on 'right knee pole' (got %s)" % [pole.get("subject")])

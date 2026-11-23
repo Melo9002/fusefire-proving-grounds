@@ -12,6 +12,7 @@ extends RefCounted
 ##   root, yaw          character root, world
 ##   bones              the mapped bones' positions in CHARACTER space (x left, y up, z forward; the root's own frame, so root travel does not look like limb motion)
 ##   hands, feet        per side: the contact target or foothold (world), the final wrist or ankle (world), error, reach margin, claimed weight and owner (ContactErrorDiagnostics.measure)
+##   carry              the carried passenger (world position, distance from the carrier's neck, carry blend), only while carrying
 ##   ladder             climbed height, the rung each foot is planted on, swing, landing status (only on a ladder)
 ##   mesh               leg-vertex overlap with the ladder (only when mesh sampling is on: it costs about 3 ms a sample)
 ## One row per FRAME: the skeleton can update more than once in a frame and only the last update is what is drawn, so a later update replaces the earlier row of the same frame.
@@ -154,6 +155,10 @@ func _on_final_pose() -> void:
 	if rig.ladder != null and rig.ladder.pose != null and rig.ladder.pose.on_ladder:
 		row["ladder"] = {"climbed": snappedf(rig.ladder.climbed, 0.0001), "foot_rung": [rig.ladder.pose.foot_rung[0], rig.ladder.pose.foot_rung[1]], "foot_swing": [snappedf(rig.ladder.pose.foot_swing[0], 0.001), snappedf(rig.ladder.pose.foot_swing[1], 0.001)],
 			"landing": String(rig.ladder.landing_status), "knee_poles": _markers(rig.knee_poles), "foot_targets": _markers(rig.foot_targets)}
+	if is_instance_valid(rig.carry_passenger):
+		# The carried body, from the rig's public view of it: where it is (world), how far it is from the carrier's neck, and the carry blend. What a rescue's "attachment" can be judged from.
+		var neck := skeleton_world(rig.bones.neck)
+		row["carry"] = {"passenger": rig.carry_passenger.global_position, "neck_to_passenger_cm": snappedf(neck.distance_to(rig.carry_passenger.global_position) * 100.0, 0.1), "blend": snappedf(rig.carry_motion_blend, 0.001), "claims": rig.carry_contact_report.size()}
 	_prev_t = presenter_time
 	if int(_pending_mesh.get("update", -1)) == int(stamp.update):
 		row["mesh"] = _pending_mesh.data
@@ -163,6 +168,10 @@ func _on_final_pose() -> void:
 		rows.pop_front()
 		dropped += 1
 	row_recorded.emit(row)
+
+func skeleton_world(bone: StringName) -> Vector3:
+	var index := rig.skeleton.find_bone(bone)
+	return rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(index).origin if index >= 0 else Vector3.ZERO
 
 ## World positions of the rig's IK helper nodes (the inputs the traversal stages feed the leg solver), read-only; empty when the rig has none.
 func _markers(nodes: Array) -> Array:
