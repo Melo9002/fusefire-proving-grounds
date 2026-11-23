@@ -311,6 +311,7 @@
   "adda_report_compare_test": {"sub": ["animation", "tooling"], "scope": "component"},
   "adda_workflow_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "adda_cli_test": {"sub": ["animation", "tooling"], "scope": "integration"},
+  "adda_why_capture": {"sub": ["animation", "tooling"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "workbench_ladder_closeup_capture": {"sub": ["animation", "tooling"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "ladder_review_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_host_test": {"sub": ["animation"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},

@@ -462,12 +462,13 @@ func step_sim(frames := 1) -> void:
 func pending_steps() -> int:
 	return _step_requests
 
-func start_scenario(id: StringName) -> bool:
+## `record` false plays it without ADDA's recorder starting over (a replay to a finding must not erase the recording the finding came from).
+func start_scenario(id: StringName, record := true) -> bool:
 	var definition := WorkbenchScenarios.find(id)
 	if definition.is_empty() or not WorkbenchScenarios.supported(definition, rig).ok:
 		return false
 	set_sim_paused(false)
-	if diagnostics != null:
+	if diagnostics != null and record:
 		diagnostics.begin_recording(func() -> float: return float(scenario_runner.time) if scenario_runner.running else -1.0)   # ADDA's recorder is passive: it only reads inside skeleton_updated
 		if not scenario_runner.step_run.is_connected(_mark_step):
 			scenario_runner.step_run.connect(_mark_step)
@@ -481,14 +482,14 @@ func _mark_step(_index: int, label: String) -> void:
 
 ## ADDA: plays a scenario again and stops, paused, at scenario time `seconds`: the moment a finding names. The steps are `step_seconds` long (set it to the recorded frame step first), so the same moment comes back.
 func replay_to(id: StringName, seconds: float) -> bool:
-	if not start_scenario(id):
+	if not start_scenario(id, false):
 		return false
 	set_sim_paused(true)
 	step_sim(int(round(seconds / maxf(step_seconds, 0.0001))))
 	return true
 
 ## ADDA: puts the camera on a world point (a finding's subject) from the side the camera is already on.
-func focus_on_world(point: Vector3, distance := 1.6) -> void:
+func focus_on_world(point: Vector3, distance := 2.4) -> void:
 	var away := camera.global_position - point
 	away.y = 0.0
 	away = away.normalized() if away.length() > 0.01 else Vector3.RIGHT

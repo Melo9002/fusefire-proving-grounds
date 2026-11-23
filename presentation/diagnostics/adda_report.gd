@@ -43,10 +43,16 @@ static func build(recorder: SessionRecorder, options := {}) -> Dictionary:
 			worst_frames.append({"finding": finding.id, "n": finding.observation.frames.worst_n, "st": finding.observation.frames.st0})
 	var report := {"format": FORMAT, "version": VERSION, "config": config,
 		"summary": {"headline": Findings.headline(findings), "findings": counts, "counts": analysis.get("counts", {}), "metrics": analysis.metrics},
-		"findings": findings, "worst_frames": worst_frames, "events": analysis.events, "markers": recorder.markers.duplicate(true),
+		"findings": findings, "worst_frames": worst_frames, "events": _events_for(analysis.events, options), "markers": recorder.markers.duplicate(true),
 		"samples": _samples(rows, findings, options), "instruments": instruments(rows, recorder), "limitations": limitations(),
 		"meta": {"tool": "ADDA — AniLab Diagnostic & Debugging Assistant", "generated_utc": Time.get_datetime_string_from_system(true)}}
 	return jsonable(report)
+
+## The per-bone `discontinuity` events (dozens for one pop) are what a pose_snap summarises; they are listed only with detail "full".
+static func _events_for(events: Array, options: Dictionary) -> Array:
+	if String(options.get("detail", "summary")) == "full":
+		return events
+	return events.filter(func(e: Dictionary) -> bool: return e.kind != "discontinuity")
 
 static func _samples(rows: Array, findings: Array, options: Dictionary) -> Dictionary:
 	var wanted := {}
@@ -60,11 +66,14 @@ static func _samples(rows: Array, findings: Array, options: Dictionary) -> Dicti
 				if int(row.n) >= int(window[0]) and int(row.n) <= int(window[1]):
 					wanted[int(row.n)] = true
 		else:
+			var rank := 0
 			for finding: Dictionary in findings:
 				if finding.severity == "info":
 					continue
 				var worst := int(finding.observation.frames.worst_n)
-				for n in range(worst - CONTEXT_ROWS, worst + CONTEXT_ROWS + 1):
+				var context := CONTEXT_ROWS if rank < 5 else 0   # the first findings get their neighbouring rows; the rest their worst row (`--window` or detail full for more)
+				rank += 1
+				for n in range(worst - context, worst + context + 1):
 					wanted[n] = true
 			if not rows.is_empty():
 				wanted[int(rows.front().n)] = true

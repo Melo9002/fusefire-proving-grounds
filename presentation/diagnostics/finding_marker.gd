@@ -37,7 +37,7 @@ func _ready() -> void:
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.no_depth_test = true
 	_label.fixed_size = true
-	_label.pixel_size = 0.0016
+	_label.pixel_size = 0.0004
 	_label.font_size = 28
 	_label.outline_size = 8
 	_label.modulate = Color(1.0, 0.95, 0.6)
