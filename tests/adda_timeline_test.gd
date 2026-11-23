@@ -218,6 +218,13 @@ func _retarget() -> void:
 	check(fa.size() == 1 and String(fa[0].observation.text).contains("did not jump") and not bool(fa[0].observation.facts.targets_jumped.size() > 0), "a pose snap while its target held still says the pose itself changed (%s)" % [fa[0].observation.text if not fa.is_empty() else "no finding"])
 	check(fb.size() == 1 and String(fb[0].observation.text).contains("followed a retarget") and _count(b.events, "target_jump") == 1, "a pose snap while its target jumped too says the pose followed a retarget")
 
+	# No intended point at all (a body with no stair, ladder or contact): the finding must not claim "its target did not jump".
+	var bare := []
+	for i in 80:
+		bare.append(_row(i, 1.0 / 60.0, {"bones": {"hand": Vector3(0.0 if i < 40 else 0.12, 1.0, 0.0)}}))
+	var fbare := Findings.build(TimelineAnalysis.analyze(bare).events, bare, config, names)
+	check(fbare.size() == 1 and not String(fbare[0].observation.text).contains("did not jump") and String(fbare[0].observation.text).contains("no hand target"), "with no contact target to compare, the finding says there is nothing to compare against instead of 'did not jump' (%s)" % [fbare[0].observation.text if not fbare.is_empty() else ""])
+
 # ---- 7
 
 func _frame_rate() -> void:

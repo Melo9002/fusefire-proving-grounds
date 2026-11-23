@@ -18,22 +18,23 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 |---|---|
 | `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
 | `--unarmed` | build the character without its weapon |
-| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing` |
-| `--tab=<0-3>` | open on a tab |
+| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing`, `rescue` |
+| `--tab=<0-4>` | open on a tab (4 = Why?) |
 | `--side-view`, `--auto-sequence` | as before |
 
 The **Evidence** tab prints the exact command for the current configuration; its JSON report now carries an `adda` block of measurement records (kind, status, pose, space, what each does not establish).
 
-## The panel: four tabs, four questions
+## The panel: five tabs, five questions
 
 The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. Compact tables use a 14-point minimum and the panel can occupy up to 44% of the viewport to improve readability at 1280×720. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
 
 | Tab | Question | What it holds |
 |---|---|---|
 | **Character** | What am I inspecting? | rig identity and body proportions; semantic roles and the bones they resolved to (required `*` and optional); capabilities with the resolver's reason (supported, fallback, unsupported, not implemented); degraded stages; equipment state; a character and armed/unarmed switch; a compatibility check |
-| **Scenario** | What am I asking it to do? | three scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
+| **Scenario** | What am I asking it to do? | scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
 | **Diagnostics** | What is the animation system doing? | live presentation state; the measured contacts; a bounded event history; overlay switches; the pose stages in execution order with declared writes and live weights; "why is this bone moving" |
 | **Evidence** | How do I reproduce and show it? | screenshot, JSON report, the relaunch command |
+| **Why?** | Why is my robot doing that? | ADDA's recording of the scenario turned into findings in plain words (what was measured, possible causes marked unconfirmed, cause unknown); *Show it* on the body, *Replay to this moment*, a body-part inspector, compare with a saved baseline, export the report an agent gets. See [`docs/claude/adda/07-usage.md`](../../docs/claude/adda/07-usage.md) |
 
 ### Scenarios
 
@@ -45,6 +46,7 @@ Each preset is data in `workbench_scenarios.gd`: timed steps calling the workben
 | `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
 | `contacts` | a 12-tread stair, then a 4 m ladder shown from a three-quarter inspection camera, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
 | `landing` | the supported ladder transfer on a 3 m ladder: a deck with posts and a deck whose ladder rails run on, each climbed and entered in reverse, then a deck with nothing to hold and a lip too far for the arm (both must stay on the fallback). Uses `LandingFixtures`; the Diagnostics tab shows the landing status and the measured deck and bar clearances. | none (unarmed works) | **synthetic** deck; the pose is the production solver and rig, the landing is the same `LadderLanding` the sandbox supplies |
+| `rescue` | pick a casualty up from the floor, carry it walking, stop, set it down (the R, P, M and Q key calls, as steps); contact diagnostics switch on | nothing (armed or unarmed) | the workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's |
 
 An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
 

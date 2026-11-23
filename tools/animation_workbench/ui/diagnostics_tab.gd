@@ -15,7 +15,8 @@ var _landing: Label
 var _recording: Label
 var _layer_checks: Dictionary = {}
 var _master: CheckBox
-const ADDA_GUIDE := "Where is the contact, and how far off is it?  -> Contact measurement (TARGET ERROR, REACH, SUPPORT CLAIM; a claim is not physical support).
+const ADDA_GUIDE := "Why is my robot doing that? (a foot slides, a hand snaps, a leg crosses a rung)  -> the Why? tab: it records the scenario and lists what stood out, in words, with possible causes marked unconfirmed.
+Where is the contact, and how far off is it?  -> Contact measurement (TARGET ERROR, REACH, SUPPORT CLAIM; a claim is not physical support).
 Does the body cross the ladder?  -> Ladder landing and the 'Ladder collisions' overlay (CAPSULE and sampled-VERTEX overlap; neither is a full mesh intersection).
 What is the presenter doing, and since when?  -> Live presentation / Recent events (the presenter's own clock).
 Which stage owns this bone?  -> Pose stages (DECLARED ownership and live weight, not a measured change).

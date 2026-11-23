@@ -144,13 +144,14 @@ func _report_fields(run: Dictionary) -> void:
 func _determinism(a: Dictionary, a2: Dictionary) -> void:
 	var result := ReportCompare.compare(a.report, a2.report)
 	# In-process, the rig's own frame time is the engine's real delta (not fixed), so two runs agree only to within that noise; the EXACT reproducibility contract is tested with --fixed-fps in adda_cli_test.
-	check(result.comparable and int(result.counts.regressed) == 0 and int(result.counts.incomparable) == 0 and int(result.counts.missing) == 0, "the same run twice compares with no regression and nothing incomparable (%s)" % ReportCompare.text(result).substr(0, 300))
-	var close := true
+	check(result.comparable and int(result.counts.incomparable) == 0 and int(result.counts.missing) == 0, "the same run twice is comparable with nothing incomparable or missing")
 	var worst := 0.0
-	for key in a.report.summary.metrics:
-		var d := absf(float(a.report.summary.metrics[key].value) - float(a2.report.summary.metrics[key].value))
-		worst = maxf(worst, d if not (a.report.summary.metrics[key].tags as Array).has("frame_rate") else 0.0)
-	check(worst < 3.0, "and no non-frame-rate metric moves by more than 3 units between the two runs (worst %.3f)" % worst)
+	var worst_key := ""
+	for row: Dictionary in result.metrics:
+		if row.delta != null and absf(float(row.delta)) > worst:
+			worst = absf(float(row.delta))
+			worst_key = String(row.key)
+	check(worst < 3.0, "and no metric differs between the two runs by more than 3 units (worst %.3f in %s: the rig's own frame time is not fixed in-process)" % [worst, worst_key])
 
 # ---- 4
 
@@ -165,7 +166,7 @@ func _experiments(a: Dictionary, unarmed: Dictionary, small: Dictionary, slow: D
 	var rates := ReportCompare.compare(a.report, slow.report)
 	check(_row(rates, "discontinuity.worst_speed_mps").verdict == "INCOMPARABLE" and (rates.notes as Array).any(func(n: String) -> bool: return n.contains("frame rate")), "60 against 30 fps: the snap speed is refused, not compared")
 	check(absf(float(slow.report.config.fps) - 30.0) < 0.5, "and the report knows it ran at %.1f fps" % float(slow.report.config.fps))
-	check(_row(rates, "foot.right.worst_error_mm").verdict != "INCOMPARABLE", "while a millimetre error still compares across frame rates")
+	check(_row(rates, "foot.right.worst_slide_mm").verdict != "INCOMPARABLE" and _row(rates, "foot.right.worst_error_mm").verdict == "INCOMPARABLE", "while a slide in millimetres still compares across frame rates, and the foot error at the first held frame (which the frame step decides) does not")
 
 func _row(result: Dictionary, key: String) -> Dictionary:
 	for row: Dictionary in result.metrics:

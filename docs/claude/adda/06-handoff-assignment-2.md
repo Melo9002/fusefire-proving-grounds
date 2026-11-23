@@ -1,5 +1,7 @@
 # Handoff to Assignment 2 (spatial observability, timelines, structured reports, workflows)
 
+> **Status:** Assignment 2 is done on this branch: see [08-assignment-2-report.md](08-assignment-2-report.md) and [07-usage.md](07-usage.md). Gaps 1, 3, 4 (per-finding overlay) and 5 below are filled; 2 (migrating `HandContactDiagnostics`, `BoneHighlight`, `MotionTrail` to envelopes) and 6 (full mesh intersection) are not.
+
 ## State
 
 * Branch `review/claude-adda`, based on `review/claude-animation@38d3865` (unmerged; merge that first). `main` untouched.

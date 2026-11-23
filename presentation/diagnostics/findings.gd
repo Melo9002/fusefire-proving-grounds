@@ -242,6 +242,17 @@ static func _intended_of(plain: String) -> String:
 			return "%s foothold" % side
 	return ""
 
+## Whether the rows around the event carry the intended point ("left hand target", "right foothold") at all: absence is not "it did not move".
+static func _has_intended(rows: Array, n0: int, n1: int, intended: String) -> bool:
+	var side := intended.split(" ")[0]
+	var key := "hands" if intended.ends_with("hand target") else "feet"
+	for row: Dictionary in rows:
+		if int(row.n) >= n0 - 2 and int(row.n) <= n1 + 2:
+			for entry: Dictionary in row.get(key, []):
+				if String(entry.name) == side:
+					return true
+	return false
+
 static func _snap(event: Dictionary, events: Array, rows: Array, config: Dictionary, names: Dictionary) -> Dictionary:
 	var detail: Dictionary = event.detail
 	var subjects: Array = detail.subjects
@@ -269,7 +280,10 @@ static func _snap(event: Dictionary, events: Array, rows: Array, config: Diction
 		for j in jumped:
 			if String(j.subject) == plain_top:
 				moved = true
-		follows = " The %s %s." % [plain_top, "jumped in the same frames, so this part followed a retarget" if moved else "did not jump in those frames, so the pose itself changed"]
+		if not _has_intended(rows, int(event.n0), int(event.n1), plain_top):
+			follows = " It has no %s in these frames to compare against (no stair, ladder or contact supplies one), so a retarget cannot be told apart from the pose itself changing." % plain_top.trim_prefix("left ").trim_prefix("right ")
+		else:
+			follows = " The %s %s." % [plain_top, "jumped in the same frames, so this part followed a retarget" if moved else "did not jump in those frames, so the pose itself changed"]
 	var hypotheses := []
 	var context_changes := _near(events, "context_changed", int(event.n0), int(event.n1), 2, "")
 	for change: Dictionary in context_changes:
