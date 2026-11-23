@@ -13,6 +13,8 @@ var highlight: BoneHighlight
 var clearance: LadderClearance
 ## Optional world overlay of the offending vertices (LadderOverlay), off until asked for.
 var ladder_overlay: LadderOverlay
+## ADDA's temporal recorder (SessionRecorder): passive, reads only inside skeleton_updated. Created when a scenario starts or the Why? tab asks.
+var recorder: SessionRecorder
 var paused := false
 
 func _init(p_rig: CharacterRig) -> void:
@@ -67,8 +69,31 @@ func contacts_on() -> bool:
 func trail_on() -> bool:
 	return is_instance_valid(trail) and trail.enabled
 
+## Starts a fresh recording (the old rows are dropped); `clock` is the host's scenario clock in seconds, or -1 when none runs.
+func begin_recording(clock := Callable(), mesh := false) -> SessionRecorder:
+	if recorder == null:
+		recorder = SessionRecorder.attach(rig)
+	if recorder == null:
+		return null
+	recorder.stop()
+	recorder.clock = clock
+	if mesh:
+		recorder.enable_mesh(1)
+	recorder.start()
+	return recorder
+
+func end_recording() -> void:
+	if recorder != null:
+		recorder.stop()
+
+func recording_on() -> bool:
+	return recorder != null and recorder.recording
+
 ## Switches every optional diagnostic off and frees what they made (the monitor included).
 func shutdown() -> void:
+	if recorder != null:
+		recorder.stop()
+		recorder = null
 	set_ladder_overlay(false)
 	release_clearance()
 	for node: Node in [contacts, trail, highlight]:
@@ -89,7 +114,7 @@ func shutdown() -> void:
 
 ## True when nothing of the diagnostics is still attached (every overlay, listener and node gone).
 func is_clean() -> bool:
-	return not is_instance_valid(monitor) and not is_instance_valid(contacts) and not is_instance_valid(trail) and not is_instance_valid(highlight)
+	return not is_instance_valid(monitor) and not is_instance_valid(contacts) and not is_instance_valid(trail) and not is_instance_valid(highlight) and (recorder == null or recorder.is_clean())
 
 
 ## The ladder clearance tool, created when the panel first asks for it (nothing is connected before that).

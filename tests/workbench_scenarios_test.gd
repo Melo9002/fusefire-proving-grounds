@@ -1,6 +1,6 @@
 extends SceneTree
 ## Task 12: the animation workbench as a developer tool. It loads WITHOUT a tactical mission, for both humanoids, armed and unarmed (character and weapon state come from WorkbenchSession, as a relaunch would set
-## them); its panel has the four workflow tabs and fits ordinary window sizes; the three scenario presets drive the REAL presenter and rig; pause, single-frame step, reset, repeat and interruption leave nothing behind;
+## them); its panel has the five workflow tabs and fits ordinary window sizes; the three scenario presets drive the REAL presenter and rig; pause, single-frame step, reset, repeat and interruption leave nothing behind;
 ## and unsupported combinations are named instead of skipped. Scenarios are stepped deterministically (paused, fixed step) so the test does not depend on frame timing.
 const SCENE := "res://tools/animation_workbench/pose_workbench.tscn"
 var failures := 0
@@ -67,18 +67,18 @@ func _run() -> void:
 			check(bench.rig.has_weapon() == armed, "%s: the weapon state follows the session" % label)
 			var info := RigInspection.report(bench.rig)
 			profiles[character] = info.identity.profile
-			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 4, "%s: the report is usable and the panel has four tabs" % label)
+			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 5, "%s: the report is usable and the panel has five tabs" % label)
 			bench.queue_free()
 			await _frames(2)
 	check(profiles[&"mira_0"] != profiles[&"small_mira_0"], "switching the character changes the rig profile (%s / %s)" % [profiles[&"mira_0"], profiles[&"small_mira_0"]])
 
 	_say("section 1 done")
-	# --- 2. The panel: the four tabs, in order, and it fits ordinary and small windows.
+	# --- 2. The panel: the five tabs, in order, and it fits ordinary and small windows.
 	var bench := await _bench(&"mira_0", true)
 	var names: Array[String] = []
 	for index in bench.panel.tabs.get_tab_count():
 		names.append(bench.panel.tabs.get_tab_title(index))
-	check(names == ["Character", "Scenario", "Diagnostics", "Evidence"], "the tabs are Character, Scenario, Diagnostics, Evidence (%s)" % [names])
+	check(names == ["Character", "Scenario", "Diagnostics", "Evidence", "Why?"], "the tabs are Character, Scenario, Diagnostics, Evidence, Why? (%s)" % [names])
 	for size in [Vector2i(1920, 1080), Vector2i(1280, 720), Vector2i(960, 600)]:
 		root.size = size
 		await _frames(3)

@@ -1,10 +1,11 @@
 class_name WorkbenchPanel
 extends PanelContainer
-## The workbench's control panel: four tabs for the four questions a developer asks, docked to the right edge and full height so it never covers the character (the workbench shifts its 3D view by the panel's width).
+## The workbench's control panel: five tabs for the five questions a developer asks, docked to the right edge and full height so it never covers the character (the workbench shifts its 3D view by the panel's width).
 ##   Character    what character and rig am I inspecting?      identity, roles, capabilities, compatibility, switching
 ##   Scenario     what am I asking this character to do?       scenario presets with pause/step/reset, then the manual controls
 ##   Diagnostics  what is the animation system actually doing? live state and history, pose stages, contact and trail overlays
 ##   Evidence     how do I reproduce, measure and communicate?  screenshot, JSON report, recording, repro command
+##   Why?         why is my robot doing that?                    ADDA's findings in plain words (measured, possible causes, cause unknown), show it, replay to it, compare, export
 ## Each tab is its own script (ui/*_tab.gd). F1 hides or shows the panel. It only calls the workbench's public controls and the read-only diagnostics.
 
 const MAX_WIDTH := 520.0
@@ -33,7 +34,7 @@ func setup(workbench: Node3D) -> void:
 	tabs = TabContainer.new()
 	tabs.name = "Tabs"
 	add_child(tabs)
-	for entry in [["Character", CharacterTab.new()], ["Scenario", ScenarioTab.new()], ["Diagnostics", DiagnosticsTab.new()], ["Evidence", EvidenceTab.new()]]:
+	for entry in [["Character", CharacterTab.new()], ["Scenario", ScenarioTab.new()], ["Diagnostics", DiagnosticsTab.new()], ["Evidence", EvidenceTab.new()], ["Why?", WhyTab.new()]]:
 		var body := WorkbenchUI.scroll_body()
 		body[1].add_child(entry[1])
 		entry[1].size_flags_horizontal = Control.SIZE_EXPAND_FILL

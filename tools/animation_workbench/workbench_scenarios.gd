@@ -10,9 +10,10 @@ const TACTICAL := &"tactical"
 const EXPLORATION := &"exploration"
 const CONTACTS := &"contacts"
 const LANDING := &"landing"
+const RESCUE := &"rescue"
 
 static func all() -> Array[Dictionary]:
-	return [tactical(), exploration(), contacts(), landing()]
+	return [tactical(), exploration(), contacts(), landing(), rescue()]
 
 static func find(id: StringName) -> Dictionary:
 	for scenario in all():
@@ -102,4 +103,21 @@ static func landing() -> Dictionary:
 			_step(16.0, "free again", func(b: Node3D) -> void:
 				b.end_ladder_demo()
 				b.command_stop()),
+		]}
+
+
+## Rescue and carry: lift a casualty from the floor, carry it, set it down. The pickup, carry pose and release are the production RescueInteraction and carry poses; the bench only presses the same buttons the R, P, M and Q keys do.
+static func rescue() -> Dictionary:
+	return {"id": RESCUE, "title": "E  Rescue and carry", "needs_weapon": false, "duration": 15.0,
+		"summary": "Pick a casualty up from the floor, carry it walking, stop, then set it down. Armed or unarmed.",
+		"context": "The workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's. Hand contacts on the passenger show in the contact measurement.",
+		"steps": [
+			_step(0.0, "pickup from the floor (side view)", func(b: Node3D) -> void:
+				b.look_from(Vector3(3.4, 1.3, 0.4), Vector3(0, 0.8, 0.5))
+				b.diagnostics_for_contacts()
+				b.rescue_pickup()),
+			_step(5.0, "carry: walk at 1.0 m/s", func(b: Node3D) -> void: b.rescue_carry(1.0)),
+			_step(9.0, "carry: stop", func(b: Node3D) -> void: b.rescue_carry(0.0)),
+			_step(10.0, "set the casualty down", func(b: Node3D) -> void: b.rescue_release()),
+			_step(14.0, "free again", func(b: Node3D) -> void: b.command_stop()),
 		]}

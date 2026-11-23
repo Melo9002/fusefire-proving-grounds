@@ -420,6 +420,26 @@ func request_reaction(seconds: float) -> ActionHandle:
 		diagnostics.monitor.watch(handle, "reaction")
 	return handle
 
+## Rescue and carry through the calls the R, P, M and Q keys make (a scenario uses these, not the keys).
+func rescue_pickup() -> void:
+	rig.finish_interaction_now()
+	rig.end_carry()
+	rig.begin_pickup(rig.character_root.global_position + rig.character_root.global_basis.orthonormalized().z * 1.0)
+	_update_status()
+
+func rescue_carry(speed: float) -> void:
+	rig.finish_interaction_now()
+	preview_speed = speed
+	rig.animation_controller.play(&"carry_move" if speed > 0.0 else &"carry_idle")
+	_update_status()
+
+func rescue_release() -> void:
+	if is_instance_valid(rig.carry_passenger) and not rig.interaction_active():
+		preview_speed = 0.0
+		rig.keep_released_passenger = true
+		rig.begin_release()
+	_update_status()
+
 ## Switches the contact diagnostics on (a scenario about contacts wants them).
 func diagnostics_for_contacts() -> void:
 	diagnostics.set_contacts(true)
@@ -443,8 +463,34 @@ func start_scenario(id: StringName) -> bool:
 	if definition.is_empty() or not WorkbenchScenarios.supported(definition, rig).ok:
 		return false
 	set_sim_paused(false)
+	if diagnostics != null:
+		diagnostics.begin_recording(func() -> float: return float(scenario_runner.time) if scenario_runner.running else -1.0)   # ADDA's recorder is passive: it only reads inside skeleton_updated
+		if not scenario_runner.step_run.is_connected(_mark_step):
+			scenario_runner.step_run.connect(_mark_step)
+			scenario_runner.finished.connect(func(_completed: bool) -> void: diagnostics.end_recording())
 	scenario_runner.start(self, definition)
 	return true
+
+func _mark_step(_index: int, label: String) -> void:
+	if diagnostics != null and is_instance_valid(diagnostics.recorder) and diagnostics.recorder.recording:
+		diagnostics.recorder.mark(label, "scenario step")
+
+## ADDA: plays a scenario again and stops, paused, at scenario time `seconds`: the moment a finding names. The steps are `step_seconds` long (set it to the recorded frame step first), so the same moment comes back.
+func replay_to(id: StringName, seconds: float) -> bool:
+	if not start_scenario(id):
+		return false
+	set_sim_paused(true)
+	step_sim(int(round(seconds / maxf(step_seconds, 0.0001))))
+	return true
+
+## ADDA: puts the camera on a world point (a finding's subject) from the side the camera is already on.
+func focus_on_world(point: Vector3, distance := 1.6) -> void:
+	var away := camera.global_position - point
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.01 else Vector3.RIGHT
+	_diagnostic_view = 0
+	camera.global_position = point + away * distance * view_scale + Vector3.UP * 0.25 * view_scale
+	camera.look_at(point, Vector3.UP)
 
 ## Returns the workbench to a neutral state: every bench ended, no hold, no posture request of its own, the walk stopped, the body square. Safe to call at any time, including mid-scenario and while paused.
 func reset_scene() -> void:
