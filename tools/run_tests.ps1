@@ -70,6 +70,23 @@ function Fail-Usage([string]$message) {
     exit 2
 }
 
+function Get-ChangedPaths([string]$ref) {
+    $PSNativeCommandUseErrorActionPreference = $false
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Fail-Usage "changed -Since requires Git."
+    }
+    $commit = git -C $repoRoot rev-parse --verify --end-of-options "${ref}^{commit}"
+    if ($LASTEXITCODE -ne 0) { Fail-Usage "Invalid -Since reference '$ref': Git could not resolve a commit." }
+
+    # A move counts in both areas, regardless of Git rename configuration.
+    $tracked = git -C $repoRoot diff --no-renames --no-ext-diff --name-only -z $commit --
+    if ($LASTEXITCODE -ne 0) { Fail-Usage "Git diff failed for -Since '$ref'." }
+    $untracked = git -C $repoRoot ls-files --others --exclude-standard -z
+    if ($LASTEXITCODE -ne 0) { Fail-Usage "Git could not list untracked files for -Since '$ref'." }
+    (@($tracked) -join "`n") -split "`0"
+    (@($untracked) -join "`n") -split "`0"
+}
+
 # ---------------------------------------------------------------- catalog
 if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
     Fail-Usage "Test catalog is missing: $catalogPath"
@@ -224,6 +241,7 @@ function Test-Filters($m) {
 }
 $subLabel = if ($Subsystem) { $Subsystem -join "," } else { "" }
 $omittedNote = @()
+$slowCandidates = @()
 
 switch ($Tier) {
     "smoke" {
@@ -262,16 +280,11 @@ switch ($Tier) {
         $paths = @()
         if ($Changed) { $paths += $Changed }
         if ($Since) {
-            Push-Location $repoRoot
-            try {
-                $paths += @(git diff --name-only $Since)
-                $paths += @(git ls-files --others --exclude-standard)
-            } finally { Pop-Location }
+            $paths += @(Get-ChangedPaths $Since)
         }
         if (-not $Changed -and -not $Since) { Fail-Usage "The changed tier needs -Changed <paths> or -Since <git ref>." }
         $paths = @($paths | Where-Object { $_ } | ForEach-Object { $_.Replace("\", "/") } | Sort-Object -Unique)
         $affected = New-Object System.Collections.Generic.HashSet[string]
-        $slowOmitted = @()
         $broaden = $false
         $areaNotes = @()
         foreach ($path in $paths) {
@@ -324,13 +337,11 @@ switch ($Tier) {
                 elseif ($m.Fast -or $m.Smoke -or $m.Critical) { Add-Selection $n ("affected subsystem ($(($m.Sub | Where-Object { $affected.Contains($_) }) -join ',') ): " + $(if ($m.Critical) { "critical" } elseif ($m.Smoke) { "smoke" } else { "fast" })) }
             }
             if ($broaden -and $m.Critical) {
-                if ($m.Scope -eq "e2e" -and -not $Thorough) { $slowOmitted += $n } else { Add-Selection $n "critical test of a central or unmapped change" }
+                if ($m.Scope -eq "e2e" -and -not $Thorough) { $slowCandidates += $n } else { Add-Selection $n "critical test of a central or unmapped change" }
             }
         }
         $selectionTitle = "changed ($($paths.Count) path(s))"
         $omittedNote = $areaNotes
-        if ($slowOmitted.Count -gt 0) { $omittedNote += "omitted long end-to-end critical tests (add -Thorough to include): " + ($slowOmitted -join ", ") }
-        if ($selected.Count -eq 0) { Write-Host "No test selected: the changed paths map to no test (docs/metadata only?)." }
     }
     "full" {
         foreach ($n in $discovered) {
@@ -354,9 +365,21 @@ foreach ($s in $selected) {
 
 $suiteLabel = $Tier
 if ($Subsystem) { $suiteLabel += "/" + ($Subsystem -join "+") }
+$selectedNames = @($selected | ForEach-Object { $_.Name })
+$slowOmitted = @($slowCandidates | Where-Object { $_ -notin $selectedNames })
+$ordinaryNotSelected = @($discovered | Where-Object { -not $meta[$_].Explicit -and $_ -notin $selectedNames -and $_ -notin $slowOmitted })
+$explicitExcluded = @($discovered | Where-Object { $meta[$_].Explicit -and $_ -notin $selectedNames })
+$skippedExplicit = @($skippedExplicit | Where-Object { $_ -notin $selectedNames } | Sort-Object -Unique)
 $lines = @()
 $lines += "FuseFire Project Ironclad - $suiteLabel"
-$lines += "  selected $($selected.Count) of $($discovered.Count) discovered test scripts; explicit-only in this tier: $($skippedExplicit.Count); not selected: $($discovered.Count - $selected.Count - $skippedExplicit.Count)"
+$lines += "  selected $($selected.Count) of $($discovered.Count) discovered test scripts: $($runnable.Count) runnable, $($blocked.Count) blocked"
+$lines += "  explicit-only exclusions: $($explicitExcluded.Count); long end-to-end omissions: $($slowOmitted.Count); other ordinary tests not selected: $($ordinaryNotSelected.Count)"
+if ($slowOmitted.Count -gt 0) {
+    $lines += "  omitted long end-to-end critical tests (add -Thorough to include): $($slowOmitted -join ', ')"
+}
+if ($Tier -eq "changed" -and $selected.Count -eq 0) {
+    $lines += "  No tests selected: changed paths matched no tests (for example, documentation or metadata only)."
+}
 
 if ($List -or $Why) {
     $lines | ForEach-Object { Write-Host $_ }
@@ -364,13 +387,14 @@ if ($List -or $Why) {
     foreach ($s in $selected) {
         $m = $meta[$s.Name]
         $cost = if ($baseline.ContainsKey($s.Name)) { "{0,6:n1}s" -f $baseline[$s.Name] } else { "     ?" }
-        if ($baseline.ContainsKey($s.Name)) { $total += $baseline[$s.Name] }
+        if ($s.Name -notin $blocked -and $baseline.ContainsKey($s.Name)) { $total += $baseline[$s.Name] }
         $flagList = @()
         if ($m.Critical) { $flagList += "critical" }
         if ($m.Smoke) { $flagList += "smoke" }
         if ($m.Fast) { $flagList += "fast" }
         if ($m.Explicit) { $flagList += "explicit:" + $m.Kind }
         if ($m.Req -ne "headless") { $flagList += "needs-render" }
+        if ($s.Name -in $blocked) { $flagList += "blocked" }
         if (-not $m.Classified) { $flagList += "UNCLASSIFIED" }
         $flags = $flagList -join ","
         $line = "  {0,-46} {1,-11} {2} [{3}]" -f $s.Name, $m.Scope, $cost, $flags
@@ -381,11 +405,15 @@ if ($List -or $Why) {
     if ($blocked.Count -gt 0) { Write-Host "Selected but cannot run headless (rendering required): $($blocked -join ', ')" }
     if ($skippedExplicit.Count -gt 0) { Write-Host "Explicit-only checks excluded from this tier: $($skippedExplicit -join ', ')" }
     if ($omittedNote.Count -gt 0) { Write-Host "Path mapping:"; $omittedNote | ForEach-Object { Write-Host "  $_" } }
-    if ($Tier -ne "full") {
-        $unsel = @($discovered | Where-Object { $n = $_; (-not $meta[$n].Explicit) -and -not (@($selected | Where-Object { $_.Name -eq $n }).Count) })
-        Write-Host "NOT verified by this selection: $($unsel.Count) ordinary test(s). Use the full tier for comprehensive regression."
-    }
     Show-CatalogProblems
+    if ($Strict -and $catalogProblems.Count -gt 0) { exit 2 }
+    exit 0
+}
+
+if ($Tier -eq "changed" -and $selected.Count -eq 0 -and -not $Import -and -not $ProbeFailureHandling) {
+    $lines | ForEach-Object { Write-Host $_ }
+    Show-CatalogProblems
+    if ($Strict -and $catalogProblems.Count -gt 0) { exit 2 }
     exit 0
 }
 
@@ -491,10 +519,9 @@ $env:FUSEFIRE_TEST_OUTPUT_DIR = $testOutputDirectory
 $processSeconds = 0.0
 Push-Location $repoRoot
 try {
-    Write-Host "FuseFire Project Ironclad - $suiteLabel"
+    $lines | ForEach-Object { Write-Host $_ }
     Write-Host "Godot: $($godotCommand.Source)"
     Write-Host "Logs:  $runDirectory"
-    Write-Host $lines[1].Trim()
     foreach ($note in $omittedNote) { Write-Host "  $note" }
     if ($catalogProblems.Count -gt 0) {
         Write-Host "WARNING: $($catalogProblems.Count) test catalog problem(s); see the end of this run (run '.\tools\run_tests.ps1 check')."
@@ -585,7 +612,7 @@ if ($blocked.Count -gt 0) { $extra += "NOT-RUN=$($blocked.Count) (need rendering
 if ($unclassified.Count -gt 0) { $extra += "UNCLASSIFIED=$($unclassified.Count)" }
 $summary | Set-Content -LiteralPath (Join-Path $runDirectory "summary.txt")
 $overhead = $totalWatch.Elapsed.TotalSeconds - $processSeconds
-@{ suite = $suiteLabel; passed = $passed; failed = $failed; skipped_explicit = $skipped; blocked = $blocked; unclassified = $unclassified; total_seconds = [math]::Round($totalWatch.Elapsed.TotalSeconds, 2); godot_process_seconds = [math]::Round($processSeconds, 2); runner_overhead_seconds = [math]::Round($overhead, 2); results = $results } |
+@{ suite = $suiteLabel; passed = $passed; failed = $failed; skipped_explicit = $skipped; explicit_excluded = $explicitExcluded.Count; blocked = $blocked; omitted_long = $slowOmitted; ordinary_not_selected = $ordinaryNotSelected.Count; selected_runnable = $runnable.Count; unclassified = $unclassified; total_seconds = [math]::Round($totalWatch.Elapsed.TotalSeconds, 2); godot_process_seconds = [math]::Round($processSeconds, 2); runner_overhead_seconds = [math]::Round($overhead, 2); results = $results } |
     ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $runDirectory "results.json") -Encoding UTF8
 Write-Host ""
 Write-Host "Ironclad summary: $summary"
@@ -598,11 +625,6 @@ if ($Slowest -gt 0 -and $results.Count -gt 1) {
 if ($blocked.Count -gt 0) { Write-Host "Selected but not run (rendering required; run directly without --headless): $($blocked -join ', ')" }
 if ($skipped -gt 0) {
     Write-Host "Explicit-only checks: $($skippedExplicit -join ', ')"
-}
-if ($Tier -ne "full") {
-    $unsel = @($discovered | Where-Object { $n = $_; (-not $meta[$n].Explicit) -and -not (@($selected | Where-Object { $_.Name -eq $n }).Count) }).Count
-    Write-Host "Not verified by this run: $unsel ordinary test(s) were not selected. A subset does not replace the full tier."
-    foreach ($note in $omittedNote) { if ($note -like "omitted long*") { Write-Host "  $note" } }
 }
 Show-CatalogProblems
 Write-Host "Detailed logs: $runDirectory"

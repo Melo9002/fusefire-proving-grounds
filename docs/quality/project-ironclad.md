@@ -50,6 +50,15 @@ godot_console --headless --path . --script res://tests/tactical_action_service_t
 godot_console --headless --path . --script res://tests/map_generation_batch_smoke.gd -- 5000 250
 ```
 
+## Changed-file comparison and selection accounting
+
+`changed -Since <ref>` resolves a local commit and compares that commit directly to the working tree. This is a tree comparison, so pass a merge-base commit explicitly if that is the comparison you want. It includes staged and unstaged changes and non-ignored untracked files. A rename contributes both its old and new paths. Additions and deletions contribute the path on their respective side. Explicit `-Changed` paths are combined with these results. Git lookup, diff or untracked-list errors exit 2 before selection. A successful comparison with no matching tests reports zero tests and skips automatic import. Explicit `-Import` or failure probes still run when requested.
+
+`-List` and `-Why` distinguish runnable and blocked selections, explicit-only scripts outside the selection, long end-to-end tests deferred by the fallback rule, and other unselected ordinary tests. The long-test omission list excludes any test selected by an affected subsystem. The existing `SKIP` result total counts explicit-only entries skipped by the tier's enumeration policy. Project import, when needed, is a separate execution entry.
+
+Run the deterministic selector controls with `pwsh -NoProfile -File tools/quality/ironclad_selection_test.ps1`. They use a disposable Git fixture and require no Godot installation. Before the correction, an invalid ref returned 0 after Git printed a fatal error, and an objective change listed the mission/replay matrix as both selected and omitted. The controls cover both defects plus a corrupt index, docs-only changes, rename sides, deleted and added paths, ignored files, and render-blocked selections.
+
+
 ## Stability categories
 
 Categories describe the protected behavior, not separate executables.
