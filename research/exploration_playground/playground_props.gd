@@ -64,8 +64,16 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	ramp.rotation.z = angle
 	ctx._box(Vector3(4.0, 1.5, 3.0), Vector3(16.0, 0.75, 8.0), Color(0.45, 0.47, 0.5), "RampPlatform")
 	# A tower with a ladder on its near face.
-	ctx._box(Vector3(3.0, LADDER_LENGTH, 3.0), Vector3(0.0, LADDER_LENGTH * 0.5, 17.0), Color(0.45, 0.47, 0.5), "LadderTower")
-	info["ladder"] = {"x": 0.0, "z": 15.42, "length": LADDER_LENGTH, "top_z": 16.2}
+	var tower_size := Vector3(3.0, LADDER_LENGTH, 3.0)
+	var tower_center := Vector3(0.0, LADDER_LENGTH * 0.5, 17.0)
+	ctx._box(tower_size, tower_center, Color(0.45, 0.47, 0.5), "LadderTower")
+	var deck_edge := tower_center.z - tower_size.z * 0.5
+	var rail_height := 0.65
+	var rail_half_span := 0.24
+	var rail_color := Color(0.87, 0.71, 0.3)
+	for side in [-1.0, 1.0]:
+		ctx._box(Vector3(0.05, rail_height, 0.05), Vector3(tower_center.x + side * rail_half_span, LADDER_LENGTH + rail_height * 0.5, deck_edge), rail_color, "LadderBrace")
+	info["ladder"] = {"x": tower_center.x, "z": 15.42, "length": LADDER_LENGTH, "deck_edge": deck_edge, "top_z": deck_edge + 0.70, "brace_posts": Vector2(rail_half_span, rail_height * 0.64)}
 	var rung_material := StandardMaterial3D.new()
 	rung_material.albedo_color = Color(0.87, 0.71, 0.3)
 	# The shared ladder layout (LadderGeometry), drawn in the frame of the cell the climber stands in: its rung plane is at z 15.42.

@@ -17,6 +17,8 @@ var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var ladder_geometry: LadderGeometry
 var ladder_body: LadderBody
 var floor_level := 0.0
+var deck_planted: Array[bool] = [false, false]
+var deck_levelling: Array[float] = [0.0, 0.0]
 ## STAIRS: the pelvis height the legs allow, the two ankle targets (world), whether each foot is planted, and the profile that limits an unplanted ankle's reach.
 var pelvis_height := 0.0
 ## The pelvis's sideways shift over the supporting foot (world, horizontal).
@@ -28,6 +30,8 @@ var planted: Array[bool] = [false, false]
 ## How far each ankle is lifted above its flat-on-the-tread height (the heel coming up toward toe-off), metres.
 var foot_lift: Array[float] = [0.0, 0.0]
 var stair_profile: StairProfile
+## Requested visual pelvis drop; still bounded by the same planted legs.
+var stair_crouch := 0.0
 
 func clear() -> void:
 	mode = Mode.NONE

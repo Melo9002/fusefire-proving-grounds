@@ -76,6 +76,20 @@ func _apply_ladder(delta: float) -> void:
 			# The knee goes where the leg's own length and the rungs allow (LadderKneePlanner), not a fixed offset from the foot: that put every knee through the ladder.
 			var hip := input.ladder_body.hip_joint(input.hips_local, side)
 			var plan := LadderKneePlanner.plan(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
+			if input.deck_planted[side]:
+				# With a deck foothold the knee can hinge forward again if
+				# that direction clears the remaining rung and rail volumes.
+				var forward_turn := move_toward(knee_turn[side], 0.0, KNEE_TURN_RATE * maxf(delta, 0.0))
+				var forward_plan := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, forward_turn)
+				if float(forward_plan.overlap) < -LadderKneePlanner.MARGIN:
+					plan = forward_plan
+			# Let a knee come back in only when it has spare clearance.
+			# A tightly folded knee still keeps its existing path around the bars.
+			if is_equal_approx(float(plan.turn), knee_turn[side]) and knee_turn[side] > 10.0 and float(plan.overlap) < -0.025:
+				var narrower := move_toward(knee_turn[side], 10.0, KNEE_TURN_RATE * maxf(delta, 0.0))
+				var inward := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, narrower)
+				if float(inward.overlap) < -0.025:
+					plan = inward
 			knee_turn[side] = move_toward(knee_turn[side], plan.turn, KNEE_TURN_RATE * delta)
 			plan = LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
 			knee_overlap[side] = float(plan.overlap)
@@ -100,6 +114,8 @@ func _apply_stairs() -> void:
 			feet.append({"position": input.ankles_world[side], "planted": input.planted[side]})
 		var solved := StairFootPlanner.pelvis(input.stair_profile, hips_xz, feet, input.smooth_floor, forward)
 		height = float(solved.height)
+		if bool(solved.ok):
+			height = maxf(float(solved.low), height - input.stair_crouch)
 	var hips_world := Vector3(hips_xz.x, height, hips_xz.z)
 	var target := skeleton.global_transform.affine_inverse() * hips_world
 	skeleton.set_bone_pose_position(_hips, current.lerp(target, weight))

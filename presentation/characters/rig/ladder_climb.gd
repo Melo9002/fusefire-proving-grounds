@@ -11,6 +11,11 @@ var body: LadderBody
 var direction := 1
 var climbed := 0.0
 var pose: LadderPose
+## Deck lip distance behind the rung plane in the climbing direction. NAN
+## means the host has no verified landing surface for a supported transfer.
+var deck_from_rungs := NAN
+## Authored upper support: lateral post centre and grip height above the deck.
+var brace_posts := Vector2.ZERO
 
 func _init(climb_kind: StringName = &"ladder", rise := 0.0, travel_direction := 1) -> void:
 	kind = climb_kind

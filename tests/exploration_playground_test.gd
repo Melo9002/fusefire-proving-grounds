@@ -218,6 +218,18 @@ func _run() -> void:
 	await create_timer(0.5).timeout
 	_press(&"playground_forward", false)
 	check(world.body.global_position.distance_to(held_position) < 0.05, "MIRA does not move while the menu is open")
+	var picker := world.menu_panel.find_child("CharacterPicker", true, false) as OptionButton
+	check(picker != null and picker.item_count == 2, "The exploration menu offers both humanoid models")
+	if picker != null:
+		var was_armed: bool = world.armed
+		picker.select(1)
+		picker.item_selected.emit(1)
+		await _frames(4)
+		check(world.visual.scene_file_path.contains("small_mira_0") and world.armed == was_armed and world.body.global_position.distance_to(held_position) < 0.05, "Switching to Small MIRA preserves the body position and equipment")
+		picker.select(0)
+		picker.item_selected.emit(0)
+		await _frames(4)
+		check(not world.visual.scene_file_path.contains("small_mira_0"), "The menu can switch back to MIRA")
 	(world.menu_panel.find_child("ResumeButton", true, false) as Button).pressed.emit()
 	check(not world.menu_open and world.mouse_captured, "Resume closes the menu and captures the mouse")
 	_press(&"ui_cancel", true)

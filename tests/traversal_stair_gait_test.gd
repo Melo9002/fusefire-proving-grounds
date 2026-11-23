@@ -23,6 +23,30 @@ func _stair(rise: float, depth: float, count: int, first_riser: float) -> StairM
 	model.first_riser = first_riser
 	return model
 
+func _lateral_control(model: StairModel, profile: StairProfile) -> void:
+	model.width = 1.6
+	var left := Vector3.UP.cross(model.direction)
+	var center := model.point_at(model.riser_s(4) + model.tread_depth * 0.5, model.tread_top(4))
+	var previous := [{}, {}]
+	var max_follow_drift := 0.0
+	var max_step_drift := 0.0
+	var plant_pairs := 0
+	var swing_samples := 0
+	for i in 51:
+		var body := center + left * (float(i) * 0.01 - 0.25)
+		for foot in 2:
+			var step := StairFootPlanner.side_step_foot(model, profile, foot, body, left)
+			var follow := StairFootPlanner.stance_foot(model, profile, foot, body, left)
+			var prior: Dictionary = previous[foot]
+			if not step.planted:
+				swing_samples += 1
+			if not prior.is_empty() and prior.step.planted and step.planted:
+				plant_pairs += 1
+				max_step_drift = maxf(max_step_drift, absf(((step.position as Vector3) - (prior.step.position as Vector3)).dot(left)))
+				max_follow_drift = maxf(max_follow_drift, absf(((follow.position as Vector3) - (prior.follow.position as Vector3)).dot(left)))
+			previous[foot] = {"step": step, "follow": follow}
+	check(plant_pairs > 10 and swing_samples > 10 and max_follow_drift > 0.009 and max_step_drift < 0.001, "Side-step control: planted target drift %.2f mm vs %.2f mm for body-following stance (%d plant pairs, %d swing samples)" % [max_step_drift * 1000.0, max_follow_drift * 1000.0, plant_pairs, swing_samples])
+
 ## Walks the whole stair (and a metre of flat each side) at `step` treads per step and measures the feet and pelvis.
 func _measure(model: StairModel, profile: StairProfile, ascending: bool, step: int) -> Dictionary:
 	var holds := StairFootPlanner.holds(model, ascending, step)
@@ -81,6 +105,7 @@ func _run() -> void:
 	var profile_speed := profile.speed
 	var extreme := _stair(0.5, 0.5, 6, 0.5)
 	var realistic := _stair(0.17, 0.28, 14, 0.5)
+	_lateral_control(_stair(0.17, 0.28, 14, 0.5), profile)
 
 	check(is_equal_approx(realistic.height_at(realistic.riser_s(14) + 0.1), 14 * 0.17), "The realistic stair rises 2.38 m over 14 treads")
 	for entry in [["range stairs 0.5/0.5", extreme, 1], ["realistic 0.17/0.28", realistic, 1], ["realistic 0.17/0.28", realistic, 2]]:

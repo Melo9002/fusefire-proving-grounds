@@ -315,14 +315,14 @@ func _sync_cover(delta: float) -> void:
 # ------------------------------------------------------------------ ladder and stairs
 
 ## Start climbing a ladder of `length` metres (the character's origin is at the ladder's foot level; the ladder plane is ahead of it). The controller moves the body up and calls `set_climb_height`.
-func begin_climb(length: float) -> void:
+func begin_climb(length: float, deck_from_rungs := NAN, direction := 1, brace_posts := Vector2.ZERO) -> void:
 	presenter.cancel_gesture()
-	rig.begin_traversal(&"ladder", length, 1)
+	rig.begin_traversal(&"ladder", length, direction, deck_from_rungs, brace_posts)
 	_state = &""
 
 
-func set_climb_height(climbed: float) -> void:
-	rig.set_traversal_progress(climbed)
+func set_climb_height(climbed: float, rung_plane := NAN, across_deck := 0.0) -> void:
+	rig.set_traversal_progress(climbed, rung_plane, across_deck)
 
 
 func end_climb() -> void:
@@ -338,11 +338,11 @@ func is_climbing() -> bool:
 func begin_stairs(model: StairModel, ascending: bool) -> void:
 	presenter.cancel_gesture()
 	rig.end_stairs()
-	rig.begin_stairs(model, ascending, 0.0, model.riser_s(model.count))
+	rig.begin_stairs(model, ascending, model.riser_s(1) - model.tread_depth, model.end_s() + model.tread_depth)
 
 
-func set_stairs_progress(s: float, speed: float) -> void:
-	rig.set_stair_progress(s, speed)
+func set_stairs_progress(s: float, speed: float, lateral_speed := 0.0) -> void:
+	rig.set_stair_progress(s, speed, lateral_speed, true)
 
 
 func end_stairs() -> void:
@@ -420,8 +420,8 @@ func _select_state() -> void:
 
 
 func _sync_posture() -> void:
-	# A crouch is suspended on a staircase or a ladder: the stair and ladder poses own the legs and the pelvis there, and a crouch on top of them sinks the body into the treads.
-	if _crouched and rig.stairs == null and rig.ladder == null:
+	# The stair solver bounds the crouch against the planted feet. The ladder owns the whole posture.
+	if _crouched and rig.ladder == null:
 		presenter.postures.set_posture(CROUCH_SOURCE, PresentationTypes.Posture.CROUCH, PresentationTypes.PRIORITY_CONTEXT, 0.0, rig.crouch_modifier.clamp_depth(crouch_depth * rig.crouch_modifier.body_ratio()))
 	else:
 		presenter.postures.release(CROUCH_SOURCE)

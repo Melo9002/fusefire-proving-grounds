@@ -47,6 +47,7 @@ var _lines: MeshInstance3D
 var _mesh: ImmediateMesh
 var _skeleton: Skeleton3D
 var _open := false
+var _previous_sample := {}
 
 static func attach(p_rig: CharacterRig) -> ContactErrorDiagnostics:
 	if not is_instance_valid(p_rig) or p_rig.skeleton == null or p_rig.bones == null:
@@ -85,6 +86,7 @@ func set_enabled(on: bool) -> void:
 		_lines = null
 		_mesh = null
 		recording = false
+		_previous_sample = {}
 
 func set_layer(layer: String, on: bool) -> void:
 	if layers.has(layer):
@@ -99,6 +101,15 @@ func _on_skeleton_updated() -> void:
 	latest = measure()
 	if latest.is_empty():
 		return
+	for foot: Dictionary in latest.feet:
+		foot["plant_drift_mm"] = -1.0
+		if not foot.planted or foot.weight < 0.9 or int(_previous_sample.get("frame", -2)) + 1 != int(latest.frame):
+			continue
+		for prior: Dictionary in _previous_sample.feet:
+			if prior.name == foot.name and prior.source == foot.source and prior.planted and prior.weight >= 0.9:
+				var offset: Vector3 = foot.ankle - prior.ankle
+				foot.plant_drift_mm = Vector2(offset.x, offset.z).length() * 1000.0
+	_previous_sample = latest
 	if recording:
 		history.append(scalars(latest))
 		if history.size() > MAX_HISTORY:
@@ -144,6 +155,7 @@ func measure() -> Dictionary:
 		hands.append({"name": HAND_NAMES[side], "target": target, "wrist": wrist, "shoulder": shoulder, "elbow": elbow, "arm_length": arm_length, "error": target.distance_to(wrist), "reach": reach,
 			"reach_margin": arm_length * REACH_LIMIT_FRACTION - reach, "unreachable": reach > arm_length * REACH_LIMIT_FRACTION, "weight": contact_weight, "owner": owner_name, "fingers": fingers, "palm": palm})
 	var feet: Array = []
+	var knees: Array[Vector3] = []
 	for side in 2:
 		var leg: Array[StringName] = rig.bones.left_leg if side == 0 else rig.bones.right_leg
 		if leg.size() < 3:
@@ -152,32 +164,45 @@ func measure() -> Dictionary:
 		if ankle_bone < 0:
 			continue
 		var ankle: Vector3 = origin * skeleton.get_bone_global_pose(ankle_bone).origin
+		var knee_bone := skeleton.find_bone(leg[1])
+		if knee_bone >= 0:
+			knees.append(origin * skeleton.get_bone_global_pose(knee_bone).origin)
 		var planned := Vector3.INF
 		var source := ""
 		var plan_weight := 0.0
 		var plan_ok := true
+		var planted := false
 		if rig.stairs != null and rig.stairs.pose != null and side < rig.stairs.pose.feet.size():
 			planned = rig.stairs.pose.feet[side].position
 			source = "stair planner"
 			plan_weight = rig.stairs.pose.weight
 			plan_ok = rig.stairs.pose.pelvis_ok   # false: the legs cannot reach the pelvis height the planner chose (a stair too steep for this body)
+			planted = rig.stairs.pose.feet[side].planted
 		elif rig.ladder != null and rig.ladder.pose != null and rig.ladder.pose.on_ladder:
 			planned = rig.character_root.to_global(rig.ladder.pose.feet[side])
 			source = "ladder solver"
 			plan_weight = rig.ladder.pose.weight
+			planted = is_zero_approx(rig.ladder.pose.foot_swing[side])
 		if source == "":
 			continue
-		feet.append({"name": HAND_NAMES[side], "ankle": ankle, "planned": planned, "error": ankle.distance_to(planned), "source": source, "weight": plan_weight, "plan_ok": plan_ok})
+		feet.append({"name": HAND_NAMES[side], "ankle": ankle, "planned": planned, "error": ankle.distance_to(planned), "source": source, "weight": plan_weight, "plan_ok": plan_ok, "planted": planted})
 	var root := rig.character_root.global_basis.orthonormalized() if is_instance_valid(rig.character_root) else Basis.IDENTITY
-	return {"hands": hands, "feet": feet, "frame": Engine.get_process_frames(), "timing": "post-update", "root_origin": rig.character_root.global_position if is_instance_valid(rig.character_root) else Vector3.ZERO, "root_basis": root}
+	var sample := {"hands": hands, "feet": feet, "frame": Engine.get_process_frames(), "timing": "post-update", "root_origin": rig.character_root.global_position if is_instance_valid(rig.character_root) else Vector3.ZERO, "root_basis": root}
+	if knees.size() == 2 and feet.size() == 2 and feet[0].source == "ladder solver":
+		sample["knee_width_cm"] = absf((knees[0] - knees[1]).dot(root.x)) * 100.0
+		sample["ankle_width_cm"] = absf(((feet[0].ankle as Vector3) - (feet[1].ankle as Vector3)).dot(root.x)) * 100.0
+	return sample
 
 ## The numbers of a sample without the vectors (for history and export).
 static func scalars(sample: Dictionary) -> Dictionary:
 	var out := {"frame": sample.frame, "hands": [], "feet": []}
+	if sample.has("knee_width_cm"):
+		out["knee_width_cm"] = sample.knee_width_cm
+		out["ankle_width_cm"] = sample.ankle_width_cm
 	for hand: Dictionary in sample.hands:
 		out.hands.append({"name": hand.name, "error_mm": snappedf(float(hand.error) * 1000.0, 0.01), "reach_cm": snappedf(float(hand.reach) * 100.0, 0.01), "arm_cm": snappedf(float(hand.arm_length) * 100.0, 0.01), "margin_cm": snappedf(float(hand.reach_margin) * 100.0, 0.01), "unreachable": hand.unreachable, "weight": snappedf(float(hand.weight), 0.001), "owner": hand.owner})
 	for foot: Dictionary in sample.feet:
-		out.feet.append({"name": foot.name, "error_mm": snappedf(float(foot.error) * 1000.0, 0.01), "source": foot.source, "weight": snappedf(float(foot.weight), 0.001), "plan_ok": foot.plan_ok})
+		out.feet.append({"name": foot.name, "error_mm": snappedf(float(foot.error) * 1000.0, 0.01), "source": foot.source, "weight": snappedf(float(foot.weight), 0.001), "plan_ok": foot.plan_ok, "planted": foot.planted, "plant_drift_mm": foot.get("plant_drift_mm", -1.0)})
 	return out
 
 ## Summarises the recorded frames per hand and foot: the worst target-to-wrist error among REACHABLE contacts, how many frames asked for an unreachable one and the worst deficit, and the worst ankle error.
@@ -195,9 +220,12 @@ func summary() -> Dictionary:
 					row.worst_reachable_error_mm = maxf(row.worst_reachable_error_mm, float(hand.error_mm))
 			result.hands[hand.name] = row
 		for foot: Dictionary in entry.feet:
-			var frow: Dictionary = result.feet.get(foot.name, {"worst_error_mm": 0.0, "source": foot.source})
+			var frow: Dictionary = result.feet.get(foot.name, {"worst_error_mm": 0.0, "source": foot.source, "worst_plant_drift_mm": 0.0, "plant_drift_pairs": 0})
 			if float(foot.weight) > 0.9:   # while the plan has hold of the leg (at its ramps the ankle follows the clip, not the plan)
 				frow.worst_error_mm = maxf(frow.worst_error_mm, float(foot.error_mm))
+			if float(foot.plant_drift_mm) >= 0.0:
+				frow.worst_plant_drift_mm = maxf(frow.worst_plant_drift_mm, float(foot.plant_drift_mm))
+				frow.plant_drift_pairs += 1
 			result.feet[foot.name] = frow
 	return result
 
@@ -222,6 +250,10 @@ static func format_readout(sample: Dictionary) -> String:
   target->wrist %s  reach %.0f/%.0f cm  %s" % [String(hand.name).to_upper(), hand.owner, float(hand.weight), _mm(float(hand.error)), float(hand.reach) * 100.0, float(hand.arm_length) * 100.0, verdict])
 	for foot: Dictionary in sample.feet:
 		lines.append("%-5s foot  %s (weight %.2f)%s  planned->ankle %s" % [String(foot.name).to_upper(), foot.source, float(foot.weight), "" if foot.plan_ok else " PLAN UNREACHABLE for this leg", _mm(float(foot.error))])
+		if float(foot.get("plant_drift_mm", -1.0)) >= 0.0:
+			lines.append("  planted ankle drift %.1f mm since previous frame" % float(foot.plant_drift_mm))
+	if sample.has("knee_width_cm"):
+		lines.append("Ladder spread: knees %.1f cm, ankles %.1f cm" % [float(sample.knee_width_cm), float(sample.ankle_width_cm)])
 	if sample.feet.is_empty():
 		lines.append("feet: no stair or ladder plan to compare against")
 	return "\n".join(lines)

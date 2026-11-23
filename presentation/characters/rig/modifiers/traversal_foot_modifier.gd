@@ -37,17 +37,20 @@ func _process_modification_with_delta(_delta: float) -> void:
 	weight = 0.0
 	if skeleton == null or not is_instance_valid(skeleton) or character_frame == null:
 		return
-	if input.mode != TraversalPoseInput.Mode.STAIRS or not input.solved:
+	if input.mode == TraversalPoseInput.Mode.NONE or not input.solved:
 		return
-	weight = input.weight
+	var ladder := input.mode == TraversalPoseInput.Mode.LADDER
+	if not ladder:
+		weight = input.weight
 	var frame_basis := character_frame.global_basis.orthonormalized()
 	var yaw := atan2(frame_basis.z.x, frame_basis.z.z)
 	var yawed := Basis(Vector3.UP, yaw)
 	var lateral := yawed.x
 	for side in 2:
 		var bone := _bones[side]
-		var planted: bool = input.planted[side]
-		var amount := weight * (1.0 if planted else swing_levelling)
+		var planted: bool = not ladder and input.planted[side]
+		var amount := input.weight * (input.deck_levelling[side] if ladder else (1.0 if planted else swing_levelling))
+		weight = maxf(weight, amount)
 		if amount <= 0.001:
 			continue
 		var target := yawed * _rest_in_character[side]

@@ -26,6 +26,8 @@ const RECENTER_RATE := 6.0
 const INTERACT_DISTANCE := 2.4
 const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_exploration_visual.tscn")
+const SMALL_VISUAL := preload("res://art/characters/small_mira_0/runtime/small_mira_0_exploration_visual.tscn")
+const CHARACTER_VISUALS := [VISUAL, SMALL_VISUAL]
 const ACTIONS := {
 	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E, &"playground_crouch": KEY_C, &"playground_weapon": KEY_Q, &"playground_run": KEY_SHIFT, &"playground_cover": KEY_SPACE, &"playground_respawn": KEY_R,
 }
@@ -37,6 +39,8 @@ const JUMP_SPEED := 4.0
 var body: CharacterBody3D
 var visual: ExplorationCharacterHost
 var armed := true
+var character_index := 0
+var character_picker: OptionButton
 var spawn_guard: ExplorationSpawnGuard
 var ui_layer: CanvasLayer
 var props := {}
@@ -275,7 +279,7 @@ func _spawn_visual(with_weapon: bool, facing_yaw: float) -> void:
 	if is_instance_valid(visual):
 		body.remove_child(visual)
 		visual.free()
-	visual = VISUAL.instantiate()
+	visual = CHARACTER_VISUALS[character_index].instantiate() as ExplorationCharacterHost
 	if not with_weapon:
 		visual.rig.weapon_scene = null
 	visual.rig.rotation.y = facing_yaw
@@ -288,9 +292,23 @@ func _spawn_visual(with_weapon: bool, facing_yaw: float) -> void:
 
 ## Holsters or draws the rifle.
 func toggle_weapon() -> void:
+	if not _can_replace_visual():
+		return
 	combat.set_aim(false)
 	cover.leave()
 	_spawn_visual(not armed, visual.rig.rotation.y)
+
+func _can_replace_visual() -> bool:
+	return not dead and not traversal.on_ladder and not traversal.on_stairs and not carry.busy and not visual.is_carrying()
+
+func _select_character(index: int) -> void:
+	if index == character_index or index < 0 or index >= CHARACTER_VISUALS.size() or not _can_replace_visual():
+		character_picker.select(character_index)
+		return
+	combat.set_aim(false)
+	cover.leave()
+	character_index = index
+	_spawn_visual(armed, visual.rig.rotation.y)
 
 ## The action packages: aim and shoot with mannequins, cover, ladder and stairs, carrying a body, and health with a respawn screen.
 func _build_actions() -> void:
@@ -377,6 +395,12 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "Exploration playground (experimental)"
 	box.add_child(title)
+	character_picker = OptionButton.new()
+	character_picker.name = "CharacterPicker"
+	character_picker.add_item("MIRA")
+	character_picker.add_item("Small MIRA")
+	character_picker.item_selected.connect(_select_character)
+	box.add_child(character_picker)
 	var resume := Button.new()
 	resume.name = "ResumeButton"
 	resume.text = "Resume"
@@ -442,7 +466,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _cover_or_jump() -> void:
 	if cover.active:
 		cover.leave()
-	elif cover.can_enter():
+	elif not traversal.on_stairs and cover.can_enter():
 		cover.enter()
 	elif not traversal.on_ladder and not visual.is_carrying():
 		_jump_requested = true
@@ -457,6 +481,8 @@ func zoom_by(amount: float) -> void:
 
 func _open_menu() -> void:
 	menu_open = true
+	character_picker.disabled = not _can_replace_visual()
+	character_picker.tooltip_text = "Finish traversal or carrying before changing models." if character_picker.disabled else "Change character model"
 	menu_panel.visible = true
 	_set_mouse_captured(false)
 
@@ -486,6 +512,9 @@ func move_direction() -> Vector3:
 ## The controller moves the body at the RENDER rate (called first in `_process`): moving it on physics ticks (60 Hz) while the camera and the animation run per rendered frame made the character advance in uneven
 ## steps (a tremor at any higher frame rate). `move_and_slide` collides and slides the same from `_process`.
 func _move(delta: float) -> void:
+	if menu_open:
+		_jump_requested = false
+		return
 	if dead:
 		body.velocity = Vector3(0.0, -2.0 if body.is_on_floor() else body.velocity.y - 9.8 * delta, 0.0)
 		body.move_and_slide()
@@ -505,21 +534,25 @@ func _move(delta: float) -> void:
 		top_speed = MOVE_SPEED * 0.7
 	if traversal.on_stairs:
 		top_speed = minf(top_speed, MOVE_SPEED)   # the stair pose plans one foot per tread: a run is too fast for it, so she takes the stairs at a walk
+		if visual.is_crouched():
+			top_speed *= 0.65
 	if carry.busy:
 		top_speed = 0.0   # the lift or the release owns her body
 	var wanted := move_direction() * top_speed
 	var velocity := Vector3(body.velocity.x, 0.0, body.velocity.z).move_toward(wanted, ACCELERATION * delta)
 	var vertical: float
-	if traversal.on_stairs:
-		vertical = 0.0   # the treads carry her (see PlaygroundTraversal)
-	elif _jump_requested and body.is_on_floor():
+	if _jump_requested and (traversal.on_stairs or body.is_on_floor()):
+		if traversal.on_stairs:
+			traversal.jump_from_stairs()
 		vertical = JUMP_SPEED
+	elif traversal.on_stairs:
+		vertical = 0.0   # the treads carry her (see PlaygroundTraversal)
 	else:
 		vertical = -2.0 if body.is_on_floor() else body.velocity.y - 9.8 * delta
 	_jump_requested = false
 	body.velocity = Vector3(velocity.x, vertical, velocity.z)
 	body.move_and_slide()
-	traversal.update_stairs(delta)
+	traversal.update_stairs()
 	var real := body.get_real_velocity()
 	var flat := Vector3(real.x, 0.0, real.z)
 	moving = flat.length() > 0.05
@@ -544,7 +577,8 @@ func _process(delta: float) -> void:
 
 func _focus_point() -> Vector3:
 	var right := Basis(Vector3.UP, yaw).x
-	return body.global_position + Vector3(0.0, CAMERA_FOCUS_HEIGHT, 0.0) + right * SHOULDER_OFFSET
+	var height := CAMERA_FOCUS_HEIGHT * (visual.rig.body_ratio() if is_instance_valid(visual) else 1.0)
+	return body.global_position + Vector3(0.0, height, 0.0) + right * SHOULDER_OFFSET
 
 func _apply_camera_rotation() -> void:
 	camera_yaw.rotation = Vector3(0.0, yaw, 0.0)
@@ -614,8 +648,7 @@ func on_player_down() -> void:
 	if traversal.on_ladder:
 		traversal._end_ladder()
 	if traversal.on_stairs:
-		traversal.on_stairs = false
-		traversal._pass_through_deck(false)
+		traversal._leave_stairs()
 	visual.defeat()
 
 func show_cursor() -> void:

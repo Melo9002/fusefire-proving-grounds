@@ -20,6 +20,8 @@ var foot_rung: Array[int] = [-1, -1]
 var hand_swing: Array[float] = [0.0, 0.0]
 var foot_swing: Array[float] = [0.0, 0.0]
 var hand_deck: Array[float] = [0.0, 0.0]
+var foot_deck: Array[float] = [0.0, 0.0]
+var landing_phase := -1.0
 ## Whether each planned target is within the limb's length (an unreachable one is reported, not presented as a success).
 var hand_reachable: Array[bool] = [true, true]
 var foot_reachable: Array[bool] = [true, true]
@@ -32,6 +34,7 @@ static func from_solver(result: Dictionary) -> LadderPose:
 	pose.lean_degrees = float(result.get("lean_degrees", 0.0))
 	pose.twist_degrees = float(result.get("twist_degrees", 0.0))
 	pose.head_pitch_degrees = float(result.get("head_pitch_degrees", 0.0))
+	pose.landing_phase = float(result.get("landing_phase", -1.0))
 	for side in 2:
 		pose.hands[side] = (result.get("hands", pose.hands) as Array)[side]
 		pose.feet[side] = (result.get("feet", pose.feet) as Array)[side]
@@ -41,6 +44,7 @@ static func from_solver(result: Dictionary) -> LadderPose:
 		pose.hand_swing[side] = float((result.get("hand_swing", pose.hand_swing) as Array)[side])
 		pose.foot_swing[side] = float((result.get("foot_swing", pose.foot_swing) as Array)[side])
 		pose.hand_deck[side] = float((result.get("hand_deck", pose.hand_deck) as Array)[side])
+		pose.foot_deck[side] = float((result.get("foot_deck", pose.foot_deck) as Array)[side])
 		pose.hand_reachable[side] = bool((result.get("hand_reachable", pose.hand_reachable) as Array)[side])
 		pose.foot_reachable[side] = bool((result.get("foot_reachable", pose.foot_reachable) as Array)[side])
 	return pose

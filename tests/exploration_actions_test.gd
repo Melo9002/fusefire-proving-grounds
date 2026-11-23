@@ -139,7 +139,7 @@ func _run() -> void:
 	await _wait(0.8)
 	check(absf(world.body.global_position.y) < 0.15 and world.body.is_on_floor(), "...and back down to the floor (y %.2f)" % world.body.global_position.y)
 
-	# ---- Stairs with a crouch and a run held: the stair pose owns her legs, so the crouch is suspended and she takes the stairs at a walk (the pelvis stays at standing height).
+	# ---- The stairs retain contact solving while crouched; a held run stays capped.
 	_place(Vector3(-12.0, 0.0, 4.4), PI)
 	world.visual.set_crouched(true)
 	await _wait(0.8)
@@ -155,9 +155,31 @@ func _run() -> void:
 			fastest = maxf(fastest, Vector3(world.body.get_real_velocity().x, 0.0, world.body.get_real_velocity().z).length())
 	_press(&"playground_forward", false)
 	_press(&"playground_run", false)
-	check(world.traversal.on_stairs and deepest_crouch < 0.05, "A held crouch is suspended on the stairs (deepest crouch %.2f m while on them)" % deepest_crouch)
+	check(world.traversal.on_stairs and deepest_crouch > 0.2, "A crouch stays active on the stairs (deepest crouch %.2f m)" % deepest_crouch)
 	check(fastest < world.MOVE_SPEED + 0.3, "A held run is walked on the stairs (%.2f m/s)" % fastest)
 	world.visual.set_crouched(false)
+	await _wait(0.3)
+	var contacts := ContactErrorDiagnostics.attach(world.visual.rig)
+	contacts.set_enabled(true)
+	contacts.start_recording()
+	_press(&"playground_left", true)
+	await _wait(0.38)
+	_press(&"playground_left", false)
+	var lateral := contacts.stop_recording()
+	var swung := false
+	for sample in contacts.history:
+		for foot: Dictionary in sample.feet:
+			swung = swung or (foot.weight > 0.9 and not foot.planted)
+	print("  lateral stair contacts: ", lateral)
+	check(world.traversal.on_stairs and swung, "Crossing a tread alternates a lifted step instead of only sliding planted targets")
+	contacts.set_enabled(false)
+	contacts.queue_free()
+	var jump_y: float = world.body.global_position.y
+	world._cover_or_jump()
+	await _wait(0.20)
+	check(not world.traversal.on_stairs and not world.visual.is_on_stairs() and world.body.global_position.y > jump_y + 0.3, "Jump detaches stair IK and lifts above the tread")
+	await _wait(0.9)
+	check(world.traversal.on_stairs and world.visual.is_on_stairs(), "Landing on the flight restores stair contacts")
 	_place(Vector3(-12.0, 0.0, 3.0), 0.0)
 	await _wait(0.6)
 	# The treads are solid from the side: walking into them does not go through.
@@ -186,17 +208,33 @@ func _run() -> void:
 	world.interact()
 	await _wait(0.5)
 	check(world.traversal.on_ladder and world.visual.is_climbing(), "E mounts the ladder")
+	check(float(world.traversal.ladder.z) - world.body.global_position.z >= 0.35, "The mount starts on the near side of the fixed rung plane")
 	_press(&"playground_forward", true)
 	await _wait(1.5)
 	var mid_height: float = world.body.global_position.y
 	var hands: float = world.visual.rig.ladder.pose.hand_weight[0] if world.visual.rig.ladder != null and world.visual.rig.ladder.pose != null else 0.0
 	check(mid_height > 0.8 and mid_height < 2.2 and hands > 0.5, "W climbs and her hands take the rungs (height %.2f m, hand weight %.2f)" % [mid_height, hands])
 	started = Time.get_ticks_msec()
+	var saw_landing_step := false
+	var saw_braced_lead := false
 	while Time.get_ticks_msec() - started < 8000 and world.traversal.on_ladder:
 		await process_frame
+		saw_landing_step = saw_landing_step or (world.visual.is_climbing() and world.body.global_position.z > float(world.traversal.ladder.z) + 0.1 and world.body.global_position.z < float(world.traversal.ladder.top_z) - 0.1)
+		var climb: LadderClimb = world.visual.rig.ladder
+		if climb != null and climb.pose != null:
+			saw_braced_lead = saw_braced_lead or (climb.pose.foot_deck[0] > 0.99 and climb.pose.foot_rung[0] < 0 and climb.pose.hand_deck[0] > 0.99 and climb.pose.hand_weight[0] > 0.9)
 	_press(&"playground_forward", false)
 	await _wait(0.8)
 	check(not world.traversal.on_ladder and not world.visual.is_climbing() and absf(world.body.global_position.y - 3.0) < 0.15 and world.body.is_on_floor(), "At the top she steps onto the tower (y %.2f)" % world.body.global_position.y)
+	check(saw_landing_step, "Top-out crosses the landing approach over multiple frames")
+	check(saw_braced_lead, "Lead foot acquires the deck while a hand brace is still active")
+	check(world.traversal.can_mount() and world.interact(), "E can enter the ladder from the deck")
+	_press(&"playground_back", true)
+	started = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - started < 8000 and world.traversal.on_ladder:
+		await process_frame
+	_press(&"playground_back", false)
+	check(not world.visual.is_climbing() and world.body.global_position.y < 0.15, "Reverse entry returns control on the floor")
 
 	# ---- Carry a body: E lifts it (the rescue lift), she walks loaded and slower, E puts it down and it stays lying.
 	_place(Vector3(8.0, 0.0, -4.5), PI)

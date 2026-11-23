@@ -180,6 +180,24 @@ static func contact_foot(model: StairModel, profile: StairProfile, hold_list: Ar
 	return result
 
 
+## Alternates a world-fixed lateral stance with a lifted step. The ground and
+## width constraints are the same ones used by the ordinary stair stance.
+static func side_step_foot(model: StairModel, profile: StairProfile, foot: int, body: Vector3, forward: Vector3) -> Dictionary:
+	var left := Vector3.UP.cross(model.direction).normalized()
+	var stride := maxf(profile.leg_length * 0.20, 0.08)
+	var distance := lateral_of(model, body)
+	var phase_offset := float(foot)
+	var phase := fposmod(distance / stride + phase_offset, 2.0)
+	var travel := smoothstep(1.0, 2.0, phase)
+	var offset := (1.0 - phase + 2.0 * travel) * stride
+	var target := stance_foot(model, profile, foot, body + left * offset, forward)
+	var swing := clampf(phase - 1.0, 0.0, 1.0)
+	target.position.y += sin(PI * swing) * profile.swing_lift
+	target.planted = swing <= 0.0 or swing >= 1.0
+	target.swing = swing
+	return target
+
+
 ## 1 when the body is at rest, 0 when it is walking: the weight of the terrain stance.
 static func settle_weight(profile: StairProfile, speed: float) -> float:
 	if not profile.settle_enabled:

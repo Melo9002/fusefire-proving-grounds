@@ -177,6 +177,77 @@ static func ladder_pose(profile: TraversalProfile, geometry: LadderGeometry, bod
 	return result
 
 
+## Last section shared by climb-out and its reverse. The host supplies a real
+## deck lip and horizontal progress. Foot and palm holds are deck-relative.
+static func landing_start(geometry: LadderGeometry, body: LadderBody) -> float:
+	return maxf(0.0, geometry.rise - maxf(0.62, body.shoulder_offset.y + body.arm_length()))
+
+
+static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeometry, body: LadderBody, climbed: float, direction: int, lip_from_rungs: float, across: float, brace_posts := Vector2.ZERO) -> Dictionary:
+	var start := landing_start(geometry, body)
+	var vertical := clampf(inverse_lerp(start, geometry.rise, climbed), 0.0, 1.0)
+	var phase := vertical * 0.72 + clampf(across, 0.0, 1.0) * 0.28
+	var pose := ladder_pose(profile, geometry, body, start, direction)
+	var to_root := Vector3.UP * (start - climbed)
+	var deck_y := geometry.rise - climbed
+	var lip := geometry.plane_ahead + lip_from_rungs
+	var lead := smoothstep(0.30, 0.65, phase)
+	var trail := smoothstep(0.64, 0.91, phase)
+	var rise := smoothstep(0.76, 1.0, phase)
+	pose["foot_deck"] = [0.0, 0.0]
+	for side in 2:
+		var sign_side := 1.0 if side == LEFT else -1.0
+		var progress := lead if side == LEFT else trail
+		var from: Vector3 = pose.feet[side] + to_root
+		var end := Vector3(sign_side * body.hip_offset.x, deck_y + body.ankle_height, lip + body.ball_length * (0.75 if side == LEFT else 1.55))
+		# Bring the toe above the deck before carrying it through the lip.
+		var lift := smoothstep(0.0, 0.32, progress)
+		var reach := smoothstep(0.44, 1.0, progress)
+		pose.feet[side] = Vector3(lerpf(from.x, end.x, reach), lerpf(from.y, end.y, lift) + sin(progress * PI) * body.ankle_height * 1.6, lerpf(from.z, end.z, reach))
+		pose.foot_swing[side] = sin(progress * PI)
+		pose.foot_deck[side] = smoothstep(0.35, 0.85, progress)
+		if progress >= 1.0:
+			pose.foot_rung[side] = -1
+
+		var brace := smoothstep(0.05 + side * 0.06, 0.32 + side * 0.06, phase)
+		var palm := Vector3(sign_side * body.shoulder_offset.x, deck_y + body.arm_length() * 0.10, lip + body.arm_length() * 0.21)
+		if brace_posts.x > 0.0:
+			palm = Vector3(sign_side * (brace_posts.x - body.arm_length() * 0.12), deck_y + brace_posts.y, lip - body.arm_length() * 0.06)
+		pose.hands[side] = (pose.hands[side] as Vector3).lerp(palm - to_root, brace) + to_root
+		pose.hand_deck[side] = brace
+		# Release the trailing-side hand first as the pelvis shifts toward
+		# the lead foot. It otherwise runs out of reach behind the shoulder.
+		var release := smoothstep(0.73, 0.88, phase) if side == LEFT else smoothstep(0.64, 0.76, phase)
+		pose.hand_weight[side] = lerpf(float(pose.hand_weight[side]), 1.0, brace) * (1.0 - release)
+
+	var start_hips: Vector3 = pose.hips + to_root
+	var pull := smoothstep(0.0, 0.76, phase)
+	# The chest leans over the brace. Keep the pelvis above the lip rather
+	# than fitting the shoulder reach by sinking the hips into the deck.
+	var brace_height := body.arm_length() * 0.86 - body.shoulder_offset.y + 0.015 * body.ratio
+	brace_height += brace_posts.y
+	var hips := start_hips.lerp(Vector3(body.hip_offset.x * 0.45, deck_y + brace_height, lip + body.ball_length * 0.95), pull)
+	hips.z = lerpf(start_hips.z, lip + body.ball_length * 0.95, smoothstep(0.36, 0.85, phase))
+	var standing_height := body.ankle_height + body.leg_length() * 0.95 - body.hip_offset.y
+	hips = hips.lerp(Vector3(0.0, deck_y + standing_height, 0.0), rise)
+	# Respect the planted legs before the ordinary standing pose takes over.
+	for side in 2:
+		var ankle: Vector3 = pose.feet[side]
+		var hip := body.hip_joint(hips, side)
+		var reach := body.leg_length() * 0.98
+		var horizontal := Vector2(hip.x - ankle.x, hip.z - ankle.z).length_squared()
+		hips.y = minf(hips.y, ankle.y - body.hip_offset.y + sqrt(maxf(0.0, reach * reach - horizontal)))
+	pose.hips = hips
+	pose.weight = lerpf(float(pose.weight), 1.0, smoothstep(0.0, 0.25, phase)) * (1.0 - smoothstep(0.91, 1.0, phase))
+	pose.on_ladder = pose.weight > 0.001
+	pose["landing_phase"] = phase
+	pose.lean_degrees = lerpf(float(pose.lean_degrees), 43.0, sin(phase * PI))
+	for side in 2:
+		pose.hand_reachable[side] = (pose.hands[side] as Vector3).distance_to(body.shoulder_joint(hips, side)) <= body.arm_length()
+		pose.foot_reachable[side] = (pose.feet[side] as Vector3).distance_to(body.hip_joint(hips, side)) <= body.leg_length()
+	return pose
+
+
 ## Where one limb is for a floor level `climbed`: the rung of its phase inside its window above the floor level, and how far it is through its swing to the next one. The limb moves `step` rungs
 ## (1 or 2) per move; its window is `step` pitches long and starts `window_low` above the floor level, shifted by `phase` windows so the limbs move one after another.
 ## Climbing: picked up at the low end of its window (reaching up); descending: at the high end (reaching down). rung -1 = no rung left (the deck).

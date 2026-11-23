@@ -65,6 +65,8 @@ func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> vo
 	var previous_knees := []
 	var previous_ankles := []
 	var knee_pop_worst := 0.0
+	var knee_width_sum := 0.0
+	var knee_width_samples := 0
 	rig.begin_traversal(&"ladder", 4.0, direction)
 	var h := 0.0 if direction > 0 else 4.0
 	while h >= 0.0 and h <= 4.0:
@@ -90,6 +92,8 @@ func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> vo
 			for part in clearance:
 				worst[part] = maxf(worst[part], clearance[part])
 			var knees := [metrics.joints.knee[0], metrics.joints.knee[1]]
+			knee_width_sum += absf((knees[0] as Vector3).x - (knees[1] as Vector3).x)
+			knee_width_samples += 1
 			var ankles := [metrics.joints.ankle[0], metrics.joints.ankle[1]]
 			if not previous_knees.is_empty():
 				for side in 2:
@@ -110,6 +114,7 @@ func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> vo
 	check(worst.knee <= LEG_TOLERANCE and worst.thigh <= LEG_TOLERANCE and worst.shin <= LEG_TOLERANCE, "%s: no knee, thigh or shin goes through a rung or rail (worst %.3f / %.3f / %.3f m)" % [label, worst.knee, worst.thigh, worst.shin])
 	check(worst.torso <= TORSO_TOLERANCE and worst.upper_arm <= ARM_TOLERANCE and worst.forearm <= ARM_TOLERANCE, "%s: the torso and arms clear the ladder too (%.3f, %.3f, %.3f m)" % [label, worst.torso, worst.upper_arm, worst.forearm])
 	check(knee_pop_worst < 0.06, "%s: the knees travel with their feet, they do not pop (worst %.3f m beyond 2.5 times the ankle's step, 4 cm apart; the knee moved up to %.3f m)" % [label, knee_pop_worst, knee_step_worst])
+	print("    mean lateral knee spread: %.1f cm (%d final-pose samples)" % [100.0 * knee_width_sum / maxf(knee_width_samples, 1), knee_width_samples])
 	rig.end_traversal()
 
 ## Negative controls: the measurement is able to fail. Knees put through the rungs (the old pole offset put them 7-14 cm past the plane) are reported as penetrating, and clean joints are not.

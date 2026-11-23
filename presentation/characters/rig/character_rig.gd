@@ -632,6 +632,8 @@ func _publish_traversal_input() -> void:
 			input.ladder_geometry = ladder.geometry
 			input.ladder_body = ladder.body
 			input.floor_level = ladder.climbed
+			input.deck_planted = [not is_nan(ladder.deck_from_rungs) and ladder.pose.foot_rung[0] < 0, not is_nan(ladder.deck_from_rungs) and ladder.pose.foot_rung[1] < 0]
+			input.deck_levelling = ladder.pose.foot_deck
 	elif stairs != null and stairs.pose != null:
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
@@ -648,19 +650,31 @@ func _publish_traversal_input() -> void:
 
 
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
-func begin_traversal(kind: StringName, length: float, direction: int) -> void:
+func begin_traversal(kind: StringName, length: float, direction: int, deck_from_rungs := NAN, brace_posts := Vector2.ZERO) -> void:
 	ladder = LadderClimb.new(kind, length, direction)
 	ladder.body = ladder_body()
+	# The caller opts in only with a continuous supporting patch at the top.
+	# A large gap from the rung plane falls back to the height-only pose.
+	if is_finite(deck_from_rungs) and deck_from_rungs >= 0.0 and deck_from_rungs < ladder.body.arm_length() * 0.5:
+		ladder.deck_from_rungs = deck_from_rungs
+		ladder.brace_posts = brace_posts
 	_publish_traversal_input()
 
 
 ## The height of the character's floor level above the ladder's bottom floor. Solves the pose now (pure function of this height), asks the trunk to lean, and sets
 ## how far the rifle is slung (the weapon travels to the sling as the climber mounts and back as they leave; the pose is released again at the ends).
-func set_traversal_progress(climbed: float) -> void:
+func set_traversal_progress(climbed: float, rung_plane := NAN, across_deck := 0.0) -> void:
 	if ladder == null:
 		return
+	if not is_nan(rung_plane):
+		ladder.geometry.plane_ahead = rung_plane
 	ladder.climbed = climbed
-	ladder.pose = LadderPose.from_solver(TraversalSolver.ladder_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction))
+	var result: Dictionary
+	if not is_nan(ladder.deck_from_rungs) and climbed >= TraversalSolver.landing_start(ladder.geometry, ladder.body):
+		result = TraversalSolver.ladder_landing_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction, ladder.deck_from_rungs, across_deck, ladder.brace_posts)
+	else:
+		result = TraversalSolver.ladder_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction)
+	ladder.pose = LadderPose.from_solver(result)
 	_publish_traversal_input()
 	var weight: float = ladder.pose.weight
 	if crouch_modifier != null:
@@ -683,7 +697,7 @@ func begin_stairs(model: StairModel, ascending: bool, enter := 0.0, exit := -1.0
 
 
 ## The body's place along the stair (distance from the lower cell centre) and its speed: plans the feet and the pelvis now (a pure function of these two numbers).
-func set_stair_progress(s: float, unit_speed: float) -> void:
+func set_stair_progress(s: float, unit_speed: float, lateral_speed := 0.0, allow_crouch := false) -> void:
 	if stairs == null:
 		return
 	var model := stairs.model
@@ -696,13 +710,22 @@ func set_stair_progress(s: float, unit_speed: float) -> void:
 	var body_root := character_root.global_position
 	var facing := character_root.global_basis.orthonormalized().z
 	var feet: Array = []
+	var lateral_blend := smoothstep(0.10, 0.40, absf(lateral_speed) - unit_speed * 0.6)
 	for foot in 2:
-		feet.append(StairFootPlanner.contact_foot(model, stair_profile, holds, ascending, s, foot, body_root, facing, unit_speed))
+		var contact := StairFootPlanner.contact_foot(model, stair_profile, holds, ascending, s, foot, body_root, facing, unit_speed)
+		if lateral_blend > 0.0:
+			var side_step := StairFootPlanner.side_step_foot(model, stair_profile, foot, body_root, facing)
+			contact.position = (contact.position as Vector3).lerp(side_step.position, lateral_blend)
+			contact.tread_top = lerpf(contact.tread_top, side_step.tread_top, lateral_blend)
+			contact.planted = contact.planted and side_step.planted
+		feet.append(contact)
 	var shift := StairFootPlanner.sway_at(model, stair_profile, holds, ascending, s) * (1.0 - StairFootPlanner.settle_weight(stair_profile, unit_speed))
 	var body := body_root + shift   # the legs are solved for the pelvis where it will actually be
 	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body, feet, facing)
 	stairs.pose = StairPose.from_planner(feet, solved, StairFootPlanner.weight_at(s, stairs.enter_s, stairs.exit_s, model.tread_depth * 1.5), s, step, shift, StairFootPlanner.floor_reference(model, stair_profile, s))
 	_publish_traversal_input()
+	if traversal_modifier != null:
+		traversal_modifier.input.stair_crouch = crouch_modifier.depth if allow_crouch and crouch_modifier != null else 0.0
 
 
 func end_stairs() -> void:
@@ -742,9 +765,21 @@ func apply_traversal_hand_targets() -> void:
 	for side in 2:   # the ladder's own order: 0 left, 1 right
 		var hand := HandContact.Hand.LEFT if side == 0 else HandContact.Hand.RIGHT
 		var node: Node3D = support_ik_target if side == 0 else right_hand_target
-		var hold: float = ladder.pose.hand_weight[side]   # the hands let go of the ladder before the body does (short arms)
-		var point := node.global_position.lerp(character_root.to_global(ladder.pose.hands[side]), hold)
-		claim_hand_contact(HandContact.make(hand, point, up, toward, hold, 0.6 * hold))
+		var hold: float = ladder.pose.hand_weight[side]
+		var deck := ladder.pose.hand_deck[side] if not is_nan(ladder.deck_from_rungs) else 0.0
+		var target := character_root.to_global(ladder.pose.hands[side])
+		if deck > 0.0:
+			# The final arm solver sees the posed shoulder, not the rest estimate.
+			var arm := left_arm_bones if side == 0 else right_arm_bones
+			var shoulder := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(arm[0])).origin
+			var arm_length := _arm_length(1 - side)
+			hold *= 1.0 - smoothstep(arm_length * 0.98, arm_length * 1.09, target.distance_to(shoulder))
+		var point := node.global_position.lerp(target, hold)
+		var on_post := ladder.brace_posts.x > 0.0
+		var fingers := up.lerp(toward, deck).normalized()
+		var post_side := character_root.global_basis.orthonormalized().x * (1.0 if side == 0 else -1.0)
+		var palm_normal := toward.lerp(post_side if on_post else Vector3.DOWN, deck).normalized()
+		claim_hand_contact(HandContact.make(hand, point, fingers, palm_normal, hold, lerpf(0.6, 0.65 if on_post else 0.1, deck) * hold))
 
 
 ## The ONE writer of a hand contact (HandContact): the wrist target goes to its point and the grip modifier takes its orientation, weight and closure, converted to skeleton space here and nowhere else. Every
@@ -895,7 +930,12 @@ func apply_weapon_targets(shoulder_world: Vector3) -> void:
 		_standing_shoulder = shoulder_marker.position
 		_standing_shoulder_known = true
 	# The held rifle follows the shoulder wherever the body puts it (crouch, a running lean, the step's bob), so its stock keeps its place in front of it.
-	var follow := 1.0 if (crouch_modifier != null and crouch_modifier.depth > 0.002) else carry_motion_blend
+	var landing := ladder != null and ladder.pose != null and ladder.pose.landing_phase >= 0.0
+	var landing_follow := 0.0
+	if landing:
+		var phase := ladder.pose.landing_phase
+		landing_follow = smoothstep(0.0, 0.12, phase) * (1.0 - smoothstep(0.95, 1.0, phase))
+	var follow := 1.0 if (crouch_modifier != null and crouch_modifier.depth > 0.002) else maxf(carry_motion_blend, landing_follow)
 	var body_offset := (shoulder_marker.position - _standing_shoulder) * follow
 	var ready_grip := _ready_grip_base + body_offset
 	right_hand_target.position = ready_grip.lerp(aimed_grip, weapon_blend()) + Vector3(0, 0, -recoil * 0.08)
