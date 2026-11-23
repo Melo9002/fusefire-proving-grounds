@@ -74,6 +74,17 @@ func _plant_rows(fps: float, drift_mm_total: float, settle := false) -> Array:
 		rows.append(_row(i, dt, {"feet": [_foot(true, 1.0, planned + offset, planned)]}))
 	return rows
 
+## A held foot whose error to its foothold goes linearly from `from_mm` to `to_mm` over one second.
+func _offset_rows(fps: float, from_mm: float, to_mm: float) -> Array:
+	var dt := 1.0 / fps
+	var rows := []
+	var frames := int(fps)
+	for i in frames:
+		var f := float(i) / float(frames - 1)
+		var planned := Vector3(0.1, 0.5, 0.2)
+		rows.append(_row(i, dt, {"feet": [_foot(true, 1.0, planned + Vector3(lerpf(from_mm, to_mm, f) / 1000.0, 0, 0), planned)]}))
+	return rows
+
 func _foot_slide() -> void:
 	var slid := TimelineAnalysis.analyze(_plant_rows(60.0, 25.0))
 	var slide := _first(slid.events, "plant_slide")
@@ -88,6 +99,14 @@ func _foot_slide() -> void:
 	for row in swing:
 		row.feet[0].planted = false   # the plan does not claim it planted: nothing to slide against
 	check(_count(TimelineAnalysis.analyze(swing).events, "plant_slide") == 0, "a foot the plan does not claim planted is never reported as sliding")
+	# plant_offset (Assignment 3, found by the injected-fault challenge CH04): a held foot that stays far off its foothold is reported even when it does not slide.
+	var parked := TimelineAnalysis.analyze(_offset_rows(60.0, 80.0, 80.0))
+	var offset := _first(parked.events, "plant_offset")
+	check(not offset.is_empty() and absf(float(offset.value) - 80.0) < 0.5 and _count(parked.events, "plant_slide") == 0, "a held ankle parked 80 mm off its foothold is a plant_offset of 80 mm and no slide (events %s)" % [_kinds(parked.events)])
+	check(_count(TimelineAnalysis.analyze(_offset_rows(60.0, 20.0, 20.0)).events, "plant_offset") == 0, "normal case: 20 mm off, inside the foot tolerance, is not reported")
+	check(_count(TimelineAnalysis.analyze(_offset_rows(60.0, 80.0, 4.0)).events, "plant_offset") == 0 and _count(TimelineAnalysis.analyze(_offset_rows(60.0, 80.0, 4.0)).events, "plant_settle") == 1, "negative control: an ankle that starts 80 mm off and closes in is a settle, not an offset")
+	var crept := TimelineAnalysis.analyze(_offset_rows(60.0, 10.0, 70.0))
+	check(_count(crept.events, "plant_offset") == 1, "a slow creep from 10 mm to 70 mm off the foothold is an offset (the error it ends at), found within one span")
 
 # ---- 2
 

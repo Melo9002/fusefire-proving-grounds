@@ -8,7 +8,7 @@ extends RefCounted
 ## "wrong": the values are in the event.
 ##
 ## Event record: {kind, subject, n0, n1, t0, t1, st0, value, unit, detail, worst_n}. n is the recorder's row number, t presenter seconds, st the scenario clock (-1 when none).
-## Kinds: pose_snap (grouped from per-bone discontinuity events), contact_acquired, contact_released, foot_planted, foot_released, reach_exceeded, target_error, plant_slide, plant_settle, discontinuity, target_jump, state_changed, stage_engaged, stage_released, context_changed, mesh_overlap.
+## Kinds: pose_snap (grouped from per-bone discontinuity events), contact_acquired, contact_released, foot_planted, foot_released, reach_exceeded, target_error, plant_slide, plant_settle, plant_offset, discontinuity, target_jump, state_changed, stage_engaged, stage_released, context_changed, mesh_overlap.
 
 const CONTACT_ON := 0.5          # a claimed contact weight at or above this counts as "in contact" for acquisition and release
 const CONTACT_HELD := 0.9        # at or above this the plan has hold of the limb (the ramps at either end follow the clip, not the plan)
@@ -167,10 +167,13 @@ static func _feet(rows: Array, events: Array[Dictionary], metrics: Dictionary) -
 					var closed := _close_span(span, rows, side, events, i - 1)
 					worst_slide_all = maxf(worst_slide_all, closed[0])
 					worst_settle_all = maxf(worst_settle_all, closed[1])
-					span = {"from": i, "source": String(foot.source), "reference": offset, "worst": 0.0, "at": i, "start_error": float(foot.error_mm), "end_error": float(foot.error_mm)}
+					span = {"from": i, "source": String(foot.source), "reference": offset, "worst": 0.0, "at": i, "start_error": float(foot.error_mm), "end_error": float(foot.error_mm), "worst_error": float(foot.error_mm), "error_at": i}
 				else:
 					var moved := (offset - (span.reference as Vector3)).length() * 1000.0
 					span["end_error"] = float(foot.error_mm)
+					if float(foot.error_mm) > float(span.worst_error):
+						span["worst_error"] = float(foot.error_mm)
+						span["error_at"] = i
 					if moved > float(span.worst):
 						span["worst"] = moved
 						span["at"] = i
@@ -207,6 +210,12 @@ static func _close_span(span: Dictionary, rows: Array, side: String, events: Arr
 		result[0] = worst
 		if worst > SLIDE_MM:
 			events.append(_event("plant_slide", "%s foot" % side, rows, int(span.from), last_row, snappedf(worst, 0.1), "mm", detail, int(span.at)))
+		# A foot the plan holds that does not arrive and does not close in: off its foothold by more than the foot tolerance for the whole span (a slow drift moves little within a span, so it is no slide, but it ends far off).
+		if float(span.worst_error) > FOOT_ERROR_MM and end_error > FOOT_ERROR_MM:
+			var offset_detail := _foot_detail(rows[int(span.error_at)], side)
+			offset_detail["error_start_mm"] = snappedf(start_error, 0.1)
+			offset_detail["error_end_mm"] = snappedf(end_error, 0.1)
+			events.append(_event("plant_offset", "%s foot" % side, rows, int(span.from), last_row, snappedf(float(span.worst_error), 0.1), "mm", offset_detail, int(span.error_at)))
 	return result
 
 static func _foot_detail(row: Dictionary, side: String) -> Dictionary:

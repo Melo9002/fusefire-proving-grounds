@@ -1,0 +1,61 @@
+{
+ "format": "adda.challenges",
+ "version": 1,
+ "note": "Do not open sealed/ until you have submitted an answer with `adda score`. The sealed files hold the injected fault and the answer key.",
+ "challenges": [
+  {
+   "id": "CH01",
+   "title": "Right hand off the weapon",
+   "scenario": "tactical",
+   "character": "mira_0",
+   "armed": true,
+   "symptom": "In the tactical presentation the right hand is not where the pose asked it to be after the rifle comes up. Find which part of the pose pipeline moves it and what was done to it.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH02",
+   "title": "Torso faces the wrong way in cover",
+   "scenario": "tactical",
+   "character": "mira_0",
+   "armed": true,
+   "symptom": "After the character takes cover the body is turned away from where it should face. Something changes the facing at that moment. Find what.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH03",
+   "title": "Knee pops on the ladder",
+   "scenario": "landing",
+   "character": "small_mira_0",
+   "armed": false,
+   "symptom": "During the ladder landing a leg joint jumps for single frames at intervals. Find which joint, which part of the pipeline moves it, and what kind of fault it is.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH04",
+   "title": "Planted foot creeps on the stairs",
+   "scenario": "contacts",
+   "character": "mira_0",
+   "armed": true,
+   "symptom": "On the stairs a foot that should be planted slowly slides sideways. Find which foot, which stage and what kind of fault it is.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH05",
+   "title": "Head sits wrong, nothing is reported",
+   "scenario": "exploration",
+   "character": "mira_0",
+   "armed": false,
+   "symptom": "The head sits several centimetres off its place for the whole exploration scenario, but nothing seems to complain. Say what ADDA can and cannot tell you about it, and find the cause if it can.",
+   "hint_level": "none"
+  },
+  {
+   "id": "CH06",
+   "title": "Control: no fault",
+   "scenario": "contacts",
+   "character": "small_mira_0",
+   "armed": false,
+   "symptom": "A report that a pop appears on the stairs. Establish whether there is a fault here at all. The right answer may be that the motion is unchanged from the baseline.",
+   "hint_level": "none"
+  }
+ ]
+}

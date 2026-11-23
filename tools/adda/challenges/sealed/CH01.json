@@ -1,0 +1,19 @@
+{
+ "fault": {
+  "name": "AuxPass1",
+  "kind": "offset",
+  "bone": "@right_hand",
+  "vector": [
+   0.05,
+   0.0,
+   0.0
+  ],
+  "after": "HandGrip",
+  "start": 3.0
+ },
+ "answer": {
+  "stage": "AuxPass1",
+  "bone": "@right_hand",
+  "kind": "offset"
+ }
+}

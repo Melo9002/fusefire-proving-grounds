@@ -68,7 +68,7 @@ func show_finding(finding: Dictionary, row: Dictionary) -> Vector3:
 			_cross(world, 0.035, COLOUR_BONE)
 	# What was asked against what was done, for the hand or foot the finding is about.
 	var side := String(subject.get("side", ""))
-	if String(finding.kind) in ["reach_exceeded", "target_error", "plant_slide", "plant_settle"]:
+	if String(finding.kind) in ["reach_exceeded", "target_error", "plant_slide", "plant_settle", "plant_offset"]:
 		for kind in [["hands", "target", "wrist"], ["feet", "planned", "ankle"]]:
 			for entry: Dictionary in row.get(kind[0], []):
 				if String(entry.name) == side and (String(subject.get("part", "")) == "hand") == (kind[0] == "hands"):

@@ -48,6 +48,8 @@ static func _from_event(event: Dictionary, events: Array, rows: Array, config: D
 			return _slide(event, events, rows, config)
 		"plant_settle":
 			return _settle(event, rows, config)
+		"plant_offset":
+			return _offset(event, events, rows, config)
 		"pose_snap":
 			return _snap(event, events, rows, config, names)
 		"mesh_overlap":
@@ -218,6 +220,22 @@ static func _slide(event: Dictionary, events: Array, rows: Array, config: Dictio
 	return _make(event, "high" if float(event.value) >= 40.0 else "medium", "%s slides while planted" % String(event.subject).capitalize(), text, {"slide_mm": event.value, "seconds": snappedf(seconds, 0.001), "source": detail.get("source", ""),
 		"weight": detail.get("weight", 0.0), "stages_engaged": detail.get("stages", [])}, hypotheses, {"kind": "limb", "text": "%s foot" % side, "side": side, "part": "foot", "bones": []},
 		[Measurement.Kind.SUPPORT_CLAIM, Measurement.Kind.TARGET_ERROR], "ankle minus the planner's foothold, change since the span began; the claim is the plan's planted flag and weight, not physical support", config)
+
+## A foot the plan holds that stays off its foothold: the absolute error, not a slide (a slow drift moves little within one planted span yet ends far off).
+static func _offset(event: Dictionary, events: Array, rows: Array, config: Dictionary) -> Dictionary:
+	var detail: Dictionary = event.detail
+	var side := String(event.subject).split(" ")[0]
+	var seconds := _span(event, rows)
+	var stages: Array = detail.get("stages", [])
+	var text := "%s stayed up to %.1f mm from its foothold (%.1f mm when the %s took hold, %.1f mm at the end) for %.2f s while the plan claimed it planted, %s." % [String(event.subject).capitalize(), float(event.value), float(detail.get("error_start_mm", 0.0)), String(detail.get("source", "plan")), float(detail.get("error_end_mm", 0.0)), seconds, _when(event)]
+	var hypotheses := []
+	var jumps := _near(events, "target_jump", int(event.n0), int(event.n1), 2, "%s foot" % side)
+	if not jumps.is_empty():
+		hypotheses.append(_hypothesis("The foothold itself was retargeted during the span, so the ankle followed a moving plan.", "target_jump events on this foot at rows %s" % ", ".join(jumps.map(func(e: Dictionary) -> String: return str(e.n0))), "Look at the foothold around those rows"))
+	hypotheses.append(_hypothesis("Something after the leg planner may have moved the foot off the plan: a stage, or a modifier that is not declared in PoseOwnership.", "the ankle ends %.1f mm from a foothold that did not move; stages engaged at the worst frame: %s" % [float(event.value), ", ".join(stages) if not stages.is_empty() else "none reported"], "Run the isolation experiment on the %s foot (adda isolate --bones=@%s_foot): it switches each modifier off in turn and reports which ones move the foot" % [side, side]))
+	return _make(event, "high" if float(event.value) >= 60.0 else "medium", "%s is off its foothold while planted" % String(event.subject).capitalize(), text, {"error_max_mm": event.value, "error_start_mm": detail.get("error_start_mm", 0.0), "error_end_mm": detail.get("error_end_mm", 0.0),
+		"seconds": snappedf(seconds, 0.001), "source": detail.get("source", ""), "weight": detail.get("weight", 0.0), "stages_engaged": stages}, hypotheses, {"kind": "limb", "text": "%s foot" % side, "side": side, "part": "foot", "bones": []},
+		[Measurement.Kind.SUPPORT_CLAIM, Measurement.Kind.TARGET_ERROR], "ankle minus the planner's foothold while the plan held the leg at full weight and did not close in; the claim is the plan's planted flag and weight, not physical support", config)
 
 static func _settle(event: Dictionary, rows: Array, config: Dictionary) -> Dictionary:
 	var detail: Dictionary = event.detail

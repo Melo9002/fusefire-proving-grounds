@@ -1,0 +1,15 @@
+{
+ "fault": {
+  "name": "AuxPass2",
+  "kind": "yaw",
+  "bone": "@hips",
+  "degrees": 25.0,
+  "after": "CoverCrouch",
+  "start": 4.2
+ },
+ "answer": {
+  "stage": "AuxPass2",
+  "bone": "@hips",
+  "kind": "yaw"
+ }
+}
