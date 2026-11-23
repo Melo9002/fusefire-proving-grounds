@@ -22,25 +22,11 @@ func _frames(count: int) -> void:
 		await process_frame
 
 
-func _ladder(profile: TraversalProfile) -> void:
+func _ladder() -> void:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.75, 0.55, 0.2)
-	for side in [-1.0, 1.0]:
-		var rail := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(0.04, 4.0, 0.04)
-		rail.mesh = box
-		rail.material_override = material
-		rail.position = Vector3(0.22 * side, 2.0, profile.ladder_plane_ahead + 0.04)
-		stage.add_child(rail)
-	for index in TraversalSolver.rung_count_for(profile, 4.0):
-		var rung := MeshInstance3D.new()
-		var rod := BoxMesh.new()
-		rod.size = Vector3(0.44, 0.03, 0.03)
-		rung.mesh = rod
-		rung.material_override = material
-		rung.position = Vector3(0.0, TraversalSolver.rung_height(profile, index, 4.0), profile.ladder_plane_ahead)
-		stage.add_child(rung)
+	# The shared ladder layout (LadderGeometry): the same rungs the poses were planned against.
+	stage.add_child(LadderGeometry.for_rise(4.0).build_visual(material))
 
 
 func _grab(host: ExplorationCharacterHost) -> Image:
@@ -48,6 +34,9 @@ func _grab(host: ExplorationCharacterHost) -> Image:
 	await _frames(2)
 	await RenderingServer.frame_post_draw
 	var img := root.get_texture().get_image()
+	# Crop to the tile's aspect before scaling: resizing the whole viewport into a portrait tile stretched the bodies.
+	var wanted_width := int(round(float(img.get_height()) * TILE.x / TILE.y))
+	img = img.get_region(Rect2i((img.get_width() - wanted_width) / 2, 0, wanted_width, img.get_height()))
 	img.resize(TILE.x, TILE.y, Image.INTERPOLATE_LANCZOS)
 	img.convert(Image.FORMAT_RGBA8)
 	return img
@@ -71,7 +60,7 @@ func _run() -> void:
 	root.add_child(cam)
 	cam.current = true
 	cam.fov = 30.0
-	_ladder(TraversalProfile.new())
+	_ladder()
 	var rows: Array = []
 	for key in SCENES:
 		var host: ExplorationCharacterHost = (load(SCENES[key]) as PackedScene).instantiate()

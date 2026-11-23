@@ -5,6 +5,9 @@ extends RefCounted
 
 var kind: StringName = &"ladder"
 var length := 0.0
+## The ladder this climb is on (the shared layout) and the body's measurements it is planned for.
+var geometry: LadderGeometry
+var body: LadderBody
 var direction := 1
 var climbed := 0.0
 var pose: LadderPose
@@ -13,3 +16,4 @@ func _init(climb_kind: StringName = &"ladder", rise := 0.0, travel_direction := 
 	kind = climb_kind
 	length = rise
 	direction = travel_direction
+	geometry = LadderGeometry.for_rise(rise)

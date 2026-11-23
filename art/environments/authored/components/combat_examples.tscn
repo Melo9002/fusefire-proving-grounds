@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://art/environments/authored/objects/delivery.tscn" id="truck"]
 
-[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_3m.tscn" id="ladder"]
 
 [sub_resource type="StandardMaterial3D" id="wall"]
 albedo_color = Color(0.52, 0.59, 0.61, 1)
@@ -350,7 +350,6 @@ metadata/ladder_local_top = Vector3i(15, 3, 22)
 
 [node name="Ladder" parent="Doorway/TopAccess" instance=ExtResource("ladder")]
 position = Vector3(15, 0, 22.55)
-scale = Vector3(1, 0.75, 1)
 
 [node name="RangeLane" type="Node3D" parent="."]
 

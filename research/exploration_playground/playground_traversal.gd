@@ -34,7 +34,7 @@ func can_mount() -> bool:
 
 
 func mount() -> void:
-	var plane: float = ctx.visual.rig.traversal_profile.ladder_plane_ahead
+	var plane: float = LadderGeometry.PLANE_AHEAD
 	ctx.visual.presenter.hold_facing()
 	ctx.body.global_position = Vector3(float(ladder.x), 0.0, float(ladder.z) - plane)
 	ctx.body.velocity = Vector3.ZERO

@@ -13,6 +13,10 @@ var weight := 0.0
 ## LADDER: the pelvis place and the two foot places, character space.
 var hips_local := Vector3.ZERO
 var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+## LADDER: the ladder and the body the legs are planned against, and how far the floor is above the ladder's bottom (the knee planner needs them to keep the legs off the rungs).
+var ladder_geometry: LadderGeometry
+var ladder_body: LadderBody
+var floor_level := 0.0
 ## STAIRS: the pelvis height the legs allow, the two ankle targets (world), whether each foot is planted, and the profile that limits an unplanted ankle's reach.
 var pelvis_height := 0.0
 ## The pelvis's sideways shift over the supporting foot (world, horizontal).

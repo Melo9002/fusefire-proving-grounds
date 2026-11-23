@@ -166,7 +166,7 @@ For the **hands** (the one body part with several producers) there is one typed 
 3. **Presentation ownership**: decide which stage owns the limb and add its writes to `PoseOwnership.WRITES` (and an `OVERLAPS` entry if it overlaps another stage). Prefer an existing stage; a new stage needs a reason.
 4. **IK application**: for a hand, build a `HandContact` in world space and `claim_hand_contact` it from the pass that places the hands (the placer's methods). For a foot or the pelvis, extend `TraversalPoseInput` and the traversal modifiers. Never write the grip modifier's contact slots directly.
 5. **Interruption**: the contact lives only while its producer claims it each pass. End the interaction by stopping the claim (and call `release_hand_contacts()` if the producer's end must be immediate); the next pass restores the weapon or the hang. Cover cleanup in a test: interrupt mid-contact, enter and leave repeatedly, check the final pose at `skeleton_updated`, and run it on both MIRA and Small MIRA.
-6. **Unreachable contacts** are the planner's to handle (clamp or report); the arm only stretches toward a target. Measure how often it happens on the smaller body before shipping (the Small MIRA ladder is the known example).
+6. **Unreachable contacts** are the planner's to handle (clamp or report); the arm only stretches toward a target. Measure how often it happens on the smaller body before shipping (the Small MIRA ladder was the example; `TraversalSolver` now reports `hand_reachable` / `foot_reachable` and `ladder_climb_test` measures the final pose on both bodies).
 
 ## Diagnostics and the workbench (Task 12)
 
@@ -350,7 +350,7 @@ Ironclad's classes (see [`quality/project-ironclad.md`](quality/project-ironclad
 |---|---|---|
 | **Invariant** | presentation holds no gameplay authority (`presentation_authority_test`; boundary gates A, B); shared modules keep their dependency direction (boundary test rules 1 to 3 and the family gate); one owner advances a presentation lifecycle (`presentation_frame_driver_test`); handles settle exactly once and cleanup leaves nothing (`action_handle_test`, `animation_cleanup_test`, `combat_presentation_lifecycle_test`); a non-humanoid family needs no skeleton (`motion_contract_test`, family gate); diagnostics observe only (gate C); hosts use public members (gate D) | smoke and FAST |
 | **Contract** | stage order and declared overlaps (`pose_ownership_test`); posture arbitration (`posture_ownership_test`, `posture_arbiter_test`); hold ranks and gestures (`gesture_capability_test`); the per-frame host order; rig capability and degraded reporting (`rig_bones_test`, `rig_profile_test`, `humanoid_portability_test`, `unarmed_humanoid_test`); the contact claim rules (`hand_contact_test`) | FAST or subsystem |
-| **Experimental** | the look of the research drone and wheeled platform, provisional non-humanoid movement numbers, art-dependent pose tuning, rendered captures (`*_capture`, explicit only), the Small MIRA ladder (#55) | explicit or not gated |
+| **Experimental** | the look of the research drone and wheeled platform, provisional non-humanoid movement numbers, art-dependent pose tuning, rendered captures (`*_capture`, explicit only), the look of the ladder pose (the numbers are gated, see "Ladders") | explicit or not gated |
 
 The gates in `tests/animation_module_boundaries_test.gd` (all text-based, each with a control proving its pattern can fail): the shared stack imports no gameplay; the rig-profile layer imports no runtime nodes; pure solvers stay pure; single owners (posture, locomotion feed, facing, route, rescue, combat lifecycle); no bone name in production code; hosts compose rather than inherit; the motion contract and the families never name the humanoid stack or tactical types; **A** production never depends on `research/`; **B** the contract, diagnostics, families, demo and workbench never reach `systems/`, `units/`, `levels/` or tactical authority types; **C** diagnostics call no driving, posing or writing method; **D** hosts, diagnostics, tools and research use no underscore member of the rig or presenter. The catalog (`tests/catalog.json`, checked by `run_tests.ps1 check`, also on every push) must classify every test, map every source file to an area (a changed file in an unmapped area would not select the suite that guards it), and keep SMOKE headless. The smoke tier includes the cheap architecture invariants (boundaries, motion contract, frame driver, action handles, cleanup, rig bones) so ordinary pushes protect them.
 
@@ -388,13 +388,37 @@ The gates in `tests/animation_module_boundaries_test.gd` (all text-based, each w
 
 ### Known limitations after Task 14
 
-* The Small MIRA ladder (#55): hands beyond the arm's reach and feet off the rungs in some frames. A body-specific specialisation, deliberately not part of this architecture work.
+* Ladders (issue #55, see "Ladders"): a raised knee on MIRA still grazes a rung by up to about 3.4 cm in the approximate limb volumes at some phases (it was 10 cm), because a 0.25 m pitch and a body that must reach the rungs leave no way to keep a raised knee entirely behind the plane; at the top-out the hands let go of the rungs about 0.9 m below the deck (the body hangs far enough back that the deck is out of reach) and the climber stands out of a deep squat with the arms down, which reads as abrupt (a pelvis that moves in toward the deck during the dismount would fix it); a loaded carrier still climbs with the placeholder clips; the knee search costs about 0.5 ms (MIRA) or 0.25 ms (Small MIRA) per frame while a character is on a ladder.
 * The tactical host reports the route speed, not the slower stair or ladder presentation speed, to the locomotion feed (observed 3.5 m/s reported against 1.0 m/s travelled on stairs); the stair pose owns the legs there, and the effect was not shown to be wrong, so it is recorded, not changed (see the validation report).
 * The exploration host decides "still moving" from wall-clock time, not presentation time (it ignores pause and time scale). It affects only the exploration controller's gait decay.
 * The tactical action presenter's watchdogs are wall-clock deadlines; a long pause can make one expire on resume (the presented effect is only an early end of a visual wait; gameplay does not depend on it).
 * `MotionTrail` and the workbench tabs need a `CharacterRig`; a workbench for other families does not exist. `ActionHandle` and `PresentationTypes` live under `characters/presenter` although most of them are neutral.
 * Quadruped and tracked families are designs. The wheeled and drone examples are demonstrations in `research/`.
 * No screenshot comparison and no automated performance budget (see the report for the measurements and why).
+
+## Ladders (issue #55)
+
+A ladder has **one geometry**, and a body is **measured, not assumed**. Report with measurements and renders: [`docs/claude/ladder-stabilization-2026-11-22.md`](claude/ladder-stabilization-2026-11-22.md).
+
+| What | Owner | Where |
+|---|---|---|
+| Where the rungs, rails and plane are (pitch 0.25 m, first rung 0.25 m, rails at 0.35 m, plane 5 cm behind the cell centre) | `LadderGeometry` | `presentation/characters/motion/ladder_geometry.gd` |
+| The authored ladders | `maintenance_ladder_4m.tscn` and `maintenance_ladder_3m.tscn`, which ARE that geometry (`ladder_geometry_test` compares every rung and rail, and fails any parcel that stretches a ladder mesh) | `art/environments/authored/components/` |
+| The body's limb lengths and joint offsets | `LadderBody`, measured once from the skeleton at rest (`CharacterRig.ladder_body()`) | `motion/ladder_body.gd` |
+| Where a body hangs, how far each limb steps, which rungs it holds | `TraversalSolver.plan_ladder` / `ladder_pose` (pure: profile + geometry + body + height) | `motion/traversal_solver.gd` |
+| Where the knee goes | `LadderKneePlanner` (pure: from the actual hip and ankle, the leg's own length and the rungs) | `motion/ladder_knee_planner.gd` |
+| Drawing a ladder in a tool or sandbox | `LadderGeometry.build_visual` (the workbench, the sandbox and the captures all use it) | |
+
+Rules:
+
+* **The profile does not restate the ladder.** `TraversalProfile` holds only how a body climbs (spread, lean, swing, sway, mount lengths). A taller ladder has more rungs at the same pitch; it is never a stretched mesh (a stretch would change the pitch the climbers were planned for). The only ladder fact a host supplies is the rise.
+* **Windows come from the body.** The pelvis hangs behind the torso's clearance and, if a raised knee needs it, farther back, as far as the arms still hold the whole hand span (`plan_ladder`). Each limb steps one rung (both feet, and the hands of a short body) or two (the hands of a body whose arm span covers most of two pitches); the limbs of a pair are a quarter window apart. Skipping rungs is never needed.
+* **The wrist holds a rung from below and behind it** (`GRIP_BELOW`, `GRIP_BEHIND`, scaled by the body), so the forearm does not run through the bar it grips.
+* **Unreachable contacts are reported.** `ladder_pose` returns `hand_reachable` and `foot_reachable` (typed in `LadderPose`); a target beyond the limb is never presented as a success.
+* **Knees are planned, not offset.** The leg IK bends toward a pole; the modifier puts the pole where `LadderKneePlanner` finds a knee whose knee, thigh and shin volumes clear every rung and rail (a frog-leg turn of the thigh, kept near its previous turn and changed at a limited rate so a knee glides). If nothing clears, the least overlap is used and reported (`knee_overlap`).
+* **Everything here is presentation.** AP, legality, routes, occupancy, replay and presentation speeds are untouched (route trace: 853 routes, no difference).
+
+Tests: `ladder_geometry_test` (the definition and the authored scenes; smoke), `traversal_solver_test` (the pure plan on both bodies, reachability reporting with negative controls), `ladder_climb_test` (the real rigs, armed and unarmed, up and down, measured from the final skeleton pose: planted feet within 3 cm, wrists within 3 cm, at least 95% of hand contacts within reach, knee/thigh/shin/torso/arm volumes clear of the bars, knees not popping), `hand_contact_test` (the contact ownership contract, unchanged). Measurement helper: `tests/support/ladder_metrics.gd`; the render check is `tests/ladder_review_capture.gd` (explicit only). **Add a ladder-using consumer** by passing the rise to `begin_traversal` and drawing with `LadderGeometry.build_visual`; never restate rung heights.
 
 ## Running and testing
 

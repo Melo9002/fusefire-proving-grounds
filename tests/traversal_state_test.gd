@@ -27,7 +27,7 @@ func _run() -> void:
 	var rungs_ok := true
 	for climbed in [0.0, 0.3, 1.0, 2.0, 2.7, 3.0]:
 		for direction in [1, -1]:
-			var raw := TraversalSolver.ladder_pose(profile, climbed, 3.0, direction)
+			var raw := TraversalSolver.ladder_pose(profile, LadderGeometry.for_rise(3.0), LadderTestBodies.mira(), climbed, direction)
 			var typed := LadderPose.from_solver(raw)
 			worst = maxf(worst, absf(typed.weight - float(raw.weight)))
 			worst = maxf(worst, typed.hips.distance_to(raw.hips))
@@ -36,7 +36,7 @@ func _run() -> void:
 				worst = maxf(worst, typed.hands[side].distance_to(raw.hands[side]))
 				worst = maxf(worst, typed.feet[side].distance_to(raw.feet[side]))
 				worst = maxf(worst, absf(typed.hand_weight[side] - float(raw.hand_weight[side])))
-				rungs_ok = rungs_ok and typed.hand_rung[side] == int(raw.hand_rung[side]) and typed.foot_rung[side] == int(raw.foot_rung[side]) and typed.on_ladder == bool(raw.on_ladder)
+				rungs_ok = rungs_ok and typed.hand_reachable[side] == bool(raw.hand_reachable[side]) and typed.foot_reachable[side] == bool(raw.foot_reachable[side]) and typed.hand_rung[side] == int(raw.hand_rung[side]) and typed.foot_rung[side] == int(raw.foot_rung[side]) and typed.on_ladder == bool(raw.on_ladder)
 	check(worst == 0.0 and rungs_ok, "LadderPose carries every field of the solver's result unchanged (worst difference %.9f)" % worst)
 	var model := StairModel.from_links(Vector3.ZERO, Vector3(0, 0, 1), 1.0, 1.0, 2, 3)
 	var stair_profile := StairProfile.new()

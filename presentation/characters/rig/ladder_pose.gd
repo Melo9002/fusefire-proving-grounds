@@ -20,6 +20,9 @@ var foot_rung: Array[int] = [-1, -1]
 var hand_swing: Array[float] = [0.0, 0.0]
 var foot_swing: Array[float] = [0.0, 0.0]
 var hand_deck: Array[float] = [0.0, 0.0]
+## Whether each planned target is within the limb's length (an unreachable one is reported, not presented as a success).
+var hand_reachable: Array[bool] = [true, true]
+var foot_reachable: Array[bool] = [true, true]
 
 static func from_solver(result: Dictionary) -> LadderPose:
 	var pose := LadderPose.new()
@@ -38,4 +41,6 @@ static func from_solver(result: Dictionary) -> LadderPose:
 		pose.hand_swing[side] = float((result.get("hand_swing", pose.hand_swing) as Array)[side])
 		pose.foot_swing[side] = float((result.get("foot_swing", pose.foot_swing) as Array)[side])
 		pose.hand_deck[side] = float((result.get("hand_deck", pose.hand_deck) as Array)[side])
+		pose.hand_reachable[side] = bool((result.get("hand_reachable", pose.hand_reachable) as Array)[side])
+		pose.foot_reachable[side] = bool((result.get("foot_reachable", pose.foot_reachable) as Array)[side])
 	return pose

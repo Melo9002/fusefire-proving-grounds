@@ -20,6 +20,11 @@ var _hips := -1
 ## Last values written, for diagnostics and tests.
 var weight := 0.0
 var passes := 0
+## The planned legs' overlap with the ladder this pass (metres, <= 0 clear), per side: what the knee planner could not avoid.
+var knee_overlap: Array[float] = [0.0, 0.0]
+## Each knee's outward turn (degrees): it starts the next search and changes at a limited rate, so a knee glides to a new stance instead of popping.
+var knee_turn: Array[float] = [LadderKneePlanner.PREFERRED_TURN, LadderKneePlanner.PREFERRED_TURN]
+const KNEE_TURN_RATE := 360.0
 
 
 func setup(target: Skeleton3D, hips_bone: StringName, frame: Node3D) -> bool:
@@ -36,21 +41,22 @@ func bind_legs(ik: TwoBoneIK3D, feet: Array[Marker3D], poles: Array[Marker3D]) -
 	knee_poles = poles
 
 
-func _process_modification_with_delta(_delta: float) -> void:
+func _process_modification_with_delta(delta: float) -> void:
 	if skeleton == null or not is_instance_valid(skeleton) or character_frame == null:
 		return
 	match input.mode:
 		TraversalPoseInput.Mode.NONE:
 			weight = 0.0
+			knee_turn = [LadderKneePlanner.PREFERRED_TURN, LadderKneePlanner.PREFERRED_TURN]
 			if is_instance_valid(leg_ik) and leg_ik.active:
 				leg_ik.active = false
 		TraversalPoseInput.Mode.STAIRS:
 			_apply_stairs()
 		TraversalPoseInput.Mode.LADDER:
-			_apply_ladder()
+			_apply_ladder(delta)
 
 
-func _apply_ladder() -> void:
+func _apply_ladder(delta: float) -> void:
 	passes += 1
 	# The pose was solved when the progress was set (CharacterRig.set_traversal_progress), together with the trunk lean and the rifle's sling blend, so those are in
 	# place before any modifier of this pass runs; this only applies it to the bones.
@@ -67,7 +73,13 @@ func _apply_ladder() -> void:
 		for side in 2:
 			var foot := input.feet_local[side]
 			foot_targets[side].global_position = character_frame.to_global(foot)
-			knee_poles[side].global_position = character_frame.to_global(foot + Vector3(foot.x * 0.5, 0.45, 0.55))
+			# The knee goes where the leg's own length and the rungs allow (LadderKneePlanner), not a fixed offset from the foot: that put every knee through the ladder.
+			var hip := input.ladder_body.hip_joint(input.hips_local, side)
+			var plan := LadderKneePlanner.plan(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
+			knee_turn[side] = move_toward(knee_turn[side], plan.turn, KNEE_TURN_RATE * delta)
+			plan = LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
+			knee_overlap[side] = float(plan.overlap)
+			knee_poles[side].global_position = character_frame.to_global(plan.pole)
 		leg_ik.influence = weight
 		leg_ik.active = weight > 0.001
 

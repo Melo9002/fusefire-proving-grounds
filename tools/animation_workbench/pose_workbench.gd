@@ -751,7 +751,6 @@ func _advance_ladder_demo(delta: float) -> void:
 
 
 func _build_ladder_visuals() -> void:
-	var profile := rig.traversal_profile
 	var length: float = ladder_demo.length
 	_ladder_group = Node3D.new()
 	_ladder_group.name = "LadderBench"
@@ -759,23 +758,10 @@ func _build_ladder_visuals() -> void:
 	add_child(_ladder_group)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.87, 0.71, 0.3)
-	var plane := profile.ladder_plane_ahead
-	for side in [-1.0, 1.0]:
-		var rail := MeshInstance3D.new()
-		var rail_mesh := BoxMesh.new()
-		rail_mesh.size = Vector3(0.06, length, 0.06)
-		rail.mesh = rail_mesh
-		rail.material_override = material
-		rail.position = Vector3(0.35 * side, length * 0.5, plane)
-		_ladder_group.add_child(rail)
-	for index in TraversalSolver.rung_count_for(profile, length):
-		var rung := MeshInstance3D.new()
-		var rung_mesh := BoxMesh.new()
-		rung_mesh.size = Vector3(0.76, 0.045, 0.045)
-		rung.mesh = rung_mesh
-		rung.material_override = material
-		rung.position = Vector3(0.0, TraversalSolver.rung_height(profile, index, length), plane)
-		_ladder_group.add_child(rung)
+	# The shared ladder layout: the same rungs the environment and the solver use.
+	var geometry := LadderGeometry.for_rise(length)
+	var plane := geometry.plane_ahead
+	_ladder_group.add_child(geometry.build_visual(material))
 	var deck := MeshInstance3D.new()
 	var deck_mesh := BoxMesh.new()
 	deck_mesh.size = Vector3(3.0, 0.2, 3.0)

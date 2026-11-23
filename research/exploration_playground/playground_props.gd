@@ -68,26 +68,10 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	info["ladder"] = {"x": 0.0, "z": 15.42, "length": LADDER_LENGTH, "top_z": 16.2}
 	var rung_material := StandardMaterial3D.new()
 	rung_material.albedo_color = Color(0.87, 0.71, 0.3)
-	var ladder_node := Node3D.new()
-	ladder_node.name = "Ladder"
+	# The shared ladder layout (LadderGeometry), drawn in the frame of the cell the climber stands in: its rung plane is at z 15.42.
+	var ladder_node := LadderGeometry.for_rise(LADDER_LENGTH).build_visual(rung_material)
+	ladder_node.position = Vector3(0.0, 0.0, 15.42 - LadderGeometry.PLANE_AHEAD)
 	world.add_child(ladder_node)
-	for side in [-1.0, 1.0]:
-		var rail := MeshInstance3D.new()
-		var rail_mesh := BoxMesh.new()
-		rail_mesh.size = Vector3(0.06, LADDER_LENGTH, 0.06)
-		rail.mesh = rail_mesh
-		rail.material_override = rung_material
-		rail.position = Vector3(0.35 * side, LADDER_LENGTH * 0.5, 15.42)
-		ladder_node.add_child(rail)
-	var profile := TraversalProfile.new()
-	for index in TraversalSolver.rung_count_for(profile, LADDER_LENGTH):
-		var rung := MeshInstance3D.new()
-		var rung_mesh := BoxMesh.new()
-		rung_mesh.size = Vector3(0.76, 0.045, 0.045)
-		rung.mesh = rung_mesh
-		rung.material_override = rung_material
-		rung.position = Vector3(0.0, TraversalSolver.rung_height(profile, index, LADDER_LENGTH), 15.42)
-		ladder_node.add_child(rung)
 	# Spots: targets, a body to carry, a hazard plate.
 	info["target_spots"] = [Vector3(-8.0, 0.0, -9.0), Vector3(0.0, 0.0, -12.0)]
 	info["carry_spot"] = Vector3(8.0, 0.0, -6.0)

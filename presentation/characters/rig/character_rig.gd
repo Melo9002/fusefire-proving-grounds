@@ -617,6 +617,9 @@ func _publish_traversal_input() -> void:
 			input.weight = ladder.pose.weight
 			input.hips_local = ladder.pose.hips
 			input.feet_local = [ladder.pose.feet[0], ladder.pose.feet[1]]
+			input.ladder_geometry = ladder.geometry
+			input.ladder_body = ladder.body
+			input.floor_level = ladder.climbed
 	elif stairs != null and stairs.pose != null:
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
@@ -635,6 +638,7 @@ func _publish_traversal_input() -> void:
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
 func begin_traversal(kind: StringName, length: float, direction: int) -> void:
 	ladder = LadderClimb.new(kind, length, direction)
+	ladder.body = ladder_body()
 	_publish_traversal_input()
 
 
@@ -644,7 +648,7 @@ func set_traversal_progress(climbed: float) -> void:
 	if ladder == null:
 		return
 	ladder.climbed = climbed
-	ladder.pose = LadderPose.from_solver(TraversalSolver.ladder_pose(traversal_profile, climbed, ladder.length, ladder.direction))
+	ladder.pose = LadderPose.from_solver(TraversalSolver.ladder_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction))
 	_publish_traversal_input()
 	var weight: float = ladder.pose.weight
 	if crouch_modifier != null:
@@ -1110,6 +1114,40 @@ func body_ratio() -> float:
 
 
 var _body_ratio := -1.0
+var _ladder_body: LadderBody
+
+
+## The limb lengths and joint offsets the ladder planner works from, measured once from the skeleton at rest as the character is shown (see LadderBody). Falls back to the reference proportions when
+## the bones are not mapped.
+func ladder_body() -> LadderBody:
+	if _ladder_body != null:
+		return _ladder_body
+	_ladder_body = LadderBody.new()
+	_ladder_body.ratio = body_ratio()
+	if bones == null or not is_instance_valid(skeleton) or not skeleton.is_inside_tree() or bones.left_leg.size() < 3 or bones.left_arm.size() < 3 or bones.hips == &"":
+		return _ladder_body
+	var to_local := character_root.global_basis.orthonormalized().inverse()
+	var rest := func(bone: StringName) -> Vector3:
+		return skeleton.global_basis * skeleton.get_bone_global_rest(skeleton.find_bone(bone)).origin
+	var hips: Vector3 = rest.call(bones.hips)
+	var hip: Vector3 = rest.call(bones.left_leg[0])
+	var knee: Vector3 = rest.call(bones.left_leg[1])
+	var ankle: Vector3 = rest.call(bones.left_leg[2])
+	var shoulder: Vector3 = rest.call(bones.left_arm[0])
+	var elbow: Vector3 = rest.call(bones.left_arm[1])
+	var wrist: Vector3 = rest.call(bones.left_arm[2])
+	_ladder_body.thigh = hip.distance_to(knee)
+	_ladder_body.shin = knee.distance_to(ankle)
+	_ladder_body.upper_arm = shoulder.distance_to(elbow)
+	_ladder_body.forearm = elbow.distance_to(wrist)
+	_ladder_body.hip_offset = to_local * (hip - hips)
+	_ladder_body.shoulder_offset = to_local * (shoulder - hips)
+	# The skeleton's origin is on the floor at rest, so the ankle's height above it is its height above the sole.
+	_ladder_body.ankle_height = maxf((to_local * ankle).y, 0.0)
+	if bones.left_toes != &"" and skeleton.find_bone(bones.left_toes) >= 0:
+		var toe: Vector3 = to_local * (rest.call(bones.left_toes) - ankle)
+		_ladder_body.ball_length = Vector2(toe.x, toe.z).length()
+	return _ladder_body
 
 
 func update_locomotion_presentation(speed: float, heading_rate: float, delta: float) -> void:

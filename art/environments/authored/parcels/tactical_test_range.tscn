@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-b.glb" id="container_b"]
 [ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="crate"]
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_roads/models/construction-barrier.glb" id="barrier"]
-[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_4m.tscn" id="ladder"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/components/maintenance_ladder_3m.tscn" id="ladder"]
 [ext_resource type="PackedScene" path="res://art/environments/authored/components/catwalk_rail_2m.tscn" id="rail"]
 [ext_resource type="Script" path="res://systems/grid/elevation_path.gd" id="elevation_path"]
 
@@ -83,7 +83,6 @@ metadata/ladder_local_top = Vector3i(12, 3, 5)
 
 [node name="Ladder" parent="TrainingGallery/GroundClimb" instance=ExtResource("ladder")]
 position = Vector3(12, 0, 4.45)
-scale = Vector3(1, 0.75, 1)
 
 [node name="UpperClimb" type="Node3D" parent="TrainingGallery"]
 metadata/ladder_local_bottom = Vector3i(7, 3, 9)
@@ -91,7 +90,6 @@ metadata/ladder_local_top = Vector3i(7, 6, 8)
 
 [node name="Ladder" parent="TrainingGallery/UpperClimb" instance=ExtResource("ladder")]
 position = Vector3(7, 3, 8.55)
-scale = Vector3(1, 0.75, 1)
 
 [node name="Ramp" type="Node3D" parent="TrainingGallery"]
 script = ExtResource("elevation_path")
