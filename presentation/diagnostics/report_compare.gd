@@ -108,7 +108,7 @@ static func _metric(key: String, ma: Variant, mb: Variant, size_differs: bool, r
 	row.delta = snappedf(vb - va, 0.0001)
 	if absf(vb - va) <= noise:
 		row.verdict = "UNCHANGED"
-		row.reason = "within the measurement's noise (%.3g)" % noise
+		row.reason = "within the measurement's noise (%s)" % str(snappedf(noise, 0.0001))
 		return row
 	match String(ma.get("better", "none")):
 		"lower":

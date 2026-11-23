@@ -8,6 +8,8 @@ const COLOUR_ACHIEVED := Color(0.2, 0.95, 1.0)
 const COLOUR_INTENDED := Color(1.0, 0.85, 0.15)
 const COLOUR_ERROR := Color(1.0, 0.15, 0.15)
 const COLOUR_BONE := Color(1.0, 0.35, 0.95)
+const COLOUR_BAR := Color(1.0, 0.6, 0.15)
+const COLOUR_NORMAL := Color(0.6, 1.0, 0.2)
 
 var _lines := MeshInstance3D.new()
 var _mesh := ImmediateMesh.new()
@@ -79,6 +81,10 @@ func show_finding(finding: Dictionary, row: Dictionary) -> Vector3:
 			var world := world_of(row, _vec(offender.point))
 			_cross(world, 0.02, COLOUR_ERROR)
 			points.append(world)
+			if offender.has("bar_a"):   # the bar the environment supplied, and its surface normal where the vertex is
+				_line(world_of(row, _vec(offender.bar_a)), world_of(row, _vec(offender.bar_b)), COLOUR_BAR)
+				var nearest := world_of(row, _vec(offender.bar_nearest))
+				_line(nearest, nearest + (world_of(row, _vec(offender.surface_normal)) - _vec(row.root)) * 0.08, COLOUR_NORMAL)
 	if _open:
 		_mesh.surface_end()
 	if points.is_empty():

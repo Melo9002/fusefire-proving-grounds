@@ -187,7 +187,8 @@ func _copy_cli() -> void:
 
 func _on_part(index: int) -> void:
 	if index <= 0:
-		bench.diagnostics.highlight_bones([])
+		var none: Array[String] = []
+		bench.diagnostics.highlight_bones(none)
 		_part_text.text = ""
 		return
 	var bones := BodyParts.bones_of(bench.rig, _parts[index - 1])
@@ -202,7 +203,9 @@ func _on_part(index: int) -> void:
 
 func refresh() -> void:
 	var recorder := _recorder()
-	if recorder != null and recorder.recording:
+	if bench.sim_paused and bench.pending_steps() > 0:
+		_status.text = "replaying to the moment: %d steps to go (one per frame)" % bench.pending_steps()
+	elif recorder != null and recorder.recording:
 		_status.text = "recording: %d frames, %.1f s%s" % [recorder.rows.size(), float(recorder.rows.back().t) if not recorder.rows.is_empty() else 0.0, "  (leg vertices sampled)" if recorder.mesh_every > 0 else ""]
 	elif recorder != null and not recorder.rows.is_empty():
 		_status.text = "stopped: %d frames recorded" % recorder.rows.size()

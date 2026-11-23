@@ -31,6 +31,8 @@ var clock := Callable()
 var recording := false
 var dropped := 0
 var mesh_every := 0
+## True once mesh sampling has been on during this recording (stop() turns the sampler off, but the report must still say it was used).
+var mesh_used := false
 var _probe: ContactErrorDiagnostics
 var _bone_names: Array[StringName] = []
 var _extra: Array[StringName] = []
@@ -94,6 +96,7 @@ func clear() -> void:
 	_t0 = NAN
 	_prev_t = NAN
 	_pending_mesh = {}
+	mesh_used = mesh_every > 0
 
 ## Names a bone to record in addition to the mapped ones (a selection made in the inspector).
 func watch_bone(bone: StringName) -> void:
@@ -103,6 +106,7 @@ func watch_bone(bone: StringName) -> void:
 ## Samples the leg vertices against the ladder every `every` rows (0 = off). Optional because the skinned-surface capture costs about 3 ms a sample.
 func enable_mesh(every := 1) -> void:
 	mesh_every = maxi(every, 1)
+	mesh_used = true
 	if _mesh == null:
 		_mesh = LadderClearance.new(rig)
 		_mesh.sampled.connect(_on_mesh_sampled)
@@ -214,13 +218,40 @@ func _on_mesh_sampled() -> void:
 		var top := []
 		for i in mini(found.size(), 4):
 			var f: Dictionary = found[i]
-			top.append({"bone": f.bone, "part": BodyParts.describe(rig, String(f.bone)).text, "bar": f.bar, "rung": f.rung, "depth_mm": snappedf(float(f.depth) * 1000.0, 0.1), "point": f.point})
+			var entry := {"bone": f.bone, "part": BodyParts.describe(rig, String(f.bone)).text, "bar": f.bar, "rung": f.rung, "depth_mm": snappedf(float(f.depth) * 1000.0, 0.1), "point": f.point}
+			entry.merge(_bar_of(rig.ladder.geometry, rig.ladder.climbed, f), true)
+			top.append(entry)
 		data = {"status": "FRESH", "count": found.size(), "top": top, "threshold_mm": 3.0}
 	var update := int(_mesh.stamp.update)
 	if not rows.is_empty() and int(rows.back().update) == update:
 		rows.back()["mesh"] = data
 	else:
 		_pending_mesh = {"update": update, "data": data}
+
+## The bar a vertex is inside, as the environment (LadderGeometry) supplies it, in the character's frame: the axis (bar_a to bar_b), its radius, the point on the axis nearest the vertex, and the surface normal there
+## (from that axis to the vertex). Nothing is invented: it is the cylinder the clearance test used.
+static func _bar_of(geometry: LadderGeometry, climbed: float, offender: Dictionary) -> Dictionary:
+	var down := Vector3(0.0, climbed, 0.0)   # ladder frame to character frame
+	var half := geometry.rail_half_span()
+	var a: Vector3
+	var b: Vector3
+	var radius: float
+	if int(offender.rung) >= 0:
+		var y := geometry.rung_height(int(offender.rung))
+		a = Vector3(-half, y, geometry.plane_ahead) - down
+		b = Vector3(half, y, geometry.plane_ahead) - down
+		radius = geometry.rung_radius
+	else:
+		var side := 1.0 if String(offender.bar).begins_with("left") else -1.0
+		a = Vector3(half * side, 0.0, geometry.plane_ahead) - down
+		b = Vector3(half * side, geometry.rise, geometry.plane_ahead) - down
+		radius = geometry.rail_radius
+	var point: Vector3 = offender.point
+	var axis := b - a
+	var along := clampf((point - a).dot(axis) / maxf(axis.length_squared(), 0.000001), 0.0, 1.0)
+	var nearest := a + axis * along
+	var normal := (point - nearest).normalized() if (point - nearest).length() > 0.0001 else Vector3.ZERO
+	return {"bar_a": a, "bar_b": b, "bar_radius_m": radius, "bar_nearest": nearest, "surface_normal": normal}
 
 ## What this recording says about itself, for a report: how many rows, the typical step, what was left out.
 func describe() -> Dictionary:
@@ -229,4 +260,4 @@ func describe() -> Dictionary:
 		if float(row.dt) > 0.0:
 			steps.append(float(row.dt))
 	steps.sort()
-	return {"rows": rows.size(), "dropped": dropped, "frame_dt_s": snappedf(steps[steps.size() / 2], 0.00001) if not steps.is_empty() else 0.0, "mesh_sampling": mesh_every > 0, "bones": _bone_names.size() + _extra.size()}
+	return {"rows": rows.size(), "dropped": dropped, "frame_dt_s": snappedf(steps[steps.size() / 2], 0.00001) if not steps.is_empty() else 0.0, "mesh_sampling": mesh_used or mesh_every > 0, "bones": _bone_names.size() + _extra.size()}

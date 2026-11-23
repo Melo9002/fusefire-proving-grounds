@@ -458,6 +458,10 @@ func step_sim(frames := 1) -> void:
 	if sim_paused:
 		_step_requests += frames
 
+## Steps still waiting (a replay to a moment plays them one per frame, so a moment 5 s in takes about 5 s to reach).
+func pending_steps() -> int:
+	return _step_requests
+
 func start_scenario(id: StringName) -> bool:
 	var definition := WorkbenchScenarios.find(id)
 	if definition.is_empty() or not WorkbenchScenarios.supported(definition, rig).ok:

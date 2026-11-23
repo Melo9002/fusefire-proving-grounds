@@ -287,6 +287,9 @@ static func _mesh(event: Dictionary, rows: Array, config: Dictionary, names: Dic
 	var ladder: Dictionary = detail.get("ladder", {})
 	var hypotheses := []
 	var facts := {"vertices": event.value, "deepest_mm": worst.depth_mm, "bar": bar, "rung": worst.get("rung", -1), "bone": worst.bone, "seconds": snappedf(seconds, 0.001), "ladder": ladder}
+	if worst.has("bar_a"):
+		facts["bar"] = {"space": "character", "axis_a": worst.bar_a, "axis_b": worst.bar_b, "radius_m": worst.bar_radius_m, "nearest_on_axis": worst.bar_nearest, "surface_normal": worst.surface_normal, "vertex": worst.point,
+			"source": "LadderGeometry (the environment's own cylinder); the normal runs from its axis to the vertex"}
 	if not ladder.is_empty() and int(worst.get("rung", -1)) >= 0:
 		var rung := int(worst.rung)
 		var on: Array = ladder.get("foot_rung", [-1, -1])
