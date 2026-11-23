@@ -53,8 +53,8 @@ func mount() -> void:
 	ctx.visual.reset_motion(0.0)   # face the rungs without an idle turn pose
 	ctx.combat.set_aim(false)
 	ctx.visual.set_crouched(false)
-	var deck_from_rungs := float(ladder.deck_edge) - float(ladder.z) if use_landing_contacts else NAN
-	ctx.visual.begin_climb(float(ladder.length), deck_from_rungs, -1 if _entering_from_top else 1, ladder.brace_posts if use_landing_contacts else Vector2.ZERO)
+	var landing: LadderLanding = ladder.landing if use_landing_contacts else null
+	ctx.visual.begin_climb(float(ladder.length), landing, -1 if _entering_from_top else 1)
 	on_ladder = true
 	_top_out_time = TOP_OUT_SECONDS if _entering_from_top else -1.0
 	ctx.visual.set_climb_height(climbed, float(ladder.z) - z, 1.0 if _entering_from_top else 0.0)

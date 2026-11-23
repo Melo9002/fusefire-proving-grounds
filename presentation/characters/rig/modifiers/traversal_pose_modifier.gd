@@ -25,6 +25,13 @@ var knee_overlap: Array[float] = [0.0, 0.0]
 ## Each knee's outward turn (degrees): it starts the next search and changes at a limited rate, so a knee glides to a new stance instead of popping.
 var knee_turn: Array[float] = [LadderKneePlanner.PREFERRED_TURN, LadderKneePlanner.PREFERRED_TURN]
 const KNEE_TURN_RATE := 360.0
+## ...and per metre the pose travels (the hips or a foot): the stance is a function of where the body is on the ladder, so it must be able to follow the body at ANY frame rate. 420 degrees per metre is
+## the same 360 degrees per second at the climb's own 0.85 m/s, which is what makes the knee glide at real speed and keeps a fast test, a scrubbed slider or a replay from outrunning it.
+const KNEE_TURN_PER_METRE := 420.0
+var _last_hips := Vector3.ZERO
+var _last_feet: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+var _have_last := false
+var _last_floor := 0.0
 
 
 func setup(target: Skeleton3D, hips_bone: StringName, frame: Node3D) -> bool:
@@ -48,6 +55,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		TraversalPoseInput.Mode.NONE:
 			weight = 0.0
 			knee_turn = [LadderKneePlanner.PREFERRED_TURN, LadderKneePlanner.PREFERRED_TURN]
+			_have_last = false
 			if is_instance_valid(leg_ik) and leg_ik.active:
 				leg_ik.active = false
 		TraversalPoseInput.Mode.STAIRS:
@@ -68,6 +76,15 @@ func _apply_ladder(delta: float) -> void:
 	var hips_in_skeleton := skeleton.global_transform.affine_inverse() * hips_world
 	var current := skeleton.get_bone_pose_position(_hips)
 	skeleton.set_bone_pose_position(_hips, current.lerp(hips_in_skeleton, weight))
+	# How far the stance may change this pass: in time, and in how far the body has travelled (see KNEE_TURN_PER_METRE).
+	var travel := 0.0
+	if _have_last:
+		travel = maxf(absf(input.floor_level - _last_floor), maxf(input.hips_local.distance_to(_last_hips), maxf(input.feet_local[0].distance_to(_last_feet[0]), input.feet_local[1].distance_to(_last_feet[1]))))
+	_last_floor = input.floor_level
+	_last_hips = input.hips_local
+	_last_feet = [input.feet_local[0], input.feet_local[1]]
+	_have_last = true
+	var knee_slew := KNEE_TURN_RATE * maxf(delta, 0.0) + KNEE_TURN_PER_METRE * travel
 	# The legs: feet on rungs, knees out toward the ladder.
 	if is_instance_valid(leg_ik):
 		for side in 2:
@@ -75,23 +92,23 @@ func _apply_ladder(delta: float) -> void:
 			foot_targets[side].global_position = character_frame.to_global(foot)
 			# The knee goes where the leg's own length and the rungs allow (LadderKneePlanner), not a fixed offset from the foot: that put every knee through the ladder.
 			var hip := input.ladder_body.hip_joint(input.hips_local, side)
-			var plan := LadderKneePlanner.plan(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
+			var plan := LadderKneePlanner.plan(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side], input.landing)
 			if input.deck_planted[side]:
 				# With a deck foothold the knee can hinge forward again if
 				# that direction clears the remaining rung and rail volumes.
-				var forward_turn := move_toward(knee_turn[side], 0.0, KNEE_TURN_RATE * maxf(delta, 0.0))
-				var forward_plan := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, forward_turn)
+				var forward_turn := move_toward(knee_turn[side], 0.0, knee_slew)
+				var forward_plan := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, forward_turn, input.landing)
 				if float(forward_plan.overlap) < -LadderKneePlanner.MARGIN:
 					plan = forward_plan
 			# Let a knee come back in only when it has spare clearance.
 			# A tightly folded knee still keeps its existing path around the bars.
 			if is_equal_approx(float(plan.turn), knee_turn[side]) and knee_turn[side] > 10.0 and float(plan.overlap) < -0.025:
-				var narrower := move_toward(knee_turn[side], 10.0, KNEE_TURN_RATE * maxf(delta, 0.0))
-				var inward := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, narrower)
+				var narrower := move_toward(knee_turn[side], 10.0, knee_slew)
+				var inward := LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, narrower, input.landing)
 				if float(inward.overlap) < -0.025:
 					plan = inward
-			knee_turn[side] = move_toward(knee_turn[side], plan.turn, KNEE_TURN_RATE * delta)
-			plan = LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side])
+			knee_turn[side] = move_toward(knee_turn[side], plan.turn, knee_slew)
+			plan = LadderKneePlanner.at_turn(input.ladder_geometry, input.ladder_body, hip, foot, side, input.floor_level, knee_turn[side], input.landing)
 			knee_overlap[side] = float(plan.overlap)
 			knee_poles[side].global_position = character_frame.to_global(plan.pole)
 		leg_ik.influence = weight

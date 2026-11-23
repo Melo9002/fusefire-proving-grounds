@@ -32,7 +32,7 @@ func _sample(sample: Dictionary) -> void:
 		var knee := rig.skeleton.global_transform * rig.skeleton.get_bone_global_pose(rig.skeleton.find_bone(leg[1])).origin
 		if knee.z > deck_edge:
 			_metrics.worst_knee_below_deck_mm = maxf(float(_metrics.worst_knee_below_deck_mm), (deck_y - knee.y) * 1000.0)
-		if not is_nan(state.deck_from_rungs) and state.pose.foot_rung[side] < 0 and float(foot.error) < 0.05:
+		if state.landing != null and state.pose.foot_rung[side] < 0 and float(foot.error) < 0.05:
 			deck_foot = true
 		if state.pose.foot_rung[side] < 0:
 			_metrics.deck_foot_max_error_mm = maxf(float(_metrics.deck_foot_max_error_mm), float(foot.error) * 1000.0)
@@ -40,7 +40,7 @@ func _sample(sample: Dictionary) -> void:
 			rung_foot = true
 		if float(hand.weight) > 0.9 and float(hand.error) < 0.035:
 			hand_support = true
-			if not is_nan(state.deck_from_rungs) and state.pose.hand_deck[side] > 0.99:
+			if state.landing != null and state.pose.hand_deck[side] > 0.99:
 				deck_brace = true
 		if state.pose.hand_deck[side] > 0.99 and state.pose.hand_weight[side] > 0.9 and float(hand.weight) < 0.9:
 			_metrics.unreachable_braces += 1

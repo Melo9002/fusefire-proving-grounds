@@ -11,6 +11,7 @@ var _stage_choice: OptionButton
 var _bone_choice: OptionButton
 var _explain: Label
 var _contact: Label
+var _landing: Label
 var _recording: Label
 var _layer_checks: Dictionary = {}
 var _master: CheckBox
@@ -31,6 +32,9 @@ func setup(workbench: Node3D) -> void:
 	measured.add_child(WorkbenchUI.row([["Record contacts", _start_recording], ["Stop and summarise", _stop_recording]]))
 	_recording = WorkbenchUI.mono("", 12)
 	measured.add_child(_recording)
+	var landing := WorkbenchUI.section(self, "Ladder landing  (final pose)")
+	_landing = WorkbenchUI.mono("", 12)
+	landing.add_child(_landing)
 	var events := WorkbenchUI.section(self, "Recent events  (presenter clock)")
 	_history = WorkbenchUI.mono("", 12)
 	events.add_child(_history)
@@ -141,4 +145,5 @@ func refresh() -> void:
 	_stages.text = PoseStageReport.text(bench.rig)
 	var contacts: ContactErrorDiagnostics = bench.diagnostics.contacts
 	_contact.text = ContactErrorDiagnostics.format_readout(contacts.latest) if is_instance_valid(contacts) and contacts.enabled else "contact diagnostics off"
+	_landing.text = bench.diagnostics.ladder_text()
 	_grip.set_pressed_no_signal(is_instance_valid(bench._diagnostics) and bench._diagnostics.enabled)

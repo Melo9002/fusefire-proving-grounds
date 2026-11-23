@@ -315,9 +315,9 @@ func _sync_cover(delta: float) -> void:
 # ------------------------------------------------------------------ ladder and stairs
 
 ## Start climbing a ladder of `length` metres (the character's origin is at the ladder's foot level; the ladder plane is ahead of it). The controller moves the body up and calls `set_climb_height`.
-func begin_climb(length: float, deck_from_rungs := NAN, direction := 1, brace_posts := Vector2.ZERO) -> void:
+func begin_climb(length: float, landing: LadderLanding = null, direction := 1) -> void:
 	presenter.cancel_gesture()
-	rig.begin_traversal(&"ladder", length, direction, deck_from_rungs, brace_posts)
+	rig.begin_traversal(&"ladder", length, direction, landing)
 	_state = &""
 
 

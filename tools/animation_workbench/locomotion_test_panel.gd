@@ -69,6 +69,10 @@ func setup(workbench: Node3D) -> void:
 	box.add_child(_label("Production solver; the bench supplies the height the game would"))
 	box.add_child(_row([["Climb 4 m", func() -> void: _ladder(4.0, 1, 0.85)], ["Descend 4 m", func() -> void: _ladder(4.0, -1, 0.75)], ["Climb 3 m", func() -> void: _ladder(3.0, 1, 0.85)], ["Stop", func() -> void: bench.end_ladder_demo()]]))
 	box.add_child(_row([["Pause / play", func() -> void: _ladder_toggle()], ["Mount (hold)", func() -> void: _ladder_hold(0.25)], ["Top-out (hold)", func() -> void: _ladder_hold(3.6)], ["Mid (hold)", func() -> void: _ladder_hold(2.0)]]))
+	box.add_child(_label("Landing: the same LadderLanding a host supplies; unsupported ones show the fallback"))
+	box.add_child(_row([["Posts up", func() -> void: _landing("posts", 1)], ["Posts down", func() -> void: _landing("posts", -1)], ["Rails up", func() -> void: _landing("rails", 1)], ["Rails down", func() -> void: _landing("rails", -1)]]))
+	box.add_child(_row([["Deck only", func() -> void: _landing("deck only", 1)], ["Lip too far", func() -> void: _landing("too far", 1)], ["Deck too small", func() -> void: _landing("too small", 1)], ["Across: 0", func() -> void: bench.set_ladder_across(0.0)]]))
+	box.add_child(_row([["Across: 0.5", func() -> void: bench.set_ladder_across(0.5)], ["Across: 1", func() -> void: bench.set_ladder_across(1.0)], ["Hold at the lip", func() -> void: _ladder_hold(3.0)], ["Interrupt", func() -> void: bench.end_ladder_demo()]]))
 	_ladder_slider = HSlider.new()
 	_ladder_slider.min_value = 0.0
 	_ladder_slider.max_value = 4.0
@@ -304,3 +308,10 @@ func _process(delta: float) -> void:
 		var plan: Dictionary = bench.cover_plan
 		cover_line += "\nintent: %s" % ("none (passive cover)" if plan.is_empty() else "authorized attack  mode %s  side %d  along %.2f lateral %.2f%s" % [CoverEdgeSelector.FiringMode.keys()[int(plan.mode)], int(plan.side), float(plan.along), float(plan.lateral), ("  MISMATCH " + str(plan.mismatch)) if not str(plan.mismatch).is_empty() else ""])
 	_readout.text = "state %s\nfeed %.1f m/s, legs follow %.2f m/s\ngait blend %.2f (0 walk, 1 jog, 2 run)  loaded %.2f\ncadence %.2f cycles/s\ntwist %.0f  bank %.1f  pitch %.1f deg%s" % [bench.rig.animation_controller.current_state, bench.preview_speed, r.speed, r.gait, r.loaded, r.cadence, modifier.twist_degrees if modifier != null else 0.0, r.bank, modifier.pitch_degrees if modifier != null else 0.0, cover_line]
+
+
+## A 3 m ladder with a landing of `kind` at its top: up starts a little below it, down starts standing on the deck.
+func _landing(kind: String, direction: int) -> void:
+	_set_speed(0.0, false)
+	bench.start_ladder_demo(3.0, direction, 0.85 if direction > 0 else 0.75, 1.9 if direction > 0 else -1.0, kind)
+	_ladder_slider.max_value = 3.0

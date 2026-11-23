@@ -20,7 +20,7 @@ const SHIN_END := 0.8
 
 ## `hip` and `ankle` in the character's frame, `side` 0 = left, `floor_level` how far the character's floor is above the ladder's bottom, `start_turn` the turn to look around first.
 ## Returns {knee, pole, clear, overlap (<= 0 clear, else metres inside), turn (degrees), reachable}.
-static func plan(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle: Vector3, side: int, floor_level: float, start_turn := PREFERRED_TURN) -> Dictionary:
+static func plan(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle: Vector3, side: int, floor_level: float, start_turn := PREFERRED_TURN, landing: LadderLanding = null) -> Dictionary:
 	var start := clampf(start_turn, MIN_TURN, MAX_TURN)
 	var best := {}
 	var best_overlap := INF
@@ -34,7 +34,7 @@ static func plan(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle
 			turns.append(start - step)
 		step += STEP
 	for turn in turns:
-		var candidate := at_turn(geometry, body, hip, ankle, side, floor_level, turn)
+		var candidate := at_turn(geometry, body, hip, ankle, side, floor_level, turn, landing)
 		if candidate.overlap < best_overlap:
 			best_overlap = candidate.overlap
 			best = candidate
@@ -45,7 +45,7 @@ static func plan(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle
 
 
 ## The knee for one given outward turn (degrees): {knee, pole, overlap, turn, reachable}.
-static func at_turn(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle: Vector3, side: int, floor_level: float, turn: float) -> Dictionary:
+static func at_turn(geometry: LadderGeometry, body: LadderBody, hip: Vector3, ankle: Vector3, side: int, floor_level: float, turn: float, landing: LadderLanding = null) -> Dictionary:
 	var axis := ankle - hip
 	var distance := axis.length()
 	var reachable := distance <= body.thigh + body.shin - 0.002
@@ -59,13 +59,22 @@ static func at_turn(geometry: LadderGeometry, body: LadderBody, hip: Vector3, an
 	var lateral := 1.0 if side == 0 else -1.0
 	var direction := Basis(-down, deg_to_rad(turn) * lateral) * hinge
 	var knee := hip + down * along + direction * offset
-	var overlap := _overlap(geometry, body, hip, knee, ankle, floor_level)
+	var overlap := _overlap(geometry, body, hip, knee, ankle, floor_level, landing)
 	return {"knee": knee, "pole": hip + down * along + direction * (offset + 0.25), "turn": turn, "overlap": overlap, "reachable": reachable}
 
 
 ## The deepest overlap (metres, <= 0 = clear by that much) of the knee, thigh and shin volumes with the ladder.
-static func _overlap(geometry: LadderGeometry, body: LadderBody, hip: Vector3, knee: Vector3, ankle: Vector3, floor_level: float) -> float:
+static func _overlap(geometry: LadderGeometry, body: LadderBody, hip: Vector3, knee: Vector3, ankle: Vector3, floor_level: float, landing: LadderLanding = null) -> float:
 	var worst := geometry.penetration(knee, knee, body.knee_radius(), floor_level)
 	worst = maxf(worst, geometry.penetration(hip, knee, body.thigh_radius(), floor_level))
 	worst = maxf(worst, geometry.penetration(knee, knee.lerp(ankle, SHIN_END), body.shin_radius(), floor_level))
+	# The deck and its face are obstacles too, once the host described a landing (character frame in, ladder frame for the deck: the floor level lifts y).
+	if landing != null:
+		var up := Vector3(0.0, floor_level, 0.0)
+		var deck := landing.penetration(knee + up, knee + up, body.knee_radius(), geometry)
+		deck = maxf(deck, landing.penetration(hip + up, knee + up, body.thigh_radius(), geometry))
+		deck = maxf(deck, landing.penetration(knee + up, knee.lerp(ankle, SHIN_END) + up, body.shin_radius(), geometry))
+		# A volume inside the deck is that much "inside" (positive); clear of it contributes nothing, so the rung and rail clearance (<= 0) still decides.
+		if deck > 0.0:
+			worst = maxf(worst, deck)
 	return worst

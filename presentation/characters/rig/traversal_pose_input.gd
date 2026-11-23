@@ -17,6 +17,8 @@ var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 var ladder_geometry: LadderGeometry
 var ladder_body: LadderBody
 var floor_level := 0.0
+## The host's verified landing at the top (null: none): the deck is an obstacle for the legs.
+var landing: LadderLanding
 var deck_planted: Array[bool] = [false, false]
 var deck_levelling: Array[float] = [0.0, 0.0]
 ## STAIRS: the pelvis height the legs allow, the two ankle targets (world), whether each foot is planted, and the profile that limits an unplanted ankle's reach.

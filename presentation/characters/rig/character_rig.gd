@@ -632,7 +632,8 @@ func _publish_traversal_input() -> void:
 			input.ladder_geometry = ladder.geometry
 			input.ladder_body = ladder.body
 			input.floor_level = ladder.climbed
-			input.deck_planted = [not is_nan(ladder.deck_from_rungs) and ladder.pose.foot_rung[0] < 0, not is_nan(ladder.deck_from_rungs) and ladder.pose.foot_rung[1] < 0]
+			input.landing = ladder.landing
+			input.deck_planted = [ladder.landing != null and ladder.pose.foot_rung[0] < 0, ladder.landing != null and ladder.pose.foot_rung[1] < 0]
 			input.deck_levelling = ladder.pose.foot_deck
 	elif stairs != null and stairs.pose != null:
 		input.mode = TraversalPoseInput.Mode.STAIRS
@@ -650,14 +651,18 @@ func _publish_traversal_input() -> void:
 
 
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
-func begin_traversal(kind: StringName, length: float, direction: int, deck_from_rungs := NAN, brace_posts := Vector2.ZERO) -> void:
+## `landing` is the supported landing the HOST verified at the top (see LadderLanding); null keeps the ordinary height-only climb-out. A landing this body cannot use (the deck too far, too small, or
+## nothing to hold) is refused here with the reason in `ladder.landing_status`, never half-used.
+func begin_traversal(kind: StringName, length: float, direction: int, landing: LadderLanding = null) -> void:
 	ladder = LadderClimb.new(kind, length, direction)
 	ladder.body = ladder_body()
-	# The caller opts in only with a continuous supporting patch at the top.
-	# A large gap from the rung plane falls back to the height-only pose.
-	if is_finite(deck_from_rungs) and deck_from_rungs >= 0.0 and deck_from_rungs < ladder.body.arm_length() * 0.5:
-		ladder.deck_from_rungs = deck_from_rungs
-		ladder.brace_posts = brace_posts
+	if landing != null:
+		var reason := landing.unsupported_reason(ladder.geometry, ladder.body)
+		if reason.is_empty():
+			ladder.landing = landing
+			ladder.landing_status = "supported (%s)" % landing.source
+		else:
+			ladder.landing_status = "fallback: %s" % reason
 	_publish_traversal_input()
 
 
@@ -670,8 +675,8 @@ func set_traversal_progress(climbed: float, rung_plane := NAN, across_deck := 0.
 		ladder.geometry.plane_ahead = rung_plane
 	ladder.climbed = climbed
 	var result: Dictionary
-	if not is_nan(ladder.deck_from_rungs) and climbed >= TraversalSolver.landing_start(ladder.geometry, ladder.body):
-		result = TraversalSolver.ladder_landing_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction, ladder.deck_from_rungs, across_deck, ladder.brace_posts)
+	if ladder.landing != null and climbed >= TraversalSolver.landing_start(ladder.geometry, ladder.body):
+		result = TraversalSolver.ladder_landing_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction, ladder.landing, across_deck)
 	else:
 		result = TraversalSolver.ladder_pose(traversal_profile, ladder.geometry, ladder.body, climbed, ladder.direction)
 	ladder.pose = LadderPose.from_solver(result)
@@ -766,7 +771,7 @@ func apply_traversal_hand_targets() -> void:
 		var hand := HandContact.Hand.LEFT if side == 0 else HandContact.Hand.RIGHT
 		var node: Node3D = support_ik_target if side == 0 else right_hand_target
 		var hold: float = ladder.pose.hand_weight[side]
-		var deck := ladder.pose.hand_deck[side] if not is_nan(ladder.deck_from_rungs) else 0.0
+		var deck := ladder.pose.hand_deck[side] if ladder.landing != null else 0.0
 		var target := character_root.to_global(ladder.pose.hands[side])
 		if deck > 0.0:
 			# The final arm solver sees the posed shoulder, not the rest estimate.
@@ -775,7 +780,7 @@ func apply_traversal_hand_targets() -> void:
 			var arm_length := _arm_length(1 - side)
 			hold *= 1.0 - smoothstep(arm_length * 0.98, arm_length * 1.09, target.distance_to(shoulder))
 		var point := node.global_position.lerp(target, hold)
-		var on_post := ladder.brace_posts.x > 0.0
+		var on_post := ladder.landing != null and ladder.landing.has_grips()
 		var fingers := up.lerp(toward, deck).normalized()
 		var post_side := character_root.global_basis.orthonormalized().x * (1.0 if side == 0 else -1.0)
 		var palm_normal := toward.lerp(post_side if on_post else Vector3.DOWN, deck).normalized()
@@ -1203,6 +1208,7 @@ func ladder_body() -> LadderBody:
 	if bones.left_toes != &"" and skeleton.find_bone(bones.left_toes) >= 0:
 		var toe: Vector3 = to_local * (rest.call(bones.left_toes) - ankle)
 		_ladder_body.ball_length = Vector2(toe.x, toe.z).length()
+		_ladder_body.toe_height = maxf((to_local * rest.call(bones.left_toes)).y, 0.0)
 	return _ladder_body
 
 

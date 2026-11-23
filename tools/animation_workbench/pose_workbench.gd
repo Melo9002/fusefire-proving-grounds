@@ -706,13 +706,22 @@ var _ladder_group: Node3D
 var _ladder_markers: Array[MeshInstance3D] = []
 
 
-## Starts a ladder scenario: `length` the ladder's rise (m), `direction` +1 climb / -1 descend, `rate` m/s (0 = hold), `climbed` the starting height.
-func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0) -> void:
+## Starts a ladder scenario: `length` the ladder's rise (m), `direction` +1 climb / -1 descend, `rate` m/s (0 = hold), `climbed` the starting height, `landing_kind` one of LandingFixtures.KINDS ("" = no
+## landing: the plain ladder). With a landing the bench plays what a host plays: the climb, then the crossing of the deck's lip over CROSS_SECONDS (and the reverse for a descent, which starts on the deck).
+## The landing, if the body can use it, is the SAME LadderLanding the sandbox supplies; if not, the rig refuses it and says why (`ladder.landing_status`), and the plain climb-out plays.
+const CROSS_SECONDS := 0.6
+const CROSS_DISTANCE := 0.73
+
+
+func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0, landing_kind := "") -> void:
 	end_ladder_demo()
-	ladder_demo = {"length": length, "direction": direction, "rate": rate, "climbed": (0.0 if direction > 0 else length) if climbed < 0.0 else climbed, "playing": rate > 0.0}
-	rig.begin_traversal(&"ladder", length, direction)
-	_build_ladder_visuals()
-	rig.set_traversal_progress(float(ladder_demo.climbed))
+	var landing: LadderLanding = LandingFixtures.make(landing_kind, LadderGeometry.for_rise(length)) if landing_kind != "" else null
+	var start := (0.0 if direction > 0 else length) if climbed < 0.0 else climbed
+	ladder_demo = {"length": length, "direction": direction, "rate": rate, "climbed": start, "playing": rate > 0.0, "landing_kind": landing_kind,
+		"across": 1.0 if (landing != null and direction < 0 and climbed < 0.0) else 0.0}
+	rig.begin_traversal(&"ladder", length, direction, landing)
+	_build_ladder_visuals(landing)
+	_apply_ladder_progress()
 	rig.animation_controller.play(&"rifle_idle")
 
 
@@ -729,28 +738,65 @@ func set_ladder_height(climbed: float) -> void:
 	if ladder_demo.is_empty():
 		return
 	ladder_demo.climbed = clampf(climbed, 0.0, float(ladder_demo.length))
-	rig.set_traversal_progress(float(ladder_demo.climbed))
+	_apply_ladder_progress()
+
+
+## How far across the deck's lip (0 on the ladder, 1 standing on the deck); the manual slider and the player set it.
+func set_ladder_across(across: float) -> void:
+	if ladder_demo.is_empty():
+		return
+	ladder_demo.across = clampf(across, 0.0, 1.0)
+	_apply_ladder_progress()
+
+
+## What the bench reports about the landing for the panel and the evidence report: whether the transfer is supported, or the fallback and why.
+func ladder_landing_report() -> Dictionary:
+	if rig.ladder == null:
+		return {"active": false}
+	return {"active": true, "kind": String(ladder_demo.get("landing_kind", "")), "status": rig.ladder.landing_status, "supported": rig.ladder.landing != null,
+		"climbed": rig.ladder.climbed, "across": float(ladder_demo.get("across", 0.0)), "landing_phase": rig.ladder.pose.landing_phase if rig.ladder.pose != null else -1.0}
+
+
+## Hands the rig the progress the game would supply. The character stays at the origin: crossing the lip moves the rung plane behind it, exactly as the sandbox's body moving over the deck does.
+func _apply_ladder_progress() -> void:
+	var across := smoothstep(0.0, 1.0, float(ladder_demo.get("across", 0.0)))
+	rig.set_traversal_progress(float(ladder_demo.climbed), LadderGeometry.PLANE_AHEAD - across * CROSS_DISTANCE, across)
 
 
 func _advance_ladder_demo(delta: float) -> void:
 	if ladder_demo.is_empty():
 		return
 	if bool(ladder_demo.playing):
-		var next: float = float(ladder_demo.climbed) + float(ladder_demo.rate) * float(ladder_demo.direction) * delta
 		var length: float = float(ladder_demo.length)
-		if next >= length or next <= 0.0:
-			ladder_demo.playing = false
-		set_ladder_height(next)
-	else:
-		rig.set_traversal_progress(float(ladder_demo.climbed))
+		var rate: float = float(ladder_demo.rate)
+		if String(ladder_demo.landing_kind) != "":
+			if int(ladder_demo.direction) > 0:
+				if float(ladder_demo.climbed) < length:
+					ladder_demo.climbed = minf(float(ladder_demo.climbed) + rate * delta, length)
+				else:
+					ladder_demo.across = minf(float(ladder_demo.across) + delta / CROSS_SECONDS, 1.0)
+					ladder_demo.playing = float(ladder_demo.across) < 1.0
+			else:
+				if float(ladder_demo.across) > 0.0:
+					ladder_demo.across = maxf(float(ladder_demo.across) - delta / CROSS_SECONDS, 0.0)
+				else:
+					ladder_demo.climbed = maxf(float(ladder_demo.climbed) - rate * delta, 0.0)
+					ladder_demo.playing = float(ladder_demo.climbed) > 0.0
+		else:
+			var next: float = float(ladder_demo.climbed) + rate * float(ladder_demo.direction) * delta
+			if next >= length or next <= 0.0:
+				ladder_demo.playing = false
+			ladder_demo.climbed = clampf(next, 0.0, length)
+	_apply_ladder_progress()
 	if is_instance_valid(_ladder_group):
-		_ladder_group.position.y = -float(ladder_demo.climbed)
+		var across := smoothstep(0.0, 1.0, float(ladder_demo.get("across", 0.0)))
+		_ladder_group.position = Vector3(0.0, -float(ladder_demo.climbed), -across * CROSS_DISTANCE)
 		for marker in _ladder_markers:
 			marker.visible = traversal_diagnostics
 		_update_ladder_markers()
 
 
-func _build_ladder_visuals() -> void:
+func _build_ladder_visuals(landing: LadderLanding = null) -> void:
 	var length: float = ladder_demo.length
 	_ladder_group = Node3D.new()
 	_ladder_group.name = "LadderBench"
@@ -762,16 +808,20 @@ func _build_ladder_visuals() -> void:
 	var geometry := LadderGeometry.for_rise(length)
 	var plane := geometry.plane_ahead
 	_ladder_group.add_child(geometry.build_visual(material))
-	var deck := MeshInstance3D.new()
-	var deck_mesh := BoxMesh.new()
-	deck_mesh.size = Vector3(3.0, 0.2, 3.0)
-	deck.mesh = deck_mesh
-	var deck_material := StandardMaterial3D.new()
-	deck_material.albedo_color = Color(0.45, 0.47, 0.5, 0.3)   # translucent: from an inspection camera the deck must not hide the climber's head
-	deck_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	deck.material_override = deck_material
-	deck.position = Vector3(0.0, length - 0.1, plane + 1.5)
-	_ladder_group.add_child(deck)
+	if String(ladder_demo.landing_kind) != "":
+		# The landing as requested (also drawn when the rig refuses it: the deck is there, the transfer is not supported).
+		_ladder_group.add_child(LandingFixtures.build_visual(LandingFixtures.make(String(ladder_demo.landing_kind), geometry), geometry, material))
+	else:
+		var deck := MeshInstance3D.new()
+		var deck_mesh := BoxMesh.new()
+		deck_mesh.size = Vector3(3.0, 0.2, 3.0)
+		deck.mesh = deck_mesh
+		var deck_material := StandardMaterial3D.new()
+		deck_material.albedo_color = Color(0.45, 0.47, 0.5, 0.3)   # translucent: from an inspection camera the deck must not hide the climber's head
+		deck_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		deck.material_override = deck_material
+		deck.position = Vector3(0.0, length - 0.1, plane + 1.5)
+		_ladder_group.add_child(deck)
 	var colours := [Color(1, 0.2, 0.2), Color(0.2, 0.4, 1), Color(1, 0.6, 0.2), Color(0.3, 0.8, 1)]   # L hand, R hand, L foot, R foot
 	for i in 4:
 		var marker := MeshInstance3D.new()

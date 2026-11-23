@@ -14,7 +14,7 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 |---|---|
 | `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
 | `--unarmed` | build the character without its weapon |
-| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts` |
+| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing` |
 | `--tab=<0-3>` | open on a tab |
 | `--side-view`, `--auto-sequence` | as before |
 
@@ -40,6 +40,7 @@ Each preset is data in `workbench_scenarios.gd`: timed steps calling the workben
 | `tactical` | move, turn while moving, low cover, aim at an authorised target, fire, recover | a weapon | **synthetic** tactical context (a wall and a target position); cover side, posture and shot choice use the production `CoverEdgeSelector` and `CoverPostureProfile` |
 | `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
 | `contacts` | a 12-tread stair, then a 4 m ladder shown from a three-quarter inspection camera, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
+| `landing` | the supported ladder transfer on a 3 m ladder: a deck with posts and a deck whose ladder rails run on, each climbed and entered in reverse, then a deck with nothing to hold and a lip too far for the arm (both must stay on the fallback). Uses `LandingFixtures`; the Diagnostics tab shows the landing status and the measured deck and bar clearances. | none (unarmed works) | **synthetic** deck; the pose is the production solver and rig, the landing is the same `LadderLanding` the sandbox supplies |
 
 An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
 

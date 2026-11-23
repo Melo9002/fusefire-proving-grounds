@@ -9,9 +9,10 @@ extends RefCounted
 const TACTICAL := &"tactical"
 const EXPLORATION := &"exploration"
 const CONTACTS := &"contacts"
+const LANDING := &"landing"
 
 static func all() -> Array[Dictionary]:
-	return [tactical(), exploration(), contacts()]
+	return [tactical(), exploration(), contacts(), landing()]
 
 static func find(id: StringName) -> Dictionary:
 	for scenario in all():
@@ -79,4 +80,26 @@ static func contacts() -> Dictionary:
 				b.start_ladder_demo(4.0, 1, 0.85)),
 			_step(9.4, "interrupt the climb (release hands)", func(b: Node3D) -> void: b.end_ladder_demo()),
 			_step(11.0, "free again", func(b: Node3D) -> void: b.command_stop()),
+		]}
+
+
+## The supported ladder transfer, on the production solver and rig (Issue #55 follow-up): a deck with posts, the ladder's own rails run on above the deck, and the landings that must NOT be treated as
+## supported. Each supported landing is climbed and then entered from the deck in reverse. The unsupported ones show the fallback and why the rig refused them (Diagnostics tab, "Ladder landing").
+static func landing() -> Dictionary:
+	return {"id": LANDING, "title": "D  Ladder landing (supported transfer)", "needs_weapon": false, "duration": 17.0,
+		"summary": "Climb onto a deck and come back down from it with the ladder's own rails running on above the deck as the handholds, then with free-standing posts instead. Then two landings that must stay on the fallback.",
+		"context": "The workbench plays what a host plays: the climb, then the crossing of the deck's lip. The pose is the production TraversalSolver, rig and hand contacts; the landing is a LadderLanding (the same description the sandbox supplies). A landing the body cannot use is refused by the rig with the reason, and the ordinary climb-out plays.",
+		"steps": [
+			_step(0.0, "rails: climb and cross (the ladder's own rails run on above the deck; side-front inspection view)", func(b: Node3D) -> void:
+				b.look_from(Vector3(3.2, 2.3, 2.4), Vector3(0.0, 1.1, 0.3))
+				b.diagnostics_for_contacts()
+				b.start_ladder_demo(3.0, 1, 0.85, 1.9, "rails")),
+			_step(2.8, "rails: reverse entry from the deck", func(b: Node3D) -> void: b.start_ladder_demo(3.0, -1, 0.75, -1.0, "rails")),
+			_step(5.4, "alternative: free-standing posts at the deck edge, climb and cross", func(b: Node3D) -> void: b.start_ladder_demo(3.0, 1, 0.85, 1.9, "posts")),
+			_step(8.2, "posts: reverse entry from the deck", func(b: Node3D) -> void: b.start_ladder_demo(3.0, -1, 0.75, -1.0, "posts")),
+			_step(10.8, "deck only (nothing to hold): fallback, ordinary climb-out", func(b: Node3D) -> void: b.start_ladder_demo(3.0, 1, 0.85, 1.9, "deck only")),
+			_step(13.4, "lip too far for the arm: fallback, ordinary climb-out", func(b: Node3D) -> void: b.start_ladder_demo(3.0, 1, 0.85, 1.9, "too far")),
+			_step(16.0, "free again", func(b: Node3D) -> void:
+				b.end_ladder_demo()
+				b.command_stop()),
 		]}

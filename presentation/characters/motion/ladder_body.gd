@@ -15,6 +15,8 @@ var shoulder_offset := Vector3(0.13, 0.35, 0.05)
 ## The ankle's height above the sole, and how far the ball of the foot is ahead of the ankle.
 var ankle_height := 0.09
 var ball_length := 0.113
+## Height of the toe (ball) bone above the sole at rest: the ball of the foot's sole is this far below it.
+var toe_height := 0.04
 ## How much smaller or larger this body is than the one the profile's authored numbers were tuned for (RigBones.body_ratio).
 var ratio := 1.0
 
@@ -50,3 +52,12 @@ func hip_joint(hips: Vector3, side: int) -> Vector3:
 
 func shoulder_joint(hips: Vector3, side: int) -> Vector3:
 	return hips + Vector3(shoulder_offset.x * (1.0 if side == 0 else -1.0), shoulder_offset.y, shoulder_offset.z)
+
+
+## The shoulder joint for a pelvis `hips` when the trunk is leaned forward `lean_degrees` (what the profile requests; the spine shares it, so the shoulders move `LEAN_GAIN` of it: measured on both bodies).
+const LEAN_GAIN := 0.68
+
+func shoulder_leaned(hips: Vector3, side: int, lean_degrees: float) -> Vector3:
+	var angle := deg_to_rad(lean_degrees * LEAN_GAIN)
+	var rest := shoulder_offset
+	return hips + Vector3(rest.x * (1.0 if side == 0 else -1.0), rest.y * cos(angle), rest.z + rest.y * sin(angle))

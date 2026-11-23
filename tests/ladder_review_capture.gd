@@ -49,6 +49,16 @@ func _run() -> void:
 		heights.append(float(text))
 	var armed := not args.has("unarmed")
 	var direction := -1 if args.has("down") else 1
+	# Optional landing: `landing=<kind>` (LandingFixtures.KINDS) draws a deck on a 3 m ladder and `across=a,b,..` gives the lip crossing (0 on the ladder, 1 on the deck) of each column.
+	var landing_kind := ""
+	var across_list: Array[float] = []
+	for arg in args:
+		if arg.begins_with("landing="):
+			landing_kind = arg.trim_prefix("landing=")
+		elif arg.begins_with("across="):
+			for text in arg.trim_prefix("across=").split(","):
+				across_list.append(float(text))
+	var rise := 3.0 if landing_kind != "" else 4.0
 	var env := WorldEnvironment.new()
 	env.environment = Environment.new()
 	env.environment.background_mode = Environment.BG_COLOR
@@ -74,16 +84,23 @@ func _run() -> void:
 			host.rig.weapon_scene = null
 		stage.add_child(host)
 		await _frames(30)
-		var geometry := LadderGeometry.for_rise(4.0)
+		var geometry := LadderGeometry.for_rise(rise)
 		var visual := geometry.build_visual(material)
 		stage.add_child(visual)
-		host.rig.begin_traversal(&"ladder", 4.0, direction)
+		var landing: LadderLanding = LandingFixtures.make(landing_kind, geometry) if landing_kind != "" else null
+		if landing != null:
+			stage.add_child(LandingFixtures.build_visual(landing, geometry, material))
+		host.rig.begin_traversal(&"ladder", rise, direction, landing)
+		print(host.rig.ladder.landing_status)
 		var per_view := {}
 		for view in VIEWS:
 			per_view[view] = []
-		for climbed in heights:
+		for column in heights.size():
+			var climbed := heights[column]
+			var across: float = across_list[column] if column >= 0 and column < across_list.size() else 0.0
 			host.position.y = climbed
-			host.rig.set_traversal_progress(climbed)
+			host.position.z = across * 0.73
+			host.rig.set_traversal_progress(climbed, LadderGeometry.PLANE_AHEAD - across * 0.73, across)
 			await _frames(3)
 			for view in VIEWS:
 				(per_view[view] as Array).append(await _grab(host, view, geometry.plane_ahead))

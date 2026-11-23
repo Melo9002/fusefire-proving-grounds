@@ -7,7 +7,7 @@ const SCENES := {
 	"mira": "res://art/characters/mira_0/runtime/mira_0_exploration_visual.tscn",
 	"small": "res://art/characters/small_mira_0/runtime/small_mira_0_exploration_visual.tscn",
 }
-## What "no significant visible penetration" means in numbers: the approximate limb volumes (LadderMetrics: capsules with proportional radii, generous by design) overlap a bar by at most this (metres). Before the fix the same measurement gave up to 0.10 m; the
+## What "no significant visible penetration" means in numbers: the approximate limb volumes (LadderClearance: capsules with proportional radii, generous by design) overlap a bar by at most this (metres). Before the fix the same measurement gave up to 0.10 m; the
 ## residual is a graze of a volume that is larger than the armor it stands for, checked by eye in the review captures (tests/ladder_review_capture.gd).
 const LEG_TOLERANCE := 0.035
 const TORSO_TOLERANCE := 0.01
@@ -52,7 +52,7 @@ func _run() -> void:
 
 func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> void:
 	var rig: CharacterRig = host.rig
-	var metrics := LadderMetrics.new(rig)
+	var metrics := LadderClearance.new(rig)
 	rig.skeleton.skeleton_updated.connect(func() -> void: metrics.sample())
 	var ladder := LadderGeometry.for_rise(4.0)
 	var worst := {"knee": 0.0, "shin": 0.0, "thigh": 0.0, "torso": 0.0, "upper_arm": 0.0, "forearm": 0.0}

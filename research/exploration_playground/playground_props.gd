@@ -68,12 +68,15 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	var tower_center := Vector3(0.0, LADDER_LENGTH * 0.5, 17.0)
 	ctx._box(tower_size, tower_center, Color(0.45, 0.47, 0.5), "LadderTower")
 	var deck_edge := tower_center.z - tower_size.z * 0.5
-	var rail_height := 0.65
-	var rail_half_span := 0.24
+	# The ladder's own rails run on above the deck: the ending of the ladder, and the handholds a climber takes to cross the lip. Real geometry at the rail span and the rung plane;
+	# the landing is described from the SAME numbers.
+	var rail_extension := 0.9
 	var rail_color := Color(0.87, 0.71, 0.3)
+	var ladder_geometry := LadderGeometry.for_rise(LADDER_LENGTH)
 	for side in [-1.0, 1.0]:
-		ctx._box(Vector3(0.05, rail_height, 0.05), Vector3(tower_center.x + side * rail_half_span, LADDER_LENGTH + rail_height * 0.5, deck_edge), rail_color, "LadderBrace")
-	info["ladder"] = {"x": tower_center.x, "z": 15.42, "length": LADDER_LENGTH, "deck_edge": deck_edge, "top_z": deck_edge + 0.70, "brace_posts": Vector2(rail_half_span, rail_height * 0.64)}
+		ctx._box(Vector3(ladder_geometry.rail_radius * 2.0, rail_extension, ladder_geometry.rail_radius * 2.0), Vector3(tower_center.x + side * ladder_geometry.rail_half_span(), LADDER_LENGTH + rail_extension * 0.5, 15.42), rail_color, "LadderRailExtension")
+	info["ladder"] = {"x": tower_center.x, "z": 15.42, "length": LADDER_LENGTH, "deck_edge": deck_edge, "top_z": deck_edge + 0.70,
+		"landing": LadderLanding.with_extended_rails(ladder_geometry, deck_edge - 15.42, tower_size.x * 0.5, tower_size.z, rail_extension, "sandbox ladder rails run on")}
 	var rung_material := StandardMaterial3D.new()
 	rung_material.albedo_color = Color(0.87, 0.71, 0.3)
 	# The shared ladder layout (LadderGeometry), drawn in the frame of the cell the climber stands in: its rung plane is at z 15.42.

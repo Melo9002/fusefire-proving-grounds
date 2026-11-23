@@ -27,6 +27,10 @@ const GRIP_BELOW := 0.05
 const TWO_RUNG_SHARE := 0.85
 ## Spare reach kept on the hand span when the pelvis hangs back (metres).
 const HAND_SPAN_MARGIN := 0.03
+## A hand holds a landing grip while it is within this share of the arm's length of the shoulder, and lets go over the next 7%.
+const LANDING_HOLD_REACH := 0.93
+## How many times the profile's weight shift the pelvis moves toward the supporting foot (the plan reserves the same amount in every reach budget).
+const SWAY_GAIN := 1.6
 ## The hands start letting go of the last rungs this far before the arm runs out of reach (metres of climb).
 const RELEASE_LEAD := 0.12
 
@@ -48,7 +52,7 @@ static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, bod
 	# Hands: the vertical span an arm can hold over the shoulder at that depth, then how many rungs a move covers (a limb steps two rungs only if its reach spans most of two pitches).
 	var hand_x := profile.hand_half_spread * k
 	# The pelvis sways sideways a little with each step (weight_shift), which a limb planned at its reach has to afford.
-	var sway := profile.weight_shift * k
+	var sway := profile.weight_shift * k * SWAY_GAIN
 	var hand_dx := absf(hand_x - shoulder_rel.x) + sway
 	var arm_reach := body.arm_length() * HAND_REACH_FRACTION
 	var grip_plane := plane - GRIP_BEHIND * k
@@ -165,7 +169,9 @@ static func ladder_pose(profile: TraversalProfile, geometry: LadderGeometry, bod
 		result.foot_reachable[side] = (result.feet[side] as Vector3).distance_to(hip_joint) <= body.leg_length() * 0.97
 	# Pelvis: back from the rung plane, at the ladder pelvis height, with a small sway toward the planted side (weight transfer between the two feet).
 	var cycle := (climbed / (2.0 * spacing)) * TAU
-	var sway := sin(cycle) * profile.weight_shift * k
+	# Weight goes onto the LOWER (straighter, supporting) foot: the pelvis shifts toward it, which also takes the raised leg's hip away from its rail. Follows the feet, not a clock.
+	var higher := clampf(((result.feet[RIGHT] as Vector3).y - (result.feet[LEFT] as Vector3).y) / (0.6 * pitch_of(geometry)), -1.0, 1.0)
+	var sway := higher * profile.weight_shift * k * SWAY_GAIN
 	result.hips = Vector3(sway, hips.y, hips.z)
 	# The hands let go once the rung they hold is below the reach of the arm (the arm is short): from the shoulder's height minus the span, over `hand_release_length`.
 	var release_start: float = float(plan.shoulder_height) - float(plan.hand_reach) + RELEASE_LEAD
@@ -183,14 +189,14 @@ static func landing_start(geometry: LadderGeometry, body: LadderBody) -> float:
 	return maxf(0.0, geometry.rise - maxf(0.62, body.shoulder_offset.y + body.arm_length()))
 
 
-static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeometry, body: LadderBody, climbed: float, direction: int, lip_from_rungs: float, across: float, brace_posts := Vector2.ZERO) -> Dictionary:
+static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeometry, body: LadderBody, climbed: float, direction: int, landing: LadderLanding, across: float) -> Dictionary:
 	var start := landing_start(geometry, body)
 	var vertical := clampf(inverse_lerp(start, geometry.rise, climbed), 0.0, 1.0)
 	var phase := vertical * 0.72 + clampf(across, 0.0, 1.0) * 0.28
 	var pose := ladder_pose(profile, geometry, body, start, direction)
 	var to_root := Vector3.UP * (start - climbed)
 	var deck_y := geometry.rise - climbed
-	var lip := geometry.plane_ahead + lip_from_rungs
+	var lip := geometry.plane_ahead + landing.lip_from_rungs
 	var lead := smoothstep(0.30, 0.65, phase)
 	var trail := smoothstep(0.64, 0.91, phase)
 	var rise := smoothstep(0.76, 1.0, phase)
@@ -209,27 +215,20 @@ static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeome
 		if progress >= 1.0:
 			pose.foot_rung[side] = -1
 
-		var brace := smoothstep(0.05 + side * 0.06, 0.32 + side * 0.06, phase)
-		var palm := Vector3(sign_side * body.shoulder_offset.x, deck_y + body.arm_length() * 0.10, lip + body.arm_length() * 0.21)
-		if brace_posts.x > 0.0:
-			palm = Vector3(sign_side * (brace_posts.x - body.arm_length() * 0.12), deck_y + brace_posts.y, lip - body.arm_length() * 0.06)
-		pose.hands[side] = (pose.hands[side] as Vector3).lerp(palm - to_root, brace) + to_root
-		pose.hand_deck[side] = brace
-		# Release the trailing-side hand first as the pelvis shifts toward
-		# the lead foot. It otherwise runs out of reach behind the shoulder.
-		var release := smoothstep(0.73, 0.88, phase) if side == LEFT else smoothstep(0.64, 0.76, phase)
-		pose.hand_weight[side] = lerpf(float(pose.hand_weight[side]), 1.0, brace) * (1.0 - release)
 
 	var start_hips: Vector3 = pose.hips + to_root
 	var pull := smoothstep(0.0, 0.76, phase)
 	# The chest leans over the brace. Keep the pelvis above the lip rather
 	# than fitting the shoulder reach by sinking the hips into the deck.
 	var brace_height := body.arm_length() * 0.86 - body.shoulder_offset.y + 0.015 * body.ratio
-	brace_height += brace_posts.y
+	brace_height += landing.grips[0].y if landing.has_grips() else 0.0
 	var hips := start_hips.lerp(Vector3(body.hip_offset.x * 0.45, deck_y + brace_height, lip + body.ball_length * 0.95), pull)
 	hips.z = lerpf(start_hips.z, lip + body.ball_length * 0.95, smoothstep(0.36, 0.85, phase))
 	var standing_height := body.ankle_height + body.leg_length() * 0.95 - body.hip_offset.y
 	hips = hips.lerp(Vector3(0.0, deck_y + standing_height, 0.0), rise)
+	# A foot still below the deck keeps the pelvis behind the lip until it comes up: with the hip over the deck and the foot on a rung the leg would have to cut through the deck's edge.
+	for side in 2:
+		hips.z = minf(hips.z, lerpf(lip - body.thigh_radius() - body.hip_offset.z, lip + 1.0, float(pose.foot_deck[side])))
 	# Respect the planted legs before the ordinary standing pose takes over.
 	for side in 2:
 		var ankle: Vector3 = pose.feet[side]
@@ -238,12 +237,31 @@ static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeome
 		var horizontal := Vector2(hip.x - ankle.x, hip.z - ankle.z).length_squared()
 		hips.y = minf(hips.y, ankle.y - body.hip_offset.y + sqrt(maxf(0.0, reach * reach - horizontal)))
 	pose.hips = hips
+	pose.lean_degrees = lerpf(float(pose.lean_degrees), 43.0, sin(phase * PI))
+	# Hands, now that the pelvis (so the shoulders) is known. The palm moves toward its grip as the climb goes on, and a hand HOLDS only while that place is within the arm's reach (the claim weight
+	# falls as the target nears the arm's length), so a grip beyond the arm is never presented as held. The plan then says truthfully when each hand is on the ladder, on the grip, or free.
+	for side in 2:
+		var sign_side := 1.0 if side == LEFT else -1.0
+		var brace := smoothstep(0.05 + side * 0.06, 0.32 + side * 0.06, phase)
+		var palm := Vector3(sign_side * body.shoulder_offset.x, deck_y + body.arm_length() * 0.10, lip + body.arm_length() * 0.21)
+		var grip: Variant = landing.grip_for(side)
+		if grip != null:
+			# The palm takes the near face of the bar (its radius and the palm's own thickness), on the inside of it.
+			var inset_x := landing.grip_radius + 0.03 * body.ratio
+			var inset_z := landing.grip_radius + 0.003
+			palm = Vector3(sign_side * (absf((grip as Vector3).x) - inset_x), deck_y + (grip as Vector3).y, lip + (grip as Vector3).z - inset_z)
+		pose.hands[side] = (pose.hands[side] as Vector3).lerp(palm - to_root, brace) + to_root
+		pose.hand_deck[side] = brace
+		# Release the trailing-side hand first as the pelvis shifts toward the lead foot.
+		var release := smoothstep(0.73, 0.88, phase) if side == LEFT else smoothstep(0.64, 0.76, phase)
+		var ratio := (pose.hands[side] as Vector3).distance_to(body.shoulder_leaned(hips, side, float(pose.lean_degrees))) / body.arm_length()
+		var in_reach := 1.0 - smoothstep(LANDING_HOLD_REACH, LANDING_HOLD_REACH + 0.07, ratio)
+		pose.hand_weight[side] = lerpf(float(pose.hand_weight[side]), 1.0, brace) * (1.0 - release) * in_reach
 	pose.weight = lerpf(float(pose.weight), 1.0, smoothstep(0.0, 0.25, phase)) * (1.0 - smoothstep(0.91, 1.0, phase))
 	pose.on_ladder = pose.weight > 0.001
 	pose["landing_phase"] = phase
-	pose.lean_degrees = lerpf(float(pose.lean_degrees), 43.0, sin(phase * PI))
 	for side in 2:
-		pose.hand_reachable[side] = (pose.hands[side] as Vector3).distance_to(body.shoulder_joint(hips, side)) <= body.arm_length()
+		pose.hand_reachable[side] = pose.hand_weight[side] < 0.01 or (pose.hands[side] as Vector3).distance_to(body.shoulder_leaned(hips, side, float(pose.lean_degrees))) <= body.arm_length()
 		pose.foot_reachable[side] = (pose.feet[side] as Vector3).distance_to(body.hip_joint(hips, side)) <= body.leg_length()
 	return pose
 
@@ -317,3 +335,7 @@ static func vault_pose(profile: TraversalProfile, phase: float, height: float, a
 		var x := 0.10 * (1.0 if lead else -1.0)
 		feet.append(Vector3(x, lerpf(0.09, 0.46 if lead else 0.26, tuck), lerpf(0.0, 0.30 if lead else -0.05, tuck)))
 	return {"weight": weight, "hands": hands, "hand_weight": [hand_weight, hand_weight], "hips": Vector3(0, -0.04 * tuck, 0), "lean_degrees": lean, "feet": feet, "tuck": tuck}
+
+
+static func pitch_of(geometry: LadderGeometry) -> float:
+	return geometry.spacing()

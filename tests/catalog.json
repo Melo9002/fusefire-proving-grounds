@@ -303,6 +303,8 @@
   "hand_contact_test": {"sub": ["animation", "equipment", "rescue"], "scope": "integration", "contracts": ["presentation-sync"]},
   "ladder_geometry_test": {"sub": ["animation", "movement", "assets"], "scope": "unit", "fast": true, "smoke": true, "crit": "critical", "contracts": ["presentation-sync"]},
   "ladder_climb_test": {"sub": ["animation", "movement"], "scope": "integration", "fast": true, "contracts": ["presentation-sync"]},
+  "workbench_landing_test": {"sub": ["animation", "tooling", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
+  "ladder_landing_test": {"sub": ["animation", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
   "ladder_review_capture": {"sub": ["animation", "movement"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_host_test": {"sub": ["animation"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},
   "unarmed_humanoid_test": {"sub": ["animation", "combat", "rescue", "equipment"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync"]},
