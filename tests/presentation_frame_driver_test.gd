@@ -75,6 +75,18 @@ func _run() -> void:
 		saw_idle_heading = saw_idle_heading or (bench.presenter.speed == 0.0 and absf(bench.presenter.heading_rate) > 0.1)
 	check(saw_idle_heading, "While idle, a turn preview still feeds its heading rate (speed 0, heading %.2f rad/s at some frame): the workbench behaviour is preserved" % bench.presenter.heading_rate)
 
+	# A manual step uses the bench's delta, independently of the engine frame.
+	bench.set_sim_paused(true)
+	bench.rig.animation_controller.play(&"move")
+	bench.rig.carry_motion_blend = 0.0
+	bench.step_seconds = 0.04
+	var before_step: float = bench.presenter.time
+	bench.step_sim()
+	for i in 3:
+		await process_frame
+	check(is_equal_approx(bench.presenter.time - before_step, 0.04) and is_equal_approx(bench.rig.carry_motion_blend, 0.20), "One paused workbench step advances both presenter time and carry blend using the supplied 40 ms")
+	bench.set_sim_paused(false)
+
 	# ---- No second path: neither host calls the locomotion feed or writes the posture ramps itself.
 	for path in ["res://tools/animation_workbench/pose_workbench.gd", "res://presentation/tactical/tactical_character_adapter.gd"]:
 		var text := FileAccess.get_file_as_string(path)

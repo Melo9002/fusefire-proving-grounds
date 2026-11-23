@@ -391,7 +391,7 @@ func _process(delta: float) -> void:
 	presenter.tick(delta)
 	_sync_cover(delta)
 	presenter.advance_actions(delta)
-	rig.update_weapon_pose()
+	rig.update_weapon_pose(delta)
 
 
 func _play(state_name: StringName) -> void:

@@ -258,6 +258,9 @@ var carry_contact_report: Array = []
 @export_group("")
 var carry_motion_blend := 0.0
 var _carry_phase := 0.0
+var _pose_delta := 0.0
+var _pose_delta_frame := -1
+var _passenger_delta_frame := -1
 
 ## How shouldered the rifle is. The rifle stays in its relaxed carry, in cover or not, and comes up
 ## only to aim or shoot. While crouched the carry simply travels with the chest (see body_offset).
@@ -454,10 +457,13 @@ func _build_grip_modifier() -> void:
 	grip_modifier = HandGripModifier.new()
 	grip_modifier.name = "HandGrip"
 	if not grip_modifier.setup(skeleton, bones):
+		grip_modifier.free()
 		grip_modifier = null
 		bones.degrade("HandGrip", bones.missing_of([&"LeftHand", &"RightHand", &"LeftMiddleProximal", &"RightMiddleProximal"]))
 		return
 	skeleton.add_child(grip_modifier)
+	if not grip_modifier.missing_digits.is_empty():
+		bones.degraded.append("HandGrip keeps wrist alignment (missing digit chains: %s)" % ", ".join(grip_modifier.missing_digits))
 	if has_weapon():
 		_place_hands_on_weapon()
 
@@ -467,14 +473,20 @@ func _build_grip_modifier() -> void:
 ## put that far behind its grip.
 func _place_hands_on_weapon() -> void:
 	var scale_value := handling.scale
-	var palm := grip_modifier.palm_length if grip_modifier != null else 0.09
-	var half_palm := handling.hand_forward() * palm * 0.5
-	var firing_wrist := handling.firing_palm() * scale_value - half_palm
+	var hand_forward := handling.hand_forward()
+	var firing_wrist := handling.firing_palm() * scale_value - hand_forward * _half_palm_length(HandContact.Hand.RIGHT)
 	grip_offset = -firing_wrist
-	support_wrist = handling.support_palm() * scale_value - half_palm
+	# Existing weapon profiles were calibrated against the firing hand's
+	# reference length for both offsets. Keep that fit until the support
+	# geometry is calibrated per hand. Surface contacts use the actual hand.
+	support_wrist = handling.support_palm() * scale_value - hand_forward * _half_palm_length(HandContact.Hand.RIGHT)
 	stock_contact_offset = handling.stock_rear * scale_value
 	if grip_modifier != null:
 		grip_modifier.hand_forward = handling.hand_forward()
+
+
+func _half_palm_length(hand: HandContact.Hand) -> float:
+	return float(grip_modifier.palm_lengths[int(hand)]) * 0.5 if grip_modifier != null else 0.045
 
 
 ## Runs after the crouch layer and before the arm IK, so the targets are placed from the final procedural shoulder.
@@ -790,14 +802,16 @@ func _align_weapon_to_aim() -> void:
 
 
 ## Once per frame, after the presenter has advanced: the arms, hands and weapon for this frame (a loaded carrier's carry posture, else the weapon or relaxed-arm inputs).
-func update_weapon_pose() -> void:
+func update_weapon_pose(delta := 0.0) -> void:
 	if not is_instance_valid(skeleton):
 		return
+	_pose_delta = delta
+	_pose_delta_frame = Engine.get_process_frames()
 	if is_loaded():
-		_apply_carry_posture()
+		_apply_carry_posture(delta)
 		return
 	_carry_lean = 0.0
-	_update_weapon_pose_inputs()
+	_update_weapon_pose_inputs(delta)
 	if weapon_pose_modifier_controls_targets():
 		return   # the WeaponPose modifier places the targets in the skeleton pass, from the real shoulder
 	# Editor-preview path (or the modifier switched off): the shoulder as the animation leaves it, which
@@ -812,7 +826,7 @@ func weapon_pose_modifier_controls_targets() -> bool:
 
 ## Everything the weapon pose needs that does not depend on where the shoulder is: the carry sway, and what the
 ## crouch and grip layers are told about the weapon.
-func _update_weapon_pose_inputs() -> void:
+func _update_weapon_pose_inputs(delta: float) -> void:
 	if not has_weapon():
 		_update_unarmed_pose_inputs()
 		return
@@ -822,8 +836,8 @@ func _update_weapon_pose_inputs() -> void:
 	# while this rig is drawing its editor preview.
 	if not Engine.is_editor_hint() and is_instance_valid(animation_controller):
 		moving = animation_controller.current_state in [&"move", &"carry_move"]
-	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, get_process_delta_time() * 5.0)
-	_carry_phase += get_process_delta_time() * TAU * 2.0
+	carry_motion_blend = move_toward(carry_motion_blend, 1.0 if moving else 0.0, delta * 5.0)
+	_carry_phase += delta * TAU * 2.0
 	# Moving with the rifle held: the butt is carried in front of the shoulder (clearance), a little higher. Standing still is the authored lowered carry.
 	var ready_grip := handling.lowered_grip + (handling.ready_clearance + Vector3(0, 0.02, 0.0)) * carry_motion_blend
 	ready_grip.y += sin(_carry_phase) * 0.008 * carry_motion_blend
@@ -837,6 +851,7 @@ func _update_weapon_pose_inputs() -> void:
 	if grip_modifier != null:
 		var holding: bool = not (is_instance_valid(animation_controller) and animation_controller.current_state in [&"pickup", &"boarding", &"carry_idle", &"carry_move"])
 		grip_modifier.curl = [SUPPORT_GRIP_CURL if holding else 0.0, TRIGGER_HAND_CURL if holding else 0.0]
+		grip_modifier.grasp[1] = HandGripModifier.Grasp.INDEXED_FIREARM if holding and ladder == null else HandGripModifier.Grasp.WRAP
 		grip_modifier.orient_weight = 1.0 if holding else 0.0
 		grip_modifier.weapon_basis = skeleton.global_basis.orthonormalized().inverse() * weapon.global_basis.orthonormalized()
 		grip_modifier.trigger_pull = trigger_pull
@@ -966,6 +981,7 @@ func _update_unarmed_pose_inputs() -> void:
 	if grip_modifier != null:
 		var grip := lerpf(UNARMED_HAND_CURL, CARRY_GRIP_CURL, ladder.pose.weight) if climbing else UNARMED_HAND_CURL
 		grip_modifier.curl = [grip, grip]
+		grip_modifier.grasp[1] = HandGripModifier.Grasp.WRAP
 		grip_modifier.orient_weight = 0.0
 		grip_modifier.trigger_pull = 0.0
 
@@ -1436,6 +1452,7 @@ func _discard_passenger() -> void:
 func _hands_to_contacts() -> void:
 	arm_ik.active = carry_contacts_enabled
 	if grip_modifier != null:
+		grip_modifier.grasp[1] = HandGripModifier.Grasp.WRAP
 		grip_modifier.orient_weight = 0.0
 		grip_modifier.trigger_pull = 0.0
 
@@ -1454,8 +1471,7 @@ func advance_rescue_clock(delta: float) -> void:
 
 ## Once per frame while carrying (before the skeleton's modifiers, after the presenter has advanced the clock): sets the carrier's body from
 ## its sample (bend, kneel, lean, step toward the passenger, base clip, weapon position).
-func _apply_carry_posture() -> void:
-	var delta := get_process_delta_time()
+func _apply_carry_posture(delta: float) -> void:
 	_interaction_sample = rescue_interaction.sample()
 	var sample := _interaction_sample
 	var interacting := rescue_interaction.active()
@@ -1537,7 +1553,12 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 	carry_passenger.motion_tilt_degrees = passenger_motion_tilt_degrees
 	carry_passenger.motion_response = passenger_motion_response
 	carry_passenger.motion_swing_degrees = passenger_motion_swing_degrees
-	carry_passenger.update_presentation(float(sample.lift), float(sample.pose), anchor, get_process_delta_time())
+	# The skeleton may still evaluate while the workbench is paused. Follow the
+	# anchor each pass, but integrate secondary motion once per supplied step.
+	var frame_id := Engine.get_process_frames()
+	var delta := _pose_delta if _pose_delta_frame == frame_id and _passenger_delta_frame != frame_id else 0.0
+	_passenger_delta_frame = frame_id
+	carry_passenger.update_presentation(float(sample.lift), float(sample.pose), anchor, delta)
 	var shoulder_of := {&"right": 0, &"left": 1}   # the index into `shoulders`
 	var report: Array = [{}, {}]
 	var curl := lerpf(_reach_curl, CARRY_GRIP_CURL, reach)
@@ -1552,7 +1573,7 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 		var fingers: Vector3 = wrap_direction * (1.0 if assignment[0] == &"left" else -1.0)
 		var normal: Vector3 = -(frame.side as Vector3)
 		var palm: Vector3 = (frame.point as Vector3) + (frame.side as Vector3) * float(frame.radius)
-		var half_palm: float = grip_modifier.palm_length * 0.5 if grip_modifier != null else 0.045
+		var half_palm := _half_palm_length(HandContact.Hand.RIGHT if assignment[0] == &"right" else HandContact.Hand.LEFT)
 		var on_contact := palm - fingers * half_palm
 		var side_index := 0 if assignment[0] == &"right" else 1
 		# Before the hands have reached, they are where they were (carried with the body); `reach` brings them onto the contact.

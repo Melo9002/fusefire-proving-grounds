@@ -344,7 +344,7 @@ func _process(frame_delta: float) -> void:
 	_ramp_pose_preset(_delta)
 	_follow_diagnostic_view()
 	rig.presenter.advance_actions(_delta)   # the same action stage the tactical host runs: the presenter advances the rescue clock, this rig applies it
-	rig.update_weapon_pose()
+	rig.update_weapon_pose(_delta)
 	if is_instance_valid(rig.carry_passenger) and rig.interaction_active():
 		_update_status()
 	if sim_paused and diagnostics != null:

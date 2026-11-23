@@ -53,9 +53,22 @@ func _run() -> void:
 			_writer_checks(host.rig, label)
 			await _release_checks(host.rig, label, armed)
 			await _ladder_checks(host, label, armed)
+			if armed:
+				_partial_hand_check(host.rig, label)
 			host.queue_free()
 	print("hand_contact_test: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+func _partial_hand_check(rig: CharacterRig, label: String) -> void:
+	var skeleton := rig.skeleton.duplicate() as Skeleton3D
+	var missing := skeleton.find_bone(rig.bones.finger("Left", "Index", 2))
+	check(missing >= 0, "%s: missing-digit control starts with an intact finger" % label)
+	if missing >= 0:
+		skeleton.set_bone_name(missing, "missing_digit_control")
+	var modifier := HandGripModifier.new()
+	check(modifier.setup(skeleton, rig.bones), "%s: missing one finger joint does not disable wrist alignment" % label)
+	modifier.free()
+	skeleton.free()
 
 ## The one writer: a claim moves ITS hand's wrist target and fills ITS slot, in skeleton space, and touches nothing of the other hand.
 func _writer_checks(rig: CharacterRig, label: String) -> void:
@@ -91,6 +104,13 @@ func _release_checks(rig: CharacterRig, label: String, armed: bool) -> void:
 	await _frames(3)
 	if armed:
 		check(grip.contact_weight == [0.0, 0.0] and grip.orient_weight == 1.0, "%s: a contact nobody claims again is released and the weapon's grip owns the hands" % label)
+		var original_pull := grip.trigger_pull
+		grip.trigger_pull = 0.0
+		var rest := grip.finger_curl(1, 1)
+		grip.trigger_pull = 1.0
+		var pulled := grip.finger_curl(1, 1)
+		grip.trigger_pull = original_pull
+		check(rest > 0.0 and rest < pulled and pulled < grip.finger_curl(1, 2) and is_equal_approx(grip.finger_curl(0, 1), grip.finger_curl(0, 2)), "%s: only the firing index uses distinct trigger rest and pull" % label)
 	else:
 		check(grip.contact_weight == [CharacterRig.HANGING_HAND_WEIGHT, CharacterRig.HANGING_HAND_WEIGHT] and (grip.contact_forward[1] as Vector3).y < -0.5, "%s: the relaxed hang is claimed every pass and replaces any stale contact" % label)
 
@@ -98,6 +118,9 @@ func _ladder_checks(host: ExplorationCharacterHost, label: String, armed: bool) 
 	var rig: CharacterRig = host.rig
 	var grip: HandGripModifier = rig.grip_modifier
 	rig.begin_traversal(&"ladder", 4.0, 1)
+	rig.set_traversal_progress(1.5)
+	await _frames(2)
+	check(grip.contact_weight[0] > 0.9 and grip.contact_weight[1] > 0.9 and grip.finger_curl(1, 1) > 0.0 and is_equal_approx(grip.finger_curl(1, 1), grip.finger_curl(1, 2)) and is_equal_approx(grip.finger_curl(0, 1), grip.finger_curl(0, 2)), "%s: both planted ladder hands wrap with the index, even while carrying a weapon" % label)
 	var worst := 0.0
 	var reachable := 0
 	var out_of_reach := 0

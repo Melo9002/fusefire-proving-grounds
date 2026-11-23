@@ -20,8 +20,9 @@ const TRIGGER_PULLED_CURL := 0.95
 var curl := [0.0, 0.0]
 ## Right index finger: 0 = resting on the guard, 1 = trigger pulled.
 var trigger_pull := 0.0
-## Whether the right hand's index finger rests on the trigger (a pistol grip) instead of wrapping.
-var right_trigger_finger := true
+enum Grasp { WRAP, INDEXED_FIREARM }
+## The base grasp for each hand. An active surface contact uses the wrap policy.
+var grasp := [Grasp.WRAP, Grasp.WRAP]
 
 ## The weapon's orientation in skeleton space, and how strongly the hands follow it (0 = animation).
 var weapon_basis := Basis.IDENTITY
@@ -34,8 +35,9 @@ var palm_normals := [Vector3.LEFT, Vector3.RIGHT]
 var contact_weight := [0.0, 0.0]
 var contact_forward := [Vector3.FORWARD, Vector3.FORWARD]
 var contact_normal := [Vector3.DOWN, Vector3.DOWN]
-## Wrist to middle-finger knuckle, metres (half of it reaches the palm centre).
-var palm_length := 0.09
+## Wrist to knuckle, metres, measured independently for each hand.
+var palm_lengths := [0.09, 0.09]
+var missing_digits: Array[String] = []
 
 var _fingers := [[], []]
 var _axes := {}
@@ -50,22 +52,30 @@ func setup(target: Skeleton3D, bones: RigBones) -> bool:
 		var side := "Left" if hand == 0 else "Right"
 		var arm := bones.left_arm if hand == 0 else bones.right_arm
 		_hands[hand] = target.find_bone(arm[2])
-		var middle := target.find_bone(bones.finger(side, "Middle", 1))
-		if _hands[hand] < 0 or middle < 0:
+		if _hands[hand] < 0:
 			return false
 		_hand_parents[hand] = target.get_bone_parent(_hands[hand])
 		_hand_rest_basis[hand] = target.get_bone_global_rest(_hands[hand]).basis.orthonormalized()
-		var along: Vector3 = target.get_bone_global_rest(middle).origin - target.get_bone_global_rest(_hands[hand]).origin
-		_finger_rest_direction[hand] = along.normalized()
-		palm_length = along.length() * scale_y
+		var hand_origin := target.get_bone_global_rest(_hands[hand]).origin
+		for digit in ["Middle", "Ring", "Index", "Little"]:
+			var knuckle := target.find_bone(bones.finger(side, digit, 1))
+			if knuckle < 0:
+				continue
+			var along := target.get_bone_global_rest(knuckle).origin - hand_origin
+			if along.length_squared() > 0.000001:
+				_finger_rest_direction[hand] = along.normalized()
+				palm_lengths[hand] = along.length() * scale_y
+				break
 		for finger_name in RigBones.FINGERS:
 			var joints := bones.finger_chain(target, side, finger_name)
-			if joints.is_empty():
-				return false
 			_fingers[hand].append(joints)
+			if joints.is_empty():
+				missing_digits.append("%s %s" % [side, finger_name])
+				continue
 			for index in 3:
 				_axes[joints[index]] = _curl_axis(target, joints[index], joints[index + 1])
-	return true
+	# A rig with no digit chains uses the existing arm-IK fallback.
+	return missing_digits.size() < 2 * RigBones.FINGERS.size()
 
 ## The local axis, signed, whose positive rotation moves `child` toward the palm (down in the rest pose).
 func _curl_axis(target: Skeleton3D, bone: int, child: int) -> Vector3:
@@ -107,6 +117,12 @@ func _orient_hands(target: Skeleton3D) -> void:
 		var current := target.get_bone_pose_rotation(_hands[hand])
 		target.set_bone_pose_rotation(_hands[hand], current.slerp(local, clampf(weight, 0.0, 1.0)))
 
+func finger_curl(hand: int, finger: int) -> float:
+	var amount: float = curl[hand]
+	if finger == 1 and grasp[hand] == Grasp.INDEXED_FIREARM and float(contact_weight[hand]) <= 0.001:
+		return lerpf(TRIGGER_REST_CURL, TRIGGER_PULLED_CURL, trigger_pull) * amount
+	return amount
+
 func _process_modification_with_delta(_delta: float) -> void:
 	var target := get_skeleton()
 	if target == null or _fingers[0].is_empty():
@@ -114,11 +130,11 @@ func _process_modification_with_delta(_delta: float) -> void:
 	_orient_hands(target)
 	for hand in 2:
 		for finger in 5:
-			var amount: float = curl[hand]
-			if hand == 1 and finger == 1 and right_trigger_finger:
-				amount = lerpf(TRIGGER_REST_CURL, TRIGGER_PULLED_CURL, trigger_pull) * curl[hand]
-			var limits: Array = THUMB_DEGREES if finger == 0 else FIST_DEGREES
 			var joints: Array = _fingers[hand][finger]
+			if joints.is_empty():
+				continue
+			var amount := finger_curl(hand, finger)
+			var limits: Array = THUMB_DEGREES if finger == 0 else FIST_DEGREES
 			for index in 3:
 				var bone: int = joints[index]
 				var rest := target.get_bone_rest(bone).basis.get_rotation_quaternion()

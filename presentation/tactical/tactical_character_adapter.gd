@@ -741,7 +741,7 @@ func _process(delta: float) -> void:
 	_sync_cover_crouch(delta)
 	presenter.advance_actions(delta)
 	_tick_traversal(delta)
-	rig.update_weapon_pose()
+	rig.update_weapon_pose(delta)
 	# Facing and cadence are supplied by TacticalUnit before each movement step.
 
 ## A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities (the presenter infers that).
