@@ -23,6 +23,7 @@ var _marker: FindingMarker
 var _mesh_check: CheckBox
 var _part_choice: OptionButton
 var _part_text: Label
+var _isolation_text: Label
 var _compare_text: Label
 var _export_text: Label
 var _parts: Array[String] = []
@@ -67,6 +68,9 @@ func setup(workbench: Node3D) -> void:
 	inspect.add_child(_part_choice)
 	_part_text = WorkbenchUI.mono("", 11)
 	inspect.add_child(_part_text)
+	inspect.add_child(WorkbenchUI.row([["Which pose stage moves it? (experiment)", _isolate, "Pauses the pose, switches each pose modifier off in turn and reports which ones move this part, including modifiers nobody declared. Changes state for a few frames and restores it."]]))
+	_isolation_text = WorkbenchUI.mono("", 11)
+	inspect.add_child(_isolation_text)
 	var compare := WorkbenchUI.section(self, "Compare with an earlier run", true)
 	compare.add_child(WorkbenchUI.row([["Save as baseline", _save_baseline, "Keeps this analysis for this character and scenario"], ["Compare with baseline", _compare, "Improved, regressed, unchanged, and what cannot be compared"]]))
 	_compare_text = WorkbenchUI.mono("", 11)
@@ -200,6 +204,21 @@ func _on_part(index: int) -> void:
 	bench.diagnostics.highlight_bones(names)
 	if not bench.diagnostics.recording_on():
 		_part_text.text = "Press 'Record (free play)' (or play a scenario) to read this part live."
+
+## The isolation experiment on the chosen part: the pose is held (the bench is paused if it is not), every modifier is switched off in turn, and the result is written in words. The pause state is put back afterwards.
+func _isolate() -> void:
+	if _part_choice.selected <= 0:
+		_isolation_text.text = "Choose a body part first."
+		return
+	var was_paused: bool = bench.sim_paused
+	if not was_paused:
+		bench.set_sim_paused(true)
+	_isolation_text.text = "Running the experiment (about %d frames)..." % 14
+	var bones := BodyParts.bones_of(bench.rig, _parts[_part_choice.selected - 1])
+	var result: Dictionary = await StageIsolation.new().measure(bench.rig, bones, get_tree())
+	_isolation_text.text = StageIsolation.text(result)
+	if not was_paused:
+		bench.set_sim_paused(false)
 
 func refresh() -> void:
 	var recorder := _recorder()

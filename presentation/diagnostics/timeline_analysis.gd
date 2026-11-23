@@ -283,6 +283,13 @@ static func _snaps(rows: Array, events: Array[Dictionary], metrics: Dictionary) 
 				return entry.get(field) if not entry.is_empty() else null
 			for spike in _spikes(rows, reader):
 				events.append(_event("target_jump", "%s %s" % [side, kind[2]], rows, int(spike.i), int(spike.i), snappedf(float(spike.step) * 100.0, 0.1), "cm", {"context": rows[int(spike.i)].get("context", ""), "speed_mps": snappedf(float(spike.speed), 0.01)}))
+	# The knee pole the traversal stage hands to the leg solver (recorded on a ladder): a knee that pops because its pole popped is a different statement from a knee that popped by itself.
+	for idx in 2:
+		var pole_reader := func(r: Dictionary) -> Variant:
+			var poles: Array = (r.get("ladder", {}) as Dictionary).get("knee_poles", [])
+			return poles[idx] if poles.size() > idx else null
+		for spike in _spikes(rows, pole_reader):
+			events.append(_event("target_jump", "%s knee pole" % ["left", "right"][idx], rows, int(spike.i), int(spike.i), snappedf(float(spike.step) * 100.0, 0.1), "cm", {"context": rows[int(spike.i)].get("context", ""), "speed_mps": snappedf(float(spike.speed), 0.01)}))
 	_metric(metrics, "discontinuity.count", float(groups.size()), "moments", "lower", ["frame_rate"], 0.0, "pose snaps: moments when a bone moved far faster than the frames around it")
 	_metric(metrics, "discontinuity.worst_step_cm", worst_step, "cm", "lower", ["frame_rate", "length"], 0.5, "the largest one-frame step of any bone at a pose snap")
 	_metric(metrics, "discontinuity.worst_speed_mps", worst_speed, "m/s", "lower", ["frame_rate"], 0.2, "the fastest snap")

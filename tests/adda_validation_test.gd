@@ -6,6 +6,7 @@ extends SceneTree
 ##                     every modifier's `active` flag is restored; missing bones are refused with a reason
 ##   3 coordinates     the recorder's character-space bones and world-space wrists agree with each other wherever the body stands and faces
 ##   4 lifecycle       starting, stopping and repeating a recording, a mesh sample, a settle watcher and an isolation leaves no ADDA listener on the skeleton
+##   6 workbench       the Why? tab's "Which pose stage moves it?" runs the experiment on a chosen part, says what it did, puts the pause state back and leaves no modifier switched off
 ##   5 passive         an isolation that runs and restores leaves the final pose where it was
 const SCENES := {
 	"mira": "res://art/characters/mira_0/runtime/mira_0_exploration_visual.tscn",
@@ -42,6 +43,8 @@ func _run() -> void:
 	await _isolation()
 	await _coordinates()
 	await _lifecycle()
+	await _workbench()
+	await _offenders_equivalence()
 	print("adda_validation_test: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
@@ -224,5 +227,96 @@ func _lifecycle() -> void:
 	witness.final_pose.disconnect(grab)
 	witness.release()
 	check(before.distance_to(after) < 0.0005, "an isolation leaves the final pose where it was (%.3f mm)" % (before.distance_to(after) * 1000.0))
+	host.queue_free()
+	await _frames(2)
+
+# ---- 6
+
+func _workbench() -> void:
+	WorkbenchSession.character = &"small_mira_0"
+	WorkbenchSession.armed = true
+	WorkbenchSession.autostart_scenario = &""
+	WorkbenchSession.start_tab = 4
+	var bench: Node3D = (load("res://tools/animation_workbench/pose_workbench.tscn") as PackedScene).instantiate()
+	root.add_child(bench)
+	await _frames(15)
+	var tab: WhyTab = bench.panel.tab_nodes[4]
+	await tab._isolate()
+	check(String(tab._isolation_text.text).contains("Choose a body part"), "with no part chosen the button says so instead of running")
+	var index := -1
+	for i in tab._part_choice.item_count:
+		if tab._part_choice.get_item_text(i) == "right hand":
+			index = i
+	check(index > 0, "the part list offers 'right hand'")
+	tab._part_choice.select(index)
+	tab._on_part(index)
+	check(not bench.sim_paused, "the bench is running before the experiment")
+	await tab._isolate()
+	var text := String(tab._isolation_text.text)
+	check(text.contains("Stage isolation") and (text.contains("moves") or text.contains("No modifier moved")) and text.contains("restored: yes"), "the experiment ran on the right hand and said what it found: %s" % text.split("
+")[1] if text.contains("
+") else text)
+	check(not bench.sim_paused, "and the pause state was put back")
+	var all_on := true
+	for child in bench.rig.skeleton.get_children():
+		if child is SkeletonModifier3D and child.name != &"TraversalLegIK" and child.name != &"TraversalFoot" and child.name != &"Traversal":
+			all_on = all_on and child.active
+	check(all_on, "and no pose modifier was left switched off")
+	bench.queue_free()
+	await _frames(2)
+
+# ---- 7
+
+## `LadderClearance.offenders` was made about five times faster with an early-out and one transform; the answer must be exactly the old one. The reference below is the original per-vertex formula, kept here as the oracle.
+func _reference_offenders(clearance: LadderClearance, geometry: LadderGeometry, climbed: float, threshold: float) -> Array:
+	var found := []
+	var rig := clearance.rig
+	var points := clearance._final_points()
+	var half := geometry.rail_half_span()
+	for i in points.size():
+		var local := rig.character_root.to_local(rig.skeleton.global_transform * points[i])
+		var p := local + Vector3(0.0, climbed, 0.0)
+		var index := clampi(int(round((p.y - geometry.first_rung()) / geometry.spacing())), 0, geometry.rung_count() - 1)
+		var rung_depth := geometry.rung_radius - LadderGeometry.segment_distance(p, Vector3(-half, geometry.rung_height(index), geometry.plane_ahead), Vector3(half, geometry.rung_height(index), geometry.plane_ahead))
+		if rung_depth > threshold:
+			found.append("rung %d %d" % [index, i])
+		for side in [-1.0, 1.0]:
+			var rail_depth := geometry.rail_radius - LadderGeometry.segment_distance(p, Vector3(half * side, 0.0, geometry.plane_ahead), Vector3(half * side, geometry.rise, geometry.plane_ahead))
+			if rail_depth > threshold:
+				found.append("rail %s %d" % [side, i])
+	return found
+
+func _offenders_equivalence() -> void:
+	var host := await _host("small", true, Vector3(1.0, 0.0, 2.0), 0.7)
+	var rig := host.rig
+	var clearance := LadderClearance.new(rig)
+	rig.begin_traversal(&"ladder", 4.0, 1)
+	var compared := 0
+	var identical := 0
+	var nonzero := 0
+	for height in [1.0, 1.5, 2.0, 2.5, 3.0]:
+		host.position.y = height
+		rig.set_traversal_progress(height)
+		await _frames(2)   # the first updates after a request are the transient (see _settle): they overlap bars, which is what makes the comparison meaningful
+		var now := clearance.offenders(rig.ladder.geometry, height, 0.003, 100000)
+		var reference := _reference_offenders(clearance, rig.ladder.geometry, height, 0.003)
+		var names := now.map(func(e: Dictionary) -> String: return ("rung %d" % e.rung if e.rung >= 0 else "rail %s" % (-1.0 if e.bar == "right rail" else 1.0)))
+		compared += 1
+		identical += 1 if now.size() == reference.size() else 0
+		nonzero += 1 if reference.size() > 0 else 0
+		var _unused := names
+	check(identical == compared, "the faster offenders() finds exactly as many vertices as the original formula at every height (%d of %d heights)" % [identical, compared])
+	# Control: the comparison must be able to see an overlap at all.
+	host.position.y = 2.0
+	rig.set_traversal_progress(2.0)
+	await _frames(25)
+	var geometry: LadderGeometry = rig.ladder.geometry
+	geometry.plane_ahead -= 0.10
+	var through := clearance.offenders(geometry, 2.0, 0.003, 100000).size()
+	var through_reference := _reference_offenders(clearance, geometry, 2.0, 0.003).size()
+	geometry.plane_ahead += 0.10
+	check(through >= 10 and through == through_reference, "control: with the rung plane moved through the legs both find the same many vertices (%d and %d)" % [through, through_reference])
+	clearance.release()
+	rig.end_traversal()
 	host.queue_free()
 	await _frames(2)

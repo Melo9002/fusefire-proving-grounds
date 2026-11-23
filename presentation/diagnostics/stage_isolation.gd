@@ -77,7 +77,13 @@ func measure(rig: CharacterRig, bone_names: Array, tree: SceneTree, window := DE
 			continue
 		modifier.active = false
 		var without := await _settle(tree)
+		# Some modifiers are switched by their owner every update (the rig turns the leg IK on and off itself): a modifier that is back on by now was never really off, and its zero effect says nothing.
+		var held_off := not modifier.active
 		modifier.active = true
+		if not held_off:
+			result.modifiers.append({"name": String(modifier.name), "declared": declared, "was_active": true, "effect_mm": {}, "effect_deg": {}, "spike_mm": {}, "max_mm": 0.0, "max_deg": 0.0, "moves_bones": false, "kind": "",
+				"held_off": false, "note": "the rig switched it back on while the experiment ran, so it could not be tested this way (its owner decides when it is on)"})
+			continue
 		var effect := _per_bone(baseline, without.last)
 		var angle := _per_bone_angle(baseline, without.last)
 		var without_spike := _spikes(without.series)
@@ -99,7 +105,7 @@ func measure(rig: CharacterRig, bone_names: Array, tree: SceneTree, window := DE
 		elif max_angle >= ANGLE_THRESHOLD_DEG:
 			kind = "rotation only"
 		result.modifiers.append({"name": String(modifier.name), "declared": declared, "was_active": true, "effect_mm": _mm(effect), "effect_deg": _deg(angle), "spike_mm": _mm(spike),
-			"max_mm": maxf(maximum, max_spike) * 1000.0, "max_deg": max_angle, "moves_bones": kind != "", "kind": kind})
+			"max_mm": maxf(maximum, max_spike) * 1000.0, "max_deg": max_angle, "moves_bones": kind != "", "kind": kind, "held_off": true})
 	# Everything off: how much the modifiers contribute in total (the clip alone is the reference).
 	for modifier in modifiers:
 		modifier.active = false
@@ -239,6 +245,9 @@ static func text(result: Dictionary) -> String:
 			if float(mover.effect_deg.get(bone, 0.0)) >= ANGLE_THRESHOLD_DEG:
 				detail.append("%s turns %.1f deg" % [bone, float(mover.effect_deg[bone])])
 		lines.append("  %s%s (%s): %s" % [mover.name, "" if bool(mover.declared) else "  (NOT declared in PoseOwnership)", mover.kind, ", ".join(detail)])
+	for m: Dictionary in result.modifiers:
+		if m.has("held_off") and not bool(m.held_off):
+			lines.append("  %s could NOT be tested: %s" % [m.name, m.note])
 	lines.append("  restored: %s (%.2f mm)" % ["yes" if bool(result.get("restored", false)) else "NO", float(result.get("restore_error_mm", 0.0))])
 	lines.append("(An effect is what changes when one modifier is switched off; it is not a statement of what the modifier is declared to write.)")
 	return "\n".join(lines)

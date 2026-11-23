@@ -271,6 +271,12 @@ static func _has_intended(rows: Array, n0: int, n1: int, intended: String) -> bo
 					return true
 	return false
 
+static func _has_poles(rows: Array, n0: int, n1: int) -> bool:
+	for row: Dictionary in rows:
+		if int(row.n) >= n0 - 2 and int(row.n) <= n1 + 2 and not ((row.get("ladder", {}) as Dictionary).get("knee_poles", []) as Array).is_empty():
+			return true
+	return false
+
 static func _snap(event: Dictionary, events: Array, rows: Array, config: Dictionary, names: Dictionary) -> Dictionary:
 	var detail: Dictionary = event.detail
 	var subjects: Array = detail.subjects
@@ -303,6 +309,15 @@ static func _snap(event: Dictionary, events: Array, rows: Array, config: Diction
 		else:
 			follows = " The %s %s." % [plain_top, "jumped in the same frames, so this part followed a retarget" if moved else "did not jump in those frames, so the pose itself changed"]
 	var hypotheses := []
+	# The knee pole (an input of the leg solver, recorded on a ladder): did it jump in the frames where a leg bone did?
+	var leg_side := side_of(worst_name)
+	if leg_side != "" and (worst_name.ends_with("shin") or worst_name.ends_with("thigh") or worst_name.ends_with("foot")):
+		var pole_jumps := _near(events, "target_jump", int(event.n0), int(event.n1), 2, "%s knee pole" % leg_side)
+		if not pole_jumps.is_empty():
+			follows += " The %s knee pole, the point the leg solver bends the knee toward, jumped %.1f cm in the same frames." % [leg_side, float(pole_jumps[0].value)]
+			hypotheses.append(_hypothesis("The leg solver was handed a knee pole that jumped, so the knee followed it.", "target_jump on the %s knee pole at rows %s, the same frames as this snap" % [leg_side, ", ".join(pole_jumps.map(func(e: Dictionary) -> String: return str(e.n0)))], "Find what writes the pole (the traversal stage sets it) and run the same scenario with --disable=Traversal to see whether the snap goes with it"))
+		elif _has_poles(rows, int(event.n0), int(event.n1)):
+			follows += " The %s knee pole did not jump in those frames." % leg_side
 	var context_changes := _near(events, "context_changed", int(event.n0), int(event.n1), 2, "")
 	for change: Dictionary in context_changes:
 		hypotheses.append(_hypothesis("The body's context changed at this frame (%s to %s), so one pose may have been replaced by another at once." % [change.detail.from, change.detail.to], "context_changed event at row %d" % int(change.n0), "Look at the stage weights across the change (Diagnostics tab, pose stages) and whether the exit is blended"))

@@ -125,9 +125,13 @@ func _run(flags: Dictionary) -> void:
 	bench.start_scenario(id)
 	var limit := int((float(definition.duration) + 5.0) * 120.0)
 	var frames := 0
+	var switched_back := {}
 	while bench.scenario_runner.running and frames < limit:
 		await process_frame
 		frames += 1
+		for name in experiment.get("disabled", []):
+			if (bench.rig.skeleton.get_node(NodePath(String(name))) as SkeletonModifier3D).active:
+				switched_back[name] = int(switched_back.get(name, 0)) + 1
 	recorder.stop()
 	if bench.scenario_runner.running:
 		_fail("the scenario did not finish within %d frames" % limit, 1)
@@ -139,7 +143,7 @@ func _run(flags: Dictionary) -> void:
 		var parts := String(flags.window).split("-")
 		if parts.size() == 2:
 			window = [int(parts[0]), int(parts[1])]
-	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": experiment.get("applied", [])})
+	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": _experiment_text(experiment, switched_back, frames)})
 	var default_path := "%s/%s-%s%s.json" % [DEFAULT_FOLDER, character, id, "" if WorkbenchSession.armed else "-unarmed"]
 	var path := String(flags.get("out", default_path))
 	var error := AddaReport.save(report, path)
@@ -221,11 +225,13 @@ func _isolate(flags: Dictionary) -> void:
 ## Experiment levers. Returns {applied: [text,...]} or {error}.
 func _apply_experiment(rig: CharacterRig, flags: Dictionary) -> Dictionary:
 	var applied: Array[String] = []
+	var disabled: Array[String] = []
 	for name in String(flags.get("disable", "")).split(",", false):
 		var modifier := rig.skeleton.get_node_or_null(NodePath(name.strip_edges())) as SkeletonModifier3D
 		if modifier == null:
 			return {"error": "--disable: no modifier named '%s' under the skeleton (modifiers: %s)" % [name, ", ".join(rig.skeleton.get_children().filter(func(c: Node) -> bool: return c is SkeletonModifier3D).map(func(c: Node) -> String: return String(c.name)))]}
 		modifier.active = false
+		disabled.append(name.strip_edges())
 		applied.append("disabled %s" % name.strip_edges())
 	for item in String(flags.get("set", "")).split(";", false):
 		var eq := item.find("=")
@@ -241,7 +247,18 @@ func _apply_experiment(rig: CharacterRig, flags: Dictionary) -> Dictionary:
 			return {"error": "--set: node '%s' has no property '%s'" % [path, property]}
 		node.set(property, str_to_var(item.substr(eq + 1)))
 		applied.append("set %s.%s = %s" % [path, property, item.substr(eq + 1)])
-	return {"applied": applied}
+	return {"applied": applied, "disabled": disabled}
+
+## What the report says about the experiment, including a modifier its owner kept switching back on (then the experiment did not hold, and a "no change" would be a false negative).
+func _experiment_text(experiment: Dictionary, switched_back: Dictionary, frames: int) -> Array:
+	var out: Array = []
+	for line in experiment.get("applied", []):
+		var text := String(line)
+		for name in switched_back:
+			if text == "disabled %s" % name:
+				text += " (NOT HELD: the rig switched it back on in %d of %d frames, so this did not test what it says)" % [int(switched_back[name]), frames]
+		out.append(text)
+	return out
 
 func _print_summary(report: Dictionary, path: String, error: Error) -> void:
 	var config: Dictionary = report.config

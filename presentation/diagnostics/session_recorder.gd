@@ -153,7 +153,7 @@ func _on_final_pose() -> void:
 	row["feet"] = _feet(sample)
 	if rig.ladder != null and rig.ladder.pose != null and rig.ladder.pose.on_ladder:
 		row["ladder"] = {"climbed": snappedf(rig.ladder.climbed, 0.0001), "foot_rung": [rig.ladder.pose.foot_rung[0], rig.ladder.pose.foot_rung[1]], "foot_swing": [snappedf(rig.ladder.pose.foot_swing[0], 0.001), snappedf(rig.ladder.pose.foot_swing[1], 0.001)],
-			"landing": String(rig.ladder.landing_status)}
+			"landing": String(rig.ladder.landing_status), "knee_poles": _markers(rig.knee_poles), "foot_targets": _markers(rig.foot_targets)}
 	_prev_t = presenter_time
 	if int(_pending_mesh.get("update", -1)) == int(stamp.update):
 		row["mesh"] = _pending_mesh.data
@@ -163,6 +163,14 @@ func _on_final_pose() -> void:
 		rows.pop_front()
 		dropped += 1
 	row_recorded.emit(row)
+
+## World positions of the rig's IK helper nodes (the inputs the traversal stages feed the leg solver), read-only; empty when the rig has none.
+func _markers(nodes: Array) -> Array:
+	var out := []
+	for node: Marker3D in nodes:
+		if is_instance_valid(node):
+			out.append(node.global_position)
+	return out
 
 func _context() -> String:
 	if rig.ladder != null and rig.ladder.pose != null and rig.ladder.pose.on_ladder:

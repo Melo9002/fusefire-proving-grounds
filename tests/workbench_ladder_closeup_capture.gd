@@ -2,7 +2,7 @@ extends SceneTree
 ## Close-up, annotated captures of the leg-and-ladder relationship, taken IN the animation workbench (the real scene, the real rig, the production solver and contacts, the workbench's own camera and its
 ## "Ladder collisions" overlay): red = skinned leg vertices inside a rung or rail, yellow = knees, green = pelvis, orange = planned feet, a label at the worst vertex. Explicit only (needs a GPU).
 ##   godot --path . --resolution 1280x720 --script res://tests/workbench_ladder_closeup_capture.gd -- <out.png> <mira_0|small_mira_0> <armed|unarmed> <up|down> <h1,h2,...> [view=side|front|three_quarter|knee]
-## One tile per height, panel hidden, the camera close on the legs. The pose is held (rate 0) at each height, so the frame is reproducible.
+## One tile per height, panel hidden, the camera close on the legs. The pose is held (rate 0) at each height and the capture waits until it has settled (PoseSettle), so the frame is reproducible.
 const SCENE := "res://tools/animation_workbench/pose_workbench.tscn"
 const TILE := Vector2i(540, 640)
 const VIEWS := {
@@ -44,7 +44,14 @@ func _run() -> void:
 		bench.diagnostics.set_ladder_overlay(true)
 		bench.set_sim_paused(true)
 		bench.look_from(VIEWS[view][0], VIEWS[view][1])
-		await _frames(4)
+		# A pose asked for cold takes a few updates to arrive (ADDA Assignment 3: 23 leg vertices in a rung on the first update, none from the third on, all FRESH): wait for it to SETTLE, not for a fixed number of frames.
+		var settle := PoseSettle.new(bench.rig.skeleton)
+		var waited := 0
+		while not settle.is_settled() and waited < 90:
+			await process_frame
+			waited += 1
+		settle.release()
+		await _frames(2)
 		await RenderingServer.frame_post_draw
 		var img := root.get_texture().get_image()
 		var wanted_width := int(round(float(img.get_height()) * TILE.x / TILE.y))
