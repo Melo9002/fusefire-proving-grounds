@@ -233,14 +233,14 @@ static func segment_enters(from: Vector3, to: Vector3, bounds: AABB) -> bool:
 			if enter >= exit: return false
 	return exit > 0 and enter < 1
 
-static func units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit = null) -> bool:
+static func units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit = null, allow_friendly_yield := false) -> bool:
 	if not grid.map_data.surface_placement_enabled: return true
 	var route := traversal_route(grid.map_data, from, to)
 	for index in range(1, route.size()):
-		if not _unit_segment_clear(grid, route[index - 1], route[index], ignored): return false
+		if not _unit_segment_clear(grid, route[index - 1], route[index], ignored, allow_friendly_yield): return false
 	return true
 
-static func _unit_segment_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit) -> bool:
+static func _unit_segment_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit, allow_friendly_yield := false) -> bool:
 	var data := grid.map_data
 	if not data.surface_placement_enabled: return true
 	var gap := data.body_radius * 2 + data.body_clearance
@@ -248,6 +248,7 @@ static func _unit_segment_clear(grid: GridManager, from: Vector3, to: Vector3, i
 	var b := Vector2(to.x, to.z)
 	for other: TacticalUnit in grid.occupancy_map.values():
 		if not is_instance_valid(other) or other == ignored: continue
+		if allow_friendly_yield and FactionRules.are_teammates(ignored.faction, other.faction): continue
 		var cell := data.get_cell(other.grid_position)
 		if not cell: return false
 		var point := cell.world_position

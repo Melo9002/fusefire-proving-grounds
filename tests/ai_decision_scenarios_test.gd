@@ -56,6 +56,11 @@ func _run() -> void:
 	await _extraction_in_zone()
 	await _extraction_en_route()
 	await _rescue_pickup()
+	await _carrier_corridor_recovery(true)
+	await _carrier_corridor_recovery(false)
+	await _carrier_corridor_recovery(true, true)
+	await _carrier_corridor_recovery(true, false, true)
+	await _carrier_handoff_after_defeat()
 	Engine.time_scale = 1.0
 	print("AI decision scenarios: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
@@ -419,6 +424,114 @@ func _rescue_pickup() -> void:
 	hard_rules(f, carrier, r, "S8")
 	check("rescue" in r.committed and (not r.present or carrier.is_carrying_unit()), "S8: the carrier picks up the casualty")
 	check(not ("attack" in r.committed), "S8: a carrier does not spend AP shooting")
+	await f.dispose(self)
+
+## An escort is already in the only evacuation lane when a player picks up the VIP.
+## With a recess the escort can yield. With the recess closed it cannot leave the exit.
+func _carrier_corridor_recovery(has_recess: bool, has_alternate := false, crowded := false) -> void:
+	var f := Fixture.new()
+	await f.setup(self, 1, 1, 2 if crowded else 1, MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.RESCUE, 1))
+	var carrier: TacticalUnit = f.turns.player_units[0]
+	var escort: TacticalUnit = f.turns.allied_units[0]
+	var casualty := f.level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var start := Vector3i(8, 0, 10)
+	var exit := Vector3i(12, 0, 10)
+	var alternate := start + Vector3i.LEFT * 2
+	var recess := exit + Vector3i.BACK
+	var second_block := exit + Vector3i.LEFT * 2
+	var second_recess := second_block + Vector3i.BACK
+	# Use the same swept-occupancy planner as the current sites on a controlled floor.
+	f.grid.map_data.surface_placement_enabled = true
+	f.grid.map_data.surface_points_resolved = true
+	f.place(carrier, start)
+	f.place(casualty, start + Vector3i.LEFT)
+	f.place(escort, exit)
+	if crowded:
+		f.place(f.turns.allied_units[1], second_block)
+	f.place(f.turns.enemy_units[0], Vector3i(22, 0, 10))
+	var wall: Array[Vector3i] = []
+	for cell: Vector3i in f.grid.map_data.cells:
+		if cell.x in range(8, 14) and (cell.y != 0 or cell.z != start.z) and (not has_recess or cell != recess):
+			if crowded and cell == second_recess:
+				continue
+			wall.append(cell)
+	# Close the far end of the corridor so the exit occupant cannot just walk through it.
+	wall.append(exit + Vector3i.RIGHT)
+	f.set_walls(wall)
+	f.battle.pathfinder.live_grid = f.grid
+	f.grid.map_data.set_objective_zone(&"extract", [exit])
+	f.ready_actor(carrier, 1)
+	f.ready_actor(escort, 1)
+	escort.stats.speed = 1
+	var pickup := await f.activate(carrier, self)
+	check("rescue" in pickup.committed and carrier.is_carrying_unit(), "Corridor: carrier legally picks up the casualty")
+	check(not f.grid.can_unit_occupy_cell(carrier, exit), "Corridor: the occupied exit is really blocked")
+	if has_alternate:
+		f.grid.map_data.set_objective_zone(&"extract", [exit, alternate])
+		# The blocked exit remains a mission option, but coordination should use the open one.
+		check(f.battle.pathfinder.calculate_3d_path(start, alternate).size() > 1, "Corridor: the alternate exit is reachable")
+	f.act_as(escort)
+	check((recess in f.legal_moves(escort)) == has_recess, "Corridor: the recess is a legal move exactly when open")
+	var yielded := await f.activate(escort, self)
+	hard_rules(f, escort, yielded, "Corridor escort")
+	if has_alternate:
+		check(not yielded.decisions.any(func(row: Dictionary) -> bool: return "Yielded" in String(row.reason)),
+			"Corridor: an open alternate exit does not require yielding")
+	elif has_recess:
+		check("move" in yielded.committed and yielded.end == recess and "Support" in yielded.actions,
+			"Corridor: the escort leaves the occupied exit for its legal recess")
+	else:
+		check(not ("move" in yielded.committed) and yielded.end == exit,
+			"Corridor: without a recess the escort cannot fabricate a yielding move")
+	if crowded:
+		check(f.battle.pathfinder.calculate_3d_path(start, exit).is_empty(),
+			"Corridor: clearing one occupant does not remove the second blockage")
+		var second: TacticalUnit = f.turns.allied_units[1]
+		f.ready_actor(second, 1)
+		second.stats.speed = 1
+		var second_yield := await f.activate(second, self)
+		hard_rules(f, second, second_yield, "Crowded corridor second escort")
+		check("move" in second_yield.committed and second_yield.end == second_recess,
+			"Corridor: the second escort clears another choke point using its own recess")
+	f.ready_actor(carrier, 3)
+	var attempted_exit := await f.activate(carrier, self)
+	hard_rules(f, carrier, attempted_exit, "Corridor carrier")
+	if has_recess:
+		check("extract" in attempted_exit.committed, "Corridor: the carrier extracts after the escort yields")
+	else:
+		check(attempted_exit.end == start and not ("extract" in attempted_exit.committed),
+			"Corridor: the blocked carrier cannot move through the escort or extract")
+		f.ready_actor(escort, 1)
+		var repeated := await f.activate(escort, self)
+		check(repeated.end == exit and not ("move" in repeated.committed),
+			"Corridor: a repeated activation does not move the blockage back and forth")
+	await f.dispose(self)
+
+## Use the real defeat and rescue lifecycle, then let the AI find the reopened objective.
+func _carrier_handoff_after_defeat() -> void:
+	var f := Fixture.new()
+	await f.setup(self, 2, 1, 1, MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.RESCUE, 2), AIDifficultyPolicy.Tier.HARD, [], true)
+	var first: TacticalUnit = f.turns.player_units[0]
+	var replacement: TacticalUnit = f.turns.allied_units[0]
+	var casualty := f.level.get_node("Units/ObjectiveUnits/RescueTarget") as TacticalUnit
+	var start := Vector3i(8, 0, 28)
+	f.place(first, start)
+	f.place(casualty, start + Vector3i.LEFT)
+	f.place(replacement, start + Vector3i.RIGHT)
+	f.place(f.turns.enemy_units[0], Vector3i(28, 0, 20))
+	f.grid.map_data.set_objective_zone(&"extract", [Vector3i(13, 0, 28)])
+	f.ready_actor(first, 1)
+	var pickup := await f.activate(first, self)
+	check("rescue" in pickup.committed and first.is_carrying_unit(), "Handoff: first carrier secured the casualty")
+	first.stats.take_damage(9999)
+	await process_frame
+	check(f.turns.battle_result == TurnManager.BattleResult.ONGOING, "Handoff: the squad has surviving players and the mission continues")
+	f.ready_actor(replacement, 1)
+	check(f.ai_of(replacement)._get_ai_mission_intent().kind == MissionIntent.Kind.RESCUE,
+		"Handoff: the surviving escort reads the reopened rescue intent")
+	var handoff := await f.activate(replacement, self)
+	hard_rules(f, replacement, handoff, "Carrier handoff")
+	check("rescue" in handoff.committed and replacement.is_carrying_unit(), "Handoff: the escort legally replaces the defeated handler")
 	await f.dispose(self)
 
 ## S1b flanking: one hostile behind low cover facing the shooter, open ground to either side.
