@@ -22,6 +22,10 @@ var diagnostics: WorkbenchDiagnostics
 var scenario_runner := WorkbenchScenarioRunner.new()
 var sim_paused := false
 var _step_requests := 0
+var _seek_total := 0
+var _seeking := false
+var _saved_max_fps := 0
+var _saved_vsync := DisplayServer.VSYNC_ENABLED
 ## The length of one paused step (seconds of presentation time); one frame at 60 fps by default.
 var step_seconds := 1.0 / 60.0
 var panel: WorkbenchPanel
@@ -160,6 +164,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if event.pressed else Input.MOUSE_MODE_VISIBLE
 		get_viewport().set_input_as_handled()
 		return
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		# The wheel zooms toward (or away from) what the camera looks at.
+		var look := -camera.global_basis.z
+		camera.global_position += look * (0.25 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.25) * view_scale
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE and is_instance_valid(panel) and (scenario_runner.running or sim_paused):
+		# With the panel, Space pauses and resumes what is playing (the clip sequence it used to start is still on Space when nothing plays).
+		set_sim_paused(not sim_paused)
+		_update_status()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouseMotion and _orbit_dragging:
 		var offset := camera.position - _view(ORBIT_FOCUS)
 		var radius := offset.length()
@@ -296,11 +312,20 @@ func _update_status() -> void:
 	# Keep controls in the demo so individual poses are easy to inspect.
 	if is_instance_valid(panel):
 		# With the panel the long key list lives in the Scenario tab; the status keeps the facts that change (the same vocabulary as before).
-		var diagnostics_text := "ON" if is_instance_valid(_diagnostics) and _diagnostics.enabled else "off"
-		status_label.text = "STATE: %s    IK: %s%s%s
-pace %.1f m/s    direction %s
-hand diagnostics %s    pose %s    view %s" % [state_name, "ON" if rig.ik_enabled else "OFF", "    PAUSED" if sim_paused else "",
-			("    scenario: " + String(scenario_runner.scenario.get("id", ""))) if scenario_runner.running else "", preview_speed, "turning" if preview_turning else str(preview_direction), diagnostics_text, POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
+		# What is true NOW, in plain words, read every refresh (the old line showed the preview's requested pace and the inspection preset, which read as "moving" while she stood still).
+		status_label.text = "STATE: %s    %s\n%s\nmoving at %.1f m/s" % [state_name, where_text(), playback_text(), rig.presenter.speed if is_instance_valid(rig.presenter) else 0.0]
+		# Inspection switches (keys I, H, Z, X) are listed only while they are not at their default, so a key press is confirmed and the usual screen stays short.
+		var switches: Array[String] = []
+		if not rig.ik_enabled:
+			switches.append("IK: OFF")
+		if is_instance_valid(_diagnostics) and _diagnostics.enabled:
+			switches.append("hand diagnostics ON")
+		if _pose_preset != 0:
+			switches.append("pose preset: %s" % POSE_PRESET_NAMES[_pose_preset])
+		if _diagnostic_view != 0:
+			switches.append("camera: %s" % DIAGNOSTIC_VIEW_NAMES[_diagnostic_view])
+		if not switches.is_empty():
+			status_label.text += "\n" + "    ".join(switches)
 		return
 	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if rig.ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
@@ -317,9 +342,12 @@ func _process(frame_delta: float) -> void:
 	if sim_paused:
 		# Paused: nothing advances (the animation tree is manual, the presenter is not ticked). A requested step runs the whole frame once at `step_seconds`.
 		if _step_requests <= 0:
+			_seek_fast(false)
 			_update_camera_offset()
 			return
 		_step_requests -= 1
+		if _step_requests == 0:
+			_seek_fast(false)   # arrived: the cap is back before anything reads it
 		_delta = step_seconds
 		rig.animation_controller.animation_tree.advance(_delta)
 	scenario_runner.advance(_delta)
@@ -446,9 +474,38 @@ func diagnostics_for_contacts() -> void:
 	if is_instance_valid(panel):
 		panel.sync_toggles()
 
+## Where the body is, in words: "on a ladder", "on stairs", "carrying someone", "in cover"... or "on the floor".
+func where_text() -> String:
+	var places: Array[String] = []
+	if rig.ladder != null:
+		places.append("on a ladder")
+	if rig.stairs != null:
+		places.append("on stairs")
+	if is_instance_valid(rig.carry_passenger):
+		places.append("carrying someone")
+	if rig.interaction_active():
+		places.append("picking up or putting down")
+	if not cover_demo.is_empty():
+		places.append("in cover")
+	if is_instance_valid(rig.presenter) and rig.presenter.attack.is_active():
+		places.append("attacking")
+	return ", ".join(places) if not places.is_empty() else "on the floor"
+
+## What playback is doing: "Playing A Tactical 4.2 / 15.0 s", "Paused at 4.2 s", "Going to 6.3 s... 40%" (a replay still on its way is never called paused).
+func playback_text() -> String:
+	var title := String(scenario_runner.scenario.get("short", scenario_runner.scenario.get("title", "")))
+	if _step_requests > 0:
+		var target := scenario_runner.time + _step_requests * step_seconds
+		var done := 1.0 - float(_step_requests) / maxf(float(_seek_total), 1.0)
+		return "Going to %.1f s... %d%%" % [target, int(done * 100.0)]
+	if scenario_runner.running:
+		return "%s %s at %.2f s of %.0f" % ["PAUSED" if sim_paused else "Playing", title, scenario_runner.time, float(scenario_runner.scenario.get("duration", 0.0))]
+	return "PAUSED" if sim_paused else "Nothing playing (Start tab)"
+
 func set_sim_paused(on: bool) -> void:
 	sim_paused = on
 	_step_requests = 0
+	_seek_fast(false)
 	if diagnostics != null:
 		diagnostics.set_paused(on)
 	var tree: AnimationTree = rig.animation_controller.animation_tree
@@ -457,6 +514,23 @@ func set_sim_paused(on: bool) -> void:
 func step_sim(frames := 1) -> void:
 	if sim_paused:
 		_step_requests += frames
+		_seek_total = _step_requests
+		if _step_requests > 1:
+			_seek_fast(true)
+
+## While a replay runs to a moment, the frame rate is uncapped so it gets there sooner. Still exactly one simulation step per frame at `step_seconds`, so the moment reached is the same one; only the waiting is shorter.
+func _seek_fast(on: bool) -> void:
+	if on == _seeking:
+		return
+	_seeking = on
+	if on:
+		_saved_max_fps = Engine.max_fps
+		_saved_vsync = DisplayServer.window_get_vsync_mode()
+		Engine.max_fps = 0
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	else:
+		Engine.max_fps = _saved_max_fps
+		DisplayServer.window_set_vsync_mode(_saved_vsync)
 
 ## Steps still waiting (a replay to a moment plays them one per frame, so a moment 5 s in takes about 5 s to reach).
 func pending_steps() -> int:
@@ -519,6 +593,7 @@ func reset_scene() -> void:
 	_update_status()
 
 func _exit_tree() -> void:
+	_seek_fast(false)   # the frame cap is engine-wide: never leave it uncapped
 	if diagnostics != null:
 		diagnostics.shutdown()
 

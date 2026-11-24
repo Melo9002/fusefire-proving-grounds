@@ -275,7 +275,43 @@ func _rifle_local_basis() -> Basis:
 
 ## Builds the character: the model, the weapon (if any), the arm IK and the animation controller. A host (the tactical adapter, the workbench, a tool) adds this node and drives it: the presenter's tick
 ## and `update_weapon_pose` once per frame. The rig has no frame callback of its own, so a character is advanced exactly once per frame by whoever hosts it.
+## Tuning saved from the Workbench's Tune tab: one `<property>.tres` per profile in a `tuning/` folder beside the character's rig profile (art/characters/<id>/tuning/). A file that exists replaces the
+## profile the scene gives, so the game and the Workbench pose the character with the same numbers. No folder, no change. Never read in the editor (the scene file is not rewritten).
+const TUNED_PROFILES: Array[StringName] = [&"cover_profile", &"locomotion_profile", &"traversal_profile", &"stair_profile", &"handling"]
+## Tests point this at a scratch folder so they never read or write the character's real tuning.
+static var tuning_folder_override := ""
+## The stair profile as authored or tuned, before `_measure_stair_anatomy` copies it and fills in this body's measurements (the Tune tab edits this one).
+var stair_profile_source: StairProfile
+
+## The folder this rig's tuning lives in ("" when the rig has no rig profile file to place it beside).
+func tuning_folder() -> String:
+	if tuning_folder_override != "":
+		return tuning_folder_override
+	if rig_profile == null or rig_profile.resource_path == "" or rig_profile.resource_path.contains("::"):
+		return ""
+	return rig_profile.resource_path.get_base_dir().path_join("tuning")
+
+func _load_tuning() -> void:
+	var folder := tuning_folder()
+	if folder == "":
+		return
+	for property in TUNED_PROFILES:
+		var path := folder.path_join("%s.tres" % property)
+		if ResourceLoader.exists(path):
+			var tuned := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)   # each rig its own copy: a Workbench edit never reaches another rig until it is saved
+			var current: Resource = get(property)
+			if tuned is Resource and (current == null or tuned.get_script() == current.get_script()):   # a file of the wrong kind is ignored, never half-applied
+				set(property, tuned)
+
+## Puts the authored stair numbers back and measures this body again (after the Tune tab changed `stair_profile_source`).
+func reapply_stair_profile() -> void:
+	if stair_profile_source != null:
+		stair_profile = stair_profile_source
+		_measure_stair_anatomy()
+
 func _ready() -> void:
+	if not Engine.is_editor_hint():
+		_load_tuning()
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
@@ -303,6 +339,8 @@ func _ready() -> void:
 func _measure_stair_anatomy() -> void:
 	if stair_profile == null or not is_instance_valid(skeleton):
 		return
+	if stair_profile_source == null:
+		stair_profile_source = stair_profile
 	stair_profile = stair_profile.duplicate() as StairProfile
 	# The profile's lengths in metres (stance roll, heel lift, swing lift, margins, step rise, stance width, standing pelvis height) are authored for the reference body (RigBones.REFERENCE_HIP_TO_ANKLE);
 	# a body with a different leg takes its share. The anatomy below is measured, never scaled.

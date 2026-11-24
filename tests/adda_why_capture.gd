@@ -19,14 +19,14 @@ func _run() -> void:
 	WorkbenchSession.character = StringName(args[1])
 	WorkbenchSession.armed = args[2] == "armed"
 	WorkbenchSession.autostart_scenario = &""
-	WorkbenchSession.start_tab = 4
+	WorkbenchSession.start_tab = WorkbenchPanel.index_of(&"Why?")
 	var scenario := StringName(args[3])
 	var kind := String(args[4])
 	var index := int(args[5]) if args.size() > 5 and String(args[5]).is_valid_int() else 0
 	var bench: Node3D = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(bench)
 	await _frames(15)
-	var tab: WhyTab = bench.panel.tab_nodes[4]
+	var tab: WhyTab = bench.panel.tab_named(&"Why?")
 	tab._mesh_check.button_pressed = "mesh" in args
 	bench.step_seconds = 1.0 / 60.0
 	bench.start_scenario(scenario)

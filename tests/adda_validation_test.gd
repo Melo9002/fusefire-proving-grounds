@@ -242,11 +242,11 @@ func _workbench() -> void:
 	WorkbenchSession.character = &"small_mira_0"
 	WorkbenchSession.armed = true
 	WorkbenchSession.autostart_scenario = &""
-	WorkbenchSession.start_tab = 4
+	WorkbenchSession.start_tab = WorkbenchPanel.index_of(&"Why?")
 	var bench: Node3D = (load("res://tools/animation_workbench/pose_workbench.tscn") as PackedScene).instantiate()
 	root.add_child(bench)
 	await _frames(15)
-	var tab: WhyTab = bench.panel.tab_nodes[4]
+	var tab: WhyTab = bench.panel.tab_named(&"Why?")
 	await tab._isolate()
 	check(String(tab._isolation_text.text).contains("Choose a body part"), "with no part chosen the button says so instead of running")
 	var index := -1

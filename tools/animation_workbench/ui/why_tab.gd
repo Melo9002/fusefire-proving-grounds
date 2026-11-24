@@ -32,7 +32,7 @@ func setup(workbench: Node3D) -> void:
 	bench = workbench
 	add_theme_constant_override("separation", 5)
 	var start := WorkbenchUI.section(self, "Record, then ask")
-	start.add_child(WorkbenchUI.label("Play a scenario (Scenario tab) and it is recorded. Then 'What happened?' lists what stood out. Recording only reads the pose; it changes nothing.", 12, WorkbenchUI.DIM))
+	start.add_child(WorkbenchUI.label("Play a scenario (Start or Scenario tab) and it is recorded. Then 'What happened?' lists what stood out. Recording only reads the pose; it changes nothing.", 12, WorkbenchUI.DIM))
 	start.add_child(WorkbenchUI.row([["Record (free play)", _toggle_recording, "Records whatever the character does until you stop"], ["What happened?", _analyze, "Analyse the recording so far"]]))
 	_mesh_check = WorkbenchUI.check("Also sample leg vertices against the ladder (slow, about 3.5 ms a frame)", false, func(_on: bool) -> void: pass, "Needed to say whether legs cross rungs; off means ADDA says it did not look")
 	start.add_child(_mesh_check)
@@ -53,7 +53,7 @@ func setup(workbench: Node3D) -> void:
 	chosen.add_child(_observed)
 	_causes = WorkbenchUI.label("", 12, WorkbenchUI.WARN)
 	chosen.add_child(_causes)
-	_actions = WorkbenchUI.row([["Show it", _show_it, "Marks it on the body and moves the camera to it"], ["Replay to this moment", _replay, "Restarts the scenario and pauses at the moment of the finding"], ["Copy reproduction", _copy_repro]])
+	_actions = WorkbenchUI.row([["Go there", go_there, "Plays the scenario again, pauses at the worst moment of this finding and marks it on the body"], ["Mark it again", _show_it, "Marks it on the body in the current pose and moves the camera to it"], ["Copy reproduction", _copy_repro]])
 	chosen.add_child(_actions)
 	var technical := WorkbenchUI.section(self, "Technical detail of the selected finding", true)
 	_detail = WorkbenchUI.mono("", 11)
@@ -100,11 +100,22 @@ func _options() -> Dictionary:
 func _analyze() -> void:
 	var recorder := _recorder()
 	if recorder == null or recorder.rows.is_empty():
-		_headline.text = "There is no recording yet. Play a scenario (Scenario tab) or press 'Record (free play)', then ask again."
+		# Never leave an older run's findings on screen under a "no recording" line: they would read as this run's.
+		_report = {}
+		_selected = {}
+		_marker.clear()
+		for child in _list.get_children():
+			child.queue_free()
+		_more.visible = false
+		_observed.text = "Select a finding above."
+		_causes.text = ""
+		_detail.text = ""
+		_headline.text = "There is no recording yet. Play a scenario (Start tab) or press 'Record (free play)', then ask again."
 		return
 	_report = AddaReport.build(recorder, _options())
 	_selected = {}
-	_headline.text = String(_report.summary.headline)
+	_marker.clear()
+	_headline.text = "%s  (%s)" % [String(_report.summary.headline), _run_label()]
 	_rebuild_list()
 
 func _rebuild_list() -> void:
@@ -117,7 +128,7 @@ func _rebuild_list() -> void:
 			break
 		shown += 1
 		var button := Button.new()
-		button.text = "%s  %s  %s" % [finding.id, String(finding.severity).to_upper(), finding.title]
+		button.text = list_label(finding)
 		button.alignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = true
 		button.focus_mode = Control.FOCUS_NONE
@@ -126,7 +137,27 @@ func _rebuild_list() -> void:
 		button.pressed.connect(_select.bind(finding))
 		_list.add_child(button)
 	_more.visible = findings.size() > 8
-	_more.text = "Show fewer" if _show_all else "Show all %d findings" % findings.size()
+	_more.text = "Show fewer" if _show_all else "Show the other %d" % (findings.size() - shown)   # the remaining items, notes included: never a total that disagrees with the headline
+
+## Who the run was: the scenario and character, so a list is never mistaken for another run's.
+func _run_label() -> String:
+	var config: Dictionary = _report.get("config", {})
+	var scenario := WorkbenchScenarios.find(StringName(String(config.get("scenario", ""))))
+	return "%s, %s" % [String(scenario.get("short", config.get("scenario", "free play"))) if not scenario.is_empty() else "free play", String(config.get("character", ""))]
+
+## A finding as one list line, WHEN and WHAT first: "5.42 s  right forearm  HIGH  Pose snap: 2 bones at once".
+func list_label(finding: Dictionary) -> String:
+	var at := moment_of(finding)
+	var part := String(finding.get("subject", {}).get("text", ""))
+	var when := ("%.2f s  " % at) if at >= 0.0 else ""
+	return "%s%s%s  %s" % [when, (part + "  ") if part != "" and not String(finding.title).to_lower().begins_with(part.to_lower()) else "", String(finding.severity).to_upper(), finding.title]
+
+## The scenario time of a finding's WORST frame (where to look), or its start when that row was not kept; -1 when the run had no scenario clock.
+func moment_of(finding: Dictionary) -> float:
+	var row := _row_of(finding)
+	if not row.is_empty() and float(row.get("st", -1.0)) >= 0.0:
+		return float(row.st)
+	return float(finding.get("reproduce", {}).get("st", -1.0))
 
 static func _colour(severity: String) -> Color:
 	match severity:
@@ -179,6 +210,26 @@ func _replay() -> void:
 	bench.step_seconds = maxf(float(_report.config.frame_dt_s), 0.0001)
 	if not bench.replay_to(id, float(_selected.reproduce.st)):
 		_observed.text += "\n\nThis scenario cannot be replayed here (it is free play, or needs a weapon this configuration does not have)."
+
+## One action for "show me this problem": replay to the finding's worst frame, pause there, then mark it. Returns when it has arrived (or could not replay).
+func go_there() -> void:
+	if _selected.is_empty():
+		return
+	var finding := _selected
+	var id := StringName(String(finding.reproduce.scenario))
+	bench.step_seconds = maxf(float(_report.config.frame_dt_s), 0.0001)
+	var at := moment_of(finding)
+	if at < 0.0 or not bench.replay_to(id, at):
+		_observed.text += "\n\nThis cannot be replayed here (it was free play, or needs a weapon this configuration does not have). 'Mark it again' still marks it on the current pose."
+		return
+	_observed.text = "%s\n\nGoing to %.2f s..." % [finding.title, at]
+	while is_inside_tree() and bench.pending_steps() > 0:
+		await get_tree().process_frame
+	if not is_inside_tree() or _selected != finding:
+		return
+	await get_tree().process_frame
+	_observed.text = "%s\n\n%s\n\nPaused at %.2f s, the worst moment. Space resumes; 'Step frame' in the Scenario tab moves one frame." % [finding.title, finding.observation.text, at]
+	_show_it()
 
 func _copy_repro() -> void:
 	if not _selected.is_empty():

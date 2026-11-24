@@ -291,8 +291,8 @@ func _negative() -> void:
 
 func _tab(run: Dictionary) -> void:
 	var bench: Node3D = run.bench
-	var tab: WhyTab = bench.panel.tab_nodes[4]
-	check(tab != null and bench.panel.tabs.get_tab_title(4) == "Why?", "the Why? tab is the fifth tab")
+	var tab: WhyTab = bench.panel.tab_named(&"Why?")
+	check(tab != null and bench.panel.tabs.get_tab_title(WorkbenchPanel.index_of(&"Why?")) == "Why?", "the Why? tab is there and found by name")
 	tab._analyze()
 	check(String(tab._headline.text).contains("finding") and tab._list.get_child_count() > 0 and tab._list.get_child_count() <= 8, "'What happened?' gives a plain headline and at most 8 findings to start with (%d)" % tab._list.get_child_count())
 	var findings: Array = tab._report.findings

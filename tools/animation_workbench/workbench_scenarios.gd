@@ -32,7 +32,7 @@ static func _step(t: float, label: String, run: Callable) -> Dictionary:
 
 static func tactical() -> Dictionary:
 	var wall := {"full": false, "height": 0.9, "left": 1.5, "right": 1.5, "left_ok": true, "right_ok": true, "aim": false}
-	return {"id": TACTICAL, "title": "A  Tactical-style presentation", "needs_weapon": true, "duration": 15.0,
+	return {"id": TACTICAL, "title": "A  Tactical-style presentation", "short": "A  Walk, take cover, aim and fire", "needs_weapon": true, "duration": 15.0,
 		"summary": "Move, turn, take low cover, aim at an authorised target, fire, recover. Cover side, crouch and the shot choice come from the production CoverEdgeSelector and CoverPostureProfile.",
 		"context": "SYNTHETIC tactical context: a wall and an authorised target position stand in for the tactical layer. No match, AP, grid or AI; the outcome of the shot is not decided here.",
 		"steps": [
@@ -50,7 +50,7 @@ static func tactical() -> Dictionary:
 		]}
 
 static func exploration() -> Dictionary:
-	return {"id": EXPLORATION, "title": "B  Exploration-style activity", "needs_weapon": false, "duration": 17.0,
+	return {"id": EXPLORATION, "title": "B  Exploration-style activity", "short": "B  Walk, crouch, gestures, a reaction", "needs_weapon": false, "duration": 17.0,
 		"summary": "Walk, turn, crouch, stand, acknowledge, nod, inspect, then a reaction that interrupts a gesture. Armed or unarmed.",
 		"context": "No tactical state. The steps use the shared CharacterPresenter's public API (postures, begin_gesture, begin_hold) the way an exploration host does. The reaction at the end shows an ActionHandle settling INTERRUPTED in the history.",
 		"steps": [
@@ -67,7 +67,7 @@ static func exploration() -> Dictionary:
 		]}
 
 static func contacts() -> Dictionary:
-	return {"id": CONTACTS, "title": "C  Contacts and traversal", "needs_weapon": false, "duration": 13.0,
+	return {"id": CONTACTS, "title": "C  Contacts and traversal", "short": "C  Stairs, then climb a ladder", "needs_weapon": false, "duration": 13.0,
 		"summary": "Climb a stair, then a ladder, interrupt the climb, and watch the contacts release. Contact diagnostics switch on: planned against final feet, target against wrist, reach margin.",
 		"context": "The workbench supplies the progress the game would supply (distance along the stair, height up the ladder); the stair planner, leg IK, ladder solver and hand contacts are the production ones. Small MIRA's ladder reach deficit (issue 55) is visible here and is not fixed by this task.",
 		"steps": [
@@ -87,7 +87,7 @@ static func contacts() -> Dictionary:
 ## The supported ladder transfer, on the production solver and rig (Issue #55 follow-up): a deck with posts, the ladder's own rails run on above the deck, and the landings that must NOT be treated as
 ## supported. Each supported landing is climbed and then entered from the deck in reverse. The unsupported ones show the fallback and why the rig refused them (Diagnostics tab, "Ladder landing").
 static func landing() -> Dictionary:
-	return {"id": LANDING, "title": "D  Ladder landing (supported transfer)", "needs_weapon": false, "duration": 17.0,
+	return {"id": LANDING, "title": "D  Ladder landing (supported transfer)", "short": "D  Get off the top of a ladder (several ways)", "needs_weapon": false, "duration": 17.0,
 		"summary": "Climb onto a deck and come back down from it with the ladder's own rails running on above the deck as the handholds, then with free-standing posts instead. Then two landings that must stay on the fallback.",
 		"context": "The workbench plays what a host plays: the climb, then the crossing of the deck's lip. The pose is the production TraversalSolver, rig and hand contacts; the landing is a LadderLanding (the same description the sandbox supplies). A landing the body cannot use is refused by the rig with the reason, and the ordinary climb-out plays.",
 		"steps": [
@@ -108,7 +108,7 @@ static func landing() -> Dictionary:
 
 ## Rescue and carry: lift a casualty from the floor, carry it, set it down. The pickup, carry pose and release are the production RescueInteraction and carry poses; the bench only presses the same buttons the R, P, M and Q keys do.
 static func rescue() -> Dictionary:
-	return {"id": RESCUE, "title": "E  Rescue and carry", "needs_weapon": false, "duration": 15.0,
+	return {"id": RESCUE, "title": "E  Rescue and carry", "short": "E  Pick someone up, carry, set down", "needs_weapon": false, "duration": 15.0,
 		"summary": "Pick a casualty up from the floor, carry it walking, stop, then set it down. Armed or unarmed.",
 		"context": "The workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's. Hand contacts on the passenger show in the contact measurement.",
 		"steps": [

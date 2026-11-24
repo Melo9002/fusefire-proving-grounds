@@ -1,6 +1,6 @@
 # ADDA — Workbench (the animation workbench)
 
-**ADDA** (AniLab Diagnostic & Debugging Assistant) is the name of AniLab's diagnostic suite: the read-only tools in `presentation/diagnostics/`, this workbench, and the measurement contract (`Measurement`, `PoseWitness`) that says what every reading is and whether it may be trusted. This scene is ADDA's Workbench. Its paths, scene name, command-line arguments, scenarios and tests keep their old names. Start with the **Diagnostics tab > ADDA guide**, and read [`docs/claude/adda/`](../../docs/claude/adda/) for the inventory, the measurement contract and the architecture decision.
+**ADDA** (AniLab Diagnostic & Debugging Assistant) is the name of AniLab's diagnostic suite: the read-only tools in `presentation/diagnostics/`, this workbench, and the measurement contract (`Measurement`, `PoseWitness`) that says what every reading is and whether it may be trusted. This scene is ADDA's Workbench. Its paths, scene name, command-line arguments, scenarios and tests keep their old names. It opens on the **Start** tab: three buttons (watch, find what went wrong, change how she moves). Read [`docs/claude/adda/`](../../docs/claude/adda/) for the inventory, the measurement contract and the architecture decision.
 
 Every number the workbench shows is read inside `skeleton_updated` and stamped; a reading that is stale, unsupported or could not be taken says so instead of showing 0. A *vertex* count is not a mesh intersection and a *support claim* is not physical support (see the contract).
 
@@ -21,22 +21,24 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 | `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
 | `--unarmed` | build the character without its weapon |
 | `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing`, `rescue` |
-| `--tab=<0-4>` | open on a tab (4 = Why?) |
+| `--tab=<name or number>` | open on a tab: `Start`, `Scenario`, `Why?`, `Tune`, `Diagnostics`, `Character`, `Evidence` |
 | `--side-view`, `--auto-sequence` | as before |
 
 The **Evidence** tab prints the exact command for the current configuration; its JSON report now carries an `adda` block of measurement records (kind, status, pose, space, what each does not establish).
 
-## The panel: five tabs, five questions
+## The panel: seven tabs
 
 The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. Compact tables use a 14-point minimum and the panel can occupy up to 44% of the viewport to improve readability at 1280×720. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
 
 | Tab | Question | What it holds |
 |---|---|---|
+| **Start** | Where do I begin? | one button per scenario, "What went wrong in that run?", "Open the settings", and a short list of the words ADDA uses |
 | **Character** | What am I inspecting? | rig identity and body proportions; semantic roles and the bones they resolved to (required `*` and optional); capabilities with the resolver's reason (supported, fallback, unsupported, not implemented); degraded stages; equipment state; a character and armed/unarmed switch; a compatibility check |
 | **Scenario** | What am I asking it to do? | scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
+| **Tune** | How do I change how she moves? | every number of the motion profiles (cover, walking, ladders, stairs, weapon hold) as a slider with its unit; a change shows at once; **Save** writes `art/characters/<id>/tuning/<profile>.tres` (or the profile's own `.tres` when it has one), which `CharacterRig` loads when it is built, so the game uses it too; **Undo** returns to the saved values; delete the file to go back to the defaults |
 | **Diagnostics** | What is the animation system doing? | live presentation state; the measured contacts; a bounded event history; overlay switches; the pose stages in execution order with declared writes and live weights; "why is this bone moving" |
 | **Evidence** | How do I reproduce and show it? | screenshot, JSON report, the relaunch command |
-| **Why?** | Why is my robot doing that? | ADDA's recording of the scenario turned into findings in plain words (what was measured, possible causes marked unconfirmed, cause unknown); *Show it* on the body, *Replay to this moment*, a body-part inspector, compare with a saved baseline, export the report an agent gets. See [`docs/claude/adda/07-usage.md`](../../docs/claude/adda/07-usage.md) |
+| **Why?** | Why is my robot doing that? | ADDA's recording of the scenario turned into findings in plain words (what was measured, possible causes marked unconfirmed, cause unknown), each line starting with when it happened and which body part; *Go there* replays to the finding's worst frame, pauses and marks it; *Mark it again* re-marks it on the current pose; a body-part inspector, compare with a saved baseline, export the report an agent gets. See [`docs/claude/adda/07-usage.md`](../../docs/claude/adda/07-usage.md) |
 
 ### Scenarios
 

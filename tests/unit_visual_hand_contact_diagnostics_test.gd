@@ -205,8 +205,8 @@ func _workbench() -> void:
 	var status: Label = workbench.get_node("UI/Status")
 	check(workbench.rig.skeleton != null and workbench.rig.animation_controller != null and status.text.contains("STATE: rifle_idle"), "The pose workbench loads in its idle state")
 	check(workbench.find_children("*", "HandContactDiagnostics", true, false).is_empty() and workbench.find_children("*", "HandContactOverlay", true, false).is_empty(), "A fresh workbench carries no diagnostics")
-	# The key list moved from the status line into the panel's Scenario tab (Task 12): the controls are still listed for the user, and the status keeps the live facts.
-	check(status.text.contains("hand diagnostics off") and ScenarioTab.KEYS.contains("H: weapon-grip contact diagnostics") and ScenarioTab.KEYS.contains("Z: pose preset"), "The workbench lists the new controls")
+	# The key list moved from the status line into the panel's Scenario tab (Task 12): the controls are still listed for the user. The status names an inspection switch only while it is on (checked below), so at rest it does not.
+	check(not status.text.contains("hand diagnostics ON") and ScenarioTab.KEYS.contains("H: weapon-grip contact diagnostics") and ScenarioTab.KEYS.contains("Z: pose preset"), "The workbench lists the new controls")
 	# Existing controls still work.
 	workbench._unhandled_input(_key(KEY_3))
 	for i in 10: await process_frame

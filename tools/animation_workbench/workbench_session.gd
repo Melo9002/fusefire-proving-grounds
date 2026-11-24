@@ -23,7 +23,8 @@ static func read_arguments() -> void:
 		elif argument.begins_with("--scenario="):
 			autostart_scenario = StringName(argument.trim_prefix("--scenario="))
 		elif argument.begins_with("--tab="):
-			start_tab = int(argument.trim_prefix("--tab="))
+			var tab := argument.trim_prefix("--tab=")
+			start_tab = int(tab) if tab.is_valid_int() else WorkbenchPanel.index_of(StringName(tab))   # a number or a title (--tab=Tune)
 
 ## The command line that reproduces the current configuration (for the Evidence tab).
 static func repro_command(scenario: StringName = &"") -> String:

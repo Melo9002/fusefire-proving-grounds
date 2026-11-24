@@ -2,7 +2,7 @@
 
 You do not need to know how the rig, the stages or the solvers are built. You need a symptom, a scenario that shows it, and the two places ADDA lives:
 
-* **ADDA - Workbench** (the window): `godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0` (or `small_mira_0`, add `--unarmed`). Five tabs: Character, Scenario, Diagnostics, Evidence, **Why?**.
+* **ADDA - Workbench** (the window): `godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0` (or `small_mira_0`, add `--unarmed`). It opens on **Start**: press a scenario, then *What went wrong in that run?*, then pick a problem and press *Go there*. To change how she moves, open **Tune** (sliders; *Save* keeps them, the game uses them too).
 * **The command line**, for repeatable and comparable runs (details in [07-usage.md](07-usage.md), the agent procedure in [10-agent-workflow.md](10-agent-workflow.md)).
 
 **Evidence of testing.** The Workbench operation described here is exercised by automated UI tests (`workbench_scenarios_test`, `workbench_diagnostics_test`, `adda_workflow_test`, `adda_validation_test`: they press the buttons, read the text, check state is restored). **No person other than the author has used it.** Nothing here is a usability result. What a project owner should try by hand is listed in section 3.
@@ -25,7 +25,7 @@ For each: what to do in the Workbench, the command-line equivalent, what to read
 ### 2.1 A hand misses its contact
 1. Scenario tab: pick the scenario (C Contacts for ladder and stairs, E Rescue and carry, A Cover and aiming). It plays and records.
 2. **Why?** > *What happened?*. Look for "Right Hand target out of reach" or "target error".
-3. Select it. Read *what was measured* (the error in mm, the reach margin in cm, the weight) and *possible causes (NOT confirmed)*. *Show it* marks the wrist (cyan), what was asked (yellow) and the gap (red).
+3. Select it. Read *what was measured* (the error in mm, the reach margin in cm, the weight) and *possible causes (NOT confirmed)*. *Go there* replays to its worst moment, pauses and marks the wrist (cyan), what was asked (yellow) and the gap (red).
 4. *Inspect a body part* > "right hand" > *Which pose stage moves it? (experiment)* names the modifiers that move the hand.
 5. Do **not** conclude the target is right: a target error says the hand is far from it, not that the target is where it should be.
 CLI: `.\tools\adda.ps1 run -Scenario rescue ...`, `inspect -Finding F2`, `isolate -Bones "@right_hand"`.
@@ -37,7 +37,7 @@ Findings come in three kinds, easy to confuse: **slides while planted** (the ank
 Only the **ladder** is measured on the skinned mesh. Before the scenario, tick *Also sample leg vertices against the ladder* in Why? (about 3.5 ms a frame, 1 ms if sampled every 4th). A finding "Right Shin intersects ladder rung 10" shows the bone, the rung and the depth in mm. **Wait until the pose has settled**: right after you jump to a height the first updates show transient overlaps that disappear. With sampling off, ADDA says it did not look ("not measured"), never "clean". CLI: `run -Scenario landing -Mesh`.
 
 ### 2.4 The animation snaps or pops
-"Pose snap: N bones at once" gives the moment, the bones and the size. Read the sentence after it: *did a hand target, foothold, knee pole or the passenger jump in the same frames?* If yes, the input moved and the pose followed it. If it says "did not jump, so the pose itself changed", look at the hypotheses (an animation state change, a stage engaging) and **test one**: *Replay to this moment* then Pause and Step in the Scenario tab walks across it frame by frame. CLI: `run`, `inspect -Finding F1`, then `run -Disable <stage>` and `compare`.
+"Pose snap: N bones at once" gives the moment, the bones and the size. Read the sentence after it: *did a hand target, foothold, knee pole or the passenger jump in the same frames?* If yes, the input moved and the pose followed it. If it says "did not jump, so the pose itself changed", look at the hypotheses (an animation state change, a stage engaging) and **test one**: *Go there*, then *Back 1 s* / Step frame in the Scenario tab walks across it frame by frame. CLI: `run`, `inspect -Finding F1`, then `run -Disable <stage>` and `compare`.
 
 ### 2.5 A modifier unexpectedly changes a pose
 *Inspect a body part* > choose the part > **Which pose stage moves it? (experiment)**. It pauses the pose (and puts the pause back), switches each modifier off in turn and lists who moves the part, by how many mm and degrees, and marks any `(NOT declared in PoseOwnership)`. Effects smaller than the printed noise floor are not attributed. A modifier the rig switches itself is marked "could NOT be tested". CLI: `isolate`.
@@ -53,7 +53,7 @@ A passing test means *its* assertion held. In this project a capsule test failed
 
 ## 3. What the project owner should try by hand (not done by anyone yet)
 
-1. Open the Workbench, play *C Contacts*, open **Why?**, press *What happened?*, select the first finding, press *Show it* and *Replay to this moment*. Is it clear what is being pointed at? Is the camera framing useful? (Automated tests cannot judge this.)
+1. Open the Workbench, play *C Contacts*, open **Why?**, press *What happened?*, select the first finding, press *Go there*. Is it clear what is being pointed at? Is the camera framing useful? (Automated tests cannot judge this.)
 2. Read three finding texts aloud. Do they say what was measured and no more?
 3. *Inspect a body part* > right hand > *Which pose stage moves it?* in the tactical scenario. Is the answer understandable without reading the source?
 4. Follow section 2.4 for the ladder knee pop (scenario C, MIRA) from this page alone. Where do you get stuck?

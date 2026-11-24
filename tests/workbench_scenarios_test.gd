@@ -67,18 +67,18 @@ func _run() -> void:
 			check(bench.rig.has_weapon() == armed, "%s: the weapon state follows the session" % label)
 			var info := RigInspection.report(bench.rig)
 			profiles[character] = info.identity.profile
-			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 5, "%s: the report is usable and the panel has five tabs" % label)
+			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 7, "%s: the report is usable and the panel has seven tabs" % label)
 			bench.queue_free()
 			await _frames(2)
 	check(profiles[&"mira_0"] != profiles[&"small_mira_0"], "switching the character changes the rig profile (%s / %s)" % [profiles[&"mira_0"], profiles[&"small_mira_0"]])
 
 	_say("section 1 done")
-	# --- 2. The panel: the five tabs, in order, and it fits ordinary and small windows.
+	# --- 2. The panel: the seven tabs, in order, and it fits ordinary and small windows.
 	var bench := await _bench(&"mira_0", true)
 	var names: Array[String] = []
 	for index in bench.panel.tabs.get_tab_count():
 		names.append(bench.panel.tabs.get_tab_title(index))
-	check(names == ["Character", "Scenario", "Diagnostics", "Evidence", "Why?"], "the tabs are Character, Scenario, Diagnostics, Evidence, Why? (%s)" % [names])
+	check(names == ["Start", "Scenario", "Why?", "Tune", "Diagnostics", "Character", "Evidence"] and bench.panel.tabs.current_tab == 0, "the tabs run in a newcomer's order and it opens on Start (%s)" % [names])
 	for size in [Vector2i(1920, 1080), Vector2i(1280, 720), Vector2i(960, 600)]:
 		root.size = size
 		await _frames(3)
@@ -97,7 +97,7 @@ func _run() -> void:
 	check(bench.panel.visible, "F1 shows it again")
 	await _trail_clock_checks(bench)
 	# Evidence: the report is complete and serialises; the repro command names character, weapon state and scenario.
-	var evidence: EvidenceTab = bench.panel.tab_nodes[3]
+	var evidence: EvidenceTab = bench.panel.tab_named(&"Evidence")
 	var report := evidence.report()
 	check(report.has("rig") and report.has("declared") and report.has("runtime") and JSON.stringify(report).length() > 500, "the evidence report has the rig, declared ownership and runtime sections and serialises")
 	check(report.declared.order_problems.is_empty() and report.runtime.stages.size() == 8, "the report's stage section agrees with the declared order")
@@ -215,7 +215,7 @@ func _run() -> void:
 	bench = await _bench(&"small_mira_0", false)
 	var support := WorkbenchScenarios.supported(WorkbenchScenarios.tactical(), bench.rig)
 	check(not support.ok and support.reason.contains("unarmed") and not bench.start_scenario(WorkbenchScenarios.TACTICAL) and not bench.scenario_runner.running, "an unarmed character cannot start the weapon scenario and is told why (%s)" % support.reason)
-	var scenario_tab: ScenarioTab = bench.panel.tab_nodes[1]
+	var scenario_tab: ScenarioTab = bench.panel.tab_named(&"Scenario")
 	scenario_tab._choice.select(0)
 	scenario_tab._choice.item_selected.emit(0)
 	check(scenario_tab._play.disabled and scenario_tab._support.text.contains("UNAVAILABLE"), "the Scenario tab disables the unavailable preset and says why")
