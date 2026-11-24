@@ -190,6 +190,8 @@ func tick(delta: float) -> void:
 	last_tick_frame = Engine.get_process_frames()
 	_advance_timed_states(delta)
 	_advance_aim_hold(delta)
+	if is_instance_valid(rig):
+		rig.advance_traversal_release(delta)
 	if not is_instance_valid(rig) or rig.locomotion_fed_this_frame():
 		return
 	if _scripted:

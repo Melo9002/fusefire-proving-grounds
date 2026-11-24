@@ -124,8 +124,25 @@ func _findings() -> void:
 	check((ReportCompare.compare(snap_a, _report({"x": _metric(1.0)}, {}, [])).findings.resolved as Array).size() == 1, "while at the same frame step it IS resolved")
 	var info_only := ReportCompare.compare(_report({"x": _metric(1.0)}, {}, [_finding("n", "info", "not_measured")]), _report({"x": _metric(1.0)}))
 	check((info_only.findings.resolved as Array).is_empty() and info_only.verdict == "UNCHANGED", "a 'not measured' note is not a finding about the motion")
+	_regrouped_snap()
 	var note := ReportCompare.compare(_report({"x": _metric(1.0)}, {"revision": {"commit": "aaa", "dirty": false}}), _report({"x": _metric(1.0)}, {"revision": {"commit": "bbb", "dirty": true}}))
 	check(note.differences.revision.a == "aaa" and note.differences.revision.b == "bbb+dirty", "the source revisions compared are reported, with the working-tree state")
+
+## Issue 72: a snap that moved fewer bones after a fix is regrouped (a different worst bone, so a different key). At the same moment it is CHANGED, not NEW and RESOLVED.
+func _snap(key: String, severity: String, worst_n: int, title: String) -> Dictionary:
+	return {"key": key, "kind": "pose_snap", "severity": severity, "title": title, "observation": {"frames": {"worst_n": worst_n}, "facts": {}}}
+
+func _regrouped_snap() -> void:
+	var a := _report({"x": _metric(1.0)}, {}, [_snap("pose_snap|right foot|0", "high", 780, "Pose snap: 6 bones at once")])
+	var b := _report({"x": _metric(1.0)}, {}, [_snap("pose_snap|left hand|0", "medium", 781, "Pose snap: 4 bones at once")])
+	var result := ReportCompare.compare(a, b)
+	check((result.findings.changed as Array).size() == 1 and (result.findings.new as Array).is_empty() and (result.findings.resolved as Array).is_empty(), "a snap regrouped at the same moment is CHANGED, not NEW and RESOLVED")
+	check(result.verdict == "UNCHANGED" and ReportCompare.text(result).contains("CHANGED") and ReportCompare.text(result).contains("was:"), "so the run is not REGRESSED, and the text names what it was")
+	# Negative controls: a snap at a different moment is genuinely new, and the pairing is one to one.
+	var far := ReportCompare.compare(a, _report({"x": _metric(1.0)}, {}, [_snap("pose_snap|left hand|0", "medium", 900, "Pose snap: 4 bones at once")]))
+	check((far.findings.new as Array).size() == 1 and (far.findings.resolved as Array).size() == 1 and (far.findings.changed as Array).is_empty() and far.verdict == "MIXED", "a snap at another moment is still NEW (with the old one RESOLVED)")
+	var two := ReportCompare.compare(a, _report({"x": _metric(1.0)}, {}, [_snap("pose_snap|left hand|0", "medium", 781, "Pose snap: 4 bones"), _snap("pose_snap|left toes|0", "high", 782, "Pose snap: 2 bones")]))
+	check((two.findings.changed as Array).size() == 1 and (two.findings.new as Array).size() == 1, "one old snap pairs with one new snap, the other stays NEW")
 
 func _format() -> void:
 	var json: Dictionary = AddaReport.jsonable({"v": Vector3(1.23456789, 2.0, -0.00004), "list": [Vector3.ZERO, &"name"], "f": 0.123456789, "n": NAN, "i": 3})

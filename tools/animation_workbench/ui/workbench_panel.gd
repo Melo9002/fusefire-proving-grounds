@@ -14,6 +14,7 @@ const TABS: Array[String] = ["Start", "Scenario", "Why?", "Tune", "Diagnostics",
 const MAX_WIDTH := 520.0
 const MIN_WIDTH := 300.0
 const WINDOW_FRACTION := 0.44
+const TAB_FONT_SIZE := 12
 
 var bench: Node3D
 var tabs: TabContainer
@@ -36,6 +37,7 @@ func setup(workbench: Node3D) -> void:
 	add_theme_stylebox_override("panel", background)
 	tabs = TabContainer.new()
 	tabs.name = "Tabs"
+	tabs.add_theme_font_size_override("font_size", TAB_FONT_SIZE)   # seven titles at the default size need more than MAX_WIDTH, which hid Evidence behind the scroll arrows (issue 75)
 	add_child(tabs)
 	for entry in TABS.map(func(title: String) -> Array: return [title, _make(title)]):
 		var body := WorkbenchUI.scroll_body()

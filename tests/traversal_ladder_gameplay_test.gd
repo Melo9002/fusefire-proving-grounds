@@ -68,7 +68,9 @@ func _run() -> void:
 	check(adapter.is_ladder_active() and adapter.rig.is_weapon_stowed(), "Mid-ladder: climbing with the rifle slung")
 	adapter.present_defeat()
 	await process_frame
-	check(adapter.rig.ladder == null and not adapter.is_ladder_active() and not adapter.rig.leg_ik.active, "Defeat mid-ladder clears the ladder state and the leg IK")
+	check(adapter.rig.ladder == null and not adapter.is_ladder_active(), "Defeat mid-ladder clears the ladder state")
+	await create_timer(adapter.rig.traversal_release_seconds + 0.2).timeout   # the climbing pose eases out (issue 67) rather than dropping the body in one frame
+	check(not adapter.rig.leg_ik.active, "...and the leg IK once the climbing pose has eased out")
 
 	await f.dispose(self)
 	print("Traversal ladder gameplay: %d checks, %d failure(s)" % [checks, failures])

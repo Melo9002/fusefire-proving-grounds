@@ -82,3 +82,23 @@ Ideas for narrowing it, none built, none a replacement for looking:
 2. Arm swing (1.2): define the metric, then compare.
 3. Decide R1 to R3 (1.3 to 1.5): each has a named next experiment.
 4. Hit reaction (2.2) and ragdoll (2.4): design the measurement first.
+
+## 7. Issue round of 2026-11-24 (uncommitted at the time of writing)
+
+Fixed, each with a regression test and a negative control: **#62** cover entry (the legs hand over from the clip to the crouch over 0.2 s; worst one-frame step 33 to 9 cm, `cover_crouch_takeover_test`), **#67** interrupted climb (the climbing pose eases out over 0.25 s; pelvis step 27 cm to 1 cm in the test, `ladder_interrupt_test`), **#72** compare reports a regrouped snap as CHANGED, **#73** workflow warning (mistake 11), **#75** tab titles fit, **#64** (the 30 fps grip-count part only: a duration, not a frame count).
+
+Found on the way, fixed: the ladder knee turn rate ran on the engine's frame time, not the simulation's, so the ladder was not repeatable in fixed-step runs (hidden until #67 removed the 44 cm snap that masked it).
+
+Not done: **#63, #66** need someone to look at the animation (no number says whether a top-out looks right); **#65** needs a tactical stair scenario; **#68, #55, #69, #70, #71** are open (#71 is an owner decision); **#64** still has the 122 mm capsule-versus-mesh disagreement (owner decision). **#74**: animation tier 85 pass, 1 fail (that capsule check); the overhead probe reads a flat 6.90 ms for every tier, so it cannot see small overheads.
+
+Known flaky at the baseline: `ladder_climb_test` (fails about 3 runs in 4 on the untouched baseline; its leg limit is borderline).
+
+### Handoff status (phase closed by the owner, 2026-11-24)
+
+* `ladder_landing_test`: a known limitation, not a regression. On the untouched baseline (`0963f95`) it fails 5 checks (four at 121 to 122 mm, legs against the capsule volumes, and the 30 fps grip count); on this branch it fails the same four (122.1 to 122.2 mm) and the grip count is fixed. The 122 mm is the capsule-versus-mesh disagreement in `docs/claude/adda/01-baseline-and-architecture.md`; the thresholds were not loosened. Owner decision.
+* `adda_workflow_test`: it was a real regression of this branch, now fixed (8 of 8 runs; passes in the full tier). Two of my changes had put real frame time into a fixed-step run; both now run on the simulation clock.
+* `ladder_climb_test`: flaky on the baseline, not fixed (issue 78).
+* Follow-ups logged as issues 76 to 80 (simulation-clock rule, shared hand-over, flaky ladder test, overhead probe, worst-step masking). Open animation issues 55, 63, 65, 66, 68, 69, 70, 71 are untouched.
+* Final verification: animation tier 85 pass, 1 fail (`ladder_landing_test`, above). The overhead probe is not informative (issue 79).
+* Not verified by eye: cover entry (0.2 s hand-over) and the interrupted-climb ease-out (0.25 s). Headless numbers do not establish that they look right.
+

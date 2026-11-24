@@ -82,6 +82,7 @@ func _settle() -> void:
 	rig.end_traversal()
 	host.position.y = 0.0
 	await _frames(5)
+	await create_timer(rig.traversal_release_seconds + 0.2).timeout   # the climbing pose eases out over `traversal_release_seconds` (issue 67); a settle test starts from a pose that is done moving
 	# Negative control: a pose that keeps moving is never settled.
 	var drift := ChallengeFault.install(rig, {"name": "Creep", "kind": "drift", "bone": "@right_hand", "vector": [0.2, 0.0, 0.0]})
 	settle.reset()

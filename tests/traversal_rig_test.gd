@@ -68,7 +68,10 @@ func _run() -> void:
 	for i in 3: await process_frame
 	rig.rig.end_traversal()
 	for i in 3: await process_frame
-	check(rig.rig.ladder == null and not rig.rig.leg_ik.active, "Interrupted mid-ladder: no traversal state, the leg IK is off")
+	check(rig.rig.ladder == null, "Interrupted mid-ladder: no traversal state")
+	# The climbing pose eases out over `traversal_release_seconds` (issue 67); the leg IK and the pelvis are back once it has.
+	await create_timer(rig.rig.traversal_release_seconds + 0.2).timeout
+	check(not rig.rig.leg_ik.active, "...and the leg IK is off")
 	check(rig.rig.crouch_modifier.aim_lean_degrees == 0.0 and not rig.rig.is_weapon_stowed() and is_equal_approx(float(rig.rig.grip_modifier.contact_weight[0]) + float(rig.rig.grip_modifier.contact_weight[1]), 0.0), "...no trunk lean, no ladder grip, the rifle back in the hand")
 	var after: Vector3 = rl * snap.Hips
 	check(absf(after.y - 0.93) < 0.04 and absf(after.z) < 0.05, "...and the pelvis is back at its ordinary place (y %.2f z %.2f)" % [after.y, after.z])

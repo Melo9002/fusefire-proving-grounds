@@ -126,6 +126,8 @@ func _stage_checks(rig: CharacterRig, label: String, armed: bool) -> void:
 	check(PoseStageReport.runtime_of(rig, &"Traversal").engaged and PoseStageReport.runtime_of(rig, &"TraversalLegIK").engaged, "%s: on a ladder the Traversal stage is engaged (live weight)" % label)
 	rig.end_traversal()
 	await _frames(3)
+	# The climbing pose eases out over `traversal_release_seconds` (issue 67), so the stage disengages once that has run.
+	await create_timer(rig.traversal_release_seconds + 0.2).timeout
 	check(not PoseStageReport.runtime_of(rig, &"Traversal").engaged, "%s: after the ladder it is not" % label)
 	# Negative controls: a reordered skeleton and a disabled stage must show.
 	var skeleton := rig.skeleton

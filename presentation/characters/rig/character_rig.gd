@@ -45,6 +45,8 @@ var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
 var knee_poles: Array[Marker3D] = []
 var crouch_modifier: CoverCrouchModifier
+## Seconds the climbing pose takes to hand the body back to the animation when a ladder traversal ends (0 = at once, the old behaviour).
+var traversal_release_seconds := 0.25
 ## The shared presentation state of this character (time, reported velocity, facing, the moving decision, posture requests). Every host of a rig (the tactical adapter, the workbench)
 ## ticks it once per frame from its own `_process`; while hosts inherit the rig it is a bound component, afterwards it becomes the node that ticks.
 var presenter := CharacterPresenter.new(self)
@@ -692,6 +694,8 @@ func _publish_traversal_input() -> void:
 		return
 	var input := traversal_modifier.input
 	if ladder != null:
+		input.release_left = 0.0
+		input.releasing = false
 		input.mode = TraversalPoseInput.Mode.LADDER
 		input.solved = ladder.pose != null
 		if input.solved:
@@ -710,6 +714,8 @@ func _publish_traversal_input() -> void:
 				levelled.append(maxf(ladder.pose.foot_deck[side_index], 1.0 - ladder.pose.foot_swing[side_index]))
 			input.deck_levelling = levelled
 	elif stairs != null and stairs.pose != null:
+		input.release_left = 0.0
+		input.releasing = false
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
 		input.weight = stairs.pose.weight
@@ -720,6 +726,8 @@ func _publish_traversal_input() -> void:
 		input.planted = [stairs.pose.feet[0].planted, stairs.pose.feet[1].planted]
 		input.foot_lift = [maxf(stairs.pose.feet[0].position.y - stairs.pose.feet[0].tread_top - stair_profile.ankle_height, 0.0), maxf(stairs.pose.feet[1].position.y - stairs.pose.feet[1].tread_top - stair_profile.ankle_height, 0.0)]
 		input.stair_profile = stair_profile
+	elif input.releasing:
+		pass   # the climbing pose is easing out (end_traversal); the modifier clears it when it is done
 	else:
 		input.clear()
 
@@ -820,8 +828,17 @@ func end_stairs() -> void:
 func end_traversal() -> void:
 	if ladder == null:
 		return
+	# Only a host that ticks the presenter every frame can advance the ease; a rig nobody ticks (a tool or test driving it by hand) releases at once, as before.
+	var ticking := presenter.tick_count > 0 and Engine.get_process_frames() - presenter.last_tick_frame <= 5
+	var easing := ticking and traversal_release_seconds > 0.0 and traversal_modifier != null and (stairs == null or stairs.pose == null) and traversal_modifier.input.mode == TraversalPoseInput.Mode.LADDER and traversal_modifier.input.solved and traversal_modifier.input.weight > 0.001
 	ladder = null
-	_publish_traversal_input()
+	if easing:
+		# Interrupted mid-climb (a defeat, a cancelled order): ease the climbing pose out instead of dropping the body to the animation in one frame.
+		traversal_modifier.input.release_total = traversal_release_seconds
+		traversal_modifier.input.release_left = traversal_release_seconds
+		traversal_modifier.input.releasing = true
+	else:
+		_publish_traversal_input()
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = 0.0
 	if is_instance_valid(leg_ik):
@@ -830,6 +847,17 @@ func end_traversal() -> void:
 	if is_weapon_stowed() and not carry_contacts_active():
 		unstow_weapon()
 	_stow_blend = 1.0
+
+
+## Counts the climbing pose's ease-out down by `delta` simulation seconds. The presenter calls it every tick.
+func advance_traversal_release(delta: float) -> void:
+	if traversal_modifier == null:
+		return
+	traversal_modifier.input.sim_delta = delta
+	traversal_modifier.input.sim_frame = Engine.get_process_frames()
+	if not traversal_modifier.input.releasing:
+		return
+	traversal_modifier.input.release_left = maxf(0.0, traversal_modifier.input.release_left - delta)
 
 
 func traversal_contacts_active() -> bool:
@@ -1251,6 +1279,7 @@ func apply_posture_target(depth_request: float, yaw_goal: float, delta: float, p
 		_kneel = move_toward(_kneel, kneel_target, profile.kneel_speed * delta)
 	crouch_modifier.depth = _crouch_depth
 	crouch_modifier.kneel = _kneel
+	crouch_modifier.advance_takeover(delta)
 	if drive_yaw:
 		# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
 		var step := deg_to_rad(profile.turn_degrees_per_second) * delta

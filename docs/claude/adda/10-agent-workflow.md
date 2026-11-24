@@ -83,6 +83,7 @@ How to interpret that evidence correctly: *the finding says a pose snap of the r
 8. **Treating a capsule or sampled-vertex count as a mesh intersection.** The instruments list says `UNSUPPORTED` for full mesh intersection.
 9. **Believing a committed capture over a re-run.** One committed ladder still could not be reproduced from its own commit ([09-diagnostic-challenges.md](09-diagnostic-challenges.md), section 4).
 10. **Quoting a cause.** `cause` is `unknown` until an experiment settles it. Say "the knee pole jumps in the same frames", not "the knee pole causes the pop".
+11. **Reading "disabling the stage left the symptom" as "the stage is innocent".** Two causes can sit in the same frame: at cover entry a cut clip crossfade and the crouch stage's instant takeover both snapped the foot, so `--disable=CoverCrouch` changed nothing and the crouch hypothesis was recorded as refuted. It was a real cause (issue 62, fixed). A disable that leaves the symptom shows only that the stage is not the ONLY cause. To separate the clip from the stages, compare the clip-only pose (read outside `skeleton_updated`) with the final pose (read inside it) frame by frame, then fix or disable the causes one at a time and measure the size of the symptom, not just whether it remains.
 
 ## 6. Blind challenge protocol for another agent
 

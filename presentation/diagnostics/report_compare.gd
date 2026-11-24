@@ -13,7 +13,7 @@ const FPS_TOLERANCE := 0.05
 const SIZE_TOLERANCE := 0.01
 
 static func compare(a: Dictionary, b: Dictionary) -> Dictionary:
-	var result := {"format": "adda.comparison", "version": 1, "comparable": true, "reason": "", "verdict": "UNCHANGED", "differences": {}, "notes": [], "metrics": [], "findings": {"new": [], "resolved": [], "persisting": [], "unverifiable": []},
+	var result := {"format": "adda.comparison", "version": 1, "comparable": true, "reason": "", "verdict": "UNCHANGED", "differences": {}, "notes": [], "metrics": [], "findings": {"new": [], "resolved": [], "persisting": [], "changed": [], "unverifiable": []},
 		"counts": {"improved": 0, "regressed": 0, "unchanged": 0, "incomparable": 0, "missing": 0, "info": 0}}
 	for report in [a, b]:
 		if String(report.get("format", "")) != AddaReport.FORMAT:
@@ -132,7 +132,14 @@ static func _findings(a: Dictionary, b: Dictionary, result: Dictionary) -> void:
 		if String(f.kind) != "not_measured":
 			fb[String(f.key)] = f
 	var rate_differs := _rate_differs(a.config, b.config)
+	# A snap whose grouping changed (a fix that stops the legs jumping turns "6 bones" into "4 bones" with a different worst bone) has a different key but is the same moment: pair it with the
+	# unmatched snap of the other run at that moment and report it CHANGED, not NEW and RESOLVED (issue 72).
+	var paired := _pair_snaps_by_moment(fa, fb)
 	for key in fb:
+		if paired.has(key):
+			var was: Dictionary = fa[paired[key]]
+			(result.findings.changed as Array).append({"key": key, "was_key": paired[key], "severity": fb[key].severity, "was_severity": was.severity, "title": fb[key].title, "was_title": was.title})
+			continue
 		var entry := {"key": key, "severity": fb[key].severity, "title": fb[key].title}
 		if fa.has(key):
 			(result.findings.persisting as Array).append(entry)
@@ -144,7 +151,7 @@ static func _findings(a: Dictionary, b: Dictionary, result: Dictionary) -> void:
 			else:
 				(result.findings.new as Array).append(entry)
 	for key in fa:
-		if not fb.has(key):
+		if not fb.has(key) and not paired.values().has(key):
 			var entry := {"key": key, "severity": fa[key].severity, "title": fa[key].title}
 			var why := _unverifiable(fa[key], b.config, "B", rate_differs)
 			if why != "":
@@ -152,6 +159,48 @@ static func _findings(a: Dictionary, b: Dictionary, result: Dictionary) -> void:
 				(result.findings.unverifiable as Array).append(entry)
 			else:
 				(result.findings.resolved as Array).append(entry)
+
+## Tolerance, in recorder rows, for two snaps to be the same moment.
+const SNAP_MOMENT_ROWS := 2
+
+## Pairs the pose snaps present in only ONE run's key set when they happen at the same moment (one-to-one, nearest first). Returns {key in B: key in A}.
+static func _pair_snaps_by_moment(fa: Dictionary, fb: Dictionary) -> Dictionary:
+	var paired := {}
+	var taken := {}
+	for key_b in fb:
+		if fa.has(key_b) or String(fb[key_b].kind) != "pose_snap":
+			continue
+		var best := ""
+		var best_gap := SNAP_MOMENT_ROWS + 1
+		for key_a in fa:
+			if fb.has(key_a) or taken.has(key_a) or String(fa[key_a].kind) != "pose_snap":
+				continue
+			var gap := _moment_gap(fa[key_a], fb[key_b])
+			if gap < best_gap:
+				best_gap = gap
+				best = key_a
+		if best != "":
+			paired[key_b] = best
+			taken[best] = true
+	return paired
+
+## The smallest distance, in rows, between any moment of one finding and any of the other (its worst frame and every listed occurrence). Large when a finding carries no frame.
+static func _moment_gap(x: Dictionary, y: Dictionary) -> int:
+	var gap := 1000000
+	for mx in _moments(x):
+		for my in _moments(y):
+			gap = mini(gap, absi(mx - my))
+	return gap
+
+static func _moments(finding: Dictionary) -> Array[int]:
+	var out: Array[int] = []
+	var observation: Dictionary = finding.get("observation", {})
+	var frames: Dictionary = observation.get("frames", {})
+	if frames.has("worst_n"):
+		out.append(int(frames.worst_n))
+	for o: Dictionary in observation.get("facts", {}).get("occurrences", []):
+		out.append(int(o.n))
+	return out
 
 static func _rate_differs(ca: Dictionary, cb: Dictionary) -> bool:
 	var dt_a := float(ca.get("frame_dt_s", 0.0))
@@ -190,6 +239,8 @@ static func text(result: Dictionary) -> String:
 		lines.append("  %-12s %s%s%s" % [row.verdict, row.label, values, ("   (%s)" % row.reason) if row.reason != "" else ""])
 	for f: Dictionary in result.findings.new:
 		lines.append("  NEW FINDING [%s] %s" % [f.severity, f.title])
+	for f: Dictionary in result.findings.changed:
+		lines.append("  CHANGED      [%s] %s   (was: [%s] %s; same moment, grouped differently)" % [f.severity, f.title, f.was_severity, f.was_title])
 	for f: Dictionary in result.findings.resolved:
 		lines.append("  RESOLVED     [%s] %s" % [f.severity, f.title])
 	for f: Dictionary in result.findings.unverifiable:

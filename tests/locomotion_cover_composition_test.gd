@@ -113,6 +113,12 @@ func _run() -> void:
 
 	# ---- 5. A cover pose (crouch drop and legs) with lean and a turn.
 	await _apply(rig, 0.0, lean, 0.12)
+	# The legs hand over from the clip to the crouch over a short time (issue 62); measure the pelvis once they have.
+	for i in 90:
+		if rig.rig.crouch_modifier.takeover >= 1.0:
+			break
+		await _apply(rig, 0.0, lean, 0.12)
+	check(rig.rig.crouch_modifier.takeover >= 1.0, "The crouch has taken over the legs before the pelvis height is read")
 	var cover_hips_height: float = (snap.Hips as Transform3D).origin.y
 	var cover_pitch := _angles("Spine2").y
 	await _apply(rig, twist, lean, 0.12)

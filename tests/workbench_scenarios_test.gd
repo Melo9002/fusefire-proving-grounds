@@ -278,6 +278,14 @@ func _run() -> void:
 	bench.start_ladder_demo(3.0, 1, 0.0)
 	await _frames(2)
 	check(bench.stair_demo.is_empty() and not bench.ladder_demo.is_empty(), "starting the ladder removes the stairs")
+
+	# ---- 8. Every tab title fits in the widest the panel gets (issue 75: Evidence used to hide behind the scroll arrows).
+	var bar: TabBar = bench.panel.tabs.get_tab_bar()
+	bar.clip_tabs = false
+	await _frames(2)
+	var needed := bar.get_combined_minimum_size().x
+	check(needed <= WorkbenchPanel.MAX_WIDTH - 16.0, "the seven tab titles fit the panel's widest width without scroll arrows (%.0f of %.0f px)" % [needed, WorkbenchPanel.MAX_WIDTH])
+	bar.clip_tabs = true
 	bench.queue_free()
 	await _frames(3)
 	WorkbenchSession.character = &""
