@@ -27,7 +27,8 @@ static func evaluate(
 		shots.append(chance)
 	var kill_chance := kill_probability(shots, damage, target.stats.current_hp)
 	vulnerability += 20.0 * policy.finishing_bonus_weight * kill_chance
-	var focus_adjustment := squad.target_adjustment(attacker, target) if squad else 0.0
+	# Spreading fire is a preference: it fades as the shot becomes a likely finisher (SquadContext.target_adjustment).
+	var focus_adjustment := squad.target_adjustment(attacker, target, kill_chance) if squad else 0.0
 	var focus := focus_adjustment * policy.focus_penalty_weight
 	var vip := 25.0 * policy.target_vip_weight if target.mission_actor and target.mission_actor.is_vip() else 0.0
 	var threat := _threat_score(target, friendlies, grid) * policy.target_threat_weight
@@ -41,7 +42,7 @@ static func evaluate(
 		"vip": vip,
 		"threat": threat,
 		"mission": mission,
-		"focus_count": int(-focus_adjustment / 15.0),
+		"focus_count": squad.focus_count(attacker, target) if squad else 0,
 		"kill_chance": kill_chance,
 		# Damage value is HP-capped; a miss still deals zero and does not become a guaranteed finisher.
 		"hit_chance": chance,

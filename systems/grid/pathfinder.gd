@@ -32,6 +32,10 @@ const DIRECTIONS: Array[Vector3i] = [
 	Vector3i.BACK,
 ]
 
+## Changes whenever the walkable graph does (cells added, opened or closed, links made), never when units move: a route planned at one revision may no longer exist at another.
+func graph_revision() -> int:
+	return _graph_revision
+
 func clear() -> void:
 	_graph_revision += 1
 	_point_cells.clear()

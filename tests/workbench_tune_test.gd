@@ -74,7 +74,7 @@ func _godot_round_trip() -> void:
 	check(not EditorBridge.editor_alive(now), "with no heartbeat no editor counts as open")
 	EditorBridge.beat()
 	check(EditorBridge.editor_alive(now + 1.0) and not EditorBridge.editor_alive(now + 30.0), "a heartbeat counts for a few seconds only")
-	var req := EditorBridge.request("res://x.tres", "Clips", "rifle_idle")
+	var req := EditorBridge.request("res://addons/prototype-texture/PROTOTYPE_BLUE.tres", "Clips", "rifle_idle")
 	EditorBridge.send(req, false)
 	check(EditorBridge.pending("").get("id", "") == req.id and EditorBridge.pending(String(req.id)).is_empty(), "the editor sees a new request once")
 	check(EditorBridge.pending("", now + EditorBridge.STALE_SECONDS + 5.0).is_empty(), "an old request is ignored")
