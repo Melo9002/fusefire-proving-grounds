@@ -15,6 +15,7 @@ extends SceneTree
 ##
 ## Arguments (after `--`): run: --scenario=<id> [--character=<key>] [--unarmed] [--mesh[=N]] [--detail=full] [--window=n0-n1] [--out=<path>] [--fps=<n> (only recorded in the command line)] [--fail-on=high|medium]
 ##                         (run and isolate also take --fault=<json> or --challenge=<id>: a known fault injected for diagnostic challenges, see docs/claude/adda/)
+##                         (run and isolate use the GAME's tuning; --drafts also reads the Workbench Tune drafts in art/characters/<id>/tuning/drafts/, as the window does; the report's config.tuning says which)
 ##                         isolate: --scenario=<id> --at=<seconds> --bones=<name|@role,...> [--window=<updates>: sample that many updates per condition, to see a fault that fires only on some] [--character=..] [--unarmed] [--out=<path>]
 ##                         inspect: --report=<path> [--finding=<F1|key>] [--n=<row>]      compare: --a=<path> --b=<path> [--out=<path>] [--fail-on=regression]
 ## Exit codes: 0 done, 1 a --fail-on condition held, 2 a usage problem or a scenario that cannot run in this configuration (said plainly, never silently skipped).
@@ -45,6 +46,7 @@ func _fail(message: String, code := 2) -> void:
 func _main() -> void:
 	var parsed := _parse()
 	var flags: Dictionary = parsed.flags
+	WorkbenchSession.read_drafts = flags.has("drafts")   # a run reproduces what the GAME plays; a person's local Tune drafts only on request
 	match String(parsed.command):
 		"run":
 			await _run(flags)
@@ -62,6 +64,17 @@ func _main() -> void:
 			_list()
 		_:
 			_fail("usage: run | inspect | compare | list   (see tools/adda/adda.gd)")
+
+## Which tuning the run used: the game's tuning files present, and whether the local drafts were read (--drafts). Two runs with different tuning are not the same animation.
+func _tuning_of(rig: CharacterRig) -> Dictionary:
+	var folder := rig.tuning_folder()
+	var files: Array[String] = []
+	for dir in [folder, folder.path_join(CharacterRig.DRAFTS)] if folder != "" else []:
+		if DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir)):
+			for file in DirAccess.get_files_at(ProjectSettings.globalize_path(dir)):
+				if file.ends_with(".tres") and (dir == folder or WorkbenchSession.read_drafts):
+					files.append(dir.path_join(file))
+	return {"drafts_read": WorkbenchSession.read_drafts, "files": files}
 
 func _challenges() -> void:
 	print("ADDA diagnostic challenges. Run one with: run --scenario=<s> --character=<c> [--unarmed] --challenge=<id>. Do not open tools/adda/challenges/sealed/ before you have scored an answer.")
@@ -143,7 +156,7 @@ func _run(flags: Dictionary) -> void:
 		var parts := String(flags.window).split("-")
 		if parts.size() == 2:
 			window = [int(parts[0]), int(parts[1])]
-	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": _experiment_text(experiment, switched_back, frames)})
+	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": _experiment_text(experiment, switched_back, frames), "tuning": _tuning_of(bench.rig)})
 	var default_path := "%s/%s-%s%s.json" % [DEFAULT_FOLDER, character, id, "" if WorkbenchSession.armed else "-unarmed"]
 	var path := String(flags.get("out", default_path))
 	var error := AddaReport.save(report, path)

@@ -96,6 +96,17 @@ func _foot_slide() -> void:
 	var settled := TimelineAnalysis.analyze(_plant_rows(60.0, 0.0, true))
 	check(_count(settled.events, "plant_settle") == 1 and _count(settled.events, "plant_slide") == 0, "an ankle that closes in on its foothold is a plant_settle, not a slide (events %s)" % [_kinds(settled.events)])
 	check(float(settled.metrics["foot.right.worst_slide_mm"].value) < 0.5 and float(settled.metrics["foot.right.worst_settle_mm"].value) > 25.0, "and the metrics keep the two apart")
+	# A one-row pop inside a planted span (out 240 mm and back in the next row: blind challenge CH08) is not a slide; its peak stays in the detail. A pop that lasts two rows still counts.
+	var popped := _plant_rows(60.0, 0.0)
+	popped[30].feet[0].ankle = (popped[30].feet[0].planned as Vector3) + Vector3(0.24, 0, 0)
+	var pop_result := TimelineAnalysis.analyze(popped)
+	check(_count(pop_result.events, "plant_slide") == 0 and float(pop_result.metrics["foot.right.worst_slide_mm"].value) < 0.5, "a one-row 240 mm pop of a planted foot is not reported as a slide (events %s)" % [_kinds(pop_result.events)])
+	var held_pop := _plant_rows(60.0, 0.0)
+	for k in [30, 31]:
+		held_pop[k].feet[0].ankle = (held_pop[k].feet[0].planned as Vector3) + Vector3(0.24, 0, 0)
+	var held_result := TimelineAnalysis.analyze(held_pop)
+	var held_slide := _first(held_result.events, "plant_slide")
+	check(not held_slide.is_empty() and absf(float(held_slide.value) - 240.0) < 0.5 and absf(float(held_slide.detail.peak_mm) - 240.0) < 0.5, "a displacement held for two rows is still a slide, with its peak (got %s)" % [held_slide.get("value")])
 	var swing := _plant_rows(60.0, 40.0)
 	for row in swing:
 		row.feet[0].planted = false   # the plan does not claim it planted: nothing to slide against
@@ -236,7 +247,13 @@ func _retarget() -> void:
 	var fa := Findings.build(a.events, held, config, names)
 	var fb := Findings.build(b.events, moved, config, names)
 	check(fa.size() == 1 and String(fa[0].observation.text).contains("did not jump") and not bool(fa[0].observation.facts.targets_jumped.size() > 0), "a pose snap while its target held still says the pose itself changed (%s)" % [fa[0].observation.text if not fa.is_empty() else "no finding"])
-	check(fb.size() == 1 and String(fb[0].observation.text).contains("followed a retarget") and _count(b.events, "target_jump") == 1, "a pose snap while its target jumped too says the pose followed a retarget")
+	# A target that jumped in the same frames is reported as a fact and offered as an UNCONFIRMED cause, never stated as the cause (on a ladder the footholds move at every step: blind challenge CH08).
+	check(fb.size() == 1 and String(fb[0].observation.text).contains("also jumped in the same frames") and String(fb[0].observation.text).contains("not confirmed") and not String(fb[0].observation.text).contains("so this part followed")
+		and _count(b.events, "target_jump") == 1, "a pose snap while its target jumped too says so as an observation, not as the cause (%s)" % [fb[0].observation.text if not fb.is_empty() else "no finding"])
+	var offered := false
+	for h: Dictionary in (fb[0].hypotheses if not fb.is_empty() else []):
+		offered = offered or String(h.text).contains("followed the")
+	check(offered, "and the retarget is offered as a hypothesis with a test")
 
 	# No intended point at all (a body with no stair, ladder or contact): the finding must not claim "its target did not jump".
 	var bare := []

@@ -51,6 +51,7 @@ These are judged by looking, not by a threshold. A row here stays open until som
 |---|---|---|---|---|
 | V1 | The climbing cycle continues while the character walks onto a platform (top-out). Every bone moves smoothly; the action is wrong. | P (review criticism) | None expected: no snap, no target error. Not reproduced by me; reported. | open |
 | V2 | The Idle button left the character walking in place (state `move` at speed 0, cadence 0.35). | P (seen in the Workbench) | Would not have been found: no discontinuity, no contact error. Fixed in `32477c6`; the check is a state test, not an ADDA finding. | fixed, needs a look |
+| V4 | Stair entry: the first steps glide into a bent-knee pose (outside reviewer) | P (via review) | None near the moment except a 30 mm LOW settle. A probe of the foot against the TREAD measured 0.84 m of slide while planted (`tools/quality/stair_tread_probe.gd`). | Workbench part fixed (the bench started the walk 0.83 m early with the idle clip): 840 to 214 mm. Remaining 214 mm is the game's own entry ramp; open. See `adda_reports/20261124-092555-contacts-stair-entry-the-first-steps/INVESTIGATION.md`. Needs a look |
 | V3 | The cover wall, ladder and stairs stood together, and the body stayed turned 45 degrees after leaving cover. | P (seen in the Workbench) | None: bench scene state, not a pose. Fixed in `32477c6`. | fixed, needs a look |
 
 ## 5. The gap behind them (ADDA)
@@ -63,6 +64,7 @@ Ideas for narrowing it, none built, none a replacement for looking:
 |---|---|---|
 | 5.1 | **Action-consistency findings:** compare the clip or state that is playing with what the character is doing (supported by a ladder or on the floor, moving or not, height changing or not). Examples: a climb state while standing on a deck; `move` at zero speed. | Flags a mismatch as an observation with the evidence. Cannot say which side is wrong. Needs a declared table of which states belong to which situations. |
 | 5.2 | **Keep the reference visible:** for each scenario record a short clip or frame strip next to the report, so a reviewer can look. | Makes the visual check cheap and repeatable. Is still a human judgment. |
+| 5.4 | **A planted foot against the surface under it** (tread, deck, floor), not only against the plan | The stair-entry report shows ADDA missing a 0.84 m glide because the plan itself was where the foot was pulled to. Justified by a real report; not built: the owner decides. |
 | 5.3 | **Reviewer checklist per scenario:** "does it do the right thing?" questions (does the climb end when the feet leave the ladder?) listed in the scenario, answered by a person, kept in the report. | Records the verdict and who gave it. Replaces nothing automatic. |
 
 ## 6. Project housekeeping

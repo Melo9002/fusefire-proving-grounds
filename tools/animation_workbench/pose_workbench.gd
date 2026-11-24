@@ -49,6 +49,7 @@ func _resolve_rig() -> void:
 func _swap_character() -> void:
 	if Engine.is_editor_hint():
 		return
+	CharacterRig.use_drafts = WorkbenchSession.read_drafts   # the window shows the Tune tab's experiments; the game never reads them, the command line only with --drafts (reset when the workbench leaves)
 	WorkbenchSession.read_arguments()
 	var key := character if WorkbenchSession.character == &"" else WorkbenchSession.character
 	var old := get_node_or_null(rig_path)
@@ -168,6 +169,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		# The wheel zooms toward (or away from) what the camera looks at.
 		var look := -camera.global_basis.z
 		camera.global_position += look * (0.25 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.25) * view_scale
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 and is_instance_valid(panel):
+		# Report this moment, from anywhere: pause and type the note on the Start tab.
+		panel.show_tab(&"Start")
+		(panel.tab_named(&"Start") as StartTab).begin_report()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE and is_instance_valid(panel) and (scenario_runner.running or sim_paused):
@@ -594,6 +601,7 @@ func reset_scene() -> void:
 
 func _exit_tree() -> void:
 	_seek_fast(false)   # the frame cap is engine-wide: never leave it uncapped
+	CharacterRig.use_drafts = false
 	if diagnostics != null:
 		diagnostics.shutdown()
 
@@ -1010,7 +1018,10 @@ func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, ra
 	model.tread_rise = rise
 	model.first_riser = 1.0
 	model.count = count
-	var enter := 0.0
+	# The walk starts where a host starts it: one tread before the first riser (the exploration host's entry). It used to start at the lower cell centre, so for the first 0.83 m the character stood
+	# in its idle clip while the floor slid under it, and the stair plan pulled the planted feet toward a foothold most of a metre ahead (0.84 m of foot travel against the floor: ADDA report
+	# adda_reports/20261124-092555-contacts-stair-entry-the-first-steps). No game host shows that approach: the tactical route walks it with the locomotion cycle.
+	var enter := maxf(0.0, model.riser_s(1) - model.tread_depth)
 	var exit := model.riser_s(count)
 	var s0 := (enter if ascending else exit) if start < 0.0 else start
 	stair_demo = {"model": model, "ascending": ascending, "rate": rate, "s": s0, "enter": enter, "exit": exit, "playing": rate > 0.0, "step_once": false}

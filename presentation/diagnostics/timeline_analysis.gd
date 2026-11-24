@@ -15,6 +15,8 @@ const CONTACT_HELD := 0.9        # at or above this the plan has hold of the lim
 const HAND_ERROR_MM := 20.0      # the contact overlay's red line
 const FOOT_ERROR_MM := 30.0
 const SLIDE_MM := 15.0           # how far an ankle may move against its own foothold while the plan claims it planted, before it is reported
+## A slide is a displacement that lasts: each row's displacement is the median of it and its two neighbours, so a one-row pop (out and back in the next row) is not a slide. The pop itself is a pose snap, and
+## the raw peak stays in the event's detail (`peak_mm`) so nothing is hidden. Found by blind challenge CH08: a 240 mm one-frame foot pop was reported as "slides 240 mm over 0.50 s".
 const SNAP_FACTOR := 0.5         # a step is a snap when its velocity departs from the neighbouring frames' median velocity by more than this fraction of that velocity ...
 const SNAP_FLOOR_MPS := 1.0      # ... plus this much (so a fast curved swing is not reported). Frame-rate sensitive by nature: 1 m/s is 1.7 cm in a 60 fps step, 3.3 cm at 30 fps.
 const SNAP_MIN_M := 0.04         # ... and the step must be at least this far (4 cm) beyond what the neighbouring frames predict: a hard but continuous kink (a foot stopping in a frame) is not a pop
@@ -167,9 +169,12 @@ static func _feet(rows: Array, events: Array[Dictionary], metrics: Dictionary) -
 					var closed := _close_span(span, rows, side, events, i - 1)
 					worst_slide_all = maxf(worst_slide_all, closed[0])
 					worst_settle_all = maxf(worst_settle_all, closed[1])
-					span = {"from": i, "source": String(foot.source), "reference": offset, "worst": 0.0, "at": i, "start_error": float(foot.error_mm), "end_error": float(foot.error_mm), "worst_error": float(foot.error_mm), "error_at": i}
+					span = {"from": i, "source": String(foot.source), "reference": offset, "worst": 0.0, "at": i, "start_error": float(foot.error_mm), "end_error": float(foot.error_mm), "worst_error": float(foot.error_mm), "error_at": i,
+						"moved": [0.0], "rows": [i]}
 				else:
 					var moved := (offset - (span.reference as Vector3)).length() * 1000.0
+					(span.moved as Array).append(moved)
+					(span.rows as Array).append(i)
 					span["end_error"] = float(foot.error_mm)
 					if float(foot.error_mm) > float(span.worst_error):
 						span["worst_error"] = float(foot.error_mm)
@@ -196,13 +201,17 @@ static func _close_span(span: Dictionary, rows: Array, side: String, events: Arr
 	var result: Array[float] = [0.0, 0.0]
 	if int(span.from) < 0 or last_row < int(span.from):
 		return result
-	var worst := float(span.worst)
+	var peak := float(span.worst)
+	var sustained := _sustained(span)
+	var worst := float(sustained.value)
+	span["at"] = int(sustained.row)
 	var start_error := float(span.start_error)
 	var end_error := float(span.end_error)
 	var settling := start_error >= SLIDE_MM * 0.8 and end_error <= start_error * 0.5
 	var detail := _foot_detail(rows[int(span.at)], side)
 	detail["error_start_mm"] = snappedf(start_error, 0.1)
 	detail["error_end_mm"] = snappedf(end_error, 0.1)
+	detail["peak_mm"] = snappedf(peak, 0.1)
 	if settling:
 		result[1] = start_error
 		events.append(_event("plant_settle", "%s foot" % side, rows, int(span.from), last_row, snappedf(start_error, 0.1), "mm", detail, int(span.from)))
@@ -217,6 +226,18 @@ static func _close_span(span: Dictionary, rows: Array, side: String, events: Arr
 			offset_detail["error_end_mm"] = snappedf(end_error, 0.1)
 			events.append(_event("plant_offset", "%s foot" % side, rows, int(span.from), last_row, snappedf(float(span.worst_error), 0.1), "mm", offset_detail, int(span.error_at)))
 	return result
+
+## The largest displacement of a span that lasted (3-row median, ends repeated) and the row it was at: {value, row}.
+static func _sustained(span: Dictionary) -> Dictionary:
+	var moved: Array = span.get("moved", [])
+	var rows: Array = span.get("rows", [])
+	var best := {"value": 0.0, "row": int(span.from)}
+	for k in moved.size():
+		var trio := [float(moved[maxi(k - 1, 0)]), float(moved[k]), float(moved[mini(k + 1, moved.size() - 1)])]
+		trio.sort()
+		if float(trio[1]) > float(best.value):
+			best = {"value": float(trio[1]), "row": int(rows[k])}
+	return best
 
 static func _foot_detail(row: Dictionary, side: String) -> Dictionary:
 	var foot := _side(row.get("feet", []), side)

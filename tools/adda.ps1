@@ -17,6 +17,7 @@ param(
 	[string]$Character = "mira_0",
 	[switch]$Unarmed,
 	[switch]$Mesh,
+	[switch]$Drafts,
 	[ValidateSet("summary", "full")][string]$Detail = "summary",
 	[string]$Window,
 	[string]$Out,
@@ -53,6 +54,7 @@ switch ($Command) {
 		$arguments += "--scenario=$Scenario", "--character=$Character", "--fps=$Fps", "--detail=$Detail"
 		if ($Unarmed) { $arguments += "--unarmed" }
 		if ($Mesh) { $arguments += "--mesh" }
+		if ($Drafts) { $arguments += "--drafts" }
 		if ($Window) { $arguments += "--window=$Window" }
 		if ($Out) { $arguments += "--out=$Out" }
 		if ($FailOn) { $arguments += "--fail-on=$FailOn" }
@@ -69,6 +71,7 @@ switch ($Command) {
 		if ($Challenge) { $arguments += "--challenge=$Challenge" }
 		if ($Fault) { $arguments += "--fault=$Fault" }
 		if ($Out) { $arguments += "--out=$Out" }
+		if ($Drafts) { $arguments += "--drafts" }
 	}
 	"score" {
 		if (-not $Challenge) { throw "score needs -Challenge <id> and the parts of your answer: -Stage <modifier> -Bone <name|@role> -Kind <offset|pop|drift|yaw|none>" }

@@ -13,6 +13,10 @@ $env:PATH += ";C:\Users\Blue\Desktop\Folder\Godot"       # godot_console.exe; or
 
 Always run with a **fixed frame rate** (`--fixed-fps 60`, the wrapper does): two runs of the same command are then identical to the last digit, so a difference between two runs is a real difference. Raw form: `godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- <command> ...`.
 
+## 0b. Starting from a person's report
+
+A person who sees something wrong presses **Report this moment** in the Workbench. The folder it writes (`adda_reports/<date>-<scenario>-<words>/`) has a README.md to read first: the note, the exact moment (scenario, time, frame), character and equipment, the revision, the commands that reproduce it, ADDA's observations near the moment, and the Tune drafts that were in use (copied into `tuning/`). Headless runs use the GAME's values; add `-Drafts` only to reproduce what the person saw with their drafts. ADDA measures jumps and distances to targets: when the note describes something ADDA does not measure (a foot gliding over a tread it is planted on, an action that is the wrong one), measure what the person sees with a focused probe, say that ADDA did not see it, and hand back strips or a moment the person can look at. Write the investigation beside the report (`INVESTIGATION.md`). Example: the stair-entry report linked from the README.
+
 ## 1. The procedure (nine steps)
 
 | # | Step | Do | Read |

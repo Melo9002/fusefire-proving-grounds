@@ -107,7 +107,8 @@ func measure(rig: CharacterRig, bone_names: Array, tree: SceneTree, window := DE
 	result["all_modifiers_off_mm"] = _mm(_per_bone(baseline, all_off.last))
 	var restored := await _settle(tree)
 	var restore_error := _distance(baseline, restored.last)
-	result["restored"] = restore_error <= maxf(0.0005, drift * 2.0) or _window > 1
+	result["restored"] = restore_error <= maxf(0.0005, drift * 2.0) or _window > 1   # a window run compares spike profiles, not one pose: its restore is NOT checked (restore_checked says so)
+	result["restore_checked"] = _window <= 1
 	result["restore_error_mm"] = restore_error * 1000.0
 	var restore_angle := 0.0
 	for bone in _per_bone_angle(baseline, restored.last):
@@ -260,6 +261,9 @@ static func text(result: Dictionary) -> String:
 	for m: Dictionary in result.modifiers:
 		if m.has("held_off") and not bool(m.held_off):
 			lines.append("  %s could NOT be tested: %s" % [m.name, m.note])
-	lines.append("  restored: %s (%.2f mm); effects below %.1f mm or %.1f deg are inside the experiment's own residual and are not attributed" % ["yes" if bool(result.get("restored", false)) else "NO", float(result.get("restore_error_mm", 0.0)), float(result.get("noise_floor_mm", 0.0)), float(result.get("noise_floor_deg", 0.0))])
+	if not bool(result.get("restore_checked", true)):
+		lines.append("  restored: NOT CHECKED (a window run compares how often bones spike, not one held pose); effects below %.1f mm or %.1f deg are inside the experiment's own residual and are not attributed" % [float(result.get("noise_floor_mm", 0.0)), float(result.get("noise_floor_deg", 0.0))])
+	else:
+		lines.append("  restored: %s (%.2f mm); effects below %.1f mm or %.1f deg are inside the experiment's own residual and are not attributed" % ["yes" if bool(result.get("restored", false)) else "NO", float(result.get("restore_error_mm", 0.0)), float(result.get("noise_floor_mm", 0.0)), float(result.get("noise_floor_deg", 0.0))])
 	lines.append("(An effect is what changes when one modifier is switched off; it is not a statement of what the modifier is declared to write.)")
 	return "\n".join(lines)

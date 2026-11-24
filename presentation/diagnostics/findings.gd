@@ -143,8 +143,14 @@ static func _span(event: Dictionary, rows: Array) -> float:
 			dt += float(row.dt)
 	return dt
 
-static func _when(event: Dictionary) -> String:
+## When it happened. A finding that spans several rows also says when it was WORST (that is the moment to look at); a one-moment finding gives one time.
+static func _when(event: Dictionary, rows := []) -> String:
 	var t := float(event.st0) if float(event.st0) >= 0.0 else float(event.t0)
+	var worst := _row(rows, int(event.get("worst_n", event.n0))) if int(event.get("worst_n", event.n0)) != int(event.n0) else {}
+	if not worst.is_empty():
+		var tw := float(worst.st) if float(event.st0) >= 0.0 and float(worst.get("st", -1.0)) >= 0.0 else float(worst.t)
+		if absf(tw - t) >= 0.01:
+			return "from %.2f s, worst at %.2f s" % [t, tw]
 	return "at %.2f s" % t
 
 static func _row(rows: Array, n: int) -> Dictionary:
@@ -175,7 +181,7 @@ static func _reach(event: Dictionary, rows: Array, config: Dictionary) -> Dictio
 	var seconds := _span(event, rows)
 	var hand_row := _side_of_row(row, side)
 	var wrist_error := float(hand_row.get("error_mm", 0.0))
-	var text := "%s target is %.1f cm beyond the arm's reach (the limit used is 97%% of a %.0f cm arm), for %.2f s, %s. The wrist ended %.0f mm from it, while the contact claimed weight %.2f." % [String(event.subject).capitalize(), float(event.value), arm, seconds, _when(event), wrist_error, float(detail.get("weight", 0.0))]
+	var text := "%s target is %.1f cm beyond the arm's reach (the limit used is 97%% of a %.0f cm arm), for %.2f s, %s. The wrist ended %.0f mm from it, while the contact claimed weight %.2f." % [String(event.subject).capitalize(), float(event.value), arm, seconds, _when(event, rows), wrist_error, float(detail.get("weight", 0.0))]
 	var hypotheses := [
 		_hypothesis("The contact point is farther from the shoulder than this body's arm can span: it was placed for a different-sized body or the body is not where the contact expects it.",
 			"reach is shoulder-to-target distance against arm length (%.0f cm here); the deficit is geometry, not a solver result" % arm,
@@ -196,7 +202,7 @@ static func _error(event: Dictionary, rows: Array, config: Dictionary) -> Dictio
 	var seconds := _span(event, rows)
 	var margin := float(detail.get("reach_margin_cm", 0.0))
 	var stages: Array = detail.get("stages", [])
-	var text := "%s ended %.1f mm from its contact target while a contact held it (%s marks 20 mm and above), for %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), "the contact overlay", seconds, _when(event)]
+	var text := "%s ended %.1f mm from its contact target while a contact held it (%s marks 20 mm and above), for %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), "the contact overlay", seconds, _when(event, rows)]
 	var hypotheses := []
 	if margin < 3.0:
 		hypotheses.append(_hypothesis("The target is close to the arm's reach limit, so the solver may not fully reach it.", "reach margin is only %.1f cm at the worst frame" % margin, "Compare against a longer-armed character, or check 'hand.%s.worst_deficit_cm'" % side))
@@ -210,7 +216,7 @@ static func _slide(event: Dictionary, events: Array, rows: Array, config: Dictio
 	var detail: Dictionary = event.detail
 	var side := String(event.subject).split(" ")[0]
 	var seconds := _span(event, rows)
-	var text := "%s moved %.1f mm against its foothold while the %s claimed it planted, over %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), String(detail.get("source", "plan")), seconds, _when(event)]
+	var text := "%s moved %.1f mm against its foothold while the %s claimed it planted, over %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), String(detail.get("source", "plan")), seconds, _when(event, rows)]
 	var hypotheses := []
 	var jumps := _near(events, "target_jump", int(event.n0), int(event.n1), 2, "%s foot" % side)
 	if not jumps.is_empty():
@@ -227,7 +233,7 @@ static func _offset(event: Dictionary, events: Array, rows: Array, config: Dicti
 	var side := String(event.subject).split(" ")[0]
 	var seconds := _span(event, rows)
 	var stages: Array = detail.get("stages", [])
-	var text := "%s stayed up to %.1f mm from its foothold (%.1f mm when the %s took hold, %.1f mm at the end) for %.2f s while the plan claimed it planted, %s." % [String(event.subject).capitalize(), float(event.value), float(detail.get("error_start_mm", 0.0)), String(detail.get("source", "plan")), float(detail.get("error_end_mm", 0.0)), seconds, _when(event)]
+	var text := "%s stayed up to %.1f mm from its foothold (%.1f mm when the %s took hold, %.1f mm at the end) for %.2f s while the plan claimed it planted, %s." % [String(event.subject).capitalize(), float(event.value), float(detail.get("error_start_mm", 0.0)), String(detail.get("source", "plan")), float(detail.get("error_end_mm", 0.0)), seconds, _when(event, rows)]
 	var hypotheses := []
 	var jumps := _near(events, "target_jump", int(event.n0), int(event.n1), 2, "%s foot" % side)
 	if not jumps.is_empty():
@@ -241,7 +247,7 @@ static func _settle(event: Dictionary, rows: Array, config: Dictionary) -> Dicti
 	var detail: Dictionary = event.detail
 	var side := String(event.subject).split(" ")[0]
 	var seconds := _span(event, rows)
-	var text := "%s was still %.1f mm from its foothold when the %s took full hold of the leg, and closed to %.1f mm over %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), String(detail.get("source", "plan")), float(detail.get("error_end_mm", 0.0)), seconds, _when(event)]
+	var text := "%s was still %.1f mm from its foothold when the %s took full hold of the leg, and closed to %.1f mm over %.2f s, %s." % [String(event.subject).capitalize(), float(event.value), String(detail.get("source", "plan")), float(detail.get("error_end_mm", 0.0)), seconds, _when(event, rows)]
 	var hypotheses := [_hypothesis("The plan's weight reached full strength before the ankle arrived, so the foot is still travelling onto its foothold while the plan claims it planted.", "the error at the first held frame (%.1f mm) is more than twice the error at the end (%.1f mm)" % [float(event.value), float(detail.get("error_end_mm", 0.0))], "Compare the weight ramp against the ankle's approach (Diagnostics tab, contact measurement) or at another frame rate")]
 	return _make(event, "low", "%s settles onto its foothold late" % String(event.subject).capitalize(), text, {"error_start_mm": event.value, "error_end_mm": detail.get("error_end_mm", 0.0), "seconds": snappedf(seconds, 0.001), "source": detail.get("source", ""),
 		"stages_engaged": detail.get("stages", [])}, hypotheses, {"kind": "limb", "text": "%s foot" % side, "side": side, "part": "foot", "bones": []},
@@ -289,15 +295,16 @@ static func _snap(event: Dictionary, events: Array, rows: Array, config: Diction
 		listed.append("%s %.1f cm" % [plain, float(subjects[i].step_cm)])
 	var text := ""
 	if count == 1:
-		text = "%s jumped %.1f cm beyond the motion of the frames around it (%.1f m/s against about %.1f m/s around it), %s." % [("The " + worst_name) if String(top.subject) == "root" else worst_name.capitalize(), float(top.step_cm), float(top.speed_mps), float(top.neighbour_speed_mps), _when(event)]
+		text = "%s jumped %.1f cm beyond the motion of the frames around it (%.1f m/s against about %.1f m/s around it), %s." % [("The " + worst_name) if String(top.subject) == "root" else worst_name.capitalize(), float(top.step_cm), float(top.speed_mps), float(top.neighbour_speed_mps), _when(event, rows)]
 	else:
-		text = "%d bones jumped at the same moment, %s, beyond the motion of the frames around them. Largest jumps: %s." % [count, _when(event), ", ".join(listed)]
+		text = "%d bones jumped at the same moment, %s, beyond the motion of the frames around them. Largest jumps: %s." % [count, _when(event, rows), ", ".join(listed)]
 	# What the intended points did in the same frames, and what else changed: these are the facts that separate "the pose followed a retarget" from "the pose itself changed".
 	var jumped := _near(events, "target_jump", int(event.n0), int(event.n1), 2, "")
 	var jumped_text: Array[String] = []
 	for j in jumped:
 		jumped_text.append("%s %.1f cm" % [j.subject, float(j.value)])
 	var follows := ""
+	var followed := ""   # the intended point that also jumped, for the unconfirmed hypothesis below
 	var plain_top := _intended_of(worst_name)
 	if plain_top != "":
 		var moved := false
@@ -307,8 +314,13 @@ static func _snap(event: Dictionary, events: Array, rows: Array, config: Diction
 		if not _has_intended(rows, int(event.n0), int(event.n1), plain_top):
 			follows = " It has no %s in these frames to compare against (no stair, ladder or contact supplies one), so a retarget cannot be told apart from the pose itself changing." % plain_top.trim_prefix("left ").trim_prefix("right ")
 		else:
-			follows = " The %s %s." % [plain_top, "jumped in the same frames, so this part followed a retarget" if moved else "did not jump in those frames, so the pose itself changed"]
+			# Observation only. A target that moved in the same frames is a coincidence until a test says otherwise (on a ladder the footholds move at every step); one that did not move rules that target out.
+			follows = (" The %s also jumped in the same frames; the pose may have followed it (not confirmed)." % plain_top) if moved else (" The %s did not jump in those frames, so the jump did not come from that target." % plain_top)
+			if moved:
+				followed = plain_top
 	var hypotheses := []
+	if followed != "":
+		hypotheses.append(_hypothesis("The pose followed the %s, which was moved (retargeted) in the same frames." % followed, "target_jump on the %s within 2 rows of this snap" % followed, "Look at what sets the %s at this moment; if it should not move here, hold it and see whether the snap goes" % followed))
 	# The knee pole (an input of the leg solver, recorded on a ladder): did it jump in the frames where a leg bone did?
 	var leg_side := side_of(worst_name)
 	if leg_side != "" and (worst_name.ends_with("shin") or worst_name.ends_with("thigh") or worst_name.ends_with("foot")):
@@ -343,7 +355,7 @@ static func _mesh(event: Dictionary, rows: Array, config: Dictionary, names: Dic
 	var part := String(worst.get("part", worst.bone))
 	var bar := String(worst.bar)
 	var seconds := _span(event, rows)
-	var text := "%s: %d sampled mesh vertices are inside ladder %s, the deepest by %.1f mm, for %.2f s, %s. (Sampled vertices of the skinned leg mesh only: not a full mesh intersection.)" % [part.capitalize(), int(event.value), bar, float(worst.depth_mm), seconds, _when(event)]
+	var text := "%s: %d sampled mesh vertices are inside ladder %s, the deepest by %.1f mm, for %.2f s, %s. (Sampled vertices of the skinned leg mesh only: not a full mesh intersection.)" % [part.capitalize(), int(event.value), bar, float(worst.depth_mm), seconds, _when(event, rows)]
 	var ladder: Dictionary = detail.get("ladder", {})
 	var hypotheses := []
 	var facts := {"vertices": event.value, "deepest_mm": worst.depth_mm, "bar": bar, "rung": worst.get("rung", -1), "bone": worst.bone, "seconds": snappedf(seconds, 0.001), "ladder": ladder}

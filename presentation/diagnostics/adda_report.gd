@@ -33,7 +33,7 @@ static func build(recorder: SessionRecorder, options := {}) -> Dictionary:
 	var config := {"scenario": String(options.get("scenario", "")), "character": String(options.get("character", "")), "identity": Measurement.identity_of(rig),
 		"armed": rig.has_weapon(), "body_ratio": snappedf(rig.body_ratio(), 0.0001), "frame_dt_s": description.frame_dt_s, "fps": snappedf(1.0 / float(description.frame_dt_s), 0.1) if float(description.frame_dt_s) > 0.0 else 0.0,
 		"rows": description.rows, "dropped": description.dropped, "duration_s": snappedf(float(analysis.metrics.get("duration_s", {}).get("value", 0.0)), 0.001), "mesh_sampling": description.mesh_sampling,
-		"engine": Engine.get_version_info().string, "revision": revision(), "command": String(options.get("command", "")), "cli": String(options.get("cli", "")), "experiment": options.get("experiment", [])}
+		"engine": Engine.get_version_info().string, "revision": revision(), "command": String(options.get("command", "")), "cli": String(options.get("cli", "")), "experiment": options.get("experiment", []), "tuning": options.get("tuning", {})}
 	var findings := Findings.build(analysis.events, rows, config, names)
 	var counts := {"high": 0, "medium": 0, "low": 0, "info": 0}
 	var worst_frames := []

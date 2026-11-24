@@ -1,0 +1,136 @@
+{
+  "armed": true,
+  "character": "mira_0",
+  "created": "2026-11-24 09:25:55",
+  "engine": "4.7.2-stable (official)",
+  "evidence": {
+    "contacts_now": {
+      "feet": [
+        {
+          "ankle": "(0.088, 0.109321, -0.047453)",
+          "error_mm": 0.00029608443696815,
+          "name": "left",
+          "plan_ok": true,
+          "planned": "(0.088, 0.109321, -0.047453)",
+          "planted": true,
+          "source": "stair planner",
+          "weight": 1.0
+        },
+        {
+          "ankle": "(-0.101788, 0.309292, 0.052864)",
+          "error_mm": 0.00088853443003245,
+          "name": "right",
+          "plan_ok": true,
+          "planned": "(-0.101788, 0.309293, 0.052864)",
+          "planted": false,
+          "source": "stair planner",
+          "weight": 1.0
+        }
+      ],
+      "hands": [
+        {
+          "arm_cm": 46.3547497987747,
+          "error_mm": 0.0000506694277646602,
+          "name": "left",
+          "owner": "weapon grip",
+          "reach_margin_cm": 11.3278234302998,
+          "target": "(0.059229, 1.062312, 0.224834)",
+          "unreachable": false,
+          "weight": 0.0,
+          "wrist": "(0.059229, 1.062312, 0.224834)"
+        },
+        {
+          "arm_cm": 46.9876661896706,
+          "error_mm": 0.00015067867309426,
+          "name": "right",
+          "owner": "weapon grip",
+          "reach_margin_cm": 24.4589110165834,
+          "target": "(-0.08, 1.16, 0.15)",
+          "unreachable": false,
+          "weight": 0.0,
+          "wrist": "(-0.08, 1.16, 0.15)"
+        }
+      ]
+    },
+    "findings_within_s": 1.0,
+    "headline": "1 finding: 0 high, 0 medium, 1 low. These are measurements; the causes are unknown unless a finding says otherwise.",
+    "near": [
+      {
+        "at_s": 0.3,
+        "id": "F1",
+        "observed": "Left Foot was still 30.3 mm from its foothold when the stair planner took full hold of the leg, and closed to 0.0 mm over 0.32 s, at 0.30 s.",
+        "possible_causes_not_confirmed": [
+          "The plan's weight reached full strength before the ankle arrived, so the foot is still travelling onto its foothold while the plan claims it planted. (test: Compare the weight ramp against the ankle's approach (Diagnostics tab, contact measurement) or at another frame rate)"
+        ],
+        "severity": "low",
+        "title": "Left Foot settles onto its foothold late"
+      }
+    ],
+    "recorded": true,
+    "rows": 42
+  },
+  "files": [
+    "screenshot.png",
+    "adda_report.json"
+  ],
+  "format": "adda.moment",
+  "moment": {
+    "frame": 36,
+    "frame_step_s": 0.0166666666666667,
+    "paused": true,
+    "presenter_time_s": 0.979,
+    "scenario": "contacts",
+    "scenario_step": "stairs up (0.17 rise, 0.33 tread, 12 treads)",
+    "scenario_time_s": 0.6,
+    "scenario_title": "C  Contacts and traversal"
+  },
+  "not_established": [
+    "The note is a person's judgement of how the animation looks at this moment. It is not a measurement and it names no cause.",
+    "ADDA's findings near the moment are measurements (a jump, a distance to a target). They do not say the animation is wrong or why; a clean list does not say it is right.",
+    "A numerical improvement after a change is not proof the animation looks better: a person compares the result."
+  ],
+  "note": "Stair entry: the first steps look like a glide into a bent-knee pose; the feet do not seem to hold their place on the treads",
+  "on_screen": {
+    "aim_blend": 0.0,
+    "animation_state": "rifle_idle",
+    "contexts": [
+      "stairs"
+    ],
+    "equipment": "HELD",
+    "facing_yaw_deg": 0.0,
+    "pose_stages_active": [
+      "Locomotion",
+      "CoverCrouch",
+      "Traversal",
+      "TraversalLegIK",
+      "TraversalFoot",
+      "WeaponPose",
+      "WeaponArmIK",
+      "HandGrip"
+    ],
+    "posture": "STAND",
+    "posture_depth": 0.0,
+    "readiness": "LOWERED",
+    "speed_mps": 0.0,
+    "where": "on stairs"
+  },
+  "reproduce": {
+    "at": "0.60",
+    "headless": ".\\tools\\adda.ps1 run -Scenario contacts -Character mira_0 -Detail full -Out adda-moment.json",
+    "isolate": ".\\tools\\adda.ps1 isolate -Scenario contacts -Character mira_0 -At 0.60 -Bones \"@left_foot,@right_foot,@left_knee,@right_knee,@left_hand,@right_hand\"",
+    "note": "In the window: start the scenario, then the Scenario tab's progress bar or 'Back 1 s' reaches 0.60 s; or the Why? tab's 'Go there' on a nearby finding. Runs are deterministic at a fixed step.",
+    "window": "godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=contacts"
+  },
+  "revision": {
+    "branch": "review/claude-adda",
+    "commit": "8a749f3",
+    "dirty": true
+  },
+  "tuning": {
+    "changes_from_game": {},
+    "clips_not_in_game": [],
+    "drafts_in_use": [],
+    "game_files": []
+  },
+  "version": 1
+}

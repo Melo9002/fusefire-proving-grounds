@@ -38,11 +38,14 @@ func _config(scenario: String, character: String, armed: bool) -> Array:
 	return ["--scenario=%s" % scenario, "--character=%s" % character] + ([] if armed else ["--unarmed"])
 
 ## Baseline run and fault run of one challenge, compared. Returns {compare: text, code}.
+var _fresh := {}
+
 func _compare(entry: Dictionary, id: String) -> Dictionary:
 	var config := _config(entry.scenario, entry.character, entry.armed)
 	var base := _path("base-%s-%s-%s" % [entry.scenario, entry.character, entry.armed])
-	if not FileAccess.file_exists(base):
+	if not _fresh.has(base):   # made by THIS run: a baseline left by an earlier run may come from other code (it did: a stair bench change turned CH06's control into a false regression)
 		_adda(["run"] + config + ["--out=%s" % base])
+		_fresh[base] = true
 	var run := _adda(["run"] + config + ["--challenge=%s" % id, "--out=%s" % _path(id)])
 	var compared := _adda(["compare", "--a=%s" % base, "--b=%s" % _path(id), "--fail-on=regression"])
 	compared["run_code"] = run.code

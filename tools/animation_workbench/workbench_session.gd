@@ -12,6 +12,8 @@ static var character: StringName = &""
 static var armed := true
 static var autostart_scenario: StringName = &""
 static var start_tab := -1
+## Whether the workbench's rig reads the Tune tab's drafts (tuning/drafts/). The window does; the headless `adda` command line does not unless asked (--drafts), so an agent's run reproduces the GAME.
+static var read_drafts := true
 
 ## Reads the command line (after `--`). Call once, before the rig builds.
 static func read_arguments() -> void:

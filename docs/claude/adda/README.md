@@ -8,6 +8,8 @@ This repository is the source of truth. The project knowledge base on Drive (<ht
 
 | I want to... | Read |
 |---|---|
+| report something that looks wrong, for an agent to investigate | Workbench > Start > **Report this moment** (F2): a folder in `adda_reports/` with the note, the moment, the settings, a screenshot and ADDA's evidence. Worked example: [`adda_reports/20261124-092555-contacts-stair-entry-the-first-steps/`](../../../adda_reports/20261124-092555-contacts-stair-entry-the-first-steps/) (its INVESTIGATION.md is the agent's side) |
+| change how she moves without changing the game | Workbench > **Tune**: experiments and drafts are Workbench-only; **Apply to game** is the one action that changes the game; clips can be edited by hand in Godot |
 | investigate a problem right now (person, in the Workbench) | [11-human-workflows.md](11-human-workflows.md), then [07-usage.md](07-usage.md) |
 | investigate it as a coding agent (Claude Code, Codex) | [10-agent-workflow.md](10-agent-workflow.md) |
 | know what ADDA can and cannot see, with evidence | [09-diagnostic-challenges.md](09-diagnostic-challenges.md) |

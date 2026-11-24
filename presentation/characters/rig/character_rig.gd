@@ -275,13 +275,21 @@ func _rifle_local_basis() -> Basis:
 
 ## Builds the character: the model, the weapon (if any), the arm IK and the animation controller. A host (the tactical adapter, the workbench, a tool) adds this node and drives it: the presenter's tick
 ## and `update_weapon_pose` once per frame. The rig has no frame callback of its own, so a character is advanced exactly once per frame by whoever hosts it.
-## Tuning saved from the Workbench's Tune tab: one `<property>.tres` per profile in a `tuning/` folder beside the character's rig profile (art/characters/<id>/tuning/). A file that exists replaces the
-## profile the scene gives, so the game and the Workbench pose the character with the same numbers. No folder, no change. Never read in the editor (the scene file is not rewritten).
+## Tuning for this character, in a `tuning/` folder beside its rig profile (art/characters/<id>/tuning/). A `<property>.tres` there replaces the profile the scene gives and `clips.tres` adds hand-edited
+## clips: that is what the GAME uses (written only by the Workbench's explicit "Apply to game"). `tuning/drafts/` holds the Workbench's experiments; only a host that sets `use_drafts` (the Workbench) reads
+## them, so an experiment never changes the game. No folder, no change. Never read in the editor (the scene file is not rewritten).
 const TUNED_PROFILES: Array[StringName] = [&"cover_profile", &"locomotion_profile", &"traversal_profile", &"stair_profile", &"handling"]
+const DRAFTS := "drafts"
 ## Tests point this at a scratch folder so they never read or write the character's real tuning.
 static var tuning_folder_override := ""
+## Set by the Workbench before it builds its rig: read the drafts over the game's tuning. The game never sets it.
+static var use_drafts := false
 ## The stair profile as authored or tuned, before `_measure_stair_anatomy` copies it and fills in this body's measurements (the Tune tab edits this one).
 var stair_profile_source: StairProfile
+## What the GAME would use, per tuned property: a copy taken before any draft was applied (the Tune tab compares against it and "Apply to game" writes over it).
+var tuning_game := {}
+## Where "Apply to game" writes each property: the tuning file, or the profile's own .tres when the scene already gives one and there is no tuning file.
+var tuning_game_file := {}
 
 ## The folder this rig's tuning lives in ("" when the rig has no rig profile file to place it beside).
 func tuning_folder() -> String:
@@ -296,18 +304,35 @@ func _load_tuning() -> void:
 	if folder == "":
 		return
 	for property in TUNED_PROFILES:
-		var path := folder.path_join("%s.tres" % property)
-		if ResourceLoader.exists(path):
-			var tuned := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)   # each rig its own copy: a Workbench edit never reaches another rig until it is saved
-			var current: Resource = get(property)
-			if tuned is Resource and (current == null or tuned.get_script() == current.get_script()):   # a file of the wrong kind is ignored, never half-applied
-				set(property, tuned)
+		var current: Resource = get(property)
+		var own := current.resource_path if current != null and current.resource_path.ends_with(".tres") and not current.resource_path.contains("::") else ""
+		var game_file := folder.path_join("%s.tres" % property)
+		if _take(property, game_file):
+			tuning_game_file[property] = game_file
+		else:
+			tuning_game_file[property] = own if own != "" else game_file
+		if get(property) != null:
+			tuning_game[property] = (get(property) as Resource).duplicate(true)
+		if use_drafts:
+			_take(property, folder.path_join(DRAFTS).path_join("%s.tres" % property))
 	# Hand-edited clips (the Workbench's "Edit this clip in Godot"): a saved clip replaces the generated one of the same name (CharacterAnimationController checks each one).
-	var clips := folder.path_join("clips.tres")
-	if ResourceLoader.exists(clips):
-		var library := ResourceLoader.load(clips, "", ResourceLoader.CACHE_MODE_IGNORE)
-		if library is AnimationLibrary:
-			clip_library = library
+	for clips in ([folder.path_join(DRAFTS).path_join("clips.tres")] if use_drafts else []) + [folder.path_join("clips.tres")]:
+		if ResourceLoader.exists(clips):
+			var library := ResourceLoader.load(clips, "", ResourceLoader.CACHE_MODE_IGNORE)
+			if library is AnimationLibrary:
+				clip_library = library
+				break
+
+## Replaces `property` with the profile in `path` when it exists and is of the same kind (a file of the wrong kind is ignored, never half-applied). Each rig gets its own copy.
+func _take(property: StringName, path: String) -> bool:
+	if not ResourceLoader.exists(path):
+		return false
+	var tuned := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
+	var current: Resource = get(property)
+	if tuned is Resource and (current == null or tuned.get_script() == current.get_script()):
+		set(property, tuned)
+		return true
+	return false
 
 ## Puts the authored stair numbers back and measures this body again (after the Tune tab changed `stair_profile_source`).
 func reapply_stair_profile() -> void:
