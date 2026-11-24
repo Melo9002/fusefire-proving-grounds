@@ -15,12 +15,15 @@ extends SkeletonModifier3D
 
 var spec := {}
 var elapsed := 0.0
+## Optional: a Callable returning the seconds since the scenario started.
+var clock := Callable()
 var updates := 0
 var _bone := -1
 
 
-static func install(rig: CharacterRig, p_spec: Dictionary) -> ChallengeFault:
+static func install(rig: CharacterRig, p_spec: Dictionary, p_clock := Callable()) -> ChallengeFault:
 	var fault := ChallengeFault.new()
+	fault.clock = p_clock
 	fault.spec = p_spec
 	fault.name = String(p_spec.get("name", "ChallengeFault"))
 	var skeleton := rig.skeleton
@@ -53,7 +56,8 @@ static func resolve(rig: CharacterRig, text: String) -> String:
 
 
 func _process_modification_with_delta(delta: float) -> void:
-	elapsed += delta
+	# With a clock (the command line gives the scenario's time) the fault starts at the same scenario moment in a run and in an isolation; without one it counts skeleton updates since it was installed.
+	elapsed = float(clock.call()) if clock.is_valid() else elapsed + delta
 	updates += 1
 	if float(spec.get("start", 0.0)) > elapsed:
 		return

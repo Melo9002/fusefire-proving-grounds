@@ -89,7 +89,7 @@ Normal FuseFire gameplay pays nothing: nothing in the game creates any of this, 
 
 ## 8. Weaknesses and limits (remaining)
 
-1. **Independence.** The challenges, the faults and ADDA were written by one agent. No other agent or person has attempted a challenge; the "scripted solver" proves the evidence exists, not that it is findable.
+1. **Independence.** The challenges, the faults and ADDA were written by one agent. Since the first draft, one other agent has attempted one hold-out blind (CH07, solved: correct on all three fields) and made two GUI passes; CH08 and any human session remain open, and one agent on one challenge says nothing about how often another would succeed. See [13-independent-evaluation.md](13-independent-evaluation.md). The "scripted solver" in the tests proves the evidence exists, not that it is findable.
 2. **No human usability result.** Automated UI tests press the buttons; nobody else has used the Workbench.
 3. **Blind spots, labelled:** a persistent offset of a bone with no target and no snap (CH05); a persistent facing error (CH02) shows only as a larger existing snap; a hypothesis can name a real but coincident event (CH02); ADDA cannot say a target is wrong.
 4. **Isolation** needs a held pose and a suspect bone; an intermittent fault needs `--window`; a modifier its owner switches cannot be tested this way; effects below the experiment's own residual are not attributed.
@@ -99,6 +99,7 @@ Normal FuseFire gameplay pays nothing: nothing in the game creates any of this, 
 8. **Tactical against exploration hosting is not compared**; the Workbench is one host.
 9. **A committed ladder close-up still does not reproduce from its own commit** and is left as history; do not read it as a measurement.
 10. **Real defects found and not fixed** (observed, cause unknown): ladder knee-pole jump per foot swing (R1), rescue contact claims out of reach (R2), cover-entry foot snap (R3). See [09-diagnostic-challenges.md](09-diagnostic-challenges.md) section 3.
+11. **ADDA finds numerical anomalies; it does not recognise incorrect behaviour** (a reviewer's criticism, accepted). A smooth climbing cycle carried onto a platform has no snap, no target error and no slide, yet is visibly wrong; an Idle preset that kept a walk cycle playing at speed 0 was equally invisible to every measurement and was found by looking. This is a gap between detecting pose discontinuities and knowing whether the character performed the right action. A clean ADDA report is therefore never a statement that the animation is correct. Such defects are recorded as visual defects, independent of ADDA evidence, in [../animation-backlog.md](../animation-backlog.md) section 4, with ideas for narrowing the gap in section 5 (state-against-situation consistency findings, kept clips or frame strips, a per-scenario reviewer checklist); none is built.
 
 ## 9. Prioritised follow-ups
 

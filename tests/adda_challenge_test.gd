@@ -129,7 +129,9 @@ func _run() -> void:
 	check(compared4.run_code == 0 and String(compared4.text).contains("NEW FINDING") and String(compared4.text).contains("off its foothold"), "CH04: the slow drift shows up as a new 'off its foothold' finding (it showed only as a metric before this challenge)")
 	var iso4 := _isolate(c4, "CH04", "4.0", "@left_foot")
 	check(String(iso4.text).contains("AuxPass4") and String(iso4.text).contains("NOT declared"), "CH04: isolation names the undeclared modifier")
-	check(String(iso4.text).contains("INCONCLUSIVE"), "CH04: and says the pose is still changing while it measured (the creep is real motion, so the sizes are approximate)")
+	# The fault is a function of scenario time, and the isolation holds the scenario: at 4.0 s the 10 mm/s creep that began at 1.0 s is a steady 30 mm, so the isolation is conclusive and exact. (It used to report
+	# INCONCLUSIVE because the fault's own clock kept advancing during the "held" pose; that detection is now tested with a genuinely moving pose in adda_validation_test.)
+	check(String(iso4.text).contains("moves 30.0 mm") and not String(iso4.text).contains("INCONCLUSIVE"), "CH04: the held-pose creep is a steady, exact 30 mm (10 mm/s over 3 s), not an approximate size")
 
 	# CH05 -------------------------------------------------------------------------------------------------
 	var c5: Dictionary = entries.CH05
@@ -158,5 +160,17 @@ func _run() -> void:
 		var control := _isolate(entries[id], "", String(solve.at), String(solve.bones), extra)
 		check(control.code == 0 and not String(control.text).contains("NOT declared"), "%s (hold-out) control: the fault-free run names no undeclared modifier" % id)
 		check(_adda(["score", "--challenge=%s" % id, "--stage=%s" % sealed.answer.stage, "--bone=%s" % sealed.answer.bone, "--kind=%s" % sealed.answer.kind]).code == 0, "%s (hold-out): its sealed answer scores correct" % id)
+	# A timed fault starts at the same SCENARIO moment in an isolation as in a run (it used to count every skeleton update since install, warm-up and settle frames included, so an isolation asked for
+	# just before the start already saw the fault: found by an independent attempt on CH07).
+	var timed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tools/adda/challenges/sealed/CH07.json"))
+	var start := float(timed.fault.start)
+	var before := _isolate(entries["CH07"], "CH07", "%.2f" % (start - 0.3), String(timed.solve.bones))
+	var after := _isolate(entries["CH07"], "CH07", "%.2f" % (start + 0.2), String(timed.solve.bones))
+	check(before.code == 0 and not String(before.text).contains("NOT declared"), "CH07: an isolation requested 0.3 s before the fault starts does not see it")
+	check(after.code == 0 and String(after.text).contains(String(timed.answer.stage)), "CH07: 0.2 s after it starts, the same isolation names it")
+	check(String(after.text).contains("Pose held at scenario time %.2f s" % (start + 0.2)), "the isolation says which scenario time it held")
+	var fault_run := _adda(["run"] + _config(entries["CH07"].scenario, entries["CH07"].character, entries["CH07"].armed) + ["--challenge=CH07", "--detail=full", "--out=%s" % _path("ch07_reproduce")])
+	var inspected := _adda(["inspect", "--report=%s" % _path("ch07_reproduce"), "--finding=F2"])
+	check(fault_run.code == 0 and inspected.code == 0 and String(inspected.text).contains("--challenge=CH07"), "a finding's reproduction names the --challenge lever when the run used it")
 	print("adda_challenge_test: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

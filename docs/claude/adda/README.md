@@ -11,12 +11,12 @@ This repository is the source of truth. The project knowledge base on Drive (<ht
 | investigate a problem right now (person, in the Workbench) | [11-human-workflows.md](11-human-workflows.md), then [07-usage.md](07-usage.md) |
 | investigate it as a coding agent (Claude Code, Codex) | [10-agent-workflow.md](10-agent-workflow.md) |
 | know what ADDA can and cannot see, with evidence | [09-diagnostic-challenges.md](09-diagnostic-challenges.md) |
-| know what it costs, what was verified, what is weak | [12-final-report.md](12-final-report.md) |
+| know what it costs, what was verified, what is weak | [12-final-report.md](12-final-report.md), and what an outside user found: [13-independent-evaluation.md](13-independent-evaluation.md) |
 | understand what a measurement means and when it is valid | [03-measurement-contract.md](03-measurement-contract.md) and the section below |
 | know what existed before ADDA, and why it is built this way | [01](01-baseline-and-architecture.md), [02](02-capability-inventory.md), [04](04-requirements-and-research.md), [05 ADR-0001](05-adr-0001-measurement-architecture.md) |
 | attempt a blind challenge | `.\tools\adda.ps1 challenges`, then [10-agent-workflow.md](10-agent-workflow.md) section 6 |
 
-Document list: 01 baseline and architecture, 02 capability inventory, 03 measurement contract, 04 requirements and research, 05 ADR-0001, 06 handoff after Assignment 1, 07 usage guide, 08 Assignment 2 report, 09 diagnostic challenges, 10 agent workflow, 11 human workflows, 12 final report. Worked example evidence is in `examples/`; images in `../images/adda/`.
+Document list: 01 baseline and architecture, 02 capability inventory, 03 measurement contract, 04 requirements and research, 05 ADR-0001, 06 handoff after Assignment 1, 07 usage guide, 08 Assignment 2 report, 09 diagnostic challenges, 10 agent workflow, 11 human workflows, 12 final report, 13 independent evaluation (the first outside use). Worked example evidence is in `examples/`; images in `../images/adda/`.
 
 ## What it can do
 
@@ -53,7 +53,7 @@ Document list: 01 baseline and architecture, 02 capability inventory, 03 measure
 
 ## Limits worth knowing before you trust it
 
-See [12-final-report.md](12-final-report.md) section 7 for the full list. In short: mesh sampling is ladder-only; a held pose is needed for isolation; a persistent offset of an untracked bone is not noticed unprompted; thresholds were set on two bodies; replay is exact only for fixed-step runs; and **no person other than the author has used it, and no agent other than Claude has run its challenges.**
+See [12-final-report.md](12-final-report.md) section 7 for the full list. In short: mesh sampling is ladder-only; a held pose is needed for isolation; a persistent offset of an untracked bone is not noticed unprompted; thresholds were set on two bodies; replay is exact only for fixed-step runs; **ADDA finds numerical anomalies, not wrong behaviour** (a character can smoothly carry a climb cycle onto a platform and pass every check; a clean report never means the animation is right, see [12-final-report.md](12-final-report.md) item 11 and the visual defects in [../animation-backlog.md](../animation-backlog.md)); and **so far one other agent has used it (CH07 solved blind, two GUI passes; see [13-independent-evaluation.md](13-independent-evaluation.md)), no person other than the author has, and CH08 is untried.**
 
 ## Where things are
 

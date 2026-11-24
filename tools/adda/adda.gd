@@ -111,7 +111,7 @@ func _run(flags: Dictionary) -> void:
 	if not bool(support.ok):
 		_fail("scenario '%s' cannot run in this configuration: %s" % [id, support.reason])
 		return
-	var fault_note := _install_fault(bench.rig, flags)
+	var fault_note := _install_fault(bench, flags)
 	var experiment := _apply_experiment(bench.rig, flags)
 	if experiment.has("error"):
 		_fail(String(experiment.error))
@@ -160,7 +160,7 @@ func _run(flags: Dictionary) -> void:
 		quit(0)
 
 ## Faults for diagnostic challenges. `--fault={json}` injects one directly; `--challenge=<id>` takes it from tools/adda/challenges (the answer is not printed: the point of a blind challenge).
-func _install_fault(rig: CharacterRig, flags: Dictionary) -> String:
+func _install_fault(bench: Node, flags: Dictionary) -> String:
 	var spec := {}
 	if flags.has("fault"):
 		var parsed = JSON.parse_string(String(flags.fault))
@@ -170,7 +170,7 @@ func _install_fault(rig: CharacterRig, flags: Dictionary) -> String:
 		spec = ChallengeSet.fault_of(String(flags.challenge))
 	if spec.is_empty():
 		return ""
-	ChallengeFault.install(rig, spec)
+	ChallengeFault.install(bench.rig, spec, func() -> float: return bench.scenario_runner.time)
 	return "fault installed"
 
 ## The experiment: stage the scenario to a moment, hold it, and ask StageIsolation which modifiers move the named bones.
@@ -189,7 +189,7 @@ func _isolate(flags: Dictionary) -> void:
 	if not bool(support.ok):
 		_fail("scenario '%s' cannot run in this configuration: %s" % [id, support.reason])
 		return
-	_install_fault(bench.rig, flags)
+	_install_fault(bench, flags)
 	bench.step_seconds = 1.0 / 60.0
 	if not bench.start_scenario(id, false):
 		_fail("scenario '%s' did not start" % id)
@@ -211,6 +211,8 @@ func _isolate(flags: Dictionary) -> void:
 	var result := await StageIsolation.new().measure(bench.rig, bones, self, maxi(int(flags.get("window", "1")), 1))
 	result["config"] = {"scenario": String(id), "character": String(WorkbenchSession.character), "armed": WorkbenchSession.armed, "at_s": float(flags.get("at", "0")), "frame_step_s": 1.0 / 60.0,
 		"revision": AddaReport.revision(), "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=%s --at=%s --bones=%s --character=%s%s%s%s" % [id, flags.get("at", "0"), flags.get("bones", ""), String(WorkbenchSession.character), "" if WorkbenchSession.armed else " --unarmed", _lever_text(flags), (" --window=%s" % flags.window) if flags.has("window") else ""]}
+	result["config"]["held_at_s"] = snappedf(bench.scenario_runner.time, 0.001)
+	print("Pose held at scenario time %.2f s (requested %s s; the scenario does not advance during the experiment)" % [bench.scenario_runner.time, flags.get("at", "0")])
 	print(StageIsolation.text(result))
 	if flags.has("out"):
 		var file := FileAccess.open(String(flags.out), FileAccess.WRITE)

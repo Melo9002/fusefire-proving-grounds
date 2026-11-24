@@ -162,7 +162,7 @@ static func _make(event: Dictionary, severity: String, title: String, text: Stri
 		"hypotheses": hypotheses, "cause": "unknown", "subject": subject,
 		"evidence": {"kinds": kinds.map(func(k: Measurement.Kind) -> String: return Measurement.Kind.keys()[k]), "method": method, "does_not_establish": limits},
 		"reproduce": {"scenario": String(config.get("scenario", "")), "character": String(config.get("character", "")), "n": event.worst_n, "st": snappedf(float(event.st0), 0.0001),
-			"replay": "Replay the scenario paused at scenario time %.2f s (Why? tab: Replay to this moment), or run: %s" % [float(event.st0), String(config.get("command", ""))]}}
+			"replay": "Replay the scenario paused at scenario time %.2f s (Why? tab: Replay to this moment), or run: %s" % [float(event.st0), _command(config)]}}
 
 static func _hypothesis(text: String, basis: String, experiment: String) -> Dictionary:
 	return {"text": text, "status": "unconfirmed", "basis": basis, "experiment": experiment}
@@ -389,7 +389,7 @@ static func _not_measured(out: Array[Dictionary], rows: Array, config: Dictionar
 			"observation": {"text": "The character climbed a ladder, but the skinned leg mesh was not sampled against the bars (mesh sampling is off: it costs about 3 ms a sample). No overlap was looked for, so none was found; that is not evidence of a clean climb.", "facts": {}, "frames": {"n0": 0, "n1": 0, "worst_n": 0, "t0": 0.0, "t1": 0.0, "st0": 0.0}},
 			"hypotheses": [], "cause": "unknown", "subject": {"kind": "none", "text": "ladder", "side": "", "part": "", "bones": []},
 			"evidence": {"kinds": ["VERTEX_OVERLAP"], "method": "not taken", "does_not_establish": [String(Measurement.MEANING[Measurement.Kind.VERTEX_OVERLAP][1])]},
-			"reproduce": {"scenario": String(config.get("scenario", "")), "character": String(config.get("character", "")), "n": 0, "st": 0.0, "replay": "Run again with --mesh: %s" % String(config.get("command", ""))}})
+			"reproduce": {"scenario": String(config.get("scenario", "")), "character": String(config.get("character", "")), "n": 0, "st": 0.0, "replay": "Run again with --mesh: %s" % _command(config)}})
 
 ## A sentence a person can read first: how many findings of what weight, or that nothing was found and what that does not mean.
 static func headline(findings: Array) -> String:
@@ -427,3 +427,13 @@ static func explain(finding: Dictionary, detailed := false) -> String:
 		lines.append("  Subject: %s" % JSON.stringify(finding.subject))
 		lines.append("  Reproduce: %s" % finding.reproduce.replay)
 	return "\n".join(lines)
+
+
+## The command that reproduces a finding. The Workbench command cannot carry a run's experiment levers (--challenge, --fault, --disable, --set), so when the run used one the exact headless command is named too: without it a copied command reproduces the unlevered scenario.
+static func _command(config: Dictionary) -> String:
+	var command := String(config.get("command", ""))
+	var cli := String(config.get("cli", ""))
+	for lever in [" --challenge=", " --fault=", " --disable=", " --set="]:
+		if cli.contains(lever):
+			return "%s  (this run used an experiment lever the Workbench command does not carry; the exact headless run is: %s)" % [command, cli]
+	return command

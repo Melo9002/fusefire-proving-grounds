@@ -146,6 +146,12 @@ func _isolation() -> void:
 	check(_mover(narrow, "Aux").is_empty() or not bool(_mover(narrow, "Aux").moves_bones) or float(narrow.drift_mm) > 0.0, "and the same experiment with one update per condition does not claim to have seen it (the limit is documented, not hidden)")
 	pop.queue_free()
 	await _frames(3)
+	# Negative control: a pose that is genuinely still moving (a fault with no scenario clock counts the updates themselves, so it creeps during the experiment) is refused as inconclusive, not measured.
+	var creep := ChallengeFault.install(rig, {"name": "Aux", "kind": "drift", "bone": "@right_hand", "vector": [0.3, 0.0, 0.0]})
+	var moving := await StageIsolation.new().measure(rig, [hand], self)
+	check(String(moving.status) == "inconclusive" and String(moving.reason) != "", "a pose that keeps moving while it is measured is reported inconclusive, with its reason (status %s)" % moving.status)
+	creep.queue_free()
+	await _frames(3)
 	# Refusals.
 	var none := await StageIsolation.new().measure(rig, ["NoSuchBone"], self)
 	check(String(none.status) == "unavailable" and String(none.reason).contains("none of the requested bones"), "a bone that does not exist is refused with a reason (%s)" % none.reason)
