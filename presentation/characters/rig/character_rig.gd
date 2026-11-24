@@ -1115,6 +1115,7 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 	var poles: Array[Node3D] = [right_elbow_pole, left_elbow_pole]
 	for side in 2:
 		var hang: Vector3 = shoulders[side] + frame * Vector3(0.0, -_arm_length(side) * RELAXED_ARM_BEND, 0.03)
+		hang += _arm_swing(side, frame, _arm_length(side))
 		hang = _clear_of_thigh(hang, side, frame, _arm_length(side))
 		if side == 0 and presenter != null:
 			hang = _raised_by_gesture(hang, shoulders[side], frame)
@@ -1123,6 +1124,26 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 		var outward := -1.0 if side == 0 else 1.0   # the character's right hand is on -X
 		poles[side].global_position = (shoulders[side] + hang) * 0.5 + frame * Vector3(outward * 0.30, 0.0, -0.30)
 
+
+## The walking arm swing of a hanging (unarmed) arm: the hand goes forward while the foot on the SAME side goes back, as a walker's arms counter the legs, by a share of how far that ankle is
+## ahead of or behind its hip, faded in with the walking speed (none when standing). It follows the legs' own phase, whatever gait or body: the hang point used to stay fixed under the shoulder, so the
+## IK held the arms rigid while the legs walked.
+const ARM_SWING_PER_STRIDE := 0.55
+## The most a hand swings fore or aft, as a share of the arm's length.
+const ARM_SWING_MAX := 0.22
+## The walking speed (m/s) at which the swing is full.
+const ARM_SWING_FULL_SPEED := 0.9
+
+func _arm_swing(side: int, frame: Basis, arm_length: float) -> Vector3:
+	var speed_share := clampf(float(locomotion_report.get("speed", 0.0)) / ARM_SWING_FULL_SPEED, 0.0, 1.0)
+	if speed_share <= 0.001 or ladder != null or is_instance_valid(carry_passenger):
+		return Vector3.ZERO
+	var leg: Array[StringName] = bones.right_leg if side == 0 else bones.left_leg
+	var hip := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[0])).origin
+	var ankle := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[2])).origin
+	var ahead := (ankle - hip).dot(frame.z)
+	var swing := clampf(-ahead * ARM_SWING_PER_STRIDE, -arm_length * ARM_SWING_MAX, arm_length * ARM_SWING_MAX) * speed_share
+	return frame.z * swing + frame.y * (absf(swing) * 0.3)   # the hand rises a little at either end of its arc
 
 ## The right hand while a gesture asks for it (CharacterPresenter.gesture_hand): raised out beside the head at the arm's own length, with a small wave, blended from where it hangs. The point is in the body's own
 ## frame and scales with the arm, so it fits any humanoid.
