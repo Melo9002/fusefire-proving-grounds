@@ -241,6 +241,8 @@
   "semantic_machine_connection_capture": {"sub": ["tooling"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "shield_stance_test": {"sub": ["actions", "combat", "equipment"], "scope": "battle", "crit": "critical", "contracts": ["authority", "legality"], "fast": true},
   "shot_result_feedback_test": {"sub": ["actions", "combat", "ui"], "scope": "battle", "crit": "critical", "contracts": ["presentation-sync"]},
+  "squad_commitment_scenarios_test": {"sub": ["ai", "movement"], "scope": "battle"},
+  "squad_commitment_expiry_test": {"sub": ["ai", "core"], "scope": "integration", "fast": true},
   "squad_context_smoke": {"sub": ["ai", "core"], "scope": "integration", "fast": true},
   "squad_loss_outcome_test": {"sub": ["core"], "scope": "battle", "crit": "critical", "contracts": ["mission"]},
   "supply_reload_test": {"sub": ["actions", "combat", "equipment"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},

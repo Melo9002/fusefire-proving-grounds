@@ -259,6 +259,9 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
+	if not manager.objective_completed.is_connected(_release_squad_objective):
+		manager.objective_completed.connect(_release_squad_objective)
+		manager.objective_failed.connect(_release_squad_objective)
 	turn_manager.free_objective_action_available = _has_free_objective_action
 	if not is_instance_valid(action_service):
 		_initialize_action_service()
@@ -744,8 +747,26 @@ func get_squad_context(unit: TacticalUnit) -> SquadContext:
 	context.begin_round(turn_manager.current_round)
 	var actors: Array[TacticalUnit] = []
 	actors.append_array(turn_manager.player_units + turn_manager.allied_units + turn_manager.enemy_units)
-	context.prune(actors)
+	# A carrier's lane is only a commitment while it still leads to the current extraction zone.
+	var extraction := {}
+	if grid_manager and grid_manager.map_data:
+		for cell: Vector3i in grid_manager.map_data.get_objective_zone(&"extract"):
+			extraction[cell] = true
+	context.revalidate(actors, extraction)
 	return context
+
+## Every side's squad commitments end with the actor that made them or the target they were aimed at, the moment it is defeated.
+func _release_squad_claims(unit: TacticalUnit) -> void:
+	if not is_instance_valid(unit):
+		return
+	var unit_id := SquadContext._actor_id(unit)
+	for context: SquadContext in _squad_contexts.values():
+		context.release_unit(unit_id, "defeated")
+
+## An ended objective has no handlers left on either side.
+func _release_squad_objective(state: MissionObjectiveState) -> void:
+	for context: SquadContext in _squad_contexts.values():
+		context.release_objective(state.definition.objective_id)
 
 func get_commander_policy(unit: TacticalUnit) -> AICommanderPolicy:
 	var team_id := _ai_team_id(unit)
@@ -990,6 +1011,7 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 	if not is_instance_valid(unit):
 		return
 
+	_release_squad_claims(unit)
 	unit_defeated_in_battle.emit(unit)
 	var fall_cell := grid_manager.get_unit_grid(unit)
 	grid_manager.unregister_unit_at(fall_cell)

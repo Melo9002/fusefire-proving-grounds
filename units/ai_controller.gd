@@ -61,6 +61,8 @@ var _last_target_candidates: Array[AITargetCandidate] = []
 ## Empty when an approach ran and was merely not worth taking. Read by _movement_wait_reason.
 var _route_block_note := ""
 var _committed_carrier_route: Array[Vector3i] = []
+## The walkable graph the committed route was planned on (Pathfinder.graph_revision): a route over a graph that has since changed is planned again.
+var _committed_route_graph := -1
 var _last_attack_plan: Dictionary = {}
 var _last_hold_score := NAN
 var _last_move_threshold := NAN
@@ -641,6 +643,8 @@ func _carrier_route(carrier: TacticalUnit) -> Dictionary:
 	var carrier_cell := battle_controller.grid_manager.get_unit_grid(carrier)
 	if carrier == unit and not _committed_carrier_route.is_empty() and not battle_controller.grid_manager.map_data.get_objective_zone(&"extract").has(_committed_carrier_route[-1]):
 		_committed_carrier_route.clear()
+	if carrier == unit and not _committed_carrier_route.is_empty() and _committed_route_graph != battle_controller.pathfinder.graph_revision():
+		_committed_carrier_route.clear()   # a cell on it may have closed (a wall, a collapse) since it was planned
 	if carrier == unit and _committed_carrier_route.has(carrier_cell):
 		var reached_index := _committed_carrier_route.find(carrier_cell)
 		if reached_index > 0:
@@ -656,6 +660,7 @@ func _carrier_route(carrier: TacticalUnit) -> Dictionary:
 		reserved[route_cell] = true
 	if carrier == unit:
 		_committed_carrier_route.clear()
+		_committed_route_graph = battle_controller.pathfinder.graph_revision()
 		for point in best:
 			_committed_carrier_route.append(battle_controller.world_to_grid(point))
 	return reserved
