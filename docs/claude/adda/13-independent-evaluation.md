@@ -63,3 +63,21 @@ A usability check the evaluator proposed, worth keeping: give someone one instru
 * The independence limit in `12-final-report.md` is updated: one hold-out has now been attempted blind by one other agent.
 * `animation-backlog.md` carries G1 to G12 as ADDA/Workbench items.
 * G2 to G5 should be reproduced before any fix: they are the ones that could mean the tool shows something untrue (stale findings, a wrong HUD state), which matters more than missing convenience.
+
+## 4. A third report: what a newcomer finds confusing (2026-11-24)
+
+An outside reviewer's list of ten confusions, brought by Pedro. Treated as reports, checked where cheap.
+
+| # | Claim | Status |
+|---|---|---|
+| 1 | The Workbench only looks; 149 animation settings can be changed only in code | partly wrong: it has sliders for walk speed, ladder and stair geometry (`locomotion_test_panel.gd`). True that the tuning exports cannot be edited in it. "149" not verified (a rough count of `@export` in `presentation/characters` gives 254, a different scope) |
+| 2, 3, 10 | Walls of bone names and numbers, no first action, unexplained jargon and 12 overlay checkboxes | reported; same as G11 |
+| 4, 5 | Top-left text disagrees with the picture (pace shown while still, "pose standing" while climbing) and covers the head | reported; the pace line is printed from preview speed (`pose_workbench.gd:301`), so a mismatch is plausible; not reproduced |
+| 6 | Findings read "Pose snap: 2 bones at once" without body part or time | verified in the title code (`findings.gd`); same as report item 4 in the ranked list |
+| 7 | "12 findings" next to "Show all 13" | verified in code: headline leaves out info items, the button counts all |
+| 8 | PAUSED while a replay is still advancing | verified in code (`replay_to` pauses, then steps one per frame) |
+| 9 | Old findings stay after a scenario change or "no recording" | verified in code (`why_tab.gd` returns early without clearing) |
+
+The reviewer could not see what broke when Pedro tried it. Nothing here is human usability testing: the ten points are one outside agent's reading, plus Pedro's own statement that the tool was hard to use. Items 7 to 9 are real defects (the tool shows something untrue) and come first in any fix.
+
+**Fixed in `28c6cf5`:** items 4 to 9 (plain status that follows what is true now, finding lines that start with time and body part, matching counts, "Going to" instead of PAUSED during a replay, stale findings cleared), and item 1: a Tune tab now edits the tuning exports live and saves them per character (the game loads them). Items 2, 3 and 10 are addressed by the Start tab and its short glossary; none of this has been tried by a person yet.

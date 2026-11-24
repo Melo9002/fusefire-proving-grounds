@@ -14,9 +14,11 @@ This repository is the source of truth. The project knowledge base on Drive (<ht
 | know what it costs, what was verified, what is weak | [12-final-report.md](12-final-report.md), and what an outside user found: [13-independent-evaluation.md](13-independent-evaluation.md) |
 | understand what a measurement means and when it is valid | [03-measurement-contract.md](03-measurement-contract.md) and the section below |
 | know what existed before ADDA, and why it is built this way | [01](01-baseline-and-architecture.md), [02](02-capability-inventory.md), [04](04-requirements-and-research.md), [05 ADR-0001](05-adr-0001-measurement-architecture.md) |
-| attempt a blind challenge | `.\tools\adda.ps1 challenges`, then [10-agent-workflow.md](10-agent-workflow.md) section 6 |
+| attempt a blind challenge | **Parked**, see the note under the table. Not needed to use the Workbench. |
 
 Document list: 01 baseline and architecture, 02 capability inventory, 03 measurement contract, 04 requirements and research, 05 ADR-0001, 06 handoff after Assignment 1, 07 usage guide, 08 Assignment 2 report, 09 diagnostic challenges, 10 agent workflow, 11 human workflows, 12 final report, 13 independent evaluation (the first outside use). Worked example evidence is in `examples/`; images in `../images/adda/`.
+
+> **Challenges are parked (2026-11-24, Pedro's call).** The eight sealed challenges (CH01 to CH08) are command-line only; the Workbench never shows them and you do not need them to use ADDA. They stay in `tools/adda/challenges/` because the tests and the CLI read them there; nothing was moved or deleted. Do not open `tools/adda/challenges/sealed/` (it holds the answers). Revisit them after the Workbench is easier to use. Anything said in older docs about "try a challenge first" is on hold.
 
 ## What it can do
 
