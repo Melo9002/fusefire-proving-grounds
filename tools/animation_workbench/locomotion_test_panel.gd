@@ -170,6 +170,16 @@ func _set_speed(value: float, start_moving := true) -> void:
 	_speed_label.text = "Speed %.1f m/s  ->  %s%s" % [value, gait, " (loaded)" if _loaded != null and _loaded.button_pressed else ""]
 	if start_moving and value >= bench.rig.locomotion_profile.idle_below:
 		_ensure_moving()
+	elif start_moving:
+		_ensure_idle()
+
+
+## Speed 0 means standing, not a walk cycle in place: leave the movement state (the Idle preset used to leave `move` playing at the minimum cadence).
+func _ensure_idle() -> void:
+	var controller: Node = bench.rig.animation_controller
+	if controller.current_state in [&"move", &"carry_move"]:
+		controller.play(&"carry_idle" if controller.current_state == &"carry_move" else &"rifle_idle")
+		bench._update_status()
 
 
 func _ensure_moving() -> void:

@@ -243,6 +243,43 @@ func _run() -> void:
 	_is_neutral(bench, "small unarmed C")
 	bench.queue_free()
 	await _frames(3)
+	# --- 6. The Scenario tab's Idle preset stands the character still: a walk, then Idle, leaves the movement state (it used to keep the walk cycle playing in place at the minimum cadence).
+	bench = await _bench(&"mira_0", true)
+	var locomotion: LocomotionTestPanel = _find_locomotion_panel(bench.panel)
+	check(locomotion != null, "the Scenario tab carries the locomotion panel")
+	if locomotion != null:
+		locomotion._preset(1.2)
+		await _frames(30)
+		check(bench.rig.animation_controller.current_state == &"move", "Walk puts the character in the move state")
+		locomotion._preset(0.0)
+		await _frames(30)
+		check(bench.rig.animation_controller.current_state == &"rifle_idle" and bench.preview_speed == 0.0, "Idle leaves the move state (now %s) and stops the preview speed" % bench.rig.animation_controller.current_state)
+		locomotion._preset(1.2)
+		await _frames(10)
+		check(bench.rig.animation_controller.current_state == &"move", "Walk after Idle starts walking again (the negative control: the fix does not strand the character in idle)")
+	# --- 7. One bench at a time: the cover wall, the ladder and the stairs never stand together (starting one ends the others), and a bench started alone is untouched.
+	var cover_spec := {"full": true, "height": 1.4, "left": 3.0, "right": 3.0, "left_ok": true, "right_ok": true, "aim": false}
+	bench.set_cover_demo(cover_spec)
+	await _frames(2)
+	check(is_instance_valid(bench._cover_group) and not bench.cover_demo.is_empty(), "the cover bench builds its wall")
+	bench.start_ladder_demo(3.0, 1, 0.0)
+	await _frames(2)
+	check(bench.cover_demo.is_empty() and (bench._cover_group == null or bench._cover_group.is_queued_for_deletion()), "starting the ladder removes the cover wall")
+	await _frames(30)   # the facing settles through the presenter, not in one frame
+	check(bench.rig.crouch_modifier.depth < 0.01 and absf(bench.rig.character_root.rotation.y) < 0.01, "and the body leaves cover: no crouch (%.2f) and square again (yaw %.1f deg)" % [bench.rig.crouch_modifier.depth, rad_to_deg(bench.rig.character_root.rotation.y)])
+	check(not bench.ladder_demo.is_empty() and is_instance_valid(bench._ladder_group), "and the ladder itself is built")
+	bench.set_cover_demo(cover_spec)
+	await _frames(2)
+	check(bench.ladder_demo.is_empty() and (bench._ladder_group == null or bench._ladder_group.is_queued_for_deletion()), "starting cover removes the ladder")
+	check(not bench.cover_demo.is_empty() and is_instance_valid(bench._cover_group) and not bench._cover_group.is_queued_for_deletion(), "and the wall stands")
+	bench.start_stair_demo(0.18, 0.28, 8, true, 0.0)
+	await _frames(2)
+	check(bench.cover_demo.is_empty() and not bench.stair_demo.is_empty(), "starting the stairs removes the cover wall")
+	bench.start_ladder_demo(3.0, 1, 0.0)
+	await _frames(2)
+	check(bench.stair_demo.is_empty() and not bench.ladder_demo.is_empty(), "starting the ladder removes the stairs")
+	bench.queue_free()
+	await _frames(3)
 	WorkbenchSession.character = &""
 	WorkbenchSession.armed = true
 	print("workbench_scenarios_test: %d checks, %d failures" % [checks, failures])
@@ -324,3 +361,13 @@ func _key(code: Key) -> InputEventKey:
 	event.keycode = code
 	event.pressed = true
 	return event
+
+
+func _find_locomotion_panel(node: Node) -> LocomotionTestPanel:
+	if node is LocomotionTestPanel:
+		return node
+	for child in node.get_children():
+		var found := _find_locomotion_panel(child)
+		if found != null:
+			return found
+	return null

@@ -613,6 +613,8 @@ func _follow_diagnostic_view() -> void:
 
 ## Starts (or, with an empty spec, ends) a cover scenario. spec: full (bool), height, left / right edge distance (m) and left_ok / right_ok (usable), aim (bool).
 func set_cover_demo(spec: Dictionary) -> void:
+	if not spec.is_empty():
+		_end_other_benches(&"cover")
 	cover_demo = spec
 	if is_instance_valid(_cover_group):
 		_cover_group.queue_free()
@@ -766,6 +768,7 @@ const CROSS_DISTANCE := 0.73
 
 
 func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0, landing_kind := "") -> void:
+	_end_other_benches(&"ladder")
 	end_ladder_demo()
 	var landing: LadderLanding = LandingFixtures.make(landing_kind, LadderGeometry.for_rise(length)) if landing_kind != "" else null
 	var start := (0.0 if direction > 0 else length) if climbed < 0.0 else climbed
@@ -775,6 +778,19 @@ func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1
 	_build_ladder_visuals(landing)
 	_apply_ladder_progress()
 	rig.animation_controller.play(&"rifle_idle")
+
+
+## One bench at a time: starting the cover, ladder or stair bench ends the other two, so a cover wall never stands in front of a ladder (or the reverse). The path corridor is a separate overlay and is left alone.
+func _end_other_benches(keep: StringName) -> void:
+	if keep != &"cover" and not cover_demo.is_empty():
+		set_cover_demo({})
+		rig.presenter.face_yaw(0.0, false, false)   # the cover bench turned the body toward its edge (-45 deg); the next bench starts square
+		rig.apply_root_yaw(0.0)   # ...and the turn it absorbed into the body root
+		_bench_heading = 0.0
+	if keep != &"ladder" and not ladder_demo.is_empty():
+		end_ladder_demo()
+	if keep != &"stairs" and not stair_demo.is_empty():
+		end_stair_demo()
 
 
 func end_ladder_demo() -> void:
@@ -911,6 +927,7 @@ var _stair_actual: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 
 ## `rise` and `depth` of one tread (m), `count` treads, `ascending`, `rate` m/s along the stair (0 = hold at `start`), `start` the starting distance (-1 = the walk's start).
 func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, rate: float, start := -1.0) -> void:
+	_end_other_benches(&"stairs")
 	end_stair_demo()
 	var model := StairModel.new()
 	model.direction = Vector3.BACK

@@ -68,7 +68,7 @@ func _challenges() -> void:
 	for entry: Dictionary in ChallengeSet.index():
 		print("  %s  %s
       %s | %s%s
-      %s" % [entry.id, entry.title, entry.scenario, entry.character, "" if bool(entry.armed) else " (unarmed)", entry.symptom])
+	  %s" % [entry.id, entry.title, entry.scenario, entry.character, "" if bool(entry.armed) else " (unarmed)", entry.symptom])
 	quit(0)
 
 func _score(flags: Dictionary) -> void:
