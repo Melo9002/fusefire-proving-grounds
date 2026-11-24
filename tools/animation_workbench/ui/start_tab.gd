@@ -30,7 +30,8 @@ func setup(workbench: Node3D) -> void:
 	add_child(WorkbenchUI.label("Pick a problem in the list, then press 'Go there' to see it paused.", 13, WorkbenchUI.DIM))
 
 	add_child(WorkbenchUI.label("3. Change how she moves", 15))
-	add_child(WorkbenchUI.button("Open the settings (crouch, walk, ladder, stairs, weapon)", func() -> void: _open(&"Tune"), "Sliders that change the animation live; Save keeps them"))
+	add_child(WorkbenchUI.button("Open the settings and clips (crouch, walk, ladder, stairs, weapon)", func() -> void: _open(&"Tune"), "Sliders that change the animation live; Save keeps them. A clip can be edited by hand in the Godot editor from there"))
+	add_child(WorkbenchUI.label("Each one has 'Edit in Godot': it opens the Godot editor on that setting or clip, and what you save there shows up here.", 13, WorkbenchUI.DIM))
 
 	var words := WorkbenchUI.section(self, "Words you will see", true)
 	words.add_child(WorkbenchUI.label(GLOSSARY, 13, WorkbenchUI.DIM))

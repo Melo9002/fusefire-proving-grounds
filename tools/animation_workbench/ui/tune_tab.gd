@@ -25,33 +25,52 @@ var _replay: Button
 var _saved := {}      # profile index -> {path: value} at load or the last save
 var _entries: Array[Dictionary] = []
 var _resets := {}     # path -> its "reset" button
+var _file_time := {}  # profile index -> modified time of its file when last read or written (an edit saved in Godot shows up as a newer time)
+var _clip_choice: OptionButton
+var _clip_status: Label
+var _clips_time := 0
 
 func setup(workbench: Node3D) -> void:
 	bench = workbench
 	add_theme_constant_override("separation", 6)
-	add_child(WorkbenchUI.label("Change how she moves. A change shows at once. Press Save to keep it: the game uses saved values too.", 14))
+	add_child(WorkbenchUI.label("Change how she moves. A change shows at once. Press Save to keep it: the game uses saved values too. 'Edit in Godot' opens the same thing in the Godot editor; what you save there shows up here by itself.", 14))
+	var clips := WorkbenchUI.section(self, "Animation clips (keyframes, edited in Godot)")
+	clips.add_child(WorkbenchUI.label("Her clips are made by code. 'Edit this clip in Godot' saves the clip she plays as a file and opens it on her body in Godot's Animation panel. Save there (Ctrl+S) and it plays here and in the game.", 13, WorkbenchUI.DIM))
+	_clip_choice = OptionButton.new()
+	clips.add_child(_clip_choice)
+	clips.add_child(WorkbenchUI.row([["Edit this clip in Godot", edit_clip, "Copies the clip into the character's clips.tres (if it is not there yet) and opens it in the Godot editor"], ["Use the generated clip", _forget_clip, "Removes your edited version of this clip; the code-made one plays again after the character reloads"]]))
+	_clip_status = WorkbenchUI.label("", 13, WorkbenchUI.ACCENT)
+	clips.add_child(_clip_status)
+	_fill_clips()
+	_clips_time = ClipFiles.modified_time(bench.rig)
+	var settings := WorkbenchUI.section(self, "Settings (numbers)")
 	_choice = OptionButton.new()
 	for profile in PROFILES:
 		_choice.add_item(profile.title)
 	_choice.item_selected.connect(func(index: int) -> void:
 		_picked = index
 		_build())
-	add_child(_choice)
+	settings.add_child(_choice)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Find a setting (for example: crouch)"
 	_search.text_changed.connect(func(_text: String) -> void: _filter())
-	add_child(_search)
+	settings.add_child(_search)
 	_replay = WorkbenchUI.button("Play the scenario again", _play_again, "Restarts the scenario that ran last, so you see the change from the start")
 	var buttons := HBoxContainer.new()
-	for node: Button in [WorkbenchUI.button("Save", save, "Keeps these values for this character (the game uses them too)"), WorkbenchUI.button("Undo my changes", undo, "Back to the last saved values"), _replay]:
+	for node: Button in [WorkbenchUI.button("Save", save, "Keeps these values for this character (the game uses them too)"), WorkbenchUI.button("Undo my changes", undo, "Back to the last saved values")]:
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		buttons.add_child(node)
-	add_child(buttons)
+	settings.add_child(buttons)
+	var more := HBoxContainer.new()
+	for node: Button in [WorkbenchUI.button("Edit in Godot", edit_in_godot, "Opens these settings in the Godot editor's Inspector (saves them first if they have no file yet)"), _replay]:
+		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		more.add_child(node)
+	settings.add_child(more)
 	_status = WorkbenchUI.label("", 13, WorkbenchUI.ACCENT)
-	add_child(_status)
+	settings.add_child(_status)
 	_rows = VBoxContainer.new()
 	_rows.add_theme_constant_override("separation", 2)
-	add_child(_rows)
+	settings.add_child(_rows)
 	_build()
 
 ## The profile being edited. For stairs it is the authored one (the rig copies it and adds this body's measurements; see CharacterRig.reapply_stair_profile).
@@ -344,6 +363,7 @@ func save() -> String:
 		_update_status("Could not save (%s) to %s." % [error_string(error), path])
 		return ""
 	_saved[_picked] = _snapshot(_picked)
+	_file_time[_picked] = FileAccess.get_modified_time(path)
 	for entry in _entries:
 		if _resets.has(entry.path) and is_instance_valid(_resets[entry.path]):
 			_resets[entry.path].visible = false
@@ -370,3 +390,104 @@ func _play_again() -> void:
 ## The Tune tab follows the character: a rebuilt workbench builds a new tab, so nothing to do per frame.
 func refresh() -> void:
 	_replay.disabled = String(bench.scenario_runner.scenario.get("id", "")) == ""
+	pick_up_outside_edits()
+
+## Edits saved in the Godot editor reach the live character: a settings file newer than the last read or save is read again (unless there are unsaved changes here, which would be lost), and a newer
+## clips file is put into the player.
+func pick_up_outside_edits() -> void:
+	var path := save_path()
+	if path != "" and FileAccess.file_exists(path):
+		var time := FileAccess.get_modified_time(path)
+		if not _file_time.has(_picked):
+			_file_time[_picked] = time
+		elif time != int(_file_time[_picked]):
+			_file_time[_picked] = time
+			if changed_count() > 0:
+				_update_status("The file changed in Godot, but you have unsaved changes here: Undo to take Godot's values, or Save to keep yours.")
+			else:
+				var count := reload_from_file(path)
+				_update_status("Picked up %d value%s saved in Godot." % [count, "" if count == 1 else "s"])
+	var clips_time := ClipFiles.modified_time(bench.rig)
+	if clips_time != _clips_time:
+		_clips_time = clips_time
+		var result := ClipFiles.apply_saved(bench.rig)
+		_fill_clips()
+		_clip_status.text = "Picked up the clips saved in Godot: %s%s." % [", ".join(result.applied) if not result.applied.is_empty() else "none", (" (skipped, not a bone clip of this body: %s)" % ", ".join(result.skipped)) if not result.skipped.is_empty() else ""]
+
+## Reads the profile's file and copies every value into the live profile (so everything holding it sees the change). Returns how many values changed.
+func reload_from_file(path: String) -> int:
+	var disk := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
+	if disk == null or profile() == null or disk.get_script() != profile().get_script():
+		return 0
+	var changed := 0
+	for entry in _entries:
+		var value: Variant = value_at(disk, String(entry.path))
+		if value != null and value != entry.owner.get(entry.name):
+			entry.owner.set(entry.name, value)
+			changed += 1
+	if PROFILES[_picked].property == &"stair_profile":
+		bench.rig.reapply_stair_profile()
+	_saved[_picked] = _snapshot(_picked)
+	_build()
+	return changed
+
+## The value at a dotted path ("walk.stride") of a resource, or null.
+static func value_at(resource: Resource, path: String) -> Variant:
+	var at: Variant = resource
+	for part in path.split("."):
+		if not (at is Object):
+			return null
+		at = (at as Object).get(part)
+	return at
+
+## Saves first when the settings have no file yet (or have unsaved changes), then asks the Godot editor to open that file in its Inspector.
+func edit_in_godot() -> void:
+	var path := save_path()
+	if path == "":
+		_update_status("This character has no folder to keep settings in.")
+		return
+	if not FileAccess.file_exists(path) or changed_count() > 0:
+		if save() == "":
+			return
+	_update_status(EditorBridge.send(EditorBridge.request(path)) + " Change values in the Inspector, then Ctrl+S: they show up here.")
+
+func _fill_clips() -> void:
+	var keep := String(_clip_choice.get_item_metadata(_clip_choice.selected)) if _clip_choice.selected >= 0 else ""
+	_clip_choice.clear()
+	var current := String(bench.rig.animation_controller.current_state) if is_instance_valid(bench.rig.animation_controller) else ""
+	var edited := ClipFiles.load_library(bench.rig)
+	for name in ClipFiles.clip_names(bench.rig):
+		_clip_choice.add_item("%s%s" % [name, "   (edited by hand)" if edited.has_animation(name) else ""])
+		_clip_choice.set_item_metadata(_clip_choice.item_count - 1, String(name))
+		if String(name) == (keep if keep != "" else current):
+			_clip_choice.select(_clip_choice.item_count - 1)
+
+func _picked_clip() -> StringName:
+	return StringName(String(_clip_choice.get_item_metadata(_clip_choice.selected))) if _clip_choice.selected >= 0 else &""
+
+## Picks a clip by name (tests).
+func pick_clip(clip: StringName) -> void:
+	for index in _clip_choice.item_count:
+		if String(_clip_choice.get_item_metadata(index)) == String(clip):
+			_clip_choice.select(index)
+
+## Copies the chosen clip into the character's clips file (when needed) and opens it in the Godot editor on her body. `launch` false only queues the request (tests).
+func edit_clip(launch := true) -> void:
+	var clip := _picked_clip()
+	var prepared := ClipFiles.prepare(bench.rig, clip)
+	if not prepared.ok:
+		_clip_status.text = prepared.message
+		return
+	_clips_time = ClipFiles.modified_time(bench.rig)
+	_fill_clips()
+	var sent := EditorBridge.send(EditorBridge.request(prepared.scene, ClipFiles.PLAYER, String(clip)), launch)
+	_clip_status.text = "%s %s\nIn Godot: the Animation panel shows %s. Click Model > Skeleton3D, press 'Edit Mode' above the 3D view, rotate a bone, press the key icon next to it, then Ctrl+S. It plays here by itself." % [prepared.message, sent, clip]
+
+func _forget_clip() -> void:
+	var clip := _picked_clip()
+	if ClipFiles.forget(bench.rig, clip):
+		_clips_time = ClipFiles.modified_time(bench.rig)
+		_fill_clips()
+		_clip_status.text = "%s goes back to the generated clip when the character reloads (Character tab > Apply and reload, or restart)." % clip
+	else:
+		_clip_status.text = "%s is not an edited clip." % clip

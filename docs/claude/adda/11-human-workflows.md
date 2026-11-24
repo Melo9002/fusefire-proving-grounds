@@ -2,7 +2,7 @@
 
 You do not need to know how the rig, the stages or the solvers are built. You need a symptom, a scenario that shows it, and the two places ADDA lives:
 
-* **ADDA - Workbench** (the window): `godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0` (or `small_mira_0`, add `--unarmed`). It opens on **Start**: press a scenario, then *What went wrong in that run?*, then pick a problem and press *Go there*. To change how she moves, open **Tune** (sliders; *Save* keeps them, the game uses them too).
+* **ADDA - Workbench** (the window): `godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0` (or `small_mira_0`, add `--unarmed`). It opens on **Start**: press a scenario, then *What went wrong in that run?*, then pick a problem and press *Go there*. To change how she moves, open **Tune** (sliders; *Save* keeps them, the game uses them too). *Edit in Godot* opens a setting, or one of her animation clips on her body, in the Godot editor; save there (Ctrl+S) and the Workbench shows it at once.
 * **The command line**, for repeatable and comparable runs (details in [07-usage.md](07-usage.md), the agent procedure in [10-agent-workflow.md](10-agent-workflow.md)).
 
 **Evidence of testing.** The Workbench operation described here is exercised by automated UI tests (`workbench_scenarios_test`, `workbench_diagnostics_test`, `adda_workflow_test`, `adda_validation_test`: they press the buttons, read the text, check state is restored). **No person other than the author has used it.** Nothing here is a usability result. What a project owner should try by hand is listed in section 3.

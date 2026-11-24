@@ -302,6 +302,12 @@ func _load_tuning() -> void:
 			var current: Resource = get(property)
 			if tuned is Resource and (current == null or tuned.get_script() == current.get_script()):   # a file of the wrong kind is ignored, never half-applied
 				set(property, tuned)
+	# Hand-edited clips (the Workbench's "Edit this clip in Godot"): a saved clip replaces the generated one of the same name (CharacterAnimationController checks each one).
+	var clips := folder.path_join("clips.tres")
+	if ResourceLoader.exists(clips):
+		var library := ResourceLoader.load(clips, "", ResourceLoader.CACHE_MODE_IGNORE)
+		if library is AnimationLibrary:
+			clip_library = library
 
 ## Puts the authored stair numbers back and measures this body again (after the Tune tab changed `stair_profile_source`).
 func reapply_stair_profile() -> void:

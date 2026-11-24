@@ -48,6 +48,79 @@ func _entry(tab: TuneTab, name: StringName) -> Dictionary:
 			return entry
 	return {}
 
+## "Edit in Godot": the request the editor plugin reads, the heartbeat that says an editor is open, a clip copied into a file with a scene that edits it on the body, and edits saved outside (as the
+## editor would) reaching the live character and a newly built one. The editor plugin itself needs a running editor and is not exercised here.
+func _godot_round_trip() -> void:
+	EditorBridge.folder = SCRATCH.path_join("bridge")
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(EditorBridge.folder))
+	for file in DirAccess.get_files_at(ProjectSettings.globalize_path(EditorBridge.folder)):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(EditorBridge.folder).path_join(file))
+	var now := Time.get_unix_time_from_system()
+	check(not EditorBridge.editor_alive(now), "with no heartbeat no editor counts as open")
+	EditorBridge.beat()
+	check(EditorBridge.editor_alive(now + 1.0) and not EditorBridge.editor_alive(now + 30.0), "a heartbeat counts for a few seconds only")
+	var req := EditorBridge.request("res://x.tres", "Clips", "rifle_idle")
+	EditorBridge.send(req, false)
+	check(EditorBridge.pending("").get("id", "") == req.id and EditorBridge.pending(String(req.id)).is_empty(), "the editor sees a new request once")
+	check(EditorBridge.pending("", now + EditorBridge.STALE_SECONDS + 5.0).is_empty(), "an old request is ignored")
+	EditorBridge.done()
+	check(EditorBridge.pending("").is_empty(), "a handled request is gone")
+
+	# A clip: copied into clips.tres, with a scene whose AnimationPlayer drives the model's skeleton.
+	var bench := await _bench(&"mira_0", false)
+	var tune: TuneTab = bench.panel.tab_named(&"Tune")
+	tune.pick_clip(&"rifle_idle")
+	tune.edit_clip(false)
+	var library_file := ClipFiles.library_path(bench.rig)
+	var scene_file := ClipFiles.scene_path(bench.rig)
+	check(FileAccess.file_exists(library_file) and ClipFiles.load_library(bench.rig).has_animation(&"rifle_idle"), "the clip is saved as a file (%s)" % library_file)
+	var sent := EditorBridge.pending("")
+	check(String(sent.get("path", "")) == scene_file and String(sent.get("animation", "")) == "rifle_idle" and String(sent.get("node", "")) == ClipFiles.PLAYER, "the editor is asked to open the clip's scene on that clip")
+	var scene: Node = (ResourceLoader.load(scene_file, "", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene).instantiate()
+	var player := scene.get_node(ClipFiles.PLAYER) as AnimationPlayer
+	check(player != null and player.has_animation(&"rifle_idle") and player.get_node_or_null(player.root_node) is Skeleton3D, "the editing scene's player has the clip and its root is the model's skeleton")
+	scene.free()
+	# A save from outside (what Ctrl+S in the editor does): a changed key reaches the live player.
+	OS.delay_msec(1100)   # file times are in whole seconds
+	var library := ClipFiles.load_library(bench.rig)
+	var clip := library.get_animation(&"rifle_idle")
+	var track := 0
+	var moved := Quaternion(Vector3.UP, 0.7) * clip.rotation_track_interpolate(track, 0.0)
+	clip.track_set_key_value(track, 0, moved)
+	ResourceSaver.save(library, library_file)
+	tune.pick_up_outside_edits()
+	var live: Animation = bench.rig.animation_controller.animation_player.get_animation(&"rifle_idle")
+	check(live.track_get_key_value(track, 0).is_equal_approx(moved), "an edit saved outside plays at once in the Workbench")
+	await _close(bench)
+	bench = await _bench(&"mira_0", false)
+	check(bench.rig.clip_library != null and bench.rig.animation_controller.animation_player.get_animation(&"rifle_idle").track_get_key_value(track, 0).is_equal_approx(moved), "a newly built character plays the edited clip (the game does the same)")
+	# A clip that is not a bone clip of this body is skipped, not applied.
+	var bad := Animation.new()
+	var value_track := bad.add_track(Animation.TYPE_VALUE)
+	bad.track_set_path(value_track, NodePath(".:visible"))
+	bad.track_insert_key(value_track, 0.0, true)
+	library = ClipFiles.load_library(bench.rig)
+	if library.has_animation(&"aim"):
+		library.remove_animation(&"aim")
+	library.add_animation(&"aim", bad)
+	ResourceSaver.save(library, library_file)
+	var applied := ClipFiles.apply_saved(bench.rig)
+	check(applied.skipped.has(&"aim") and applied.applied.has(&"rifle_idle"), "a clip that is not a bone clip is skipped (%s)" % [applied])
+	# Settings saved outside reach the live profile.
+	tune = bench.panel.tab_named(&"Tune")
+	tune.pick(&"cover_profile")
+	var path := tune.save()
+	tune.refresh()
+	OS.delay_msec(1100)
+	var outside := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as CoverPostureProfile
+	outside.high_cover_crouch_depth = 0.33
+	ResourceSaver.save(outside, path)
+	tune.pick_up_outside_edits()
+	check(is_equal_approx(bench.rig.cover_profile.high_cover_crouch_depth, 0.33) and tune.changed_count() == 0, "a settings file saved outside is picked up (%.3f)" % bench.rig.cover_profile.high_cover_crouch_depth)
+	await _close(bench)
+	_clean()
+	EditorBridge.folder = "user://adda_bridge"
+
 func _run() -> void:
 	CharacterRig.tuning_folder_override = SCRATCH
 	_clean()
@@ -145,6 +218,8 @@ func _run() -> void:
 	check(bench.playback_text().begins_with("PAUSED") and absf(bench.scenario_runner.time - 1.0) < 0.06, "once there it says PAUSED at the moment (%s)" % bench.playback_text())
 	check(Engine.max_fps == bench._saved_max_fps and not bench._seeking, "the frame cap is put back after the replay")
 	await _close(bench)
+
+	await _godot_round_trip()
 
 	CharacterRig.tuning_folder_override = ""
 	print("workbench_tune_test: %d checks, %d failures" % [checks, failures])

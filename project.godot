@@ -30,6 +30,10 @@ window/size/window_height_override=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/adda_bridge/plugin.cfg")
+
 [layer_names]
 
 3d_render/layer_1="Environment"
