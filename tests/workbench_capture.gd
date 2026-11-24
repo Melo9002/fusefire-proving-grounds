@@ -13,11 +13,11 @@ func _frames(count: int) -> void:
 	for i in count:
 		await process_frame
 
-func _open(character: StringName, armed: bool, tab: int) -> void:
+func _open(character: StringName, armed: bool, tab: StringName) -> void:
 	WorkbenchSession.character = character
 	WorkbenchSession.armed = armed
 	WorkbenchSession.autostart_scenario = &""
-	WorkbenchSession.start_tab = tab
+	WorkbenchSession.start_tab = WorkbenchPanel.index_of(tab)
 	bench = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(bench)
 	await _frames(20)
@@ -44,8 +44,8 @@ func _scrub(id: StringName, seconds: float) -> void:
 		await process_frame
 	await _frames(3)
 
-func _tab(index: int) -> void:
-	bench.panel.tabs.current_tab = index
+func _tab(title: StringName) -> void:
+	bench.panel.show_tab(title)
 	bench.panel._refresh_left = 0.0
 	await _frames(4)
 
@@ -56,29 +56,35 @@ func _run() -> void:
 	if args.size() > 2:
 		root.size = Vector2i(int(args[1]), int(args[2]))
 		await _frames(3)
+	# The first screen and the settings, MIRA armed.
+	await _open(&"mira_0", true, &"Start")
+	await _shot("00-start")
+	await _tab(&"Tune")
+	await _shot("00-tune")
+	await _close()
 	# Character tab, MIRA armed and Small MIRA unarmed.
-	await _open(&"mira_0", true, 0)
+	await _open(&"mira_0", true, &"Character")
 	await _shot("01-character-mira")
-	bench.panel.tab_nodes[0]._check_broken()
+	bench.panel.tab_named(&"Character")._check_broken()
 	await _frames(3)
-	(bench.panel.tab_nodes[0].get_parent().get_parent() as ScrollContainer).scroll_vertical = 100000   # the result is at the bottom of the tab
+	(bench.panel.tab_named(&"Character").get_parent().get_parent() as ScrollContainer).scroll_vertical = 100000   # the result is at the bottom of the tab
 	await _shot("02-incompatible-profile")
 	await _close()
-	await _open(&"small_mira_0", false, 0)
+	await _open(&"small_mira_0", false, &"Character")
 	await _shot("03-character-small-unarmed")
 	await _close()
 	# A: tactical-style (MIRA armed), Diagnostics tab with the live state, the history and the pose stages.
-	await _open(&"mira_0", true, 2)
+	await _open(&"mira_0", true, &"Diagnostics")
 	await _scrub(WorkbenchScenarios.TACTICAL, 7.2)
 	await _shot("04-scenario-a-aim")
 	await _scrub(WorkbenchScenarios.TACTICAL, 8.6)
 	await _shot("05-scenario-a-fire")
 	# Scenario tab.
-	await _tab(1)
+	await _tab(&"Scenario")
 	await _shot("06-scenario-tab")
 	await _close()
 	# B: exploration-style on Small MIRA unarmed.
-	await _open(&"small_mira_0", false, 2)
+	await _open(&"small_mira_0", false, &"Diagnostics")
 	await _scrub(WorkbenchScenarios.EXPLORATION, 8.4)
 	await _shot("07-scenario-b-gesture")
 	await _scrub(WorkbenchScenarios.EXPLORATION, 15.2)
@@ -86,7 +92,7 @@ func _run() -> void:
 	await _close()
 	# C: stairs then ladder on both humanoids, contact overlays on.
 	for entry in [[&"mira_0", true, "09-scenario-c-mira"], [&"small_mira_0", false, "10-scenario-c-small"]]:
-		await _open(entry[0], entry[1], 2)
+		await _open(entry[0], entry[1], &"Diagnostics")
 		await _scrub(WorkbenchScenarios.CONTACTS, 2.4)
 		await _shot(entry[2] + "-stairs")
 		await _scrub(WorkbenchScenarios.CONTACTS, 8.3)
@@ -94,7 +100,7 @@ func _run() -> void:
 		await _shot(entry[2] + "-ladder")
 		await _close()
 	# Evidence tab.
-	await _open(&"mira_0", true, 3)
+	await _open(&"mira_0", true, &"Evidence")
 	await _shot("11-evidence-tab")
 	await _close()
 	print("workbench_capture: done")

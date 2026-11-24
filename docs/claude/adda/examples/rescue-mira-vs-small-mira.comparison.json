@@ -1,0 +1,202 @@
+{
+  "comparable": true,
+  "counts": {
+    "improved": 4,
+    "incomparable": 0,
+    "info": 0,
+    "missing": 0,
+    "regressed": 3,
+    "unchanged": 6
+  },
+  "differences": {
+    "character": {
+      "a": "mira_0",
+      "b": "small_mira_0"
+    },
+    "revision": {
+      "a": "1d500e7+dirty",
+      "b": "1d500e7+dirty"
+    }
+  },
+  "findings": {
+    "new": [],
+    "persisting": [
+      {
+        "key": "pose_snap|pose snap|0",
+        "severity": "high",
+        "title": "Pose snap: 6 bones at once (5 times)"
+      },
+      {
+        "key": "reach_exceeded|right hand|0",
+        "severity": "high",
+        "title": "Right Hand target out of reach"
+      },
+      {
+        "key": "reach_exceeded|left hand|0",
+        "severity": "high",
+        "title": "Left Hand target out of reach"
+      },
+      {
+        "key": "reach_exceeded|right hand|1",
+        "severity": "high",
+        "title": "Right Hand target out of reach"
+      },
+      {
+        "key": "reach_exceeded|left hand|1",
+        "severity": "high",
+        "title": "Left Hand target out of reach"
+      }
+    ],
+    "resolved": [
+      {
+        "key": "pose_snap|pose snap|2",
+        "severity": "medium",
+        "title": "Right Forearm snaps"
+      },
+      {
+        "key": "pose_snap|pose snap|4",
+        "severity": "medium",
+        "title": "Right Shin snaps"
+      }
+    ]
+  },
+  "format": "adda.comparison",
+  "metrics": [
+    {
+      "a": 7.0,
+      "b": 5.0,
+      "delta": -2.0,
+      "key": "discontinuity.count",
+      "label": "pose snaps: moments when a bone moved far faster than the frames around it",
+      "reason": "",
+      "unit": "moments",
+      "verdict": "IMPROVED"
+    },
+    {
+      "a": 27.4999,
+      "b": 20.8806,
+      "delta": -6.6193,
+      "key": "discontinuity.worst_speed_mps",
+      "label": "the fastest snap",
+      "reason": "",
+      "unit": "m/s",
+      "verdict": "IMPROVED"
+    },
+    {
+      "a": 44.2616,
+      "b": 47.5566,
+      "delta": 3.295,
+      "key": "discontinuity.worst_step_cm",
+      "label": "the largest one-frame step of any bone at a pose snap",
+      "reason": "",
+      "unit": "cm per body ratio",
+      "verdict": "REGRESSED"
+    },
+    {
+      "a": 14.9833,
+      "b": 14.9833,
+      "delta": 0.0,
+      "key": "duration_s",
+      "label": "recorded time",
+      "reason": "within the measurement's noise (0.05)",
+      "unit": "s",
+      "verdict": "UNCHANGED"
+    },
+    {
+      "a": 10.95,
+      "b": 10.95,
+      "delta": 0.0,
+      "key": "hand.left.held_s",
+      "label": "left hand: time a contact had hold of it",
+      "reason": "within the measurement's noise (0.02)",
+      "unit": "s",
+      "verdict": "UNCHANGED"
+    },
+    {
+      "a": 2.9167,
+      "b": 2.85,
+      "delta": -0.0667,
+      "key": "hand.left.unreachable_s",
+      "label": "left hand: time the target was beyond 97% of the arm while in contact",
+      "reason": "",
+      "unit": "s",
+      "verdict": "IMPROVED"
+    },
+    {
+      "a": 50.8473,
+      "b": 92.7645,
+      "delta": 41.9172,
+      "key": "hand.left.worst_deficit_cm",
+      "label": "left hand: how far beyond the arm's reach the target was, at worst",
+      "reason": "",
+      "unit": "cm per body ratio",
+      "verdict": "REGRESSED"
+    },
+    {
+      "a": 0.0002,
+      "b": 0.0004,
+      "delta": 0.0002,
+      "key": "hand.left.worst_error_mm",
+      "label": "left hand: worst wrist-to-target error while holding a reachable target",
+      "reason": "within the measurement's noise (0.5)",
+      "unit": "mm per body ratio",
+      "verdict": "UNCHANGED"
+    },
+    {
+      "a": 10.95,
+      "b": 10.95,
+      "delta": 0.0,
+      "key": "hand.right.held_s",
+      "label": "right hand: time a contact had hold of it",
+      "reason": "within the measurement's noise (0.02)",
+      "unit": "s",
+      "verdict": "UNCHANGED"
+    },
+    {
+      "a": 2.8333,
+      "b": 2.8,
+      "delta": -0.0333,
+      "key": "hand.right.unreachable_s",
+      "label": "right hand: time the target was beyond 97% of the arm while in contact",
+      "reason": "",
+      "unit": "s",
+      "verdict": "IMPROVED"
+    },
+    {
+      "a": 41.8735,
+      "b": 82.2126,
+      "delta": 40.3391,
+      "key": "hand.right.worst_deficit_cm",
+      "label": "right hand: how far beyond the arm's reach the target was, at worst",
+      "reason": "",
+      "unit": "cm per body ratio",
+      "verdict": "REGRESSED"
+    },
+    {
+      "a": 0.0003,
+      "b": 0.0003,
+      "delta": 0.0,
+      "key": "hand.right.worst_error_mm",
+      "label": "right hand: worst wrist-to-target error while holding a reachable target",
+      "reason": "within the measurement's noise (0.5)",
+      "unit": "mm per body ratio",
+      "verdict": "UNCHANGED"
+    },
+    {
+      "a": 1.4978,
+      "b": 1.4978,
+      "delta": 0.0,
+      "key": "root.max_speed_mps",
+      "label": "fastest the root travelled",
+      "reason": "within the measurement's noise (0.05)",
+      "unit": "m/s",
+      "verdict": "UNCHANGED"
+    }
+  ],
+  "notes": [
+    "Different body size (ratio 1.000 against 0.695): lengths are compared after dividing by each body's ratio."
+  ],
+  "reason": "",
+  "verdict": "MIXED",
+  "version": 1
+}

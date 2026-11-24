@@ -19,6 +19,12 @@ extends Resource
 @export_range(-0.2, 0.2, 0.005, "suffix:m") var foot_window_bias := 0.0
 ## How far the thigh may turn outward (the frog-leg stance that keeps a raised knee off the rungs) when the pelvis is placed.
 @export_range(0.0, 60.0, 1.0, "suffix:°") var knee_turn_degrees := 35.0
+## Where the foot stands on a rung: the share of the ankle-to-ball distance the ankle stays behind the bar (1 puts the ball of the foot on it, 0.5 the arch). Measured on the final mesh: see the ladder report.
+@export_range(0.3, 1.2, 0.01) var ankle_behind_share := 0.5
+## EXPERIMENT: how much farther behind its planned place the pelvis hangs (m). The plan puts it as far back as the hands still hold; more costs reach. 0 = the plan.
+@export_range(-0.2, 0.3, 0.005, "suffix:m") var hang_bias := 0.0
+## How far a swinging foot draws back toward the body at the middle of its step (m, for the reference body; scaled by body_ratio) so its toes pass BEHIND the rung it is going to, not through it.
+@export_range(0.0, 0.3, 0.005, "suffix:m") var swing_back := 0.12
 ## Fraction of the window (from the end where the limb is picked up) over which the limb travels between rungs.
 @export_range(0.1, 1.0, 0.01) var swing_fraction := 0.45
 ## Peak height the limb lifts clear of the rungs in a swing.

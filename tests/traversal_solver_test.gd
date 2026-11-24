@@ -52,8 +52,9 @@ func _run() -> void:
 					reported += 1
 	check(asked > 20 and reported > asked * 0.9, "A body whose arms cannot span the rungs has its hand contacts reported unreachable (%d of %d)" % [reported, asked])
 	var legless := LadderTestBodies.mira()
-	legless.thigh = 0.12
-	legless.shin = 0.12
+	# Legs that cannot span even the stance (0.30 m of hip-to-ankle offset): the plan reports it. (0.12 m legs span it, and the plan then places the feet window to suit the hips: not an unreachable contact.)
+	legless.thigh = 0.04
+	legless.shin = 0.04
 	var feet_reported := 0
 	var feet_asked := 0
 	for h in range(80, 321, 5):

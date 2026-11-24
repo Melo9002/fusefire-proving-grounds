@@ -1,6 +1,12 @@
-# Animation workbench
+# ADDA — Workbench (the animation workbench)
+
+**ADDA** (AniLab Diagnostic & Debugging Assistant) is the name of AniLab's diagnostic suite: the read-only tools in `presentation/diagnostics/`, this workbench, and the measurement contract (`Measurement`, `PoseWitness`) that says what every reading is and whether it may be trusted. This scene is ADDA's Workbench. Its paths, scene name, command-line arguments, scenarios and tests keep their old names. It opens on the **Start** tab: three buttons (watch, find what went wrong, change how she moves). Read [`docs/claude/adda/`](../../docs/claude/adda/) for the inventory, the measurement contract and the architecture decision.
+
+Every number the workbench shows is read inside `skeleton_updated` and stamped; a reading that is stale, unsupported or could not be taken says so instead of showing 0. A *vertex* count is not a mesh intersection and a *support claim* is not physical support (see the contract).
 
 `pose_workbench.tscn` is a **host** of the shared character stack, like the tactical adapter and the exploration host, built for inspection: it drives a `CharacterRig` and its `CharacterPresenter` exactly as the game does (presenter tick, action stage, weapon pose), with no tactical unit, match or mission. Architecture: [`docs/animation.md`](../../docs/animation.md).
+
+**Documentation.** Everything about ADDA (what it measures and does not, how to investigate a problem as a person or as a coding agent, the diagnostic challenges, performance and limitations) starts at [`docs/claude/adda/README.md`](../../docs/claude/adda/README.md). The command-line interface is `tools/adda.ps1`.
 
 ## Quick start
 
@@ -14,22 +20,25 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 |---|---|
 | `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
 | `--unarmed` | build the character without its weapon |
-| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing` |
-| `--tab=<0-3>` | open on a tab |
+| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing`, `rescue` |
+| `--tab=<name or number>` | open on a tab: `Start`, `Scenario`, `Why?`, `Tune`, `Diagnostics`, `Character`, `Evidence` |
 | `--side-view`, `--auto-sequence` | as before |
 
-The **Evidence** tab prints the exact command for the current configuration.
+The **Evidence** tab prints the exact command for the current configuration; its JSON report now carries an `adda` block of measurement records (kind, status, pose, space, what each does not establish).
 
-## The panel: four tabs, four questions
+## The panel: seven tabs
 
 The panel is docked to the right edge, full height, and the 3D view is shifted so the character stays centred in the free part of the window. Compact tables use a 14-point minimum and the panel can occupy up to 44% of the viewport to improve readability at 1280×720. **F1** hides or shows it. (The old long key list is no longer drawn over the viewport; it is in *Scenario > Keyboard shortcuts*. No shortcut changed; F1 is new.)
 
 | Tab | Question | What it holds |
 |---|---|---|
+| **Start** | Where do I begin? | one button per scenario; **Report this moment** (F2 from anywhere): pause, write what looks wrong, and it saves a folder in `adda_reports/` for a coding agent (note, scenario, time and frame, character and equipment, revision, what was on screen, the drafts in use, ADDA's observations near the moment, a screenshot, how to reproduce it; `moment_report.gd`); "What went wrong in that run?"; "Open the settings and clips"; the words ADDA uses |
 | **Character** | What am I inspecting? | rig identity and body proportions; semantic roles and the bones they resolved to (required `*` and optional); capabilities with the resolver's reason (supported, fallback, unsupported, not implemented); degraded stages; equipment state; a character and armed/unarmed switch; a compatibility check |
-| **Scenario** | What am I asking it to do? | three scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
+| **Scenario** | What am I asking it to do? | scenario presets with play, pause, single-frame step, reset, repeat; then every manual control that existed before (locomotion, turns, cover and authorised attack, ladder, stairs, path corridor, camera, slow motion) in folding sections |
+| **Tune** | How do I change how she moves, without changing the game by accident? | the motion profiles (cover, walking, ladders, stairs, weapon hold) as sliders with their units: a few **basic** settings per profile, the rest behind *Show advanced settings* (a search finds any). A change is an **experiment**: it shows at once and is listed against the game's value. *Keep as draft* stores it in `art/characters/<id>/tuning/drafts/` (not committed; only the Workbench window reads drafts, the `adda` command line only with `-Drafts`). *Back to game values* undoes it. **Apply to game** (two clicks, after the list of changes) is the one action that writes where the game reads: `tuning/<profile>.tres`, or the profile's own `.tres`; CharacterRig loads it when it is built. *Edit in Godot* opens the draft in the Godot editor's Inspector; a save there shows up live. **Animation clips** (generated by code): *Edit this clip in Godot* copies the clip into `drafts/clips.tres` and opens `drafts/clip_editor.tscn` (her model, an AnimationPlayer on its skeleton) on it; a save there plays here at once; *Apply this clip to the game* copies it to `tuning/clips.tres` (the controller's existing saved-clip rule). Only the base clip is edited there: IK, crouch, ladder and weapon stages still apply on top. The editor side is the `addons/adda_bridge` plugin (enabled in `project.godot`; `tools/animation_workbench/editor_bridge.gd`); with no editor open, the button starts one |
 | **Diagnostics** | What is the animation system doing? | live presentation state; the measured contacts; a bounded event history; overlay switches; the pose stages in execution order with declared writes and live weights; "why is this bone moving" |
 | **Evidence** | How do I reproduce and show it? | screenshot, JSON report, the relaunch command |
+| **Why?** | Why is my robot doing that? | ADDA's recording of the scenario turned into findings in plain words (what was measured, possible causes marked unconfirmed, cause unknown), each line starting with when it happened and which body part; *Go there* replays to the finding's worst frame, pauses and marks it; *Mark it again* re-marks it on the current pose; a body-part inspector, compare with a saved baseline, export the report an agent gets. See [`docs/claude/adda/07-usage.md`](../../docs/claude/adda/07-usage.md) |
 
 ### Scenarios
 
@@ -41,6 +50,7 @@ Each preset is data in `workbench_scenarios.gd`: timed steps calling the workben
 | `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
 | `contacts` | a 12-tread stair, then a 4 m ladder shown from a three-quarter inspection camera, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
 | `landing` | the supported ladder transfer on a 3 m ladder: a deck with posts and a deck whose ladder rails run on, each climbed and entered in reverse, then a deck with nothing to hold and a lip too far for the arm (both must stay on the fallback). Uses `LandingFixtures`; the Diagnostics tab shows the landing status and the measured deck and bar clearances. | none (unarmed works) | **synthetic** deck; the pose is the production solver and rig, the landing is the same `LadderLanding` the sandbox supplies |
+| `rescue` | pick a casualty up from the floor, carry it walking, stop, set it down (the R, P, M and Q key calls, as steps); contact diagnostics switch on | nothing (armed or unarmed) | the workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's |
 
 An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
 

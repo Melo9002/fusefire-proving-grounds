@@ -17,3 +17,6 @@
 # Reviewed evidence belongs beside the current documentation when needed.
 /artifacts/
 /docs/**/*.png.import
+
+# Workbench tuning experiments (Tune tab drafts): local to the machine; "Apply to game" writes the shared files beside them
+art/characters/*/tuning/drafts/

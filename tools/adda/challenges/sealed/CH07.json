@@ -1,0 +1,23 @@
+{
+ "fault": {
+  "name": "AuxPass7",
+  "kind": "offset",
+  "bone": "@left_elbow",
+  "vector": [
+   0.0,
+   0.04,
+   0.0
+  ],
+  "after": "WeaponArmIK",
+  "start": 2.0
+ },
+ "answer": {
+  "stage": "AuxPass7",
+  "bone": "@left_elbow",
+  "kind": "offset"
+ },
+ "solve": {
+  "at": "4.0",
+  "bones": "@left_elbow"
+ }
+}

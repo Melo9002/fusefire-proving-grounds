@@ -99,3 +99,54 @@ Replay and traces: **route trace re-run on this tree: 853 routes, zero discrete 
 * Normal-speed moving demonstrations and the matching before/after captures were not produced beyond the still sheets (`docs/claude/images/ladder55/landing-*.png`; use `tools/quality/ladder_transfer_demo.gd` for moving review).
 * Top-out reads better with a supported landing, but the unsupported fallback keeps the abrupt exit documented in #55.
 * Full tier not run.
+
+---
+
+# Addendum 2: the leg-and-rung investigation (CORRECTS the earlier addendum, which is withdrawn)
+
+**Correction first.** An earlier version of this addendum reported mesh-level numbers (deck 0.0 mm, "a quarter to a half of landing frames with a leg inside a rung", "the 0.25 m pitch leaves no gap the knee armor fits through"). Those numbers were **invalid**: the skinned mesh was read outside `skeleton_updated`, where Godot returns the base animation pose, not the pose the modifiers produce. The surface did not follow the climbing body. `SkinnedSurface.capture()` now caches the bone poses inside the signal, and `ladder_mesh_clearance_test` carries two controls (the surface must move with the pose; a rung plane pushed through the legs must light up). Everything below is measured with the corrected method. The geometric conclusion of the old addendum (change the pitch) is **not supported** and is withdrawn.
+
+## Three measurements, not to be confused
+| level | what it is | where | limit |
+|---|---|---|---|
+| capsule overlap | limb volumes (measured radii) against bars | `ladder_climb_test`, `ladder_landing_test` | approximate volumes; **both tests still fail on it, deliberately left visible** |
+| sampled mesh vertices | skinned vertices of the drawn legs inside a rung/rail/deck; the **count** is the severity (a vertex on a bar's axis reads the full bar radius whatever the depth) | `ladder_mesh_clearance_test`, `LadderClearance`, overlay | thin crossings between vertices can be missed |
+| full mesh intersection | triangle vs bar | not measured | |
+
+## What the corrected measurement showed, and what changed
+In an ordinary climb MIRA's thigh, shin and knee never went through a bar. The real crossings were (a) boots on the rung: the ankle sat on the rung line with the sole sinking into it, and (b) the swinging toe crossing the next rung; for Small MIRA also (c) its thick shin armor (measured radius 0.106 m against an assumed 0.042) crossing the rung plane. Changes, all in the solver/rig, none in rung pitch, rail span or character geometry:
+* ankle held behind the rung by the measured shin radius (`LadderBody.ankle_behind`, `TraversalProfile.ankle_behind_share`), ankle height by the measured sole depth; planted feet levelled to the rung;
+* a swing-back trajectory for the lifting foot (`swing_back` 0.12, `FOOT_SWING_BAND` 0.33, the band widened because a narrower one broke the solver's continuity contract);
+* rail grips taken along the physical rail (a reachable point, no invented contact): Small MIRA's rail-held grips 8 to 47-52 frames;
+* the landing wall clearance uses the measured boot (`foot_forward`), the sandbox tower moved to 0.22 m off the rungs, "too close" fixture added.
+
+Result (3 mm threshold, unarmed; armed within noise, see the test output):
+| | mean verts/frame | frames with >=5 verts | max |
+|---|---|---|---|
+| MIRA up | 0 | 1% | 14 |
+| MIRA down | 0 | 0% | 0 |
+| Small up | 0 | 7% | 7 |
+| Small down | 0 | 3% | 5 |
+
+Landing (frames with a leg vertex over 10 mm inside a bar or the deck, deepest deck overlap): MIRA 10-11% up, 23% down, 41-52 mm; Small MIRA 21%, 58 mm. This is the lead knee crossing the lip and, on the way down, the trailing leg through rung 10. **Not solved**; recorded as baselines (27% / 65 mm) next to the goal (0), never as the goal.
+
+## Controlled what-if sweeps (nothing applied; raw output in `docs/claude/whatif-sweeps-raw.txt`)
+Tool: `tools/quality/ladder_sweep_probe.gd -- <param> <v1,v2,..> [small|mira] [up|down]`. Unarmed, ordinary climb, vertices inside bars (mean / frames with >=5):
+* **Rung pitch** (why 0.25 was adopted: hands span two rungs and the step stays natural): MIRA up 0.25 0/1%, 0.28 1/7%, 0.30 3/12%, **0.33 29/94%**; down is clean up to 0.30; Small up 0.25 0/7%, 0.30 3/12%, **0.33 52/66%**. A larger pitch makes the legs **worse**, not better (the stride exceeds the leg), so the earlier suggestion is withdrawn.
+* **Rail span** 0.30 to 0.45: no meaningful change for either body (MIRA 1% to 0% frames at 0.40+; Small 7% unchanged). Legs are not what the rails touch. Not a lever.
+* **hang_bias** (pelvis farther from the rungs): MIRA up 0.05 leaves 1 vertex at worst, but hands in reach fall from 100% to 81% at 0.10 and the planted ankle drifts 12 mm / 34 mm on descent; Small improves 7% to 3% but hands in reach fall to 83%. A real trade (legs against arms), left at 0 (not applied).
+Conclusion: **no geometry change is justified**; the remaining crossings are transitional (landing) and a small residue on Small MIRA's climb.
+
+## Small MIRA armed brace
+8 frames armed vs 44 unarmed was **not reproduced** in the landing test, where armed equals unarmed; the mesh and landing runs are identical for both. The large difference seen earlier was the wrist grip on a rail point; after the physical-rail change both hold 47-52 frames. Hands in reach: Small 94-100%.
+
+## Workbench tooling
+"Ladder collisions (leg vertices inside bars)" checkbox in Diagnostics: red = vertices inside bars, yellow knees, green pelvis, orange planned feet, label at the worst. `tests/workbench_ladder_closeup_capture.gd` (explicit, needs a GPU) renders held-pose close-ups (side/front/three_quarter/knee) at chosen heights; stills in `docs/claude/images/ladder55/workbench-closeup-*`.
+
+## State of the tests
+* `ladder_mesh_clearance_test`: 66 checks, 0 failures. Ironclad `check`: catalog complete. `changed -Since HEAD`: 58 pass, 1 fail.
+* **Failing and left failing on purpose:** `ladder_climb_test` (2 capsule checks: MIRA armed up knee/thigh/shin 64/48/37 mm, unarmed up 36/20/22 mm against the goal) and `ladder_landing_test` (capsule checks). Their contract (capsule) disagrees with the mesh and needs an owner decision; I did not loosen thresholds.
+* Not re-run after the last change: pose trace, route trace (gameplay code untouched), moving demos. I cannot view video; only stills were inspected.
+
+## Tactical status
+Unchanged: tactical ladders still use the earlier route/gameplay data; the presentation reads the same landing. Not implemented (see section 7).

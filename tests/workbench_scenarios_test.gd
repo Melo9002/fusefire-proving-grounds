@@ -1,6 +1,6 @@
 extends SceneTree
 ## Task 12: the animation workbench as a developer tool. It loads WITHOUT a tactical mission, for both humanoids, armed and unarmed (character and weapon state come from WorkbenchSession, as a relaunch would set
-## them); its panel has the four workflow tabs and fits ordinary window sizes; the three scenario presets drive the REAL presenter and rig; pause, single-frame step, reset, repeat and interruption leave nothing behind;
+## them); its panel has the five workflow tabs and fits ordinary window sizes; the three scenario presets drive the REAL presenter and rig; pause, single-frame step, reset, repeat and interruption leave nothing behind;
 ## and unsupported combinations are named instead of skipped. Scenarios are stepped deterministically (paused, fixed step) so the test does not depend on frame timing.
 const SCENE := "res://tools/animation_workbench/pose_workbench.tscn"
 var failures := 0
@@ -67,18 +67,18 @@ func _run() -> void:
 			check(bench.rig.has_weapon() == armed, "%s: the weapon state follows the session" % label)
 			var info := RigInspection.report(bench.rig)
 			profiles[character] = info.identity.profile
-			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 4, "%s: the report is usable and the panel has four tabs" % label)
+			check(info.usable and bench.panel != null and bench.panel.tabs.get_tab_count() == 7, "%s: the report is usable and the panel has seven tabs" % label)
 			bench.queue_free()
 			await _frames(2)
 	check(profiles[&"mira_0"] != profiles[&"small_mira_0"], "switching the character changes the rig profile (%s / %s)" % [profiles[&"mira_0"], profiles[&"small_mira_0"]])
 
 	_say("section 1 done")
-	# --- 2. The panel: the four tabs, in order, and it fits ordinary and small windows.
+	# --- 2. The panel: the seven tabs, in order, and it fits ordinary and small windows.
 	var bench := await _bench(&"mira_0", true)
 	var names: Array[String] = []
 	for index in bench.panel.tabs.get_tab_count():
 		names.append(bench.panel.tabs.get_tab_title(index))
-	check(names == ["Character", "Scenario", "Diagnostics", "Evidence"], "the tabs are Character, Scenario, Diagnostics, Evidence (%s)" % [names])
+	check(names == ["Start", "Scenario", "Why?", "Tune", "Diagnostics", "Character", "Evidence"] and bench.panel.tabs.current_tab == 0, "the tabs run in a newcomer's order and it opens on Start (%s)" % [names])
 	for size in [Vector2i(1920, 1080), Vector2i(1280, 720), Vector2i(960, 600)]:
 		root.size = size
 		await _frames(3)
@@ -97,7 +97,7 @@ func _run() -> void:
 	check(bench.panel.visible, "F1 shows it again")
 	await _trail_clock_checks(bench)
 	# Evidence: the report is complete and serialises; the repro command names character, weapon state and scenario.
-	var evidence: EvidenceTab = bench.panel.tab_nodes[3]
+	var evidence: EvidenceTab = bench.panel.tab_named(&"Evidence")
 	var report := evidence.report()
 	check(report.has("rig") and report.has("declared") and report.has("runtime") and JSON.stringify(report).length() > 500, "the evidence report has the rig, declared ownership and runtime sections and serialises")
 	check(report.declared.order_problems.is_empty() and report.runtime.stages.size() == 8, "the report's stage section agrees with the declared order")
@@ -215,7 +215,7 @@ func _run() -> void:
 	bench = await _bench(&"small_mira_0", false)
 	var support := WorkbenchScenarios.supported(WorkbenchScenarios.tactical(), bench.rig)
 	check(not support.ok and support.reason.contains("unarmed") and not bench.start_scenario(WorkbenchScenarios.TACTICAL) and not bench.scenario_runner.running, "an unarmed character cannot start the weapon scenario and is told why (%s)" % support.reason)
-	var scenario_tab: ScenarioTab = bench.panel.tab_nodes[1]
+	var scenario_tab: ScenarioTab = bench.panel.tab_named(&"Scenario")
 	scenario_tab._choice.select(0)
 	scenario_tab._choice.item_selected.emit(0)
 	check(scenario_tab._play.disabled and scenario_tab._support.text.contains("UNAVAILABLE"), "the Scenario tab disables the unavailable preset and says why")
@@ -241,6 +241,51 @@ func _run() -> void:
 					unreachable += 1 if hand.unreachable else 0
 	check(seen > 20 and unreachable > 0, "C on Small MIRA shows its ladder contacts and flags the unreachable ones (%d of %d samples, issue 55)" % [unreachable, seen])
 	_is_neutral(bench, "small unarmed C")
+	bench.queue_free()
+	await _frames(3)
+	# --- 6. The Scenario tab's Idle preset stands the character still: a walk, then Idle, leaves the movement state (it used to keep the walk cycle playing in place at the minimum cadence).
+	bench = await _bench(&"mira_0", true)
+	var locomotion: LocomotionTestPanel = _find_locomotion_panel(bench.panel)
+	check(locomotion != null, "the Scenario tab carries the locomotion panel")
+	if locomotion != null:
+		locomotion._preset(1.2)
+		await _frames(30)
+		check(bench.rig.animation_controller.current_state == &"move", "Walk puts the character in the move state")
+		locomotion._preset(0.0)
+		await _frames(30)
+		check(bench.rig.animation_controller.current_state == &"rifle_idle" and bench.preview_speed == 0.0, "Idle leaves the move state (now %s) and stops the preview speed" % bench.rig.animation_controller.current_state)
+		locomotion._preset(1.2)
+		await _frames(10)
+		check(bench.rig.animation_controller.current_state == &"move", "Walk after Idle starts walking again (the negative control: the fix does not strand the character in idle)")
+	# --- 7. One bench at a time: the cover wall, the ladder and the stairs never stand together (starting one ends the others), and a bench started alone is untouched.
+	var cover_spec := {"full": true, "height": 1.4, "left": 3.0, "right": 3.0, "left_ok": true, "right_ok": true, "aim": false}
+	bench.set_cover_demo(cover_spec)
+	await _frames(2)
+	check(is_instance_valid(bench._cover_group) and not bench.cover_demo.is_empty(), "the cover bench builds its wall")
+	bench.start_ladder_demo(3.0, 1, 0.0)
+	await _frames(2)
+	check(bench.cover_demo.is_empty() and (bench._cover_group == null or bench._cover_group.is_queued_for_deletion()), "starting the ladder removes the cover wall")
+	await _frames(30)   # the facing settles through the presenter, not in one frame
+	check(bench.rig.crouch_modifier.depth < 0.01 and absf(bench.rig.character_root.rotation.y) < 0.01, "and the body leaves cover: no crouch (%.2f) and square again (yaw %.1f deg)" % [bench.rig.crouch_modifier.depth, rad_to_deg(bench.rig.character_root.rotation.y)])
+	check(not bench.ladder_demo.is_empty() and is_instance_valid(bench._ladder_group), "and the ladder itself is built")
+	bench.set_cover_demo(cover_spec)
+	await _frames(2)
+	check(bench.ladder_demo.is_empty() and (bench._ladder_group == null or bench._ladder_group.is_queued_for_deletion()), "starting cover removes the ladder")
+	check(not bench.cover_demo.is_empty() and is_instance_valid(bench._cover_group) and not bench._cover_group.is_queued_for_deletion(), "and the wall stands")
+	bench.start_stair_demo(0.18, 0.28, 8, true, 0.0)
+	await _frames(2)
+	check(bench.cover_demo.is_empty() and not bench.stair_demo.is_empty(), "starting the stairs removes the cover wall")
+	bench.start_ladder_demo(3.0, 1, 0.0)
+	await _frames(2)
+	check(bench.stair_demo.is_empty() and not bench.ladder_demo.is_empty(), "starting the ladder removes the stairs")
+
+	# ---- 8. Every tab title fits in the widest the panel gets (issue 75: Evidence used to hide behind the scroll arrows).
+	var bar: TabBar = bench.panel.tabs.get_tab_bar()
+	bar.clip_tabs = false
+	await _frames(2)
+	var needed := bar.get_combined_minimum_size().x
+	check(needed <= WorkbenchPanel.MAX_WIDTH - 16.0, "the seven tab titles fit the panel's widest width without scroll arrows (%.0f of %.0f px)" % [needed, WorkbenchPanel.MAX_WIDTH])
+	bar.clip_tabs = true
 	bench.queue_free()
 	await _frames(3)
 	WorkbenchSession.character = &""
@@ -324,3 +369,13 @@ func _key(code: Key) -> InputEventKey:
 	event.keycode = code
 	event.pressed = true
 	return event
+
+
+func _find_locomotion_panel(node: Node) -> LocomotionTestPanel:
+	if node is LocomotionTestPanel:
+		return node
+	for child in node.get_children():
+		var found := _find_locomotion_panel(child)
+		if found != null:
+			return found
+	return null

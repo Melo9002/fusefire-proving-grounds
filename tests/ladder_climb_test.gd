@@ -53,7 +53,6 @@ func _run() -> void:
 func _climb(host: ExplorationCharacterHost, label: String, direction: int) -> void:
 	var rig: CharacterRig = host.rig
 	var metrics := LadderClearance.new(rig)
-	rig.skeleton.skeleton_updated.connect(func() -> void: metrics.sample())
 	var ladder := LadderGeometry.for_rise(4.0)
 	var worst := {"knee": 0.0, "shin": 0.0, "thigh": 0.0, "torso": 0.0, "upper_arm": 0.0, "forearm": 0.0}
 	var hands := 0

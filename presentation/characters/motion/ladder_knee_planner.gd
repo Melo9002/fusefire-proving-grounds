@@ -54,8 +54,11 @@ static func at_turn(geometry: LadderGeometry, body: LadderBody, hip: Vector3, an
 	# The knee's place along the hip-ankle line and how far it stands off it.
 	var along := (body.thigh * body.thigh - body.shin * body.shin + distance * distance) / (2.0 * distance)
 	var offset := sqrt(maxf(body.thigh * body.thigh - along * along, 0.0))
-	var forward := Vector3(0.0, 0.0, 1.0)   # +z: toward the ladder
-	var hinge := (forward - down * forward.dot(down)).normalized()
+	# The knee hinges forward, perpendicular to the leg in the body's sagittal plane: leg axis x lateral axis. (It was "toward the ladder (+z) minus its part along the leg", which collapses and
+	# flips to the other side when the hip-ankle line itself turns toward +z, a foot reaching up and in front during a step: the knee pole jumped 0.9 m in two frames and the shin with it, 17 times
+	# in one landing run. For a leg with no sideways lean the two are the same direction.)
+	var hinge := down.cross(Vector3.RIGHT)
+	hinge = hinge.normalized() if hinge.length() > 0.0001 else Vector3(0.0, 0.0, 1.0)
 	var lateral := 1.0 if side == 0 else -1.0
 	var direction := Basis(-down, deg_to_rad(turn) * lateral) * hinge
 	var knee := hip + down * along + direction * offset

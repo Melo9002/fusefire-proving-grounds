@@ -1,15 +1,20 @@
 class_name WorkbenchPanel
 extends PanelContainer
-## The workbench's control panel: four tabs for the four questions a developer asks, docked to the right edge and full height so it never covers the character (the workbench shifts its 3D view by the panel's width).
+## The workbench's control panel, docked to the right edge and full height so it never covers the character (the workbench shifts its 3D view by the panel's width). It opens on Start (watch, find what went wrong,
+## change it: one button each) and Tune (the motion profiles as live sliders, saved per character) sits beside the five question tabs:
 ##   Character    what character and rig am I inspecting?      identity, roles, capabilities, compatibility, switching
 ##   Scenario     what am I asking this character to do?       scenario presets with pause/step/reset, then the manual controls
 ##   Diagnostics  what is the animation system actually doing? live state and history, pose stages, contact and trail overlays
 ##   Evidence     how do I reproduce, measure and communicate?  screenshot, JSON report, recording, repro command
+##   Why?         why is my robot doing that?                    ADDA's findings in plain words (measured, possible causes, cause unknown), show it, replay to it, compare, export
 ## Each tab is its own script (ui/*_tab.gd). F1 hides or shows the panel. It only calls the workbench's public controls and the read-only diagnostics.
 
+## Left to right in the order a newcomer needs them: start, watch, find problems, change, then the detail tabs. Look tabs up by name (tab_named), never by index.
+const TABS: Array[String] = ["Start", "Scenario", "Why?", "Tune", "Diagnostics", "Character", "Evidence"]
 const MAX_WIDTH := 520.0
 const MIN_WIDTH := 300.0
 const WINDOW_FRACTION := 0.44
+const TAB_FONT_SIZE := 12
 
 var bench: Node3D
 var tabs: TabContainer
@@ -32,8 +37,9 @@ func setup(workbench: Node3D) -> void:
 	add_theme_stylebox_override("panel", background)
 	tabs = TabContainer.new()
 	tabs.name = "Tabs"
+	tabs.add_theme_font_size_override("font_size", TAB_FONT_SIZE)   # seven titles at the default size need more than MAX_WIDTH, which hid Evidence behind the scroll arrows (issue 75)
 	add_child(tabs)
-	for entry in [["Character", CharacterTab.new()], ["Scenario", ScenarioTab.new()], ["Diagnostics", DiagnosticsTab.new()], ["Evidence", EvidenceTab.new()]]:
+	for entry in TABS.map(func(title: String) -> Array: return [title, _make(title)]):
 		var body := WorkbenchUI.scroll_body()
 		body[1].add_child(entry[1])
 		entry[1].size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -44,6 +50,33 @@ func setup(workbench: Node3D) -> void:
 	if WorkbenchSession.start_tab >= 0 and WorkbenchSession.start_tab < tabs.get_tab_count():
 		tabs.current_tab = WorkbenchSession.start_tab
 	_fit()
+
+static func _make(title: String) -> Control:
+	match title:
+		"Start": return StartTab.new()
+		"Scenario": return ScenarioTab.new()
+		"Why?": return WhyTab.new()
+		"Tune": return TuneTab.new()
+		"Diagnostics": return DiagnosticsTab.new()
+		"Character": return CharacterTab.new()
+	return EvidenceTab.new()
+
+## The index of the tab titled `title`, or -1.
+static func index_of(title: StringName) -> int:
+	for index in TABS.size():
+		if StringName(TABS[index]) == title:
+			return index
+	return -1
+
+## The tab body titled `title` ("Start", "Scenario", "Why?", "Tune", "Diagnostics", "Character", "Evidence"), or null.
+func tab_named(title: StringName) -> Control:
+	var index := index_of(title)
+	return tab_nodes[index] if index >= 0 and index < tab_nodes.size() else null
+
+func show_tab(title: StringName) -> void:
+	var index := index_of(title)
+	if index >= 0:
+		tabs.current_tab = index
 
 ## The width the panel occupies on screen (0 when hidden): the 3D view is centred in what is left.
 func occupied_width() -> float:
@@ -71,6 +104,8 @@ func _process(delta: float) -> void:
 	if _refresh_left > 0.0:
 		return
 	_refresh_left = 0.1   # ten readouts a second are plenty to read, and cost little
+	if bench.has_method("_update_status"):
+		bench._update_status()   # the on-screen status follows what is true now, not the last event
 	var current := tab_nodes[tabs.current_tab]
 	if current.has_method("refresh"):
 		current.refresh()

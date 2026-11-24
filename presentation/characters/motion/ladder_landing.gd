@@ -17,6 +17,8 @@ var deck_depth := 0.0
 ## The genuine handholds above the deck: x (signed lateral place), y (height above the deck), z (relative to the LIP, + = ahead), and the bar's radius. A hand takes the grip on its own side.
 var grips: Array[Vector3] = []
 var grip_radius := 0.025
+## The span of heights (above the deck) along which each bar really exists: a hand may take any point of a rail or a post inside it. `y` of a grip is where it is held by default.
+var grip_span := Vector2(0.05, 0.9)
 ## Where the landing came from, for reports ("sandbox tower posts", "authored rails"...).
 var source := ""
 
@@ -29,6 +31,7 @@ static func with_posts(lip: float, half_width: float, depth: float, post_x: floa
 	landing.deck_depth = depth
 	landing.grip_radius = radius
 	landing.grips = [Vector3(post_x, post_height, 0.0), Vector3(-post_x, post_height, 0.0)]
+	landing.grip_span = Vector2(0.05, post_height / 0.64)
 	landing.source = origin
 	return landing
 
@@ -42,6 +45,7 @@ static func with_extended_rails(geometry: LadderGeometry, lip: float, half_width
 	landing.grip_radius = geometry.rail_radius
 	var height := extension * 0.64
 	landing.grips = [Vector3(geometry.rail_half_span(), height, -lip), Vector3(-geometry.rail_half_span(), height, -lip)]
+	landing.grip_span = Vector2(0.05, extension)
 	landing.source = origin
 	return landing
 
@@ -72,8 +76,14 @@ func grip_for(side: int) -> Variant:
 
 ## "" when a supported transfer is verified for this body on this ladder, else the reason it is not (the host's request then keeps the height-only climb-out). The numbers come from the body.
 func unsupported_reason(geometry: LadderGeometry, body: LadderBody) -> String:
-	if lip_from_rungs < 0.0 or lip_from_rungs > body.arm_length() * 0.5:
-		return "the deck lip is %.2f m from the rungs, outside this body's reach budget (%.2f m)" % [lip_from_rungs, body.arm_length() * 0.5]
+	# The wall (or deck face) must be far enough behind the rungs for the boot: standing on a rung the toes go past it by the boot's measured reach less the half foot behind the ankle. And near enough
+	# for the lead foot to step onto the deck from the last rung (a share of the measured leg).
+	var toes_past_rung := body.foot_forward - body.ankle_behind(geometry.rung_radius, 0.5)
+	var needed_clearance := toes_past_rung + 0.03
+	if lip_from_rungs < needed_clearance:
+		return "the wall is %.2f m behind the rungs and this body's boot needs %.2f m (it reaches %.2f m ahead of the ankle)" % [lip_from_rungs, needed_clearance, body.foot_forward]
+	if lip_from_rungs > body.leg_length() * 0.45:
+		return "the deck lip is %.2f m from the rungs, farther than this body's leg can step (%.2f m)" % [lip_from_rungs, body.leg_length() * 0.45]
 	var needed_half_width := body.hip_offset.x + 0.1 * body.ratio
 	if deck_half_width < needed_half_width:
 		return "the deck is %.2f m wide each side of the axis, this body needs %.2f m" % [deck_half_width, needed_half_width]

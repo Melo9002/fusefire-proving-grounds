@@ -1,0 +1,7 @@
+Stage isolation (an experiment: each modifier switched off in turn, in one held pose). Bones: mixamorig_RightHand, mixamorig_RightForeArm. Baseline drift 0.00 mm.
+  WeaponArmIK (steady): mixamorig_RightHand moves 345.2 mm, mixamorig_RightForeArm moves 185.3 mm, mixamorig_RightForeArm turns 140.2 deg
+  AuxPass1  (NOT declared in PoseOwnership) (steady): mixamorig_RightHand moves 50.0 mm
+  HandGrip (rotation only): mixamorig_RightHand turns 105.8 deg
+  restored: yes (0.00 mm); effects below 1.0 mm or 0.5 deg are inside the experiment's own residual and are not attributed
+(An effect is what changes when one modifier is switched off; it is not a statement of what the modifier is declared to write.)
+isolation: docs/claude/adda/examples/ch01-isolation.json

@@ -62,7 +62,8 @@ func _run() -> void:
 		else:
 			c.present_movement_end()
 		_clean(c, "stairs -> " + label)
-	# Ending twice is harmless (idempotent).
+	# Ending twice is harmless (idempotent). A climb ended mid-ladder eases its pose out over `traversal_release_seconds` (issue 67), so the leg IK is off only once that has run.
+	await create_timer(a.rig.traversal_release_seconds + 0.2).timeout
 	a.present_movement_end()
 	a.present_defeat()
 	_clean(a, "repeated end")

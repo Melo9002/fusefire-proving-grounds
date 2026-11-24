@@ -11,6 +11,10 @@ var trail: MotionTrail
 var highlight: BoneHighlight
 ## Read-only ladder clearance (LadderClearance), sampled at skeleton_updated while a ladder is climbed.
 var clearance: LadderClearance
+## Optional world overlay of the offending vertices (LadderOverlay), off until asked for.
+var ladder_overlay: LadderOverlay
+## ADDA's temporal recorder (SessionRecorder): passive, reads only inside skeleton_updated. Created when a scenario starts or the Why? tab asks.
+var recorder: SessionRecorder
 var paused := false
 
 func _init(p_rig: CharacterRig) -> void:
@@ -65,8 +69,32 @@ func contacts_on() -> bool:
 func trail_on() -> bool:
 	return is_instance_valid(trail) and trail.enabled
 
+## Starts a fresh recording (the old rows are dropped); `clock` is the host's scenario clock in seconds, or -1 when none runs.
+func begin_recording(clock := Callable(), mesh := false) -> SessionRecorder:
+	if recorder == null:
+		recorder = SessionRecorder.attach(rig)
+	if recorder == null:
+		return null
+	recorder.stop()
+	recorder.clock = clock
+	if mesh:
+		recorder.enable_mesh(1)
+	recorder.start()
+	return recorder
+
+func end_recording() -> void:
+	if recorder != null:
+		recorder.stop()
+
+func recording_on() -> bool:
+	return recorder != null and recorder.recording
+
 ## Switches every optional diagnostic off and frees what they made (the monitor included).
 func shutdown() -> void:
+	if recorder != null:
+		recorder.stop()
+		recorder = null
+	set_ladder_overlay(false)
 	release_clearance()
 	for node: Node in [contacts, trail, highlight]:
 		if is_instance_valid(node):
@@ -86,19 +114,24 @@ func shutdown() -> void:
 
 ## True when nothing of the diagnostics is still attached (every overlay, listener and node gone).
 func is_clean() -> bool:
-	return not is_instance_valid(monitor) and not is_instance_valid(contacts) and not is_instance_valid(trail) and not is_instance_valid(highlight)
+	return not is_instance_valid(monitor) and not is_instance_valid(contacts) and not is_instance_valid(trail) and not is_instance_valid(highlight) and (recorder == null or recorder.is_clean())
 
 
 ## The ladder clearance tool, created when the panel first asks for it (nothing is connected before that).
 func ensure_clearance() -> LadderClearance:
 	if clearance == null:
 		clearance = LadderClearance.new(rig)
-		rig.skeleton.skeleton_updated.connect(_sample_clearance)
+		clearance.sampled.connect(_sample_clearance)
 	return clearance
 
 func _sample_clearance() -> void:
 	if clearance != null and rig.ladder != null:
-		clearance.sample()
+		if is_instance_valid(ladder_overlay):
+			var targets: Array[Vector3] = []
+			if rig.ladder.pose != null:
+				targets.append(rig.ladder.pose.feet[0])
+				targets.append(rig.ladder.pose.feet[1])
+			ladder_overlay.show_sample(clearance, rig.ladder.geometry, rig.ladder.climbed, targets)
 
 ## The panel's "Ladder landing" text: the rig's landing status and the measured clearances, or why there is nothing to show.
 func ladder_text() -> String:
@@ -109,6 +142,18 @@ func ladder_text() -> String:
 	return tool.readout(rig.ladder.landing_status, rig.ladder.landing, rig.ladder.geometry, rig.ladder.climbed, phase)
 
 func release_clearance() -> void:
-	if clearance != null and is_instance_valid(rig.skeleton) and rig.skeleton.skeleton_updated.is_connected(_sample_clearance):
-		rig.skeleton.skeleton_updated.disconnect(_sample_clearance)
+	if clearance != null:
+		clearance.release()
 	clearance = null
+
+
+## The world overlay that marks every leg vertex inside a rung or rail (red), the knees (yellow), the pelvis (green) and the planned feet (orange), with a label at the worst. Needs the clearance sample, so it
+## creates it. Off by default; `shutdown()` removes it.
+func set_ladder_overlay(on: bool) -> void:
+	if on:
+		ensure_clearance()
+		if not is_instance_valid(ladder_overlay):
+			ladder_overlay = LadderOverlay.attach(rig)
+	elif is_instance_valid(ladder_overlay):
+		ladder_overlay.shutdown()
+		ladder_overlay = null

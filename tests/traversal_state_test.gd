@@ -90,7 +90,10 @@ func _run() -> void:
 	v.rig.set_traversal_progress(1.2)
 	v.rig.end_traversal()
 	await _frames(3)
-	check(v.rig.ladder == null and not v.rig.leg_ik.active and not v.rig.traversal_contacts_active() and v.rig.crouch_modifier.aim_lean_degrees == 0.0, "A climb ended midway leaves no state, no leg IK, no contacts and no lean")
+	check(v.rig.ladder == null and not v.rig.traversal_contacts_active() and v.rig.crouch_modifier.aim_lean_degrees == 0.0, "A climb ended midway leaves no state, no contacts and no lean at once")
+	# The climbing pose eases out over `traversal_release_seconds` (issue 67) instead of dropping the body in one frame; the leg IK is off once it has.
+	await create_timer(v.rig.traversal_release_seconds + 0.2).timeout
+	check(not v.rig.leg_ik.active and v.rig.traversal_modifier.input.mode == TraversalPoseInput.Mode.NONE, "...and no leg IK once the climbing pose has eased out")
 	# A loaded carrier does not walk stairs (the existing rule), and a begun walk is not created.
 	v.rig.begin_carry()
 	v.rig.begin_stairs(model, true)

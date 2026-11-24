@@ -1,0 +1,19 @@
+{
+ "fault": {
+  "name": "AuxPass4",
+  "kind": "drift",
+  "bone": "@left_foot",
+  "vector": [
+   0.01,
+   0.0,
+   0.0
+  ],
+  "after": "TraversalFoot",
+  "start": 1.0
+ },
+ "answer": {
+  "stage": "AuxPass4",
+  "bone": "@left_foot",
+  "kind": "drift"
+ }
+}

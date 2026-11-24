@@ -15,6 +15,15 @@ var _landing: Label
 var _recording: Label
 var _layer_checks: Dictionary = {}
 var _master: CheckBox
+const ADDA_GUIDE := "Why is my robot doing that? (a foot slides, a hand snaps, a leg crosses a rung)  -> the Why? tab: it records the scenario and lists what stood out, in words, with possible causes marked unconfirmed.
+Where is the contact, and how far off is it?  -> Contact measurement (TARGET ERROR, REACH, SUPPORT CLAIM; a claim is not physical support).
+Does the body cross the ladder?  -> Ladder landing and the 'Ladder collisions' overlay (CAPSULE and sampled-VERTEX overlap; neither is a full mesh intersection).
+What is the presenter doing, and since when?  -> Live presentation / Recent events (the presenter's own clock).
+Which stage owns this bone?  -> Pose stages (DECLARED ownership and live weight, not a measured change).
+Where did the root go?  -> Root trail.  Does the weapon grip fit?  -> Weapon-grip contacts.
+Which modifier moves this bone, even one nobody declared?  -> Why? tab, Inspect a body part, 'Which pose stage moves it?' (an experiment: it switches each modifier off in turn and puts it back).
+Full guide: docs/claude/adda/README.md.
+Every number is read inside skeleton_updated and stamped; a number that is stale or could not be read says so instead of showing 0."
 var _trail: CheckBox
 var _grip: CheckBox
 var _bones: Array[String] = []
@@ -23,16 +32,18 @@ func setup(workbench: Node3D) -> void:
 	bench = workbench
 	add_theme_constant_override("separation", 5)
 	# What a developer looks at first is first: the live state, then the contact measurement, then what just happened.
+	var guide := WorkbenchUI.section(self, "ADDA guide: which tool answers which question", true)
+	guide.add_child(WorkbenchUI.label(ADDA_GUIDE, 12, WorkbenchUI.DIM))
 	var live := WorkbenchUI.section(self, "Live presentation  (runtime values)")
 	_live = WorkbenchUI.mono("", 12)
 	live.add_child(_live)
-	var measured := WorkbenchUI.section(self, "Contact measurement  (final pose)")
+	var measured := WorkbenchUI.section(self, "Contact measurement  (final pose: target error, reach, support claim)")
 	_contact = WorkbenchUI.mono("", 12)
 	measured.add_child(_contact)
 	measured.add_child(WorkbenchUI.row([["Record contacts", _start_recording], ["Stop and summarise", _stop_recording]]))
 	_recording = WorkbenchUI.mono("", 12)
 	measured.add_child(_recording)
-	var landing := WorkbenchUI.section(self, "Ladder landing  (final pose)")
+	var landing := WorkbenchUI.section(self, "Ladder landing  (final pose: capsules and sampled vertices, not full intersection)")
 	_landing = WorkbenchUI.mono("", 12)
 	landing.add_child(_landing)
 	var events := WorkbenchUI.section(self, "Recent events  (presenter clock)")
@@ -59,6 +70,7 @@ func setup(workbench: Node3D) -> void:
 	for node: CheckBox in [_grip, _trail]:
 		node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(node)
+	overlays.add_child(WorkbenchUI.check("Ladder collisions (leg vertices inside bars)", is_instance_valid(bench.diagnostics.ladder_overlay), func(on: bool) -> void: bench.diagnostics.set_ladder_overlay(on), "Red: skinned leg vertices inside a rung or rail. Yellow: knees. Green: pelvis. Orange: planned feet. Label: the worst one."))
 	for entry in [["Cover lines", bench.cover_diagnostics, func(on: bool) -> void: bench.cover_diagnostics = on, "Facing, weapon direction, wall normal"],
 			["Ladder markers", bench.traversal_diagnostics, func(on: bool) -> void: bench.traversal_diagnostics = on, "Ladder solver's hand and foot targets"],
 			["Stair markers", bench.stair_diagnostics, func(on: bool) -> void: bench.stair_diagnostics = on, "Planned and actual feet"]]:

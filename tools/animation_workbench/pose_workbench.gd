@@ -22,6 +22,10 @@ var diagnostics: WorkbenchDiagnostics
 var scenario_runner := WorkbenchScenarioRunner.new()
 var sim_paused := false
 var _step_requests := 0
+var _seek_total := 0
+var _seeking := false
+var _saved_max_fps := 0
+var _saved_vsync := DisplayServer.VSYNC_ENABLED
 ## The length of one paused step (seconds of presentation time); one frame at 60 fps by default.
 var step_seconds := 1.0 / 60.0
 var panel: WorkbenchPanel
@@ -45,6 +49,7 @@ func _resolve_rig() -> void:
 func _swap_character() -> void:
 	if Engine.is_editor_hint():
 		return
+	CharacterRig.use_drafts = WorkbenchSession.read_drafts   # the window shows the Tune tab's experiments; the game never reads them, the command line only with --drafts (reset when the workbench leaves)
 	WorkbenchSession.read_arguments()
 	var key := character if WorkbenchSession.character == &"" else WorkbenchSession.character
 	var old := get_node_or_null(rig_path)
@@ -140,7 +145,8 @@ func _ready() -> void:
 		status_label.add_theme_font_size_override("font_size", 16)
 	var title := get_node_or_null("UI/Title") as Label
 	if title != null:
-		title.text = "%s - ANIMATION WORKBENCH" % (String(rig.rig_profile.display_name) if rig.rig_profile != null else "character")
+		get_window().title = WorkbenchSession.PRODUCT_LONG
+		title.text = "%s - ADDA — Workbench" % (String(rig.rig_profile.display_name) if rig.rig_profile != null else "character")
 	_update_status()   # the compact status line replaces the long key list now that the panel exists
 	await get_tree().process_frame   # the rig aligns its own weapon once the skeleton has posed (its _ready)
 	await get_tree().process_frame
@@ -157,6 +163,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		_orbit_dragging = event.pressed
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if event.pressed else Input.MOUSE_MODE_VISIBLE
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		# The wheel zooms toward (or away from) what the camera looks at.
+		var look := -camera.global_basis.z
+		camera.global_position += look * (0.25 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.25) * view_scale
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 and is_instance_valid(panel):
+		# Report this moment, from anywhere: pause and type the note on the Start tab.
+		panel.show_tab(&"Start")
+		(panel.tab_named(&"Start") as StartTab).begin_report()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE and is_instance_valid(panel) and (scenario_runner.running or sim_paused):
+		# With the panel, Space pauses and resumes what is playing (the clip sequence it used to start is still on Space when nothing plays).
+		set_sim_paused(not sim_paused)
+		_update_status()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion and _orbit_dragging:
@@ -295,11 +319,20 @@ func _update_status() -> void:
 	# Keep controls in the demo so individual poses are easy to inspect.
 	if is_instance_valid(panel):
 		# With the panel the long key list lives in the Scenario tab; the status keeps the facts that change (the same vocabulary as before).
-		var diagnostics_text := "ON" if is_instance_valid(_diagnostics) and _diagnostics.enabled else "off"
-		status_label.text = "STATE: %s    IK: %s%s%s
-pace %.1f m/s    direction %s
-hand diagnostics %s    pose %s    view %s" % [state_name, "ON" if rig.ik_enabled else "OFF", "    PAUSED" if sim_paused else "",
-			("    scenario: " + String(scenario_runner.scenario.get("id", ""))) if scenario_runner.running else "", preview_speed, "turning" if preview_turning else str(preview_direction), diagnostics_text, POSE_PRESET_NAMES[_pose_preset], DIAGNOSTIC_VIEW_NAMES[_diagnostic_view]]
+		# What is true NOW, in plain words, read every refresh (the old line showed the preview's requested pace and the inspection preset, which read as "moving" while she stood still).
+		status_label.text = "STATE: %s    %s\n%s\nmoving at %.1f m/s" % [state_name, where_text(), playback_text(), rig.presenter.speed if is_instance_valid(rig.presenter) else 0.0]
+		# Inspection switches (keys I, H, Z, X) are listed only while they are not at their default, so a key press is confirmed and the usual screen stays short.
+		var switches: Array[String] = []
+		if not rig.ik_enabled:
+			switches.append("IK: OFF")
+		if is_instance_valid(_diagnostics) and _diagnostics.enabled:
+			switches.append("hand diagnostics ON")
+		if _pose_preset != 0:
+			switches.append("pose preset: %s" % POSE_PRESET_NAMES[_pose_preset])
+		if _diagnostic_view != 0:
+			switches.append("camera: %s" % DIAGNOSTIC_VIEW_NAMES[_diagnostic_view])
+		if not switches.is_empty():
+			status_label.text += "\n" + "    ".join(switches)
 		return
 	status_label.text = "STATE: %s    IK: %s\n1 Idle  2 Move  3 Aim  4 Shoot  5 Hit  6 Defeat\nArrows: forward/back/strafe    T: turn preview\n[ / ]: pace %.1f m/s    Direction: %s\nRMB drag: orbit    C: camera preset\nSpace: sequence    I: IK    Esc: close\nLocomotion preview is in place" % [state_name, "ON" if rig.ik_enabled else "OFF", preview_speed, "turning" if preview_turning else str(preview_direction)]
 	status_label.text += "\n7/8: low/high cover    9/0: expose left/right\nV: vault    B: climb    N: descend    L: landing"
@@ -316,9 +349,12 @@ func _process(frame_delta: float) -> void:
 	if sim_paused:
 		# Paused: nothing advances (the animation tree is manual, the presenter is not ticked). A requested step runs the whole frame once at `step_seconds`.
 		if _step_requests <= 0:
+			_seek_fast(false)
 			_update_camera_offset()
 			return
 		_step_requests -= 1
+		if _step_requests == 0:
+			_seek_fast(false)   # arrived: the cap is back before anything reads it
 		_delta = step_seconds
 		rig.animation_controller.animation_tree.advance(_delta)
 	scenario_runner.advance(_delta)
@@ -419,15 +455,64 @@ func request_reaction(seconds: float) -> ActionHandle:
 		diagnostics.monitor.watch(handle, "reaction")
 	return handle
 
+## Rescue and carry through the calls the R, P, M and Q keys make (a scenario uses these, not the keys).
+func rescue_pickup() -> void:
+	rig.finish_interaction_now()
+	rig.end_carry()
+	rig.begin_pickup(rig.character_root.global_position + rig.character_root.global_basis.orthonormalized().z * 1.0)
+	_update_status()
+
+func rescue_carry(speed: float) -> void:
+	rig.finish_interaction_now()
+	preview_speed = speed
+	rig.animation_controller.play(&"carry_move" if speed > 0.0 else &"carry_idle")
+	_update_status()
+
+func rescue_release() -> void:
+	if is_instance_valid(rig.carry_passenger) and not rig.interaction_active():
+		preview_speed = 0.0
+		rig.keep_released_passenger = true
+		rig.begin_release()
+	_update_status()
+
 ## Switches the contact diagnostics on (a scenario about contacts wants them).
 func diagnostics_for_contacts() -> void:
 	diagnostics.set_contacts(true)
 	if is_instance_valid(panel):
 		panel.sync_toggles()
 
+## Where the body is, in words: "on a ladder", "on stairs", "carrying someone", "in cover"... or "on the floor".
+func where_text() -> String:
+	var places: Array[String] = []
+	if rig.ladder != null:
+		places.append("on a ladder")
+	if rig.stairs != null:
+		places.append("on stairs")
+	if is_instance_valid(rig.carry_passenger):
+		places.append("carrying someone")
+	if rig.interaction_active():
+		places.append("picking up or putting down")
+	if not cover_demo.is_empty():
+		places.append("in cover")
+	if is_instance_valid(rig.presenter) and rig.presenter.attack.is_active():
+		places.append("attacking")
+	return ", ".join(places) if not places.is_empty() else "on the floor"
+
+## What playback is doing: "Playing A Tactical 4.2 / 15.0 s", "Paused at 4.2 s", "Going to 6.3 s... 40%" (a replay still on its way is never called paused).
+func playback_text() -> String:
+	var title := String(scenario_runner.scenario.get("short", scenario_runner.scenario.get("title", "")))
+	if _step_requests > 0:
+		var target := scenario_runner.time + _step_requests * step_seconds
+		var done := 1.0 - float(_step_requests) / maxf(float(_seek_total), 1.0)
+		return "Going to %.1f s... %d%%" % [target, int(done * 100.0)]
+	if scenario_runner.running:
+		return "%s %s at %.2f s of %.0f" % ["PAUSED" if sim_paused else "Playing", title, scenario_runner.time, float(scenario_runner.scenario.get("duration", 0.0))]
+	return "PAUSED" if sim_paused else "Nothing playing (Start tab)"
+
 func set_sim_paused(on: bool) -> void:
 	sim_paused = on
 	_step_requests = 0
+	_seek_fast(false)
 	if diagnostics != null:
 		diagnostics.set_paused(on)
 	var tree: AnimationTree = rig.animation_controller.animation_tree
@@ -436,14 +521,62 @@ func set_sim_paused(on: bool) -> void:
 func step_sim(frames := 1) -> void:
 	if sim_paused:
 		_step_requests += frames
+		_seek_total = _step_requests
+		if _step_requests > 1:
+			_seek_fast(true)
 
-func start_scenario(id: StringName) -> bool:
+## While a replay runs to a moment, the frame rate is uncapped so it gets there sooner. Still exactly one simulation step per frame at `step_seconds`, so the moment reached is the same one; only the waiting is shorter.
+func _seek_fast(on: bool) -> void:
+	if on == _seeking:
+		return
+	_seeking = on
+	if on:
+		_saved_max_fps = Engine.max_fps
+		_saved_vsync = DisplayServer.window_get_vsync_mode()
+		Engine.max_fps = 0
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	else:
+		Engine.max_fps = _saved_max_fps
+		DisplayServer.window_set_vsync_mode(_saved_vsync)
+
+## Steps still waiting (a replay to a moment plays them one per frame, so a moment 5 s in takes about 5 s to reach).
+func pending_steps() -> int:
+	return _step_requests
+
+## `record` false plays it without ADDA's recorder starting over (a replay to a finding must not erase the recording the finding came from).
+func start_scenario(id: StringName, record := true) -> bool:
 	var definition := WorkbenchScenarios.find(id)
 	if definition.is_empty() or not WorkbenchScenarios.supported(definition, rig).ok:
 		return false
 	set_sim_paused(false)
+	if diagnostics != null and record:
+		diagnostics.begin_recording(func() -> float: return float(scenario_runner.time) if scenario_runner.running else -1.0)   # ADDA's recorder is passive: it only reads inside skeleton_updated
+		if not scenario_runner.step_run.is_connected(_mark_step):
+			scenario_runner.step_run.connect(_mark_step)
+			scenario_runner.finished.connect(func(_completed: bool) -> void: diagnostics.end_recording())
 	scenario_runner.start(self, definition)
 	return true
+
+func _mark_step(_index: int, label: String) -> void:
+	if diagnostics != null and is_instance_valid(diagnostics.recorder) and diagnostics.recorder.recording:
+		diagnostics.recorder.mark(label, "scenario step")
+
+## ADDA: plays a scenario again and stops, paused, at scenario time `seconds`: the moment a finding names. The steps are `step_seconds` long (set it to the recorded frame step first), so the same moment comes back.
+func replay_to(id: StringName, seconds: float) -> bool:
+	if not start_scenario(id, false):
+		return false
+	set_sim_paused(true)
+	step_sim(int(round(seconds / maxf(step_seconds, 0.0001))))
+	return true
+
+## ADDA: puts the camera on a world point (a finding's subject) from the side the camera is already on.
+func focus_on_world(point: Vector3, distance := 2.4) -> void:
+	var away := camera.global_position - point
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.01 else Vector3.RIGHT
+	_diagnostic_view = 0
+	camera.global_position = point + away * distance * view_scale + Vector3.UP * 0.25 * view_scale
+	camera.look_at(point, Vector3.UP)
 
 ## Returns the workbench to a neutral state: every bench ended, no hold, no posture request of its own, the walk stopped, the body square. Safe to call at any time, including mid-scenario and while paused.
 func reset_scene() -> void:
@@ -467,6 +600,8 @@ func reset_scene() -> void:
 	_update_status()
 
 func _exit_tree() -> void:
+	_seek_fast(false)   # the frame cap is engine-wide: never leave it uncapped
+	CharacterRig.use_drafts = false
 	if diagnostics != null:
 		diagnostics.shutdown()
 
@@ -561,6 +696,8 @@ func _follow_diagnostic_view() -> void:
 
 ## Starts (or, with an empty spec, ends) a cover scenario. spec: full (bool), height, left / right edge distance (m) and left_ok / right_ok (usable), aim (bool).
 func set_cover_demo(spec: Dictionary) -> void:
+	if not spec.is_empty():
+		_end_other_benches(&"cover")
 	cover_demo = spec
 	if is_instance_valid(_cover_group):
 		_cover_group.queue_free()
@@ -714,6 +851,7 @@ const CROSS_DISTANCE := 0.73
 
 
 func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1.0, landing_kind := "") -> void:
+	_end_other_benches(&"ladder")
 	end_ladder_demo()
 	var landing: LadderLanding = LandingFixtures.make(landing_kind, LadderGeometry.for_rise(length)) if landing_kind != "" else null
 	var start := (0.0 if direction > 0 else length) if climbed < 0.0 else climbed
@@ -723,6 +861,19 @@ func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1
 	_build_ladder_visuals(landing)
 	_apply_ladder_progress()
 	rig.animation_controller.play(&"rifle_idle")
+
+
+## One bench at a time: starting the cover, ladder or stair bench ends the other two, so a cover wall never stands in front of a ladder (or the reverse). The path corridor is a separate overlay and is left alone.
+func _end_other_benches(keep: StringName) -> void:
+	if keep != &"cover" and not cover_demo.is_empty():
+		set_cover_demo({})
+		rig.presenter.face_yaw(0.0, false, false)   # the cover bench turned the body toward its edge (-45 deg); the next bench starts square
+		rig.apply_root_yaw(0.0)   # ...and the turn it absorbed into the body root
+		_bench_heading = 0.0
+	if keep != &"ladder" and not ladder_demo.is_empty():
+		end_ladder_demo()
+	if keep != &"stairs" and not stair_demo.is_empty():
+		end_stair_demo()
 
 
 func end_ladder_demo() -> void:
@@ -859,6 +1010,7 @@ var _stair_actual: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 
 ## `rise` and `depth` of one tread (m), `count` treads, `ascending`, `rate` m/s along the stair (0 = hold at `start`), `start` the starting distance (-1 = the walk's start).
 func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, rate: float, start := -1.0) -> void:
+	_end_other_benches(&"stairs")
 	end_stair_demo()
 	var model := StairModel.new()
 	model.direction = Vector3.BACK
@@ -866,7 +1018,10 @@ func start_stair_demo(rise: float, depth: float, count: int, ascending: bool, ra
 	model.tread_rise = rise
 	model.first_riser = 1.0
 	model.count = count
-	var enter := 0.0
+	# The walk starts where a host starts it: one tread before the first riser (the exploration host's entry). It used to start at the lower cell centre, so for the first 0.83 m the character stood
+	# in its idle clip while the floor slid under it, and the stair plan pulled the planted feet toward a foothold most of a metre ahead (0.84 m of foot travel against the floor: ADDA report
+	# adda_reports/20261124-092555-contacts-stair-entry-the-first-steps). No game host shows that approach: the tactical route walks it with the locomotion cycle.
+	var enter := maxf(0.0, model.riser_s(1) - model.tread_depth)
 	var exit := model.riser_s(count)
 	var s0 := (enter if ascending else exit) if start < 0.0 else start
 	stair_demo = {"model": model, "ascending": ascending, "rate": rate, "s": s0, "enter": enter, "exit": exit, "playing": rate > 0.0, "step_once": false}

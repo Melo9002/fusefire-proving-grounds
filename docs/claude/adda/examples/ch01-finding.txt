@@ -1,0 +1,25 @@
+F3  [MEDIUM]  Pose snap: 3 bones at once
+  Observed: 3 bones jumped at the same moment, at 2.98 s, beyond the motion of the frames around them. Largest jumps: right hand 8.1 cm, right toes 5.8 cm, right foot 4.2 cm. The right hand target did not jump in those frames, so the pose itself changed.
+  Possible causes: none that the measurements support. Cause: unknown.
+  Facts: {"bones_moved":3.0,"context":"free","largest":[{"neighbour_speed_mps":0.15,"speed_mps":5.0,"step_cm":8.1,"subject":"mixamorig_RightHand"},{"neighbour_speed_mps":1.14,"speed_mps":3.07,"step_cm":5.8,"subject":"mixamorig_RightToeBase"},{"neighbour_speed_mps":2.29,"speed_mps":2.19,"step_cm":4.2,"subject":"mixamorig_RightFoot"}],"stages_engaged":["WeaponPose","WeaponArmIK","HandGrip"],"step_cm":8.1,"targets_jumped":[]}
+  Frames: rows 178-180 (worst 180), presenter 2.98-3.02 s, scenario 2.98 s
+  Measured with: bone position per frame, in the world (character frame plus the root's own position and heading), read inside skeleton_updated; a snap is a velocity that departs from the median of the 3 frames either side by more than 0.5x that velocity plus 1.0 m/s (frame-rate sensitive); adjacent rows are one moment  [JOINT_POSITION]
+  Does not establish: that anything is in contact, or that the drawn mesh follows the bone
+  Subject: {"bones":["mixamorig_RightHand","mixamorig_RightToeBase","mixamorig_RightFoot"],"kind":"bone","part":"right hand","side":"right","text":"right hand"}
+  Reproduce: Replay the scenario paused at scenario time 2.98 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=tactical
+  Recorded rows around the worst frame:
+    row 178  t 2.983 s  scenario 2.98 s  move/free  stages WeaponPose,WeaponArmIK,HandGrip
+      left hand: error 0.0 mm, margin 6.8 cm, weight 0.00, weapon grip
+      right hand: error 0.0 mm, margin 18.6 cm, weight 0.00, weapon grip
+    row 179  t 3.000 s  scenario 3.00 s  move/free  stages WeaponPose,WeaponArmIK,HandGrip
+      left hand: error 0.0 mm, margin 6.9 cm, weight 0.00, weapon grip
+      right hand: error 0.0 mm, margin 18.6 cm, weight 0.00, weapon grip
+    row 180  t 3.017 s  scenario 3.02 s  move/free  stages WeaponPose,WeaponArmIK,HandGrip
+      left hand: error 0.0 mm, margin 6.9 cm, weight 0.00, weapon grip
+      right hand: error 80.0 mm, margin 23.1 cm, weight 0.00, weapon grip
+    row 181  t 3.033 s  scenario 3.03 s  move/free  stages WeaponPose,WeaponArmIK,HandGrip
+      left hand: error 0.0 mm, margin 7.0 cm, weight 0.00, weapon grip
+      right hand: error 80.0 mm, margin 23.1 cm, weight 0.00, weapon grip
+    row 182  t 3.050 s  scenario 3.05 s  move/free  stages WeaponPose,WeaponArmIK,HandGrip
+      left hand: error 0.0 mm, margin 7.0 cm, weight 0.00, weapon grip
+      right hand: error 80.0 mm, margin 23.1 cm, weight 0.00, weapon grip

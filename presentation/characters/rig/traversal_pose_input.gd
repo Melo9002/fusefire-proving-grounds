@@ -10,6 +10,15 @@ var mode: Mode = Mode.NONE
 ## False while a ladder traversal is active but its pose has not been solved yet (nothing to apply).
 var solved := false
 var weight := 0.0
+## LADDER: seconds of the hand-over back to the animation still to run after the traversal ended mid-climb (0 = none). The rig starts it in `end_traversal`; the modifier counts it down while it scales `weight` by what is left, so the body
+## eases out of the climbing pose instead of jumping (issue 67: 44 cm in one frame when a climb was interrupted).
+var release_left := 0.0
+var release_total := 0.0
+## True from `end_traversal` until the ease-out is done; the rig's simulation clock advances it (CharacterRig.advance_traversal_release). `end_traversal` only starts it when a presenter is ticking.
+var releasing := false
+## The simulation's own delta of the last presenter tick and the frame it came in (CharacterRig.advance_traversal_release). The knee turn rate runs on it, not on the engine's frame time, so a fixed-step run is exactly repeatable (the modifier's own delta is real time).
+var sim_delta := 0.0
+var sim_frame := -100
 ## LADDER: the pelvis place and the two foot places, character space.
 var hips_local := Vector3.ZERO
 var feet_local: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
@@ -36,6 +45,8 @@ var stair_profile: StairProfile
 var stair_crouch := 0.0
 
 func clear() -> void:
+	release_left = 0.0
+	releasing = false
 	mode = Mode.NONE
 	solved = false
 	weight = 0.0

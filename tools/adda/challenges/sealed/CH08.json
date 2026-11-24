@@ -1,0 +1,24 @@
+{
+ "fault": {
+  "name": "AuxPass8",
+  "kind": "pop",
+  "bone": "@left_foot",
+  "vector": [
+   0.0,
+   0.15,
+   0.0
+  ],
+  "every": 50,
+  "after": "TraversalFoot"
+ },
+ "answer": {
+  "stage": "AuxPass8",
+  "bone": "@left_foot",
+  "kind": "pop"
+ },
+ "solve": {
+  "at": "3.0",
+  "bones": "@left_foot",
+  "window": "120"
+ }
+}

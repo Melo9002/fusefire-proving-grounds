@@ -70,7 +70,18 @@ func _apply_ladder(delta: float) -> void:
 	# place before any modifier of this pass runs; this only applies it to the bones.
 	if not input.solved:
 		return
-	weight = input.weight
+	var scale := 1.0
+	if input.releasing:
+		# The traversal ended mid-climb: the climbing pose hands the body back to the animation over `release_total` seconds of the rig's simulation clock (CharacterRig.advance_traversal_release, so a fixed-step run
+		# is exactly repeatable).
+		if input.release_left <= 0.0:
+			input.clear()
+			weight = 0.0
+			if is_instance_valid(leg_ik):
+				leg_ik.active = false
+			return
+		scale = smoothstep(0.0, 1.0, input.release_left / input.release_total)
+	weight = input.weight * scale
 	# The pelvis: toward the target place by the weight (the animation's own hips are the weight-0 pose).
 	var hips_world := character_frame.to_global(input.hips_local)
 	var hips_in_skeleton := skeleton.global_transform.affine_inverse() * hips_world
@@ -84,7 +95,10 @@ func _apply_ladder(delta: float) -> void:
 	_last_hips = input.hips_local
 	_last_feet = [input.feet_local[0], input.feet_local[1]]
 	_have_last = true
-	var knee_slew := KNEE_TURN_RATE * maxf(delta, 0.0) + KNEE_TURN_PER_METRE * travel
+	# While the pose eases out (the traversal has ended) the knees keep the turn they have: the slew runs on the engine's frame time, which would make the ease differ from run to run.
+	# The rate runs on the simulation's delta when a presenter is ticking (a fixed-step run repeats exactly) and on the engine's otherwise.
+	var step := input.sim_delta if Engine.get_process_frames() - input.sim_frame <= 5 else delta
+	var knee_slew := 0.0 if input.releasing else KNEE_TURN_RATE * maxf(step, 0.0) + KNEE_TURN_PER_METRE * travel
 	# The legs: feet on rungs, knees out toward the ladder.
 	if is_instance_valid(leg_ik):
 		for side in 2:

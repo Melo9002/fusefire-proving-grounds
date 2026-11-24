@@ -57,6 +57,25 @@ var support_reach_degrees := 0.0
 var kneel := 0.0
 ## Which leg goes down in the kneel: 0 = left, 1 = right (right-handed shooter).
 var kneel_leg := 1
+## Seconds the legs take to hand over from the playing clip to the solved crouch when a crouch begins (0 = at once, the old behaviour). Without it a clip that is mid-step snaps its swinging foot to the floor in one frame (issue 62).
+var takeover_seconds := 0.2
+## How far the legs have handed over, 0 (the clip's legs) to 1 (the solved crouch). Reset whenever the character stands.
+var takeover := 0.0
+## The most time one update advances the handover, seconds: a hitch frame must not carry the legs most of the way in one step (that is the snap this handover exists to remove), and it keeps runs at different frame times alike.
+const MAX_TAKEOVER_STEP := 1.0 / 60.0
+var _driver_depth := 0.0
+var _driver_kneel := 0.0
+
+## Moves the handover on by `delta` simulation seconds (never more than MAX_TAKEOVER_STEP in one update), or back to 0 while the character stands.
+func advance_takeover(delta: float) -> void:
+	_driver_depth = depth
+	_driver_kneel = kneel
+	if depth <= 0.002 and kneel <= 0.002:
+		takeover = 0.0
+	elif takeover_seconds <= 0.0:
+		takeover = 1.0
+	else:
+		takeover = minf(1.0, takeover + minf(delta, MAX_TAKEOVER_STEP) / takeover_seconds)
 ## Deepest natural crouch for this body, metres. Valid after setup().
 var max_depth := 0.0
 ## Standing head-top height above the ankle-height floor, metres. Valid after setup().
@@ -277,6 +296,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 		return
 	_apply_support_reach(target)
 	if depth <= 0.002 and kneel <= 0.002:
+		takeover = 0.0
 		# Standing: only the aiming lean.
 		if aim_lean_degrees > 0.05:
 			_apply_lean(target, aim_lean_degrees)
@@ -293,6 +313,15 @@ func _process_modification_with_delta(_delta: float) -> void:
 	# Absolute hip placement: the baked cover clip's own crouch must not add to this one.
 	var parent := target.get_bone_parent(_hips)
 	var parent_basis := target.get_bone_global_rest(parent).basis if parent >= 0 else Basis.IDENTITY
+	# The handover is advanced by whoever drives the posture (CharacterRig.apply_posture_target, with the simulation's own delta, so a fixed-step run is exactly repeatable). Nobody driving it (a test or a tool
+	# setting `depth` by hand) means no handover: the crouch is applied at once, as before.
+	if takeover_seconds <= 0.0 or not is_equal_approx(depth, _driver_depth) or not is_equal_approx(kneel, _driver_kneel):
+		takeover = 1.0
+	var clip_hips := target.get_bone_pose_position(_hips)
+	var clip_rotations := {}
+	if takeover < 1.0:
+		for bone in _upper + _lower + _foot:
+			clip_rotations[bone] = target.get_bone_pose_rotation(bone)
 	var rest_origin := target.get_bone_rest(_hips).origin
 	var delta_skeleton := Vector3(0.0, -drop, 0.0) / _scale - _forward_skeleton * (back / _scale)
 	target.set_bone_pose_position(_hips, rest_origin + parent_basis.inverse() * delta_skeleton)
@@ -319,7 +348,26 @@ func _process_modification_with_delta(_delta: float) -> void:
 		_set_flexion(target, _foot[side], foot + shin_lean)
 		if side == kneel_leg and weight > 0.0 and not _kneel_front.is_empty():
 			_aim_rear_foot(target, side, weight)
+	if takeover < 1.0:
+		_blend_takeover(target, clip_hips, clip_rotations, parent_basis)
 	_apply_lean(target, current_lean_degrees() + aim_lean_degrees)
+
+## While the legs are handing over from the clip to the solved crouch, gives each leg bone and the hips a share of both, so a foot that is mid-step glides to the floor instead of snapping. Blended legs with
+## a half-lowered hip can leave a planted sole under the floor, so the hips are lifted just enough to keep the lowest ankle where the finished crouch puts it (never lowered: a foot in the air is left in the air).
+func _blend_takeover(target: Skeleton3D, clip_hips: Vector3, clip_rotations: Dictionary, parent_basis: Basis) -> void:
+	var floor_y := INF
+	for side in 2:
+		floor_y = minf(floor_y, target.get_bone_global_pose(_foot[side]).origin.y)
+	var weight := smoothstep(0.0, 1.0, takeover)
+	for bone: int in clip_rotations:
+		target.set_bone_pose_rotation(bone, (clip_rotations[bone] as Quaternion).slerp(target.get_bone_pose_rotation(bone), weight))
+	target.set_bone_pose_position(_hips, clip_hips.lerp(target.get_bone_pose_position(_hips), weight))
+	var lowest := INF
+	for side in 2:
+		lowest = minf(lowest, target.get_bone_global_pose(_foot[side]).origin.y)
+	if lowest < floor_y:
+		var lift := Vector3(0.0, floor_y - lowest, 0.0)
+		target.set_bone_pose_position(_hips, target.get_bone_pose_position(_hips) + parent_basis.inverse() * lift)
 
 ## Finishes the rear foot of the half-kneel by DIRECTION instead of by a flexion number: the foot-to-toe line is turned to point back, a little outward and slightly down so the instep rests on
 ## the floor, whatever this body's foot bone happens to be rotated at rest and whichever leg is down. The flexion above only brings the foot close (so the turn here is small and never ambiguous);

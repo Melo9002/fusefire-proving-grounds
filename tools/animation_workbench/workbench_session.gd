@@ -3,10 +3,17 @@ extends RefCounted
 ## What the next workbench launch should look like. A scene reload is the workbench's one reliable "full reset" (it also switches the character, whose rig builds itself once), so the choice made in the panel is kept
 ## here, in static variables that outlive the reload, and read by the workbench before its rig builds. Command-line user arguments (`--character=<key>`, `--unarmed`, `--scenario=<id>`) set the same things.
 
+## The product name. AniLab is the animation framework; ADDA (AniLab Diagnostic & Debugging Assistant) is its diagnostic and debugging suite; this scene is ADDA's Workbench. Paths, scene names and command lines
+## keep their old names (pose_workbench.tscn) on purpose: only what a person reads says ADDA.
+const PRODUCT := "ADDA — Workbench"
+const PRODUCT_LONG := "ADDA — AniLab Diagnostic & Debugging Assistant: Workbench"
+
 static var character: StringName = &""
 static var armed := true
 static var autostart_scenario: StringName = &""
 static var start_tab := -1
+## Whether the workbench's rig reads the Tune tab's drafts (tuning/drafts/). The window does; the headless `adda` command line does not unless asked (--drafts), so an agent's run reproduces the GAME.
+static var read_drafts := true
 
 ## Reads the command line (after `--`). Call once, before the rig builds.
 static func read_arguments() -> void:
@@ -18,7 +25,8 @@ static func read_arguments() -> void:
 		elif argument.begins_with("--scenario="):
 			autostart_scenario = StringName(argument.trim_prefix("--scenario="))
 		elif argument.begins_with("--tab="):
-			start_tab = int(argument.trim_prefix("--tab="))
+			var tab := argument.trim_prefix("--tab=")
+			start_tab = int(tab) if tab.is_valid_int() else WorkbenchPanel.index_of(StringName(tab))   # a number or a title (--tab=Tune)
 
 ## The command line that reproduces the current configuration (for the Evidence tab).
 static func repro_command(scenario: StringName = &"") -> String:

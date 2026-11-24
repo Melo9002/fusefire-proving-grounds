@@ -14,6 +14,8 @@ const RIGHT := 1
 ## The share of a limb's full length it may be asked to span (a fully straight limb is not a planted contact).
 const REACH_FRACTION := 0.95
 ## Arms are planned a little shorter: the shoulder is where the lean and the rifle's or the hang's pose leave it, which the plan only models.
+## The share of a step a foot spends in the air. The feet are a quarter of a step apart, so a band wider than 0.25 lets both be airborne for a moment; a narrower one makes the foot move so fast that its target jumps (the continuity contract).
+const FOOT_SWING_BAND := 0.33
 const HAND_REACH_FRACTION := 0.92
 ## How much of a forward lean moves the shoulders (the spine shares the lean with the hips and the head: measured on both bodies, 0.64 to 0.7 of T sin(lean)).
 const LEAN_SHOULDER_GAIN := 0.68
@@ -37,7 +39,7 @@ const RELEASE_LEAD := 0.12
 
 ## The ladder plan for a body: where the pelvis hangs, how far each limb steps and the windows the limbs work in. Pure; cheap (a few dozen operations).
 ## {hips: Vector3, hand_step, foot_step (rungs per move), hand_window_low, foot_window_low (rung heights above the floor level at which a limb is picked up), shoulder_height,
-##  hand_reach (vertical half range), shoulder_z, ankle_above, ankle_behind, d_max, d_min, hand_depth}
+##  hand_reach (vertical half range), shoulder_z, ankle_above, ankle_behind, d_max, d_min, hand_depth, leg_feasible}
 static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, body: LadderBody) -> Dictionary:
 	var k := body.ratio
 	var plane := geometry.plane_ahead
@@ -69,14 +71,17 @@ static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, bod
 	# The knee of the foot that is highest must stay behind the rungs (frog-leg turn included): how far the pelvis has to hang for that, as far as the arms allow.
 	var hips_z := torso_hips_z
 	var hip_rel := Vector3(body.hip_offset.x, body.hip_offset.y, body.hip_offset.z)
-	var ankle_behind := body.ball_length * 0.5
-	var ankle_above := geometry.rung_radius + body.ankle_height * 0.85
+	# Where the ankle stands behind the rung: the share of the ankle-to-ball length that puts the BALL of the foot on the bar (1) or the arch (0.5). The wall clearance a landing needs follows from it.
+	var ankle_behind := body.ankle_behind(geometry.rung_radius, profile.ankle_behind_share)
+	var ankle_above := geometry.rung_radius + body.sole_depth()
 	var foot_step := 1
 	var reach_leg := body.leg_length() * REACH_FRACTION
 	var ankle_z := plane - ankle_behind
 	var foot_x := profile.foot_half_spread * k
 	var dz := ankle_z - (hips_z + hip_rel.z)
 	var dx := absf(foot_x - hip_rel.x) + sway
+	# If the leg cannot even span the horizontal offset to the rung (a body with legs shorter than the stance) there is no honest foot window: say so (`leg_feasible`) instead of clamping the feet up to hip height.
+	var leg_feasible := reach_leg * reach_leg >= dz * dz + dx * dx
 	var d_max := sqrt(maxf(reach_leg * reach_leg - dz * dz - dx * dx, 0.0))
 	var d_min := maxf(d_max - float(foot_step) * pitch * 1.25, absf(body.thigh - body.shin) + 0.05)
 	var knee_z_max := plane - geometry.rung_radius - body.knee_radius() - KNEE_GAP
@@ -91,6 +96,7 @@ static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, bod
 		var needed_hip_z := (knee_z_max - ankle_z * fraction - offset * cos(turn) * 0.9) / (1.0 - fraction)
 		hips_z = minf(torso_hips_z, maxf(needed_hip_z - hip_rel.z, hang_limit))
 		dz = ankle_z - (hips_z + hip_rel.z)
+	hips_z -= profile.hang_bias * k
 	var shoulder_z := hips_z + shoulder_rel.z
 	var hand_depth := grip_plane - shoulder_z
 	vertical = sqrt(maxf(arm_reach * arm_reach - hand_depth * hand_depth - hand_dx * hand_dx, 0.0))
@@ -102,7 +108,7 @@ static func plan_ladder(profile: TraversalProfile, geometry: LadderGeometry, bod
 	return {
 		"hips": Vector3(0.0, hips_y, hips_z), "hand_step": hand_step, "foot_step": foot_step, "hand_window_low": hand_low, "foot_window_low": foot_low + profile.foot_window_bias,
 		"shoulder_height": shoulder_height, "hand_reach": vertical, "shoulder_z": shoulder_z, "ankle_above": ankle_above, "ankle_behind": ankle_behind, "d_max": d_max, "d_min": d_min,
-		"hand_depth": hand_depth,
+		"hand_depth": hand_depth, "leg_feasible": leg_feasible,
 	}
 
 
@@ -156,17 +162,17 @@ static func ladder_pose(profile: TraversalProfile, geometry: LadderGeometry, bod
 		if deck > 0.5:
 			result.hand_rung[side] = -1
 		var fx := profile.foot_half_spread * k * (1.0 if side == LEFT else -1.0)
-		var foot := _limb_on_ladder(climbed, rung_count, foot_step, foot_phase[side], plan.foot_window_low, up, first, spacing, minf(profile.swing_fraction, 0.25))
+		var foot := _limb_on_ladder(climbed, rung_count, foot_step, foot_phase[side], plan.foot_window_low, up, first, spacing, minf(profile.swing_fraction, FOOT_SWING_BAND))
 		result.foot_rung[side] = foot.rung
 		result.foot_swing[side] = foot.swing
 		var foot_y: float = foot.height + float(plan.ankle_above)
-		result.feet[side] = Vector3(fx, foot_y + sin(foot.swing * PI) * profile.swing_lift, plane - float(plan.ankle_behind))
+		result.feet[side] = Vector3(fx, foot_y + sin(foot.swing * PI) * profile.swing_lift, plane - float(plan.ankle_behind) - sin(foot.swing * PI) * profile.swing_back * k)
 		var shoulder := Vector3((1.0 if side == LEFT else -1.0) * body.shoulder_offset.x, float(plan.shoulder_height), float(plan.shoulder_z))
 		var hand_target: Vector3 = result.hands[side]
 		# The deck handhold is let go of by the hand weight below, so only a hand that is meant to hold a rung is judged.
 		result.hand_reachable[side] = deck > 0.5 or hand_target.distance_to(shoulder) <= body.arm_length() * 0.97
 		var hip_joint := body.hip_joint(hips, side)
-		result.foot_reachable[side] = (result.feet[side] as Vector3).distance_to(hip_joint) <= body.leg_length() * 0.97
+		result.foot_reachable[side] = bool(plan.leg_feasible) and (result.feet[side] as Vector3).distance_to(hip_joint) <= body.leg_length() * 0.97
 	# Pelvis: back from the rung plane, at the ladder pelvis height, with a small sway toward the planted side (weight transfer between the two feet).
 	var cycle := (climbed / (2.0 * spacing)) * TAU
 	# Weight goes onto the LOWER (straighter, supporting) foot: the pelvis shifts toward it, which also takes the raised leg's hip away from its rail. Follows the feet, not a clock.
@@ -249,7 +255,10 @@ static func ladder_landing_pose(profile: TraversalProfile, geometry: LadderGeome
 			# The palm takes the near face of the bar (its radius and the palm's own thickness), on the inside of it.
 			var inset_x := landing.grip_radius + 0.03 * body.ratio
 			var inset_z := landing.grip_radius + 0.003
-			palm = Vector3(sign_side * (absf((grip as Vector3).x) - inset_x), deck_y + (grip as Vector3).y, lip + (grip as Vector3).z - inset_z)
+			# The hand takes the point of the bar nearest where its arm naturally is (a little below the shoulder), inside the part of the bar that exists.
+			var natural := body.shoulder_leaned(hips, side, float(pose.lean_degrees)).y - deck_y - body.arm_length() * 0.15
+			var held_height := clampf(natural, landing.grip_span.x, landing.grip_span.y)
+			palm = Vector3(sign_side * (absf((grip as Vector3).x) - inset_x), deck_y + held_height, lip + (grip as Vector3).z - inset_z)
 		pose.hands[side] = (pose.hands[side] as Vector3).lerp(palm - to_root, brace) + to_root
 		pose.hand_deck[side] = brace
 		# Release the trailing-side hand first as the pelvis shifts toward the lead foot.

@@ -39,6 +39,9 @@ const COLOR_NORMAL := Color(0.6, 1.0, 0.2)
 var rig: CharacterRig
 var enabled := false
 var latest: Dictionary = {}
+## The pose witness (sampling happens from its `final_pose`, the moment the skeleton's pose is final) and the stamp of `latest`.
+var witness: PoseWitness
+var stamp := {}
 var layers := {"targets": true, "solved": true, "errors": true, "reach": true, "feet": true, "frames": false}
 var recording := false
 var history: Array[Dictionary] = []
@@ -76,11 +79,13 @@ func set_enabled(on: bool) -> void:
 		_lines.material_override = material
 		_lines.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(_lines)
-		if not _skeleton.skeleton_updated.is_connected(_on_skeleton_updated):
-			_skeleton.skeleton_updated.connect(_on_skeleton_updated)
+		witness = PoseWitness.acquire(_skeleton)
+		witness.final_pose.connect(_on_skeleton_updated)
 	else:
-		if is_instance_valid(_skeleton) and _skeleton.skeleton_updated.is_connected(_on_skeleton_updated):
-			_skeleton.skeleton_updated.disconnect(_on_skeleton_updated)
+		if witness != null and witness.final_pose.is_connected(_on_skeleton_updated):
+			witness.final_pose.disconnect(_on_skeleton_updated)
+			witness.release()
+			witness = null
 		if is_instance_valid(_lines):
 			_lines.queue_free()
 		_lines = null
@@ -95,9 +100,10 @@ func set_layer(layer: String, on: bool) -> void:
 
 ## True when nothing of this diagnostic remains attached to the skeleton or the scene.
 func is_clean() -> bool:
-	return not enabled and not is_instance_valid(_lines) and not (is_instance_valid(_skeleton) and _skeleton.skeleton_updated.is_connected(_on_skeleton_updated))
+	return not enabled and not is_instance_valid(_lines) and not (witness != null and witness.final_pose.is_connected(_on_skeleton_updated))
 
 func _on_skeleton_updated() -> void:
+	stamp = witness.stamp()
 	latest = measure()
 	if latest.is_empty():
 		return
@@ -192,6 +198,40 @@ func measure() -> Dictionary:
 		sample["knee_width_cm"] = absf((knees[0] - knees[1]).dot(root.x)) * 100.0
 		sample["ankle_width_cm"] = absf(((feet[0].ankle as Vector3) - (feet[1].ankle as Vector3)).dot(root.x)) * 100.0
 	return sample
+
+## The last sample as ADDA measurements (see Measurement): per hand a TARGET_ERROR (wrist from the contact target) and a REACH_FEASIBILITY (shoulder to target against 97% of the arm), per foot a TARGET_ERROR
+## (final ankle from the plan's foothold) and a SUPPORT_CLAIM (the plan says planted, with its weight). Each is FRESH only for the update it was taken in; with no sample, or a stale one, every entry says so
+## instead of carrying numbers. A TARGET_ERROR does not say the target is reachable or right, and a SUPPORT_CLAIM is not physical support (see Measurement.MEANING).
+func evidence(scenario := "") -> Array[Measurement]:
+	var out: Array[Measurement] = []
+	if witness == null or latest.is_empty():
+		out.append(Measurement.missing(Measurement.Kind.TARGET_ERROR, "contact error", Measurement.Status.UNAVAILABLE, "no sample yet (enable the diagnostic and let a frame run)"))
+		return out
+	var verdict := witness.judge(stamp)
+	for hand: Dictionary in latest.hands:
+		var error := Measurement.make(Measurement.Kind.TARGET_ERROR, "%s hand: wrist from contact target" % hand.name, snappedf(float(hand.error) * 1000.0, 0.01), "mm")
+		var reach := Measurement.make(Measurement.Kind.REACH_FEASIBILITY, "%s hand: target within 97%% of arm length" % hand.name, not bool(hand.unreachable), "bool")
+		reach.tolerance = REACH_LIMIT_FRACTION
+		for m in [error, reach]:
+			out.append(_finish(m, verdict, "world", "bones read inside skeleton_updated; target = the contact target node", scenario))
+	for foot: Dictionary in latest.feet:
+		var ferror := Measurement.make(Measurement.Kind.TARGET_ERROR, "%s foot: ankle from %s foothold" % [foot.name, foot.source], snappedf(float(foot.error) * 1000.0, 0.01), "mm")
+		var claim := Measurement.make(Measurement.Kind.SUPPORT_CLAIM, "%s foot: %s claims it planted" % [foot.name, foot.source], bool(foot.planted) and float(foot.weight) > 0.9, "bool")
+		for m in [ferror, claim]:
+			out.append(_finish(m, verdict, "world", "ankle bone read inside skeleton_updated; foothold = the planner's typed plan", scenario))
+	return out
+
+func _finish(m: Measurement, verdict: Dictionary, space: String, method: String, scenario: String) -> Measurement:
+	m.pose = Measurement.Pose.FINAL
+	m.space = space
+	m.source = "ContactErrorDiagnostics.measure"
+	m.method = method
+	m.stamped(witness, stamp)
+	if verdict.status != Measurement.Status.FRESH:
+		m.status = verdict.status
+		m.reason = verdict.reason
+		m.value = null
+	return m.with_identity(rig, scenario)
 
 ## The numbers of a sample without the vectors (for history and export).
 static func scalars(sample: Dictionary) -> Dictionary:

@@ -49,7 +49,23 @@ func report() -> Dictionary:
 	if is_instance_valid(contacts) and not contacts.latest.is_empty():
 		data.runtime["contacts"] = ContactErrorDiagnostics.scalars(contacts.latest)
 		data.runtime["contact_recording"] = contacts.summary()
+	data["adda"] = adda_measurements()
 	return data
+
+## ADDA's measurement records (Measurement.to_dict): what each reading is, its pose, space, status and what it does not establish. Each tool contributes only while it is on; a tool that is off is listed as
+## UNAVAILABLE, never as zero.
+func adda_measurements() -> Dictionary:
+	var scenario := String(bench.scenario_runner.scenario.get("id", &""))
+	var records: Array[Dictionary] = []
+	var contacts: ContactErrorDiagnostics = bench.diagnostics.contacts
+	if is_instance_valid(contacts):
+		for m in contacts.evidence(scenario):
+			records.append(m.to_dict())
+	else:
+		records.append(Measurement.missing(Measurement.Kind.TARGET_ERROR, "contact error", Measurement.Status.UNAVAILABLE, "the contact diagnostic is off").to_dict())
+	if bench.diagnostics.clearance != null and bench.rig.ladder != null:
+		records.append(bench.diagnostics.clearance.vertex_evidence(bench.rig.ladder.geometry, bench.rig.ladder.climbed, 0.003, scenario).to_dict())
+	return {"product": WorkbenchSession.PRODUCT_LONG, "schema": 1, "measurements": records}
 
 func _export_report() -> void:
 	var path := _path("json")

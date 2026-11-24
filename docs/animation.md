@@ -52,7 +52,7 @@ presentation/exploration/       the non-tactical host: ExplorationCharacterHost 
 presentation/tactical/          the tactical host and its policy: TacticalCharacterAdapter, TacticalActionPresenter, CoverEdgeSelector,
                                 CoverEdgePolicy, TacticalPoseContext, TacticalRouteBuilder
 presentation/diagnostics/       hand-contact diagnostics (read the rig, never write it)
-tools/animation_workbench/      the animation workbench: pose_workbench.tscn, its panel tabs (ui/), scenarios, locomotion test panel
+tools/animation_workbench/      ADDA — Workbench (the animation workbench): pose_workbench.tscn, its panel tabs (ui/), scenarios, locomotion test panel
 tools/quality/                  pose_trace, route_trace, animation_perf_baseline and probes
 art/characters/mira_0/          model, rig profile (mira_0_rig_profile.tres), runtime/mira_0_unit_visual.tscn (the production character)
 tests/                          flat; tagged in tests/catalog.json
@@ -171,6 +171,8 @@ For the **hands** (the one body part with several producers) there is one typed 
 6. **Unreachable contacts** are the planner's to handle (clamp or report); the arm only stretches toward a target. Measure how often it happens on the smaller body before shipping (the Small MIRA ladder was the example; `TraversalSolver` now reports `hand_reachable` / `foot_reachable` and `ladder_climb_test` measures the final pose on both bodies).
 
 ## Diagnostics and the workbench (Task 12)
+
+> **ADDA (AniLab Diagnostic & Debugging Assistant)** is the name of this diagnostic suite today: the Workbench below, the measurement contract, the temporal recorder, findings, reports, comparison, the command line `tools/adda.ps1` and the Why? tab. Start at [`docs/claude/adda/README.md`](claude/adda/README.md) for how to investigate an animation problem (as a person or as a coding agent), what ADDA measures and what it does not, the diagnostic challenges and the measured cost. The paragraphs below describe the original Task 12 layer.
 
 The workbench (`tools/animation_workbench/`, see its README for the panel and scenarios) is a host that inspects the shared stack. Its diagnostics live in `presentation/diagnostics/`, are **read-only, rig-only and opt-in** (nothing in the game creates them), and are usable from any host: `RigInspection` (identity, roles, measurements, capabilities, a compatibility check that does not build a rig), `PoseStageReport` (the stages in real order with declared writes and live weights), `PresentationMonitor` (a live snapshot and a bounded event history from the presenter's public accessors), `ContactErrorDiagnostics` (target against final wrist or ankle, reach margin), `MotionTrail`, `BoneHighlight`, and the older `HandContactDiagnostics`.
 

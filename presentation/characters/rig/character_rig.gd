@@ -45,6 +45,8 @@ var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
 var knee_poles: Array[Marker3D] = []
 var crouch_modifier: CoverCrouchModifier
+## Seconds the climbing pose takes to hand the body back to the animation when a ladder traversal ends (0 = at once, the old behaviour).
+var traversal_release_seconds := 0.25
 ## The shared presentation state of this character (time, reported velocity, facing, the moving decision, posture requests). Every host of a rig (the tactical adapter, the workbench)
 ## ticks it once per frame from its own `_process`; while hosts inherit the rig it is a bound component, afterwards it becomes the node that ticks.
 var presenter := CharacterPresenter.new(self)
@@ -275,7 +277,74 @@ func _rifle_local_basis() -> Basis:
 
 ## Builds the character: the model, the weapon (if any), the arm IK and the animation controller. A host (the tactical adapter, the workbench, a tool) adds this node and drives it: the presenter's tick
 ## and `update_weapon_pose` once per frame. The rig has no frame callback of its own, so a character is advanced exactly once per frame by whoever hosts it.
+## Tuning for this character, in a `tuning/` folder beside its rig profile (art/characters/<id>/tuning/). A `<property>.tres` there replaces the profile the scene gives and `clips.tres` adds hand-edited
+## clips: that is what the GAME uses (written only by the Workbench's explicit "Apply to game"). `tuning/drafts/` holds the Workbench's experiments; only a host that sets `use_drafts` (the Workbench) reads
+## them, so an experiment never changes the game. No folder, no change. Never read in the editor (the scene file is not rewritten).
+const TUNED_PROFILES: Array[StringName] = [&"cover_profile", &"locomotion_profile", &"traversal_profile", &"stair_profile", &"handling"]
+const DRAFTS := "drafts"
+## Tests point this at a scratch folder so they never read or write the character's real tuning.
+static var tuning_folder_override := ""
+## Set by the Workbench before it builds its rig: read the drafts over the game's tuning. The game never sets it.
+static var use_drafts := false
+## The stair profile as authored or tuned, before `_measure_stair_anatomy` copies it and fills in this body's measurements (the Tune tab edits this one).
+var stair_profile_source: StairProfile
+## What the GAME would use, per tuned property: a copy taken before any draft was applied (the Tune tab compares against it and "Apply to game" writes over it).
+var tuning_game := {}
+## Where "Apply to game" writes each property: the tuning file, or the profile's own .tres when the scene already gives one and there is no tuning file.
+var tuning_game_file := {}
+
+## The folder this rig's tuning lives in ("" when the rig has no rig profile file to place it beside).
+func tuning_folder() -> String:
+	if tuning_folder_override != "":
+		return tuning_folder_override
+	if rig_profile == null or rig_profile.resource_path == "" or rig_profile.resource_path.contains("::"):
+		return ""
+	return rig_profile.resource_path.get_base_dir().path_join("tuning")
+
+func _load_tuning() -> void:
+	var folder := tuning_folder()
+	if folder == "":
+		return
+	for property in TUNED_PROFILES:
+		var current: Resource = get(property)
+		var own := current.resource_path if current != null and current.resource_path.ends_with(".tres") and not current.resource_path.contains("::") else ""
+		var game_file := folder.path_join("%s.tres" % property)
+		if _take(property, game_file):
+			tuning_game_file[property] = game_file
+		else:
+			tuning_game_file[property] = own if own != "" else game_file
+		if get(property) != null:
+			tuning_game[property] = (get(property) as Resource).duplicate(true)
+		if use_drafts:
+			_take(property, folder.path_join(DRAFTS).path_join("%s.tres" % property))
+	# Hand-edited clips (the Workbench's "Edit this clip in Godot"): a saved clip replaces the generated one of the same name (CharacterAnimationController checks each one).
+	for clips in ([folder.path_join(DRAFTS).path_join("clips.tres")] if use_drafts else []) + [folder.path_join("clips.tres")]:
+		if ResourceLoader.exists(clips):
+			var library := ResourceLoader.load(clips, "", ResourceLoader.CACHE_MODE_IGNORE)
+			if library is AnimationLibrary:
+				clip_library = library
+				break
+
+## Replaces `property` with the profile in `path` when it exists and is of the same kind (a file of the wrong kind is ignored, never half-applied). Each rig gets its own copy.
+func _take(property: StringName, path: String) -> bool:
+	if not ResourceLoader.exists(path):
+		return false
+	var tuned := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
+	var current: Resource = get(property)
+	if tuned is Resource and (current == null or tuned.get_script() == current.get_script()):
+		set(property, tuned)
+		return true
+	return false
+
+## Puts the authored stair numbers back and measures this body again (after the Tune tab changed `stair_profile_source`).
+func reapply_stair_profile() -> void:
+	if stair_profile_source != null:
+		stair_profile = stair_profile_source
+		_measure_stair_anatomy()
+
 func _ready() -> void:
+	if not Engine.is_editor_hint():
+		_load_tuning()
 	_build_character()
 	_build_weapon_attachment()
 	_build_arm_ik()
@@ -303,6 +372,8 @@ func _ready() -> void:
 func _measure_stair_anatomy() -> void:
 	if stair_profile == null or not is_instance_valid(skeleton):
 		return
+	if stair_profile_source == null:
+		stair_profile_source = stair_profile
 	stair_profile = stair_profile.duplicate() as StairProfile
 	# The profile's lengths in metres (stance roll, heel lift, swing lift, margins, step rise, stance width, standing pelvis height) are authored for the reference body (RigBones.REFERENCE_HIP_TO_ANKLE);
 	# a body with a different leg takes its share. The anatomy below is measured, never scaled.
@@ -623,6 +694,8 @@ func _publish_traversal_input() -> void:
 		return
 	var input := traversal_modifier.input
 	if ladder != null:
+		input.release_left = 0.0
+		input.releasing = false
 		input.mode = TraversalPoseInput.Mode.LADDER
 		input.solved = ladder.pose != null
 		if input.solved:
@@ -634,8 +707,15 @@ func _publish_traversal_input() -> void:
 			input.floor_level = ladder.climbed
 			input.landing = ladder.landing
 			input.deck_planted = [ladder.landing != null and ladder.pose.foot_rung[0] < 0, ladder.landing != null and ladder.pose.foot_rung[1] < 0]
-			input.deck_levelling = ladder.pose.foot_deck
+			# A foot planted on a rung is turned flat to it (the sole on the bar), as it is on a tread or the deck; a swinging foot is levelled less. Without this the foot keeps the pitch the shin gives it
+			# and its sole sinks into the rung (measured on the mesh, up to 17 mm).
+			var levelled: Array[float] = []
+			for side_index in 2:
+				levelled.append(maxf(ladder.pose.foot_deck[side_index], 1.0 - ladder.pose.foot_swing[side_index]))
+			input.deck_levelling = levelled
 	elif stairs != null and stairs.pose != null:
+		input.release_left = 0.0
+		input.releasing = false
 		input.mode = TraversalPoseInput.Mode.STAIRS
 		input.solved = true
 		input.weight = stairs.pose.weight
@@ -646,6 +726,8 @@ func _publish_traversal_input() -> void:
 		input.planted = [stairs.pose.feet[0].planted, stairs.pose.feet[1].planted]
 		input.foot_lift = [maxf(stairs.pose.feet[0].position.y - stairs.pose.feet[0].tread_top - stair_profile.ankle_height, 0.0), maxf(stairs.pose.feet[1].position.y - stairs.pose.feet[1].tread_top - stair_profile.ankle_height, 0.0)]
 		input.stair_profile = stair_profile
+	elif input.releasing:
+		pass   # the climbing pose is easing out (end_traversal); the modifier clears it when it is done
 	else:
 		input.clear()
 
@@ -746,8 +828,17 @@ func end_stairs() -> void:
 func end_traversal() -> void:
 	if ladder == null:
 		return
+	# Only a host that ticks the presenter every frame can advance the ease; a rig nobody ticks (a tool or test driving it by hand) releases at once, as before.
+	var ticking := presenter.tick_count > 0 and Engine.get_process_frames() - presenter.last_tick_frame <= 5
+	var easing := ticking and traversal_release_seconds > 0.0 and traversal_modifier != null and (stairs == null or stairs.pose == null) and traversal_modifier.input.mode == TraversalPoseInput.Mode.LADDER and traversal_modifier.input.solved and traversal_modifier.input.weight > 0.001
 	ladder = null
-	_publish_traversal_input()
+	if easing:
+		# Interrupted mid-climb (a defeat, a cancelled order): ease the climbing pose out instead of dropping the body to the animation in one frame.
+		traversal_modifier.input.release_total = traversal_release_seconds
+		traversal_modifier.input.release_left = traversal_release_seconds
+		traversal_modifier.input.releasing = true
+	else:
+		_publish_traversal_input()
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = 0.0
 	if is_instance_valid(leg_ik):
@@ -756,6 +847,17 @@ func end_traversal() -> void:
 	if is_weapon_stowed() and not carry_contacts_active():
 		unstow_weapon()
 	_stow_blend = 1.0
+
+
+## Counts the climbing pose's ease-out down by `delta` simulation seconds. The presenter calls it every tick.
+func advance_traversal_release(delta: float) -> void:
+	if traversal_modifier == null:
+		return
+	traversal_modifier.input.sim_delta = delta
+	traversal_modifier.input.sim_frame = Engine.get_process_frames()
+	if not traversal_modifier.input.releasing:
+		return
+	traversal_modifier.input.release_left = maxf(0.0, traversal_modifier.input.release_left - delta)
 
 
 func traversal_contacts_active() -> bool:
@@ -1041,6 +1143,7 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 	var poles: Array[Node3D] = [right_elbow_pole, left_elbow_pole]
 	for side in 2:
 		var hang: Vector3 = shoulders[side] + frame * Vector3(0.0, -_arm_length(side) * RELAXED_ARM_BEND, 0.03)
+		hang += _arm_swing(side, frame, _arm_length(side))
 		hang = _clear_of_thigh(hang, side, frame, _arm_length(side))
 		if side == 0 and presenter != null:
 			hang = _raised_by_gesture(hang, shoulders[side], frame)
@@ -1049,6 +1152,26 @@ func apply_relaxed_hand_targets(right_shoulder_world: Vector3) -> void:
 		var outward := -1.0 if side == 0 else 1.0   # the character's right hand is on -X
 		poles[side].global_position = (shoulders[side] + hang) * 0.5 + frame * Vector3(outward * 0.30, 0.0, -0.30)
 
+
+## The walking arm swing of a hanging (unarmed) arm: the hand goes forward while the foot on the SAME side goes back, as a walker's arms counter the legs, by a share of how far that ankle is
+## ahead of or behind its hip, faded in with the walking speed (none when standing). It follows the legs' own phase, whatever gait or body: the hang point used to stay fixed under the shoulder, so the
+## IK held the arms rigid while the legs walked.
+const ARM_SWING_PER_STRIDE := 0.55
+## The most a hand swings fore or aft, as a share of the arm's length.
+const ARM_SWING_MAX := 0.22
+## The walking speed (m/s) at which the swing is full.
+const ARM_SWING_FULL_SPEED := 0.9
+
+func _arm_swing(side: int, frame: Basis, arm_length: float) -> Vector3:
+	var speed_share := clampf(float(locomotion_report.get("speed", 0.0)) / ARM_SWING_FULL_SPEED, 0.0, 1.0)
+	if speed_share <= 0.001 or ladder != null or is_instance_valid(carry_passenger):
+		return Vector3.ZERO
+	var leg: Array[StringName] = bones.right_leg if side == 0 else bones.left_leg
+	var hip := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[0])).origin
+	var ankle := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(leg[2])).origin
+	var ahead := (ankle - hip).dot(frame.z)
+	var swing := clampf(-ahead * ARM_SWING_PER_STRIDE, -arm_length * ARM_SWING_MAX, arm_length * ARM_SWING_MAX) * speed_share
+	return frame.z * swing + frame.y * (absf(swing) * 0.3)   # the hand rises a little at either end of its arc
 
 ## The right hand while a gesture asks for it (CharacterPresenter.gesture_hand): raised out beside the head at the arm's own length, with a small wave, blended from where it hangs. The point is in the body's own
 ## frame and scales with the arm, so it fits any humanoid.
@@ -1156,6 +1279,7 @@ func apply_posture_target(depth_request: float, yaw_goal: float, delta: float, p
 		_kneel = move_toward(_kneel, kneel_target, profile.kneel_speed * delta)
 	crouch_modifier.depth = _crouch_depth
 	crouch_modifier.kneel = _kneel
+	crouch_modifier.advance_takeover(delta)
 	if drive_yaw:
 		# Shortest way round, always: the offset is an angle, and a plain linear chase could sweep the long way through a full turn.
 		var step := deg_to_rad(profile.turn_degrees_per_second) * delta
@@ -1209,6 +1333,23 @@ func ladder_body() -> LadderBody:
 		var toe: Vector3 = to_local * (rest.call(bones.left_toes) - ankle)
 		_ladder_body.ball_length = Vector2(toe.x, toe.z).length()
 		_ladder_body.toe_height = maxf((to_local * rest.call(bones.left_toes)).y, 0.0)
+	# The limb volumes as this body's own mesh has them (armor included), not as the reference body would: measured once from the skinned vertices at rest.
+	var legs: Array[StringName] = [bones.left_leg[0], bones.left_leg[1], bones.left_leg[2]]
+	var foot_bones: Array[StringName] = [bones.left_leg[2]]
+	if bones.left_toes != &"" and skeleton.find_bone(bones.left_toes) >= 0:
+		legs.append(bones.left_toes)
+		foot_bones.append(bones.left_toes)
+	var surface := SkinnedSurface.create(skeleton, legs)
+	if surface.size() > 100:
+		_ladder_body.measured_thigh = surface.measured_radius([bones.left_leg[0]], bones.left_leg[0], bones.left_leg[1])
+		_ladder_body.measured_shin = surface.measured_radius([bones.left_leg[1]], bones.left_leg[1], bones.left_leg[2])
+		_ladder_body.measured_knee = surface.measured_radius([bones.left_leg[0], bones.left_leg[1]], bones.left_leg[1], bones.left_leg[1], 0.9, true)
+		# The boot's reach ahead of the ankle, along the character's own forward (in the skeleton frame).
+		var forward := (skeleton.global_basis.inverse() * character_root.global_basis.z).normalized()
+		_ladder_body.foot_forward = surface.reach_along(foot_bones, bones.left_leg[2], forward, 1.0)
+		# The boot's sole thickness: how far below the ankle bone its lowest vertex is (down = the character's own down in the skeleton frame).
+		var down := (skeleton.global_basis.inverse() * -character_root.global_basis.y).normalized()
+		_ladder_body.sole_below_ankle = maxf(surface.reach_along(foot_bones, bones.left_leg[2], down, 1.0), _ladder_body.ankle_height * 0.5)
 	return _ladder_body
 
 

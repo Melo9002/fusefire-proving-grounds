@@ -1,0 +1,6593 @@
+{
+  "config": {
+    "armed": true,
+    "body_ratio": 1.0,
+    "character": "mira_0",
+    "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- run --scenario=rescue --character=mira_0",
+    "command": "godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+    "dropped": 0,
+    "duration_s": 14.983,
+    "engine": "4.7.2-stable (official)",
+    "fps": 60.0,
+    "frame_dt_s": 0.01667,
+    "identity": "Mira0PoseWorkbench | MIRA (Mixamo) | armed",
+    "mesh_sampling": false,
+    "revision": {
+      "branch": "review/claude-adda",
+      "commit": "d71b139",
+      "dirty": true
+    },
+    "rows": 900,
+    "scenario": "rescue"
+  },
+  "events": [
+    {
+      "detail": {
+        "context": "carry",
+        "count": 1,
+        "rows_affected": 1,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.86,
+            "speed_mps": 3.06,
+            "step_cm": 4.7,
+            "subject": "mixamorig_RightToeBase"
+          }
+        ],
+        "worst_subject": "mixamorig_RightToeBase"
+      },
+      "kind": "pose_snap",
+      "n0": 6,
+      "n1": 6,
+      "st0": 0.11667,
+      "subject": "pose snap",
+      "t0": 0.1,
+      "t1": 0.1,
+      "unit": "cm",
+      "value": 4.7,
+      "worst_n": 6
+    },
+    {
+      "detail": {
+        "stage": "CoverCrouch"
+      },
+      "kind": "stage_engaged",
+      "n0": 10,
+      "n1": 10,
+      "st0": 0.18333,
+      "subject": "CoverCrouch",
+      "t0": 0.16667,
+      "t1": 0.16667,
+      "unit": "",
+      "value": 1.0,
+      "worst_n": 10
+    },
+    {
+      "detail": {
+        "context": "carry",
+        "count": 6,
+        "rows_affected": 1,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 1.04,
+            "speed_mps": 27.5,
+            "step_cm": 44.3,
+            "subject": "mixamorig_RightToeBase"
+          },
+          {
+            "neighbour_speed_mps": 1.26,
+            "speed_mps": 23.16,
+            "step_cm": 36.9,
+            "subject": "mixamorig_RightFoot"
+          },
+          {
+            "neighbour_speed_mps": 1.46,
+            "speed_mps": 14.49,
+            "step_cm": 26.5,
+            "subject": "mixamorig_LeftToeBase"
+          },
+          {
+            "neighbour_speed_mps": 1.48,
+            "speed_mps": 14.15,
+            "step_cm": 26.0,
+            "subject": "mixamorig_LeftFoot"
+          },
+          {
+            "neighbour_speed_mps": 1.88,
+            "speed_mps": 5.67,
+            "step_cm": 12.4,
+            "subject": "mixamorig_LeftLeg"
+          },
+          {
+            "neighbour_speed_mps": 1.74,
+            "speed_mps": 7.33,
+            "step_cm": 9.4,
+            "subject": "mixamorig_RightLeg"
+          }
+        ],
+        "worst_subject": "mixamorig_RightToeBase"
+      },
+      "kind": "pose_snap",
+      "n0": 10,
+      "n1": 10,
+      "st0": 0.18333,
+      "subject": "pose snap",
+      "t0": 0.16667,
+      "t1": 0.16667,
+      "unit": "cm",
+      "value": 44.3,
+      "worst_n": 10
+    },
+    {
+      "detail": {
+        "from": "move",
+        "to": "pickup"
+      },
+      "kind": "state_changed",
+      "n0": 27,
+      "n1": 27,
+      "st0": 0.46667,
+      "subject": "animation state",
+      "t0": 0.45,
+      "t1": 0.45,
+      "unit": "",
+      "value": "pickup",
+      "worst_n": 27
+    },
+    {
+      "detail": {
+        "stage": "HandGrip"
+      },
+      "kind": "stage_engaged",
+      "n0": 30,
+      "n1": 30,
+      "st0": 0.51667,
+      "subject": "HandGrip",
+      "t0": 0.5,
+      "t1": 0.5,
+      "unit": "",
+      "value": 1.0,
+      "worst_n": 30
+    },
+    {
+      "detail": {
+        "arm_cm": 46.99,
+        "context": "carry",
+        "error_mm": 404.6,
+        "owner": "contact claim",
+        "reach_margin_cm": -41.87,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "weight": 1.0
+      },
+      "kind": "reach_exceeded",
+      "n0": 50,
+      "n1": 137,
+      "st0": 0.85,
+      "subject": "right hand",
+      "t0": 0.83333,
+      "t1": 2.28333,
+      "unit": "cm",
+      "value": 41.87,
+      "worst_n": 71
+    },
+    {
+      "detail": {
+        "error_mm": 35.7,
+        "owner": "contact claim"
+      },
+      "kind": "contact_acquired",
+      "n0": 50,
+      "n1": 50,
+      "st0": 0.85,
+      "subject": "right hand",
+      "t0": 0.83333,
+      "t1": 0.83333,
+      "unit": "weight",
+      "value": 0.5,
+      "worst_n": 50
+    },
+    {
+      "detail": {
+        "arm_cm": 46.35,
+        "context": "carry",
+        "error_mm": 485.9,
+        "owner": "contact claim",
+        "reach_margin_cm": -49.98,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "weight": 1.0
+      },
+      "kind": "reach_exceeded",
+      "n0": 50,
+      "n1": 140,
+      "st0": 0.85,
+      "subject": "left hand",
+      "t0": 0.83333,
+      "t1": 2.33333,
+      "unit": "cm",
+      "value": 49.98,
+      "worst_n": 112
+    },
+    {
+      "detail": {
+        "error_mm": 23.3,
+        "owner": "contact claim"
+      },
+      "kind": "contact_acquired",
+      "n0": 50,
+      "n1": 50,
+      "st0": 0.85,
+      "subject": "left hand",
+      "t0": 0.83333,
+      "t1": 0.83333,
+      "unit": "weight",
+      "value": 0.5,
+      "worst_n": 50
+    },
+    {
+      "detail": {
+        "context": "carry",
+        "count": 1,
+        "rows_affected": 1,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.34,
+            "speed_mps": 2.89,
+            "step_cm": 4.3,
+            "subject": "mixamorig_RightForeArm"
+          }
+        ],
+        "worst_subject": "mixamorig_RightForeArm"
+      },
+      "kind": "pose_snap",
+      "n0": 137,
+      "n1": 137,
+      "st0": 2.3,
+      "subject": "pose snap",
+      "t0": 2.28333,
+      "t1": 2.28333,
+      "unit": "cm",
+      "value": 4.3,
+      "worst_n": 137
+    },
+    {
+      "detail": {
+        "from": "pickup",
+        "to": "carry_move"
+      },
+      "kind": "state_changed",
+      "n0": 151,
+      "n1": 151,
+      "st0": 2.53333,
+      "subject": "animation state",
+      "t0": 2.51667,
+      "t1": 2.51667,
+      "unit": "",
+      "value": "carry_move",
+      "worst_n": 151
+    },
+    {
+      "detail": {
+        "context": "carry",
+        "count": 6,
+        "rows_affected": 1,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.6,
+            "speed_mps": 6.75,
+            "step_cm": 12.1,
+            "subject": "mixamorig_RightToeBase"
+          },
+          {
+            "neighbour_speed_mps": 0.43,
+            "speed_mps": 5.54,
+            "step_cm": 9.7,
+            "subject": "mixamorig_RightFoot"
+          },
+          {
+            "neighbour_speed_mps": 0.31,
+            "speed_mps": 4.29,
+            "step_cm": 7.2,
+            "subject": "mixamorig_LeftFoot"
+          },
+          {
+            "neighbour_speed_mps": 0.29,
+            "speed_mps": 4.05,
+            "step_cm": 6.9,
+            "subject": "mixamorig_LeftToeBase"
+          },
+          {
+            "neighbour_speed_mps": 0.49,
+            "speed_mps": 2.47,
+            "step_cm": 4.7,
+            "subject": "mixamorig_RightLeg"
+          },
+          {
+            "neighbour_speed_mps": 0.36,
+            "speed_mps": 2.72,
+            "step_cm": 4.2,
+            "subject": "mixamorig_LeftLeg"
+          }
+        ],
+        "worst_subject": "mixamorig_RightToeBase"
+      },
+      "kind": "pose_snap",
+      "n0": 192,
+      "n1": 192,
+      "st0": 3.21667,
+      "subject": "pose snap",
+      "t0": 3.2,
+      "t1": 3.2,
+      "unit": "cm",
+      "value": 12.1,
+      "worst_n": 192
+    },
+    {
+      "detail": {
+        "stage": "CoverCrouch"
+      },
+      "kind": "stage_released",
+      "n0": 193,
+      "n1": 193,
+      "st0": 3.23333,
+      "subject": "CoverCrouch",
+      "t0": 3.21667,
+      "t1": 3.21667,
+      "unit": "",
+      "value": 0.0,
+      "worst_n": 193
+    },
+    {
+      "detail": {
+        "from": "carry_move",
+        "to": "carry_idle"
+      },
+      "kind": "state_changed",
+      "n0": 194,
+      "n1": 194,
+      "st0": 3.25,
+      "subject": "animation state",
+      "t0": 3.23333,
+      "t1": 3.23333,
+      "unit": "",
+      "value": "carry_idle",
+      "worst_n": 194
+    },
+    {
+      "detail": {
+        "from": "carry_idle",
+        "to": "carry_move"
+      },
+      "kind": "state_changed",
+      "n0": 300,
+      "n1": 300,
+      "st0": 5.01667,
+      "subject": "animation state",
+      "t0": 5.0,
+      "t1": 5.0,
+      "unit": "",
+      "value": "carry_move",
+      "worst_n": 300
+    },
+    {
+      "detail": {
+        "from": "carry_move",
+        "to": "carry_idle"
+      },
+      "kind": "state_changed",
+      "n0": 539,
+      "n1": 539,
+      "st0": 9.0,
+      "subject": "animation state",
+      "t0": 8.98333,
+      "t1": 8.98333,
+      "unit": "",
+      "value": "carry_idle",
+      "worst_n": 539
+    },
+    {
+      "detail": {
+        "from": "carry_idle",
+        "to": "carry_move"
+      },
+      "kind": "state_changed",
+      "n0": 599,
+      "n1": 599,
+      "st0": 10.0,
+      "subject": "animation state",
+      "t0": 9.98333,
+      "t1": 9.98333,
+      "unit": "",
+      "value": "carry_move",
+      "worst_n": 599
+    },
+    {
+      "detail": {
+        "stage": "CoverCrouch"
+      },
+      "kind": "stage_engaged",
+      "n0": 600,
+      "n1": 600,
+      "st0": 10.01667,
+      "subject": "CoverCrouch",
+      "t0": 10.0,
+      "t1": 10.0,
+      "unit": "",
+      "value": 1.0,
+      "worst_n": 600
+    },
+    {
+      "detail": {
+        "context": "carry",
+        "count": 1,
+        "rows_affected": 1,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.51,
+            "speed_mps": 3.52,
+            "step_cm": 5.0,
+            "subject": "mixamorig_RightLeg"
+          }
+        ],
+        "worst_subject": "mixamorig_RightLeg"
+      },
+      "kind": "pose_snap",
+      "n0": 601,
+      "n1": 601,
+      "st0": 10.03333,
+      "subject": "pose snap",
+      "t0": 10.01667,
+      "t1": 10.01667,
+      "unit": "cm",
+      "value": 5.0,
+      "worst_n": 601
+    },
+    {
+      "detail": {
+        "from": "carry_move",
+        "to": "pickup"
+      },
+      "kind": "state_changed",
+      "n0": 638,
+      "n1": 638,
+      "st0": 10.65,
+      "subject": "animation state",
+      "t0": 10.63333,
+      "t1": 10.63333,
+      "unit": "",
+      "value": "pickup",
+      "worst_n": 638
+    },
+    {
+      "detail": {
+        "arm_cm": 46.35,
+        "context": "carry",
+        "error_mm": 494.6,
+        "owner": "contact claim",
+        "reach_margin_cm": -50.85,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "weight": 1.0
+      },
+      "kind": "reach_exceeded",
+      "n0": 647,
+      "n1": 730,
+      "st0": 10.8,
+      "subject": "left hand",
+      "t0": 10.78333,
+      "t1": 12.16667,
+      "unit": "cm",
+      "value": 50.85,
+      "worst_n": 673
+    },
+    {
+      "detail": {
+        "arm_cm": 46.99,
+        "context": "carry",
+        "error_mm": 404.0,
+        "owner": "contact claim",
+        "reach_margin_cm": -41.81,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "weight": 1.0
+      },
+      "kind": "reach_exceeded",
+      "n0": 649,
+      "n1": 730,
+      "st0": 10.83333,
+      "subject": "right hand",
+      "t0": 10.81667,
+      "t1": 12.16667,
+      "unit": "cm",
+      "value": 41.81,
+      "worst_n": 712
+    },
+    {
+      "detail": {
+        "error_mm": 130.4,
+        "owner": "contact claim"
+      },
+      "kind": "contact_released",
+      "n0": 731,
+      "n1": 731,
+      "st0": 12.2,
+      "subject": "right hand",
+      "t0": 12.18333,
+      "t1": 12.18333,
+      "unit": "weight",
+      "value": 0.497,
+      "worst_n": 731
+    },
+    {
+      "detail": {
+        "error_mm": 107.1,
+        "owner": "contact claim"
+      },
+      "kind": "contact_released",
+      "n0": 731,
+      "n1": 731,
+      "st0": 12.2,
+      "subject": "left hand",
+      "t0": 12.18333,
+      "t1": 12.18333,
+      "unit": "weight",
+      "value": 0.497,
+      "worst_n": 731
+    },
+    {
+      "detail": {
+        "stage": "HandGrip"
+      },
+      "kind": "stage_released",
+      "n0": 750,
+      "n1": 750,
+      "st0": 12.51667,
+      "subject": "HandGrip",
+      "t0": 12.5,
+      "t1": 12.5,
+      "unit": "",
+      "value": 0.0,
+      "worst_n": 750
+    },
+    {
+      "detail": {
+        "from": "pickup",
+        "to": "move"
+      },
+      "kind": "state_changed",
+      "n0": 754,
+      "n1": 754,
+      "st0": 12.58333,
+      "subject": "animation state",
+      "t0": 12.56667,
+      "t1": 12.56667,
+      "unit": "",
+      "value": "move",
+      "worst_n": 754
+    },
+    {
+      "detail": {
+        "context": "carry",
+        "count": 6,
+        "rows_affected": 1,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.92,
+            "speed_mps": 27.15,
+            "step_cm": 43.7,
+            "subject": "mixamorig_RightToeBase"
+          },
+          {
+            "neighbour_speed_mps": 0.9,
+            "speed_mps": 22.3,
+            "step_cm": 35.8,
+            "subject": "mixamorig_RightFoot"
+          },
+          {
+            "neighbour_speed_mps": 1.58,
+            "speed_mps": 11.9,
+            "step_cm": 22.3,
+            "subject": "mixamorig_LeftFoot"
+          },
+          {
+            "neighbour_speed_mps": 1.54,
+            "speed_mps": 11.84,
+            "step_cm": 22.2,
+            "subject": "mixamorig_LeftToeBase"
+          },
+          {
+            "neighbour_speed_mps": 1.41,
+            "speed_mps": 5.2,
+            "step_cm": 10.7,
+            "subject": "mixamorig_LeftLeg"
+          },
+          {
+            "neighbour_speed_mps": 0.9,
+            "speed_mps": 5.68,
+            "step_cm": 8.0,
+            "subject": "mixamorig_RightLeg"
+          }
+        ],
+        "worst_subject": "mixamorig_RightToeBase"
+      },
+      "kind": "pose_snap",
+      "n0": 769,
+      "n1": 769,
+      "st0": 12.83333,
+      "subject": "pose snap",
+      "t0": 12.81667,
+      "t1": 12.81667,
+      "unit": "cm",
+      "value": 43.7,
+      "worst_n": 769
+    },
+    {
+      "detail": {
+        "stage": "CoverCrouch"
+      },
+      "kind": "stage_released",
+      "n0": 769,
+      "n1": 769,
+      "st0": 12.83333,
+      "subject": "CoverCrouch",
+      "t0": 12.81667,
+      "t1": 12.81667,
+      "unit": "",
+      "value": 0.0,
+      "worst_n": 769
+    },
+    {
+      "detail": {
+        "context": "free",
+        "speed_mps": 18.99
+      },
+      "kind": "target_jump",
+      "n0": 778,
+      "n1": 778,
+      "st0": 12.98333,
+      "subject": "right hand target",
+      "t0": 12.96667,
+      "t1": 12.96667,
+      "unit": "cm",
+      "value": 31.7,
+      "worst_n": 778
+    },
+    {
+      "detail": {
+        "context": "free",
+        "speed_mps": 13.68
+      },
+      "kind": "target_jump",
+      "n0": 778,
+      "n1": 778,
+      "st0": 12.98333,
+      "subject": "left hand target",
+      "t0": 12.96667,
+      "t1": 12.96667,
+      "unit": "cm",
+      "value": 22.8,
+      "worst_n": 778
+    },
+    {
+      "detail": {
+        "context": "free",
+        "count": 9,
+        "rows_affected": 1,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "subjects": [
+          {
+            "neighbour_speed_mps": 0.0,
+            "speed_mps": 24.16,
+            "step_cm": 40.3,
+            "subject": "mixamorig_RightToeBase"
+          },
+          {
+            "neighbour_speed_mps": 0.0,
+            "speed_mps": 19.47,
+            "step_cm": 32.4,
+            "subject": "mixamorig_RightFoot"
+          },
+          {
+            "neighbour_speed_mps": 0.03,
+            "speed_mps": 16.76,
+            "step_cm": 27.9,
+            "subject": "mixamorig_RightHand"
+          },
+          {
+            "neighbour_speed_mps": 0.02,
+            "speed_mps": 11.84,
+            "step_cm": 19.7,
+            "subject": "mixamorig_LeftHand"
+          },
+          {
+            "neighbour_speed_mps": 0.02,
+            "speed_mps": 9.99,
+            "step_cm": 16.7,
+            "subject": "mixamorig_LeftFoot"
+          },
+          {
+            "neighbour_speed_mps": 0.03,
+            "speed_mps": 9.49,
+            "step_cm": 15.8,
+            "subject": "mixamorig_LeftToeBase"
+          },
+          {
+            "neighbour_speed_mps": 0.03,
+            "speed_mps": 8.63,
+            "step_cm": 14.4,
+            "subject": "mixamorig_RightForeArm"
+          },
+          {
+            "neighbour_speed_mps": 0.03,
+            "speed_mps": 8.38,
+            "step_cm": 14.0,
+            "subject": "mixamorig_LeftLeg"
+          }
+        ],
+        "worst_subject": "mixamorig_RightToeBase"
+      },
+      "kind": "pose_snap",
+      "n0": 778,
+      "n1": 778,
+      "st0": 12.98333,
+      "subject": "pose snap",
+      "t0": 12.96667,
+      "t1": 12.96667,
+      "unit": "cm",
+      "value": 40.3,
+      "worst_n": 778
+    },
+    {
+      "detail": {
+        "from": "move",
+        "to": "rifle_idle"
+      },
+      "kind": "state_changed",
+      "n0": 778,
+      "n1": 778,
+      "st0": 12.98333,
+      "subject": "animation state",
+      "t0": 12.96667,
+      "t1": 12.96667,
+      "unit": "",
+      "value": "rifle_idle",
+      "worst_n": 778
+    },
+    {
+      "detail": {
+        "from": "carry",
+        "to": "free"
+      },
+      "kind": "context_changed",
+      "n0": 778,
+      "n1": 778,
+      "st0": 12.98333,
+      "subject": "body context",
+      "t0": 12.96667,
+      "t1": 12.96667,
+      "unit": "",
+      "value": "free",
+      "worst_n": 778
+    },
+    {
+      "detail": {
+        "stage": "HandGrip"
+      },
+      "kind": "stage_engaged",
+      "n0": 779,
+      "n1": 779,
+      "st0": 13.0,
+      "subject": "HandGrip",
+      "t0": 12.98333,
+      "t1": 12.98333,
+      "unit": "",
+      "value": 1.0,
+      "worst_n": 779
+    }
+  ],
+  "findings": [
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that anything is in contact, or that the drawn mesh follows the bone"
+        ],
+        "kinds": [
+          "JOINT_POSITION"
+        ],
+        "method": "bone position per frame, in the world (character frame plus the root's own position and heading), read inside skeleton_updated; a snap is a velocity that departs from the median of the 3 frames either side by more than 0.5x that velocity plus 1.0 m/s (frame-rate sensitive); adjacent rows are one moment"
+      },
+      "hypotheses": [
+        {
+          "basis": "stage events within 2 rows: CoverCrouch engaged (row 10)",
+          "experiment": "Diagnostics tab, 'Why is this bone moving', for the bone that moved most",
+          "status": "unconfirmed",
+          "text": "A pose stage changed its engagement at about the same frame, which can add or remove an offset at once."
+        }
+      ],
+      "id": "F1",
+      "key": "pose_snap|right toes|0",
+      "kind": "pose_snap",
+      "observation": {
+        "facts": {
+          "bones_moved": 6,
+          "context": "carry",
+          "largest": [
+            {
+              "neighbour_speed_mps": 1.04,
+              "speed_mps": 27.5,
+              "step_cm": 44.3,
+              "subject": "mixamorig_RightToeBase"
+            },
+            {
+              "neighbour_speed_mps": 1.26,
+              "speed_mps": 23.16,
+              "step_cm": 36.9,
+              "subject": "mixamorig_RightFoot"
+            },
+            {
+              "neighbour_speed_mps": 1.46,
+              "speed_mps": 14.49,
+              "step_cm": 26.5,
+              "subject": "mixamorig_LeftToeBase"
+            },
+            {
+              "neighbour_speed_mps": 1.48,
+              "speed_mps": 14.15,
+              "step_cm": 26.0,
+              "subject": "mixamorig_LeftFoot"
+            },
+            {
+              "neighbour_speed_mps": 1.88,
+              "speed_mps": 5.67,
+              "step_cm": 12.4,
+              "subject": "mixamorig_LeftLeg"
+            }
+          ],
+          "occurrence_count": 5,
+          "occurrences": [
+            {
+              "n": 6,
+              "st": 0.1167,
+              "value": 4.7
+            },
+            {
+              "n": 10,
+              "st": 0.1833,
+              "value": 44.3
+            },
+            {
+              "n": 192,
+              "st": 3.2167,
+              "value": 12.1
+            },
+            {
+              "n": 769,
+              "st": 12.8333,
+              "value": 43.7
+            },
+            {
+              "n": 778,
+              "st": 12.9833,
+              "value": 40.3
+            }
+          ],
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK"
+          ],
+          "step_cm": 44.3,
+          "targets_jumped": []
+        },
+        "frames": {
+          "n0": 10,
+          "n1": 10,
+          "st0": 0.1833,
+          "t0": 0.1667,
+          "t1": 0.1667,
+          "worst_n": 10
+        },
+        "text": "6 bones jumped at the same moment, at 0.18 s, beyond the motion of the frames around them. Largest jumps: right toes 44.3 cm, right foot 36.9 cm, left toes 26.5 cm. It has no foothold in these frames to compare against (no stair, ladder or contact supplies one), so a retarget cannot be told apart from the pose itself changing. This happened 5 times in the run (at 0.12, 0.18, 3.22, 12.83, 12.98 s); the worst is described here."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 10,
+        "replay": "Replay the scenario paused at scenario time 0.18 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 0.1833
+      },
+      "severity": "high",
+      "subject": {
+        "bones": [
+          "mixamorig_RightToeBase",
+          "mixamorig_RightFoot",
+          "mixamorig_LeftToeBase",
+          "mixamorig_LeftFoot",
+          "mixamorig_LeftLeg"
+        ],
+        "kind": "bone",
+        "part": "right toes",
+        "side": "right",
+        "text": "right toes"
+      },
+      "title": "Pose snap: 6 bones at once (5 times)"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that the pose reaches it, or that the rig enforces the limit",
+          "that the target is reachable, correct, or a physical support"
+        ],
+        "kinds": [
+          "REACH_FEASIBILITY",
+          "TARGET_ERROR"
+        ],
+        "method": "shoulder bone and contact target read inside skeleton_updated; reach = distance against 97% of shoulder-elbow-wrist length"
+      },
+      "hypotheses": [
+        {
+          "basis": "reach is shoulder-to-target distance against arm length (47 cm here); the deficit is geometry, not a solver result",
+          "experiment": "Run the same scenario on the other character (--character) or unarmed and compare 'hand.right.worst_deficit_cm'",
+          "status": "unconfirmed",
+          "text": "The contact point is farther from the shoulder than this body's arm can span: it was placed for a different-sized body or the body is not where the contact expects it."
+        }
+      ],
+      "id": "F2",
+      "key": "reach_exceeded|right contact target|0",
+      "kind": "reach_exceeded",
+      "observation": {
+        "facts": {
+          "arm_cm": 46.99,
+          "deficit_cm": 41.87,
+          "owner": "contact claim",
+          "seconds": 1.467,
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "weight": 1.0,
+          "wrist_error_mm": 404.6
+        },
+        "frames": {
+          "n0": 50,
+          "n1": 137,
+          "st0": 0.85,
+          "t0": 0.8333,
+          "t1": 2.2833,
+          "worst_n": 71
+        },
+        "text": "Right Hand target is 41.9 cm beyond the arm's reach (the limit used is 97% of a 47 cm arm), for 1.47 s, at 0.85 s. The wrist ended 405 mm from it, while the contact claimed weight 1.00."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 71,
+        "replay": "Replay the scenario paused at scenario time 0.85 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 0.85
+      },
+      "severity": "high",
+      "subject": {
+        "bones": [],
+        "kind": "target",
+        "part": "hand",
+        "side": "right",
+        "text": "right contact target"
+      },
+      "title": "Right Hand target out of reach"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that the pose reaches it, or that the rig enforces the limit",
+          "that the target is reachable, correct, or a physical support"
+        ],
+        "kinds": [
+          "REACH_FEASIBILITY",
+          "TARGET_ERROR"
+        ],
+        "method": "shoulder bone and contact target read inside skeleton_updated; reach = distance against 97% of shoulder-elbow-wrist length"
+      },
+      "hypotheses": [
+        {
+          "basis": "reach is shoulder-to-target distance against arm length (46 cm here); the deficit is geometry, not a solver result",
+          "experiment": "Run the same scenario on the other character (--character) or unarmed and compare 'hand.left.worst_deficit_cm'",
+          "status": "unconfirmed",
+          "text": "The contact point is farther from the shoulder than this body's arm can span: it was placed for a different-sized body or the body is not where the contact expects it."
+        }
+      ],
+      "id": "F3",
+      "key": "reach_exceeded|left contact target|0",
+      "kind": "reach_exceeded",
+      "observation": {
+        "facts": {
+          "arm_cm": 46.35,
+          "deficit_cm": 49.98,
+          "owner": "contact claim",
+          "seconds": 1.517,
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "weight": 1.0,
+          "wrist_error_mm": 485.9
+        },
+        "frames": {
+          "n0": 50,
+          "n1": 140,
+          "st0": 0.85,
+          "t0": 0.8333,
+          "t1": 2.3333,
+          "worst_n": 112
+        },
+        "text": "Left Hand target is 50.0 cm beyond the arm's reach (the limit used is 97% of a 46 cm arm), for 1.52 s, at 0.85 s. The wrist ended 486 mm from it, while the contact claimed weight 1.00."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 112,
+        "replay": "Replay the scenario paused at scenario time 0.85 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 0.85
+      },
+      "severity": "high",
+      "subject": {
+        "bones": [],
+        "kind": "target",
+        "part": "hand",
+        "side": "left",
+        "text": "left contact target"
+      },
+      "title": "Left Hand target out of reach"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that the pose reaches it, or that the rig enforces the limit",
+          "that the target is reachable, correct, or a physical support"
+        ],
+        "kinds": [
+          "REACH_FEASIBILITY",
+          "TARGET_ERROR"
+        ],
+        "method": "shoulder bone and contact target read inside skeleton_updated; reach = distance against 97% of shoulder-elbow-wrist length"
+      },
+      "hypotheses": [
+        {
+          "basis": "reach is shoulder-to-target distance against arm length (46 cm here); the deficit is geometry, not a solver result",
+          "experiment": "Run the same scenario on the other character (--character) or unarmed and compare 'hand.left.worst_deficit_cm'",
+          "status": "unconfirmed",
+          "text": "The contact point is farther from the shoulder than this body's arm can span: it was placed for a different-sized body or the body is not where the contact expects it."
+        }
+      ],
+      "id": "F4",
+      "key": "reach_exceeded|left contact target|1",
+      "kind": "reach_exceeded",
+      "observation": {
+        "facts": {
+          "arm_cm": 46.35,
+          "deficit_cm": 50.85,
+          "owner": "contact claim",
+          "seconds": 1.4,
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "weight": 1.0,
+          "wrist_error_mm": 494.6
+        },
+        "frames": {
+          "n0": 647,
+          "n1": 730,
+          "st0": 10.8,
+          "t0": 10.7833,
+          "t1": 12.1667,
+          "worst_n": 673
+        },
+        "text": "Left Hand target is 50.9 cm beyond the arm's reach (the limit used is 97% of a 46 cm arm), for 1.40 s, at 10.80 s. The wrist ended 495 mm from it, while the contact claimed weight 1.00."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 673,
+        "replay": "Replay the scenario paused at scenario time 10.80 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 10.8
+      },
+      "severity": "high",
+      "subject": {
+        "bones": [],
+        "kind": "target",
+        "part": "hand",
+        "side": "left",
+        "text": "left contact target"
+      },
+      "title": "Left Hand target out of reach"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that the pose reaches it, or that the rig enforces the limit",
+          "that the target is reachable, correct, or a physical support"
+        ],
+        "kinds": [
+          "REACH_FEASIBILITY",
+          "TARGET_ERROR"
+        ],
+        "method": "shoulder bone and contact target read inside skeleton_updated; reach = distance against 97% of shoulder-elbow-wrist length"
+      },
+      "hypotheses": [
+        {
+          "basis": "reach is shoulder-to-target distance against arm length (47 cm here); the deficit is geometry, not a solver result",
+          "experiment": "Run the same scenario on the other character (--character) or unarmed and compare 'hand.right.worst_deficit_cm'",
+          "status": "unconfirmed",
+          "text": "The contact point is farther from the shoulder than this body's arm can span: it was placed for a different-sized body or the body is not where the contact expects it."
+        }
+      ],
+      "id": "F5",
+      "key": "reach_exceeded|right contact target|1",
+      "kind": "reach_exceeded",
+      "observation": {
+        "facts": {
+          "arm_cm": 46.99,
+          "deficit_cm": 41.81,
+          "owner": "contact claim",
+          "seconds": 1.367,
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "weight": 1.0,
+          "wrist_error_mm": 404.0
+        },
+        "frames": {
+          "n0": 649,
+          "n1": 730,
+          "st0": 10.8333,
+          "t0": 10.8167,
+          "t1": 12.1667,
+          "worst_n": 712
+        },
+        "text": "Right Hand target is 41.8 cm beyond the arm's reach (the limit used is 97% of a 47 cm arm), for 1.37 s, at 10.83 s. The wrist ended 404 mm from it, while the contact claimed weight 1.00."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 712,
+        "replay": "Replay the scenario paused at scenario time 10.83 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 10.8333
+      },
+      "severity": "high",
+      "subject": {
+        "bones": [],
+        "kind": "target",
+        "part": "hand",
+        "side": "right",
+        "text": "right contact target"
+      },
+      "title": "Right Hand target out of reach"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that anything is in contact, or that the drawn mesh follows the bone"
+        ],
+        "kinds": [
+          "JOINT_POSITION"
+        ],
+        "method": "bone position per frame, in the world (character frame plus the root's own position and heading), read inside skeleton_updated; a snap is a velocity that departs from the median of the 3 frames either side by more than 0.5x that velocity plus 1.0 m/s (frame-rate sensitive); adjacent rows are one moment"
+      },
+      "hypotheses": [],
+      "id": "F6",
+      "key": "pose_snap|right forearm|0",
+      "kind": "pose_snap",
+      "observation": {
+        "facts": {
+          "bones_moved": 1,
+          "context": "carry",
+          "largest": [
+            {
+              "neighbour_speed_mps": 0.34,
+              "speed_mps": 2.89,
+              "step_cm": 4.3,
+              "subject": "mixamorig_RightForeArm"
+            }
+          ],
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "step_cm": 4.3,
+          "targets_jumped": []
+        },
+        "frames": {
+          "n0": 137,
+          "n1": 137,
+          "st0": 2.3,
+          "t0": 2.2833,
+          "t1": 2.2833,
+          "worst_n": 137
+        },
+        "text": "Right Forearm jumped 4.3 cm beyond the motion of the frames around it (2.9 m/s against about 0.3 m/s around it), at 2.30 s. The right hand target did not jump in those frames, so the pose itself changed."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 137,
+        "replay": "Replay the scenario paused at scenario time 2.30 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 2.3
+      },
+      "severity": "medium",
+      "subject": {
+        "bones": [
+          "mixamorig_RightForeArm"
+        ],
+        "kind": "bone",
+        "part": "right forearm",
+        "side": "right",
+        "text": "right forearm"
+      },
+      "title": "Right Forearm snaps"
+    },
+    {
+      "cause": "unknown",
+      "evidence": {
+        "does_not_establish": [
+          "that anything is in contact, or that the drawn mesh follows the bone"
+        ],
+        "kinds": [
+          "JOINT_POSITION"
+        ],
+        "method": "bone position per frame, in the world (character frame plus the root's own position and heading), read inside skeleton_updated; a snap is a velocity that departs from the median of the 3 frames either side by more than 0.5x that velocity plus 1.0 m/s (frame-rate sensitive); adjacent rows are one moment"
+      },
+      "hypotheses": [
+        {
+          "basis": "stage events within 2 rows: CoverCrouch engaged (row 600)",
+          "experiment": "Diagnostics tab, 'Why is this bone moving', for the bone that moved most",
+          "status": "unconfirmed",
+          "text": "A pose stage changed its engagement at about the same frame, which can add or remove an offset at once."
+        }
+      ],
+      "id": "F7",
+      "key": "pose_snap|right shin|0",
+      "kind": "pose_snap",
+      "observation": {
+        "facts": {
+          "bones_moved": 1,
+          "context": "carry",
+          "largest": [
+            {
+              "neighbour_speed_mps": 0.51,
+              "speed_mps": 3.52,
+              "step_cm": 5.0,
+              "subject": "mixamorig_RightLeg"
+            }
+          ],
+          "stages_engaged": [
+            "CoverCrouch",
+            "WeaponPose",
+            "WeaponArmIK",
+            "HandGrip"
+          ],
+          "step_cm": 5.0,
+          "targets_jumped": []
+        },
+        "frames": {
+          "n0": 601,
+          "n1": 601,
+          "st0": 10.0333,
+          "t0": 10.0167,
+          "t1": 10.0167,
+          "worst_n": 601
+        },
+        "text": "Right Shin jumped 5.0 cm beyond the motion of the frames around it (3.5 m/s against about 0.5 m/s around it), at 10.03 s. It has no foothold in these frames to compare against (no stair, ladder or contact supplies one), so a retarget cannot be told apart from the pose itself changing."
+      },
+      "reproduce": {
+        "character": "mira_0",
+        "n": 601,
+        "replay": "Replay the scenario paused at scenario time 10.03 s (Why? tab: Replay to this moment), or run: godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --character=mira_0 --scenario=rescue",
+        "scenario": "rescue",
+        "st": 10.0333
+      },
+      "severity": "medium",
+      "subject": {
+        "bones": [
+          "mixamorig_RightLeg"
+        ],
+        "kind": "bone",
+        "part": "right shin",
+        "side": "right",
+        "text": "right shin"
+      },
+      "title": "Right Shin snaps"
+    }
+  ],
+  "format": "adda.report",
+  "instruments": [
+    {
+      "does_not_establish": "that anything is in contact, or that the drawn mesh follows the bone",
+      "establishes": "where a bone is in the final pose",
+      "kind": "JOINT_POSITION",
+      "reason": "",
+      "status": "TAKEN"
+    },
+    {
+      "does_not_establish": "that the target is reachable, correct, or a physical support",
+      "establishes": "how far a limb ended from the point a solver asked for",
+      "kind": "TARGET_ERROR",
+      "reason": "",
+      "status": "TAKEN"
+    },
+    {
+      "does_not_establish": "that the pose reaches it, or that the rig enforces the limit",
+      "establishes": "whether a point lies within the limb's length from its root (a display convention, 97% of the arm)",
+      "kind": "REACH_FEASIBILITY",
+      "reason": "",
+      "status": "TAKEN"
+    },
+    {
+      "does_not_establish": "that the body is physically supported or touching anything",
+      "establishes": "that the animation system CLAIMS a contact (owner, weight, plan)",
+      "kind": "SUPPORT_CLAIM",
+      "reason": "nothing of this kind occurred in the recording, or the instrument was off",
+      "status": "NOT TAKEN"
+    },
+    {
+      "does_not_establish": "that the drawn mesh intersects it: armor can be thicker or thinner than the capsule",
+      "establishes": "overlap of approximate limb volumes (capsules from bone lengths and measured radii) with a shape",
+      "kind": "CAPSULE_OVERLAP",
+      "reason": "available in the Workbench (Diagnostics tab) but not recorded per frame",
+      "status": "NOT TAKEN"
+    },
+    {
+      "does_not_establish": "a full intersection: a thin crossing between two vertices can be missed, and a vertex on a bar's axis reads the bar's whole radius",
+      "establishes": "how many sampled vertices of the drawn skinned mesh lie inside a shape",
+      "kind": "VERTEX_OVERLAP",
+      "reason": "nothing of this kind occurred in the recording, or the instrument was off",
+      "status": "NOT TAKEN"
+    },
+    {
+      "does_not_establish": "physical collision",
+      "establishes": "triangle against shape intersection of the drawn mesh",
+      "kind": "MESH_INTERSECTION",
+      "reason": "ADDA has no instrument for this",
+      "status": "UNSUPPORTED"
+    },
+    {
+      "does_not_establish": "anything about the drawn mesh unless the shapes are the mesh",
+      "establishes": "a physics engine's contact",
+      "kind": "PHYSICAL_COLLISION",
+      "reason": "ADDA has no instrument for this",
+      "status": "UNSUPPORTED"
+    }
+  ],
+  "limitations": [
+    "Every pose value is read inside skeleton_updated (the final pose) and is one row per rendered frame; the last update of a frame wins.",
+    "A finding is an observation of recorded numbers. Hypotheses are unconfirmed; the cause is unknown unless a finding says it was measured.",
+    "Thresholds decide what is reported (20 mm hand, 30 mm foot, 15 mm slide, 97% of the arm, snap = speed over 4x the neighbours plus 1 m/s); the values are always in the finding.",
+    "Snap and frame-count metrics depend on the frame rate; lengths depend on the body size. Compare reports with ReportCompare, which says when a comparison is not valid.",
+    "Vertex overlap counts sampled skinned vertices only; full mesh intersection and physical collision are not measured.",
+    "A support claim is the animation system's claim, not physical support."
+  ],
+  "markers": [
+    {
+      "kind": "scenario step",
+      "label": "pickup from the floor (side view)",
+      "n": 0,
+      "st": 0.01667,
+      "t": 0.0
+    },
+    {
+      "kind": "scenario step",
+      "label": "carry: walk at 1.0 m/s",
+      "n": 300,
+      "st": 5.01667,
+      "t": 4.98333
+    },
+    {
+      "kind": "scenario step",
+      "label": "carry: stop",
+      "n": 539,
+      "st": 9.0,
+      "t": 8.96667
+    },
+    {
+      "kind": "scenario step",
+      "label": "set the casualty down",
+      "n": 599,
+      "st": 10.0,
+      "t": 9.96667
+    },
+    {
+      "kind": "scenario step",
+      "label": "free again",
+      "n": 839,
+      "st": 14.0,
+      "t": 13.96667
+    }
+  ],
+  "meta": {
+    "generated_utc": "2026-11-23T16:50:29",
+    "tool": "ADDA — AniLab Diagnostic & Debugging Assistant"
+  },
+  "samples": {
+    "count": 29,
+    "rows": [
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0042,
+            1.4404,
+            -0.0179
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.9277,
+            0.0031
+          ],
+          "mixamorig_LeftArm": [
+            0.1284,
+            1.2777,
+            -0.0324
+          ],
+          "mixamorig_LeftFoot": [
+            0.1542,
+            0.108,
+            -0.0014
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2039,
+            1.0608,
+            0.0693
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.1131,
+            0.4839,
+            0.0159
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0411,
+            1.2968,
+            -0.0324
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1602,
+            0.0306,
+            0.1137
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.8715,
+            0.0103
+          ],
+          "mixamorig_Neck": [
+            0.0039,
+            1.3658,
+            -0.044
+          ],
+          "mixamorig_RightArm": [
+            -0.1214,
+            1.2788,
+            -0.033
+          ],
+          "mixamorig_RightFoot": [
+            -0.1467,
+            0.1165,
+            -0.0989
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1947,
+            1.0417,
+            0.006
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1057,
+            0.485,
+            -0.0225
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0339,
+            1.2971,
+            -0.0326
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1548,
+            0.0281,
+            0.0078
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8714,
+            0.0085
+          ],
+          "mixamorig_Spine": [
+            0.003,
+            0.9839,
+            0.0156
+          ],
+          "mixamorig_Spine1": [
+            0.0029,
+            1.0963,
+            0.0156
+          ]
+        },
+        "context": "carry",
+        "dt": 0.0,
+        "feet": [],
+        "frame": 3,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 0.00009,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 10.70695,
+            "target": [
+              0.0592,
+              1.0623,
+              0.2265
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.2265
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00017,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.36877,
+            "target": [
+              -0.08,
+              1.16,
+              0.1516
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.1516
+            ]
+          }
+        ],
+        "n": 0,
+        "root": [
+          0.0,
+          0.0,
+          0.0016
+        ],
+        "st": 0.01667,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.0,
+        "update": 1,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0052,
+            1.4416,
+            -0.0222
+          ],
+          "mixamorig_Hips": [
+            0.0066,
+            0.9293,
+            0.0028
+          ],
+          "mixamorig_LeftArm": [
+            0.1302,
+            1.2792,
+            -0.0339
+          ],
+          "mixamorig_LeftFoot": [
+            0.1862,
+            0.1452,
+            0.2238
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2036,
+            1.0622,
+            0.069
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.1303,
+            0.5136,
+            0.1571
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0428,
+            1.2979,
+            -0.0344
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1905,
+            0.0719,
+            0.3417
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0999,
+            0.8734,
+            0.0152
+          ],
+          "mixamorig_Neck": [
+            0.0054,
+            1.3666,
+            -0.0472
+          ],
+          "mixamorig_RightArm": [
+            -0.1196,
+            1.2791,
+            -0.0355
+          ],
+          "mixamorig_RightFoot": [
+            -0.1556,
+            0.2806,
+            -0.3828
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1943,
+            1.0428,
+            0.0049
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1135,
+            0.4931,
+            -0.0723
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0322,
+            1.2979,
+            -0.0349
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1741,
+            0.1444,
+            -0.3634
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0871,
+            0.8728,
+            0.0029
+          ],
+          "mixamorig_Spine": [
+            0.0056,
+            0.9856,
+            0.0153
+          ],
+          "mixamorig_Spine1": [
+            0.0052,
+            1.098,
+            0.0153
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 11,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 0.00003,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 10.46556,
+            "target": [
+              0.0592,
+              1.0623,
+              0.3328
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.3328
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00012,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.17762,
+            "target": [
+              -0.08,
+              1.16,
+              0.258
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.258
+            ]
+          }
+        ],
+        "n": 8,
+        "root": [
+          0.0,
+          0.0,
+          0.108
+        ],
+        "st": 0.15,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.13333,
+        "update": 9,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0058,
+            1.442,
+            -0.0222
+          ],
+          "mixamorig_Hips": [
+            0.0072,
+            0.9297,
+            0.0028
+          ],
+          "mixamorig_LeftArm": [
+            0.1308,
+            1.2796,
+            -0.0339
+          ],
+          "mixamorig_LeftFoot": [
+            0.1869,
+            0.1441,
+            0.2171
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2037,
+            1.0625,
+            0.0691
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.131,
+            0.5134,
+            0.1555
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0434,
+            1.2983,
+            -0.0345
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1912,
+            0.0683,
+            0.3334
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.1004,
+            0.8738,
+            0.0151
+          ],
+          "mixamorig_Neck": [
+            0.0059,
+            1.367,
+            -0.0472
+          ],
+          "mixamorig_RightArm": [
+            -0.119,
+            1.2795,
+            -0.0356
+          ],
+          "mixamorig_RightFoot": [
+            -0.155,
+            0.2846,
+            -0.3818
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1942,
+            1.0433,
+            0.0045
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.113,
+            0.4928,
+            -0.0684
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0316,
+            1.2983,
+            -0.035
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1734,
+            0.1477,
+            -0.368
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0866,
+            0.8732,
+            0.0029
+          ],
+          "mixamorig_Spine": [
+            0.0062,
+            0.986,
+            0.0153
+          ],
+          "mixamorig_Spine1": [
+            0.0058,
+            1.0984,
+            0.0152
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 12,
+        "hands": [
+          {
+            "arm_cm": 46.35477,
+            "error_mm": 0.00009,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 10.42459,
+            "target": [
+              0.0592,
+              1.0623,
+              0.3545
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.3545
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00024,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.16329,
+            "target": [
+              -0.08,
+              1.16,
+              0.2796
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.2796
+            ]
+          }
+        ],
+        "n": 9,
+        "root": [
+          0.0,
+          0.0,
+          0.1296
+        ],
+        "st": 0.16667,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.15,
+        "update": 10,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0016,
+            1.4373,
+            -0.0215
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.9249,
+            0.0022
+          ],
+          "mixamorig_LeftArm": [
+            0.1267,
+            1.275,
+            -0.0338
+          ],
+          "mixamorig_LeftFoot": [
+            0.1465,
+            0.1147,
+            -0.0361
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2037,
+            1.0592,
+            0.0691
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.1104,
+            0.4826,
+            0.0458
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0393,
+            1.2937,
+            -0.0343
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1572,
+            0.0315,
+            0.0745
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0964,
+            0.869,
+            0.0145
+          ],
+          "mixamorig_Neck": [
+            0.0018,
+            1.3624,
+            -0.0468
+          ],
+          "mixamorig_RightArm": [
+            -0.1231,
+            1.2749,
+            -0.0354
+          ],
+          "mixamorig_RightFoot": [
+            -0.1384,
+            0.1153,
+            -0.058
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1945,
+            1.0382,
+            0.0089
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1013,
+            0.4816,
+            0.03
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0357,
+            1.2936,
+            -0.0347
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1458,
+            0.0301,
+            0.0514
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8684,
+            0.0024
+          ],
+          "mixamorig_Spine": [
+            0.0021,
+            0.9812,
+            0.0146
+          ],
+          "mixamorig_Spine1": [
+            0.0018,
+            1.0936,
+            0.0148
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 13,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 0.0001,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 10.80883,
+            "target": [
+              0.0592,
+              1.0623,
+              0.3772
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.3772
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00015,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.34805,
+            "target": [
+              -0.08,
+              1.16,
+              0.3024
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.3024
+            ]
+          }
+        ],
+        "n": 10,
+        "root": [
+          0.0,
+          0.0,
+          0.1524
+        ],
+        "st": 0.18333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.16667,
+        "update": 11,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0015,
+            1.4341,
+            -0.0211
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.9216,
+            0.001
+          ],
+          "mixamorig_LeftArm": [
+            0.1267,
+            1.2719,
+            -0.034
+          ],
+          "mixamorig_LeftFoot": [
+            0.1453,
+            0.1137,
+            -0.0351
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2043,
+            1.0567,
+            0.0698
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.1102,
+            0.48,
+            0.0535
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0392,
+            1.2905,
+            -0.0344
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1577,
+            0.0301,
+            0.0751
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0964,
+            0.8657,
+            0.0133
+          ],
+          "mixamorig_Neck": [
+            0.0018,
+            1.3593,
+            -0.0466
+          ],
+          "mixamorig_RightArm": [
+            -0.1232,
+            1.2717,
+            -0.0356
+          ],
+          "mixamorig_RightFoot": [
+            -0.1389,
+            0.1146,
+            -0.0609
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1944,
+            1.0354,
+            0.0112
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1014,
+            0.4788,
+            0.0353
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0357,
+            1.2905,
+            -0.0349
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1461,
+            0.0272,
+            0.0468
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8651,
+            0.0013
+          ],
+          "mixamorig_Spine": [
+            0.0021,
+            0.9778,
+            0.0135
+          ],
+          "mixamorig_Spine1": [
+            0.0018,
+            1.0903,
+            0.0139
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 14,
+        "hands": [
+          {
+            "arm_cm": 46.35477,
+            "error_mm": 0.00016,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 10.98733,
+            "target": [
+              0.0592,
+              1.0623,
+              0.4008
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.4008
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00003,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.49392,
+            "target": [
+              -0.08,
+              1.16,
+              0.326
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.326
+            ]
+          }
+        ],
+        "n": 11,
+        "root": [
+          0.0,
+          0.0,
+          0.176
+        ],
+        "st": 0.2,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.18333,
+        "update": 12,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0014,
+            1.4297,
+            -0.0205
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.917,
+            -0.0006
+          ],
+          "mixamorig_LeftArm": [
+            0.1266,
+            1.2676,
+            -0.0343
+          ],
+          "mixamorig_LeftFoot": [
+            0.1437,
+            0.1123,
+            -0.0339
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2051,
+            1.0533,
+            0.0706
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.11,
+            0.4767,
+            0.0627
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0392,
+            1.2862,
+            -0.0346
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1582,
+            0.0284,
+            0.0758
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0964,
+            0.8611,
+            0.0115
+          ],
+          "mixamorig_Neck": [
+            0.0017,
+            1.3551,
+            -0.0464
+          ],
+          "mixamorig_RightArm": [
+            -0.1232,
+            1.2673,
+            -0.0358
+          ],
+          "mixamorig_RightFoot": [
+            -0.1394,
+            0.1136,
+            -0.0649
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1941,
+            1.0317,
+            0.0144
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1015,
+            0.4749,
+            0.0414
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0358,
+            1.2862,
+            -0.035
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1466,
+            0.0235,
+            0.0405
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8605,
+            -0.0002
+          ],
+          "mixamorig_Spine": [
+            0.0022,
+            0.9732,
+            0.0119
+          ],
+          "mixamorig_Spine1": [
+            0.0018,
+            1.0857,
+            0.0126
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 15,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 0.00005,
+            "name": "left",
+            "owner": "none",
+            "reach_margin_cm": 11.22816,
+            "target": [
+              0.0592,
+              1.0623,
+              0.4251
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.4251
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00006,
+            "name": "right",
+            "owner": "none",
+            "reach_margin_cm": 23.68811,
+            "target": [
+              -0.08,
+              1.16,
+              0.3503
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.3503
+            ]
+          }
+        ],
+        "n": 12,
+        "root": [
+          0.0,
+          0.0,
+          0.2003
+        ],
+        "st": 0.21667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK"
+        ],
+        "state": "move",
+        "t": 0.2,
+        "update": 13,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.999,
+            -0.2032
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5003,
+            -0.3166
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8309,
+            -0.2685
+          ],
+          "mixamorig_LeftFoot": [
+            0.097,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2252,
+            0.6734,
+            -0.0894
+          ],
+          "mixamorig_LeftHand": [
+            0.2917,
+            0.5403,
+            0.0621
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4638,
+            0.0768
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8628,
+            -0.2618
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4441,
+            -0.3103
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9371,
+            -0.2511
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8721,
+            -0.2668
+          ],
+          "mixamorig_RightFoot": [
+            -0.1515,
+            0.0374,
+            -0.7556
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6842,
+            -0.1086
+          ],
+          "mixamorig_RightHand": [
+            -0.002,
+            0.5205,
+            0.0291
+          ],
+          "mixamorig_RightLeg": [
+            -0.1055,
+            0.0629,
+            -0.3807
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8752,
+            -0.2613
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1659,
+            0.0443,
+            -0.8935
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4441,
+            -0.3103
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3041
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.6669,
+            -0.2826
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 72,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 288.24198,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.21484,
+            "target": [
+              0.382,
+              0.3595,
+              0.7677
+            ],
+            "unreachable": true,
+            "weight": 0.99341,
+            "wrist": [
+              0.2917,
+              0.5403,
+              0.5621
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 398.66415,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.27604,
+            "target": [
+              0.0811,
+              0.2223,
+              0.7802
+            ],
+            "unreachable": true,
+            "weight": 0.99341,
+            "wrist": [
+              -0.002,
+              0.5205,
+              0.5291
+            ]
+          }
+        ],
+        "n": 69,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.16667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.15,
+        "update": 70,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9991,
+            -0.2037
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3168
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.2689
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2254,
+            0.673,
+            -0.0903
+          ],
+          "mixamorig_LeftHand": [
+            0.2921,
+            0.5393,
+            0.0607
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0765
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2622
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2516
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2672
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0385,
+            -0.7574
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6839,
+            -0.1096
+          ],
+          "mixamorig_RightHand": [
+            -0.0021,
+            0.5198,
+            0.0278
+          ],
+          "mixamorig_RightLeg": [
+            -0.1055,
+            0.0632,
+            -0.3825
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2617
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0454,
+            -0.8953
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3043
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2828
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 73,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 291.3942,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.53007,
+            "target": [
+              0.3836,
+              0.3559,
+              0.7678
+            ],
+            "unreachable": true,
+            "weight": 0.99833,
+            "wrist": [
+              0.2921,
+              0.5393,
+              0.5607
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 403.11983,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.72161,
+            "target": [
+              0.0819,
+              0.2175,
+              0.7808
+            ],
+            "unreachable": true,
+            "weight": 0.99833,
+            "wrist": [
+              -0.0021,
+              0.5198,
+              0.5278
+            ]
+          }
+        ],
+        "n": 70,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.18333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.16667,
+        "update": 71,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9992,
+            -0.2039
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3169
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.269
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2254,
+            0.6728,
+            -0.0907
+          ],
+          "mixamorig_LeftHand": [
+            0.2922,
+            0.539,
+            0.0602
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0764
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2624
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0139,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2517
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2673
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0389,
+            -0.758
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6837,
+            -0.1099
+          ],
+          "mixamorig_RightHand": [
+            -0.0021,
+            0.5195,
+            0.0273
+          ],
+          "mixamorig_RightLeg": [
+            -0.1056,
+            0.0633,
+            -0.3831
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2619
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0458,
+            -0.8959
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3044
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2829
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 74,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 292.46938,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.63758,
+            "target": [
+              0.3842,
+              0.3547,
+              0.7679
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2922,
+              0.539,
+              0.5602
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 404.6385,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.87348,
+            "target": [
+              0.0822,
+              0.2158,
+              0.7811
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.0021,
+              0.5195,
+              0.5273
+            ]
+          }
+        ],
+        "n": 71,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.2,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.18333,
+        "update": 72,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9992,
+            -0.2038
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3168
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.2689
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2255,
+            0.673,
+            -0.0904
+          ],
+          "mixamorig_LeftHand": [
+            0.2923,
+            0.5394,
+            0.0606
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0765
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2623
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0139,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2517
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2673
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0387,
+            -0.7577
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6839,
+            -0.1096
+          ],
+          "mixamorig_RightHand": [
+            -0.002,
+            0.5198,
+            0.0277
+          ],
+          "mixamorig_RightLeg": [
+            -0.1056,
+            0.0633,
+            -0.3828
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2618
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0456,
+            -0.8956
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3043
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2829
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 75,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 291.82097,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.57274,
+            "target": [
+              0.3841,
+              0.3559,
+              0.7681
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2923,
+              0.5394,
+              0.5606
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 403.76449,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.78608,
+            "target": [
+              0.0821,
+              0.217,
+              0.7812
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.002,
+              0.5198,
+              0.5277
+            ]
+          }
+        ],
+        "n": 72,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.21667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.2,
+        "update": 73,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9991,
+            -0.2036
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3167
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.2687
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2256,
+            0.6738,
+            -0.0896
+          ],
+          "mixamorig_LeftHand": [
+            0.2926,
+            0.5408,
+            0.0619
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0766
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2621
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4441,
+            -0.3105
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2514
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2671
+          ],
+          "mixamorig_RightFoot": [
+            -0.1515,
+            0.0381,
+            -0.7568
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0475,
+            0.6843,
+            -0.1089
+          ],
+          "mixamorig_RightHand": [
+            -0.0019,
+            0.5206,
+            0.0289
+          ],
+          "mixamorig_RightLeg": [
+            -0.1055,
+            0.0631,
+            -0.3819
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8752,
+            -0.2616
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.045,
+            -0.8947
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4441,
+            -0.3105
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3042
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2827
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 76,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 289.90796,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.38143,
+            "target": [
+              0.3839,
+              0.3593,
+              0.7688
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2926,
+              0.5408,
+              0.5619
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 401.17913,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.52754,
+            "target": [
+              0.0818,
+              0.2205,
+              0.7815
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.0019,
+              0.5206,
+              0.5289
+            ]
+          }
+        ],
+        "n": 73,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.23333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.21667,
+        "update": 74,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0381,
+            -0.131
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5422,
+            -0.2558
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.872,
+            -0.2012
+          ],
+          "mixamorig_LeftFoot": [
+            0.0963,
+            0.0961,
+            -0.0175
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1915,
+            0.9537,
+            0.032
+          ],
+          "mixamorig_LeftHand": [
+            0.2295,
+            1.0229,
+            0.2292
+          ],
+          "mixamorig_LeftLeg": [
+            0.1164,
+            0.4418,
+            0.1354
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9037,
+            -0.1936
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1243,
+            0.0081,
+            0.0862
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.486,
+            -0.2496
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9776,
+            -0.1807
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.9131,
+            -0.1983
+          ],
+          "mixamorig_RightFoot": [
+            -0.1397,
+            -0.0176,
+            -0.4795
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1087,
+            1.004,
+            0.0356
+          ],
+          "mixamorig_RightHand": [
+            -0.1163,
+            1.0832,
+            0.2394
+          ],
+          "mixamorig_RightLeg": [
+            -0.0955,
+            0.1174,
+            -0.1286
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.916,
+            -0.1927
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1745,
+            -0.0578,
+            -0.6077
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.486,
+            -0.2496
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5985,
+            -0.2433
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7085,
+            -0.2202
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 113,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 481.93517,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -49.58416,
+            "target": [
+              0.3158,
+              1.1798,
+              1.1766
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2295,
+              1.0229,
+              0.7292
+            ]
+          },
+          {
+            "arm_cm": 46.98765,
+            "error_mm": 360.62834,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -37.47247,
+            "target": [
+              -0.1289,
+              1.2137,
+              1.0754
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1163,
+              1.0832,
+              0.7394
+            ]
+          }
+        ],
+        "n": 110,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.85,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.83333,
+        "update": 111,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0426,
+            -0.1284
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5465,
+            -0.2522
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8763,
+            -0.1982
+          ],
+          "mixamorig_LeftFoot": [
+            0.0964,
+            0.0959,
+            -0.0168
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1927,
+            0.9531,
+            0.0364
+          ],
+          "mixamorig_LeftHand": [
+            0.2318,
+            1.0181,
+            0.2348
+          ],
+          "mixamorig_LeftLeg": [
+            0.1165,
+            0.4406,
+            0.1383
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9081,
+            -0.1907
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1251,
+            0.0079,
+            0.0866
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4903,
+            -0.2459
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.982,
+            -0.178
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.9175,
+            -0.1954
+          ],
+          "mixamorig_RightFoot": [
+            -0.1394,
+            -0.0156,
+            -0.4703
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1114,
+            1.0038,
+            0.0401
+          ],
+          "mixamorig_RightHand": [
+            -0.1215,
+            1.079,
+            0.2453
+          ],
+          "mixamorig_RightLeg": [
+            -0.0953,
+            0.1231,
+            -0.1209
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.9204,
+            -0.1898
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1748,
+            -0.0593,
+            -0.5973
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4903,
+            -0.2459
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6027,
+            -0.2397
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7128,
+            -0.2167
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 114,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 485.6967,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -49.96032,
+            "target": [
+              0.3213,
+              1.1667,
+              1.1885
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2318,
+              1.0181,
+              0.7348
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 377.45494,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -39.15513,
+            "target": [
+              -0.1387,
+              1.2088,
+              1.0993
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1215,
+              1.079,
+              0.7453
+            ]
+          }
+        ],
+        "n": 111,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.86667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.85,
+        "update": 112,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0474,
+            -0.1259
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5509,
+            -0.2484
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8809,
+            -0.1951
+          ],
+          "mixamorig_LeftFoot": [
+            0.0966,
+            0.0958,
+            -0.0161
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1941,
+            0.952,
+            0.041
+          ],
+          "mixamorig_LeftHand": [
+            0.2344,
+            1.0121,
+            0.2407
+          ],
+          "mixamorig_LeftLeg": [
+            0.1167,
+            0.4395,
+            0.1413
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9126,
+            -0.1877
+          ],
+          "mixamorig_LeftToeBase": [
+            0.126,
+            0.0076,
+            0.0871
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4947,
+            -0.2422
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9866,
+            -0.1753
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.922,
+            -0.1925
+          ],
+          "mixamorig_RightFoot": [
+            -0.1392,
+            -0.0136,
+            -0.4612
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1142,
+            1.0029,
+            0.0448
+          ],
+          "mixamorig_RightHand": [
+            -0.1267,
+            1.0733,
+            0.2516
+          ],
+          "mixamorig_RightLeg": [
+            -0.0951,
+            0.1288,
+            -0.1133
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.925,
+            -0.1869
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1751,
+            -0.0607,
+            -0.5868
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4947,
+            -0.2422
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6072,
+            -0.236
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7173,
+            -0.2131
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 115,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 485.87066,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -49.97771,
+            "target": [
+              0.3265,
+              1.1496,
+              1.1975
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2344,
+              1.0121,
+              0.7407
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 390.0072,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -40.41035,
+            "target": [
+              -0.1488,
+              1.1988,
+              1.1202
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1267,
+              1.0733,
+              0.7516
+            ]
+          }
+        ],
+        "n": 112,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.88333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.86667,
+        "update": 113,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0523,
+            -0.1234
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5556,
+            -0.2446
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8856,
+            -0.1921
+          ],
+          "mixamorig_LeftFoot": [
+            0.0968,
+            0.0956,
+            -0.0153
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1955,
+            0.9503,
+            0.0456
+          ],
+          "mixamorig_LeftHand": [
+            0.237,
+            1.005,
+            0.2466
+          ],
+          "mixamorig_LeftLeg": [
+            0.1168,
+            0.4383,
+            0.1442
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9173,
+            -0.1848
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1269,
+            0.0074,
+            0.0876
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4993,
+            -0.2384
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9914,
+            -0.1726
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.9268,
+            -0.1895
+          ],
+          "mixamorig_RightFoot": [
+            -0.1391,
+            -0.0113,
+            -0.4522
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1171,
+            1.0012,
+            0.0497
+          ],
+          "mixamorig_RightHand": [
+            -0.132,
+            1.0661,
+            0.2581
+          ],
+          "mixamorig_RightLeg": [
+            -0.0948,
+            0.1347,
+            -0.1058
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.9297,
+            -0.184
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1754,
+            -0.0621,
+            -0.5763
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4993,
+            -0.2384
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6118,
+            -0.2321
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7219,
+            -0.2095
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 116,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 482.38707,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -49.62935,
+            "target": [
+              0.3312,
+              1.1292,
+              1.2031
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.237,
+              1.005,
+              0.7466
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 398.05225,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.21486,
+            "target": [
+              -0.1592,
+              1.1841,
+              1.1372
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.132,
+              1.0661,
+              0.7581
+            ]
+          }
+        ],
+        "n": 113,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.9,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.88333,
+        "update": 114,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0574,
+            -0.1209
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5603,
+            -0.2407
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8905,
+            -0.1889
+          ],
+          "mixamorig_LeftFoot": [
+            0.097,
+            0.0954,
+            -0.0146
+          ],
+          "mixamorig_LeftForeArm": [
+            0.197,
+            0.9481,
+            0.0502
+          ],
+          "mixamorig_LeftHand": [
+            0.2398,
+            0.9969,
+            0.2525
+          ],
+          "mixamorig_LeftLeg": [
+            0.117,
+            0.4371,
+            0.1471
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9222,
+            -0.1818
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1278,
+            0.0072,
+            0.0881
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.5041,
+            -0.2345
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9963,
+            -0.1698
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.9316,
+            -0.1866
+          ],
+          "mixamorig_RightFoot": [
+            -0.1389,
+            -0.009,
+            -0.4434
+          ],
+          "mixamorig_RightForeArm": [
+            -0.12,
+            0.999,
+            0.0545
+          ],
+          "mixamorig_RightHand": [
+            -0.1376,
+            1.0576,
+            0.2645
+          ],
+          "mixamorig_RightLeg": [
+            -0.0946,
+            0.1408,
+            -0.0985
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.9346,
+            -0.181
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1757,
+            -0.0634,
+            -0.5657
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.5041,
+            -0.2345
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6165,
+            -0.2282
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7267,
+            -0.2058
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 117,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 475.2436,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -48.915,
+            "target": [
+              0.3354,
+              1.1061,
+              1.205
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2398,
+              0.9969,
+              0.7525
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 401.49063,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.55869,
+            "target": [
+              -0.1697,
+              1.1653,
+              1.15
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1376,
+              1.0576,
+              0.7645
+            ]
+          }
+        ],
+        "n": 114,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 1.91667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 1.9,
+        "update": 115,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.1831,
+            -0.0743
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.6774,
+            -0.1503
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            1.0095,
+            -0.1232
+          ],
+          "mixamorig_LeftFoot": [
+            0.1049,
+            0.091,
+            -0.002
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2532,
+            0.879,
+            0.0629
+          ],
+          "mixamorig_LeftHand": [
+            0.3435,
+            0.7686,
+            0.2203
+          ],
+          "mixamorig_LeftLeg": [
+            0.1193,
+            0.4191,
+            0.1863
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            1.0419,
+            -0.1197
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1452,
+            0.0027,
+            0.0973
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.6212,
+            -0.1441
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            1.1169,
+            -0.1161
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            1.0507,
+            -0.1255
+          ],
+          "mixamorig_RightFoot": [
+            -0.1405,
+            0.046,
+            -0.286
+          ],
+          "mixamorig_RightForeArm": [
+            -0.2489,
+            0.9162,
+            0.0255
+          ],
+          "mixamorig_RightHand": [
+            -0.3177,
+            0.8158,
+            0.2073
+          ],
+          "mixamorig_RightLeg": [
+            -0.0931,
+            0.2682,
+            0.0168
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            1.0543,
+            -0.1203
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1746,
+            -0.0751,
+            -0.3449
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.6212,
+            -0.1441
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.7337,
+            -0.1378
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.8449,
+            -0.1216
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 140,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 8.94494,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -2.28514,
+            "target": [
+              0.3473,
+              0.7639,
+              0.7269
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.3435,
+              0.7686,
+              0.7203
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00013,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -0.60699,
+            "target": [
+              -0.3177,
+              0.8158,
+              0.7073
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.3177,
+              0.8158,
+              0.7073
+            ]
+          }
+        ],
+        "n": 137,
+        "root": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "st": 2.3,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 2.28333,
+        "update": 138,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0031,
+            1.4267,
+            0.1161
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.924,
+            0.0019
+          ],
+          "mixamorig_LeftArm": [
+            0.1281,
+            1.2783,
+            0.0488
+          ],
+          "mixamorig_LeftFoot": [
+            0.1409,
+            0.114,
+            -0.0449
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2582,
+            1.1178,
+            -0.0939
+          ],
+          "mixamorig_LeftHand": [
+            0.3775,
+            0.9946,
+            0.0315
+          ],
+          "mixamorig_LeftLeg": [
+            0.1117,
+            0.4815,
+            0.041
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0406,
+            1.2959,
+            0.0552
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1589,
+            0.0306,
+            0.0646
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.8678,
+            0.0081
+          ],
+          "mixamorig_Neck": [
+            0.0031,
+            1.3648,
+            0.067
+          ],
+          "mixamorig_RightArm": [
+            -0.1218,
+            1.2783,
+            0.0488
+          ],
+          "mixamorig_RightFoot": [
+            -0.1447,
+            0.1155,
+            -0.0494
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1888,
+            1.127,
+            -0.1401
+          ],
+          "mixamorig_RightHand": [
+            -0.2812,
+            0.984,
+            -0.0028
+          ],
+          "mixamorig_RightLeg": [
+            -0.1006,
+            0.4811,
+            0.0382
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0344,
+            1.2959,
+            0.0552
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1452,
+            0.0297,
+            0.0597
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8678,
+            0.0081
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.9802,
+            0.0144
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            1.091,
+            0.0339
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 604,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 0.00003,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": 7.14476,
+            "target": [
+              0.3775,
+              0.9946,
+              0.0374
+            ],
+            "unreachable": false,
+            "weight": 1.0,
+            "wrist": [
+              0.3775,
+              0.9946,
+              0.0374
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 0.00009,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": 11.71223,
+            "target": [
+              -0.2812,
+              0.984,
+              0.0031
+            ],
+            "unreachable": false,
+            "weight": 1.0,
+            "wrist": [
+              -0.2812,
+              0.984,
+              0.0031
+            ]
+          }
+        ],
+        "n": 601,
+        "root": [
+          0.0,
+          0.0,
+          0.0059
+        ],
+        "st": 10.03333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "carry_move",
+        "t": 10.01667,
+        "update": 602,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0732,
+            1.0586,
+            -0.1271
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5648,
+            -0.2371
+          ],
+          "mixamorig_LeftArm": [
+            0.155,
+            0.8811,
+            -0.19
+          ],
+          "mixamorig_LeftFoot": [
+            0.0973,
+            0.0953,
+            -0.0138
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1973,
+            0.9345,
+            0.0517
+          ],
+          "mixamorig_LeftHand": [
+            0.2332,
+            0.9796,
+            0.2562
+          ],
+          "mixamorig_LeftLeg": [
+            0.1171,
+            0.4361,
+            0.1498
+          ],
+          "mixamorig_LeftShoulder": [
+            0.075,
+            0.9206,
+            -0.1834
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1286,
+            0.0069,
+            0.0886
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.5086,
+            -0.2308
+          ],
+          "mixamorig_Neck": [
+            0.0565,
+            0.9971,
+            -0.1738
+          ],
+          "mixamorig_RightArm": [
+            -0.0866,
+            0.9448,
+            -0.1875
+          ],
+          "mixamorig_RightFoot": [
+            -0.1388,
+            -0.0068,
+            -0.4353
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1208,
+            1.0067,
+            0.0534
+          ],
+          "mixamorig_RightHand": [
+            -0.1505,
+            1.0606,
+            0.2633
+          ],
+          "mixamorig_RightLeg": [
+            -0.0945,
+            0.1464,
+            -0.092
+          ],
+          "mixamorig_RightShoulder": [
+            0.0025,
+            0.9397,
+            -0.1827
+          ],
+          "mixamorig_RightToeBase": [
+            -0.176,
+            -0.0645,
+            -0.556
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.5086,
+            -0.2308
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.621,
+            -0.2246
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7313,
+            -0.2023
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 674,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 486.09355,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -50.0,
+            "target": [
+              0.3151,
+              1.0829,
+              1.174
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2332,
+              0.9796,
+              0.7062
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 389.99668,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -40.4093,
+            "target": [
+              -0.2035,
+              1.1568,
+              1.0875
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1505,
+              1.0606,
+              0.7133
+            ]
+          }
+        ],
+        "n": 671,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.2,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.18333,
+        "update": 672,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.067,
+            1.0541,
+            -0.1277
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5595,
+            -0.2414
+          ],
+          "mixamorig_LeftArm": [
+            0.153,
+            0.8793,
+            -0.1925
+          ],
+          "mixamorig_LeftFoot": [
+            0.097,
+            0.0955,
+            -0.0147
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1962,
+            0.9404,
+            0.0472
+          ],
+          "mixamorig_LeftHand": [
+            0.2327,
+            0.9921,
+            0.25
+          ],
+          "mixamorig_LeftLeg": [
+            0.117,
+            0.4373,
+            0.1466
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0721,
+            0.9169,
+            -0.1856
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1276,
+            0.0072,
+            0.088
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.5033,
+            -0.2351
+          ],
+          "mixamorig_Neck": [
+            0.0519,
+            0.9928,
+            -0.1752
+          ],
+          "mixamorig_RightArm": [
+            -0.09,
+            0.9374,
+            -0.1898
+          ],
+          "mixamorig_RightFoot": [
+            -0.1389,
+            -0.0094,
+            -0.4448
+          ],
+          "mixamorig_RightForeArm": [
+            -0.118,
+            1.0068,
+            0.0499
+          ],
+          "mixamorig_RightHand": [
+            -0.1423,
+            1.0673,
+            0.2587
+          ],
+          "mixamorig_RightLeg": [
+            -0.0947,
+            0.1397,
+            -0.0997
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0008,
+            0.9343,
+            -0.1848
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1757,
+            -0.0632,
+            -0.5675
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.5033,
+            -0.2351
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6157,
+            -0.2289
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7259,
+            -0.2064
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 675,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 492.65563,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -50.6562,
+            "target": [
+              0.3174,
+              1.1121,
+              1.1702
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2327,
+              0.9921,
+              0.7
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 392.75217,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -40.68485,
+            "target": [
+              -0.186,
+              1.176,
+              1.0836
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1423,
+              1.0673,
+              0.7087
+            ]
+          }
+        ],
+        "n": 672,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.21667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.2,
+        "update": 673,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0608,
+            1.0496,
+            -0.1283
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5544,
+            -0.2456
+          ],
+          "mixamorig_LeftArm": [
+            0.1509,
+            0.8776,
+            -0.1949
+          ],
+          "mixamorig_LeftFoot": [
+            0.0968,
+            0.0956,
+            -0.0155
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1948,
+            0.9457,
+            0.0428
+          ],
+          "mixamorig_LeftHand": [
+            0.232,
+            1.0033,
+            0.2438
+          ],
+          "mixamorig_LeftLeg": [
+            0.1168,
+            0.4386,
+            0.1435
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0692,
+            0.9132,
+            -0.1877
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1267,
+            0.0075,
+            0.0875
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4982,
+            -0.2393
+          ],
+          "mixamorig_Neck": [
+            0.0472,
+            0.9885,
+            -0.1765
+          ],
+          "mixamorig_RightArm": [
+            -0.0934,
+            0.93,
+            -0.1921
+          ],
+          "mixamorig_RightFoot": [
+            -0.1391,
+            -0.0119,
+            -0.4545
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1153,
+            1.0065,
+            0.0461
+          ],
+          "mixamorig_RightHand": [
+            -0.1344,
+            1.0731,
+            0.2536
+          ],
+          "mixamorig_RightLeg": [
+            -0.0949,
+            0.1333,
+            -0.1077
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0041,
+            0.9289,
+            -0.1869
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1754,
+            -0.0618,
+            -0.5789
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4982,
+            -0.2393
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6106,
+            -0.2331
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7207,
+            -0.2104
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 676,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 494.56677,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -50.84732,
+            "target": [
+              0.3185,
+              1.1374,
+              1.1619
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.232,
+              1.0033,
+              0.6938
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 390.54346,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -40.46398,
+            "target": [
+              -0.1685,
+              1.1921,
+              1.074
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1344,
+              1.0731,
+              0.7036
+            ]
+          }
+        ],
+        "n": 673,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.23333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.21667,
+        "update": 674,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0546,
+            1.0451,
+            -0.1289
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5494,
+            -0.2497
+          ],
+          "mixamorig_LeftArm": [
+            0.1487,
+            0.876,
+            -0.1972
+          ],
+          "mixamorig_LeftFoot": [
+            0.0965,
+            0.0958,
+            -0.0163
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1935,
+            0.9501,
+            0.0385
+          ],
+          "mixamorig_LeftHand": [
+            0.2313,
+            1.0128,
+            0.2379
+          ],
+          "mixamorig_LeftLeg": [
+            0.1166,
+            0.4398,
+            0.1403
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0662,
+            0.9096,
+            -0.1898
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1257,
+            0.0077,
+            0.0869
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4932,
+            -0.2435
+          ],
+          "mixamorig_Neck": [
+            0.0424,
+            0.9843,
+            -0.1778
+          ],
+          "mixamorig_RightArm": [
+            -0.0967,
+            0.9228,
+            -0.1943
+          ],
+          "mixamorig_RightFoot": [
+            -0.1393,
+            -0.0143,
+            -0.4642
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1128,
+            1.0056,
+            0.0422
+          ],
+          "mixamorig_RightHand": [
+            -0.1268,
+            1.0778,
+            0.2482
+          ],
+          "mixamorig_RightLeg": [
+            -0.0951,
+            0.1269,
+            -0.1158
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0074,
+            0.9237,
+            -0.189
+          ],
+          "mixamorig_RightToeBase": [
+            -0.175,
+            -0.0603,
+            -0.5903
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4932,
+            -0.2435
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6057,
+            -0.2372
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.7158,
+            -0.2143
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 677,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 491.8257,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -50.57321,
+            "target": [
+              0.3189,
+              1.1579,
+              1.1496
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2313,
+              1.0128,
+              0.6879
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 383.24413,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -39.73404,
+            "target": [
+              -0.1514,
+              1.2042,
+              1.0592
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1268,
+              1.0778,
+              0.6982
+            ]
+          }
+        ],
+        "n": 674,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.25,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.23333,
+        "update": 675,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            1.0407,
+            -0.1295
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5447,
+            -0.2537
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8745,
+            -0.1994
+          ],
+          "mixamorig_LeftFoot": [
+            0.0964,
+            0.096,
+            -0.0171
+          ],
+          "mixamorig_LeftForeArm": [
+            0.1922,
+            0.9535,
+            0.0345
+          ],
+          "mixamorig_LeftHand": [
+            0.2308,
+            1.0203,
+            0.2324
+          ],
+          "mixamorig_LeftLeg": [
+            0.1165,
+            0.4411,
+            0.1371
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.9062,
+            -0.1919
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1248,
+            0.008,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4885,
+            -0.2474
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9802,
+            -0.1791
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.9157,
+            -0.1966
+          ],
+          "mixamorig_RightFoot": [
+            -0.1395,
+            -0.0165,
+            -0.4741
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1103,
+            1.004,
+            0.0382
+          ],
+          "mixamorig_RightHand": [
+            -0.1193,
+            1.081,
+            0.2428
+          ],
+          "mixamorig_RightLeg": [
+            -0.0954,
+            0.1207,
+            -0.1241
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.9186,
+            -0.191
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1747,
+            -0.0587,
+            -0.6016
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4885,
+            -0.2474
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.6009,
+            -0.2412
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.711,
+            -0.2181
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 678,
+        "hands": [
+          {
+            "arm_cm": 46.35476,
+            "error_mm": 484.55462,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -49.8461,
+            "target": [
+              0.319,
+              1.1726,
+              1.1339
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2308,
+              1.0203,
+              0.6824
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 370.94048,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -38.50368,
+            "target": [
+              -0.1346,
+              1.2115,
+              1.0397
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.1193,
+              1.081,
+              0.6928
+            ]
+          }
+        ],
+        "n": 675,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.26667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.25,
+        "update": 676,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9991,
+            -0.2037
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3168
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.2688
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2255,
+            0.6736,
+            -0.0898
+          ],
+          "mixamorig_LeftHand": [
+            0.2924,
+            0.5405,
+            0.0616
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0765
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2622
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3105
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2515
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2672
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0383,
+            -0.7572
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6842,
+            -0.1091
+          ],
+          "mixamorig_RightHand": [
+            -0.002,
+            0.5204,
+            0.0285
+          ],
+          "mixamorig_RightLeg": [
+            -0.1055,
+            0.0632,
+            -0.3822
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2617
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0453,
+            -0.8951
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3105
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3043
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2828
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 713,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 290.46264,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.4369,
+            "target": [
+              0.3838,
+              0.3584,
+              0.7187
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2924,
+              0.5405,
+              0.5116
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 401.82546,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.59218,
+            "target": [
+              0.0819,
+              0.2196,
+              0.7314
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.002,
+              0.5204,
+              0.4785
+            ]
+          }
+        ],
+        "n": 710,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.85,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.83333,
+        "update": 711,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9992,
+            -0.2038
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3169
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.269
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2254,
+            0.673,
+            -0.0904
+          ],
+          "mixamorig_LeftHand": [
+            0.2922,
+            0.5394,
+            0.0606
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0765
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2623
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0139,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2517
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2673
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0388,
+            -0.7579
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0476,
+            0.6838,
+            -0.1097
+          ],
+          "mixamorig_RightHand": [
+            -0.0021,
+            0.5197,
+            0.0276
+          ],
+          "mixamorig_RightLeg": [
+            -0.1056,
+            0.0633,
+            -0.383
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2618
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0457,
+            -0.8958
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3044
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2829
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 714,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 292.02577,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.59322,
+            "target": [
+              0.384,
+              0.3556,
+              0.7181
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              0.2922,
+              0.5394,
+              0.5106
+            ]
+          },
+          {
+            "arm_cm": 46.98766,
+            "error_mm": 403.93728,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.80336,
+            "target": [
+              0.0821,
+              0.2167,
+              0.7311
+            ],
+            "unreachable": true,
+            "weight": 1.0,
+            "wrist": [
+              -0.0021,
+              0.5197,
+              0.4776
+            ]
+          }
+        ],
+        "n": 711,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.86667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.85,
+        "update": 712,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9992,
+            -0.2038
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3169
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.831,
+            -0.2689
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2254,
+            0.673,
+            -0.0905
+          ],
+          "mixamorig_LeftHand": [
+            0.2922,
+            0.5393,
+            0.0605
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0765
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.2623
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0139,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9372,
+            -0.2517
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.2673
+          ],
+          "mixamorig_RightFoot": [
+            -0.1516,
+            0.0388,
+            -0.7578
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0477,
+            0.6838,
+            -0.1097
+          ],
+          "mixamorig_RightHand": [
+            -0.0021,
+            0.5197,
+            0.0276
+          ],
+          "mixamorig_RightLeg": [
+            -0.1056,
+            0.0633,
+            -0.3829
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8753,
+            -0.2618
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0457,
+            -0.8958
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4442,
+            -0.3106
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3044
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2829
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 715,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 292.05793,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.59644,
+            "target": [
+              0.3839,
+              0.3555,
+              0.7181
+            ],
+            "unreachable": true,
+            "weight": 0.99958,
+            "wrist": [
+              0.2922,
+              0.5393,
+              0.5105
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 403.95662,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.80529,
+            "target": [
+              0.082,
+              0.2166,
+              0.7311
+            ],
+            "unreachable": true,
+            "weight": 0.99958,
+            "wrist": [
+              -0.0021,
+              0.5197,
+              0.4776
+            ]
+          }
+        ],
+        "n": 712,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.88333,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.86667,
+        "update": 713,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9991,
+            -0.2035
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5004,
+            -0.3167
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8309,
+            -0.2687
+          ],
+          "mixamorig_LeftFoot": [
+            0.0971,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2254,
+            0.6733,
+            -0.0898
+          ],
+          "mixamorig_LeftHand": [
+            0.2921,
+            0.5399,
+            0.0615
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4639,
+            0.0766
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8629,
+            -0.262
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.4441,
+            -0.3104
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.9371,
+            -0.2514
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.8722,
+            -0.267
+          ],
+          "mixamorig_RightFoot": [
+            -0.1515,
+            0.0379,
+            -0.7565
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0479,
+            0.684,
+            -0.109
+          ],
+          "mixamorig_RightHand": [
+            -0.0025,
+            0.5202,
+            0.0286
+          ],
+          "mixamorig_RightLeg": [
+            -0.1055,
+            0.063,
+            -0.3816
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8752,
+            -0.2615
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1658,
+            0.0448,
+            -0.8944
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.4441,
+            -0.3104
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5566,
+            -0.3042
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.667,
+            -0.2827
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 716,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 290.38462,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.4291,
+            "target": [
+              0.3833,
+              0.3577,
+              0.7183
+            ],
+            "unreachable": true,
+            "weight": 0.99584,
+            "wrist": [
+              0.2921,
+              0.5399,
+              0.5115
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 401.48595,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.55823,
+            "target": [
+              0.0808,
+              0.2194,
+              0.7312
+            ],
+            "unreachable": true,
+            "weight": 0.99584,
+            "wrist": [
+              -0.0025,
+              0.5202,
+              0.4786
+            ]
+          }
+        ],
+        "n": 713,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.9,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.88333,
+        "update": 714,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0484,
+            0.9989,
+            -0.2027
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.5003,
+            -0.3163
+          ],
+          "mixamorig_LeftArm": [
+            0.1465,
+            0.8308,
+            -0.2681
+          ],
+          "mixamorig_LeftFoot": [
+            0.097,
+            0.0989,
+            -0.0224
+          ],
+          "mixamorig_LeftForeArm": [
+            0.2253,
+            0.674,
+            -0.0885
+          ],
+          "mixamorig_LeftHand": [
+            0.292,
+            0.5413,
+            0.0634
+          ],
+          "mixamorig_LeftLeg": [
+            0.1143,
+            0.4638,
+            0.077
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0632,
+            0.8627,
+            -0.2614
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1109,
+            0.0138,
+            0.0864
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.444,
+            -0.3101
+          ],
+          "mixamorig_Neck": [
+            0.0377,
+            0.937,
+            -0.2507
+          ],
+          "mixamorig_RightArm": [
+            -0.1,
+            0.872,
+            -0.2664
+          ],
+          "mixamorig_RightFoot": [
+            -0.1514,
+            0.0362,
+            -0.7538
+          ],
+          "mixamorig_RightForeArm": [
+            -0.0482,
+            0.6845,
+            -0.1076
+          ],
+          "mixamorig_RightHand": [
+            -0.0031,
+            0.5211,
+            0.0306
+          ],
+          "mixamorig_RightLeg": [
+            -0.1054,
+            0.0625,
+            -0.3789
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0107,
+            0.8751,
+            -0.2609
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1659,
+            0.0431,
+            -0.8917
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.444,
+            -0.3101
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.5565,
+            -0.3038
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            0.6669,
+            -0.2823
+          ]
+        },
+        "context": "carry",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 717,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 287.06378,
+            "name": "left",
+            "owner": "contact claim",
+            "reach_margin_cm": -30.09702,
+            "target": [
+              0.3821,
+              0.362,
+              0.7187
+            ],
+            "unreachable": true,
+            "weight": 0.98842,
+            "wrist": [
+              0.292,
+              0.5413,
+              0.5134
+            ]
+          },
+          {
+            "arm_cm": 46.98767,
+            "error_mm": 396.58046,
+            "name": "right",
+            "owner": "contact claim",
+            "reach_margin_cm": -41.06768,
+            "target": [
+              0.0786,
+              0.2248,
+              0.7313
+            ],
+            "unreachable": true,
+            "weight": 0.98842,
+            "wrist": [
+              -0.0031,
+              0.5211,
+              0.4806
+            ]
+          }
+        ],
+        "n": 714,
+        "root": [
+          0.0,
+          0.0,
+          0.45
+        ],
+        "st": 11.91667,
+        "stages": [
+          "CoverCrouch",
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "pickup",
+        "t": 11.9,
+        "update": 715,
+        "yaw": 0.0
+      },
+      {
+        "bones": {
+          "mixamorig_Head": [
+            0.0046,
+            1.4405,
+            -0.0173
+          ],
+          "mixamorig_Hips": [
+            0.0031,
+            0.9277,
+            0.0031
+          ],
+          "mixamorig_LeftArm": [
+            0.1287,
+            1.2777,
+            -0.0323
+          ],
+          "mixamorig_LeftFoot": [
+            0.1468,
+            0.1093,
+            -0.0469
+          ],
+          "mixamorig_LeftForeArm": [
+            0.204,
+            1.0608,
+            0.0694
+          ],
+          "mixamorig_LeftHand": [
+            0.0592,
+            1.0623,
+            0.2248
+          ],
+          "mixamorig_LeftLeg": [
+            0.1093,
+            0.4841,
+            -0.0094
+          ],
+          "mixamorig_LeftShoulder": [
+            0.0414,
+            1.2969,
+            -0.0321
+          ],
+          "mixamorig_LeftToeBase": [
+            0.1531,
+            0.0281,
+            0.0656
+          ],
+          "mixamorig_LeftUpLeg": [
+            0.0968,
+            0.8714,
+            0.0094
+          ],
+          "mixamorig_Neck": [
+            0.0043,
+            1.366,
+            -0.0435
+          ],
+          "mixamorig_RightArm": [
+            -0.1211,
+            1.279,
+            -0.0327
+          ],
+          "mixamorig_RightFoot": [
+            -0.1406,
+            0.1093,
+            -0.0469
+          ],
+          "mixamorig_RightForeArm": [
+            -0.1947,
+            1.042,
+            0.0059
+          ],
+          "mixamorig_RightHand": [
+            -0.08,
+            1.16,
+            0.15
+          ],
+          "mixamorig_RightLeg": [
+            -0.1031,
+            0.4841,
+            -0.0094
+          ],
+          "mixamorig_RightShoulder": [
+            -0.0336,
+            1.2972,
+            -0.0322
+          ],
+          "mixamorig_RightToeBase": [
+            -0.1468,
+            0.0281,
+            0.0656
+          ],
+          "mixamorig_RightUpLeg": [
+            -0.0906,
+            0.8714,
+            0.0094
+          ],
+          "mixamorig_Spine": [
+            0.0031,
+            0.9839,
+            0.0156
+          ],
+          "mixamorig_Spine1": [
+            0.0031,
+            1.0963,
+            0.0156
+          ]
+        },
+        "context": "free",
+        "dt": 0.01667,
+        "feet": [],
+        "frame": 902,
+        "hands": [
+          {
+            "arm_cm": 46.35475,
+            "error_mm": 0.00012,
+            "name": "left",
+            "owner": "weapon grip",
+            "reach_margin_cm": 10.71293,
+            "target": [
+              0.0592,
+              1.0623,
+              0.2248
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              0.0592,
+              1.0623,
+              0.2248
+            ]
+          },
+          {
+            "arm_cm": 46.98768,
+            "error_mm": 0.0002,
+            "name": "right",
+            "owner": "weapon grip",
+            "reach_margin_cm": 23.39221,
+            "target": [
+              -0.08,
+              1.16,
+              0.15
+            ],
+            "unreachable": false,
+            "weight": 0.0,
+            "wrist": [
+              -0.08,
+              1.16,
+              0.15
+            ]
+          }
+        ],
+        "n": 899,
+        "root": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "st": -1.0,
+        "stages": [
+          "WeaponPose",
+          "WeaponArmIK",
+          "HandGrip"
+        ],
+        "state": "rifle_idle",
+        "t": 14.98333,
+        "update": 900,
+        "yaw": 0.0
+      }
+    ],
+    "selection": "worst frames and their neighbours"
+  },
+  "summary": {
+    "counts": {
+      "contact_acquired": 2,
+      "contact_released": 2,
+      "context_changed": 1,
+      "discontinuity": 30,
+      "pose_snap": 7,
+      "reach_exceeded": 4,
+      "stage_engaged": 4,
+      "stage_released": 3,
+      "state_changed": 9,
+      "target_jump": 2
+    },
+    "findings": {
+      "high": 5,
+      "info": 0,
+      "low": 0,
+      "medium": 2
+    },
+    "headline": "7 findings: 5 high, 2 medium, 0 low. These are measurements; the causes are unknown unless a finding says otherwise.",
+    "metrics": {
+      "discontinuity.count": {
+        "better": "lower",
+        "label": "pose snaps: moments when a bone moved far faster than the frames around it",
+        "noise": 0.0,
+        "tags": [
+          "frame_rate"
+        ],
+        "unit": "moments",
+        "value": 7.0
+      },
+      "discontinuity.worst_speed_mps": {
+        "better": "lower",
+        "label": "the fastest snap",
+        "noise": 0.2,
+        "tags": [
+          "frame_rate"
+        ],
+        "unit": "m/s",
+        "value": 27.4999
+      },
+      "discontinuity.worst_step_cm": {
+        "better": "lower",
+        "label": "the largest one-frame step of any bone at a pose snap",
+        "noise": 0.5,
+        "tags": [
+          "frame_rate",
+          "length"
+        ],
+        "unit": "cm",
+        "value": 44.2616
+      },
+      "duration_s": {
+        "better": "none",
+        "label": "recorded time",
+        "noise": 0.05,
+        "tags": [],
+        "unit": "s",
+        "value": 14.9833
+      },
+      "hand.left.held_s": {
+        "better": "none",
+        "label": "left hand: time a contact had hold of it",
+        "noise": 0.05,
+        "tags": [
+          "time"
+        ],
+        "unit": "s",
+        "value": 10.95
+      },
+      "hand.left.unreachable_s": {
+        "better": "lower",
+        "label": "left hand: time the target was beyond 97% of the arm while in contact",
+        "noise": 0.05,
+        "tags": [
+          "time"
+        ],
+        "unit": "s",
+        "value": 2.9167
+      },
+      "hand.left.worst_deficit_cm": {
+        "better": "lower",
+        "label": "left hand: how far beyond the arm's reach the target was, at worst",
+        "noise": 0.2,
+        "tags": [
+          "length"
+        ],
+        "unit": "cm",
+        "value": 50.8473
+      },
+      "hand.left.worst_error_mm": {
+        "better": "lower",
+        "label": "left hand: worst wrist-to-target error while holding a reachable target",
+        "noise": 0.5,
+        "tags": [
+          "length"
+        ],
+        "unit": "mm",
+        "value": 0.0002
+      },
+      "hand.right.held_s": {
+        "better": "none",
+        "label": "right hand: time a contact had hold of it",
+        "noise": 0.05,
+        "tags": [
+          "time"
+        ],
+        "unit": "s",
+        "value": 10.95
+      },
+      "hand.right.unreachable_s": {
+        "better": "lower",
+        "label": "right hand: time the target was beyond 97% of the arm while in contact",
+        "noise": 0.05,
+        "tags": [
+          "time"
+        ],
+        "unit": "s",
+        "value": 2.8333
+      },
+      "hand.right.worst_deficit_cm": {
+        "better": "lower",
+        "label": "right hand: how far beyond the arm's reach the target was, at worst",
+        "noise": 0.2,
+        "tags": [
+          "length"
+        ],
+        "unit": "cm",
+        "value": 41.8735
+      },
+      "hand.right.worst_error_mm": {
+        "better": "lower",
+        "label": "right hand: worst wrist-to-target error while holding a reachable target",
+        "noise": 0.5,
+        "tags": [
+          "length"
+        ],
+        "unit": "mm",
+        "value": 0.0003
+      },
+      "root.max_speed_mps": {
+        "better": "none",
+        "label": "fastest the root travelled",
+        "noise": 0.05,
+        "tags": [
+          "rate"
+        ],
+        "unit": "m/s",
+        "value": 1.4978
+      }
+    }
+  },
+  "version": 1,
+  "worst_frames": [
+    {
+      "finding": "F1",
+      "n": 10,
+      "st": 0.1833
+    },
+    {
+      "finding": "F2",
+      "n": 71,
+      "st": 0.85
+    },
+    {
+      "finding": "F3",
+      "n": 112,
+      "st": 0.85
+    },
+    {
+      "finding": "F4",
+      "n": 673,
+      "st": 10.8
+    },
+    {
+      "finding": "F5",
+      "n": 712,
+      "st": 10.8333
+    },
+    {
+      "finding": "F6",
+      "n": 137,
+      "st": 2.3
+    },
+    {
+      "finding": "F7",
+      "n": 601,
+      "st": 10.0333
+    }
+  ]
+}

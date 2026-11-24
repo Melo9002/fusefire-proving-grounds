@@ -74,7 +74,11 @@ func play(state_name: StringName) -> void:
 	sequence_running = false
 	var repeat := current_state == state_name
 	current_state = state_name
-	if repeat:
+	# A repeat restarts the clip (a second shot replays `shoot`), but not while the state machine is still on its way to it: the request is already being honoured, and start() would cut the
+	# crossfade (two callers asking for rifle_idle in the same frame made a walking stop drop the swing foot 30 cm in one frame: ADDA pose snap at the cover entry, scenario A 4.22 s).
+	if repeat and playback.is_playing() and playback.get_current_node() != state_name:   # (a machine that has not started yet must still be started)
+		pass
+	elif repeat:
 		playback.start(state_name)
 	else:
 		playback.travel(state_name)

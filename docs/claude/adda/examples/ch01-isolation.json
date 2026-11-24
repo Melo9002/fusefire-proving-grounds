@@ -1,0 +1,247 @@
+{
+  "all_modifiers_off_mm": {
+    "mixamorig_RightForeArm": 185.299754142761,
+    "mixamorig_RightHand": 391.528606414795
+  },
+  "bones": [
+    "mixamorig_RightHand",
+    "mixamorig_RightForeArm"
+  ],
+  "config": {
+    "armed": true,
+    "at_s": 3.5,
+    "character": "mira_0",
+    "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=tactical --at=3.5 --bones=@right_hand,@right_elbow --character=mira_0 --challenge=CH01",
+    "frame_step_s": 0.0166666666666667,
+    "revision": {
+      "branch": "review/claude-adda",
+      "commit": "7cc2f6c",
+      "dirty": true
+    },
+    "scenario": "tactical"
+  },
+  "drift_mm": 0.0,
+  "format": "adda.isolation",
+  "limits": [
+    "An effect is what changes when ONE modifier is switched off with the others as they are, in one held pose; it is not a declaration of what the modifier writes.",
+    "A modifier that only sets a target moves a bone through the solver after it: both are reported.",
+    "Two modifiers that cancel each other's effect on a bone each show an effect; a modifier whose effect is below the baseline drift cannot be attributed."
+  ],
+  "missing_bones": [],
+  "modifiers": [
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": false,
+      "name": "Locomotion",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": false,
+      "name": "CoverCrouch",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": false,
+      "name": "Traversal",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {},
+      "effect_mm": {},
+      "kind": "",
+      "max_deg": 0.0,
+      "max_mm": 0.0,
+      "moves_bones": false,
+      "name": "TraversalLegIK",
+      "note": "was not active, so it contributes nothing to compare",
+      "spike_mm": {},
+      "was_active": false
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": false,
+      "name": "TraversalFoot",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": false,
+      "name": "WeaponPose",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 140.15565935358,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 185.299754142761,
+        "mixamorig_RightHand": 345.18039226532
+      },
+      "held_off": true,
+      "kind": "steady",
+      "max_deg": 140.15565935358,
+      "max_mm": 345.18039226532,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 345.18039226532,
+      "moves_bones": true,
+      "name": "WeaponArmIK",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": true,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 105.767617146858
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "held_off": true,
+      "kind": "rotation only",
+      "max_deg": 105.767617146858,
+      "max_mm": 0.0,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 0.0,
+      "moves_bones": true,
+      "name": "HandGrip",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    },
+    {
+      "declared": false,
+      "effect_deg": {
+        "mixamorig_RightForeArm": 0.0395646811852521,
+        "mixamorig_RightHand": 0.0395646811852521
+      },
+      "effect_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 50.0000230967999
+      },
+      "held_off": true,
+      "kind": "steady",
+      "max_deg": 0.0395646811852521,
+      "max_mm": 50.0000230967999,
+      "max_spike_mm": 0.0,
+      "max_steady_mm": 50.0000230967999,
+      "moves_bones": true,
+      "name": "AuxPass1",
+      "spike_mm": {
+        "mixamorig_RightForeArm": 0.0,
+        "mixamorig_RightHand": 0.0
+      },
+      "was_active": true
+    }
+  ],
+  "noise_floor_deg": 0.5,
+  "noise_floor_mm": 1.0,
+  "reason": "",
+  "restore_error_mm": 0.0,
+  "restored": true,
+  "status": "ok",
+  "unit": "mm",
+  "version": 1,
+  "window": 1
+}

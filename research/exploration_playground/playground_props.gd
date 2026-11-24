@@ -65,7 +65,8 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	ctx._box(Vector3(4.0, 1.5, 3.0), Vector3(16.0, 0.75, 8.0), Color(0.45, 0.47, 0.5), "RampPlatform")
 	# A tower with a ladder on its near face.
 	var tower_size := Vector3(3.0, LADDER_LENGTH, 3.0)
-	var tower_center := Vector3(0.0, LADDER_LENGTH * 0.5, 17.0)
+	# The rungs stand 0.22 m clear of the tower face (a boot reaches 0.17 to 0.19 m ahead of the ankle, so a ladder hard against a wall cannot be stood on).
+	var tower_center := Vector3(0.0, LADDER_LENGTH * 0.5, 17.14)
 	ctx._box(tower_size, tower_center, Color(0.45, 0.47, 0.5), "LadderTower")
 	var deck_edge := tower_center.z - tower_size.z * 0.5
 	# The ladder's own rails run on above the deck: the ending of the ladder, and the handholds a climber takes to cross the lip. Real geometry at the rail span and the rung plane;
