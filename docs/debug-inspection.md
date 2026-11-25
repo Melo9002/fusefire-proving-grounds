@@ -18,18 +18,20 @@ Read-only tools for following what the AI decided and why. They show the decisio
 
 | Tool | Where | What it shows |
 | --- | --- | --- |
-| **Timeline** | Timeline tab | The last 80 AI decisions, newest first, tagged `[committed]` or `[rejected]` once the action service has answered. Selecting one turns the scoring overlay on, redraws that decision's heatmap and arrows, and shows its details: goal, reason, alternatives, outcome, the best moves with a score-component bar for each (progress, cover, exposure, firing, danger, squad; one shared scale, `#` helps and `-` hurts), the rejected moves grouped by reason, and the targets with chance and expected damage. |
+| **Timeline** | Timeline tab | The last 80 decisions, newest first. Select a row to see the recorded actor and faction, difficulty and doctrine, mission and movement profile, score components, and the selected option. A linked outcome shows the submitted action, transaction or rejection, and recorded AP/ammo changes where available. |
 | **Route arrow** | 3D view, scoring overlay | An arrow from the acting unit to its chosen destination for Move decisions. |
 | **Target lines** | 3D view, scoring overlay | A line to every target the unit considered: thick and bright for the chosen one, colored by score for the others. Rejected targets appear only if rejected cells are shown. |
 | **Squad reservations** | Diagnostics, "Show squad reservations" | Cyan squares for reserved destinations (labelled with the owner), green for the carrier's reserved corridor, magenta diamonds under the targets squads committed to. Both teams are shown. |
 
-An Attack decision does not choose a tile, so its heatmap and movement list are hidden (the record still carries the last movement plan's candidates; the details label them as such).
+Historical rows distinguish a selected action awaiting an outcome, a commitment, a rejected submission, and a standalone post-action explanation. A score bar compares the retained move candidates on one scale. The decision reason can explain why a selected candidate ranked below another option. Movement-policy filters and unavailable shots are displayed separately from evaluated scores. Attack rows show target forecast evidence without reusing an earlier move heatmap.
+
+The timeline retains up to 128 move and 32 target candidates per decision. It keeps the selected candidate and the highest-scoring alternatives when truncation is needed. The historical squad section shows the reservations and recent events captured when the decision was published. The squad overlay continues to show current reservations. The closed panel records history without refreshing the timeline widgets.
 
 Shots and destination feedback use the same queries/text as gameplay. Capture runs **before** F3 pauses the tree; otherwise legal actions would misleadingly report that the battle is paused. Already-paused inspection reports action snapshots unavailable. Target inspection is bounded to the first eight hostile actor IDs in sorted order; the full manifest remains in map/replay data.
 
 A changed action revision or a developer mission command marks the snapshot **STALE**. Close and reopen F3 to refresh it. Opening/browsing the inspection does not spend AP, commit actions, consume combat RNG or create squad contexts. Closing the panel releases only a pause it owns; removing an open panel also releases that pause.
 
-Runtime monitors reflect the last engine sample, potentially including loading or paused frames. They are **not AI planning measurements**. The snapshot-build time in the header measures this inspection only. Decision latency, explicit commitment expiry and new movement profiles remain milestone 05 work. No combat or AI balance changes are part of this panel update.
+Runtime monitors reflect the last engine sample, potentially including loading or paused frames. The snapshot-build number measures inspection only. Use the existing `profile-ai` simulator argument to collect planning slices, decision latency, frame yields, activation pacing, and execution windows. See the [Step 11 methodology and results](quality/ai-step11-profiling-f3-2026-11-24.md).
 
 Current AI repair follow-up: [behavior and trace contracts](ai-current-behavior.md), [verification](quality/ai-repairs-2026-11-17.md).
 

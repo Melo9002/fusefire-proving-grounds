@@ -11,6 +11,12 @@ const STAGE_SELECTED := "selected"
 const STAGE_EXPLANATION := "explanation"
 
 var actor := "Unknown"
+var actor_id := ""
+var faction := ""
+var expected_action: StringName
+var committed_action: StringName
+var linked_outcome := {}
+var squad_at_decision := {}
 var decision_id := 0
 var state_revision := 0
 var stage := STAGE_EXPLANATION
@@ -56,8 +62,14 @@ func to_dictionary() -> Dictionary:
 		"difficulty": difficulty,
 	}
 	if has_commander:
+		record["actor_id"] = actor_id
+		record["faction"] = faction
 		record["commander_policy"] = commander_policy
 		record["commander_policy_id"] = commander_policy_id
 		record["strategic_intent"] = strategic_intent
+	if not linked_outcome.is_empty():
+		record["linked_outcome"] = linked_outcome
+	if not squad_at_decision.is_empty():
+		record["squad_at_decision"] = squad_at_decision
 	record.merge(context.to_dictionary(), true)
 	return record

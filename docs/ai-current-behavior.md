@@ -28,7 +28,7 @@ flowchart TD
 
 How one decision flows from the battle to a committed action, and what each stage owns, is in the [decision pipeline](claude/ai-decision-pipeline.md).
 
-Hover a destination and press **F3**. Unit/Tactical show existing authoritative predictions; AI shows the latest explanation plus the latest authoritative outcome. Early movement heatmaps are labeled **selected**. Outcomes separately say **committed** or **rejected**, with transaction/revision data and a linked movement decision ID. Other post-action explanations are labeled explanations; an outcome with decision ID 0 has no preselected movement record. AI simulation records decision count separately from committed/rejected action counts.
+Hover a destination and press **F3**. Unit/Tactical show existing authoritative predictions. Open Timeline for the recorded decision, retained alternatives, and squad commitments at publication. A matching action receipt identifies the commitment or rejection. Some outcomes have no corresponding decision row, such as reactions. Guard explanations state the tactical condition the planner actually used. For profiling, the simulator's `profile-ai` flag separates synchronous planner work, frame waits, pacing, and action execution. [F3 guide](debug-inspection.md) · [Step 11 evidence](quality/ai-step11-profiling-f3-2026-11-24.md).
 
 Simulation terminal outcomes take precedence over limits reached in the same sampled frame. A genuinely ongoing deadline, stalled state or round limit remains distinct. The existing state-change stall clock is not a measure of useful tactical progress.
 

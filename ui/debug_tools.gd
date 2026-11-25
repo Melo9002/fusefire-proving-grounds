@@ -7,6 +7,8 @@ const DebugInspection := preload("res://ui/debug_inspection_snapshot.gd")
 const AIScoringOverlayData := preload("res://presentation/overlays/ai_scoring_overlay.gd")
 const AIReservationOverlayData := preload("res://presentation/overlays/ai_reservation_overlay.gd")
 const DECISION_HISTORY_LIMIT := 80
+const HISTORY_MOVE_LIMIT := 128
+const HISTORY_TARGET_LIMIT := 32
 
 @export_group("Debug Availability")
 @export var debug_tools_enabled: bool = true
@@ -54,6 +56,7 @@ var _ai_reservation_toggle: CheckButton
 var _decision_history: Array[Dictionary] = []
 var _decision_outcomes: Dictionary = {}
 var _timeline_list: ItemList
+var _timeline_selected_id := 0
 var _timeline_details: RichTextLabel
 var _inspection_snapshot: Dictionary = {}
 var _inspection_labels: Dictionary = {}
@@ -110,6 +113,7 @@ func set_panel_open(open: bool) -> void:
 	panel_open = open
 	_panel.visible = open
 	if open:
+		_refresh_timeline()
 		_update_seed_display()
 		_capture_inspected_destination()
 		_refresh_mission_controls()
@@ -435,6 +439,8 @@ func _set_shot_trajectories_visible(enabled: bool) -> void:
 
 func _set_ai_decisions_visible(enabled: bool) -> void:
 	_show_ai_decisions = enabled
+	if enabled and not _latest_ai_decision.is_empty():
+		_refresh_ai_decision_label(_latest_ai_decision)
 	if _ai_decision_label:
 		_ai_decision_label.visible = enabled
 
@@ -605,16 +611,42 @@ func _update_map_inspection() -> void:
 	_map_inspection_label.text = "\n".join(lines)
 
 func _on_ai_decision_recorded(record: Dictionary) -> void:
-	_latest_ai_decision = record
-	_decision_history.append(record)
+	var history_record := record.duplicate()
+	_bound_candidates(history_record, "position_candidates", HISTORY_MOVE_LIMIT)
+	_bound_candidates(history_record, "target_candidates", HISTORY_TARGET_LIMIT)
+	_latest_ai_decision = history_record
+	var receipt: Dictionary = history_record.get("linked_outcome", {})
+	if not receipt.is_empty() and receipt.get("transaction_id") == _latest_ai_outcome.get("transaction_id"):
+		_latest_ai_outcome = receipt
+	_decision_history.append(history_record)
 	if _decision_history.size() > DECISION_HISTORY_LIMIT:
 		_decision_outcomes.erase(_decision_history.pop_front().get("decision_id", 0))
-	_refresh_timeline()
+	if panel_open: _refresh_timeline()
 	_refresh_reservations()
 	if _ai_scoring_overlay:
-		_ai_scoring_overlay.display(record)
+		_ai_scoring_overlay.display(history_record)
 	if _ai_scoring_toggle and _ai_scoring_toggle.button_pressed:
-		_update_ai_scoring_details(record)
+		_update_ai_scoring_details(history_record)
+	if _show_ai_decisions:
+		_refresh_ai_decision_label(history_record)
+
+func _bound_candidates(record: Dictionary, key: String, limit: int) -> void:
+	var candidates: Array = record.get(key, [])
+	if candidates.size() <= limit:
+		return
+	var ranked := candidates.duplicate()
+	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_chosen := bool(a.get("chosen", false))
+		var b_chosen := bool(b.get("chosen", false))
+		if a_chosen != b_chosen: return a_chosen
+		var a_rejected: bool = a.get("status") == "rejected"
+		var b_rejected: bool = b.get("status") == "rejected"
+		if a_rejected != b_rejected: return not a_rejected
+		return float(a.get("score", -INF)) > float(b.get("score", -INF)))
+	record[key + "_total"] = candidates.size()
+	record[key] = ranked.slice(0, limit)
+
+func _refresh_ai_decision_label(record: Dictionary) -> void:
 	if not _ai_decision_label:
 		return
 	_ai_decision_label.text = "AI DECISION — %s\nCommander: %s  |  Intent: %s\nDoctrine: %s\n%s → %s  %s\nMission goal: %s\nMovement profile: %s\nPosition: %s\nTarget: %s\nSquad: %s\nReason: %s\nAlternatives: %s" % [
@@ -716,7 +748,7 @@ func _build_inspection_section(tabs: TabContainer, section: String) -> void:
 		var mono := SystemFont.new()
 		mono.font_names = PackedStringArray(["Consolas", "Courier New", "monospace"])
 		details.add_theme_font_override("normal_font", mono)
-		details.add_theme_font_size_override("normal_font_size", 13)
+		details.add_theme_font_size_override("normal_font_size", 14)
 		_timeline_details = details
 	column.add_child(details)
 	_inspection_labels[section] = details
@@ -738,7 +770,9 @@ func _capture_inspection() -> void:
 	if _target_picker.item_count == 0: _target_picker.add_item("No live hostile action query available")
 	_show_target_snapshot(0)
 	_show_map_snapshot()
-	if not _latest_ai_decision.is_empty(): _update_ai_scoring_details(_latest_ai_decision)
+	if not _latest_ai_decision.is_empty():
+		_refresh_ai_decision_label(_latest_ai_decision)
+		_update_ai_scoring_details(_latest_ai_decision)
 	_inspection_labels["AI"].text = ("Latest recorded decision (historical):\n" + _ai_decision_label.text + "\n\n" + _ai_scoring_label.text if not _latest_ai_decision.is_empty() else "No AI decision recorded in this battle yet.") + "\n\n" + _inspection_snapshot.squad
 	_inspection_labels["AI"].text = "Latest authoritative AI outcome:\n" + _format_ai_outcome() + "\n\n" + _inspection_labels["AI"].text
 	_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
@@ -764,10 +798,11 @@ func _exit_tree() -> void:
 
 func _on_ai_action_outcome(record: Dictionary) -> void:
 	_latest_ai_outcome = record.duplicate(true)
-	if int(record.get("decision_id", 0)) > 0:
-		_decision_outcomes[int(record.decision_id)] = _latest_ai_outcome
-		_refresh_timeline()
-	if int(record.get("decision_id", 0)) > 0 and record.get("decision_id") == _latest_ai_decision.get("decision_id"):
+	var id := int(record.get("decision_id", 0))
+	if id > 0 and _decision_history.any(func(row: Dictionary) -> bool: return row.get("decision_id") == id):
+		_decision_outcomes[id] = _latest_ai_outcome
+		if panel_open: _refresh_timeline()
+	if _show_ai_decisions and id > 0 and id == _latest_ai_decision.get("decision_id"):
 		_ai_decision_label.text += "\nOutcome: " + _format_ai_outcome()
 
 func _format_ai_outcome() -> String:
@@ -826,11 +861,16 @@ func _refresh_reservations() -> void:
 		_ai_reservation_overlay.show_entries(_collect_reservations())
 
 func _timeline_entry_text(record: Dictionary) -> String:
-	var outcome: Dictionary = _decision_outcomes.get(int(record.get("decision_id", 0)), {})
+	var outcome := _decision_outcome(record)
 	var tag := ""
 	if not outcome.is_empty():
 		tag = "  [%s]" % String(outcome.get("stage", ""))
+	elif record.get("stage") == "selected":
+		tag = "  [selected]"
 	return "#%s  %s · %s %s%s" % [record.get("decision_id", "?"), record.get("actor", "?"), record.get("action", "?"), record.get("subject", ""), tag]
+
+func _decision_outcome(record: Dictionary) -> Dictionary:
+	return _decision_outcomes.get(int(record.get("decision_id", 0)), record.get("linked_outcome", {}))
 
 func _refresh_timeline() -> void:
 	if _timeline_list == null:
@@ -840,14 +880,21 @@ func _refresh_timeline() -> void:
 		var record := _decision_history[index]
 		var item := _timeline_list.add_item(_timeline_entry_text(record))
 		_timeline_list.set_item_metadata(item, index)
-		if record.get("stage", "") == "selected":
+		if record.get("stage") == "selected" and _decision_outcome(record).is_empty():
 			_timeline_list.set_item_custom_fg_color(item, Color(1.0, 0.82, 0.35))
+		if int(record.get("decision_id", 0)) == _timeline_selected_id and _timeline_selected_id > 0:
+			_timeline_list.select(item)
+			_timeline_details.text = _format_decision_detail(record)
+	if _timeline_selected_id > 0 and not _timeline_list.is_anything_selected():
+		_timeline_selected_id = 0
+		_timeline_details.text = ""
 
 func _select_timeline_entry(item: int) -> void:
 	var index: int = _timeline_list.get_item_metadata(item)
 	if index < 0 or index >= _decision_history.size():
 		return
 	var record := _decision_history[index]
+	_timeline_selected_id = int(record.get("decision_id", 0))
 	if _ai_scoring_toggle and not _ai_scoring_toggle.button_pressed:
 		_ai_scoring_toggle.button_pressed = true
 	if _ai_scoring_overlay:
@@ -865,25 +912,42 @@ static func score_bar(value: float, scale_value: float, width := 8) -> String:
 func _format_decision_detail(record: Dictionary) -> String:
 	var lines: Array[String] = [
 		"%s  #%s  %s %s  (%s, revision %s)" % [record.get("actor", "?"), record.get("decision_id", "?"), record.get("action", "?"), record.get("subject", ""), record.get("stage", "explanation"), record.get("state_revision", "?")],
+		"Recorded actor: %s · %s" % [record.get("actor_id", "unknown"), record.get("faction", "unknown")],
 		"Goal: %s | Commander: %s | %s" % [record.get("mission_goal", "None"), record.get("commander_policy", "-"), record.get("difficulty", "-")],
+		"Movement: %s" % record.get("movement_profile", "None"),
+		"At publication: AP %s · SP %s" % [record.get("remaining_ap", "?"), record.get("remaining_sp", "?")],
 		"Reason: %s" % record.get("reason", ""),
-		"Alternatives: %s" % record.get("alternatives", ""),
+		"Policy alternatives: %s" % record.get("alternatives", ""),
 	]
-	var outcome: Dictionary = _decision_outcomes.get(int(record.get("decision_id", 0)), {})
+	var outcome := _decision_outcome(record)
 	if not outcome.is_empty():
-		lines.append("Outcome: %s" % ("committed (transaction %s)" % outcome.get("transaction_id", "?") if outcome.get("stage") == "committed" else "REJECTED — %s" % outcome.get("reason", "")))
-	var positions: Array = record.get("position_candidates", [])
-	var scored: Array = positions.filter(func(c: Dictionary) -> bool: return c.get("status", "") != "rejected" and c.has("score"))
-	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.score) > float(b.score))
+		if outcome.get("stage") == "committed":
+			lines.append("Outcome: committed · transaction %s · revision %s → %s" % [
+				outcome.get("transaction_id", "?"), outcome.get("base_revision", "?"), outcome.get("committed_revision", "?")])
+			lines.append("Resources at commit: AP %s → %s%s" % [outcome.get("ap_before", "?"), outcome.get("ap_after", "?"),
+				" · SP %s → %s" % [outcome.sp_before, outcome.sp_after] if outcome.has("sp_before") else ""])
+		else:
+			lines.append("Outcome: rejected at submission · %s" % outcome.get("reason", ""))
+	elif record.get("stage") == "selected":
+		lines.append("Outcome: no submission result recorded")
+	var positions: Array = []
+	if record.get("action") in ["Move", "Wait", "Guard"]:
+		positions = record.get("position_candidates", [])
+	var scored: Array = positions.filter(func(c: Dictionary) -> bool: return (c.get("chosen", false) or c.get("status", "") != "rejected") and c.has("score"))
+	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a.get("chosen", false) != b.get("chosen", false): return a.get("chosen", false)
+		return float(a.score) > float(b.score))
 	if not scored.is_empty():
 		var scale_value := 1.0
 		for candidate in scored.slice(0, 6):
 			for key in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 				scale_value = maxf(scale_value, absf(float(candidate.get(key, 0.0))))
 		lines.append("")
-		lines.append("MOVES  (bars share one scale; # helps, - hurts)" if String(record.get("action", "")) != "Attack" else "LAST MOVEMENT PLAN  (from earlier this activation; an attack chooses no tile)")
+		lines.append("MOVES  (bars share one scale; # helps, - hurts)" if record.get("action") == "Move" else "LAST MOVEMENT EVALUATION  (context, not choices for this action)")
+		if record.get("move_acceptance_threshold") != null:
+			lines.append("Hold %.1f · accept above %.1f · urgency +%.1f" % [float(record.get("hold_score", 0.0)), float(record.move_acceptance_threshold), float(record.get("urgency_bonus", 0.0))])
 		for candidate in scored.slice(0, 6):
-			lines.append("%s %+.1f%s" % [candidate.cell, float(candidate.score), "  <- CHOSEN" if candidate.get("chosen", false) else ""])
+			lines.append("%s %+.1f%s" % [candidate.cell, float(candidate.score), "  <- CHOSEN" if candidate.get("chosen", false) else "  (not selected)"])
 			var parts: Array[String] = []
 			for key in ["progress", "cover", "exposure", "firing", "danger", "squad"]:
 				if candidate.has(key):
@@ -891,24 +955,38 @@ func _format_decision_detail(record: Dictionary) -> String:
 			if not parts.is_empty(): lines.append("   " + "   ".join(parts))
 	var reasons := {}
 	for candidate in positions:
-		if candidate.get("status", "") == "rejected":
-			var why := String(candidate.get("reason", "No score"))
+		if candidate.get("status", "") == "rejected" and not candidate.get("chosen", false):
+			var why := "Scored below the hold threshold" if candidate.has("score") else String(candidate.get("reason", "No score"))
 			if why.length() > 60: why = why.substr(0, 60) + "…"
 			reasons[why] = int(reasons.get(why, 0)) + 1
 	if not reasons.is_empty():
 		lines.append("")
-		lines.append("REJECTED MOVES")
+		lines.append("MOVEMENT FILTERS  (legal inventory; policy or reservation)")
 		for why in reasons:
 			lines.append("%4d × %s" % [reasons[why], why])
 	var targets: Array = record.get("target_candidates", [])
 	if not targets.is_empty():
 		lines.append("")
-		lines.append("TARGETS")
+		lines.append("TARGETS" if record.get("action") == "Attack" else "LAST SHOT CHECKS  (context)")
 		for candidate in targets:
 			if candidate.get("status", "") == "rejected":
-				lines.append("%s REJECTED — %s" % [candidate.get("target", "?"), candidate.get("reason", "")])
+				lines.append("%s UNAVAILABLE — %s%s" % [candidate.get("target", "?"), candidate.get("reason", ""), " [%s]" % candidate.code if candidate.has("code") else ""])
 			else:
 				lines.append("%s %+.1f%s | %s%% x %s dmg = %.1f | %s" % [candidate.get("target", "?"), float(candidate.score), "  <- CHOSEN" if candidate.get("chosen", false) else "", candidate.get("hit_chance", "?"), candidate.get("damage_on_hit", "?"), float(candidate.get("expected_damage", 0.0)), candidate.get("summary", "")])
 	lines.append("")
 	lines.append("Squad: %s" % record.get("squad_adjustments", "None"))
+	for key in ["position_candidates", "target_candidates"]:
+		if record.has(key + "_total"):
+			lines.append("Retained %d of %d %s" % [record[key].size(), record[key + "_total"], key.replace("_", " ")])
+	var squad: Dictionary = record.get("squad_at_decision", {})
+	if not squad.is_empty():
+		lines.append("Squad at publication (round %s)" % squad.round)
+		for cell in squad.destinations:
+			lines.append("  %s reserved by %s" % [cell, squad.destinations[cell]])
+		if int(squad.corridor_count) > 0:
+			lines.append("  Carrier %s · %s lane cells · first %s" % [squad.carrier, squad.corridor_count, squad.corridor])
+		for target in squad.focus:
+			lines.append("  Focus %s · %d claimant(s)" % [target, squad.focus[target]])
+		for expiry in squad.expiry:
+			lines.append("  Released (round %s): %s" % [expiry.round, expiry.reason])
 	return "\n".join(lines)

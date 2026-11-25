@@ -7,6 +7,7 @@ var commander_composition: Dictionary = {}
 var attack_plan: Dictionary = {}
 var grid_position := Vector3i(-1, -1, -1)
 var remaining_ap := -1
+var remaining_sp := -1
 var recent_move_origins: Array = []
 var consecutive_low_value_actions := 0
 ## null while a score has not been computed this activation.
@@ -21,6 +22,7 @@ func to_dictionary() -> Dictionary:
 		"attack_plan": attack_plan,
 		"grid_position": grid_position,
 		"remaining_ap": remaining_ap,
+		"remaining_sp": remaining_sp,
 		"recent_move_origins": recent_move_origins,
 		"consecutive_low_value_actions": consecutive_low_value_actions,
 		"hold_score": hold_score,

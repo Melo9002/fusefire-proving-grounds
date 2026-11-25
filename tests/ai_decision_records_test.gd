@@ -2,6 +2,7 @@ extends SceneTree
 ## Milestone 05 step 4: typed decision records and the planning snapshot.
 ## The records must publish exactly the trace keys F3, the simulator and tests already read.
 const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
+const ActivationProfile := preload("res://systems/ai/ai_activation_profile.gd")
 
 var failures := 0
 var checks := 0
@@ -23,6 +24,8 @@ func _run() -> void:
 	_position_candidates()
 	_target_candidates()
 	_decision_record()
+	_activation_timing()
+	_activation_handoff()
 	await _planning_snapshot()
 	print("AI decision records: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
@@ -75,6 +78,45 @@ func _decision_record() -> void:
 	record.action = "Attack"
 	check(not record.is_selected_move(), "Only a selected Move is an early movement preview")
 	check(full.position_candidates[0] is Dictionary and full.target_candidates[0] is Dictionary, "Candidates are published as plain dictionaries")
+
+func _activation_timing() -> void:
+	var profile := ActivationProfile.new(&"timed_actor", 1000)
+	profile.suspend(1000)
+	profile.resume("presentation", 1100)
+	profile.note("move_inventory", 50, 12)
+	profile.suspend(1150)
+	profile.resume("yield", 1300)
+	profile.note("position_scoring", 50, 4)
+	profile.begin_action(1350)
+	profile.note_commit(&"move", 17, 25, 10)
+	profile.end_action(2100)
+	var activation := profile.finish(2200)
+	var decision: Dictionary = activation.decisions[0]
+	check(decision.work_us == 100 and decision.max_slice_us == 50 and decision.wall_us == 250,
+		"Planning work, wall latency and the longest work slice are measured independently")
+	check(decision.yields == 1 and decision.yield_us == 150 and activation.delay_us == 100,
+		"Planning yield and activation presentation delay are separate")
+	check(decision.transaction == 17 and decision.core_us == 25 and decision.observers_us == 10 and decision.action_window_us == 750,
+		"The planning sample carries the committed action's transaction and separate execution window")
+	check(decision.counts.move_inventory == 12 and decision.counts.position_scoring == 4 and activation.tail.work_us == 100,
+		"Candidate counts and activation tail are retained outside the action window")
+	check(activation.activation_us == decision.wall_us + activation.tail.wall_us + activation.delay_us + activation.action_windows_us,
+		"The sampled activation accounts for the measured intervals")
+
+func _activation_handoff() -> void:
+	var service := TacticalActionService.new()
+	var outgoing := ActivationProfile.new(&"extracting")
+	var incoming := ActivationProfile.new(&"next")
+	service.ai_activation_profile = outgoing
+	service._set_busy(true, &"extracting")
+	service.ai_activation_profile = incoming
+	service._set_busy(false)
+	check(outgoing.decisions.size() == 1 and incoming.decisions.is_empty(),
+		"An action window settles on its original activation after a successor starts")
+	service._set_busy(true, &"unrelated")
+	service._set_busy(false)
+	check(incoming.decisions.is_empty(), "An unrelated action is not charged to the active planner")
+	service.free()
 
 func _planning_snapshot() -> void:
 	var f := Fixture.new()

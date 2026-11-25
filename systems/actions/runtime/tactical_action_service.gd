@@ -15,6 +15,8 @@ const OVERWATCH_SUPPLY_COST := 1
 var actor_registry := TacticalActorRegistry.new()
 var state_revision := 0
 var _profile_busy_start_usec := 0
+var ai_activation_profile: RefCounted
+var _busy_activation_profile: RefCounted
 var last_transaction_id := 0
 var last_rejection: ActionValidationResult
 var last_result: AttackActionResult
@@ -88,14 +90,32 @@ func setup(
 func register_actor(actor: TacticalUnit) -> bool:
 	return actor_registry.register_actor(actor)
 
-func _set_busy(value: bool) -> void:
+func _set_busy(value: bool, actor_id: StringName = &"") -> void:
 	if is_busy == value:
 		return
 	if OS.get_cmdline_user_args().has("profile-ai"):
 		if value: _profile_busy_start_usec = Time.get_ticks_usec()
 		else: print("[AIAction] wall_ms=%.3f" % ((Time.get_ticks_usec() - _profile_busy_start_usec) / 1000.0))
+	if value and ai_activation_profile != null and ai_activation_profile.actor_id == actor_id:
+		# Extraction can start another activation before this window closes.
+		_busy_activation_profile = ai_activation_profile
+		_busy_activation_profile.begin_action()
+	elif not value and _busy_activation_profile != null:
+		_busy_activation_profile.end_action()
+		_busy_activation_profile = null
 	is_busy = value
 	busy_changed.emit(value)
+
+func _publish_commit(result) -> void:
+	var profiling := OS.get_cmdline_user_args().has("profile-ai")
+	var emit_start := Time.get_ticks_usec() if profiling else 0
+	action_committed.emit(result)
+	if profiling:
+		var core := emit_start - _profile_busy_start_usec
+		var observers := Time.get_ticks_usec() - emit_start
+		if _busy_activation_profile != null:
+			_busy_activation_profile.note_commit(result.request.kind, result.transaction_id, core, observers)
+		print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, core / 1000.0, observers / 1000.0])
 
 func unregister_actor(actor: TacticalUnit) -> void:
 	actor_registry.unregister_actor(actor)
@@ -173,6 +193,7 @@ func query_attack(actor_id: StringName, target_id: StringName = &"") -> AttackQu
 	return query
 
 func submit_attack(request: TacticalActionRequest, suppress_presentation := false) -> AttackActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -191,7 +212,9 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(validation)
 		return null
 
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := AttackActionResult.new()
@@ -253,9 +276,7 @@ func submit_attack(request: TacticalActionRequest, suppress_presentation := fals
 	result.committed_revision = state_revision
 	last_result = result
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 
 	result.presentation_suppressed = suppress_presentation
 	if _present_attack.is_valid():
@@ -342,6 +363,7 @@ func query_shield(actor_id: StringName, threat_id: StringName = &"") -> ShieldQu
 	return query
 
 func submit_shield(request: TacticalActionRequest, suppress_presentation := false) -> ShieldActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -355,7 +377,9 @@ func submit_shield(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := ShieldActionResult.new()
@@ -380,9 +404,7 @@ func submit_shield(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_shield.is_valid(): await _present_shield.call(result)
 	result.presentation_completed = true
@@ -409,6 +431,7 @@ func query_overwatch(actor_id: StringName) -> OverwatchQueryResult:
 	return query
 
 func submit_overwatch(request: TacticalActionRequest, suppress_presentation := false) -> OverwatchActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -422,7 +445,9 @@ func submit_overwatch(request: TacticalActionRequest, suppress_presentation := f
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := OverwatchActionResult.new()
@@ -442,9 +467,7 @@ func submit_overwatch(request: TacticalActionRequest, suppress_presentation := f
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_overwatch.is_valid(): await _present_overwatch.call(result)
 	result.presentation_completed = true
@@ -453,6 +476,7 @@ func submit_overwatch(request: TacticalActionRequest, suppress_presentation := f
 	return result
 
 func submit_aim(request: TacticalActionRequest, suppress_presentation := false) -> AimActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -466,7 +490,9 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := AimActionResult.new()
@@ -486,9 +512,7 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_aim.is_valid(): await _present_aim.call(result)
 	result.presentation_completed = true
@@ -497,6 +521,7 @@ func submit_aim(request: TacticalActionRequest, suppress_presentation := false) 
 	return result
 
 func submit_reload(request: TacticalActionRequest, suppress_presentation := false) -> ReloadActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -510,7 +535,9 @@ func submit_reload(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := ReloadActionResult.new()
@@ -530,9 +557,7 @@ func submit_reload(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_reload.is_valid(): await _present_reload.call(result)
 	result.presentation_completed = true
@@ -578,6 +603,7 @@ func query_move(actor_id: StringName, target_cell := Vector3i(-1, -1, -1)) -> Mo
 	return query
 
 func submit_move(request: TacticalActionRequest, suppress_presentation := false) -> MoveActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -591,7 +617,9 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 		_reject(query.validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := MoveActionResult.new()
@@ -633,9 +661,7 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 		_objective_manager.evaluate_outcome_after_action_commit()
 	result.objective_state_after = _capture_objectives()
 	result.carried_actor_id = actor.carried_unit.tactical_id if actor.is_carrying_unit() else &""
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_move.is_valid(): await _present_move.call(result)
 	result.presentation_completed = true
@@ -754,6 +780,7 @@ func query_mission(kind: StringName, actor_id: StringName, target_id: StringName
 	return query
 
 func submit_simple(request: TacticalActionRequest, suppress_presentation := false) -> SimpleActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -764,7 +791,9 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 		_reject(validation)
 		return null
 	var actor := actor_registry.resolve(request.actor_id)
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := SimpleActionResult.new()
@@ -794,9 +823,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_simple.is_valid(): await _present_simple.call(result)
 	result.presentation_completed = true
@@ -805,6 +832,7 @@ func submit_simple(request: TacticalActionRequest, suppress_presentation := fals
 	return result
 
 func submit_mission(request: TacticalActionRequest, suppress_presentation := false) -> MissionActionResult:
+	var validation_started := Time.get_ticks_usec() if ai_activation_profile != null else 0
 	var validation := _validate_request(request)
 	if not validation.accepted:
 		_reject(validation)
@@ -819,7 +847,9 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	if not validation.accepted:
 		_reject(validation)
 		return null
-	_set_busy(true)
+	if ai_activation_profile != null:
+		ai_activation_profile.note("submit_validation", Time.get_ticks_usec() - validation_started)
+	_set_busy(true, request.actor_id)
 	is_committing = true
 	last_transaction_id += 1
 	var result := MissionActionResult.new()
@@ -856,9 +886,7 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	state_revision += 1
 	result.committed_revision = state_revision
 	is_committing = false
-	var emit_start := Time.get_ticks_usec() if OS.get_cmdline_user_args().has("profile-ai") else 0
-	action_committed.emit(result)
-	if emit_start > 0: print("[AICommit] %s core_ms=%.3f observer_ms=%.3f" % [result.request.kind, (emit_start - _profile_busy_start_usec) / 1000.0, (Time.get_ticks_usec() - emit_start) / 1000.0])
+	_publish_commit(result)
 	result.presentation_suppressed = suppress_presentation
 	if _present_mission.is_valid(): await _present_mission.call(result, actor, target)
 	result.presentation_completed = true

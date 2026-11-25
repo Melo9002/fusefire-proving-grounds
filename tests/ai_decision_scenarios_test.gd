@@ -43,6 +43,7 @@ func _run() -> void:
 	await _empty_ammo_reloads()
 	await _blocked_corridor()
 	await _open_corridor()
+	await _guard_explains_its_trigger()
 	await _flat_map_approach()
 	await _reposition_for_a_better_shot()
 	await _good_shot_is_kept()
@@ -183,6 +184,10 @@ func _blocked_corridor() -> void:
 	var wait_reason := String(r.decisions[-1].reason) if not r.decisions.is_empty() else ""
 	check(wait_reason.contains(String(ally.name)) and wait_reason.contains("blocked"), "S6: the wait reason names the blocking ally (%s)" % wait_reason)
 	check(not wait_reason.contains("no reachable legal destination"), "S6: the wait reason no longer claims there is no legal destination (%s)" % wait_reason)
+	var wait_id := int(r.decisions[-1].decision_id)
+	check(r.outcomes.any(func(outcome: Dictionary) -> bool:
+		return outcome.action == "wait" and outcome.stage == "committed" and outcome.decision_id == wait_id),
+		"S6: the blocked-route Wait links to its authoritative submission")
 	await f.dispose(self)
 
 ## S6b the same corridor with the ally gone: progress through it must be possible.
@@ -197,6 +202,32 @@ func _open_corridor() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S6b")
 	check(r.end.x > 3, "S6b: with the corridor free the unit advances toward the hostile")
+	await f.dispose(self)
+
+func _guard_explains_its_trigger() -> void:
+	var f := Fixture.new()
+	await f.setup(self, 1, 1)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var hostile: TacticalUnit = f.turns.enemy_units[0]
+	var start := Vector3i(5, 0, 12)
+	f.place(actor, start)
+	f.place(hostile, Vector3i(17, 0, 12))
+	var walls: Array[Vector3i] = []
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			if dx != 0 or dz != 0: walls.append(start + Vector3i(dx, 0, dz))
+	f.set_walls(walls)
+	f.ready_actor(actor, 1)
+	var run := await f.activate(actor, self)
+	hard_rules(f, actor, run, "Guard trace")
+	var guards: Array = run.decisions.filter(func(row: Dictionary) -> bool: return row.action == "Guard")
+	check("overwatch" in run.committed and guards.size() == 1, "Guard trace: boxed actor reserves an authoritative reaction")
+	if not guards.is_empty():
+		check(guards[0].reason.contains(String(hostile.name)) and guards[0].reason.contains("within one move of range"),
+			"Guard trace names the threat and the heuristic the planner used")
+		var receipt: Dictionary = guards[0].get("linked_outcome", {})
+		check(receipt.get("action") == "overwatch" and receipt.get("sp_before") == receipt.get("sp_after"),
+			"Guard trace links to its commitment without reporting spent reaction ammo")
 	await f.dispose(self)
 
 ## S6c legacy flat map (no surface placement), open ground, hostile 21 cells away. Reasonable: advance.

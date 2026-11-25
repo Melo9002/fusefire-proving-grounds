@@ -25,7 +25,8 @@ signal unit_moved(unit: TacticalUnit, from_cell: Vector3i, to_cell: Vector3i)
 signal unit_defeated_in_battle(unit: TacticalUnit)
 
 var _ai_decision_sequence := 0
-var _pending_ai_moves: Dictionary = {}
+var _pending_ai_decisions: Dictionary = {}
+var _last_unlinked_ai_commit: Dictionary = {}
 var _shot_cell_cache: Dictionary = {}
 
 @export var battle_root: Node3D
@@ -281,11 +282,17 @@ func _on_action_service_busy_changed(is_busy: bool) -> void:
 func _on_action_committed(result) -> void:
 	if result.request.source == TacticalActionRequest.Source.AI:
 		var actor_id: StringName = result.request.actor_id
-		ai_action_outcome_recorded.emit({"actor_id": String(actor_id), "action": String(result.request.kind),
-			"stage": "committed", "decision_id": _pending_ai_moves.get(actor_id, 0) if result.request.kind == &"move" else 0,
+		var decision_id := _take_ai_selection(result.request)
+		var outcome := {"actor_id": String(actor_id), "action": String(result.request.kind),
+			"stage": "committed", "decision_id": decision_id,
 			"transaction_id": result.transaction_id, "base_revision": result.base_revision,
-			"committed_revision": result.committed_revision})
-		if result.request.kind == &"move": _pending_ai_moves.erase(actor_id)
+			"committed_revision": result.committed_revision,
+			"ap_before": result.actor_ap_before, "ap_after": result.actor_ap_after}
+		if result.request.kind in [&"attack", &"reload", &"overwatch"]:
+			outcome["sp_before"] = result.supply_points_before
+			outcome["sp_after"] = result.supply_points_before if result.request.kind == &"overwatch" else result.supply_points_after
+		_last_unlinked_ai_commit = outcome.duplicate() if decision_id == 0 else {}
+		ai_action_outcome_recorded.emit(outcome)
 	_refresh_overwatch_range()
 	_append_combat_entries(TacticalFeedbackText.committed(result))
 
@@ -792,13 +799,25 @@ func record_ai_decision(actor: TacticalUnit, record: AIDecisionRecord) -> int:
 	record.state_revision = action_service.state_revision
 	record.difficulty = AIDifficultyPolicy.get_label(ai_difficulty)
 	if actor_valid:
+		record.actor_id = String(actor.tactical_id)
+		record.faction = TacticalUnit.Faction.keys()[actor.faction].capitalize()
 		var commander := get_commander_policy(actor)
 		record.has_commander = true
 		record.commander_policy = AICommanderPolicy.get_label(commander.profile)
 		record.commander_policy_id = String(commander.get_policy_id())
 		record.strategic_intent = commander.get_strategic_intent_label()
-	if actor_valid and record.is_selected_move():
-		_pending_ai_moves[actor.tactical_id] = _ai_decision_sequence
+		var context := peek_squad_context(actor)
+		if context != null:
+			record.squad_at_decision = context.inspection_record()
+		var proposed := &"move" if record.is_selected_move() else record.expected_action
+		if not proposed.is_empty():
+			_pending_ai_decisions[actor.tactical_id] = {"action": proposed, "id": record.decision_id}
+		elif not record.committed_action.is_empty() and record.actor_id == _last_unlinked_ai_commit.get("actor_id") \
+		and String(record.committed_action) == _last_unlinked_ai_commit.get("action") \
+		and action_service.last_transaction_id == _last_unlinked_ai_commit.get("transaction_id"):
+			record.linked_outcome = _last_unlinked_ai_commit
+			record.linked_outcome["decision_id"] = record.decision_id
+			_last_unlinked_ai_commit = {}
 	ai_decision_recorded.emit(record.to_dictionary())
 	return _ai_decision_sequence
 
@@ -939,7 +958,9 @@ func try_defend(unit: TacticalUnit) -> bool:
 	return result != null
 
 func try_end_unit_turn(unit: TacticalUnit, reason := "No useful action available.") -> bool:
-	var result := await action_service.submit_simple(action_service.make_simple_request(&"wait", unit, _action_source(), {"reason": reason}))
+	var request := action_service.make_simple_request(&"wait", unit, _action_source(), {"reason": reason})
+	var result := await action_service.submit_simple(request)
+	if result == null: _report_ai_rejection(request)
 	is_move_mode_active = false
 	is_attack_mode_active = false
 	return result != null
@@ -951,7 +972,9 @@ func try_emergency_seal(unit: TacticalUnit) -> bool:
 
 func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalUnit = null) -> bool:
 	if not is_instance_valid(action_service): return false
-	var result := await action_service.submit_mission(action_service.make_mission_request(kind, actor, target, _action_source()))
+	var request := action_service.make_mission_request(kind, actor, target, _action_source())
+	var result := await action_service.submit_mission(request)
+	if result == null: _report_ai_rejection(request)
 	if result != null and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
 		turn_manager.complete_free_objective_action(actor)
 	return result != null
@@ -990,12 +1013,24 @@ func try_move(unit: TacticalUnit, target_cell: Vector3i) -> bool:
 	var source := _action_source()
 	var request := action_service.make_move_request(unit, target_cell, source)
 	var result := await action_service.submit_move(request)
-	if result == null and source == TacticalActionRequest.Source.AI:
-		ai_action_outcome_recorded.emit({"actor_id": String(request.actor_id), "action": "move", "stage": "rejected",
-			"decision_id": _pending_ai_moves.get(request.actor_id, 0), "base_revision": request.expected_revision,
-			"state_revision": action_service.state_revision, "reason": action_service.last_rejection.message if action_service.last_rejection else "Move rejected"})
-		_pending_ai_moves.erase(request.actor_id)
+	if result == null: _report_ai_rejection(request)
 	return result != null
+
+func _take_ai_selection(request: TacticalActionRequest) -> int:
+	var pending: Dictionary = _pending_ai_decisions.get(request.actor_id, {})
+	if pending.get("action", &"") != request.kind:
+		return 0
+	_pending_ai_decisions.erase(request.actor_id)
+	return int(pending.id)
+
+func _report_ai_rejection(request: TacticalActionRequest) -> void:
+	if request.source != TacticalActionRequest.Source.AI or not is_instance_valid(action_service):
+		return
+	var decision_id := _take_ai_selection(request)
+	ai_action_outcome_recorded.emit({"actor_id": String(request.actor_id), "action": String(request.kind),
+		"stage": "rejected", "decision_id": decision_id, "base_revision": request.expected_revision,
+		"state_revision": action_service.state_revision,
+		"reason": action_service.last_rejection.message if action_service.last_rejection else "Action rejected"})
 
 func _build_movement_path(unit: TacticalUnit, path: PackedVector3Array) -> PackedVector3Array:
 	var animated_path := PackedVector3Array()

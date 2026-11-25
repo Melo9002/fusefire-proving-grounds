@@ -32,6 +32,9 @@ const ESCORT_POSITION_IDEAL_DISTANCE := 3.0
 const ESCORT_POSITION_DISTANCE_WEIGHT := 2.0
 
 const MissionIntentData = preload("res://systems/objectives/mission_intent.gd")
+const ActivationProfile = preload("res://systems/ai/ai_activation_profile.gd")
+var _profile: ActivationProfile
+var _guard_trigger_note := ""
 
 @export var unit: TacticalUnit
 @export var turn_manager: TurnManager
@@ -153,9 +156,36 @@ func _execute_turn() -> void:
 			turn_manager.end_current_turn()
 
 func _run_activation() -> bool:
+	if not OS.get_cmdline_user_args().has("profile-ai") or not _battle_is_live():
+		return await _plan_activation()
+	var service := battle_controller.action_service
+	_profile = ActivationProfile.new(unit.tactical_id)
+	service.ai_activation_profile = _profile
+	var advance := await _plan_activation()
+	if is_instance_valid(service) and service.ai_activation_profile == _profile:
+		service.ai_activation_profile = null
+	print("[AIActivation] " + JSON.stringify(_profile.finish()))
+	_profile = null
+	return advance
+
+func _profile_clock() -> int:
+	return Time.get_ticks_usec() if _profile != null else 0
+
+func _profile_note(stage: String, started: int, count := 1) -> void:
+	if _profile != null:
+		_profile.note(stage, Time.get_ticks_usec() - started, count)
+
+func _wait_for_objective_update() -> void:
+	if _profile != null: _profile.suspend()
+	await get_tree().process_frame
+	if _profile != null: _profile.resume("yield")
+
+func _plan_activation() -> bool:
 	if not _battle_is_live(): return false
 	# Brief pause makes the enemy activation visible before it acts.
+	if _profile != null: _profile.suspend()
 	await get_tree().create_timer(ACTIVATION_PRESENTATION_DELAY_SECONDS, false).timeout
+	if _profile != null: _profile.resume("presentation")
 	if not _should_control_unit():
 		return false
 	if unit.mission_actor and unit.mission_actor.is_vip():
@@ -163,11 +193,15 @@ func _run_activation() -> bool:
 		return false
 	var has_moved := false
 	_route_block_note = ""
+	var intent_start := _profile_clock()
 	current_mission_intent = _get_ai_mission_intent()
+	_profile_note("intent", intent_start)
+	var squad_start := _profile_clock()
 	_squad_context = battle_controller.get_squad_context(unit)
 	var active_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	if active_carrier:
 		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier, true))
+	_profile_note("squad_and_carrier", squad_start)
 	# TurnManager may select a zero-AP actor only when a legal free objective
 	# action exists. Give that action one deterministic submission opportunity.
 	if unit.stats.current_ap <= 0:
@@ -181,8 +215,12 @@ func _run_activation() -> bool:
 	while is_instance_valid(unit) and unit.stats.current_ap > 0 \
 		and turn_manager.battle_result == TurnManager.BattleResult.ONGOING \
 		and _should_control_unit():
+		squad_start = _profile_clock()
 		_squad_context = battle_controller.get_squad_context(unit)
+		_profile_note("squad_and_carrier", squad_start)
+		intent_start = _profile_clock()
 		current_mission_intent = _get_ai_mission_intent()
+		_profile_note("intent", intent_start)
 		_squad_context.reserve_objective(unit, current_mission_intent.objective_id)
 		var sealed := await _try_emergency_seal()
 		if not _battle_is_live(): return false
@@ -205,7 +243,9 @@ func _run_activation() -> bool:
 				if is_instance_valid(escort_target):
 					_squad_context.reserve_target(unit, escort_target)
 				_record_ai_decision("Attack", String(escort_target.name) if is_instance_valid(escort_target) else "defeated target", "Protected the VIP carrier from a legal threat.", "Clear route, Reposition, Wait")
+				if _profile != null: _profile.suspend()
 				await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
+				if _profile != null: _profile.resume("presentation")
 				continue
 		var mission_step := await _try_mission_step(has_moved)
 		if not _battle_is_live(): return false
@@ -261,7 +301,9 @@ func _run_activation() -> bool:
 				_squad_context.reserve_target(unit, attack_target)
 			if not _pending_target_note.is_empty(): _squad_notes.append(_pending_target_note)
 			_record_ai_decision("Attack", attack_target.name if is_instance_valid(attack_target) else "defeated target", "Legal shot; target score balances vulnerability with allied focus.", "Move, Wait")
+			if _profile != null: _profile.suspend()
 			await get_tree().create_timer(ACTION_PRESENTATION_DELAY_SECONDS, false).timeout
+			if _profile != null: _profile.resume("presentation")
 			continue
 		var reloaded := await _try_reload_if_useful()
 		if not _battle_is_live(): return false
@@ -287,7 +329,10 @@ func _run_activation() -> bool:
 				continue
 			_wait_for_next_turn(_movement_wait_reason("No useful escort move or legal shot."), "Move, Extract")
 			break
+		var intercept_start := _profile_clock()
 		var intercept := _evacuation_intercept()
+		if current_mission_intent.objective_id == &"stop_enemy_evacuation":
+			_profile_note("interception", intercept_start)
 		if not intercept.is_empty():
 			var intercepted := await _move_toward_cell(intercept.cell, has_moved, intercept.reason)
 			if not _battle_is_live(): return false
@@ -317,7 +362,7 @@ func _run_activation() -> bool:
 		var guarded := await _try_guard_if_useful()
 		if not _battle_is_live(): return false
 		if guarded:
-			_record_ai_decision("Guard", unit.name, "Reserved a reaction because a hostile can plausibly move or attack.", "Shield, Wait")
+			_record_ai_decision("Guard", unit.name, _guard_trigger_note, "Shield, Wait")
 			break
 		var reason := "No legal shot or safe second advance." if has_moved else "No legal shot or reachable approach."
 		_wait_for_next_turn(_movement_wait_reason(reason), "Attack, Move")
@@ -331,7 +376,7 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 	if current_mission_intent.kind == MissionIntentData.Kind.RESCUE:
 		var rescue_target := _objective_manager.find_mission_actor(current_mission_intent.target_ids)
 		if rescue_target and _can_use_mission_action(&"rescue", unit, rescue_target):
-			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Wait")
+			_record_ai_decision("Rescue", rescue_target.name, "Rescue target is adjacent.", "Attack, Move, Wait", &"rescue")
 			if await _objective_manager.try_rescue(unit, rescue_target):
 				return MissionStepResult.INTERACTED
 		if not has_moved and rescue_target and await _move_toward(rescue_target):
@@ -377,9 +422,9 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 		if carrier and carrier != unit:
 			if await _clear_carrier_route(carrier): return MissionStepResult.MOVED
 			return MissionStepResult.NONE
-		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Wait")
+		_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Move, Wait", &"extract")
 		if await _objective_manager.try_extract(unit):
-			await get_tree().process_frame
+			await _wait_for_objective_update()
 			if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
 				turn_manager.end_current_turn()
 			return MissionStepResult.EXTRACTED
@@ -408,15 +453,15 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 	if moved_toward_objective:
 		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Wait")
 		if is_instance_valid(unit) and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT and _can_use_mission_action(&"extract", unit):
-			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Wait")
+			_record_ai_decision("Extract", current_mission_intent.zone_id, "Unit reached its mission extraction zone.", "Attack, Wait", &"extract")
 			if await _objective_manager.try_extract(unit):
-				await get_tree().process_frame
+				await _wait_for_objective_update()
 				if turn_manager.battle_result == TurnManager.BattleResult.ONGOING and turn_manager.active_unit == null:
 					turn_manager.end_current_turn()
 				return MissionStepResult.EXTRACTED
 		if current_mission_intent.kind == MissionIntentData.Kind.REACH:
 			# Objective outcomes are deferred so movement signals finish cleanly.
-			await get_tree().process_frame
+			await _wait_for_objective_update()
 		return MissionStepResult.MOVED
 	return MissionStepResult.NONE
 
@@ -469,6 +514,7 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 	if unit.stats.current_ap - move_ap < attack_ap:
 		return null
 	var uses_supply := battle_controller.supply_points_enabled
+	var baseline_plan_start := _profile_clock()
 	var moved_shots := AIPlanEvaluator.shots_with(unit.stats.current_ap - move_ap, unit.stats.current_supply_points, attack_ap, supply_cost, uses_supply, MAX_ATTACK_PLAN_AP)
 	if moved_shots < 1:
 		return null
@@ -479,19 +525,24 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 	var aim_bonus: int = CombatRules.cover_tuning.aim_accuracy_bonus if battle_controller.aim_enabled and unit.tactical_state and unit.tactical_state.is_aiming else 0
 	var now_shots := AIPlanEvaluator.shots_with(unit.stats.current_ap, unit.stats.current_supply_points, attack_ap, supply_cost, uses_supply, MAX_ATTACK_PLAN_AP)
 	var now := AIPlanEvaluator.best_attack_from(unit, start, hostiles, battle_controller, now_shots, kill_bonus, aim_bonus)
+	_profile_note("short_plans", baseline_plan_start)
 	var required: float = float(now.value) + maxf(REPOSITION_MIN_GAIN, float(now.value) * REPOSITION_MIN_GAIN_FRACTION)
 	var snapshot := AIPlanningSnapshot.capture(battle_controller)
 	var scored: Array[Dictionary] = []
 	var slice_start := Time.get_ticks_usec()
 	for cell in move_query.legal_destination_cells:
 		if Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
+			if _profile != null: _profile.suspend()
 			await get_tree().process_frame
+			if _profile != null: _profile.resume("yield")
 			if not is_inside_tree() or not _should_control_unit() or snapshot.is_stale(battle_controller):
 				return null
 			slice_start = Time.get_ticks_usec()
 		if cell == start or (_squad_context and not _squad_context.block_reason(unit, cell).is_empty()):
 			continue
+		var plan_start := _profile_clock()
 		var shot := AIPlanEvaluator.best_attack_from(unit, cell, hostiles, battle_controller, moved_shots, kill_bonus)
+		_profile_note("short_plans", plan_start)
 		if shot.target != null and float(shot.value) >= required:
 			scored.append({"cell": cell, "shot": shot})
 	if scored.is_empty():
@@ -514,7 +565,9 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 func _try_aim_for_attack(target: TacticalUnit) -> bool:
 	if not is_instance_valid(unit) or not is_instance_valid(target) or not unit.stats:
 		return false
+	var started := _profile_clock()
 	var comparison := AIPlanEvaluator.compare_aim(unit, target, battle_controller, 20.0 * _ensure_policy().finishing_bonus_weight, MAX_ATTACK_PLAN_AP)
+	_profile_note("short_plans", started)
 	if comparison.is_empty():
 		return false
 	_last_attack_plan = comparison.trace
@@ -542,9 +595,11 @@ func _guard_has_plausible_trigger() -> bool:
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
 		if battle_controller.query_attack(unit, hostile).is_legal():
+			_guard_trigger_note = "Reserved a reaction against %s, who is currently in a legal firing lane." % hostile.name
 			return true
 		var hostile_cell := battle_controller.grid_manager.get_unit_grid(hostile)
 		if CombatRules.attack_distance(actor_cell, hostile_cell, battle_controller.grid_manager) <= unit.attack_range + hostile.stats.speed:
+			_guard_trigger_note = "Reserved a reaction because %s is within one move of range. A reaction still needs a legal firing lane." % hostile.name
 			return true
 	return false
 
@@ -646,6 +701,7 @@ func _get_ai_mission_intent() -> MissionIntentData:
 func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictionary:
 	if not is_instance_valid(carrier):
 		return {}
+	var started := _profile_clock()
 	var grid := battle_controller.grid_manager
 	var pathfinder := battle_controller.pathfinder
 	var carrier_cell := grid.get_unit_grid(carrier)
@@ -655,6 +711,7 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 	and not _squad_context.reserved_corridor.is_empty():
 		var lane := _squad_context.reserved_corridor
 		if not recheck_occupancy or pathfinder.is_route_clear(_carrier_route_points(lane.keys()), carrier, grid):
+			_profile_note("carrier_routes", started, 0)
 			return lane.duplicate()
 	if carrier == unit and _committed_route_graph == pathfinder.graph_revision() \
 	and _committed_carrier_route.has(carrier_cell) and zone.has(_committed_carrier_route[-1]):
@@ -662,13 +719,17 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 		if reached_index > 0:
 			_committed_carrier_route = _committed_carrier_route.slice(reached_index)
 		if pathfinder.is_route_clear(_carrier_route_points(_committed_carrier_route), carrier, grid):
+			_profile_note("carrier_routes", started, 0)
 			return _route_dictionary(_committed_carrier_route)
 	var reserved := {}
 	var best := PackedVector3Array()
+	var queries := 0
 	for destination in zone:
 		var path := pathfinder.calculate_3d_path(carrier_cell, destination)
+		queries += 1
 		if not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
 			path = pathfinder.calculate_path_with_occupancy(carrier_cell, destination, grid, carrier)
+			queries += 1
 		if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
 	if carrier == unit:
 		_committed_carrier_route.clear()
@@ -680,9 +741,11 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 	if best.is_empty():
 		for destination in zone:
 			var path := pathfinder.calculate_friendly_yield_path(carrier_cell, destination, grid, carrier)
+			queries += 1
 			if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
 	for point in best:
 		reserved[battle_controller.world_to_grid(point)] = true
+	_profile_note("carrier_routes", started, queries)
 	return reserved
 
 func _carrier_route_points(cells: Array) -> PackedVector3Array:
@@ -959,6 +1022,8 @@ func _explain_blocked_route(start: Vector3i, goal: Vector3i, label: String) -> S
 	return "route to %s is closed to this unit (body clearance or occupied approach cells)" % label
 
 func _path_to_target_neighbor(start: Vector3i, target: Vector3i) -> PackedVector3Array:
+	var started := _profile_clock()
+	var queries := 0
 	var grid := battle_controller.grid_manager
 	var graph := battle_controller.pathfinder
 	var best := PackedVector3Array()
@@ -967,11 +1032,13 @@ func _path_to_target_neighbor(start: Vector3i, target: Vector3i) -> PackedVector
 		for z in range(-1, 2):
 			var candidate := target + Vector3i(x, 0, z)
 			if not grid.can_unit_occupy_cell(unit, candidate) or not CombatRules.can_reach_adjacent(candidate, target, grid): continue
+			queries += 1
 			var route := graph.calculate_path_with_occupancy(start, candidate, grid, unit)
 			var cost := _route_cost(route) if not route.is_empty() else INF
 			if cost < best_cost:
 				best = route
 				best_cost = cost
+	_profile_note("approach_paths", started, queries)
 	return best
 
 func _grid_distance_to(target: TacticalUnit) -> int:
@@ -1003,7 +1070,9 @@ func _evacuation_intercept() -> Dictionary:
 		for exit in exits:
 			if origin.distance_to(exit) > budget:
 				continue
+			var route_start := _profile_clock()
 			var candidate := battle_controller.pathfinder.calculate_path_with_occupancy(origin, exit, grid, runner)
+			_profile_note("interception_paths", route_start)
 			if candidate.size() <= 1:
 				continue
 			var cost := _route_cost(candidate)
@@ -1040,12 +1109,15 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var inventory_start := Time.get_ticks_usec() if profiling else 0
 	var reachable := _legal_move_destinations()
 	var inventory_usec := Time.get_ticks_usec() - inventory_start if profiling else 0
+	if _profile != null: _profile.note("move_inventory", inventory_usec, reachable.size())
 	var plan_start := Time.get_ticks_usec() if profiling else 0
 	var yield_usec := 0
 	var safety_usec := 0
 	var route_checks := {}
 	var route_usec := 0
+	var route_queries := 0
 	var score_usec := 0
+	var scored_candidates := 0
 	var best_candidate := Vector3i(-1, -1, -1)
 	var best_adjustment := 0.0
 	var best_score := -INF
@@ -1069,9 +1141,6 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var initial_cost := _route_cost(path)
 	var planning := AIPlanningSnapshot.capture(battle_controller)
 	var use_goal_field := battle_controller.grid_manager.map_data.surface_placement_enabled and battle_controller.grid_manager.map_data.traversal_links.is_empty()
-	var field_start := Time.get_ticks_usec() if profiling else 0
-	var goal_costs := battle_controller.pathfinder.planning_costs_to_goal(route_end, reachable, battle_controller.grid_manager, unit) if use_goal_field else {}
-	if profiling: route_usec += Time.get_ticks_usec() - field_start
 	var hold := AIPositionScorer.evaluate(unit, start_cell, start_cell, goal_cell, 0.0, movement_layers, hostiles, battle_controller.grid_manager, _policy, null, movement_context)
 	_last_urgency_bonus = _get_movement_urgency_bonus()
 	_last_route_corridor = ROUTE_CORRIDOR_BASE + minf(ROUTE_CORRIDOR_MAX_BONUS, floorf(float(_consecutive_low_value_actions) / 3.0))
@@ -1079,6 +1148,25 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	# every pathfinder-valid detour. A second advance still has to pass the
 	# exposure check above, so this relaxes route shape without relaxing safety.
 	var allow_route_detour := _last_urgency_bonus >= URGENCY_MAX_SCORE
+	# The goal field stops once it settles every requested cell. Do not ask it
+	# to solve for cells that this decision will never score.
+	var corridor_cells := {}
+	var wanted: Array[Vector3i] = []
+	var field_start := Time.get_ticks_usec() if profiling else 0
+	for cell in reachable:
+		if cell == start_cell or escort_route.has(cell):
+			continue
+		var in_corridor := _in_route_corridor(cell, route_cells)
+		if in_corridor:
+			corridor_cells[cell] = true
+		if use_goal_field and (in_corridor or allow_route_detour):
+			wanted.append(cell)
+	var goal_costs := {}
+	if use_goal_field and not wanted.is_empty():
+		goal_costs = battle_controller.pathfinder.planning_costs_to_goal(route_end, wanted, battle_controller.grid_manager, unit)
+		route_queries += 1
+	if profiling: route_usec += Time.get_ticks_usec() - field_start
+	if _profile != null: _profile.note("goal_field_cells", 0, wanted.size())
 	_last_hold_score = hold.total
 	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
 	best_score = -INF if unit.is_carrying_unit() else _last_move_threshold
@@ -1089,10 +1177,12 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		# Yield between candidates. Wall-clock time controls scheduling only.
 		if Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
 			var yield_start := Time.get_ticks_usec() if profiling else 0
+			if _profile != null: _profile.suspend()
 			await get_tree().process_frame
 			if profiling: yield_usec += Time.get_ticks_usec() - yield_start
 			while is_inside_tree() and get_tree().paused:
 				await get_tree().process_frame
+			if _profile != null: _profile.resume("yield")
 			if not is_inside_tree() or not _should_control_unit():
 				return false
 			if planning.is_stale(battle_controller):
@@ -1100,27 +1190,23 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			if route_checks.size() > 16384: route_checks.clear()
 			slice_start = Time.get_ticks_usec()
 		if candidate == start_cell: continue
-		if escort_route.has(candidate): continue
+		if escort_route.has(candidate):
+			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, "Reserved for the carrier corridor"))
+			continue
 		var safety_start := Time.get_ticks_usec() if profiling else 0
 		var safe := not safe_only or _is_safe_advance_cell(candidate, current_exposure)
 		if profiling: safety_usec += Time.get_ticks_usec() - safety_start
 		if not safe:
 			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, "Unsafe second advance"))
 			continue
-		var route_index := -1
-		var route_distance := INF
-		for index in range(1, route_cells.size()):
-			var route_cell := route_cells[index]
-			var distance := candidate.distance_to(route_cell)
-			if distance <= _last_route_corridor and (distance < route_distance or (is_equal_approx(distance, route_distance) and index > route_index)):
-				route_distance = distance
-				route_index = index
-		if route_index < 0 and not allow_route_detour:
+		var in_corridor := corridor_cells.has(candidate)
+		if not in_corridor and not allow_route_detour:
 			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, "Outside useful route"))
 			continue
 		var route_start := Time.get_ticks_usec() if profiling else 0
 		var remaining_cost: float = goal_costs.get(candidate, INF)
 		if not use_goal_field:
+			route_queries += 1
 			var remaining := battle_controller.pathfinder.calculate_path_with_occupancy(candidate, route_end, battle_controller.grid_manager, unit, route_checks)
 			remaining_cost = _route_cost(remaining) if not remaining.is_empty() else INF
 		if profiling: route_usec += Time.get_ticks_usec() - route_start
@@ -1137,6 +1223,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		)
 		var score_start := Time.get_ticks_usec() if profiling else 0
 		var scored := AIPositionScorer.evaluate(unit, candidate, start_cell, goal_cell, progress, movement_layers, hostiles, battle_controller.grid_manager, _policy, _squad_context, movement_context)
+		scored_candidates += 1
 		if profiling: score_usec += Time.get_ticks_usec() - score_start
 		if not is_finite(float(scored.total)):
 			_last_position_candidates.append(AIPositionCandidate.rejected_before_scoring(candidate, scored.summary))
@@ -1148,7 +1235,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		scored.total -= revisit_penalty
 		scored.summary += "; revisit %+.0f" % -revisit_penalty
 		var score: float = scored.total
-		if route_index < 0:
+		if not in_corridor:
 			scored.summary += "; maximum urgency allowed route detour"
 		if is_inf(remaining_cost):
 			scored.summary += "; occupied-origin recovery estimate"
@@ -1176,6 +1263,10 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_summary = scored.summary
 	if profiling:
 		print("[AIPlan] %s candidates=%d inventory_ms=%.3f routes_ms=%.3f scores_ms=%.3f safety_ms=%.3f yields_ms=%.3f wall_ms=%.3f" % [unit.tactical_id, reachable.size(), inventory_usec / 1000.0, route_usec / 1000.0, score_usec / 1000.0, safety_usec / 1000.0, yield_usec / 1000.0, (Time.get_ticks_usec() - plan_start) / 1000.0])
+	if _profile != null:
+		_profile.note("goal_paths", route_usec, route_queries)
+		_profile.note("position_scoring", score_usec, scored_candidates)
+		_profile.note("advance_safety", safety_usec)
 	# Mission movement must eventually accept the least-bad valid route step.
 	# This only applies after the ordinary urgency ramp has reached its cap;
 	# immediate and cautious choices still use the normal position threshold.
@@ -1230,6 +1321,13 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		_reserve_destination(best_candidate, best_adjustment)
 		return true
 	_movement_preview_pending_completion = false
+	return false
+
+func _in_route_corridor(cell: Vector3i, route: Array[Vector3i]) -> bool:
+	var radius_squared := _last_route_corridor * _last_route_corridor
+	for index in range(1, route.size()):
+		if cell.distance_squared_to(route[index]) <= radius_squared:
+			return true
 	return false
 
 ## The facts the movement-profile stance rules read, from the shared queries (see AIMovementProfiles.select).
@@ -1352,6 +1450,7 @@ func _survival_position_score(candidate: Vector3i, start: Vector3i) -> float:
 	return score
 
 func _find_attack_target() -> TacticalUnit:
+	var observation_start := _profile_clock()
 	_last_attack_plan.clear()
 	var best_target: TacticalUnit
 	var best_score := -INF
@@ -1361,7 +1460,11 @@ func _find_attack_target() -> TacticalUnit:
 	_last_target_candidates.clear()
 	var friendlies := _get_friendly_units()
 	var targets := _get_hostile_units()
+	_profile_note("observation", observation_start, targets.size())
+	var inventory_start := _profile_clock()
 	var attack_inventory := battle_controller.query_attack(unit)
+	_profile_note("attack_inventory", inventory_start, attack_inventory.candidate_results.size())
+	var target_start := _profile_clock()
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	if carrier and carrier != unit:
 		var threats: Array[TacticalUnit] = []
@@ -1410,6 +1513,7 @@ func _find_attack_target() -> TacticalUnit:
 			_pending_target_scores = "%s; %s lapse: near-best target %.1f vs %.1f" % [selected.scored.summary, AIDifficultyPolicy.get_label(_policy.tier), selected.score, scores[0]]
 	for target_record in _last_target_candidates:
 		target_record.mark_chosen(is_instance_valid(best_target) and target_record.target == String(best_target.name))
+	_profile_note("target_scoring", target_start, options.size())
 	return best_target
 
 func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
@@ -1421,7 +1525,7 @@ func _reserve_destination(cell: Vector3i, adjustment: float) -> void:
 	else:
 		_squad_notes.append("Destination reserved for later allies")
 
-func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String) -> void:
+func _record_ai_decision(action: String, subject: String, reason: String, alternatives: String, expected_action: StringName = &"") -> void:
 	# Work resumed after the battle, scene or unit went away is discarded, as in the main loop.
 	if not _dependencies_alive(): return
 	if action == "Wait":
@@ -1437,8 +1541,18 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 		_movement_preview_pending_completion = false
 		return
 	var record := _build_decision_record(action, subject, reason, alternatives)
+	record.expected_action = expected_action
+	if not expected_action.is_empty():
+		record.stage = AIDecisionRecord.STAGE_SELECTED
+	else:
+		match action:
+			"Attack", "Aim", "Reload", "Shield", "Move", "Emergency Seal": record.committed_action = StringName(action.to_snake_case())
+			"Guard": record.committed_action = &"overwatch"
+			"Interact": record.committed_action = &"interact_terminal"
 	record.target_scores = _pending_target_scores if action == "Attack" else "None"
+	var started := _profile_clock()
 	battle_controller.record_ai_decision(unit, record)
+	_profile_note("publication", started)
 
 ## The facts of one decision as the controller knows them. BattleController adds the
 ## fields it owns (decision id, state revision, difficulty, commander) when it publishes.
@@ -1463,11 +1577,13 @@ func _publish_movement_preview(destination: Vector3i, summary: String) -> void:
 	_movement_preview_pending_completion = true
 	var record := _build_decision_record("Move", str(destination), "Selected destination; movement is beginning.", "Attack, Wait")
 	record.stage = AIDecisionRecord.STAGE_SELECTED
+	var started := _profile_clock()
 	battle_controller.record_ai_decision(unit, record)
+	_profile_note("publication", started)
 
 func _wait_for_next_turn(reason: String, alternatives: String) -> bool:
 	if not _dependencies_alive(): return false
-	_record_ai_decision("Wait", unit.name, reason, alternatives)
+	_record_ai_decision("Wait", unit.name, reason, alternatives, &"wait")
 	return await battle_controller.try_end_unit_turn(unit, reason)
 
 func _movement_wait_reason(prefix: String) -> String:
@@ -1523,6 +1639,7 @@ func _decision_context() -> AIDecisionContext:
 	context.attack_plan = _last_attack_plan.duplicate()
 	context.grid_position = unit.grid_position if is_instance_valid(unit) else Vector3i(-1, -1, -1)
 	context.remaining_ap = unit.stats.current_ap if is_instance_valid(unit) and unit.stats else -1
+	context.remaining_sp = unit.stats.current_supply_points if is_instance_valid(unit) and unit.stats else -1
 	context.recent_move_origins = _recent_move_origins.duplicate()
 	context.consecutive_low_value_actions = _consecutive_low_value_actions
 	context.hold_score = _optional_score(_last_hold_score)
