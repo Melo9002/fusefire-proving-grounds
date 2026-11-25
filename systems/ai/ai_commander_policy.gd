@@ -75,6 +75,7 @@ func compose(difficulty: AIDifficultyPolicy) -> AIDifficultyPolicy:
 	composed.tier = difficulty.tier
 	composed.expected_damage_weight = difficulty.expected_damage_weight
 	composed.wounded_target_weight = _multiply(&"wounded_target_weight", difficulty.wounded_target_weight)
+	composed.wound_reliability_weight = difficulty.wound_reliability_weight
 	composed.finishing_bonus_weight = _multiply(&"finishing_bonus_weight", difficulty.finishing_bonus_weight)
 	composed.focus_penalty_weight = difficulty.focus_penalty_weight
 	composed.movement_progress_weight = _multiply(&"movement_progress_weight", difficulty.movement_progress_weight)
