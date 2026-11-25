@@ -15,6 +15,7 @@ var _point_cells: Dictionary = {}
 var _graph_revision := 0
 var _edge_radius_revision := -1
 var _max_edge_radius := 0.0
+var _goal_field_columns: Dictionary = {}
 var grid_to_id_map: Dictionary = {}
 var id_to_grid_map: Dictionary = {}
 var movement_costs: Dictionary = {}
@@ -39,6 +40,7 @@ func graph_revision() -> int:
 func clear() -> void:
 	_graph_revision += 1
 	_point_cells.clear()
+	_goal_field_columns.clear()
 	surface_map = null
 	live_grid = null
 	defer_surface_edges = false
@@ -231,17 +233,24 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 	var open_ids: Array[int] = [start_id]
 	var came_from := {}
 	var costs := {start_id: 0.0}
-	var estimates := {start_id: 0.0}
+	var estimates := PackedFloat64Array()
+	estimates.resize(next_id)
+	var is_open := PackedByteArray()
+	is_open.resize(next_id)
+	is_open[start_id] = 1
 	while not open_ids.is_empty():
 		var best_index := 0
+		var best_id := open_ids[0]
+		var best_score := estimates[best_id]
 		for index in range(1, open_ids.size()):
 			var candidate_id := open_ids[index]
-			var best_id := open_ids[best_index]
-			var candidate_score: float = estimates.get(candidate_id, INF)
-			var best_score: float = estimates.get(best_id, INF)
+			var candidate_score := estimates[candidate_id]
 			if candidate_score < best_score or (is_equal_approx(candidate_score, best_score) and candidate_id < best_id):
 				best_index = index
+				best_id = candidate_id
+				best_score = candidate_score
 		var current_id: int = open_ids.pop_at(best_index)
+		is_open[current_id] = 0
 		if current_id == end_id:
 			return _reconstruct_hypothetical_path(came_from, current_id)
 		for neighbor_id in astar.get_point_connections(current_id):
@@ -268,13 +277,24 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 					var delta := (neighbor_cell - end_grid).abs()
 					heuristic = float(delta.x + delta.z) + (sqrt(2.0) - 2.0) * mini(delta.x, delta.z)
 			estimates[neighbor_id] = new_cost + heuristic
-			if neighbor_id not in open_ids:
+			if not is_open[neighbor_id]:
+				is_open[neighbor_id] = 1
 				open_ids.append(neighbor_id)
 	return PackedVector3Array()
 
 func _planning_units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit, checks: Dictionary, allow_friendly_yield := false) -> bool:
 	var key := [from, to]
-	if not checks.has(key): checks[key] = SurfaceNavigation.units_clear(grid, from, to, ignored, allow_friendly_yield)
+	if checks.has(key):
+		return checks[key]
+	# The dictionary is scoped to one actor, policy and body layout by the
+	# caller (or by the occupied-search signature).
+	if not checks.has(&"body_points"):
+		checks[&"body_points"] = SurfaceNavigation.planning_body_points(grid, ignored, allow_friendly_yield)
+	var points: Variant = checks[&"body_points"]
+	if points != null and not SurfaceNavigation.may_cross_planning_body(grid.map_data, from, to, points):
+		checks[key] = true
+	else:
+		checks[key] = SurfaceNavigation.units_clear(grid, from, to, ignored, allow_friendly_yield)
 	return checks[key]
 
 func _reconstruct_hypothetical_path(came_from: Dictionary, end_id: int) -> PackedVector3Array:
@@ -299,6 +319,8 @@ func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Ve
 	if astar.is_point_disabled(grid_to_id_map[start_grid]):
 		return reachable
 
+	var actor := live_grid.get_unit_at(start_grid) if is_instance_valid(live_grid) else null
+	var clearance := {}
 	var frontier: Array = [[start_grid, 0]]
 	var best_cost: Dictionary = {start_grid: 0}
 	while not frontier.is_empty():
@@ -318,7 +340,7 @@ func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Ve
 				continue
 			if surface_map and surface_map.surface_placement_enabled and is_instance_valid(live_grid):
 				if live_grid.is_cell_occupied(neighbor): continue
-				if not SurfaceNavigation.units_clear(live_grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), live_grid.get_unit_at(start_grid)): continue
+				if not _planning_units_clear(live_grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), actor, clearance): continue
 			var new_cost = current_cost + get_step_cost(current_pos, neighbor)
 			if new_cost > movement_budget or (best_cost.has(neighbor) and best_cost[neighbor] <= new_cost):
 				continue
@@ -335,31 +357,52 @@ func _cell_less(first: Vector3i, second: Vector3i) -> bool:
 
 ## One reverse cost field replaces repeated hypothetical route searches on the
 ## ordinary bidirectional surface graph. Custom traversal links keep the old path.
-func planning_costs_to_goal(goal: Vector3i, wanted: Array[Vector3i], grid: GridManager, ignored: TacticalUnit) -> Dictionary:
+## A budgeted search calls resume between expansions. The caller must validate
+## its board and graph on resume. Cancellation returns null, never a partial field.
+func planning_costs_to_goal(goal: Vector3i, wanted: Array[Vector3i], grid: GridManager, ignored: TacticalUnit,
+		resume := Callable(), budget_usec := 0) -> Variant:
+	var slice_start := Time.get_ticks_usec()
 	if not grid.map_data.surface_placement_enabled or not grid.map_data.traversal_links.is_empty() or not grid_to_id_map.has(goal): return {}
 	var goal_id: int = grid_to_id_map[goal]
 	if astar.is_point_disabled(goal_id) or not stoppable_cells.get(goal, false): return {}
 	var goal_point := astar.get_point_position(goal_id)
 	if not SurfaceNavigation.units_clear(grid, goal_point, goal_point, ignored): return {}
 	if _edge_radius_revision != _graph_revision:
-		_max_edge_radius = 0.0
-		for point_id in id_to_grid_map:
+		var max_edge_radius := 0.0
+		var columns := {}
+		for point_id: int in id_to_grid_map:
 			var from := astar.get_point_position(point_id)
+			var point := Vector2(from.x, from.z)
+			var column := Vector2i(floori(point.x), floori(point.y))
+			if not columns.has(column):
+				columns[column] = []
+			columns[column].append([point_id, point])
 			for adjacent in astar.get_point_connections(point_id):
 				var to := astar.get_point_position(adjacent)
-				_max_edge_radius = maxf(_max_edge_radius, Vector2(from.x, from.z).distance_to(Vector2(to.x, to.z)))
+				max_edge_radius = maxf(max_edge_radius, point.distance_to(Vector2(to.x, to.z)))
+			if budget_usec > 0 and Time.get_ticks_usec() - slice_start >= budget_usec:
+				if not await resume.call():
+					return null
+				slice_start = Time.get_ticks_usec()
+		_max_edge_radius = max_edge_radius
+		_goal_field_columns = columns
 		_edge_radius_revision = _graph_revision
 	var nearby := {}
 	var gap := grid.map_data.body_radius * 2.0 + grid.map_data.body_clearance
 	var broad_radius := _max_edge_radius + gap + 0.0001
+	var broad_squared := broad_radius * broad_radius
 	for occupant in grid.occupancy_map.values():
 		if not is_instance_valid(occupant) or occupant == ignored: continue
 		var body_cell := grid.map_data.get_cell(occupant.grid_position)
 		if body_cell == null: return {}
 		var body := Vector2(body_cell.world_position.x, body_cell.world_position.z)
-		for point_id in id_to_grid_map:
-			var point := astar.get_point_position(point_id)
-			if body.distance_squared_to(Vector2(point.x, point.z)) <= broad_radius * broad_radius: nearby[point_id] = true
+		# Test the same radius as before, visiting only XZ buckets that can
+		# intersect it. Multiple floors share a bucket.
+		for x in range(floori(body.x - broad_radius), floori(body.x + broad_radius) + 1):
+			for z in range(floori(body.y - broad_radius), floori(body.y + broad_radius) + 1):
+				for entry in _goal_field_columns.get(Vector2i(x, z), []):
+					if body.distance_squared_to(entry[1]) <= broad_squared:
+						nearby[entry[0]] = true
 	var costs := {goal_id: 0.0}
 	var result := {}
 	var pending := {}
@@ -367,6 +410,10 @@ func planning_costs_to_goal(goal: Vector3i, wanted: Array[Vector3i], grid: GridM
 	var heap: Array[Array] = [[0.0, goal_id]]
 	var checks := {}
 	while not heap.is_empty() and not pending.is_empty():
+		if budget_usec > 0 and Time.get_ticks_usec() - slice_start >= budget_usec:
+			if not await resume.call():
+				return null
+			slice_start = Time.get_ticks_usec()
 		var entry := _cost_heap_pop(heap)
 		var cost: float = entry[0]
 		var current: int = entry[1]

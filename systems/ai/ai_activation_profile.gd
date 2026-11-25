@@ -29,6 +29,12 @@ func note(stage: String, elapsed: int, count := 1) -> void:
 	stages[stage] = int(stages.get(stage, 0)) + elapsed
 	counts[stage] = int(counts.get(stage, 0)) + count
 
+func peak(stage: String, elapsed: int) -> void:
+	stages[stage] = maxi(stages.get(stage, 0), elapsed)
+
+func yield_usec() -> int:
+	return _yield_time
+
 func suspend(now: int = Time.get_ticks_usec()) -> void:
 	_close_slice(now)
 	_suspended_at = now

@@ -129,6 +129,13 @@ func _run() -> void:
 	var safe_detour := not detour.is_empty()
 	for index in range(1, detour.size()): safe_detour = safe_detour and SurfaceNavigation.units_clear(grid, detour[index - 1], detour[index], actor)
 	check(safe_detour, "Every detour segment, not only the destination, clears other units")
+	# Put a body at the baked elbow. The straight chord misses it entirely,
+	# so a chord-based broad phase would accept an invalid swept route.
+	other_cell.world_position = around[1]
+	check(SurfaceNavigation._unit_segment_clear(grid, around[0], around[2], actor), "Elbow blocker does not intersect the straight chord")
+	check(not SurfaceNavigation.units_clear(grid, around[0], around[2], actor), "Elbow blocker intersects actual movement")
+	check(not graph._planning_units_clear(grid, around[0], around[2], actor, {}), "Planning broad phase preserves clearance along elbow")
+	other_cell.world_position = previous
 	var attack := CombatRules.evaluate_attack(actor, second, grid, null)
 	var preview := CombatRules.evaluate_attack_from_cell(actor, partial, second, grid, null)
 	check(attack.is_legal and preview.is_legal and preview.hit_chance == attack.hit_chance and preview.aim_point == attack.aim_point, "Outgoing preview and actual five-sample shot share the resolved point")

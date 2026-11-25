@@ -214,9 +214,12 @@ func _plan_activation() -> bool:
 	var squad_start := _profile_clock()
 	_squad_context = battle_controller.get_squad_context(unit)
 	var active_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
-	if active_carrier:
-		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier, true))
 	_profile_note("squad_and_carrier", squad_start)
+	if active_carrier:
+		var corridor := await _carrier_route(active_carrier, true, MOVEMENT_SCORING_SLICE_USEC)
+		if not _should_control_unit(): return false
+		if is_instance_valid(active_carrier):
+			_squad_context.reserve_corridor(active_carrier, corridor)
 	# TurnManager may select a zero-AP actor only when a legal free objective
 	# action exists. Give that action one deterministic submission opportunity.
 	if unit.stats.current_ap <= 0:
@@ -250,7 +253,7 @@ func _plan_activation() -> bool:
 		if not _battle_is_live(): return false
 		# An escort already clear of the evacuation lane may engage immediate
 		# threats before repositioning. A blocker clears the lane first.
-		if escorted_carrier and escorted_carrier != unit and not _carrier_route(escorted_carrier).has(unit.grid_position):
+		if escorted_carrier and escorted_carrier != unit and not (await _carrier_route(escorted_carrier)).has(unit.grid_position):
 			var escort_target := _find_attack_target()
 			var escort_shot := escort_target != null and await battle_controller.try_attack(unit, escort_target)
 			if not _battle_is_live(): return false
@@ -263,7 +266,7 @@ func _plan_activation() -> bool:
 				if _profile != null: _profile.resume("presentation")
 				continue
 		var mission_step := await _try_mission_step(has_moved)
-		if not _battle_is_live(): return false
+		if not _should_control_unit(): return false
 		if mission_step == MissionStepResult.EXTRACTED:
 			return false
 		if mission_step == MissionStepResult.MOVED:
@@ -716,7 +719,7 @@ func _get_ai_mission_intent() -> MissionIntentData:
 		return MissionIntentData.new()
 	return intent
 
-func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictionary:
+func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false, budget_usec := 0) -> Dictionary:
 	if not is_instance_valid(carrier):
 		return {}
 	var started := _profile_clock()
@@ -739,34 +742,111 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 		if pathfinder.is_route_clear(_carrier_route_points(_committed_carrier_route), carrier, grid):
 			_profile_note("carrier_routes", started, 0)
 			return _route_dictionary(_committed_carrier_route)
-	var reserved := {}
+	# A batched scan has no tactical side effects until it has a complete,
+	# current answer. If its inputs changed, restart against the live board.
+	while is_instance_valid(carrier):
+		var scan := await _scan_carrier_exits(carrier, budget_usec)
+		if not scan.is_empty():
+			var live_route: PackedVector3Array = scan.live
+			if carrier == unit:
+				_committed_carrier_route.clear()
+				_committed_route_graph = pathfinder.graph_revision()
+				for point in live_route:
+					_committed_carrier_route.append(battle_controller.world_to_grid(point))
+			var lane: PackedVector3Array = scan.lane
+			var reserved := {}
+			for point in lane:
+				reserved[battle_controller.world_to_grid(point)] = true
+			return reserved
+		if not _route_search_active(carrier) or not carrier.is_carrying_unit():
+			return {}
+	return {}
+
+func _scan_carrier_exits(carrier: TacticalUnit, budget_usec: int) -> Dictionary:
+	var grid := battle_controller.grid_manager
+	var pathfinder := battle_controller.pathfinder
+	var origin := grid.get_unit_grid(carrier)
+	var zone := grid.map_data.get_objective_zone(&"extract")
+	var stamp := _route_search_stamp(carrier) if budget_usec > 0 else []
+	var slice_start := Time.get_ticks_usec()
 	var best := PackedVector3Array()
-	var queries := 0
-	# One synchronous endpoint scan sees the same actor and occupancy.
+	var live_route := PackedVector3Array()
 	var clearance_checks := {}
-	for destination in zone:
-		var path := pathfinder.calculate_3d_path(carrier_cell, destination, clearance_checks)
-		queries += 1
-		if not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
-			path = pathfinder.calculate_path_with_occupancy(carrier_cell, destination, grid, carrier)
-			queries += 1
-		if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
-	if carrier == unit:
-		_committed_carrier_route.clear()
-		_committed_route_graph = pathfinder.graph_revision()
-		for point in best:
-			_committed_carrier_route.append(battle_controller.world_to_grid(point))
-	# Only look for help when there is no live route. The hint is never stored
-	# as the carrier's movement route or passed to the action service.
-	if best.is_empty():
+	for allow_yield in [false, true]:
+		# The friendly-yield route is a coordination hint. The carrier may
+		# only commit a route found by the strict occupancy search.
 		for destination in zone:
-			var path := pathfinder.calculate_friendly_yield_path(carrier_cell, destination, grid, carrier)
-			queries += 1
-			if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
-	for point in best:
-		reserved[battle_controller.world_to_grid(point)] = true
-	_profile_note("carrier_routes", started, queries)
-	return reserved
+			var started := _profile_clock()
+			var path := pathfinder.calculate_friendly_yield_path(origin, destination, grid, carrier) if allow_yield \
+				else pathfinder.calculate_3d_path(origin, destination, clearance_checks)
+			_profile_note("carrier_routes", started)
+			if _profile != null:
+				_profile.peak("carrier_query_peak", Time.get_ticks_usec() - started)
+			if not allow_yield and not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
+				started = _profile_clock()
+				path = pathfinder.calculate_path_with_occupancy(origin, destination, grid, carrier)
+				_profile_note("carrier_routes", started)
+				if _profile != null:
+					_profile.peak("carrier_query_peak", Time.get_ticks_usec() - started)
+			if not path.is_empty() and (best.is_empty() or path.size() < best.size()):
+				best = path
+			# Yield after expensive endpoint work, including the last endpoint,
+			# so the following goal field starts in a new slice.
+			if budget_usec > 0 and Time.get_ticks_usec() - slice_start >= budget_usec:
+				if not await _resume_route_slice(carrier, stamp):
+					return {}
+				slice_start = Time.get_ticks_usec()
+		if not best.is_empty():
+			if not allow_yield:
+				live_route = best
+			break
+	return {"live": live_route, "lane": best}
+
+func _resume_route_slice(subject: TacticalUnit, stamp: Array) -> bool:
+	if _profile != null: _profile.suspend()
+	await get_tree().process_frame
+	while _route_search_active(subject):
+		if not get_tree().paused and not battle_controller.action_service.is_busy:
+			if _profile != null: _profile.resume("yield")
+			return stamp == _route_search_stamp(subject)
+		await get_tree().process_frame
+	return false
+
+func _route_search_active(subject: TacticalUnit) -> bool:
+	if not _should_control_unit() or turn_manager.battle_result != TurnManager.BattleResult.ONGOING:
+		return false
+	if not is_instance_valid(subject) or subject.is_queued_for_deletion() or (subject.stats and subject.stats.is_defeated):
+		return false
+	# queue_free on the battle root does not flag its children until disposal.
+	var owner: Node = battle_controller
+	while owner != null:
+		if owner.is_queued_for_deletion():
+			return false
+		owner = owner.get_parent()
+	return true
+
+## A route dependency fingerprint, captured again only on resume. The body's
+## standing point and faction matter even if the logical occupancy is unchanged.
+func _route_search_stamp(subject: TacticalUnit) -> Array:
+	var grid := battle_controller.grid_manager
+	var data := grid.map_data
+	var squad := battle_controller.peek_squad_context(unit)
+	var claims := [] if squad == null else [squad.round_number, squad.corridor_owner,
+		squad.reserved_corridor.keys(), squad.reserved_destinations.duplicate()]
+	var occupants := []
+	for cell in grid.occupancy_map:
+		var body := grid.get_unit_at(cell)
+		if is_instance_valid(body):
+			var occupied_cell := data.get_cell(body.grid_position)
+			var point: Variant = occupied_cell.world_position if occupied_cell != null else null
+			occupants.append([cell, body.get_instance_id(), body.grid_position, point, body.faction])
+	var passenger := subject.carried_unit
+	return [battle_controller.action_service.state_revision,
+		battle_controller.pathfinder.get_instance_id(), battle_controller.pathfinder.graph_revision(),
+		data.get_instance_id(), data.los_revision, data.body_radius, data.body_height, data.body_clearance,
+		data.surface_placement_enabled, data.surface_unit, data.get_objective_zone(&"extract"),
+		subject.grid_position, subject.faction, passenger.get_instance_id() if is_instance_valid(passenger) else 0,
+		occupants, claims]
 
 func _carrier_route_points(cells: Array) -> PackedVector3Array:
 	var path := PackedVector3Array()
@@ -784,9 +864,10 @@ func _route_dictionary(route: Array[Vector3i]) -> Dictionary:
 	return cells
 
 func _move_carrier_along_committed_route(safe_only: bool) -> bool:
-	var lane := _carrier_route(unit)
+	var lane := await _carrier_route(unit, false, MOVEMENT_SCORING_SLICE_USEC if _is_executing else 0)
+	if not _dependencies_alive() or (_is_executing and not _should_control_unit()): return false
 	_squad_context.reserve_corridor(unit, lane)
-	if _committed_carrier_route.size() <= 1:
+	if lane.is_empty() or _committed_carrier_route.size() <= 1:
 		_route_block_note = "No reachable extraction route." if lane.is_empty() else "Extraction lane occupied by allies; waiting for passage."
 		return false
 	var path := _carrier_route_points(_committed_carrier_route)
@@ -798,7 +879,7 @@ func _move_carrier_along_committed_route(safe_only: bool) -> bool:
 	)
 
 func _clear_carrier_route(carrier: TacticalUnit) -> bool:
-	var route := _carrier_route(carrier)
+	var route := await _carrier_route(carrier)
 	var start := battle_controller.grid_manager.get_unit_grid(unit)
 	if not route.has(start): return false
 	var grid := battle_controller.grid_manager
@@ -855,7 +936,7 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 func _move_to_escort_position(carrier: TacticalUnit) -> bool:
 	var grid := battle_controller.grid_manager
 	var start := grid.get_unit_grid(unit)
-	var route := _carrier_route(carrier)
+	var route := await _carrier_route(carrier)
 	var hostiles := _get_hostile_units()
 	var best := Vector3i(-1, -1, -1)
 	var best_score := -INF
@@ -996,17 +1077,27 @@ func _move_toward(target: TacticalUnit, safe_only := false) -> bool:
 	return await _move_toward_range(target, 1, safe_only)
 
 func _move_toward_range(target: TacticalUnit, desired_distance: int, safe_only := false) -> bool:
-	var start_cell = battle_controller.grid_manager.get_unit_grid(unit)
-	var target_cell = battle_controller.grid_manager.get_unit_grid(target)
+	var start_cell: Vector3i
+	var target_cell: Vector3i
 	_route_block_note = ""
 	var path := PackedVector3Array()
 	var leave_steps := desired_distance
-	if battle_controller.grid_manager.map_data.surface_placement_enabled:
+	while is_instance_valid(target):
+		start_cell = battle_controller.grid_manager.get_unit_grid(unit)
+		target_cell = battle_controller.grid_manager.get_unit_grid(target)
+		if not battle_controller.grid_manager.map_data.surface_placement_enabled:
+			path = battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
+			break
 		# An occupied opponent is a goal to approach, never a legal body destination.
-		path = _path_to_target_neighbor(start_cell, target_cell)
-		leave_steps = maxi(0, desired_distance - 1)
-	else:
-		path = battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
+		var approach: Variant = await _path_to_target_neighbor(start_cell, target_cell, target)
+		if approach != null:
+			path = approach
+			leave_steps = maxi(0, desired_distance - 1)
+			break
+		if not _route_search_active(target):
+			return false
+	if not is_instance_valid(target):
+		return false
 	if path.size() <= 1:
 		# An empty route means blocked, not "already there": name what is in the way.
 		if path.is_empty():
@@ -1041,24 +1132,29 @@ func _explain_blocked_route(start: Vector3i, goal: Vector3i, label: String) -> S
 		return "route to %s is blocked by %s" % [label, ", ".join(blockers.slice(0, 3))]
 	return "route to %s is closed to this unit (body clearance or occupied approach cells)" % label
 
-func _path_to_target_neighbor(start: Vector3i, target: Vector3i) -> PackedVector3Array:
-	var started := _profile_clock()
-	var queries := 0
+func _path_to_target_neighbor(start: Vector3i, target: Vector3i, target_unit: TacticalUnit) -> Variant:
 	var grid := battle_controller.grid_manager
 	var graph := battle_controller.pathfinder
 	var best := PackedVector3Array()
 	var best_cost := INF
+	var checks := {}
+	var stamp := _route_search_stamp(target_unit) if _is_executing else []
+	var slice_start := Time.get_ticks_usec()
 	for x in range(-1, 2):
 		for z in range(-1, 2):
 			var candidate := target + Vector3i(x, 0, z)
 			if not grid.can_unit_occupy_cell(unit, candidate) or not CombatRules.can_reach_adjacent(candidate, target, grid): continue
-			queries += 1
-			var route := graph.calculate_path_with_occupancy(start, candidate, grid, unit)
+			var started := _profile_clock()
+			var route := graph.calculate_path_with_occupancy(start, candidate, grid, unit, checks)
 			var cost := _route_cost(route) if not route.is_empty() else INF
+			_profile_note("approach_paths", started)
 			if cost < best_cost:
 				best = route
 				best_cost = cost
-	_profile_note("approach_paths", started, queries)
+			if _is_executing and Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
+				if not await _resume_route_slice(target_unit, stamp):
+					return null
+				slice_start = Time.get_ticks_usec()
 	return best
 
 func _grid_distance_to(target: TacticalUnit) -> int:
@@ -1126,7 +1222,8 @@ func _move_toward_cell(target_cell: Vector3i, safe_only := false, route_reason :
 
 func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_cell: Vector3i, safe_only: bool, route_reason := "") -> bool:
 	var profiling := OS.get_cmdline_user_args().has("profile-ai")
-	var inventory_start := Time.get_ticks_usec() if profiling else 0
+	var slice_start := Time.get_ticks_usec()
+	var inventory_start := slice_start if profiling else 0
 	var reachable := _legal_move_destinations()
 	var inventory_usec := Time.get_ticks_usec() - inventory_start if profiling else 0
 	if _profile != null: _profile.note("move_inventory", inventory_usec, reachable.size())
@@ -1148,7 +1245,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var options: Array[Dictionary] = []
 	var hostiles := _get_hostile_units()
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
-	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
+	var escort_route: Dictionary = await _carrier_route(carrier) if carrier and carrier != unit else {}
 	var objective_route := not route_reason.is_empty() or current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
 	var movement_context := AIMovementContext.build(unit, _get_friendly_units(), hostiles, battle_controller.grid_manager)
 	var profile_choice := AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label(), _movement_situation(movement_context, hostiles, carrier))
@@ -1182,17 +1279,27 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 		if use_goal_field and (in_corridor or allow_route_detour):
 			wanted.append(cell)
 	var goal_costs := {}
+	var before_field_yield := _profile.yield_usec() if _profile != null else 0
 	if use_goal_field and not wanted.is_empty():
-		goal_costs = battle_controller.pathfinder.planning_costs_to_goal(route_end, wanted, battle_controller.grid_manager, unit)
+		var resume := Callable()
+		if _is_executing:
+			resume = _resume_route_slice.bind(unit, _route_search_stamp(unit))
+		var field: Variant = await battle_controller.pathfinder.planning_costs_to_goal(
+			route_end, wanted, battle_controller.grid_manager, unit, resume, MOVEMENT_SCORING_SLICE_USEC if _is_executing else 0)
+		if field == null:
+			return false
+		goal_costs = field
 		route_queries += 1
-	if profiling: route_usec += Time.get_ticks_usec() - field_start
+	if profiling:
+		var field_yield := _profile.yield_usec() - before_field_yield if _profile != null else 0
+		yield_usec += field_yield
+		route_usec += Time.get_ticks_usec() - field_start - field_yield
 	if _profile != null: _profile.note("goal_field_cells", 0, wanted.size())
 	_last_hold_score = hold.total
 	_last_move_threshold = hold.total + 1.0 - _last_urgency_bonus
 	best_score = -INF if unit.is_carrying_unit() else _last_move_threshold
 	_last_position_candidates.clear()
 	var current_exposure := _advance_exposure(start_cell) if safe_only else NAN
-	var slice_start := Time.get_ticks_usec()
 	for candidate in reachable:
 		# Yield between candidates. Wall-clock time controls scheduling only.
 		if Time.get_ticks_usec() - slice_start >= MOVEMENT_SCORING_SLICE_USEC:
