@@ -1,0 +1,2629 @@
+{
+  "source": "0df1700bb3697283f0feb350c2159303fb6068af",
+  "engine": "Godot 4.7.2 stable",
+  "simulations": {
+    "carrier": {
+      "site": "service_depot",
+      "seed": 16,
+      "difficulty": "HARD",
+      "status": "Completed",
+      "battle_result": "Defeat",
+      "rounds": 12,
+      "decision_count": 201,
+      "committed_action_count": 192,
+      "rejected_action_count": 0,
+      "action_counts": {
+        "Move": 108,
+        "Rescue": 4,
+        "Support": 10,
+        "Wait": 16,
+        "Guard": 9,
+        "Attack": 45,
+        "Reload": 6,
+        "Aim": 3
+      },
+      "last_round_objectives": [
+        {
+          "id": "rescue",
+          "progress": 0,
+          "status": 0
+        },
+        {
+          "id": "extract_rescue",
+          "progress": 0,
+          "status": 0
+        }
+      ],
+      "records": [
+        {
+          "action": "Rescue",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Attack, Move, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 39,
+          "difficulty": "Hard",
+          "faction": "Player",
+          "grid_position": [
+            22,
+            0,
+            3
+          ],
+          "hold_score": 0.0,
+          "mission_goal": "Rescue VIP [RESCUE]",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Objective route: the mission intent is Rescue VIP [RESCUE]",
+          "position_scores": "progress +27, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0",
+          "reason": "Rescue target is adjacent.",
+          "recent_move_origins": [
+            [
+              5,
+              0,
+              1
+            ],
+            [
+              10,
+              0,
+              1
+            ],
+            [
+              15,
+              0,
+              1
+            ],
+            [
+              20,
+              0,
+              1
+            ]
+          ],
+          "remaining_ap": 1,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support; Destination reserved for later allies; Destination reserved for later allies",
+          "stage": "selected",
+          "state_revision": 45,
+          "strategic_intent": "Balanced engagement",
+          "subject": "RescueTarget",
+          "target_candidates": [
+            {
+              "cell": [
+                26,
+                0,
+                23
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                26,
+                0,
+                25
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                25,
+                0,
+                15
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            },
+            {
+              "cell": [
+                29,
+                0,
+                27
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit4"
+            },
+            {
+              "cell": [
+                24,
+                0,
+                18
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit5"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 44,
+          "positions_top": [
+            {
+              "cell": [
+                22,
+                0,
+                3
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 26.8700576850888,
+              "score": 26.8700576850888,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +27, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                23,
+                0,
+                3
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 19.4913780286484,
+              "score": 19.4913780286484,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +19, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                21,
+                0,
+                3
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 17.6372760623988,
+              "score": 17.6372760623988,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +18, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                15,
+                0,
+                1
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                16,
+                0,
+                0
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 2,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 2
+          }
+        },
+        {
+          "action": "Move",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Attack, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 40,
+          "difficulty": "Hard",
+          "faction": "Player",
+          "grid_position": [
+            22,
+            0,
+            3
+          ],
+          "hold_score": 0.0,
+          "mission_goal": "Extract Rescued VIP [EXTRACT]",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Objective route: the mission intent is Extract Rescued VIP [EXTRACT]; Carrier: carrying a casualty",
+          "position_scores": "progress +12, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0; carrier forward progress required",
+          "reason": "Selected destination; movement is beginning.",
+          "recent_move_origins": [
+            [
+              5,
+              0,
+              1
+            ],
+            [
+              10,
+              0,
+              1
+            ],
+            [
+              15,
+              0,
+              1
+            ],
+            [
+              20,
+              0,
+              1
+            ]
+          ],
+          "remaining_ap": 1,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support; Destination reserved for later allies; Destination reserved for later allies",
+          "stage": "selected",
+          "state_revision": 46,
+          "strategic_intent": "Balanced engagement",
+          "subject": "(23, 0, 4)",
+          "target_candidates": [
+            {
+              "cell": [
+                26,
+                0,
+                23
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                26,
+                0,
+                25
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                25,
+                0,
+                15
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            },
+            {
+              "cell": [
+                29,
+                0,
+                27
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit4"
+            },
+            {
+              "cell": [
+                24,
+                0,
+                18
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit5"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 20,
+          "positions_top": [
+            {
+              "cell": [
+                23,
+                0,
+                4
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 12.0541136372219,
+              "score": 12.0541136372219,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +12, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                23,
+                0,
+                5
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 19.1958551233406,
+              "score": 4.7958551233406,
+              "squad": -14.4,
+              "status": "considered",
+              "summary": "progress +19, cover +0, exposure +0, firing +0, danger +0, squad -14; revisit -0"
+            },
+            {
+              "cell": [
+                23,
+                0,
+                3
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 4.72279426878812,
+              "score": 4.72279426878812,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +5, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                19,
+                0,
+                3
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                20,
+                0,
+                1
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 2,
+            "carrier": "PlayerUnit2",
+            "corridor_count": 38,
+            "destination_count": 2
+          }
+        },
+        {
+          "action": "Move",
+          "actor": "PlayerUnit3",
+          "actor_id": "PlayerUnit3",
+          "alternatives": "Attack, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 41,
+          "difficulty": "Hard",
+          "faction": "Player",
+          "grid_position": [
+            14,
+            0,
+            12
+          ],
+          "hold_score": 0.0,
+          "mission_goal": "None",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Escort: guarding the carrier",
+          "position_scores": "progress +21, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0",
+          "reason": "Selected destination; movement is beginning.",
+          "recent_move_origins": [
+            [
+              1,
+              0,
+              13
+            ],
+            [
+              6,
+              0,
+              13
+            ],
+            [
+              11,
+              0,
+              13
+            ]
+          ],
+          "remaining_ap": 3,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "None",
+          "stage": "selected",
+          "state_revision": 47,
+          "strategic_intent": "Balanced engagement",
+          "subject": "(17, 0, 10)",
+          "target_candidates": [
+            {
+              "cell": [
+                26,
+                0,
+                23
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                26,
+                0,
+                25
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                25,
+                0,
+                15
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            },
+            {
+              "cell": [
+                29,
+                0,
+                27
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit4"
+            },
+            {
+              "cell": [
+                24,
+                0,
+                18
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit5"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 41,
+          "positions_top": [
+            {
+              "cell": [
+                17,
+                0,
+                10
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 20.6481783058154,
+              "score": 20.6481783058154,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +21, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                18,
+                0,
+                11
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -22.68,
+              "firing": 20.0,
+              "flank": 0.0,
+              "progress": 20.4726124666093,
+              "score": 17.7926124666093,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +20, cover +0, exposure -23, firing +20, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                16,
+                0,
+                10
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 15.5467836812339,
+              "score": 15.5467836812339,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +16, cover +0, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                10,
+                0,
+                13
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                11,
+                0,
+                13
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 2,
+            "carrier": "PlayerUnit2",
+            "corridor_count": 37,
+            "destination_count": 2
+          }
+        }
+      ],
+      "selected_receipts": [
+        {
+          "action": "rescue",
+          "actor_id": "PlayerUnit2",
+          "ap_after": 1,
+          "ap_before": 1,
+          "base_revision": 45,
+          "committed_revision": 46,
+          "decision_id": 39,
+          "stage": "committed",
+          "transaction_id": 39
+        },
+        {
+          "action": "move",
+          "actor_id": "PlayerUnit2",
+          "ap_after": 0,
+          "ap_before": 1,
+          "base_revision": 46,
+          "committed_revision": 47,
+          "decision_id": 40,
+          "stage": "committed",
+          "transaction_id": 40
+        },
+        {
+          "action": "move",
+          "actor_id": "PlayerUnit3",
+          "ap_after": 2,
+          "ap_before": 3,
+          "base_revision": 47,
+          "committed_revision": 48,
+          "decision_id": 41,
+          "stage": "committed",
+          "transaction_id": 41
+        }
+      ],
+      "profile": {
+        "activations": 71,
+        "decision_samples": 189,
+        "total_yields": 507,
+        "timing": {
+          "work": {
+            "mean_ms": 49.7,
+            "median_ms": 41.714,
+            "p95_ms": 126.156,
+            "max_ms": 163.744
+          },
+          "max_slice": {
+            "mean_ms": 32.27,
+            "median_ms": 23.514,
+            "p95_ms": 96.629,
+            "max_ms": 150.55
+          },
+          "wall": {
+            "mean_ms": 58.03,
+            "median_ms": 47.244,
+            "p95_ms": 158.803,
+            "max_ms": 245.508
+          },
+          "yield": {
+            "mean_ms": 8.33,
+            "median_ms": 0.0,
+            "p95_ms": 41.676,
+            "max_ms": 81.764
+          },
+          "action_window": {
+            "mean_ms": 81.284,
+            "median_ms": 82.347,
+            "p95_ms": 168.922,
+            "max_ms": 322.472
+          },
+          "observers": {
+            "mean_ms": 11.546,
+            "median_ms": 8.185,
+            "p95_ms": 13.078,
+            "max_ms": 100.304
+          }
+        },
+        "transactions": {
+          "39": {
+            "actor": "PlayerUnit2",
+            "action": "rescue",
+            "action_window_us": 276194,
+            "core_us": 1706,
+            "counts": {
+              "intent": 1,
+              "publication": 1,
+              "squad_and_carrier": 1,
+              "submit_validation": 1
+            },
+            "max_slice_us": 1960,
+            "observers_us": 7668,
+            "stages_us": {
+              "intent": 28,
+              "publication": 542,
+              "squad_and_carrier": 36,
+              "submit_validation": 59
+            },
+            "transaction": 39,
+            "wall_us": 1960,
+            "work_us": 1960,
+            "yield_us": 0,
+            "yields": 0
+          },
+          "40": {
+            "actor": "PlayerUnit2",
+            "action": "move",
+            "action_window_us": 88709,
+            "core_us": 303,
+            "counts": {
+              "advance_safety": 1,
+              "carrier_routes": 4,
+              "goal_field_cells": 7,
+              "goal_paths": 1,
+              "intent": 1,
+              "move_inventory": 20,
+              "position_scoring": 7,
+              "publication": 1,
+              "squad_and_carrier": 1,
+              "submit_validation": 1
+            },
+            "max_slice_us": 121139,
+            "observers_us": 7884,
+            "stages_us": {
+              "advance_safety": 394,
+              "carrier_routes": 89685,
+              "goal_field_cells": 0,
+              "goal_paths": 23371,
+              "intent": 35,
+              "move_inventory": 2289,
+              "position_scoring": 199,
+              "publication": 331,
+              "squad_and_carrier": 40,
+              "submit_validation": 2372
+            },
+            "transaction": 40,
+            "wall_us": 121139,
+            "work_us": 121139,
+            "yield_us": 0,
+            "yields": 0
+          },
+          "41": {
+            "actor": "PlayerUnit3",
+            "action": "move",
+            "action_window_us": 108440,
+            "core_us": 300,
+            "counts": {
+              "advance_safety": 1,
+              "approach_paths": 4,
+              "attack_inventory": 22,
+              "carrier_routes": 0,
+              "goal_field_cells": 16,
+              "goal_paths": 1,
+              "intent": 2,
+              "move_inventory": 41,
+              "observation": 10,
+              "position_scoring": 16,
+              "publication": 1,
+              "squad_and_carrier": 2,
+              "submit_validation": 1,
+              "target_scoring": 0
+            },
+            "max_slice_us": 23328,
+            "observers_us": 7542,
+            "stages_us": {
+              "advance_safety": 4,
+              "approach_paths": 3421,
+              "attack_inventory": 1053,
+              "carrier_routes": 646,
+              "goal_field_cells": 0,
+              "goal_paths": 6424,
+              "intent": 57,
+              "move_inventory": 5286,
+              "observation": 39,
+              "position_scoring": 28985,
+              "publication": 508,
+              "squad_and_carrier": 721,
+              "submit_validation": 5633,
+              "target_scoring": 75
+            },
+            "transaction": 41,
+            "wall_us": 67810,
+            "work_us": 53394,
+            "yield_us": 14416,
+            "yields": 5
+          }
+        }
+      }
+    },
+    "evacuation": {
+      "site": "freight_yard",
+      "seed": 17,
+      "difficulty": "NORMAL",
+      "status": "Completed",
+      "battle_result": "Victory",
+      "rounds": 5,
+      "decision_count": 63,
+      "committed_action_count": 64,
+      "rejected_action_count": 0,
+      "action_counts": {
+        "Move": 36,
+        "Aim": 3,
+        "Attack": 17,
+        "Wait": 2,
+        "Reload": 3,
+        "Guard": 2
+      },
+      "last_round_objectives": [
+        {
+          "id": "stop_enemy_evacuation",
+          "progress": 3,
+          "status": 1
+        },
+        {
+          "id": "enemy_escape",
+          "progress": 0,
+          "status": 0
+        }
+      ],
+      "records": [
+        {
+          "action": "Move",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Attack, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 38,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            19,
+            0,
+            27
+          ],
+          "hold_score": 0.0,
+          "mission_goal": "Stop Enemy Evacuation [ELIMINATE]",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Objective route: the mission intent is Stop Enemy Evacuation [ELIMINATE]",
+          "position_scores": "Intercept EnemyUnit2 near (38, 0, 38) (exit route 12.5 / 15 movement); progress +45, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0",
+          "reason": "Selected destination; movement is beginning.",
+          "recent_move_origins": [
+            [
+              38,
+              0,
+              25
+            ],
+            [
+              34,
+              0,
+              27
+            ],
+            [
+              29,
+              0,
+              27
+            ],
+            [
+              24,
+              0,
+              27
+            ]
+          ],
+          "remaining_ap": 3,
+          "remaining_sp": 2,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support",
+          "stage": "selected",
+          "state_revision": 45,
+          "strategic_intent": "Balanced engagement",
+          "subject": "(23, 0, 29)",
+          "target_candidates": [
+            {
+              "cell": [
+                14,
+                0,
+                17
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                28,
+                0,
+                32
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                13,
+                0,
+                22
+              ],
+              "chosen": false,
+              "code": "blocked_los",
+              "reason": "Blocked",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 70,
+          "positions_top": [
+            {
+              "cell": [
+                23,
+                0,
+                29
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 45.3198810713159,
+              "score": 24.3198810713159,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +45, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                22,
+                0,
+                30
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 40.040057367107,
+              "score": 19.040057367107,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +40, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                22,
+                0,
+                29
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 36.022824972091,
+              "score": 15.022824972091,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +36, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                14,
+                0,
+                27
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                15,
+                0,
+                25
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 3,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 0
+          }
+        },
+        {
+          "action": "Attack",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Move, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 39,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            23,
+            0,
+            29
+          ],
+          "hold_score": 0.0,
+          "linked_outcome": {
+            "action": "attack",
+            "actor_id": "PlayerUnit2",
+            "ap_after": 1,
+            "ap_before": 2,
+            "base_revision": 46,
+            "committed_revision": 47,
+            "decision_id": 39,
+            "sp_after": 1,
+            "sp_before": 2,
+            "stage": "committed",
+            "transaction_id": 39
+          },
+          "mission_goal": "Stop Enemy Evacuation [ELIMINATE]",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Objective route: the mission intent is Stop Enemy Evacuation [ELIMINATE]",
+          "position_scores": "Intercept EnemyUnit2 near (38, 0, 38) (exit route 12.5 / 15 movement); progress +45, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0",
+          "reason": "Legal shot; target score balances vulnerability with allied focus.",
+          "recent_move_origins": [
+            [
+              34,
+              0,
+              27
+            ],
+            [
+              29,
+              0,
+              27
+            ],
+            [
+              24,
+              0,
+              27
+            ],
+            [
+              19,
+              0,
+              27
+            ]
+          ],
+          "remaining_ap": 1,
+          "remaining_sp": 1,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support; Destination reserved for later allies; Target focus: -0 (0 allies engaged)",
+          "stage": "explanation",
+          "state_revision": 47,
+          "strategic_intent": "Balanced engagement",
+          "subject": "EnemyUnit2",
+          "target_candidates": [
+            {
+              "cell": [
+                14,
+                0,
+                17
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                28,
+                0,
+                32
+              ],
+              "chosen": true,
+              "damage_on_hit": 25,
+              "damage_value": 25.0,
+              "expected_damage": 25.0,
+              "focus": 0.0,
+              "focus_count": 0,
+              "hit_chance": 100,
+              "mission": 0.0,
+              "score": 128.0,
+              "status": "considered",
+              "summary": "damage +25.0, vulnerable +95, VIP +0, threat +8, mission +0, focus -0, kill 100%",
+              "target": "EnemyUnit2",
+              "threat": 8.0,
+              "vip": 0.0,
+              "vulnerability": 95.0
+            },
+            {
+              "cell": [
+                13,
+                0,
+                22
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            }
+          ],
+          "target_scores": "damage +25.0, vulnerable +95, VIP +0, threat +8, mission +0, focus -0, kill 100%",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 70,
+          "positions_top": [
+            {
+              "cell": [
+                23,
+                0,
+                29
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 45.3198810713159,
+              "score": 24.3198810713159,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +45, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                22,
+                0,
+                30
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 40.040057367107,
+              "score": 19.040057367107,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +40, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                22,
+                0,
+                29
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -21.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 36.022824972091,
+              "score": 15.022824972091,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +36, cover +0, exposure -21, firing +0, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                14,
+                0,
+                27
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                15,
+                0,
+                25
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 3,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 1
+          }
+        }
+      ],
+      "selected_receipts": [
+        {
+          "action": "move",
+          "actor_id": "PlayerUnit2",
+          "ap_after": 2,
+          "ap_before": 3,
+          "base_revision": 45,
+          "committed_revision": 46,
+          "decision_id": 38,
+          "stage": "committed",
+          "transaction_id": 38
+        },
+        {
+          "action": "attack",
+          "actor_id": "PlayerUnit2",
+          "ap_after": 1,
+          "ap_before": 2,
+          "base_revision": 46,
+          "committed_revision": 47,
+          "decision_id": 0,
+          "sp_after": 1,
+          "sp_before": 2,
+          "stage": "committed",
+          "transaction_id": 39
+        }
+      ],
+      "profile": {
+        "activations": 22,
+        "decision_samples": 61,
+        "total_yields": 221,
+        "timing": {
+          "work": {
+            "mean_ms": 61.968,
+            "median_ms": 63.578,
+            "p95_ms": 146.567,
+            "max_ms": 168.722
+          },
+          "max_slice": {
+            "mean_ms": 39.078,
+            "median_ms": 39.437,
+            "p95_ms": 79.595,
+            "max_ms": 123.481
+          },
+          "wall": {
+            "mean_ms": 70.77,
+            "median_ms": 63.691,
+            "p95_ms": 167.908,
+            "max_ms": 232.358
+          },
+          "yield": {
+            "mean_ms": 8.801,
+            "median_ms": 0.0,
+            "p95_ms": 26.629,
+            "max_ms": 73.785
+          },
+          "action_window": {
+            "mean_ms": 86.746,
+            "median_ms": 88.893,
+            "p95_ms": 156.515,
+            "max_ms": 171.962
+          },
+          "observers": {
+            "mean_ms": 10.262,
+            "median_ms": 7.776,
+            "p95_ms": 9.206,
+            "max_ms": 82.7
+          }
+        },
+        "transactions": {
+          "38": {
+            "actor": "PlayerUnit2",
+            "action": "move",
+            "action_window_us": 93870,
+            "core_us": 255,
+            "counts": {
+              "advance_safety": 1,
+              "attack_inventory": 5,
+              "goal_field_cells": 17,
+              "goal_paths": 1,
+              "intent": 2,
+              "interception": 1,
+              "interception_paths": 4,
+              "move_inventory": 70,
+              "observation": 3,
+              "position_scoring": 17,
+              "publication": 1,
+              "squad_and_carrier": 2,
+              "submit_validation": 1,
+              "target_scoring": 0
+            },
+            "max_slice_us": 42150,
+            "observers_us": 7548,
+            "stages_us": {
+              "advance_safety": 6,
+              "attack_inventory": 1017,
+              "goal_field_cells": 0,
+              "goal_paths": 9295,
+              "intent": 62,
+              "interception": 3689,
+              "interception_paths": 3340,
+              "move_inventory": 6804,
+              "observation": 16,
+              "position_scoring": 20265,
+              "publication": 618,
+              "squad_and_carrier": 49,
+              "submit_validation": 7347,
+              "target_scoring": 28
+            },
+            "transaction": 38,
+            "wall_us": 71632,
+            "work_us": 65717,
+            "yield_us": 5915,
+            "yields": 3
+          },
+          "39": {
+            "actor": "PlayerUnit2",
+            "action": "attack",
+            "action_window_us": 156565,
+            "core_us": 448,
+            "counts": {
+              "attack_inventory": 5,
+              "intent": 1,
+              "observation": 3,
+              "short_plans": 1,
+              "squad_and_carrier": 1,
+              "submit_validation": 1,
+              "target_scoring": 1
+            },
+            "max_slice_us": 2932,
+            "observers_us": 7123,
+            "stages_us": {
+              "attack_inventory": 635,
+              "intent": 41,
+              "observation": 23,
+              "short_plans": 377,
+              "squad_and_carrier": 32,
+              "submit_validation": 606,
+              "target_scoring": 424
+            },
+            "transaction": 39,
+            "wall_us": 2932,
+            "work_us": 2932,
+            "yield_us": 0,
+            "yields": 0
+          }
+        }
+      }
+    },
+    "combat": {
+      "site": "freight_yard",
+      "seed": 17,
+      "difficulty": "NORMAL",
+      "status": "Completed",
+      "battle_result": "Victory",
+      "rounds": 7,
+      "decision_count": 72,
+      "committed_action_count": 73,
+      "rejected_action_count": 0,
+      "action_counts": {
+        "Move": 30,
+        "Attack": 30,
+        "Guard": 3,
+        "Reload": 4,
+        "Aim": 3,
+        "Wait": 2
+      },
+      "last_round_objectives": [
+        {
+          "id": "eliminate",
+          "progress": 3,
+          "status": 1
+        }
+      ],
+      "records": [
+        {
+          "action": "Move",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Attack, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 22,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            24,
+            0,
+            27
+          ],
+          "hold_score": 0.0,
+          "mission_goal": "Eliminate [ELIMINATE]",
+          "move_acceptance_threshold": 1.0,
+          "movement_profile": "Flanking: an ally already has a shot at the target",
+          "position_scores": "progress +27, cover +0, exposure -13, firing +22, danger +0, squad +0, flank +13, cohesion +0; revisit -0",
+          "reason": "Selected destination; movement is beginning.",
+          "recent_move_origins": [
+            [
+              38,
+              0,
+              25
+            ],
+            [
+              34,
+              0,
+              27
+            ],
+            [
+              29,
+              0,
+              27
+            ]
+          ],
+          "remaining_ap": 3,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support",
+          "stage": "selected",
+          "state_revision": 25,
+          "strategic_intent": "Balanced engagement",
+          "subject": "(19, 0, 27)",
+          "target_candidates": [
+            {
+              "cell": [
+                13,
+                0,
+                13
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                14,
+                0,
+                28
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                13,
+                0,
+                20
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit3"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 72,
+          "positions_top": [
+            {
+              "cell": [
+                19,
+                0,
+                27
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -12.6,
+              "firing": 22.0,
+              "flank": 12.5,
+              "progress": 27.4262841612922,
+              "score": 49.3262841612922,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +27, cover +0, exposure -13, firing +22, danger +0, squad +0, flank +13, cohesion +0; revisit -0"
+            },
+            {
+              "cell": [
+                20,
+                0,
+                27
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": -9.0,
+              "exposure": -25.2,
+              "firing": 22.0,
+              "flank": 12.5,
+              "progress": 21.950669636234,
+              "score": 22.250669636234,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +22, cover +0, exposure -25, firing +22, danger -9, squad +0, flank +13, cohesion +0; revisit -0"
+            },
+            {
+              "cell": [
+                20,
+                0,
+                26
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": -9.0,
+              "exposure": -25.2,
+              "firing": 22.0,
+              "flank": 12.5,
+              "progress": 19.9311262016838,
+              "score": 20.2311262016838,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +20, cover +0, exposure -25, firing +22, danger -9, squad +0, flank +13, cohesion +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                21,
+                0,
+                24
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                21,
+                0,
+                30
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 2,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 1
+          }
+        },
+        {
+          "action": "Move",
+          "actor": "PlayerUnit1",
+          "actor_id": "PlayerUnit1",
+          "alternatives": "Attack, Aim, Wait",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 36,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            16,
+            0,
+            16
+          ],
+          "hold_score": null,
+          "linked_outcome": {
+            "action": "move",
+            "actor_id": "PlayerUnit1",
+            "ap_after": 2,
+            "ap_before": 3,
+            "base_revision": 43,
+            "committed_revision": 44,
+            "decision_id": 36,
+            "stage": "committed",
+            "transaction_id": 36
+          },
+          "mission_goal": "Eliminate [ELIMINATE]",
+          "move_acceptance_threshold": null,
+          "movement_profile": "None",
+          "position_scores": "Move to (16, 0, 16), then 2 shot(s) at EnemyUnit3 (100% each); shooting from here is worth 35.9, from there 45.0",
+          "reason": "Repositioned for a better shot: Move to (16, 0, 16), then 2 shot(s) at EnemyUnit3 (100% each); shooting from here is worth 35.9, from there 45.0.",
+          "recent_move_origins": [
+            [
+              34,
+              0,
+              13
+            ],
+            [
+              29,
+              0,
+              13
+            ],
+            [
+              24,
+              0,
+              13
+            ],
+            [
+              19,
+              0,
+              13
+            ]
+          ],
+          "remaining_ap": 2,
+          "remaining_sp": 2,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective handler: first; Destination reserved for later allies",
+          "stage": "explanation",
+          "state_revision": 44,
+          "strategic_intent": "Balanced engagement",
+          "subject": "(16, 0, 16)",
+          "target_candidates": [
+            {
+              "cell": [
+                13,
+                0,
+                14
+              ],
+              "chosen": false,
+              "code": "blocked_los",
+              "reason": "Blocked",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            },
+            {
+              "cell": [
+                14,
+                0,
+                28
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "EnemyUnit2"
+            },
+            {
+              "cell": [
+                13,
+                0,
+                20
+              ],
+              "chosen": true,
+              "damage_on_hit": 25,
+              "damage_value": 13.75,
+              "expected_damage": 13.75,
+              "focus": 0.0,
+              "focus_count": 0,
+              "hit_chance": 55,
+              "mission": 0.0,
+              "score": 121.1,
+              "status": "considered",
+              "summary": "damage +13.8, vulnerable +91, VIP +0, threat +16, mission +0, focus -0, kill 80%",
+              "target": "EnemyUnit3",
+              "threat": 16.4,
+              "vip": 0.0,
+              "vulnerability": 90.95
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 0,
+          "positions_top": [],
+          "position_rejection_examples": [],
+          "squad_counts": {
+            "round": 3,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 1
+          }
+        },
+        {
+          "action": "Aim",
+          "actor": "EnemyUnit1",
+          "actor_id": "EnemyUnit1",
+          "alternatives": "Attack, Move, Wait",
+          "attack_plan": {
+            "aimed_shots": 1,
+            "aimed_value": 45.0,
+            "choice": "Aim",
+            "direct_shots": 2,
+            "direct_value": 44.55,
+            "target": "PlayerUnit3"
+          },
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 46,
+          "difficulty": "Normal",
+          "faction": "Enemy",
+          "grid_position": [
+            13,
+            0,
+            17
+          ],
+          "hold_score": 11.9,
+          "linked_outcome": {
+            "action": "aim",
+            "actor_id": "EnemyUnit1",
+            "ap_after": 1,
+            "ap_before": 2,
+            "base_revision": 54,
+            "committed_revision": 55,
+            "decision_id": 46,
+            "stage": "committed",
+            "transaction_id": 46
+          },
+          "mission_goal": "None",
+          "move_acceptance_threshold": 12.9,
+          "movement_profile": "Aggressive: healthy with a wounded target in reach",
+          "position_scores": "progress +18, cover +6, exposure -11, firing +13, danger -7, squad +0; revisit -0",
+          "reason": "Improved a legal shot through the authoritative Aim query.",
+          "recent_move_origins": [
+            [
+              6,
+              0,
+              13
+            ],
+            [
+              11,
+              0,
+              13
+            ],
+            [
+              13,
+              0,
+              13
+            ],
+            [
+              13,
+              0,
+              14
+            ]
+          ],
+          "remaining_ap": 1,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Destination reserved for later allies",
+          "stage": "explanation",
+          "state_revision": 55,
+          "strategic_intent": "Balanced engagement",
+          "subject": "PlayerUnit3",
+          "target_candidates": [
+            {
+              "cell": [
+                16,
+                0,
+                16
+              ],
+              "chosen": false,
+              "code": "blocked_los",
+              "reason": "Blocked",
+              "status": "rejected",
+              "target": "PlayerUnit1"
+            },
+            {
+              "cell": [
+                19,
+                0,
+                27
+              ],
+              "chosen": false,
+              "code": "out_of_range",
+              "reason": "Out of range",
+              "status": "rejected",
+              "target": "PlayerUnit2"
+            },
+            {
+              "cell": [
+                14,
+                0,
+                17
+              ],
+              "chosen": true,
+              "damage_on_hit": 25,
+              "damage_value": 22.5,
+              "expected_damage": 22.5,
+              "focus": 0.0,
+              "focus_count": 0,
+              "hit_chance": 90,
+              "mission": 0.0,
+              "score": 124.5,
+              "status": "considered",
+              "summary": "damage +22.5, vulnerable +95, VIP +0, threat +7, mission +0, focus -0, kill 99%",
+              "target": "PlayerUnit3",
+              "threat": 7.2,
+              "vip": 0.0,
+              "vulnerability": 94.8
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 56,
+          "positions_top": [
+            {
+              "cell": [
+                13,
+                0,
+                17
+              ],
+              "chosen": true,
+              "cohesion": 0.0,
+              "cover": 5.95,
+              "danger": -6.8,
+              "exposure": -11.2,
+              "firing": 13.0,
+              "flank": 0.0,
+              "progress": 17.5299289637905,
+              "score": 18.4799289637905,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +18, cover +6, exposure -11, firing +13, danger -7, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                13,
+                0,
+                15
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 11.9,
+              "danger": 0.0,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 6.19771170260332,
+              "score": 18.0977117026033,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +6, cover +12, exposure +0, firing +0, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                13,
+                0,
+                16
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 11.9,
+              "danger": -6.8,
+              "exposure": 0.0,
+              "firing": 0.0,
+              "flank": 0.0,
+              "progress": 12.2154105686969,
+              "score": 17.3154105686969,
+              "squad": 0.0,
+              "status": "considered",
+              "summary": "progress +12, cover +12, exposure +0, firing +0, danger -7, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                8,
+                0,
+                14
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                9,
+                0,
+                12
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 3,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 1
+          }
+        },
+        {
+          "action": "Aim",
+          "actor": "PlayerUnit1",
+          "actor_id": "PlayerUnit1",
+          "alternatives": "Attack, Move, Wait",
+          "attack_plan": {
+            "aimed_shots": 2,
+            "aimed_value": 33.75,
+            "choice": "Aim",
+            "direct_shots": 2,
+            "direct_value": 25.0,
+            "target": "EnemyUnit1"
+          },
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 0,
+          "decision_id": 57,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            15,
+            0,
+            17
+          ],
+          "hold_score": null,
+          "linked_outcome": {
+            "action": "aim",
+            "actor_id": "PlayerUnit1",
+            "ap_after": 2,
+            "ap_before": 3,
+            "base_revision": 68,
+            "committed_revision": 69,
+            "decision_id": 57,
+            "stage": "committed",
+            "transaction_id": 57
+          },
+          "mission_goal": "Eliminate [ELIMINATE]",
+          "move_acceptance_threshold": null,
+          "movement_profile": "None",
+          "position_scores": "None",
+          "reason": "Improved a legal shot through the authoritative Aim query.",
+          "recent_move_origins": [
+            [
+              29,
+              0,
+              13
+            ],
+            [
+              24,
+              0,
+              13
+            ],
+            [
+              19,
+              0,
+              13
+            ],
+            [
+              16,
+              0,
+              16
+            ]
+          ],
+          "remaining_ap": 2,
+          "remaining_sp": 2,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective handler: first",
+          "stage": "explanation",
+          "state_revision": 69,
+          "strategic_intent": "Balanced engagement",
+          "subject": "EnemyUnit1",
+          "target_candidates": [
+            {
+              "cell": [
+                13,
+                0,
+                17
+              ],
+              "chosen": true,
+              "damage_on_hit": 25,
+              "damage_value": 12.5,
+              "expected_damage": 12.5,
+              "focus": 0.0,
+              "focus_count": 0,
+              "hit_chance": 50,
+              "mission": 0.0,
+              "score": 16.5,
+              "status": "considered",
+              "summary": "damage +12.5, vulnerable +0, VIP +0, threat +4, mission +0, focus -0, kill 0%",
+              "target": "EnemyUnit1",
+              "threat": 4.0,
+              "vip": 0.0,
+              "vulnerability": 0.0
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 0,
+          "positions_top": [],
+          "position_rejection_examples": [],
+          "squad_counts": {
+            "round": 5,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 0
+          }
+        },
+        {
+          "action": "Wait",
+          "actor": "PlayerUnit2",
+          "actor_id": "PlayerUnit2",
+          "alternatives": "Attack, Move",
+          "attack_plan": {},
+          "commander_policy": "Default",
+          "commander_policy_id": "default",
+          "consecutive_low_value_actions": 2,
+          "decision_id": 60,
+          "difficulty": "Normal",
+          "faction": "Player",
+          "grid_position": [
+            15,
+            0,
+            24
+          ],
+          "hold_score": 9.8,
+          "mission_goal": "Eliminate [ELIMINATE]",
+          "move_acceptance_threshold": 10.8,
+          "movement_profile": "Defensive: badly hurt (25% HP)",
+          "position_scores": "None",
+          "reason": "No legal shot or reachable approach. 35 cells outside route; 22 moves below threshold",
+          "recent_move_origins": [
+            [
+              29,
+              0,
+              27
+            ],
+            [
+              24,
+              0,
+              27
+            ],
+            [
+              19,
+              0,
+              27
+            ],
+            [
+              15,
+              0,
+              25
+            ]
+          ],
+          "remaining_ap": 3,
+          "remaining_sp": 4,
+          "route_corridor": 2.0,
+          "squad_adjustments": "Objective already handled by 1 ally: spread/support",
+          "stage": "selected",
+          "state_revision": 71,
+          "strategic_intent": "Balanced engagement",
+          "subject": "PlayerUnit2",
+          "target_candidates": [
+            {
+              "cell": [
+                13,
+                0,
+                17
+              ],
+              "chosen": false,
+              "code": "blocked_los",
+              "reason": "Blocked",
+              "status": "rejected",
+              "target": "EnemyUnit1"
+            }
+          ],
+          "target_scores": "None",
+          "urgency_bonus": 0.0,
+          "positions_in_history": 57,
+          "positions_top": [
+            {
+              "cell": [
+                13,
+                0,
+                20
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -19.6,
+              "firing": 8.0,
+              "flank": 0.0,
+              "progress": 20.5870986663244,
+              "reason": "progress +21, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0",
+              "score": 8.98709866632443,
+              "squad": 0.0,
+              "status": "rejected",
+              "summary": "progress +21, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                15,
+                0,
+                19
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -19.6,
+              "firing": 8.0,
+              "flank": 0.0,
+              "progress": 19.4675027170351,
+              "reason": "progress +19, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0",
+              "score": 7.8675027170351,
+              "squad": 0.0,
+              "status": "rejected",
+              "summary": "progress +19, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0"
+            },
+            {
+              "cell": [
+                14,
+                0,
+                20
+              ],
+              "chosen": false,
+              "cohesion": 0.0,
+              "cover": 0.0,
+              "danger": 0.0,
+              "exposure": -19.6,
+              "firing": 8.0,
+              "flank": 0.0,
+              "progress": 19.0668820745285,
+              "reason": "progress +19, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0",
+              "score": 7.46688207452847,
+              "squad": 0.0,
+              "status": "rejected",
+              "summary": "progress +19, cover +0, exposure -20, firing +8, danger +0, squad +0; revisit -0"
+            }
+          ],
+          "position_rejection_examples": [
+            {
+              "cell": [
+                12,
+                0,
+                22
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            },
+            {
+              "cell": [
+                12,
+                0,
+                26
+              ],
+              "chosen": false,
+              "reason": "Outside useful route",
+              "status": "rejected"
+            }
+          ],
+          "squad_counts": {
+            "round": 5,
+            "carrier": "",
+            "corridor_count": 0,
+            "destination_count": 0
+          }
+        }
+      ],
+      "selected_receipts": [
+        {
+          "action": "attack",
+          "actor_id": "PlayerUnit1",
+          "ap_after": 1,
+          "ap_before": 2,
+          "base_revision": 23,
+          "committed_revision": 24,
+          "decision_id": 0,
+          "sp_after": 3,
+          "sp_before": 4,
+          "stage": "committed",
+          "transaction_id": 20
+        },
+        {
+          "action": "move",
+          "actor_id": "PlayerUnit1",
+          "ap_after": 2,
+          "ap_before": 3,
+          "base_revision": 43,
+          "committed_revision": 44,
+          "decision_id": 0,
+          "stage": "committed",
+          "transaction_id": 36
+        },
+        {
+          "action": "aim",
+          "actor_id": "EnemyUnit1",
+          "ap_after": 1,
+          "ap_before": 2,
+          "base_revision": 54,
+          "committed_revision": 55,
+          "decision_id": 0,
+          "stage": "committed",
+          "transaction_id": 46
+        },
+        {
+          "action": "aim",
+          "actor_id": "PlayerUnit1",
+          "ap_after": 2,
+          "ap_before": 3,
+          "base_revision": 68,
+          "committed_revision": 69,
+          "decision_id": 0,
+          "stage": "committed",
+          "transaction_id": 57
+        },
+        {
+          "action": "wait",
+          "actor_id": "PlayerUnit2",
+          "ap_after": 0,
+          "ap_before": 3,
+          "base_revision": 71,
+          "committed_revision": 72,
+          "decision_id": 60,
+          "stage": "committed",
+          "transaction_id": 60
+        }
+      ],
+      "profile": {
+        "activations": 25,
+        "decision_samples": 70,
+        "total_yields": 195,
+        "timing": {
+          "work": {
+            "mean_ms": 43.622,
+            "median_ms": 52.053,
+            "p95_ms": 81.354,
+            "max_ms": 94.37
+          },
+          "max_slice": {
+            "mean_ms": 26.844,
+            "median_ms": 17.996,
+            "p95_ms": 70.159,
+            "max_ms": 74.623
+          },
+          "wall": {
+            "mean_ms": 49.54,
+            "median_ms": 60.142,
+            "p95_ms": 101.373,
+            "max_ms": 110.066
+          },
+          "yield": {
+            "mean_ms": 5.918,
+            "median_ms": 0.0,
+            "p95_ms": 21.006,
+            "max_ms": 34.201
+          },
+          "action_window": {
+            "mean_ms": 80.665,
+            "median_ms": 93.546,
+            "p95_ms": 156.552,
+            "max_ms": 192.06
+          },
+          "observers": {
+            "mean_ms": 11.376,
+            "median_ms": 7.861,
+            "p95_ms": 13.365,
+            "max_ms": 88.675
+          }
+        },
+        "transactions": {
+          "20": {
+            "actor": "PlayerUnit1",
+            "action": "attack",
+            "action_window_us": 31202,
+            "core_us": 235,
+            "counts": {
+              "attack_inventory": 5,
+              "intent": 1,
+              "observation": 3,
+              "short_plans": 1,
+              "squad_and_carrier": 1,
+              "submit_validation": 1,
+              "target_scoring": 2
+            },
+            "max_slice_us": 8049,
+            "observers_us": 12799,
+            "stages_us": {
+              "attack_inventory": 1819,
+              "intent": 43,
+              "observation": 23,
+              "short_plans": 1833,
+              "squad_and_carrier": 39,
+              "submit_validation": 1621,
+              "target_scoring": 1265
+            },
+            "transaction": 20,
+            "wall_us": 8049,
+            "work_us": 8049,
+            "yield_us": 0,
+            "yields": 0
+          },
+          "36": {
+            "actor": "PlayerUnit1",
+            "action": "move",
+            "action_window_us": 74979,
+            "core_us": 1147,
+            "counts": {
+              "attack_inventory": 5,
+              "intent": 2,
+              "observation": 3,
+              "short_plans": 72,
+              "squad_and_carrier": 2,
+              "submit_validation": 1,
+              "target_scoring": 1
+            },
+            "max_slice_us": 18227,
+            "observers_us": 7763,
+            "stages_us": {
+              "attack_inventory": 1514,
+              "intent": 58,
+              "observation": 15,
+              "short_plans": 52096,
+              "squad_and_carrier": 47,
+              "submit_validation": 7483,
+              "target_scoring": 1888
+            },
+            "transaction": 36,
+            "wall_us": 89483,
+            "work_us": 73708,
+            "yield_us": 15775,
+            "yields": 9
+          },
+          "46": {
+            "actor": "EnemyUnit1",
+            "action": "aim",
+            "action_window_us": 21543,
+            "core_us": 71,
+            "counts": {
+              "attack_inventory": 3,
+              "intent": 1,
+              "observation": 3,
+              "short_plans": 1,
+              "squad_and_carrier": 1,
+              "submit_validation": 1,
+              "target_scoring": 1
+            },
+            "max_slice_us": 2740,
+            "observers_us": 8400,
+            "stages_us": {
+              "attack_inventory": 1020,
+              "intent": 66,
+              "observation": 124,
+              "short_plans": 785,
+              "squad_and_carrier": 55,
+              "submit_validation": 29,
+              "target_scoring": 439
+            },
+            "transaction": 46,
+            "wall_us": 2740,
+            "work_us": 2740,
+            "yield_us": 0,
+            "yields": 0
+          },
+          "57": {
+            "actor": "PlayerUnit1",
+            "action": "aim",
+            "action_window_us": 21360,
+            "core_us": 127,
+            "counts": {
+              "attack_inventory": 2,
+              "intent": 2,
+              "observation": 1,
+              "short_plans": 60,
+              "squad_and_carrier": 2,
+              "submit_validation": 1,
+              "target_scoring": 1
+            },
+            "max_slice_us": 11915,
+            "observers_us": 13294,
+            "stages_us": {
+              "attack_inventory": 532,
+              "intent": 60,
+              "observation": 11,
+              "short_plans": 27815,
+              "squad_and_carrier": 43,
+              "submit_validation": 58,
+              "target_scoring": 1040
+            },
+            "transaction": 57,
+            "wall_us": 52501,
+            "work_us": 40066,
+            "yield_us": 12435,
+            "yields": 5
+          },
+          "60": {
+            "actor": "PlayerUnit2",
+            "action": "wait",
+            "action_window_us": 9042,
+            "core_us": 77,
+            "counts": {
+              "advance_safety": 1,
+              "approach_paths": 6,
+              "attack_inventory": 2,
+              "goal_field_cells": 22,
+              "goal_paths": 1,
+              "intent": 2,
+              "move_inventory": 57,
+              "observation": 1,
+              "position_scoring": 22,
+              "publication": 1,
+              "squad_and_carrier": 2,
+              "submit_validation": 1,
+              "target_scoring": 0
+            },
+            "max_slice_us": 29511,
+            "observers_us": 8812,
+            "stages_us": {
+              "advance_safety": 5,
+              "approach_paths": 7408,
+              "attack_inventory": 981,
+              "goal_field_cells": 0,
+              "goal_paths": 5906,
+              "intent": 72,
+              "move_inventory": 5987,
+              "observation": 23,
+              "position_scoring": 27984,
+              "publication": 631,
+              "squad_and_carrier": 55,
+              "submit_validation": 38,
+              "target_scoring": 18
+            },
+            "transaction": 60,
+            "wall_us": 63735,
+            "work_us": 52968,
+            "yield_us": 10767,
+            "yields": 5
+          }
+        }
+      }
+    }
+  },
+  "rendered_probe": {
+    "frames": {
+      "count": 4000,
+      "max_ms": 4808.758,
+      "median_ms": 16.665,
+      "p95_ms": 16.822,
+      "worst": [
+        {
+          "busy": false,
+          "last_transaction": 0,
+          "ms": 4808.758
+        },
+        {
+          "busy": true,
+          "last_transaction": 31,
+          "ms": 228.558
+        },
+        {
+          "busy": true,
+          "last_transaction": 32,
+          "ms": 220.843
+        },
+        {
+          "busy": true,
+          "last_transaction": 30,
+          "ms": 204.55
+        },
+        {
+          "busy": true,
+          "last_transaction": 16,
+          "ms": 198.86
+        },
+        {
+          "busy": true,
+          "last_transaction": 18,
+          "ms": 183.748
+        },
+        {
+          "busy": true,
+          "last_transaction": 17,
+          "ms": 166.704
+        },
+        {
+          "busy": true,
+          "last_transaction": 10,
+          "ms": 164.237
+        },
+        {
+          "busy": true,
+          "last_transaction": 40,
+          "ms": 149.306
+        },
+        {
+          "busy": true,
+          "last_transaction": 7,
+          "ms": 147.953
+        }
+      ]
+    },
+    "profile": {
+      "activations": 18,
+      "decision_samples": 51,
+      "total_yields": 38,
+      "timing": {
+        "work": {
+          "mean_ms": 83.291,
+          "median_ms": 76.872,
+          "p95_ms": 179.755,
+          "max_ms": 200.408
+        },
+        "max_slice": {
+          "mean_ms": 77.575,
+          "median_ms": 71.876,
+          "p95_ms": 179.75,
+          "max_ms": 200.394
+        },
+        "wall": {
+          "mean_ms": 90.004,
+          "median_ms": 90.791,
+          "p95_ms": 186.372,
+          "max_ms": 200.408
+        },
+        "yield": {
+          "mean_ms": 6.713,
+          "median_ms": 0.0,
+          "p95_ms": 67.269,
+          "max_ms": 84.276
+        },
+        "action_window": {
+          "mean_ms": 1030.029,
+          "median_ms": 995.966,
+          "p95_ms": 2034.416,
+          "max_ms": 3252.425
+        },
+        "observers": {
+          "mean_ms": 10.404,
+          "median_ms": 8.541,
+          "p95_ms": 15.835,
+          "max_ms": 52.834
+        }
+      },
+      "transactions": {
+        "40": {
+          "actor": "PlayerUnit2",
+          "action": "move",
+          "action_window_us": 1152729,
+          "core_us": 312,
+          "counts": {
+            "advance_safety": 1,
+            "carrier_routes": 4,
+            "goal_field_cells": 7,
+            "goal_paths": 1,
+            "intent": 1,
+            "move_inventory": 20,
+            "position_scoring": 7,
+            "publication": 1,
+            "squad_and_carrier": 1,
+            "submit_validation": 1
+          },
+          "max_slice_us": 133208,
+          "observers_us": 8192,
+          "stages_us": {
+            "advance_safety": 397,
+            "carrier_routes": 100048,
+            "goal_field_cells": 0,
+            "goal_paths": 24430,
+            "intent": 41,
+            "move_inventory": 2331,
+            "position_scoring": 210,
+            "publication": 376,
+            "squad_and_carrier": 49,
+            "submit_validation": 2435
+          },
+          "transaction": 40,
+          "wall_us": 133208,
+          "work_us": 133208,
+          "yield_us": 0,
+          "yields": 0
+        }
+      }
+    },
+    "match_result": "seed 16 | authored_service_depot 40x40 | Rescue Test | Timeout/Ongoing | rounds 2 | decisions 57 | 75.09s | Exceeded 75.0 seconds."
+  }
+}
