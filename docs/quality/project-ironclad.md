@@ -41,7 +41,30 @@ Subsystems: `core`, `actions`, `combat`, `equipment`, `movement`, `animation`, `
 
 FAST, SMOKE and the subsystem selections complement the full tier; they never replace it. Full discovers every top-level `tests/*.gd` except the explicit-only scripts. A script missing from the catalog still runs in the full tier and is reported as UNCLASSIFIED; `check` (also run by CI) fails on an unclassified script, a stale entry, an unknown value, an explicit-only or rendering test marked FAST/SMOKE, an area path that does not exist, and (Task 14) any `.gd` or `.tscn` under the source roots (`systems`, `units`, `presentation`, `research`, `ui`, `levels`, `tools`, `content`, `art`) that no area covers: an unmapped file would make `changed` fall back to the critical tests only and never select the suite that guards it (this happened to `presentation/motion/` and `research/` after Task 13).
 
-Each run prints suite-level pass/fail/skip totals, the time split between the Godot processes and the runner, and the slowest tests. A selection that is not the full tier ends by saying how many ordinary tests it did not run. Detailed stdout, stderr, engine logs and a machine-readable `results.json` are written under `artifacts/test-results/<timestamp>-<tier>/`; that generated directory is ignored by Git. Results are `PASS`, `FAIL`, `TIMEOUT` (the process tree is killed; counted as a failure) and, for selected tests that need rendering, `NOT-RUN`. The runner supplies a writable isolated test-output directory (`FUSEFIRE_TEST_OUTPUT_DIR`) for tests that serialize reports. Unexpected `SCRIPT ERROR:`, `Parse Error:` and `Compile Error:` output fails the entry even when the process exits zero. `-ProbeFailureHandling` adds three probes (a nonzero exit, a zero-exit script error and a process that never ends) and must report three failures, one of them a timeout. Application-level negative-test diagnostics are not blanket-rejected. Exit codes: 0 all passed, 1 a failure or timeout, 2 a usage or catalog problem or a test that could not run as requested.
+### Run results and artifacts
+
+Run artifacts go under `artifacts/test-results/<timestamp>-<run-id>-<tier>/` by default. The unique ID prevents runs started in the same second from sharing log files. Each execution records combined text, raw stdout and stderr, the Godot engine log, an atomic `results.json` checkpoint and a final `summary.txt`. `FUSEFIRE_TEST_OUTPUT_DIR` points to the run's writable `test-output` directory in the child process.
+
+| Field | Counts or meaning |
+| --- | --- |
+| Discovered / catalogued | Top-level GDScript files found and metadata entries loaded. |
+| Ordinary selected / explicit exclusions | Tests selected from the ordinary tier and scripts with explicit-only metadata outside the selection. Exclusions never started. |
+| Started / completed | Godot test processes started and tests that exited with a pass or failure. A timeout is a started test with its own outcome. Imports and probes have separate entry kinds. |
+| Passed / failed / timed out / not run | Test outcomes. A process start failure can fail a test without a started process. An unsuccessful import marks dependent tests `NOT-RUN`. Rendering requirements can block a selection before execution. |
+| Import | A separate Godot editor scan with its own result. A failed import prevents dependent scripts from running and invalidates the previous freshness stamp. |
+| Retries / distinct failures | Ironclad runs each selected test once. Use a second named selection and compare the two run files if a failure needs investigation. |
+
+The console and JSON distinguish **GREEN**, **RED**, and **INCOMPLETE**. A failed entry makes the run RED even if other entries pass. Catalog errors, rendering blocks or interrupted execution can leave a run INCOMPLETE. Exit 1 means a failed attempt or timeout. Exit 2 means setup, catalog or selection could not provide complete evidence. A regular test with exit 0 is green only when neither its captured output nor its engine log contains a script, parse or compile error. The combined `passed`, `failed` and `skipped_explicit` JSON fields remain available for older consumers. Use the separate test and import fields for new reporting.
+
+While a run is active, the checkpoint is INCOMPLETE and names the entry in progress. With a cooperative interruption, Ironclad stops the current child and releases the checkout lock. On hard termination, the last complete checkpoint and any written streams remain available. Check for surviving Godot processes after killing the entire runner or OS session. The runner can only enforce child cleanup while its process remains alive.
+
+### Windows test data and checkout ownership
+
+Ironclad directs each Windows child entry's `APPDATA` and `LOCALAPPDATA` to a fresh directory under that run's `user-data/`. Godot and nested ADDA invocations resolve `user://` there. Your shell, editor and normal game settings keep their own profile. A passing entry's profile is removed. Failed, timed-out and interrupted entry data stays with the run artifacts for reproduction. Direct Godot commands retain their native user-data paths, as do runner launches on non-Windows hosts.
+
+One Ironclad runner holds the checkout's `.godot/ironclad-run.lock`. Run separate worktrees for simultaneous campaigns. The lock does not coordinate external editor or direct Godot processes. Tests write fixed paths under `res://.godot/`, so keep those other writers out of the same checkout during a validation run. Distinct worktrees and unique run directories allow independent campaigns, including campaigns targeting the same log parent.
+
+A test may declare `fixed_fps` when measured behavior requires deterministic engine stepping. Ironclad then passes the corresponding Godot `--fixed-fps` option and records it for that entry. `ladder_climb_test` uses 60 fps and retains the same poses, samples and assertions. The landing test retains its live-frame and 30 fps coverage. This setting changes the test launch only.
 
 Direct commands remain supported for a single script:
 
@@ -54,7 +77,7 @@ godot_console --headless --path . --script res://tests/map_generation_batch_smok
 
 `changed -Since <ref>` resolves a local commit and compares that commit directly to the working tree. This is a tree comparison, so pass a merge-base commit explicitly if that is the comparison you want. It includes staged and unstaged changes and non-ignored untracked files. A rename contributes both its old and new paths. Additions and deletions contribute the path on their respective side. Explicit `-Changed` paths are combined with these results. Git lookup, diff or untracked-list errors exit 2 before selection. A successful comparison with no matching tests reports zero tests and skips automatic import. Explicit `-Import` or failure probes still run when requested.
 
-`-List` and `-Why` distinguish runnable and blocked selections, explicit-only scripts outside the selection, long end-to-end tests deferred by the fallback rule, and other unselected ordinary tests. The long-test omission list excludes any test selected by an affected subsystem. The existing `SKIP` result total counts explicit-only entries skipped by the tier's enumeration policy. Project import, when needed, is a separate execution entry.
+`-List` and `-Why` distinguish runnable and blocked selections, explicit-only scripts outside the selection, long end-to-end tests deferred by the fallback rule, and other unselected ordinary tests. The long-test omission list excludes any test selected by an affected subsystem. The existing `SKIP` result total counts explicit-only entries skipped by the tier's enumeration policy. Project import, when needed, is a separate execution entry with its own verdict.
 
 Run the deterministic selector controls with `pwsh -NoProfile -File tools/quality/ironclad_selection_test.ps1`. They use a disposable Git fixture and require no Godot installation. Before the correction, an invalid ref returned 0 after Git printed a fatal error, and an objective change listed the mission/replay matrix as both selected and omitted. The controls cover both defects plus a corrupt index, docs-only changes, rename sides, deleted and added paths, ignored files, and render-blocked selections.
 
@@ -97,24 +120,30 @@ When investigating a failure:
 5. Assert behavioral properties such as connectivity or reachability instead of an exact generated layout unless the layout itself is the contract.
 6. Separate filesystem, executable, import, and graphics failures from gameplay failures.
 
+### Compare the original run and focused attempts
+
+```powershell
+.\tools\quality\ironclad_compare_runs.ps1 -Initial <full-results.json> -Rerun <focused-results.json> -Baseline <baseline-results.json>
+pwsh -NoProfile -File tools/quality/ironclad_runtime_test.ps1
+```
+
+The comparison reads existing JSON and keeps the initial verdict. It records every supplied observation separately, including mixed reruns and baseline failures. A passing rerun needs a cause classification. A passed-on-rerun entry can be a corrected fixture, an isolated environment failure or an intermittent product/test behavior. Keep raw evidence, commit, configuration, and execution mode with that conclusion. The runtime regression runs a real disposable Godot project and includes controlled failures, process exit, timeout, import failure, locking, interruption and user-data writes. `-ProbeFailureHandling` still runs the three engine failure probes in a normal checkout when requested.
+
+[Step 12 failure forensics and QA verification](ironclad-failure-forensics-2026-11-25.md) links the original red run, known ladder behavior and the isolated reruns.
+
 ## Explicit-only validation
 
-Twenty-four scripts are classified `run: explicit` in the catalog and are excluded from the full tier (reported as skipped by policy):
-
-* Headless batches and benchmarks (6), run by name, e.g. `.\tools\run_tests.ps1 select -Test container_maps_smoke`: `ai_baseline_report`, `ai_match_simulation_smoke`, `battlefield_stress_smoke`, `container_maps_smoke`, `map_quality_metrics_smoke`, `prototype_1_milestone`.
-* Rendered captures (18), which need a graphics run and a human to inspect the images: `asset_lab_capture`, `authored_parcel_catalog_capture`, `battle_loading_screen_capture`, `class_marker_capture`, `cover_target_aware_capture`, `hand_contact_capture`, `hand_views_capture`, `industrial_warehouse_capture`, `parcel_editor_capture`, `parking_garage_capture`, `pose_review_capture`, `semantic_asset_contact_sheet`, `semantic_asset_review_capture`, `semantic_machine_connection_capture`, `traversal_ladder_capture`, `traversal_stair_capture`, `weapon_closeup_capture`, `weapon_readiness_capture`. The runner reports them as `NOT-RUN` rather than failing them headless; run them directly without `--headless`.
+The catalog's explicit-only entries include long batches, benchmarks and rendered captures. Run a headless batch by exact name, for example `.\tools\run_tests.ps1 select -Test container_maps_smoke`. Run a capture directly with graphics and inspect the resulting frames. `check` reports the current explicit count; `full -Why` lists exclusions.
 
 A wildcard in `-Test` never selects an explicit-only script; an exact name does. Headless import or scene success does not establish visual correctness.
 
 ## Current limitations
 
 - CI runs the catalog check and the smoke tier (see GitHub smoke automation below). The full subsystem tiers and the explicit-only batches are not run on GitHub, and artifacts are retained only for failed smoke runs.
-- No screenshot comparison, performance budget, coverage percentage, or flaky-test history.
+- No screenshot comparison, job-wide performance budget, coverage percentage, or automatically inferred failure classification.
 - Classification lives in `tests/catalog.json`; scope labels and the path-to-subsystem map used by `changed` are judgements, not a computed dependency graph, and the selections are aids, not proofs.
 - Individual GDScript tests report their own internal checks differently, so Ironclad reports honest suite counts rather than inventing assertion totals.
-- Per-test timeouts exist (default 900 s). Tests are run one at a time: about 25 scripts write fixed file names under `res://.godot/`, so parallel execution is not yet safe.
-
-After the first hosted smoke run, the next useful milestones are optional timeouts for hung processes, machine-readable summary output, and measured promotion or retirement of explicit-only batches.
+- Per-test timeouts default to 900 seconds. The runner serializes Godot entries in a checkout.
 
 Retired map-specific suites are preserved in the outside-project quarantine recorded in [Generation 2.0](../generation-2.md). Shared parcel/deployment/population checks now use Service Depot, and `current_generation_test.gd` protects the one-map menu and standalone generator boundary. Mechanics fixtures live under `tests/fixtures/`; the runner discovers only top-level suite scripts. No assertion was removed merely to make a failure pass.
 

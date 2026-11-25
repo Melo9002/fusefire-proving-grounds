@@ -308,7 +308,7 @@
   "workbench_report_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "hand_contact_test": {"sub": ["animation", "equipment", "rescue"], "scope": "integration", "contracts": ["presentation-sync"]},
   "ladder_geometry_test": {"sub": ["animation", "movement", "assets"], "scope": "unit", "fast": true, "smoke": true, "crit": "critical", "contracts": ["presentation-sync"]},
-  "ladder_climb_test": {"sub": ["animation", "movement"], "scope": "integration", "fast": true, "contracts": ["presentation-sync"]},
+  "ladder_climb_test": {"sub": ["animation", "movement"], "scope": "integration", "fast": true, "contracts": ["presentation-sync"], "fixed_fps": 60},
   "workbench_landing_test": {"sub": ["animation", "tooling", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
   "ladder_interrupt_test": {"sub": ["animation"], "scope": "component", "fast": true},
   "ladder_landing_test": {"sub": ["animation", "movement"], "scope": "integration", "contracts": ["presentation-sync"]},
