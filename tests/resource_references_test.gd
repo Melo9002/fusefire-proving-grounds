@@ -65,11 +65,11 @@ func _run() -> void:
 		var text: String = texts[path]
 		for match in path_pattern.search_all(text):
 			var reference := match.get_string(1)
+			if RUNTIME_PREFIXES.any(func(prefix: String) -> bool: return reference.begins_with(prefix)):
+				continue
 			if reference.ends_with("/") or reference.ends_with(".") or reference.begins_with("."):
 				if reference.ends_with("/") and not DirAccess.dir_exists_absolute("res://" + reference):
 					broken_paths.append("%s -> %s" % [path, reference])
-				continue
-			if RUNTIME_PREFIXES.any(func(prefix: String) -> bool: return reference.begins_with(prefix)):
 				continue
 			if reference.get_extension() == "":
 				if not DirAccess.dir_exists_absolute("res://" + reference):
