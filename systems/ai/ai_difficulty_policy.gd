@@ -6,6 +6,8 @@ enum Tier { EASY, NORMAL, HARD }
 var tier: Tier = Tier.NORMAL
 var expected_damage_weight := 1.0
 var wounded_target_weight := 1.0
+## How much the wound bonus depends on the chance that at least one affordable shot connects.
+var wound_reliability_weight := 0.0
 var finishing_bonus_weight := 1.0
 var focus_penalty_weight := 1.0
 var movement_progress_weight := 1.0
@@ -60,6 +62,7 @@ static func create(selected_tier: Tier) -> AIDifficultyPolicy:
 		Tier.HARD:
 			policy.lapse_chance = 0.0
 			policy.wounded_target_weight = 1.3
+			policy.wound_reliability_weight = 1.0
 			policy.finishing_bonus_weight = 1.5
 			policy.focus_penalty_weight = 0.7
 			policy.crowding_penalty_weight = 1.2

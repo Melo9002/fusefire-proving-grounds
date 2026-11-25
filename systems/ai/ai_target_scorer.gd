@@ -26,6 +26,12 @@ static func evaluate(
 	for shot in maxi(1, affordable_shots):
 		shots.append(chance)
 	var kill_chance := kill_probability(shots, damage, target.stats.current_hp)
+	var reliability_summary := ""
+	if policy.wound_reliability_weight > 0.0 and missing_hp > 0:
+		var hit_probability := clampf(float(chance) / 100.0, 0.0, 1.0)
+		var connect_probability := 1.0 - pow(1.0 - hit_probability, shots.size())
+		vulnerability *= lerpf(1.0, connect_probability, policy.wound_reliability_weight)
+		reliability_summary = ", wound reach %d%%" % roundi(connect_probability * 100.0)
 	vulnerability += 20.0 * policy.finishing_bonus_weight * kill_chance
 	# Spreading fire is a preference: it fades as the shot becomes a likely finisher (SquadContext.target_adjustment).
 	var focus_adjustment := squad.target_adjustment(attacker, target, kill_chance) if squad else 0.0
@@ -47,7 +53,7 @@ static func evaluate(
 		# Damage value is HP-capped; a miss still deals zero and does not become a guaranteed finisher.
 		"hit_chance": chance,
 		"expected_damage": float(damage) * float(chance) / 100.0,
-		"summary": "damage %+.1f, vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f, kill %d%%" % [damage_value, vulnerability, vip, threat, mission, focus, roundi(kill_chance * 100.0)],
+		"summary": ("damage %+.1f, vulnerable %+.0f, VIP %+.0f, threat %+.0f, mission %+.0f, focus %+.0f, kill %d%%" % [damage_value, vulnerability, vip, threat, mission, focus, roundi(kill_chance * 100.0)]) + reliability_summary,
 	}
 
 static func _threat_score(target: TacticalUnit, friendlies: Array[TacticalUnit], grid: GridManager) -> float:

@@ -49,6 +49,10 @@ func _run() -> void:
 	await _reposition_needs_ap_to_fire()
 	await _reposition_is_deterministic()
 	await _easy_does_not_reposition()
+	await _wound_priority_uses_shot_reliability()
+	await _evacuation_intercept()
+	await _evacuation_intercept(false)
+	await _mission_route_never_rolls_a_lapse()
 	await _shield_when_stuck_under_fire()
 	await _no_shield_without_a_threat()
 	await _shield_over_last_shot()
@@ -286,6 +290,94 @@ func _easy_does_not_reposition() -> void:
 	var r: Dictionary = await f.activate(actor, self)
 	hard_rules(f, actor, r, "S9e")
 	check(not r.committed.is_empty() and r.committed[0] != "move", "S9e: Easy does not reposition for a better shot (committed %s)" % str(r.committed))
+	await f.dispose(self)
+
+## Two legal shots: a nearly defeated enemy at the end of the range curve
+## and a healthier enemy in the open. There is only AP for a single shot.
+func _wound_priority_uses_shot_reliability() -> void:
+	for tier in [AIDifficultyPolicy.Tier.NORMAL, AIDifficultyPolicy.Tier.HARD]:
+		var f := Fixture.new()
+		await f.setup(self, 1, 2, 0, null, tier)
+		var actor: TacticalUnit = f.turns.player_units[0]
+		var distant: TacticalUnit = f.turns.enemy_units[0]
+		var clear: TacticalUnit = f.turns.enemy_units[1]
+		f.place(actor, Vector3i(3, 0, 12))
+		f.place(distant, Vector3i(13, 0, 12))
+		f.place(clear, Vector3i(6, 0, 14))
+		distant.stats.take_damage(99)
+		clear.stats.take_damage(60)
+		f.ready_actor(actor, 1)
+		f.act_as(actor)
+		var distant_shot := f.battle.query_attack(actor, distant)
+		var clear_shot := f.battle.query_attack(actor, clear)
+		check(distant_shot.is_legal() and clear_shot.is_legal() and clear_shot.hit_chance > distant_shot.hit_chance + 25,
+			"Reliable fire setup: both shots legal, with a material reliability gap (%d vs %d)" % [clear_shot.hit_chance, distant_shot.hit_chance])
+		var result := await f.activate(actor, self)
+		hard_rules(f, actor, result, "Reliable fire")
+		var attacks: Array = result.decisions.filter(func(row: Dictionary) -> bool: return row.action == "Attack")
+		var expected := String(clear.name if tier == AIDifficultyPolicy.Tier.HARD else distant.name)
+		var selected := String(attacks[0].subject) if not attacks.is_empty() else "none"
+		check("attack" in result.committed and attacks.size() == 1 and selected == expected,
+			"%s takes its intended one-shot tradeoff (%s)" % [AIDifficultyPolicy.get_label(tier), selected])
+		await f.dispose(self)
+
+## The nearer of two hostiles cannot escape on its next turn. The other
+## can reach the exit, and the defender has a legal move toward its lane.
+func _evacuation_intercept(runner_can_escape := true) -> void:
+	var mission := MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ENEMY_EVACUATION, 2)
+	var f := Fixture.new()
+	await f.setup(self, 1, 2, 0, mission)
+	f.grid.map_data.surface_placement_enabled = true
+	f.grid.map_data.surface_points_resolved = true
+	f.rebuild_graph()
+	f.battle.pathfinder.live_grid = f.grid
+	var defender: TacticalUnit = f.turns.player_units[0]
+	var nearer: TacticalUnit = f.turns.enemy_units[0]
+	var runner: TacticalUnit = f.turns.enemy_units[1]
+	var start := Vector3i(22, 0, 8)
+	var exit := Vector3i(24, 0, 17)
+	f.place(defender, start)
+	f.place(nearer, Vector3i(14, 0, 8))
+	f.place(runner, Vector3i(19, 0, 17))
+	nearer.stats.speed = 2
+	runner.stats.speed = 3 if runner_can_escape else 1
+	f.grid.map_data.set_objective_zone(&"enemy_extract", [exit])
+	f.ready_actor(defender, 1)
+	defender.attack_range = 5
+	f.act_as(defender)
+	check(f.legal_attacks(defender).is_empty(), "Intercept setup: neither enemy is currently shootable")
+	var result := await f.activate(defender, self)
+	hard_rules(f, defender, result, "Intercept")
+	var explains_intercept: bool = result.decisions.any(func(row: Dictionary) -> bool: return "Intercept" in String(row.position_scores))
+	if runner_can_escape:
+		check("move" in result.committed and result.end.z > start.z and result.end.distance_to(exit) < start.distance_to(exit),
+			"Intercept: the defender advances toward the imminent runner's lane instead of chasing the nearer hostile")
+		check(explains_intercept, "Intercept: the selected movement trace explains the mission priority")
+	else:
+		check("move" in result.committed and result.end.distance_to(nearer.grid_position) < start.distance_to(nearer.grid_position) and not explains_intercept,
+			"Intercept control: a distant exit or slow runner does not displace the normal approach")
+	await f.dispose(self)
+
+func _mission_route_never_rolls_a_lapse() -> void:
+	var mission := MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.EXTRACT, 1)
+	var f := Fixture.new()
+	await f.setup(self, 1, 1, 0, mission, AIDifficultyPolicy.Tier.EASY, [], true)
+	var actor: TacticalUnit = f.turns.player_units[0]
+	var start := Vector3i(5, 0, 28)
+	var exit := Vector3i(14, 0, 28)
+	f.grid.map_data.set_objective_zone(&"extract", [exit])
+	f.place(actor, start)
+	f.place(f.turns.enemy_units[0], Vector3i(28, 0, 20))
+	f.ready_actor(actor, 1)
+	var ai := f.ai_of(actor)
+	var policy := ai._ensure_policy()
+	policy.lapse_chance = 1.0
+	var rng_before := ai._decision_rng.state
+	var result := await f.activate(actor, self)
+	hard_rules(f, actor, result, "Easy mission route")
+	check("move" in result.committed and result.end.distance_to(exit) < start.distance_to(exit),
+		"Easy mission route: the unit commits objective progress with one AP")
+	check(ai._decision_rng.state == rng_before, "Easy mission route: even a forced lapse leaves the objective and decision RNG untouched")
 	await f.dispose(self)
 
 ## S10 A unit with a Shield that cannot act on its turn (the corridor is blocked, the hostile out of its

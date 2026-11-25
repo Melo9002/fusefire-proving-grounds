@@ -43,6 +43,7 @@ func _check_cautious_composition() -> void:
 		check(is_equal_approx(composed.crowding_penalty_weight, difficulty.crowding_penalty_weight * 1.15), "Cautious strengthens squad spacing")
 		check(is_equal_approx(composed.safe_advance_exposure_tolerance, maxf(0.0, difficulty.safe_advance_exposure_tolerance - 0.10)), "Cautious threshold delta clamps at zero")
 		check(composed.lapse_chance == difficulty.lapse_chance and composed.lapse_score_margin == difficulty.lapse_score_margin, "Commander leaves difficulty lapse semantics unchanged")
+		check(composed.plans_repositioning == difficulty.plans_repositioning and composed.wound_reliability_weight == difficulty.wound_reliability_weight, "Cautious retains the tier's planning and shot reliability")
 		check(composed.survival_cover_weight == difficulty.survival_cover_weight, "Cautious does not activate the inactive survival cover field")
 
 func _check_configuration_round_trip() -> void:
@@ -73,6 +74,7 @@ func _check_aggressive_composition() -> void:
 		check(is_equal_approx(composed.position_danger_weight, difficulty.position_danger_weight * 0.90), "Aggressive retains meaningful danger penalties")
 		check(is_equal_approx(composed.safe_advance_exposure_tolerance, difficulty.safe_advance_exposure_tolerance + 0.15), "Aggressive permits a modest extra exposure increase")
 		check(composed.lapse_chance == difficulty.lapse_chance and composed.lapse_score_margin == difficulty.lapse_score_margin, "Aggressive leaves difficulty lapse semantics unchanged")
+		check(composed.plans_repositioning == difficulty.plans_repositioning and composed.wound_reliability_weight == difficulty.wound_reliability_weight, "Aggressive retains the tier's planning and shot reliability")
 		check(composed.survival_cover_weight == difficulty.survival_cover_weight, "Aggressive does not activate the inactive survival cover field")
 
 func _check_team_ownership_and_diagnostics() -> void:
@@ -117,5 +119,5 @@ func _difficulty_properties() -> Array[StringName]:
 		&"survival_separation_weight", &"safe_advance_exposure_tolerance", &"position_cover_weight",
 		&"position_exposure_weight", &"position_firing_weight", &"position_danger_weight",
 		&"target_vip_weight", &"target_threat_weight", &"target_mission_weight", &"lapse_chance",
-		&"lapse_score_margin",
+		&"lapse_score_margin", &"plans_repositioning", &"wound_reliability_weight",
 	]

@@ -271,7 +271,6 @@ func _run_activation() -> bool:
 		if current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT]:
 			_wait_for_next_turn(_movement_wait_reason("No useful objective advance or supporting shot."), "Move, Attack")
 			break
-		var movement_target = _find_nearest_hostile()
 		var protected_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		if protected_carrier and protected_carrier != unit:
 			var rejoined := not has_moved and _grid_distance_to(protected_carrier) > ESCORT_REJOIN_DISTANCE \
@@ -288,6 +287,15 @@ func _run_activation() -> bool:
 				continue
 			_wait_for_next_turn(_movement_wait_reason("No useful escort move or legal shot."), "Move, Extract")
 			break
+		var intercept := _evacuation_intercept()
+		if not intercept.is_empty():
+			var intercepted := await _move_toward_cell(intercept.cell, has_moved, intercept.reason)
+			if not _battle_is_live(): return false
+			if intercepted:
+				has_moved = true
+				_record_ai_decision("Move", str(_last_move_destination), intercept.reason, "Attack, Guard, Wait")
+				continue
+		var movement_target = _find_nearest_hostile()
 		var approached := not has_moved and movement_target != null and await _move_toward(movement_target)
 		if not _battle_is_live(): return false
 		if approached:
@@ -971,7 +979,53 @@ func _grid_distance_to(target: TacticalUnit) -> int:
 	var to := battle_controller.grid_manager.get_unit_grid(target)
 	return absi(from.x - to.x) + absi(from.y - to.y) + absi(from.z - to.z)
 
-func _move_toward_cell(target_cell: Vector3i, safe_only := false) -> bool:
+## When there is no shot, make room to meet an enemy that can escape on its
+## next activation. This is one estimate based on a live route and move budget.
+## The enemy can change route. The defender still uses the normal move planner.
+func _evacuation_intercept() -> Dictionary:
+	if current_mission_intent.objective_id != &"stop_enemy_evacuation":
+		return {}
+	var grid := battle_controller.grid_manager
+	var exits := grid.map_data.get_objective_zone(&"enemy_extract")
+	var move_ap := MoveQueryResult.new().cost.ap
+	var reach := unit.attack_range + unit.stats.speed * floori(float(unit.stats.current_ap) / move_ap)
+	var start := grid.get_unit_grid(unit)
+	var best := {}
+	var best_cost := INF
+	var best_distance := INF
+	for runner in _get_hostile_units():
+		if not is_instance_valid(runner) or not runner.stats or runner.stats.is_defeated:
+			continue
+		var origin := grid.get_unit_grid(runner)
+		var budget := runner.stats.speed * floori(float(runner.stats.effective_max_ap) / move_ap)
+		var route := PackedVector3Array()
+		var route_cost := INF
+		for exit in exits:
+			if origin.distance_to(exit) > budget:
+				continue
+			var candidate := battle_controller.pathfinder.calculate_path_with_occupancy(origin, exit, grid, runner)
+			if candidate.size() <= 1:
+				continue
+			var cost := _route_cost(candidate)
+			if cost <= budget and cost < route_cost:
+				route = candidate
+				route_cost = cost
+		# Look ahead of the runner on its route. Avoid committing to a lane
+		# outside the distance this defender can plausibly influence.
+		for index in range(route.size() - 1, 0, -1):
+			var cell := battle_controller.world_to_grid(route[index])
+			var distance := start.distance_to(cell)
+			if distance > reach or not grid.can_unit_occupy_cell(unit, cell):
+				continue
+			if route_cost < best_cost or (is_equal_approx(route_cost, best_cost) and distance < best_distance):
+				best_cost = route_cost
+				best_distance = distance
+				best = {"cell": cell, "reason": "Intercept %s near %s (exit route %.1f / %d movement)" % [
+					runner.name, cell, route_cost, budget]}
+			break
+	return best
+
+func _move_toward_cell(target_cell: Vector3i, safe_only := false, route_reason := "") -> bool:
 	var start_cell := battle_controller.grid_manager.get_unit_grid(unit)
 	_route_block_note = ""
 	var path := battle_controller.pathfinder.calculate_3d_path(start_cell, target_cell)
@@ -979,9 +1033,9 @@ func _move_toward_cell(target_cell: Vector3i, safe_only := false) -> bool:
 		if path.is_empty():
 			_route_block_note = _explain_blocked_route(start_cell, target_cell, str(target_cell))
 		return false
-	return await _move_along_goal_path(path, start_cell, target_cell, safe_only)
+	return await _move_along_goal_path(path, start_cell, target_cell, safe_only, route_reason)
 
-func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_cell: Vector3i, safe_only: bool) -> bool:
+func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_cell: Vector3i, safe_only: bool, route_reason := "") -> bool:
 	var profiling := OS.get_cmdline_user_args().has("profile-ai")
 	var inventory_start := Time.get_ticks_usec() if profiling else 0
 	var reachable := _legal_move_destinations()
@@ -1003,7 +1057,7 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	var hostiles := _get_hostile_units()
 	var carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 	var escort_route := _carrier_route(carrier) if carrier and carrier != unit else {}
-	var objective_route := current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
+	var objective_route := not route_reason.is_empty() or current_mission_intent.kind in [MissionIntentData.Kind.REACH, MissionIntentData.Kind.EXTRACT, MissionIntentData.Kind.RESCUE, MissionIntentData.Kind.INTERACT_TERMINAL]
 	var movement_context := AIMovementContext.build(unit, _get_friendly_units(), hostiles, battle_controller.grid_manager)
 	var profile_choice := AIMovementProfiles.select(unit, objective_route, current_mission_intent.get_debug_label(), _movement_situation(movement_context, hostiles, carrier))
 	var movement_layers: Array = profile_choice.layers
@@ -1144,7 +1198,9 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 			best_adjustment = _squad_context.destination_adjustment(unit, best_candidate) if _squad_context else 0.0
 			best_score = selected_forward.score
 			best_summary = "%s; carrier forward progress required" % selected_forward.scored.summary
-	if options.size() > 1 and best_candidate != goal_cell and not unit.is_carrying_unit():
+	# Difficulty can vary close combat choices. Mission routes already balance
+	# progress, movement profiles and safety, and do not spend a lapse roll.
+	if options.size() > 1 and not objective_route and best_candidate != goal_cell and not unit.is_carrying_unit():
 		options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
 		var scores: Array[float] = [options[0].score]
 		var eligible: Array[Dictionary] = [options[0]]
@@ -1163,6 +1219,8 @@ func _move_along_goal_path(path: PackedVector3Array, start_cell: Vector3i, goal_
 	for candidate_record in _last_position_candidates:
 		candidate_record.mark_chosen(candidate_record.cell == best_candidate)
 	if best_candidate.x >= 0:
+		if not route_reason.is_empty():
+			best_summary = "%s; %s" % [route_reason, best_summary]
 		_publish_movement_preview(best_candidate, best_summary)
 	if best_candidate.x >= 0 and await battle_controller.try_move(unit, best_candidate):
 		_recent_move_origins.append(start_cell)

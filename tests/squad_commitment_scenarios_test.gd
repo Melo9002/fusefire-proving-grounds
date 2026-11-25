@@ -77,7 +77,7 @@ func _focus_prefers_a_finisher_but_still_spreads() -> void:
 	var rival: TacticalUnit = f.turns.enemy_units[1]
 	f.place(actor, Vector3i(5, 0, 10)); f.place(ally_a, Vector3i(5, 0, 6)); f.place(ally_b, Vector3i(5, 0, 14))
 	f.place(target, Vector3i(10, 0, 8)); f.place(rival, Vector3i(10, 0, 12))
-	f.ready_actor(actor)
+	f.ready_actor(actor, 1)
 	var squad: SquadContext = f.battle.get_squad_context(actor)
 	# Healthy and equal: two allies already on the target. The actor spreads to the other.
 	squad.reserve_target(ally_a, target)
@@ -87,7 +87,9 @@ func _focus_prefers_a_finisher_but_still_spreads() -> void:
 	var healthy_score: Dictionary = AITargetScorer.evaluate(actor, target, ai._get_friendly_units(), ai.current_mission_intent, ai._objective_manager, f.grid, ai._policy, squad, f.battle.query_attack(actor, target))
 	check(healthy_score.focus < 0.0 and healthy_score.focus_count == 2, "Control: the healthy target carries the full penalty for both allies (%.1f)" % healthy_score.focus)
 	# The same two allies on a target one hit from death, against a rival that is almost as good a kill (one hit from death too, but behind low cover: 80% to hit).
+	# The rival's extra missing HP keeps this a genuine near-tie after Hard discounts wounds on less reliable shots.
 	target.stats.current_hp = 25
+	rival.stats.max_hp = 116
 	rival.stats.current_hp = 25
 	f.set_cover(Vector3i(9, 0, 12), MapCellData.CoverType.LOW, 0.9)
 	var evaluate := func(candidate: TacticalUnit) -> Dictionary:
@@ -99,7 +101,7 @@ func _focus_prefers_a_finisher_but_still_spreads() -> void:
 	# What the earlier fixed penalty would have done with the same facts: two allies at 15 each, whatever the kill chance.
 	var old_total: float = wounded_score.total - wounded_score.focus + -SquadContext.FOCUS_PENALTY * 2.0 * ai._policy.focus_penalty_weight
 	check(old_total < rival_score.total and wounded_score.total > rival_score.total, "Setup: this is a near-tie the fixed penalty used to lose (old %.1f < rival %.1f < now %.1f)" % [old_total, rival_score.total, wounded_score.total])
-	check(f.choose_target(actor) == target, "A certain kill is taken even with two allies already on it, over an 80% kill on a fresh target")
+	check(f.choose_target(actor) == target, "A certain kill is taken even with two allies already on it, over the 80% alternative")
 	# Control: with nobody on it the finisher is chosen too (so the claims did not create the preference).
 	squad.begin_round(squad.round_number + 1)
 	check(f.choose_target(actor) == target, "Control: with no allied fire at all the finisher is also chosen")
