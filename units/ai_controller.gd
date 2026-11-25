@@ -120,9 +120,6 @@ func _on_active_unit_changed(new_active_unit: TacticalUnit) -> void:
 	current_mission_intent = _get_ai_mission_intent()
 	_squad_context = battle_controller.get_squad_context(unit)
 	_squad_context.begin_unit(unit)
-	var active_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
-	if active_carrier:
-		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier))
 	_squad_notes.clear()
 	_last_position_scores = "None"
 	_last_movement_profile = "None"
@@ -167,6 +164,10 @@ func _run_activation() -> bool:
 	var has_moved := false
 	_route_block_note = ""
 	current_mission_intent = _get_ai_mission_intent()
+	_squad_context = battle_controller.get_squad_context(unit)
+	var active_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+	if active_carrier:
+		_squad_context.reserve_corridor(active_carrier, _carrier_route(active_carrier, true))
 	# TurnManager may select a zero-AP actor only when a legal free objective
 	# action exists. Give that action one deterministic submission opportunity.
 	if unit.stats.current_ap <= 0:
@@ -189,6 +190,11 @@ func _run_activation() -> bool:
 			_record_ai_decision("Emergency Seal", unit.name, "Stopped authoritative Leaking damage.", "Attack, Move, Objective")
 			continue
 		var escorted_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
+		if not has_moved and escorted_carrier and escorted_carrier != unit and await _clear_carrier_route(escorted_carrier):
+			if not _battle_is_live(): return false
+			has_moved = true
+			continue
+		if not _battle_is_live(): return false
 		# An escort already clear of the evacuation lane may engage immediate
 		# threats before repositioning. A blocker clears the lane first.
 		if escorted_carrier and escorted_carrier != unit and not _carrier_route(escorted_carrier).has(unit.grid_position):
@@ -268,11 +274,6 @@ func _run_activation() -> bool:
 		var movement_target = _find_nearest_hostile()
 		var protected_carrier := _objective_manager.find_rescue_carrier(unit.faction) if _objective_manager else null
 		if protected_carrier and protected_carrier != unit:
-			var cleared_route := not has_moved and await _clear_carrier_route(protected_carrier)
-			if not _battle_is_live(): return false
-			if cleared_route:
-				has_moved = true
-				continue
 			var rejoined := not has_moved and _grid_distance_to(protected_carrier) > ESCORT_REJOIN_DISTANCE \
 			and await _move_toward_range(protected_carrier, ESCORT_APPROACH_RANGE)
 			if not _battle_is_live(): return false
@@ -389,11 +390,12 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 				return MissionStepResult.MOVED
 			return MissionStepResult.NONE
 
-	var destination := _nearest_reachable_zone_cell(current_mission_intent.zone_id)
-	if destination.x < 0:
+	var carrying := unit.is_carrying_unit() and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT
+	var destination := _nearest_reachable_zone_cell(current_mission_intent.zone_id) if not carrying else Vector3i(-1, -1, -1)
+	if not carrying and destination.x < 0:
 		return MissionStepResult.NONE
 	var moved_toward_objective := await _move_carrier_along_committed_route(has_moved) \
-		if unit.is_carrying_unit() and current_mission_intent.kind == MissionIntentData.Kind.EXTRACT \
+		if carrying \
 		else await _move_toward_cell(destination, has_moved)
 	if moved_toward_objective:
 		_record_ai_decision("Move", str(_last_move_destination), current_mission_intent.reason, "Attack, Wait")
@@ -633,37 +635,56 @@ func _get_ai_mission_intent() -> MissionIntentData:
 		return MissionIntentData.new()
 	return intent
 
-func _carrier_route(carrier: TacticalUnit) -> Dictionary:
+func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictionary:
 	if not is_instance_valid(carrier):
 		return {}
+	var grid := battle_controller.grid_manager
+	var pathfinder := battle_controller.pathfinder
+	var carrier_cell := grid.get_unit_grid(carrier)
+	var zone := grid.map_data.get_objective_zone(&"extract")
 	if carrier != unit and _squad_context \
 	and _squad_context.corridor_owner == SquadContext._actor_id(carrier) \
 	and not _squad_context.reserved_corridor.is_empty():
-		return _squad_context.reserved_corridor.duplicate()
-	var carrier_cell := battle_controller.grid_manager.get_unit_grid(carrier)
-	if carrier == unit and not _committed_carrier_route.is_empty() and not battle_controller.grid_manager.map_data.get_objective_zone(&"extract").has(_committed_carrier_route[-1]):
-		_committed_carrier_route.clear()
-	if carrier == unit and not _committed_carrier_route.is_empty() and _committed_route_graph != battle_controller.pathfinder.graph_revision():
-		_committed_carrier_route.clear()   # a cell on it may have closed (a wall, a collapse) since it was planned
-	if carrier == unit and _committed_carrier_route.has(carrier_cell):
+		var lane := _squad_context.reserved_corridor
+		if not recheck_occupancy or pathfinder.is_route_clear(_carrier_route_points(lane.keys()), carrier, grid):
+			return lane.duplicate()
+	if carrier == unit and _committed_route_graph == pathfinder.graph_revision() \
+	and _committed_carrier_route.has(carrier_cell) and zone.has(_committed_carrier_route[-1]):
 		var reached_index := _committed_carrier_route.find(carrier_cell)
 		if reached_index > 0:
 			_committed_carrier_route = _committed_carrier_route.slice(reached_index)
-		return _route_dictionary(_committed_carrier_route)
+		if pathfinder.is_route_clear(_carrier_route_points(_committed_carrier_route), carrier, grid):
+			return _route_dictionary(_committed_carrier_route)
 	var reserved := {}
 	var best := PackedVector3Array()
-	for destination in battle_controller.grid_manager.map_data.get_objective_zone(&"extract"):
-		var path := battle_controller.pathfinder.calculate_3d_path(carrier_cell, destination)
+	for destination in zone:
+		var path := pathfinder.calculate_3d_path(carrier_cell, destination)
+		if not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
+			path = pathfinder.calculate_path_with_occupancy(carrier_cell, destination, grid, carrier)
 		if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
-	for point in best:
-		var route_cell := battle_controller.world_to_grid(point)
-		reserved[route_cell] = true
 	if carrier == unit:
 		_committed_carrier_route.clear()
-		_committed_route_graph = battle_controller.pathfinder.graph_revision()
+		_committed_route_graph = pathfinder.graph_revision()
 		for point in best:
 			_committed_carrier_route.append(battle_controller.world_to_grid(point))
+	# Only look for help when there is no live route. The hint is never stored
+	# as the carrier's movement route or passed to the action service.
+	if best.is_empty():
+		for destination in zone:
+			var path := pathfinder.calculate_friendly_yield_path(carrier_cell, destination, grid, carrier)
+			if not path.is_empty() and (best.is_empty() or path.size() < best.size()): best = path
+	for point in best:
+		reserved[battle_controller.world_to_grid(point)] = true
 	return reserved
+
+func _carrier_route_points(cells: Array) -> PackedVector3Array:
+	var path := PackedVector3Array()
+	for route_cell: Vector3i in cells:
+		var cell := battle_controller.grid_manager.get_cell_data(route_cell)
+		if not cell:
+			return PackedVector3Array()
+		path.append(cell.world_position)
+	return path
 
 func _route_dictionary(route: Array[Vector3i]) -> Dictionary:
 	var cells := {}
@@ -672,16 +693,12 @@ func _route_dictionary(route: Array[Vector3i]) -> Dictionary:
 	return cells
 
 func _move_carrier_along_committed_route(safe_only: bool) -> bool:
-	_carrier_route(unit)
+	var lane := _carrier_route(unit)
+	_squad_context.reserve_corridor(unit, lane)
 	if _committed_carrier_route.size() <= 1:
+		_route_block_note = "No reachable extraction route." if lane.is_empty() else "Extraction lane occupied by allies; waiting for passage."
 		return false
-	var path := PackedVector3Array()
-	for route_cell in _committed_carrier_route:
-		var cell := battle_controller.grid_manager.get_cell_data(route_cell)
-		if not cell:
-			_committed_carrier_route.clear()
-			return false
-		path.append(cell.world_position)
+	var path := _carrier_route_points(_committed_carrier_route)
 	return await _move_along_goal_path(
 		path,
 		battle_controller.grid_manager.get_unit_grid(unit),
@@ -699,7 +716,8 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 	var best_score := -INF
 	var fallback := Vector3i(-1, -1, -1)
 	var fallback_score := -INF
-	var start_carrier_distance := start.distance_to(carrier.grid_position)
+	var route_order := route.keys()
+	var start_index := route_order.find(start)
 	_last_position_candidates.clear()
 	for candidate in _legal_move_destinations():
 		if candidate == start:
@@ -708,11 +726,11 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 		# Some stairs and bridges have no side tile within one move. In that case
 		# the blocker may continue ahead through the bottleneck, creating room for
 		# the carrier behind it. A real off-route clearing position always wins.
-		if remains_on_route and candidate.distance_to(carrier.grid_position) <= start_carrier_distance + 0.5:
+		if remains_on_route and route_order.find(candidate) <= start_index:
 			continue
-		if candidate.distance_to(carrier.grid_position) > 6.0:
-			if not remains_on_route:
-				continue
+		var destination_owner: StringName = _squad_context.reserved_destinations.get(candidate, &"")
+		if not destination_owner.is_empty() and destination_owner != SquadContext._actor_id(unit):
+			continue
 		var scored := AIPositionScorer.evaluate(unit, candidate, start, carrier.grid_position, 0.0, _movement_layers(false), hostiles, grid, _policy, _squad_context)
 		var score: float = scored.total - candidate.distance_to(carrier.grid_position)
 		var summary := "%s; %s" % [scored.summary, "bottleneck advance" if remains_on_route else "route clearance"]
@@ -739,7 +757,8 @@ func _clear_carrier_route(carrier: TacticalUnit) -> bool:
 	if _recent_move_origins.size() > RECENT_MOVE_HISTORY_LIMIT: _recent_move_origins.pop_front()
 	_last_move_destination = best
 	_reserve_destination(best, _squad_context.destination_adjustment(unit, best) if _squad_context else 0.0)
-	_record_ai_decision("Support", carrier.name, "Cleared the carrier's reserved evacuation route.", "Attack, Wait")
+	var reason := "Advanced through the bottleneck to give the carrier room." if route.has(best) else "Yielded the carrier's evacuation route."
+	_record_ai_decision("Support", carrier.name, reason, "Attack, Wait")
 	return true
 
 func _move_to_escort_position(carrier: TacticalUnit) -> bool:

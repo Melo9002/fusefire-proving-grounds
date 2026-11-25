@@ -178,26 +178,53 @@ func calculate_path_with_occupancy(start_grid: Vector3i, end_grid: Vector3i, gri
 		return path
 	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, ignored_actor, checks)
 
-func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null) -> bool:
+## Revalidate a committed route after other bodies move, without rerouting it on clear turns.
+func is_route_clear(path: PackedVector3Array, actor: TacticalUnit, grid: GridManager) -> bool:
+	if path.is_empty() or _point_cells.get(path[0]) != actor.grid_position:
+		return false
+	var previous_id := -1
+	for point in path:
+		var cell: Vector3i = _point_cells.get(point, Vector3i(-1, -1, -1))
+		var point_id: int = grid_to_id_map.get(cell, -1)
+		if point_id < 0 or astar.is_point_disabled(point_id):
+			return false
+		if previous_id >= 0 and not astar.are_points_connected(previous_id, point_id, false):
+			return false
+		previous_id = point_id
+	return _path_respects_hypothetical_occupancy(path, actor.grid_position, grid, actor)
+
+## A coordination hint only. This may pass through teammates, but respects terrain and hostile
+## bodies. Callers must still use a normal movement query for every actual move.
+func calculate_friendly_yield_path(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, carrier: TacticalUnit) -> PackedVector3Array:
+	if not grid_to_id_map.has(start_grid) or not stoppable_cells.get(end_grid, false):
+		return PackedVector3Array()
+	var path := astar.get_point_path(grid_to_id_map[start_grid], grid_to_id_map[end_grid])
+	var checks := {}
+	if not path.is_empty() and _path_respects_hypothetical_occupancy(path, start_grid, grid, carrier, checks, true):
+		return path
+	return _calculate_hypothetical_fallback(start_grid, end_grid, grid, carrier, checks, true)
+
+func _path_respects_hypothetical_occupancy(path: PackedVector3Array, start_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null, allow_friendly_yield := false) -> bool:
 	if checks == null: checks = {}
 	for index in path.size():
 		var point := path[index]
-		if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, path[maxi(0, index - 1)], point, ignored_actor, checks): return false
+		if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, path[maxi(0, index - 1)], point, ignored_actor, checks, allow_friendly_yield): return false
 		var cell: Vector3i = _point_cells.get(point, Vector3i(-1, -1, -1))
 		var occupant := grid.get_unit_at(cell)
 		if is_instance_valid(occupant) and occupant != ignored_actor and cell != start_grid:
-			return false
+			if not allow_friendly_yield or not FactionRules.are_teammates(ignored_actor.faction, occupant.faction):
+				return false
 	return true
 
 ## The normal path is native and fast. This fallback is needed only when live
 ## AStar disabling hides the planning actor's origin or its first route crosses
 ## another occupant. It searches the existing graph without mutating it.
-func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null) -> PackedVector3Array:
+func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, grid: GridManager, ignored_actor: TacticalUnit, checks: Variant = null, allow_friendly_yield := false) -> PackedVector3Array:
 	if checks == null: checks = {}
 	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
 		return PackedVector3Array()
 	if not stoppable_cells.get(end_grid, false): return PackedVector3Array()
-	if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, astar.get_point_position(grid_to_id_map[end_grid]), astar.get_point_position(grid_to_id_map[end_grid]), ignored_actor, checks): return PackedVector3Array()
+	if grid.map_data.surface_placement_enabled and not _planning_units_clear(grid, astar.get_point_position(grid_to_id_map[end_grid]), astar.get_point_position(grid_to_id_map[end_grid]), ignored_actor, checks, allow_friendly_yield): return PackedVector3Array()
 	var start_id: int = grid_to_id_map[start_grid]
 	var end_id: int = grid_to_id_map[end_grid]
 	var open_ids: Array[int] = [start_id]
@@ -222,10 +249,11 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 				continue
 			var occupant := grid.get_unit_at(neighbor_cell)
 			if is_instance_valid(occupant) and occupant != ignored_actor:
-				continue
+				if not allow_friendly_yield or not FactionRules.are_teammates(ignored_actor.faction, occupant.faction):
+					continue
 			if astar.is_point_disabled(neighbor_id) and occupant != ignored_actor:
 				continue
-			if not _planning_units_clear(grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), ignored_actor, checks): continue
+			if not _planning_units_clear(grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), ignored_actor, checks, allow_friendly_yield): continue
 			var step := get_step_cost(id_to_grid_map[current_id], neighbor_cell) if grid.map_data.surface_placement_enabled else astar.get_point_position(current_id).distance_to(astar.get_point_position(neighbor_id))
 			var new_cost: float = costs[current_id] + step
 			if new_cost >= float(costs.get(neighbor_id, INF)):
@@ -243,9 +271,9 @@ func _calculate_hypothetical_fallback(start_grid: Vector3i, end_grid: Vector3i, 
 				open_ids.append(neighbor_id)
 	return PackedVector3Array()
 
-func _planning_units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit, checks: Dictionary) -> bool:
+func _planning_units_clear(grid: GridManager, from: Vector3, to: Vector3, ignored: TacticalUnit, checks: Dictionary, allow_friendly_yield := false) -> bool:
 	var key := [from, to]
-	if not checks.has(key): checks[key] = SurfaceNavigation.units_clear(grid, from, to, ignored)
+	if not checks.has(key): checks[key] = SurfaceNavigation.units_clear(grid, from, to, ignored, allow_friendly_yield)
 	return checks[key]
 
 func _reconstruct_hypothetical_path(came_from: Dictionary, end_id: int) -> PackedVector3Array:
