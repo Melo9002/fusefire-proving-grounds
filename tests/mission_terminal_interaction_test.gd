@@ -14,6 +14,7 @@ func check(condition: bool, message: String) -> void:
 
 func _run() -> void:
 	await _test_terminal_action()
+	await _test_ai_terminal_receipt()
 	await _test_generated_terminal_placement()
 	_test_replay_schema_policy()
 	print("Mission terminal interaction: %d failure(s)" % failures)
@@ -103,6 +104,36 @@ func _test_terminal_action() -> void:
 	while not player.playback_complete and Time.get_ticks_msec() < deadline: await process_frame
 	check(player.playback_succeeded and player.verified_actions == 1, "Terminal interaction reconstructs through the ordinary authoritative replay path")
 	replay.queue_free()
+	await process_frame
+	await process_frame
+
+func _test_ai_terminal_receipt() -> void:
+	var config := BattleConfiguration.new()
+	config.player_count = 1
+	config.enemy_count = 1
+	config.battle_seed = 1160
+	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.INTERACT_TERMINAL, 1, false)
+	config.mission.terminals[0].grid_position = Vector3i(2, 0, 8)
+	var level := BATTLE_SCENE.instantiate() as BattleLevel
+	level.configure_battle(config)
+	root.add_child(level)
+	while level.turn_manager.current_round == 0: await process_frame
+	var choices: Array[Dictionary] = []
+	var receipts: Array[Dictionary] = []
+	level.battle_controller.ai_decision_recorded.connect(func(row: Dictionary): choices.append(row))
+	level.battle_controller.ai_action_outcome_recorded.connect(func(row: Dictionary): receipts.append(row))
+	level.battle_controller.set_debug_player_ai(true)
+	var deadline := Time.get_ticks_msec() + 5000
+	while level.turn_manager.battle_result == TurnManager.BattleResult.ONGOING and Time.get_ticks_msec() < deadline:
+		await process_frame
+	check(level.turn_manager.battle_result == TurnManager.BattleResult.VICTORY, "AI adjacent terminal commits and completes the mission")
+	check(choices.size() == 1 and choices[0].action == "Interact" and choices[0].subject == "main_terminal",
+		"The terminal decision exists by the mission-ending commit, even when presentation has yet to settle")
+	check(receipts.size() == 1 and receipts[0].stage == "committed" and receipts[0].action == "interact_terminal"
+		and not choices.is_empty() and receipts[0].decision_id == choices[0].decision_id
+		and receipts[0].ap_before == receipts[0].ap_after,
+		"The F3 terminal receipt links the exact free interaction to the historical decision")
+	level.queue_free()
 	await process_frame
 	await process_frame
 

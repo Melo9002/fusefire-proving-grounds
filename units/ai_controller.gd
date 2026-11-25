@@ -404,8 +404,9 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			return MissionStepResult.NONE
 		var terminal_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
 		if terminal_query.is_legal():
+			_record_ai_decision("Interact", String(terminal.definition.terminal_id),
+				"Reached the required adjacent mission terminal.", "Attack, Move, Wait", &"interact_terminal")
 			if await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
-				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the required adjacent mission terminal.", "Attack, Move, Wait")
 				return MissionStepResult.INTERACTED
 		var approach := _nearest_terminal_approach_cell(terminal)
 		if approach.x >= 0 and await _move_toward_cell(approach, has_moved):
@@ -414,9 +415,11 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			# Terminal interactions are free and intentionally remain available at
 			# zero AP. Complete the objective now rather than relying on another loop.
 			var arrived_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
-			if arrived_query.is_legal() and await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
-				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the terminal after the final movement AP.", "Attack, Wait")
-				return MissionStepResult.INTERACTED
+			if arrived_query.is_legal():
+				_record_ai_decision("Interact", String(terminal.definition.terminal_id),
+					"Reached the terminal after moving. Interacting is free.", "Attack, Wait", &"interact_terminal")
+				if await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
+					return MissionStepResult.INTERACTED
 			return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.PROTECT:
@@ -1565,7 +1568,6 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 		match action:
 			"Attack", "Aim", "Reload", "Shield", "Move", "Emergency Seal": record.committed_action = StringName(action.to_snake_case())
 			"Guard": record.committed_action = &"overwatch"
-			"Interact": record.committed_action = &"interact_terminal"
 	record.target_scores = _pending_target_scores if action == "Attack" else "None"
 	var started := _profile_clock()
 	battle_controller.record_ai_decision(unit, record)
