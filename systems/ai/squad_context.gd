@@ -48,6 +48,21 @@ func begin_unit(actor: TacticalUnit) -> void:
 func claim_count() -> int:
 	return _actor_destinations.size() + _actor_targets.size() + _actor_objectives.size() + (1 if not corridor_owner.is_empty() else 0)
 
+## A bounded copy of facts available at publication. Browsing it never looks up
+## the live owner or runs the round/expiry logic.
+func inspection_record() -> Dictionary:
+	var destinations := {}
+	for cell in reserved_destinations.keys().slice(0, 8):
+		destinations[cell] = reserved_destinations[cell]
+	var focus := {}
+	for id in intended_targets.keys().slice(0, 8):
+		if intended_targets[id] > 0:
+			focus[id] = intended_targets[id]
+	return {"round": round_number, "destinations": destinations, "destination_count": reserved_destinations.size(),
+		"carrier": corridor_owner, "corridor": reserved_corridor.keys().slice(0, 8),
+		"corridor_count": reserved_corridor.size(), "focus": focus,
+		"expiry": expiry_log.slice(-3).duplicate(true)}
+
 func _log(kind: StringName, owner: StringName, reason: String) -> void:
 	expiry_log.append({"round": round_number, "kind": kind, "owner": owner, "reason": reason})
 	if expiry_log.size() > EXPIRY_LOG_LIMIT:

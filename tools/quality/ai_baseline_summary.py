@@ -8,12 +8,70 @@ per-round samples and (optionally) [AIPlan] planning-time lines joined to the
 [BaselineBegin] markers in the Godot log. "thinking" planning time is wall time minus
 frame yields; it excludes animation, but the scored slice still includes any frame time
 spent inside a single planning call.
+
+Newer logs also contain [AIActivation] samples with per-submission planner work,
+uninterrupted slices, waits, stage counters and authoritative action windows.
 """
-import argparse, collections, json, re, statistics, sys
+import argparse, collections, json, math, re, statistics, sys
 from pathlib import Path
 
 PLAN = re.compile(r"\[AIPlan\] (\S+) candidates=(\d+) inventory_ms=([\d.]+) routes_ms=([\d.]+) scores_ms=([\d.]+)"
                   r"(?: safety_ms=([\d.]+) yields_ms=([\d.]+) wall_ms=([\d.]+))?")
+
+def activation_profiles(log_paths):
+    profiles = []
+    for log in log_paths:
+        label = ""
+        for line in Path(log).read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.startswith("[BaselineBegin] "):
+                label = line.removeprefix("[BaselineBegin] ")
+            if line.startswith("[AIActivation] "):
+                record = json.loads(line.removeprefix("[AIActivation] "))
+                profiles.append({**record, "match": label})
+    return profiles
+
+
+def activation_lines(profiles):
+    if not profiles:
+        return []
+    samples = [{**decision, "match": profile["match"], "actor": profile["actor"]}
+               for profile in profiles for decision in profile["decisions"]]
+    if not samples:
+        return []
+
+    def describe(values):
+        values = sorted(values)
+        p95 = values[math.ceil(len(values) * 0.95) - 1]
+        p99 = f"{values[math.ceil(len(values) * 0.99) - 1] / 1000:.2f}" if len(values) >= 100 else "—"
+        return f"{len(values)} | {statistics.mean(values) / 1000:.2f} | {statistics.median(values) / 1000:.2f} | {p95 / 1000:.2f} | {p99} | {max(values) / 1000:.2f}"
+
+    rows = [
+        ("Planner work", [s["work_us"] for s in samples]),
+        ("Longest slice per decision", [s["max_slice_us"] for s in samples]),
+        ("Decision wall time", [s["wall_us"] for s in samples]),
+        ("Authoritative action window", [s["action_window_us"] for s in samples]),
+        ("Commit observers", [s["observers_us"] for s in samples if "observers_us" in s]),
+        ("Activation excluding action windows and pacing delays",
+         [a["activation_us"] - a["action_windows_us"] - a["delay_us"] for a in profiles]),
+    ]
+    lines = ["", "## Activation profile", "", "| Interval (ms) | Samples | Mean | Median | P95 | P99 | Max |",
+             "|---|---:|---:|---:|---:|---:|---:|"]
+    lines += [f"| {label} | {describe(values)} |" for label, values in rows if values]
+    lines += ["", f"- Planner frame yields: {sum(s['yields'] for s in samples)}",
+              f"- Planner suspension: {sum(s['yield_us'] for s in samples) / 1000:.1f} ms total", "",
+              "| Observed stage | Counter | Total ms |", "|---|---:|---:|"]
+    times = collections.Counter()
+    counts = collections.Counter()
+    for sample in samples + [a["tail"] for a in profiles]:
+        times.update(sample["stages_us"])
+        counts.update(sample["counts"])
+    for key, duration in times.most_common():
+        lines.append(f"| {key} | {counts[key]} | {duration / 1000:.1f} |")
+    lines += ["", "Worst recorded uninterrupted slices"]
+    for sample in sorted(samples, key=lambda s: s["max_slice_us"], reverse=True)[:5]:
+        lines.append(f"- {sample['match']} · {sample['actor']} · {sample.get('action', '?')} "
+                     f"transaction {sample.get('transaction', '?')} · {sample['max_slice_us'] / 1000:.2f} ms")
+    return lines
 
 
 def planning_by_label(log_path):
@@ -116,6 +174,8 @@ def main():
         for reason, n in r["top_wait_reasons"]:
             agg[reason] += n
     lines += [f"- {n}x {reason}" for reason, n in agg.most_common(8)]
+    if args.log:
+        lines.extend(activation_lines(activation_profiles([args.log])))
     text = "\n".join(lines)
     print(text)
     if args.out:

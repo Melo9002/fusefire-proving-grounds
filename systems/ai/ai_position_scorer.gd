@@ -39,8 +39,8 @@ static func evaluate(
 			continue
 		var hostile_cell := grid.get_unit_grid(hostile)
 		var distance := CombatRules.attack_distance(hostile_cell, candidate, grid)
-		var directional_cover := CombatRules.get_directional_cover(hostile_cell, candidate, grid, hostile.standing_height, unit.standing_height)
 		if distance <= hostile.attack_range:
+			var directional_cover := CombatRules.get_directional_cover(hostile_cell, candidate, grid, hostile.standing_height, unit.standing_height)
 			match directional_cover:
 				MapCellData.CoverType.LOW:
 					cover += 4.0

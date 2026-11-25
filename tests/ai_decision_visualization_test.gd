@@ -41,6 +41,8 @@ func _run() -> void:
 	f.ready_actor(actor)
 	var move_run: Dictionary = await f.plan_move_toward(actor, far, self)
 	check(move_run.moved and "move" in move_run.committed, "Setup: the AI plans and commits a move toward the far hostile")
+	check(tools._timeline_list.item_count == 0, "The closed panel does not build hidden timeline items")
+	tools.set_panel_open(true)
 	check(not tools._decision_history.is_empty() and tools._timeline_list.item_count == tools._decision_history.size(), "The timeline lists every recorded decision")
 	var selected_index := -1
 	for index in tools._decision_history.size():
@@ -54,12 +56,17 @@ func _run() -> void:
 	var revision: int = f.battle.action_service.state_revision
 	var contexts: int = f.battle._squad_contexts.size()
 	var rng = f.battle.action_service.get_combat_rng_state()
+	var decision_rng := f.ai_of(actor)._decision_rng.state
+	var ap := actor.stats.current_ap
+	var sp := actor.stats.current_supply_points
 	# The newest entry is at the top; map the history index back to its list item.
 	var list_item := -1
 	for item in tools._timeline_list.item_count:
 		if int(tools._timeline_list.get_item_metadata(item)) == selected_index: list_item = item
 	tools._select_timeline_entry(list_item)
 	check(f.battle.action_service.state_revision == revision and f.battle._squad_contexts.size() == contexts and f.battle.action_service.get_combat_rng_state() == rng, "Browsing a decision changes no revision, RNG or squad context")
+	check(f.ai_of(actor)._decision_rng.state == decision_rng and actor.stats.current_ap == ap and actor.stats.current_supply_points == sp,
+		"Browsing changes no decision RNG, AP or SP")
 	check(tools._ai_scoring_toggle.button_pressed, "Selecting a decision turns the scoring overlay on so its effect is visible")
 	var overlay := tools._ai_scoring_overlay as AIScoringOverlay
 	check(_surface_vertices(overlay._line_mesh.mesh) >= 9, "A move decision draws a route arrow (ribbon plus arrowhead)")
@@ -67,6 +74,12 @@ func _run() -> void:
 	var detail: String = tools._timeline_details.text
 	check(detail.contains("MOVES") and detail.contains("<- CHOSEN") and detail.contains("[#"), "Details show the chosen tile with component bars")
 	check(detail.contains("Outcome: committed"), "Details show the committed outcome")
+	check(detail.contains("Resources at commit: AP") and detail.contains(String(actor.tactical_id)), "The historical action displays the actor ID and committed resource changes")
+	var stored_move: Dictionary = tools._decision_history[selected_index]
+	var squad_before: Dictionary = stored_move.squad_at_decision.duplicate(true)
+	f.battle.peek_squad_context(actor).reserve_destination(actor, actor.grid_position)
+	check(stored_move.squad_at_decision == squad_before, "The historical squad snapshot stays independent of live reservations")
+	tools.set_panel_open(false)
 	await _shoot(f, tools, actor, "1-move-arrow-and-heatmap", false)
 
 	# Phase 2: hostiles in range, so the AI shoots and lists the targets it considered.
@@ -76,6 +89,7 @@ func _run() -> void:
 	f.ready_actor(actor)
 	var attack_run: Dictionary = await f.activate(actor, self)
 	check("attack" in attack_run.committed, "Setup: the second activation shoots (did %s)" % str(attack_run.actions))
+	tools.set_panel_open(true)
 	var attack_index := -1
 	for index in tools._decision_history.size():
 		if tools._decision_history[index].action == "Attack": attack_index = index
@@ -85,8 +99,20 @@ func _run() -> void:
 	tools._select_timeline_entry(list_item)
 	check(_surface_vertices(overlay._line_mesh.mesh) >= 6, "An attack decision draws lines to the targets it considered")
 	check(tools._timeline_details.text.contains("TARGETS") and tools._timeline_details.text.contains("<- CHOSEN"), "Details list the targets with the chosen one marked")
+	check(not tools._timeline_details.text.contains("LAST MOVEMENT EVALUATION"), "A shot details its own candidates without an old movement evaluation")
+	var attack_record: Dictionary = tools._decision_history[attack_index]
+	var receipt: Dictionary = tools._decision_outcome(attack_record)
+	check(receipt.get("committed_revision") == attack_record.state_revision and receipt.get("actor_id") == attack_record.actor_id and receipt.get("action") == "attack",
+		"The attack explanation links to the actual authoritatively committed attack")
+	check(tools._latest_ai_outcome.get("decision_id") == attack_record.decision_id, "The AI tab can link its latest outcome to the same historical decision")
+	tools.set_panel_open(false)
 	await _shoot(f, tools, actor, "2-target-lines", false)
 	await _shoot(f, tools, actor, "3-timeline-details", true)
+	tools.set_panel_open(true)
+	check(tools._timeline_list.is_selected(list_item) and tools._timeline_details.text.contains("TARGETS"),
+		"Reopening F3 keeps the historical row and its details together")
+	tools.set_panel_open(false)
+	print("F3 serialized history: %d bytes across %d real decisions" % [var_to_bytes(tools._decision_history).size(), tools._decision_history.size()])
 
 	# Squad reservations: draw what the squad context holds, without creating one.
 	var context := f.battle.get_squad_context(actor)
@@ -107,6 +133,15 @@ func _run() -> void:
 	# The timeline is bounded.
 	for index in 100:
 		tools._on_ai_decision_recorded({"decision_id": 1000 + index, "actor": "Probe", "action": "Wait", "subject": "", "stage": "explanation"})
+	var oversized: Array[Dictionary] = []
+	for index in 160:
+		oversized.append({"cell": Vector3i(index, 0, 0), "score": float(index), "chosen": index == 0})
+	tools._on_ai_decision_recorded({"decision_id": 1100, "actor": "Probe", "action": "Move", "position_candidates": oversized})
+	check(tools._latest_ai_decision.position_candidates.size() == tools.HISTORY_MOVE_LIMIT and tools._latest_ai_decision.position_candidates[0].chosen and oversized.size() == 160,
+		"F3 keeps the chosen cell within its budget and leaves the published candidates intact")
+	tools._on_ai_action_outcome({"decision_id": 1000, "actor_id": "Probe", "action": "wait", "stage": "rejected"})
+	check(not tools._decision_outcomes.has(1000), "Late outcomes for evicted decisions do not accumulate")
+	tools.set_panel_open(true)
 	check(tools._decision_history.size() == tools.DECISION_HISTORY_LIMIT and tools._timeline_list.item_count == tools.DECISION_HISTORY_LIMIT, "The timeline keeps a bounded history")
 
 	# Bars are deterministic and shared-scale.
