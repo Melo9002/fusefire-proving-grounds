@@ -32,6 +32,23 @@ func _place(position: Vector3, camera_yaw: float) -> void:
 	world._apply_camera_rotation()
 	world.pivot_position = world._focus_point()
 
+func _check_cover_release(label: String) -> void:
+	var rig: CharacterRig = world.visual.rig
+	var before := rig.cover_yaw()
+	var facing := rig.global_rotation.y
+	check(absf(before) > deg_to_rad(25.0), "%s takes a real sideways cover pose" % label)
+	world._cover_or_jump()
+	check(absf(angle_difference(before, rig.cover_yaw())) < 0.001, "%s leaves cover without snapping" % label)
+	var eased := false
+	for frame in 15:
+		await process_frame
+		var yaw := absf(rig.cover_yaw())
+		eased = eased or (yaw > deg_to_rad(1.0) and yaw < absf(before) - deg_to_rad(1.0))
+	check(eased, "%s passes through an intermediate cover yaw" % label)
+	await _wait(0.5)
+	check(absf(angle_difference(rig.character_root.global_rotation.y, facing)) < deg_to_rad(2.0),
+		"%s settles on the exploration host's facing" % label)
+
 func _run() -> void:
 	world = load(PLAYGROUND).instantiate()
 	root.add_child(world)
@@ -87,7 +104,7 @@ func _run() -> void:
 	check(world.visual.rig.aim_blend > 0.9 and world.visual.rig.crouch_modifier.depth < low_depth - 0.02, "Aiming pops her up over the low wall (depth %.2f to %.2f m)" % [low_depth, world.visual.rig.crouch_modifier.depth])
 	world.combat.set_aim(false)
 	await _wait(0.5)
-	world._cover_or_jump()
+	await _check_cover_release("MIRA exploration")
 	await _wait(0.8)
 	check(not world.cover.active and not world.visual.is_in_cover() and world.visual.rig.crouch_modifier.depth < 0.05, "Space again leaves cover and she stands")
 	await _wait(1.0)
@@ -270,6 +287,20 @@ func _run() -> void:
 	var spawn_flat: Vector3 = world.body.global_position
 	spawn_flat.y = 0.0
 	check(spawn_flat.length() < 1.0, "...at the spawn point (%s)" % [world.body.global_position])
+
+	# The same real wall interaction after switching to the second model.
+	world._select_character(1)
+	check(world.character_index == 1, "The exploration host switches to Small MIRA")
+	_place(Vector3(-8.0, 0.0, 3.0), 0.0)
+	await _wait(0.4)
+	world._cover_or_jump()
+	await _wait(0.4)
+	check(world.cover.active, "Small MIRA enters exploration cover")
+	_press(&"playground_right", true)
+	await _wait(0.4)
+	_press(&"playground_right", false)
+	await _wait(0.4)
+	await _check_cover_release("Small MIRA exploration")
 
 	print("Exploration actions: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)

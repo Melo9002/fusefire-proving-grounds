@@ -68,7 +68,7 @@ func _run() -> void:
 		await process_frame
 	check(bench.presenter.speed > 0.5 and bench.rig.locomotion_report.speed > 0.5, "A preview walk is fed through the presenter into the production locomotion (%.2f m/s)" % bench.rig.locomotion_report.speed)
 	bench.rig.animation_controller.play(&"rifle_idle")
-	bench.turn_goal = bench.rig.character_root.rotation.y + deg_to_rad(120.0)
+	bench.turn_goal = bench.rig.rotation.y + deg_to_rad(120.0)
 	var saw_idle_heading := false
 	for i in 20:
 		await process_frame

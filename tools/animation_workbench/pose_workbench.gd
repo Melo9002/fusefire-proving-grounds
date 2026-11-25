@@ -96,7 +96,7 @@ var cover_policy := CoverEdgePolicy.new()
 var cover_target: Variant = null
 var cover_plan := {}
 var _cover_found := {}
-var _bench_heading := 0.0
+var _facing_before_cover := 0.0
 var cover_diagnostics := false
 var _cover_group: Node3D
 var _cover_lines: MeshInstance3D
@@ -369,8 +369,10 @@ func _process(frame_delta: float) -> void:
 	var walking: bool = rig.animation_controller.current_state in [&"move", &"carry_move"] and not rig.interaction_active()
 	var heading_rate := 0.0
 	if not is_nan(turn_goal):
-		heading_rate = rig.presenter.turn_root_toward(turn_goal, 360.0, _delta)
-		if is_equal_approx(rig.character_root.rotation.y, turn_goal):
+		var before := rig.rotation.y
+		rig.presenter.turn_toward_yaw(turn_goal, 360.0, _delta)
+		heading_rate = angle_difference(before, rig.rotation.y) / maxf(_delta, 0.0001)
+		if is_zero_approx(angle_difference(rig.rotation.y, turn_goal)):
 			turn_goal = NAN
 	rig.presenter.set_scripted_motion(preview_speed if walking else 0.0, heading_rate)   # authored preview motion, fed as given (a turn preview keeps its heading rate while idle)
 	rig.presenter.tick(_delta)
@@ -423,7 +425,7 @@ func command_stop() -> void:
 func turn_by(degrees: float) -> void:
 	if preview_speed < 1.0:
 		command_move(2.4)
-	turn_goal = rig.character_root.rotation.y + deg_to_rad(degrees)
+	turn_goal = rig.rotation.y + deg_to_rad(degrees)
 
 func set_pose_preset(index: int) -> void:
 	_pose_preset = clampi(index, 0, POSE_PRESET_NAMES.size() - 1)
@@ -655,7 +657,9 @@ func _ramp_pose_preset(delta: float) -> void:
 		# A kneel is asked for as one blend range past the deepest crouch.
 		var request := _pose_preset_depth() + (rig.KNEEL_BLEND_RANGE if _pose_preset == 2 else 0.0)
 		rig.presenter.postures.set_posture(POSE_PRESET_SOURCE, posture, PresentationTypes.PRIORITY_BASE, 0.0, request)
-	rig.presenter.apply_posture(delta, rig.cover_profile, false)
+	# With the cover request released, keep driving body yaw toward the resolved
+	# posture. Preview turns use the rig's facing, so this ramp cannot erase them.
+	rig.presenter.apply_posture(delta, rig.cover_profile)
 
 ## X: cycles fixed diagnostic camera views. The close-ups follow the hands as the pose changes.
 func _cycle_diagnostic_view() -> void:
@@ -696,21 +700,28 @@ func _follow_diagnostic_view() -> void:
 
 ## Starts (or, with an empty spec, ends) a cover scenario. spec: full (bool), height, left / right edge distance (m) and left_ok / right_ok (usable), aim (bool).
 func set_cover_demo(spec: Dictionary) -> void:
+	var was_in_cover := not cover_demo.is_empty()
 	if not spec.is_empty():
 		_end_other_benches(&"cover")
+		if not was_in_cover:
+			_facing_before_cover = rig.rotation.y
+		turn_goal = NAN
 	cover_demo = spec
 	if is_instance_valid(_cover_group):
 		_cover_group.queue_free()
 	_cover_group = null
+	cover_target = null
+	cover_plan = {}
 	if spec.is_empty():
 		cover_side = 0
 		rig.presenter.postures.release(COVER_DEMO_SOURCE)
+		if was_in_cover:
+			# The wall and attack target owned the fixture facing temporarily.
+			# Rebase without a visible jump and let the posture ramp settle.
+			rig.presenter.face_yaw(_facing_before_cover, true, false)
 		rig.animation_controller.play(&"rifle_idle")
 		return
-	cover_target = null
-	cover_plan = {}
 	rig.presenter.face_yaw(0.0, false, false)   # square to the wall again, at once: no hips catching up, no absorption
-	_bench_heading = 0.0
 	_cover_found = {"left": {"distance": spec.left, "usable": spec.left_ok}, "right": {"distance": spec.right, "usable": spec.right_ok}, "normal": Vector3(0, 0, 1), "tangent": Vector3(-1, 0, 0)}
 	cover_side = CoverEdgeSelector.choose(_cover_found, cover_side, cover_policy)
 	rig.animation_controller.play(&"aim" if spec.aim else &"rifle_idle")
@@ -745,7 +756,6 @@ func fire_cover_shot() -> void:
 
 func _turn_to_heading(heading: float) -> void:
 	rig.presenter.face_yaw(heading, true, false)   # the cover pose absorbs the change (no snap); the bench shows no hips catching up
-	_bench_heading = heading
 
 
 func _build_cover_visuals() -> void:
@@ -867,9 +877,6 @@ func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1
 func _end_other_benches(keep: StringName) -> void:
 	if keep != &"cover" and not cover_demo.is_empty():
 		set_cover_demo({})
-		rig.presenter.face_yaw(0.0, false, false)   # the cover bench turned the body toward its edge (-45 deg); the next bench starts square
-		rig.apply_root_yaw(0.0)   # ...and the turn it absorbed into the body root
-		_bench_heading = 0.0
 	if keep != &"ladder" and not ladder_demo.is_empty():
 		end_ladder_demo()
 	if keep != &"stairs" and not stair_demo.is_empty():

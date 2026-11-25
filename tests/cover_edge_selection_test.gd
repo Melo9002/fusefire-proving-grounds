@@ -161,16 +161,28 @@ func _run() -> void:
 	check(adapter.get_presentation_state() == &"cover_low" and adapter.rig.aim_blend < 0.05, "...and recovers to the protected posture with the weapon down")
 
 	# ---- Leaving cover: nothing of the cover pose is left, and ordinary locomotion takes over.
+	var held_yaw := absf(adapter.rig.cover_yaw())
+	check(held_yaw > deg_to_rad(25.0), "A real tactical move starts from the protected cover yaw")
 	var moved := []
 	var go := func() -> void:
 		moved.append(await f.battle.try_move(actor, Vector3i(2, 0, 10)))
 	go.call()
-	await create_timer(0.4).timeout
-	check(actor.is_moving and adapter.get_presentation_state() == &"move", "A real move order out of cover starts the locomotion clip (%s)" % adapter.get_presentation_state())
+	var eased := false
+	var started_move := false
+	for frame in 25:
+		await process_frame
+		var current_yaw := absf(adapter.rig.cover_yaw())
+		eased = eased or (current_yaw > deg_to_rad(1.0) and current_yaw < held_yaw - deg_to_rad(1.0))
+		started_move = started_move or (actor.is_moving and adapter.get_presentation_state() == &"move")
+	check(eased, "The tactical move passes through an intermediate cover yaw during release")
+	check(started_move, "A real move order out of cover starts the locomotion clip")
 	while moved.is_empty():
 		await process_frame
 	await create_timer(1.0).timeout
 	check(absf(adapter.rig._cover_yaw) < deg_to_rad(1.0) and adapter.rig.crouch_modifier.depth < 0.01 and adapter.rig.crouch_modifier.kneel < 0.01 and adapter.cover_side == CoverEdgeSelector.Side.NONE, "After leaving cover the yaw offset, crouch and side are all cleared")
+	var movement_yaw := adapter.rig.global_rotation.y
+	check(absf(movement_yaw) > 0.1 and absf(angle_difference(adapter.rig.character_root.global_rotation.y, movement_yaw)) < deg_to_rad(1.0),
+		"Tactical cover release preserves the nonzero movement facing")
 	var owners := 0
 	for child in adapter.rig.skeleton.get_children():
 		if child is LocomotionPoseModifier or child is CoverCrouchModifier:
