@@ -36,6 +36,20 @@ A host is a plain `Node3D` with a `Rig` child. It does not inherit the rig, buil
 
 The reusable cover **body-motion** numbers (yaw offsets, crouch depths, clearances, speeds) are `CoverPostureProfile` (`motion/`, exported on the rig). The tactical **edge-selection** numbers are `CoverEdgePolicy` (`presentation/tactical/`, owned by the host).
 
+### Cover facing and release
+
+The rig node's yaw is the facing selected by its host. `CoverPostureProfile.yaw_offset()` supplies a relative body turn. The presenter resolves the posture request and `CharacterRig` drives the offset on `character_root`. `CharacterAnimationController` deliberately leaves that axis alone when changing clips, so repeated clip changes and cover posing can coexist.
+
+ADDA previously drove body yaw only while its cover demo existed. **Leave** released the request, but later frames applied only depth and kneel, so the rig kept the last cover offset (45° on both MIRA rigs in the traversal repro). The direct cover-to-traversal shortcut forced the heading and local offset to zero, masking the problem on that path. The Workbench now continues applying the resolved yaw after release, like the tactical and exploration hosts. Preview turns use the rig-facing channel. On exit the Workbench restores the heading from before the temporary wall/target facing, preserves the visible heading at the handoff, and lets the shared posture ramp settle it. Idle, walk, aim, stairs, and ladder all use that same release.
+
+Regression coverage starts with a real cover offset, samples its first frame of release, and checks the settled facing after each action on MIRA and Small MIRA. Run `.\tools\run_tests.ps1 select -Test workbench_cover_release_test,cover_edge_selection_test,exploration_actions_test`. The tactical and exploration tests sample the running gameplay hosts. The Workbench fixture also supports rendered screenshots:
+
+```powershell
+godot_console --path . --resolution 1280x720 --rendering-method gl_compatibility --script res://tests/workbench_cover_release_test.gd -- capture=res://artifacts/cover-release/rendered
+```
+
+The original 44-assertion reproduction had 18 failures on `707a1e2`. The final fixture passed 52 assertions headless and 66 with 14 screenshots. For each rig the stair and ladder transitions measured 45.0° at release, 39.7° one 60 Hz step later, and 0.0° settled. Idle and its subsequent aim preserved a 31° heading. A 70° walking turn from 19° settled at 89°. Project import and ten targeted Ironclad tests passed across the focused run and reruns, including in-engine cover release in a tactical battle and both rigs in the exploration playground. The screenshots document the sampled poses. They are not a traversal animation quality review.
+
 ## Where things live
 
 ```

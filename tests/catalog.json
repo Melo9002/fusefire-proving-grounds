@@ -302,6 +302,7 @@
   "presentation_authority_test": {"sub": ["animation", "movement", "replay"], "scope": "battle", "crit": "critical", "contracts": ["authority", "replay", "presentation-sync"]},
   "motion_contract_test": {"sub": ["animation"], "scope": "integration", "crit": "critical", "contracts": ["presentation-sync", "lifecycle"], "smoke": true, "fast": true},
   "workbench_diagnostics_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"], "fast": true},
+  "workbench_cover_release_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_scenarios_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_tune_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},
   "workbench_report_test": {"sub": ["animation", "tooling"], "scope": "integration", "contracts": ["presentation-sync"]},

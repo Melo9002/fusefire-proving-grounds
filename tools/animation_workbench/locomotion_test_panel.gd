@@ -212,15 +212,13 @@ func _on_loaded_toggled(pressed: bool) -> void:
 func _turn_in_place(degrees: float) -> void:
 	_set_speed(0.0)
 	bench.turn_goal = NAN
-	var change := deg_to_rad(degrees)
-	bench.rig.character_root.rotation.y += change
-	bench.rig.begin_turn(change)
+	bench.presenter.face_yaw(bench.rig.rotation.y + deg_to_rad(degrees))
 
 
 func _moving_turn(degrees: float) -> void:
 	if bench.preview_speed < 1.0:
 		_set_speed(4.0)
-	bench.turn_goal = bench.rig.character_root.rotation.y + deg_to_rad(degrees)
+	bench.turn_by(degrees)
 
 
 func _start_scenario(kind: StringName) -> void:
