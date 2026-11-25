@@ -176,3 +176,5 @@ Human acceptance checklist:
 [#89](https://github.com/Melo9002/fusefire-proving-grounds/issues/89) is addressed on this review branch. Short carrier reversals and the simulator teardown's unlinked terminal Attack receipts remain documented. The separately reproduced ladder-landing failure belongs to animation quality. No milestone or issue was closed as part of this review.
 
 Implementation commits are `165bd902a7b13d7e8c07d6222f61e4199ad20953` for handoff and route clearance and `68509940349f1daadd9ed0f3009ed56e7aa6cace` for the terminal decision link. The F3 fixture correction is `55e7483267c07b93d4427db4148fd34befd40b02`. This report is on the same review branch. Milestone acceptance remains with the owner.
+
+Post-milestone follow-up: [source-verified AI architecture and performance research](../ai-architecture/README.md) covers the integrated implementation and reproduces the remaining carrier planning hitch.
