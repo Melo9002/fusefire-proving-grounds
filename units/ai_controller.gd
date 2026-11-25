@@ -180,13 +180,28 @@ func _wait_for_objective_update() -> void:
 	await get_tree().process_frame
 	if _profile != null: _profile.resume("yield")
 
+func _await_action_window() -> bool:
+	while _should_control_unit():
+		var service := battle_controller.action_service
+		if not is_instance_valid(service):
+			return false
+		if not service.is_busy and not get_tree().paused:
+			return true
+		if _profile != null: _profile.suspend()
+		await get_tree().process_frame
+		if _profile != null: _profile.resume("presentation")
+	return false
+
 func _plan_activation() -> bool:
 	if not _battle_is_live(): return false
 	# Brief pause makes the enemy activation visible before it acts.
 	if _profile != null: _profile.suspend()
 	await get_tree().create_timer(ACTIVATION_PRESENTATION_DELAY_SECONDS, false).timeout
 	if _profile != null: _profile.resume("presentation")
-	if not _should_control_unit():
+	# Extraction can select its successor during the authoritative commit for
+	# replay compatibility. Planning must wait until the presentation window
+	# settles, otherwise a busy query looks like no useful action.
+	if not await _await_action_window():
 		return false
 	if unit.mission_actor and unit.mission_actor.is_vip():
 		await _execute_vip_turn()
@@ -389,8 +404,9 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			return MissionStepResult.NONE
 		var terminal_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
 		if terminal_query.is_legal():
+			_record_ai_decision("Interact", String(terminal.definition.terminal_id),
+				"Reached the required adjacent mission terminal.", "Attack, Move, Wait", &"interact_terminal")
 			if await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
-				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the required adjacent mission terminal.", "Attack, Move, Wait")
 				return MissionStepResult.INTERACTED
 		var approach := _nearest_terminal_approach_cell(terminal)
 		if approach.x >= 0 and await _move_toward_cell(approach, has_moved):
@@ -399,9 +415,11 @@ func _try_mission_step(has_moved: bool) -> MissionStepResult:
 			# Terminal interactions are free and intentionally remain available at
 			# zero AP. Complete the objective now rather than relying on another loop.
 			var arrived_query := battle_controller.query_terminal(unit, terminal.definition.terminal_id)
-			if arrived_query.is_legal() and await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
-				_record_ai_decision("Interact", String(terminal.definition.terminal_id), "Activated the terminal after the final movement AP.", "Attack, Wait")
-				return MissionStepResult.INTERACTED
+			if arrived_query.is_legal():
+				_record_ai_decision("Interact", String(terminal.definition.terminal_id),
+					"Reached the terminal after moving. Interacting is free.", "Attack, Wait", &"interact_terminal")
+				if await battle_controller.try_terminal(unit, terminal.definition.terminal_id):
+					return MissionStepResult.INTERACTED
 			return MissionStepResult.MOVED
 		return MissionStepResult.NONE
 	if current_mission_intent.kind == MissionIntentData.Kind.PROTECT:
@@ -724,8 +742,10 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 	var reserved := {}
 	var best := PackedVector3Array()
 	var queries := 0
+	# One synchronous endpoint scan sees the same actor and occupancy.
+	var clearance_checks := {}
 	for destination in zone:
-		var path := pathfinder.calculate_3d_path(carrier_cell, destination)
+		var path := pathfinder.calculate_3d_path(carrier_cell, destination, clearance_checks)
 		queries += 1
 		if not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
 			path = pathfinder.calculate_path_with_occupancy(carrier_cell, destination, grid, carrier)
@@ -1548,7 +1568,6 @@ func _record_ai_decision(action: String, subject: String, reason: String, altern
 		match action:
 			"Attack", "Aim", "Reload", "Shield", "Move", "Emergency Seal": record.committed_action = StringName(action.to_snake_case())
 			"Guard": record.committed_action = &"overwatch"
-			"Interact": record.committed_action = &"interact_terminal"
 	record.target_scores = _pending_target_scores if action == "Attack" else "None"
 	var started := _profile_clock()
 	battle_controller.record_ai_decision(unit, record)

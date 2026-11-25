@@ -44,6 +44,12 @@ func _run() -> void:
 	grid.update_unit_position(blocker, blocker.grid_position, Vector3i(1, 0, 18))
 	var blocked := graph.calculate_path_with_occupancy(start, goal, grid, actor, cache)
 	check(blocked == graph.calculate_path_with_occupancy(start, goal, grid, actor) and blocked != first, "Moved blocker invalidates prior clear edges")
+	var live_scan := {}
+	for destination in [goal, goal + Vector3i.RIGHT]:
+		var shared_route := graph.calculate_3d_path(start, destination, live_scan)
+		check(shared_route == graph.calculate_3d_path(start, destination),
+			"Same-layout endpoint scan preserves the uncached route to %s" % destination)
+	check(not live_scan.is_empty(), "Occupied route scan exercises scratch edge reuse")
 	var changed_field := graph.planning_costs_to_goal(goal, wanted, grid, actor)
 	for cell in wanted:
 		var route := graph.calculate_path_with_occupancy(cell, goal, grid, actor)

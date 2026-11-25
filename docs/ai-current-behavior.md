@@ -89,6 +89,10 @@ Run the first simulation from the baseline revision and the second from the revi
 
 The recovery path coordinates one rescue carrier and reserves its lane with the existing squad context. It does not search combinations of several actors' future moves. A human-controlled or inactive teammate may still hold a lane. Yielding currently identifies blockers by their lane cell, so a swept-body obstruction caused solely from an adjacent cell can still require separate handling. Mission balance and defensive tradeoffs remain Step 10 work.
 
+## Integrated acceptance review
+
+An extracted unit can be removed and its same-phase successor selected before presentation settles. The successor's controller defers planning until the service window releases, while the committed extraction fingerprint retains the existing selection boundary. The carrier's synchronous exit scan also reuses swept-body clearance across endpoints from the same live origin. See the [Step 12 acceptance review](quality/ai-step12-acceptance-2026-11-25.md) for evidence, measured performance limits, and owner acceptance conditions.
+
 ## Where to adjust it
 
 - [Difficulty weights](../systems/ai/ai_difficulty_policy.gd): `expected_damage_weight`, finishing/wound/mission/focus/position weights and bounded lapses.

@@ -8,6 +8,8 @@ extends SceneTree
 ## instead of being asserted here.
 const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
 
+signal release_extraction
+
 var failures := 0
 var checks := 0
 
@@ -59,6 +61,7 @@ func _run() -> void:
 	await _shield_over_last_shot()
 	await _shot_over_shield_for_a_kill()
 	await _extraction_in_zone()
+	await _extraction_handoff_waits_for_settlement()
 	await _extraction_en_route()
 	await _rescue_pickup()
 	await _carrier_corridor_recovery(true)
@@ -508,6 +511,43 @@ func _extraction_in_zone() -> void:
 	f.ready_actor(actor)
 	var r: Dictionary = await f.activate(actor, self)
 	check(r.rejected.is_empty() and "extract" in r.committed, "S7: a unit in the extraction zone extracts")
+	await f.dispose(self)
+
+func _extraction_handoff_waits_for_settlement() -> void:
+	var f := Fixture.new()
+	var mission := MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.EXTRACT, 1)
+	await f.setup(self, 2, 1, 0, mission, AIDifficultyPolicy.Tier.EASY, [], true)
+	var outgoing := f.turns.player_units[0]
+	var successor := f.turns.player_units[1]
+	var successor_id := String(successor.tactical_id)
+	var exit := Vector3i(14, 0, 28)
+	f.grid.map_data.set_objective_zone(&"extract", [exit])
+	f.place(outgoing, exit)
+	f.place(successor, Vector3i(5, 0, 28))
+	f.place(f.turns.enemy_units[0], Vector3i(28, 0, 20))
+	f.ready_actor(outgoing)
+	f.ready_actor(successor)
+	check(f.turns.select_player_unit(outgoing), "Handoff fixture selects the extracting actor")
+	var service := f.battle.action_service
+	var present := service._present_mission
+	service._present_mission = func(result, actor, target):
+		await release_extraction
+		await present.call(result, actor, target)
+	f.battle.debug_player_ai = true
+	f.level.objective_manager.try_extract(outgoing)
+	check(service.is_busy and f.turns.active_unit == successor and not f.turns.player_units.has(outgoing),
+		"Authoritative extraction removes the actor and selects the successor before presentation settles")
+	var extract_transaction := service.last_transaction_id
+	await create_timer(AIController.ACTIVATION_PRESENTATION_DELAY_SECONDS + 0.3).timeout
+	check(service.is_busy and service.last_transaction_id == extract_transaction and f.decisions.is_empty(),
+		"The activated successor publishes no decision and commits nothing while the extraction window is held")
+	release_extraction.emit()
+	var deadline := Time.get_ticks_msec() + 4000
+	while not f.outcomes.any(func(row: Dictionary) -> bool: return row.actor_id == successor_id) and Time.get_ticks_msec() < deadline:
+		await process_frame
+	var successor_outcomes := f.outcomes.filter(func(row: Dictionary) -> bool: return row.actor_id == successor_id)
+	check(not successor_outcomes.is_empty() and successor_outcomes[0].stage == "committed" and successor_outcomes[0].action == "move",
+		"The successor resumes once the action settles and makes a legal advance instead of submitting a busy Wait")
 	await f.dispose(self)
 
 ## S7b extraction en route: the zone is a few cells away, no hostile is in range.

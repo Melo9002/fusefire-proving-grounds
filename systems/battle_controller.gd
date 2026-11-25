@@ -983,6 +983,7 @@ func try_terminal(actor: TacticalUnit, terminal_id: StringName) -> bool:
 	if not is_instance_valid(action_service): return false
 	var request := action_service.make_terminal_request(actor, terminal_id, _action_source())
 	var result := await action_service.submit_mission(request)
+	if result == null: _report_ai_rejection(request)
 	if result != null and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
 		turn_manager.complete_free_objective_action(actor)
 	return result != null
