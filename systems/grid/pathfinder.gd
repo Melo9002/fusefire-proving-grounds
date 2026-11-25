@@ -131,7 +131,8 @@ func connect_cells(from_cell: Vector3i, to_cell: Vector3i, bidirectional: bool =
 	astar.connect_points(grid_to_id_map[from_cell], grid_to_id_map[to_cell], bidirectional)
 	return true
 
-func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector3Array:
+## Supplied checks are scratch for one synchronous scan from the same live origin.
+func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i, clearance_checks: Variant = null) -> PackedVector3Array:
 	if not grid_to_id_map.has(start_grid) or not grid_to_id_map.has(end_grid):
 		return PackedVector3Array()
 	if not stoppable_cells.get(end_grid, false):
@@ -142,8 +143,8 @@ func calculate_3d_path(start_grid: Vector3i, end_grid: Vector3i) -> PackedVector
 	var path := astar.get_point_path(start_id, end_id)
 	if surface_map and surface_map.surface_placement_enabled and is_instance_valid(live_grid) and not live_grid.occupancy_map.is_empty():
 		var actor := live_grid.get_unit_at(start_grid)
-		if path.is_empty() or not _path_respects_hypothetical_occupancy(path, start_grid, live_grid, actor):
-			return _calculate_hypothetical_fallback(start_grid, end_grid, live_grid, actor)
+		if path.is_empty() or not _path_respects_hypothetical_occupancy(path, start_grid, live_grid, actor, clearance_checks):
+			return _calculate_hypothetical_fallback(start_grid, end_grid, live_grid, actor, clearance_checks)
 	return path
 
 ## Read-only planning path. Occupied cells remain blocked except for the named

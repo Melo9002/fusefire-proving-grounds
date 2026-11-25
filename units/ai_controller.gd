@@ -180,13 +180,28 @@ func _wait_for_objective_update() -> void:
 	await get_tree().process_frame
 	if _profile != null: _profile.resume("yield")
 
+func _await_action_window() -> bool:
+	while _should_control_unit():
+		var service := battle_controller.action_service
+		if not is_instance_valid(service):
+			return false
+		if not service.is_busy and not get_tree().paused:
+			return true
+		if _profile != null: _profile.suspend()
+		await get_tree().process_frame
+		if _profile != null: _profile.resume("presentation")
+	return false
+
 func _plan_activation() -> bool:
 	if not _battle_is_live(): return false
 	# Brief pause makes the enemy activation visible before it acts.
 	if _profile != null: _profile.suspend()
 	await get_tree().create_timer(ACTIVATION_PRESENTATION_DELAY_SECONDS, false).timeout
 	if _profile != null: _profile.resume("presentation")
-	if not _should_control_unit():
+	# Extraction can select its successor during the authoritative commit for
+	# replay compatibility. Planning must wait until the presentation window
+	# settles, otherwise a busy query looks like no useful action.
+	if not await _await_action_window():
 		return false
 	if unit.mission_actor and unit.mission_actor.is_vip():
 		await _execute_vip_turn()
@@ -724,8 +739,10 @@ func _carrier_route(carrier: TacticalUnit, recheck_occupancy := false) -> Dictio
 	var reserved := {}
 	var best := PackedVector3Array()
 	var queries := 0
+	# One synchronous endpoint scan sees the same actor and occupancy.
+	var clearance_checks := {}
 	for destination in zone:
-		var path := pathfinder.calculate_3d_path(carrier_cell, destination)
+		var path := pathfinder.calculate_3d_path(carrier_cell, destination, clearance_checks)
 		queries += 1
 		if not path.is_empty() and not pathfinder.is_route_clear(path, carrier, grid):
 			path = pathfinder.calculate_path_with_occupancy(carrier_cell, destination, grid, carrier)
