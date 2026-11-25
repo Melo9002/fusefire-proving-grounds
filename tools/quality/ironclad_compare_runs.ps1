@@ -23,9 +23,22 @@ function Get-Verdict($run) {
     return "GREEN"
 }
 
-$first = Read-Run $Initial
+$initialPath = (Resolve-Path -LiteralPath $Initial).Path
+$first = Read-Run $initialPath
 $baselineRun = if ($Baseline) { Read-Run $Baseline }
-$followups = @($Rerun | ForEach-Object { Read-Run $_ })
+$seenAttempts = @{}
+$followups = @(foreach ($path in $Rerun) {
+    $absolute = (Resolve-Path -LiteralPath $path).Path
+    $attempt = Read-Run $absolute
+    if ($absolute -eq $initialPath -or ($attempt.run_id -and $attempt.run_id -eq $first.run_id)) {
+        throw "The initial run cannot also be supplied as a rerun."
+    }
+    $id = if ($attempt.run_id) { $attempt.run_id } else { $absolute }
+    if (-not $seenAttempts.ContainsKey($id)) {
+        $seenAttempts[$id] = $true
+        $attempt
+    }
+})
 $details = @(
     foreach ($failure in $first.results | Where-Object { Is-Failure $_ }) {
         $attempts = @(foreach ($run in $followups) {

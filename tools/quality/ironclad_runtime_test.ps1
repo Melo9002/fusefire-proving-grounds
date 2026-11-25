@@ -84,10 +84,11 @@ try {
     $null = New-Item -ItemType File -Path (Join-Path $root "second-attempt")
     $repeatPath = Run @("select","-Test","late_pass","-SkipImport") 0 "repeat"
     $knownPath = Run @("select","-Test","assertion","-SkipImport") 1 "known failure"
-    $comparison = & $compare -Initial $firstPath -Rerun $repeatPath,$knownPath -Baseline $knownPath -Json | ConvertFrom-Json
+    $comparison = & $compare -Initial $firstPath -Rerun $repeatPath,$repeatPath,$knownPath -Baseline $knownPath -Json | ConvertFrom-Json
     Check ($comparison.initial_verdict -eq "RED" -and $comparison.passed_on_rerun -eq 1 -and $comparison.without_clean_rerun -eq 4) "reruns preserve the original RED verdict"
     Check (($comparison.failures | Where-Object name -eq "assertion").rerun_evidence -eq "REPRODUCED" -and
         ($comparison.failures | Where-Object name -eq "assertion").baseline_status -eq "FAIL") "known failure is still present"
+    Check (($comparison.failures | Where-Object name -eq "late_pass").attempts.Count -eq 1) "duplicate artifact paths do not inflate attempt counts"
     $explicitPath = Run @("select","-Test","explicit_case","-SkipImport") 0 "explicit"
     $explicit = Read-Result $explicitPath
     Check ($explicit.explicit_excluded -eq 0 -and $explicit.ordinary_selected -eq 0 -and $explicit.test_processes_started -eq 1) "explicit case runs by name"
