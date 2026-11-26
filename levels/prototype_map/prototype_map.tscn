@@ -403,7 +403,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" unique_id=60364855 node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager", "presentation_root", "objective_manager")]
+[node name="DebugTools" type="Control" parent="Visualizers/BattleUI" unique_id=60364855 node_paths=PackedStringArray("battle_controller", "turn_manager", "grid_manager", "presentation_root", "objective_manager", "tile_layers")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -416,6 +416,7 @@ battle_controller = NodePath("../../../Systems/BattleController")
 turn_manager = NodePath("../../../Systems/TurnManager")
 grid_manager = NodePath("../../../Systems/GridManager")
 presentation_root = NodePath("../..")
+tile_layers = NodePath("../../GroundTileLayers")
 objective_manager = NodePath("../../../Systems/ObjectiveManager")
 
 [node name="BattlePauseMenu" type="Control" parent="Visualizers/BattleUI" unique_id=1956238595 node_paths=PackedStringArray("debug_tools")]
