@@ -1,0 +1,82 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank.glb" id="tank"]
+
+[node name="HorizontalDrum" type="Node3D"]
+metadata/asset_id = "city_kit_industrial/detail-tank"
+
+[node name="Visual" parent="." instance=ExtResource("tank")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0, 1.038239, 0)
+metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
+metadata/round_volume = true
+metadata/presentation_shape = &"box"
+metadata/max_shape_revision = 7
+
+[node name="DrumTacticalVolume" type="Node3D" parent="."]
+position = Vector3(0, 1.038239, 0)
+metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
+metadata/min_shape_revision = 8
+metadata/max_shape_revision = 8
+
+[node name="FrontBand" type="Node3D" parent="."]
+position = Vector3(-0.545, 1.03824, 0)
+metadata/solid_size = Vector3(0.4502, 2.07668, 2.07668)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="RearBand" type="Node3D" parent="."]
+position = Vector3(1.495, 1.03824, 0)
+metadata/solid_size = Vector3(0.4502, 2.07668, 2.07668)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="Barrel" type="Node3D" parent="."]
+position = Vector3(0.475, 1.03824, 0)
+metadata/solid_size = Vector3(3.2902, 1.8602, 1.8602)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="PipeFlange" type="Node3D" parent="."]
+position = Vector3(-1.22, 1.03824, 0)
+metadata/solid_size = Vector3(0.1002, 1.0002, 1.0002)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="PipeElbow" type="Node3D" parent="."]
+position = Vector3(-1.645, 0.78824, 0)
+metadata/solid_size = Vector3(0.7502, 0.8752, 0.3752)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="PipeFoot" type="Node3D" parent="."]
+position = Vector3(-1.8325, 0.22574, 0)
+metadata/solid_size = Vector3(0.5752, 0.2502, 0.5752)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="FrontLeftSupport" type="Node3D" parent="."]
+position = Vector3(-0.545, 0.56949, -1.03824)
+metadata/solid_size = Vector3(0.1252, 0.9377, 0.5002)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="FrontRightSupport" type="Node3D" parent="."]
+position = Vector3(-0.545, 0.56949, 1.03824)
+metadata/solid_size = Vector3(0.1252, 0.9377, 0.5002)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="RearLeftSupport" type="Node3D" parent="."]
+position = Vector3(1.495, 0.56949, -1.03824)
+metadata/solid_size = Vector3(0.1252, 0.9377, 0.5002)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9
+
+[node name="RearRightSupport" type="Node3D" parent="."]
+position = Vector3(1.495, 0.56949, 1.03824)
+metadata/solid_size = Vector3(0.1252, 0.9377, 0.5002)
+metadata/standing_clearance = 2.0
+metadata/min_shape_revision = 9

@@ -144,7 +144,9 @@ instances inherit its shape.
 
 A compound uses ordinary sibling solids. The Depot tank combines a cylinder
 for the shell and a separate box for the outside pipe. Compiler 8 feeds the horizontal drum's measured box into partial-tile
-placement. Historical compilers retain its stepped reservation. The compiler uses explicit solid
+placement. Compiler 9 uses saved component bounds for its barrel, bands,
+pipe and supports. The Depot and the Parcel Editor share the reusable drum
+scene. Earlier compiler revisions keep their recorded drum geometry. The compiler uses explicit solid
 volumes and does not infer doors, hollows or arbitrary hulls from render meshes.
 
 Curves participate in the same single-point-per-cell fit, support, sweep,
