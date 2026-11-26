@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank.glb" id="tank"]
+[ext_resource type="PackedScene" path="res://art/environments/authored/objects/horizontal_drum.tscn" id="tank"]
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/detail-tank-large.glb" id="tank_large"]
 [ext_resource type="PackedScene" path="res://art/environments/kenney/city_kit_industrial/models/shipping-container-c.glb" id="container_c"]
 
@@ -48,24 +48,8 @@ position = Vector3(0, 2.156, -3.767)
 metadata/solid_size = Vector3(0.502, 4.312, 0.710)
 metadata/min_shape_revision = 7
 
-[node name="TankWest" type="Node3D" parent="."]
+[node name="TankWest" parent="." instance=ExtResource("tank")]
 position = Vector3(2.5, 0, 12)
-metadata/asset_id = "city_kit_industrial/detail-tank"
-
-[node name="Visual" parent="TankWest" instance=ExtResource("tank")]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
-
-[node name="TacticalVolume" type="Node3D" parent="TankWest"]
-position = Vector3(0, 1.038239, 0)
-metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
-metadata/round_volume = true
-metadata/presentation_shape = &"box"
-metadata/max_shape_revision = 7
-
-[node name="DrumTacticalVolume" type="Node3D" parent="TankWest"]
-position = Vector3(0, 1.038239, 0)
-metadata/solid_size = Vector3(4.240002, 2.076478, 2.576478)
-metadata/min_shape_revision = 8
 
 [node name="ContainerEast" type="Node3D" parent="."]
 position = Vector3(13, 0, 12)

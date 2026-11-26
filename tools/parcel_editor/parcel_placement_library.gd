@@ -5,6 +5,7 @@ const Assets = preload("res://tools/asset_lab/asset_catalog.gd")
 const Semantics = preload("res://tools/asset_lab/semantic_asset_catalog.gd")
 const MeshBounds = preload("res://tools/parcel_editor/mesh_tactical_bounds.gd")
 const TACTICAL := {
+	"city_kit_industrial/detail-tank": preload("res://art/environments/authored/objects/horizontal_drum.tscn"),
 	"factory_kit/box-large": preload("res://art/environments/authored/objects/box_large.tscn"),
 	"city_kit_industrial/shipping-container-a": preload("res://art/environments/authored/objects/container_a.tscn"),
 	"city_kit_industrial/shipping-container-b": preload("res://art/environments/authored/objects/container_b.tscn"),

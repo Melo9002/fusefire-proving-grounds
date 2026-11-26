@@ -279,9 +279,9 @@ func _drum_battle() -> void:
 	check(old.generation_errors.is_empty(), "Revision 7 reconstructs the published Depot standing-point signature")
 	var middle := Vector3i(25, 0, 2)
 	check(not data.get_cell(middle).can_stop, "The middle of the drum remains physically blocked")
-	var solid := CombatRules.get_blocking_cell(Vector3(3.5, 1, -17.5), Vector3(7.0, 1, -17.5), grid)
-	check(solid != null and solid.authored_shot_bounds.size.is_equal_approx(Vector3(2.576478, 2.076478, 4.240002)),
-		"Shots through the middle still hit the measured drum bounds")
+	var solid := CombatRules.get_blocking_cell(Vector3(3.5, 1, -16.5), Vector3(7.0, 1, -16.5), grid)
+	check(solid != null and solid.authored_shot_bounds.size.is_equal_approx(Vector3(1.8602, 1.8602, 3.2902)),
+		"Shots through the middle still hit the measured barrel component")
 	for index in 2:
 		var z := 0 if index == 0 else 5
 		var actor := battle.turn_manager.player_units[index]
@@ -303,6 +303,29 @@ func _drum_battle() -> void:
 			"MIRA follows the approved route to the canonical drum end point")
 		print("[DrumWalk] %s to %s at %s" % [start, destination, point])
 		await _capture(battle, point, "depot-drum-end-%d" % index)
+	old_manifest.compiler_revision = 8
+	old_manifest.standing_points_signature = "73da5f08a3a31f323d66a65d14596070e5bb5eb974d763ce3d126ab8e4013eb3"
+	var boxed := BattlefieldCatalog.generate(BattlefieldCatalog.SERVICE_DEPOT, Vector2i.ZERO, 16, 1.0, old_manifest)
+	check(boxed.generation_errors.is_empty(), "Revision 8 reconstructs the original solid drum box")
+	var pipe_cell := Vector3i(25, 0, 1)
+	check(not data.get_cell(pipe_cell).can_stop, "The pipe stays solid between the open shoulders")
+	var pipe := CombatRules.get_blocking_cell(Vector3(4.9, 0.6, -18.5), Vector3(6.1, 0.6, -18.5), grid)
+	check(pipe != null and pipe.authored_shot_bounds.size.x < 0.5, "Shots through the pipe hit its own narrow solid")
+	for index in 2:
+		var actor := battle.turn_manager.player_units[index]
+		var x := 24 if index == 0 else 26
+		var start := Vector3i(x, 0, 0)
+		var destination := Vector3i(x, 0, 1)
+		check(not boxed.get_cell(destination).can_stop, "The old drum box blocks each pipe shoulder")
+		_set_fixture_cell(grid, actor, start)
+		battle.turn_manager.select_player_unit(actor)
+		var preview := controller.query_move(actor, destination)
+		check(preview.is_legal() and preview.path_cells == [start, destination],
+			"Each pipe shoulder can be reached in one checked step")
+		if not preview.is_legal(): continue
+		check(await controller.try_move(actor, destination) and actor.grid_position == destination,
+			"MIRA commits the move into the pipe shoulder")
+		await _capture(battle, Vector3(5.5, 0.0, -18.5), "depot-drum-shoulder-%d" % index)
 	battle.free()
 	await process_frame
 
