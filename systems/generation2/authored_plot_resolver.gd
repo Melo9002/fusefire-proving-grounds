@@ -22,7 +22,7 @@ static func resolve(catalog, map_seed: int, population_enabled: bool = true, req
 			result.errors.append(_error("UNSUPPORTED_MANIFEST", String(plot.plot_id)))
 			return result
 		var revision: Variant = requested.get("compiler_revision", LEGACY_COMPILER_REVISION)
-		if not (revision is int or revision is float) or revision not in [1, 2, 3, 4, 5, 6, COMPILER_REVISION]:
+		if not (revision is int or revision is float) or revision not in [1, 2, 3, 4, 5, 6, 7, COMPILER_REVISION]:
 			result.errors.append(_error("UNSUPPORTED_COMPILER_REVISION", "%s requires %s. This build supports revisions 1 through %d." % [plot.plot_id, revision, COMPILER_REVISION]))
 			return result
 		result.compiler_revision = int(revision)

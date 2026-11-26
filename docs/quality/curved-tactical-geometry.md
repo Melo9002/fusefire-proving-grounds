@@ -27,8 +27,8 @@ render triangles.
 Asset definitions carry the shape once, and placed copies inherit it through
 the scene transform. The Depot's measured upright shell has a 3.77104 m
 radius and a 0.35 m local axis offset. An overlapping authored box covers the
-external pipe, including the portion outside the shell. The lying drum keeps
-its historical approximation. The rounded cabinet is a reusable authoring
+external pipe, including the portion outside the shell. Revision 7 kept the lying drum's historical approximation. Compiler 8
+replaces its stepped reservation with the measured box, as described below. The rounded cabinet is a reusable authoring
 fixture in the real Surface Fit Range battle, with a 3.6 × 2.6 m footprint,
 0.65 m corner radius and 0.41 rad yaw. [Asset authoring and replay details](../asset-edge-placement.md)
 
@@ -192,3 +192,23 @@ The starting baseline ladder log is in `artifacts/curved-tactics/baseline`.
 The reviewed implementation is `a375707` on `codex/curved-tactical-geometry`.
 Dense maps with many curved solids remain outside the measured workload.
 Issue #7 stays open for owner review. [PR #95](https://github.com/Melo9002/fusefire-proving-grounds/pull/95)
+
+
+## Horizontal drum follow-up
+
+In Service Depot seed 16, the yellow horizontal drum's whole-cell stand-ins
+blocked two floor tiles beyond its ends. Each of those points fits the full
+body against the measured solid. Compiler 8 sends the same measured box
+through the standard partial-tile fit, route sweep, shot and cover queries.
+The drum and its supports stay inside this conservative box.
+
+MIRA executed player moves to both newly legal stops. They are `(25, 0, 0)`
+at world `(5.5, 0, -19.5)` and `(25, 0, 5)` at world
+`(5.5, 0, -14.5)`. Both are approximately 0.38 m past the modeled
+end face, with a required 0.32 m of body radius plus clearance. Shots past
+both ends clear the empty space. The middle still blocks standing and
+shooting. Revision 7 reconstructed its published Depot signature and
+retained both old blocked stops. The rendered regression passed 63 checks
+at 1280×720. The earlier full-suite numbers above apply to revision 7.
+
+![MIRA at the restored stop beside the drum's end](images/curved-tactical-geometry/depot-drum-end.jpg)

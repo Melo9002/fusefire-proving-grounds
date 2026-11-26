@@ -1,5 +1,5 @@
 extends SceneTree
-## Real move, occupancy, combat geometry, IK contact and replay through compiler 7.
+## Real move, occupancy, combat geometry, IK contact and compiler-versioned replay.
 const Parcels = preload("res://systems/generation2/authored_parcel_catalog.gd")
 const LocalContent = preload("res://systems/generation2/local_parcel_content.gd")
 const BattleScene = preload("res://levels/prototype_map/prototype_map.tscn")
@@ -23,6 +23,7 @@ func _run() -> void:
 	Engine.time_scale = 12.0 if DisplayServer.get_name() == "headless" else 1.0
 	_primitive_cases()
 	await _tank_battle()
+	await _drum_battle()
 	await _range_replay()
 	print("Curved tactical battle: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
@@ -254,6 +255,56 @@ func _tank_shot(battle: BattleLevel, actor: TacticalUnit, tank: CylinderPart) ->
 func _set_fixture_cell(grid: GridManager, unit: TacticalUnit, cell: Vector3i) -> void:
 	grid.update_unit_position(unit, unit.grid_position, cell)
 	unit.global_position = grid.grid_to_world(cell) + Vector3.UP * unit.standing_height
+
+func _drum_battle() -> void:
+	var config := BattleConfiguration.new()
+	config.generated_map = true
+	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
+	config.battle_seed = 16
+	config.player_count = 2
+	config.enemy_count = 2
+	var battle := _make_battle(config)
+	await process_frame
+	if not battle.battle_initialization_succeeded:
+		check(false, "Depot drum battle initializes")
+		battle.free()
+		return
+	var controller := battle.battle_controller
+	var grid := controller.grid_manager
+	var data := grid.map_data
+	var old_manifest := data.content_manifest.duplicate(true)
+	old_manifest.compiler_revision = 7
+	old_manifest.standing_points_signature = "cdfa61020838350c9d81b07e7d674f5152760c67c7091ce0013852b03f433273"
+	var old := BattlefieldCatalog.generate(BattlefieldCatalog.SERVICE_DEPOT, Vector2i.ZERO, 16, 1.0, old_manifest)
+	check(old.generation_errors.is_empty(), "Revision 7 reconstructs the published Depot standing-point signature")
+	var middle := Vector3i(25, 0, 2)
+	check(not data.get_cell(middle).can_stop, "The middle of the drum remains physically blocked")
+	var solid := CombatRules.get_blocking_cell(Vector3(3.5, 1, -17.5), Vector3(7.0, 1, -17.5), grid)
+	check(solid != null and solid.authored_shot_bounds.size.is_equal_approx(Vector3(2.576478, 2.076478, 4.240002)),
+		"Shots through the middle still hit the measured drum bounds")
+	for index in 2:
+		var z := 0 if index == 0 else 5
+		var actor := battle.turn_manager.player_units[index]
+		var start := Vector3i(24, 0, z)
+		var destination := Vector3i(25, 0, z)
+		var previous := old.get_cell(destination)
+		check(previous != null and not previous.can_stop, "The older drum compiler keeps its original blocked end tile")
+		check(grid.can_unit_occupy_cell(actor, start), "Legal approach to the end of the drum")
+		_set_fixture_cell(grid, actor, start)
+		battle.turn_manager.select_player_unit(actor)
+		var preview := controller.query_move(actor, destination)
+		check(preview.is_legal(), "Move preview offers the recovered drum end %s" % destination)
+		if not preview.is_legal(): continue
+		var point := grid.grid_to_world(destination)
+		var ray := CombatRules.get_blocking_cell(point + Vector3(-0.9, 1, 0), point + Vector3(0.9, 1, 0), grid)
+		check(ray == null, "The visible gap past the drum end also clears a shot")
+		check(await controller.try_move(actor, destination) and actor.grid_position == destination
+			and (actor.global_position - Vector3.UP * actor.standing_height).is_equal_approx(point),
+			"MIRA follows the approved route to the canonical drum end point")
+		print("[DrumWalk] %s to %s at %s" % [start, destination, point])
+		await _capture(battle, point, "depot-drum-end-%d" % index)
+	battle.free()
+	await process_frame
 
 func _range_replay() -> void:
 	var parcel = Parcels.get_definition(Parcels.SURFACE_FIT_RANGE)
