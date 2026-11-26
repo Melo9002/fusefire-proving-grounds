@@ -18,7 +18,7 @@ static func resolve_map(data: MapData, unit: float) -> void:
 		cell.is_vault_transit = false
 		cell.world_position = cell.support_center
 		cell.elevation = cell.support_center.y
-		var fit := Fit.resolve(cell.support_center, _local_parts(data, cell.support_center, cell.support_center, unit * 0.5 + data.body_radius + data.body_clearance), data.body_radius, data.body_height, data.body_clearance, unit, Vector3.INF, true)
+		var fit := Fit.resolve(cell.support_center, _local_parts(data, cell.support_center, cell.support_center, unit * 0.5 + data.body_radius + data.body_clearance), data.body_radius, data.body_height, data.body_clearance, unit, Vector3.INF, true, _local_curves(data, cell.support_center, cell.support_center, unit * 0.5 + data.body_radius + data.body_clearance))
 		var valid: bool = fit.fits
 		if valid:
 			var point: Vector3 = fit.position
@@ -59,7 +59,7 @@ static func _bounds_less(a: AABB, b: AABB) -> bool:
 static func body_clear(data: MapData, point: Vector3) -> bool:
 	for part in _local_parts(data, point, point, data.body_radius + data.body_clearance):
 		if Fit._intersects_body(point, part, data.body_radius + data.body_clearance - data.surface_unit / PRECISION, data.body_height, true): return false
-	return true
+	return _curves_clear(data, point, point)
 
 ## Whole circular footprint must be on existing floor cells, including at edges.
 ## Route tolerance permits the existing one-level step/ramp representation.
@@ -119,6 +119,11 @@ static func _compute_traversal_route(data: MapData, from: Vector3, to: Vector3) 
 				var high := to if from.y < to.y else from
 				return PackedVector3Array([from, Vector3(low.x, high.y, low.z), to])
 	if is_equal_approx(from.y, to.y):
+		if not _curves_clear(data, from, to):
+			for elbow in [Vector3(from.x, from.y, to.z), Vector3(to.x, from.y, from.z)]:
+				if not elbow.is_equal_approx(from) and not elbow.is_equal_approx(to) and _sweep_clear(data, from, elbow, true) and _sweep_clear(data, elbow, to, true):
+					return PackedVector3Array([from, elbow, to])
+			return PackedVector3Array([from, to])
 		var radius := data.body_radius + data.body_clearance - data.surface_unit / PRECISION
 		var peak := from.y
 		var blocked := false
@@ -170,6 +175,7 @@ static func _sweep_clear(data: MapData, from: Vector3, to: Vector3, require_floo
 	for part in _local_parts(data, from, to, radius):
 		var expanded := AABB(part.position - Vector3(radius, data.body_height, radius), part.size + Vector3(radius * 2, data.body_height, radius * 2))
 		if segment_enters(from, to, expanded): return false
+	if not _curves_clear(data, from, to): return false
 	if not require_floor: return true
 	if is_equal_approx(from.y, to.y):
 		# The swept enclosing box needs a supported footprint. Check each floor
@@ -215,6 +221,30 @@ static func _local_parts(data: MapData, from: Vector3, to: Vector3, margin: floa
 	var result: Array[AABB] = []
 	for index in indices: result.append(data.movement_parts[index])
 	return result
+
+static func _local_curves(data: MapData, from: Vector3, to: Vector3, margin: float) -> Array[CylinderPart]:
+	if data.curved_parts.is_empty(): return []
+	var bounds := data.curved_envelope
+	if minf(from.x, to.x) - margin > bounds.end.x or maxf(from.x, to.x) + margin < bounds.position.x \
+		or minf(from.z, to.z) - margin > bounds.end.z or maxf(from.z, to.z) + margin < bounds.position.z:
+		return []
+	if data.curved_parts.size() == 1: return data.curved_parts
+	var result: Array[CylinderPart] = []
+	var half := Vector2(data.map_size) * 0.5
+	var seen := {}
+	for x in range(floori((minf(from.x, to.x) - margin) / data.surface_unit + half.x), floori((maxf(from.x, to.x) + margin) / data.surface_unit + half.x) + 1):
+		for z in range(floori((minf(from.z, to.z) - margin) / data.surface_unit + half.y), floori((maxf(from.z, to.z) + margin) / data.surface_unit + half.y) + 1):
+			for obstacle: MapCellData in data.curved_columns.get(Vector2i(x, z), []):
+				if not seen.has(obstacle):
+					seen[obstacle] = true
+					result.append(obstacle.curved_part)
+	return result
+
+static func _curves_clear(data: MapData, from: Vector3, to: Vector3) -> bool:
+	if data.curved_parts.is_empty(): return true
+	for curve in _local_curves(data, from, to, data.body_radius + data.body_clearance):
+		if not curve.segment_clear(from, to, data.body_radius, data.body_height, data.body_clearance, data.surface_unit / PRECISION): return false
+	return true
 
 static func segment_enters(from: Vector3, to: Vector3, bounds: AABB) -> bool:
 	var enter := 0.0
@@ -291,9 +321,15 @@ static func _unit_segment_clear(grid: GridManager, from: Vector3, to: Vector3, i
 const ROUND_REACH_UNITS := 1.75
 
 ## Presentation-only contacts with the real wall of round assets (MapData.presentation_*).
-## Cover markers and pose contacts use these; tactics (cover, shots, standing points) never do.
+## Cover markers and pose contacts use canonical revision-7 geometry and historical stand-ins.
 static func presentation_contacts(data: MapData, point: Vector3, reach: float) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	for part in _local_curves(data, point, point, reach):
+		var contact := part.contact(point, data.body_radius, data.body_height, data.body_clearance)
+		if contact.found and contact.distance <= minf(reach, data.surface_unit * 0.85):
+			var entry := {"contact": contact, "top": part.top()}
+			if not part is RoundedPrism: entry.cylinder = part
+			result.append(entry)
 	for part in data.presentation_cylinders:
 		var contact := part.contact(point, data.body_radius, data.body_height, data.body_clearance)
 		if contact.found and contact.distance <= reach:
@@ -314,7 +350,9 @@ static func cover_surfaces(data: MapData, point: Vector3) -> Array[MapCellData]:
 			var key := Vector2i(x, z)
 			for obstacle: MapCellData in data.shot_columns.get(key, []) + data.columns.get(key, []):
 				if obstacle.cover_type == MapCellData.CoverType.NONE or not obstacle.authored_shot_bounds.has_volume(): continue
-				var contact := Fit.contact(point, obstacle.authored_shot_bounds, data.body_radius, data.body_height, data.body_clearance)
+				if obstacle.curved_part and result.has(obstacle): continue
+				var contact := obstacle.curved_part.contact(point, data.body_radius, data.body_height, data.body_clearance) if obstacle.curved_part \
+					else Fit.contact(point, obstacle.authored_shot_bounds, data.body_radius, data.body_height, data.body_clearance)
 				if contact.found and contact.distance <= reach: result.append(obstacle)
 	return result
 
@@ -325,6 +363,10 @@ static func signature(data: MapData) -> String:
 		var a := (part.position / data.surface_unit * PRECISION).round()
 		var b := (part.size / data.surface_unit * PRECISION).round()
 		records.append("part=%d,%d,%d,%d,%d,%d" % [a.x, a.y, a.z, b.x, b.y, b.z])
+	var curves := PackedStringArray()
+	for curve in data.curved_parts: curves.append(curve.geometry_record(data.surface_unit))
+	curves.sort()
+	for record in curves: records.append("curve=" + record)
 	var keys := data.cells.keys()
 	keys.sort_custom(func(a: Vector3i, b: Vector3i): return a.x < b.x or (a.x == b.x and (a.y < b.y or (a.y == b.y and a.z < b.z))))
 	for key: Vector3i in keys:

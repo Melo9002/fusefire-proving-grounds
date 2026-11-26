@@ -28,6 +28,11 @@ func _run() -> void:
 	config.select_battlefield(BattlefieldCatalog.SERVICE_DEPOT)
 	config.battle_seed = 16
 	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 2)
+	# This test protects the original render-only round contact contract.
+	var modern := BattlefieldCatalog.generate(BattlefieldCatalog.SERVICE_DEPOT, Vector2i.ZERO, 16, 1.0)
+	config.content_manifest = modern.content_manifest.duplicate(true)
+	config.content_manifest.compiler_revision = 6
+	config.content_manifest.erase("standing_points_signature")
 	var live := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
 	live.configure_battle(config)
 	root.add_child(live)

@@ -41,10 +41,10 @@ The lab therefore indexes the object independently of navigation, using the exis
 | 1 | Existing part boxes automatically produce a supported point. Invalid/no-fit cells remain blocked; assets are never moved to suit the grid. |
 | 2 | Swept body/floor clearance validates graph edges, entrances, diagonal corners and neighboring bodies. Existing authored ladders, ramps and stairs supply checked rise-outside/step-on routes, also followed by presentation. |
 | 3 | Shared canonical positions feed movement, previews, combat, Guard, spawning, mission adjacency, contacts and surface-aligned cover markers. |
-| 4 | Compiler **6**, simulation **height-range-8**, Move payload **10**. Points round to **1/10000 tile**. Manifests store a reconstruction signature; moves record XYZ per checkpoint; fingerprints include geometry/profile and within-cell positions. Older simulation recordings reject clearly. Compilers 1–5 preserve historical geometry, including the former compiler-5 opt-in pilot. |
+| 4 | Compiler **6** (historical), simulation **height-range-8**, Move payload **10**. Points round to **1/10000 tile**. Manifests store a reconstruction signature; moves record XYZ per checkpoint; fingerprints include geometry/profile and within-cell positions. Older simulation recordings reject clearly. Compilers 1–5 preserve historical geometry, including the former compiler-5 opt-in pilot. |
 | 5 | All three examples complete real moves and saved replay. Existing authored cover clips, contact direction and weapon IK follow the committed point. Wall-hand/foot IK and new peek firing origins remain future animation work. |
 
-Standing-point fitting and sweeps use the same conservative enclosing body box: a tight rounded corner may reject even if a more sophisticated solver could pass it. Unsupported rises still reject. Existing authored ladders and ElevationPath ramps/stairs provide checked transitions: rise outside the upper floor, then step onto it; reverse downhill. This preserves authored traversal without inferring arbitrary slopes or climbs from a render mesh. Explicit rounded tanks retain their conservative stepped reservation and cover; their unused enclosing-box corners remain free. Exact curved footprints are in progress: see [Round assets](#round-assets-cylinder-geometry-in-progress).
+Rectangular solids use the same conservative enclosing body box for both standing-point fitting and sweeps. Curved solids use the established radius and vertical clearance. Unsupported rises still reject. Existing authored ladders and ElevationPath ramps/stairs provide checked transitions: rise outside the upper floor, then step onto it; reverse downhill. This preserves authored traversal without inferring arbitrary slopes or climbs from a render mesh. Compiler 7 uses exact curved footprints for tagged upright solids. See [Curved tactical geometry](#curved-tactical-geometry).
 
 A route may bend within an edge to enter a valid gap, but both legs require floor and body clearance. Existing low-cover vaults use checked raised transit points that cannot be selected as standing destinations. Thin low barriers can also supply a checked rise/cross/land route; a ceiling or a tall obstacle prevents that route. Presentation follows these same waypoints, while AP and Guard checkpoints remain tied to logical cells.
 
@@ -100,9 +100,9 @@ godot_console --path . res://art/characters/mira_0/demo/surface_fit_demo.tscn
 
 Verification: [original pilot](quality/surface-placement-2026-11-16.md) and [global rollout](quality/surface-rollout-2026-11-16.md).
 
-## Round assets: how they look (presentation)
+## Round assets: historical presentation-only rollout
 
-Round assets stay tactically what they were: whole reserved tiles, the same cover, shots, standing points and replay evidence (hashed on 18 compiled maps before and after: identical). Only what the player sees changed. Cover markers and pose contacts used to be built from the nearest point of the tile-sized stand-in boxes, so they were axis-aligned, floated up to about a tile from the wall and zigzagged. They now follow the real wall.
+Through compiler 6, round assets used: whole reserved tiles, the same cover, shots, standing points and replay evidence (hashed on 18 compiled maps before and after: identical). Only what the player sees changed. Cover markers and pose contacts used to be built from the nearest point of the tile-sized stand-in boxes, so they were axis-aligned, floated up to about a tile from the wall and zigzagged. They now follow the real wall.
 
 ![Round cover before and after](quality/images/round-cover-before-after-2026-11-18.png)
 
@@ -112,13 +112,13 @@ Round assets stay tactically what they were: whole reserved tiles, the same cove
 - **Reach:** a free tile beside a reserved diagonal corner can be about 1.7 tiles from the real wall while the stand-in still grants cover, so presentation contacts reach `SurfaceNavigation.ROUND_REACH_UNITS = 1.75` tiles.
 - Test: `tests/cover_round_presentation_test.gd` (13 checks, on the real Service Depot). Capture with `-- capture <directory>` on a machine with a display.
 
-Not changed: the pose still crouches at the tile, not against the wall (that gap is up to about a tile for diagonal tiles because the tiles are reserved), and the old unreachable gap of unused ground beside round walls remains. Closing it would be a tactical change (the cylinder fit below), not a presentation one.
+This historical version retained the unreachable gap beside round walls. Its crouch started at the tile, which could sit about a tile away along diagonals.
 
-## Round assets: cylinder geometry (in progress)
+## Historical cylinder prototype
 
-Today a `round_volume` asset (the two tanks in `tank_storage.tscn`) is replaced by whole-tile boxes in a stepped, circle-ish pattern, because every geometry layer assumes axis-aligned boxes. By the compiler's own rule that reserves about 1.2 to 1.3 times the tiles of the real circle, leaves reserved corners up to about a tile outside the wall, and puts cover markers and contacts on tile edges instead of the wall.
+Through compiler 6 a `round_volume` asset (the two tanks in `tank_storage.tscn`) is replaced by whole-tile boxes in a stepped, circle-ish pattern, because every geometry layer assumes axis-aligned boxes. By the compiler's own rule that reserves about 1.2 to 1.3 times the tiles of the real circle, leaves reserved corners up to about a tile outside the wall, and puts cover markers and contacts on tile edges instead of the wall.
 
-**Phase 1 (this change, not integrated yet):** `systems/grid/cylinder_part.gd` is pure geometry for a vertical cylinder that answers the questions the box code asks of an AABB, exactly for a curve:
+The original prototype, `systems/grid/cylinder_part.gd`, provides pure geometry for a vertical cylinder that answers the questions the box code asks of an AABB, exactly for a curve:
 
 | Question | Function | Matches the box rule |
 | --- | --- | --- |
@@ -131,4 +131,27 @@ It never reads or mutates a map, actor or occupancy, and a fit is still not perm
 
 Measured with the real functions on a ring of cells around a tank (diagram: [cylinder-census-2026-11-18.png](quality/images/cylinder-census-2026-11-18.png)): the box fit leaves 48 of 64 cells around a radius-2 tank usable, the curve 52. It never loses a cell the box keeps, and it recovers the four diagonal corner cells that the box leaves with no legal point inside the tile. Standing points follow the arc instead of sliding out along a box face. The same four tiles are recovered around a radius-3.5 tank.
 
-**Not done yet (later phases):** emitting cylinders from the compiler for round assets (behind a new compiler revision, so recorded replays keep their historical geometry); using them in navigation sweeps, shots, cover and the pose contacts; cover markers on the actual wall; and a decision about the big tank's side pipe (a separate box beside the cylinder is the likely answer). The lying drum is a rectangle seen from above, so the box is nearly right in plan; only its curved profile is approximated.
+## Curved tactical geometry
+
+Compiler 7 accepts `tactical_curve = &"cylinder"` on an upright solid. Reuse
+`presentation_radius` and `presentation_center` to match the radius and axis of
+an off-center asset. Set `tactical_curve = &"rounded_box"` and
+`tactical_corner_radius` for an upright rounded rectangle. Dimensions and
+metadata are asset-local. Scene yaw, uniform horizontal scale and independent
+positive vertical scale are supported. Unsupported transforms and metadata
+use the solid's full enclosing box. Tag each reusable asset once so placed
+instances inherit its shape.
+
+A compound uses ordinary sibling solids. The Depot tank combines a cylinder
+for the shell and a separate box for the outside pipe. Compiler 8 feeds the horizontal drum's measured box into partial-tile
+placement. Historical compilers retain its stepped reservation. The compiler uses explicit solid
+volumes and does not infer doors, hollows or arbitrary hulls from render meshes.
+
+Curves participate in the same single-point-per-cell fit, support, sweep,
+occupancy, LOS, cover and pose-contact system. Manifests record compiler 7 and
+hash the resulting canonical positions and shapes. A saved manifest for
+compiler 6 reconstructs the historical stepped geometry, including its old
+stopping points and line-of-fire behavior.
+
+See the [integration report](quality/curved-tactical-geometry.md) and the
+[rounded equipment fixture](../tests/fixtures/rounded_equipment.tscn).

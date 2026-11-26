@@ -60,6 +60,7 @@ func _draw_surface_contacts(cells: Array[Vector3i]) -> void:
 		if not cell: continue
 		var seen := {}
 		for obstacle in SurfaceNavigation.cover_surfaces(grid_manager.map_data, cell.world_position):
+			if obstacle.curved_part: continue
 			var bounds := obstacle.authored_shot_bounds
 			# Skip the tile-sized stand-in for a round asset; its real wall is drawn below.
 			if seen.has(bounds) or grid_manager.map_data.presentation_stand_ins.has(bounds): continue

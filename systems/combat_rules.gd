@@ -314,6 +314,9 @@ static func _protecting_cover(attacker_cell: Vector3i, target_cell: Vector3i, gr
 
 static func _cover_type_for_ray(cell: MapCellData, origin: Vector3, protected_point: Vector3, ground_y: float, cell_size: float) -> MapCellData.CoverType:
 	if not cell: return MapCellData.CoverType.NONE
+	if cell.curved_part:
+		if not is_finite(cell.curved_part.ray_entry(origin, protected_point)): return MapCellData.CoverType.NONE
+		return MapCellData.CoverType.FULL if cell.curved_part.top() - ground_y >= 1.2 * cell_size else MapCellData.CoverType.LOW
 	if cell.authored_shot_parts.is_empty() and not cell.authored_shot_bounds.has_volume():
 		return cell.cover_type
 	var parts: Array[AABB] = cell.authored_shot_parts
@@ -353,6 +356,9 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 		if is_finite(entry) and _closer_blocker(data, entry, nearest, nearest_entry):
 			nearest = data
 			nearest_entry = entry
+		# A pure tangent to one continuous curve is open. Only legacy box
+		# cells can take part in the paired-diagonal seam contract.
+		if data.curved_part: continue
 		var closed_entry := _obstacle_entry(origin, destination, data, grid.cell_size, true) if data.blocks_line_of_sight else INF
 		if is_finite(closed_entry):
 			for other in grazed:
@@ -384,18 +390,28 @@ static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, lo
 	# The extra column on each edge preserves diagonal seam checks and the
 	# narrow-phase tolerance at cell boundaries.
 	var candidates: Array[MapCellData] = []
+	var seen_curves := {}
 	for x in range(mini(from.x, to.x) - 1, maxi(from.x, to.x) + 2):
 		for z in range(mini(from.z, to.z) - 1, maxi(from.z, to.z) + 2):
 			for cell: MapCellData in grid.map_data.columns.get(Vector2i(x, z), []):
 				if cell.cover_height > 0.0 and (not los_blockers_only or cell.blocks_line_of_sight):
 					candidates.append(cell)
-			candidates.append_array(grid.map_data.shot_columns.get(Vector2i(x, z), []))
+			var obstacles: Array = grid.map_data.shot_columns.get(Vector2i(x, z), [])
+			if grid.map_data.curved_parts.is_empty():
+				candidates.append_array(obstacles)
+				continue
+			for obstacle: MapCellData in obstacles:
+				if obstacle.curved_part:
+					if seen_curves.has(obstacle): continue
+					seen_curves[obstacle] = true
+				candidates.append(obstacle)
 	return candidates
 
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
 	return is_finite(_obstacle_entry(origin, destination, cell, cell_size, closed_edges))
 
 static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> float:
+	if cell.curved_part: return cell.curved_part.ray_entry(origin, destination, closed_edges)
 	if not cell.authored_shot_parts.is_empty():
 		var nearest := INF
 		for part in cell.authored_shot_parts:

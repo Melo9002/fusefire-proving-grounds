@@ -15,6 +15,10 @@ var shot_obstacles: Array[MapCellData] = []
 var shot_columns: Dictionary = {}
 ## Presentation-query invalidation; not simulation state or replay evidence.
 var los_revision := 0
+## Authoritative curves and their column index for standing, sweeps and shots.
+var curved_parts: Array[CylinderPart] = []
+var curved_columns: Dictionary = {}
+var curved_envelope := AABB()
 ## Presentation-only shapes for round assets, in world units. Tactics never read these: the
 ## reserved tiles, cover, shots and standing points are unchanged. Cover markers and pose
 ## contacts use them so they follow the real wall instead of the tile-sized stand-ins below.
@@ -137,6 +141,34 @@ func add_shot_obstacle(obstacle: MapCellData) -> void:
 	if not shot_columns.has(column): shot_columns[column] = []
 	shot_columns[column].append(obstacle)
 
+## Index one obstacle identity across its full envelope. The envelope is only
+## for lookup/debug drawing; the exact shape answers movement and shot queries.
+func add_curved_obstacle(part: CylinderPart, unit: float) -> void:
+	var bounds := part.enclosing_bounds()
+	var half := Vector2(map_size) * 0.5
+	var lower := Vector2i(floori(bounds.position.x / unit + half.x), floori(bounds.position.z / unit + half.y)).max(Vector2i.ZERO)
+	var upper := Vector2i(ceili(bounds.end.x / unit + half.x), ceili(bounds.end.z / unit + half.y)).min(map_size)
+	if lower.x >= upper.x or lower.y >= upper.y: return
+	curved_envelope = bounds if curved_parts.is_empty() else curved_envelope.merge(bounds)
+	curved_parts.append(part)
+	var obstacle := MapCellData.new(Vector3i(lower.x, floori(part.center.y / unit), lower.y), part.center)
+	obstacle.curved_part = part
+	obstacle.authored_shot_bounds = bounds
+	obstacle.cover_height = part.height
+	obstacle.cover_type = MapCellData.CoverType.FULL if part.height >= unit * 1.2 else MapCellData.CoverType.LOW
+	obstacle.walkable = false
+	obstacle.can_stop = false
+	obstacle.blocks_line_of_sight = true
+	add_shot_obstacle(obstacle)
+	for x in range(lower.x, upper.x):
+		for z in range(lower.y, upper.y):
+			var key := Vector2i(x, z)
+			if not curved_columns.has(key): curved_columns[key] = []
+			curved_columns[key].append(obstacle)
+			if key == lower: continue
+			if not shot_columns.has(key): shot_columns[key] = []
+			shot_columns[key].append(obstacle)
+
 func get_walkable_elevation_levels() -> Array[int]:
 	var seen: Dictionary = {}
 	for cell: MapCellData in cells.values():
@@ -162,6 +194,9 @@ func get_inspectable_elevation_levels() -> Array[int]:
 
 func clear() -> void:
 	los_revision += 1
+	curved_parts.clear()
+	curved_columns.clear()
+	curved_envelope = AABB()
 	presentation_cylinders.clear()
 	presentation_boxes.clear()
 	presentation_stand_ins.clear()
