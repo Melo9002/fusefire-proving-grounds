@@ -16,11 +16,14 @@ const FREIGHT_YARD := &"freight_yard"
 const FLEET_STATION := &"fleet_station"
 const SERVICE_DEPOT := &"service_depot"
 const TACTICAL_TEST_RANGE := &"tactical_test_range"
+const CONTEXTUAL_BAY := &"contextual_firing_bay"
+const ContextualBay = preload("res://systems/generation/contextual_firing_bay.gd")
 const PARCEL_TEST := &"parcel_editor_test"
 const CurrentGenerator = preload("res://systems/generation2/generator.gd")
 
 
 const DEFINITIONS := {
+	CONTEXTUAL_BAY: {"label": "Contextual Firing Bay", "source_kind": CONTEXTUAL_BAY, "fixed_size": Vector2i(12, 12)},
 	FREIGHT_YARD: {"label": "Freight Yard", "source_kind": CurrentGenerator.FREIGHT_SOURCE, "fixed_size": CurrentGenerator.FREIGHT_SIZE},
 	FLEET_STATION: {"label": "Fleet Station", "source_kind": CurrentGenerator.FLEET_SOURCE, "fixed_size": CurrentGenerator.FLEET_SIZE},
 	PARCEL_TEST: {"label": "Local parcel test", "source_kind": CurrentGenerator.ParcelTest.SOURCE, "fixed_size": Vector2i.ZERO},
@@ -72,6 +75,7 @@ static func id_from_configuration(data: Dictionary, fallback: StringName = GENER
 static func generate(id: StringName, requested_size: Vector2i, map_seed: int, cell_size: float, requested_manifest: Dictionary = {}) -> MapData:
 	var size := map_size(id, requested_size)
 	match id:
+		CONTEXTUAL_BAY: return ContextualBay.generate(map_seed, cell_size)
 		FREIGHT_YARD:
 			return CurrentGenerator.generate(CurrentGenerator.FREIGHT_SOURCE, map_seed, cell_size, requested_manifest)
 		FLEET_STATION:
@@ -98,6 +102,9 @@ static func present_special(data: MapData, parent: Node3D, cell_size: float, wor
 
 ## Current maps bypass the old procedural renderer entirely.
 static func present(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
+	if data.source_kind == CONTEXTUAL_BAY:
+		ContextualBay.present(data, parent)
+		return true
 	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
 		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:

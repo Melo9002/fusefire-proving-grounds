@@ -83,7 +83,8 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 		if curve != null:
 			data.add_curved_obstacle(curve, unit)
 		else:
-			_stamp_volume(data, transform, node.get_meta("solid_size"), not wants_curve and node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node))
+			_stamp_volume(data, transform, node.get_meta("solid_size"), not wants_curve and node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node), String(node.get_meta("shot_label", "")),
+				node.get_meta("shot_local_parts", []) if shape_revision >= 10 and data.surface_placement_enabled else [])
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -168,11 +169,21 @@ static func _register_presentation(data: MapData, transform: Transform3D, dimens
 	var part := CylinderPart.create(Vector3(axis.x, bounds.position.y, axis.z), radius * scale, bounds.size.y)
 	if part.is_valid(): data.presentation_cylinders.append(part)
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false, presentation := {}) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false, presentation := {}, shot_label := "", shot_local_parts: Array = []) -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var world_units := data.surface_placement_enabled
 	var coordinate_unit := unit if world_units else 1.0
 	var shot_bounds := bounds if world_units else AABB(bounds.position * unit, bounds.size * unit)
+	# Keep the standing/movement hull. A measured upper silhouette can differ
+	# while the body envelope stays conservative. Parts share this hull's index.
+	var shot_parts: Array[AABB] = []
+	var local_hull := AABB(-dimensions * 0.5, dimensions)
+	for part in shot_local_parts:
+		if not part is AABB or not part.has_volume() or not local_hull.encloses(part):
+			shot_parts.clear() # Invalid optional metadata falls back to the full hull.
+			break
+		shot_parts.append(transform * part)
+	if shot_parts.is_empty(): shot_parts.append(shot_bounds)
 	if world_units and round_volume: _register_presentation(data, transform, dimensions, bounds, presentation)
 	if data.surface_placement_enabled and not round_volume and not data.movement_parts.has(shot_bounds): data.movement_parts.append(shot_bounds)
 	var lower := Vector2i(floori(bounds.position.x / coordinate_unit + data.map_size.x * 0.5), floori(bounds.position.z / coordinate_unit + data.map_size.y * 0.5))
@@ -204,8 +215,9 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				cell.can_stop = false
 				# Overlapping solids retain the conservative cell contract.
 				if separate_parts and precise_shot_bounds and not round_volume and (cell.cover_height <= 0.0 or not cell.authored_shot_parts.is_empty()):
-					cell.authored_shot_parts.append(shot_bounds)
-					cell.authored_shot_bounds = shot_bounds if cell.authored_shot_parts.size() == 1 else cell.authored_shot_bounds.merge(shot_bounds)
+					# Keep the independent index envelope wide enough for all parts.
+					cell.authored_shot_bounds = shot_bounds if cell.authored_shot_parts.is_empty() else cell.authored_shot_bounds.merge(shot_bounds)
+					cell.authored_shot_parts.append_array(shot_parts)
 				else:
 					cell.authored_shot_parts.clear()
 					cell.authored_shot_bounds = shot_bounds if precise_shot_bounds and not round_volume and cell.cover_height <= 0.0 else AABB()
@@ -232,6 +244,8 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				obstacle.cover_height = shot_bounds.size.y
 				obstacle.blocks_line_of_sight = true
 				obstacle.authored_shot_bounds = shot_bounds
+				obstacle.shot_obstacle_label = shot_label
+				if not shot_local_parts.is_empty(): obstacle.authored_shot_parts.assign(shot_parts)
 				obstacle.cover_type = MapCellData.CoverType.FULL if shot_bounds.size.y >= unit * 1.2 else MapCellData.CoverType.LOW
 				data.add_shot_obstacle(obstacle)
 

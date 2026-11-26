@@ -504,9 +504,10 @@ func _update_attack_preview() -> void:
 	var inspect_shot := is_attack_mode_active or (not is_move_mode_active and not is_shield_mode_active and not is_overwatch_mode_active)
 	if inspect_shot and not is_action_in_progress and is_instance_valid(tactical_unit):
 		var hovered = mouse_raycaster.get_unit_under_mouse()
-		if is_instance_valid(hovered) and FactionRules.are_hostile(tactical_unit.faction, hovered.faction):
+		if is_instance_valid(hovered) and hovered.is_visible_in_tree() and FactionRules.are_hostile(tactical_unit.faction, hovered.faction):
 			var query := query_attack(tactical_unit, hovered)
-			_set_tactical_preview(TacticalFeedbackText.shot(query), TacticalFeedbackText.chance_color(query.hit_chance, query.is_legal()))
+			var counterfire := CombatRules.evaluate_attack(hovered, tactical_unit, grid_manager, null, 0, shield_enabled)
+			_set_tactical_preview(TacticalFeedbackText.shot(query, false, counterfire), TacticalFeedbackText.chance_color(query.hit_chance, query.is_legal()))
 			feedback_shown = true
 			preview = "%d%% HIT" % query.hit_chance if query.is_legal() else query.reason.to_upper()
 			if query.is_legal() and query.obstruction != "Clear":
@@ -624,8 +625,11 @@ func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
 		attacker_grid, grid_manager.grid_to_world(attacker_grid), attacker.standing_height, attacker.attack_range,
 		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights]
 	var key := attacker.get_instance_id()
+	# A side step depends on same-height bodies and stance, which the
+	# direct-lane cache deliberately ignores. Contextual bays query live.
+	var cache_direct := not data.contextual_steps.has(attacker_grid)
 	var cached: Dictionary = _shot_cell_cache.get(key, {})
-	if cached.get("signature") == signature:
+	if cache_direct and cached.get("signature") == signature:
 		cells.assign(cached.cells)
 		return cells
 	if _shot_cell_cache.size() >= 32: _shot_cell_cache.clear()
@@ -642,7 +646,7 @@ func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
 			cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
 		return a.x < b.x or (a.x == b.x and (a.z < b.z or (a.z == b.z and a.y < b.y))))
-	_shot_cell_cache[key] = {"signature": signature, "cells": cells.duplicate()}
+	if cache_direct: _shot_cell_cache[key] = {"signature": signature, "cells": cells.duplicate()}
 	return cells
 
 func world_to_grid(pos: Vector3) -> Vector3i:

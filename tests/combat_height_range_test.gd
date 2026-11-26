@@ -165,7 +165,7 @@ func _run() -> void:
 	var prediction := CombatRules.evaluate_attack_from_cell(actor, actor.grid_position, target, grid, null)
 	var guard := CombatRules.evaluate_attack_at_cell(actor, target, target.grid_position, grid, null)
 	check(query.is_legal() and query.hit_chance == 93 and prediction.hit_chance == 93 and guard.hit_chance == 93, "Service, prediction and checkpoint share height/range calculation")
-	check(TacticalFeedbackText.shot(query).contains("Range penalty 17.5") and TacticalFeedbackText.shot(query).contains("Height +10.0"), "Preview explains the same continuous range/height contributions")
+	check(TacticalFeedbackText.shot(query, true).contains("Range penalty 17.5") and TacticalFeedbackText.shot(query, true).contains("Height +10.0"), "Preview explains the same continuous range/height contributions")
 	check(before == BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager) and rng_before == level.battle_controller.action_service.get_combat_rng_state(), "Height/range queries leave authoritative state and combat RNG untouched")
 	var service := level.battle_controller.action_service
 	var result := await service.submit_attack(service.make_attack_request(actor, target, TacticalActionRequest.Source.PLAYER), true)

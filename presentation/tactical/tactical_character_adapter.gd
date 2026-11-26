@@ -662,6 +662,62 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 	presenter.cancel_hold()
 	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), rig.aim_blend)
 
+## A physical offset of the visual host only. The selected simulation solution
+## already certified the same-cell sweep, supports, weapon envelope and ray.
+func present_contextual_attack(offset: Vector3, target_world_position: Vector3) -> void:
+	var tree := get_tree()
+	var home := position
+	var heading := target_world_position - (rig.global_position + offset)
+	var prior_yaw := atan2(rig.character_root.global_basis.z.x, rig.character_root.global_basis.z.z)
+	presenter.face_authoritative(atan2(heading.x, heading.z), false)
+	# Read fresh ankle poses after the facing request has reached the skeleton.
+	for frame in 3:
+		await tree.process_frame
+		if not is_inside_tree(): return
+	var sk := rig.skeleton
+	var ankles: Array[Vector3] = []
+	for bones in [rig.bones.left_leg, rig.bones.right_leg]:
+		ankles.append(sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bones[2])).origin)
+	var hips_y: float = (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(rig.bones.hips)).origin).y
+	var local_offset := (get_parent_node_3d().global_basis.inverse() * offset)
+	await _play_local_step(home, local_offset, offset, ankles, hips_y, false)
+	if not is_inside_tree(): return
+	var attack := present_attack(target_world_position)
+	while not attack.is_done():
+		await tree.process_frame
+		if not is_inside_tree(): return
+	await _play_local_step(home, local_offset, offset, ankles, hips_y, true)
+	if not is_inside_tree(): return
+	position = home
+	rig.traversal_modifier.input.clear()
+	presenter.face_authoritative(prior_yaw, false)
+	present_idle()
+
+func _play_local_step(home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float, returning: bool) -> void:
+	var tree := get_tree()
+	var elapsed := 0.0
+	const STEP_SECONDS := 0.46
+	while elapsed < STEP_SECONDS and is_inside_tree():
+		await tree.process_frame
+		if not is_inside_tree(): return
+		if not can_process(): continue
+		elapsed = minf(STEP_SECONDS, elapsed + get_process_delta_time())
+		var progress := elapsed / STEP_SECONDS
+		_apply_local_step(1.0 - progress if returning else progress, home, local_offset, offset, ankles, hips_y)
+
+func _apply_local_step(progress: float, home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float) -> void:
+	position = home + local_offset * smoothstep(0.0, 1.0, progress)
+	var pose := rig.traversal_modifier.input
+	pose.mode = TraversalPoseInput.Mode.LOCAL_STEP
+	pose.solved = true
+	pose.weight = 1.0
+	pose.pelvis_height = hips_y - sin(progress * PI) * 0.035
+	var first_side := 0 if offset.dot(rig.character_root.global_basis.x) > 0.0 else 1
+	for side in 2:
+		var swing := smoothstep(0.0, 0.5, progress) if side == first_side else smoothstep(0.5, 1.0, progress)
+		pose.ankles_world[side] = ankles[side] + offset * swing + Vector3.UP * (sin(PI * swing) * 0.055)
+		pose.planted[side] = true
+
 ## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.
 func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:
 	if int(cover.type) == MapCellData.CoverType.NONE or not is_instance_valid(presentation_grid):

@@ -105,6 +105,7 @@
   "combat_cover_direction_test": {"sub": ["combat"], "scope": "battle"},
   "combat_cover_smoke": {"sub": ["combat"], "scope": "battle", "fast": true},
   "combat_decision_preview_test": {"sub": ["combat"], "scope": "battle"},
+  "contextual_firing_bay_test": {"sub": ["combat", "actions", "animation", "ai", "replay"], "scope": "battle", "contracts": ["replay"]},
   "combat_geometry_los_test": {"sub": ["combat"], "scope": "battle"},
   "combat_guard_coverage_cache_test": {"sub": ["combat"], "scope": "battle"},
   "combat_height_range_test": {"sub": ["combat"], "scope": "battle"},

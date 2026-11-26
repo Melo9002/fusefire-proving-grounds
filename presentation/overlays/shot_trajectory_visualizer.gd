@@ -11,6 +11,7 @@ var destination_lines: Array[ShotTrajectoryVisualizer] = []
 
 var last_origin := Vector3.ZERO
 var last_destination := Vector3.ZERO
+var last_line_end := Vector3.ZERO
 var last_reason := ""
 var last_blocking_cell: MapCellData
 
@@ -23,6 +24,9 @@ func _ready() -> void:
 	add_child(blocker_marker)
 
 func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRules.AttackEvaluation, targeting := false, action_available := true) -> void:
+	if evaluation.firing_solution:
+		origin = evaluation.firing_solution.origin
+		destination = evaluation.firing_solution.aim_point()
 	last_origin = origin
 	last_destination = destination
 	last_reason = evaluation.reason
@@ -30,7 +34,15 @@ func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRu
 		clear()
 		return
 
-	var direction := destination - origin
+	# The explained sample can extend beyond a blocker, but the drawn line cannot.
+	last_line_end = destination if evaluation.is_legal else origin
+	if evaluation.reason == "Blocked" and evaluation.blocking_point.is_finite():
+		last_line_end = evaluation.blocking_point
+	_draw_blocker(evaluation)
+	var direction := last_line_end - origin
+	if direction.is_zero_approx():
+		mesh_instance.mesh = null
+		return
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = radius
 	cylinder.bottom_radius = radius
@@ -38,10 +50,9 @@ func draw_trajectory(origin: Vector3, destination: Vector3, evaluation: CombatRu
 	cylinder.radial_segments = 8
 	cylinder.rings = 1
 	mesh_instance.mesh = cylinder
-	mesh_instance.position = (origin + destination) * 0.5
+	mesh_instance.position = (origin + last_line_end) * 0.5
 	mesh_instance.quaternion = Quaternion(Vector3.UP, direction.normalized())
 	mesh_instance.material_override = _make_material(_get_color(evaluation, action_available))
-	_draw_blocker(evaluation)
 
 func clear() -> void:
 	if mesh_instance:
@@ -54,6 +65,7 @@ func clear() -> void:
 func draw_destination_options(actor: TacticalUnit, destination: Vector3i, options: Array[Dictionary]) -> void:
 	clear_destination_options()
 	var origin := CombatRules.get_support_position(destination, grid_manager) + Vector3.UP * actor.standing_height
+	if options.size() > 1 and not debug_enabled: return
 	for option in options:
 		var line := ShotTrajectoryVisualizer.new()
 		line.grid_manager = grid_manager
@@ -83,6 +95,14 @@ func _draw_blocker(evaluation: CombatRules.AttackEvaluation) -> void:
 		return
 	last_blocking_cell = evaluation.blocking_cell
 	if not last_blocking_cell:
+		return
+	if evaluation.blocking_point.is_finite() and not debug_enabled:
+		var impact := SphereMesh.new()
+		impact.radius = 0.085
+		impact.height = 0.17
+		blocker_marker.mesh = impact
+		blocker_marker.position = evaluation.blocking_point
+		blocker_marker.material_override = _make_material(Color(1.0, 0.23, 0.16, 1.0))
 		return
 	var box := BoxMesh.new()
 	box.size = Vector3(grid_manager.cell_size * 0.92, last_blocking_cell.cover_height, grid_manager.cell_size * 0.92)

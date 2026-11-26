@@ -29,6 +29,8 @@ var curved_part: CylinderPart
 var authored_shot_parts: Array[AABB] = []
 ## A raised obstruction indexed for shots only; never a navigable map cell.
 var is_shot_only := false
+## Optional public name on an independently indexed authored obstacle.
+var shot_obstacle_label := ""
 var movement_cost: int = 1
 ## Optional authored environmental exposure. Empty cells have no hazard.
 var hazard_condition: ConditionDefinition

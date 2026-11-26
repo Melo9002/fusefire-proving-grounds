@@ -45,7 +45,7 @@ func present_attack(result: AttackActionResult) -> void:
 		result.presentation_error = "Attack actor left the scene during presentation"
 		await _finish_camera(camera_presented)
 		return
-	await _wait_for_shot(attacker.present_attack(result.target_position))
+	await _present_firing_solution(attacker, result.target_position, result.firing_solution)
 	if result.did_hit and is_instance_valid(target):
 		target.present_attack_impact(result.target_defeated)
 		if result.target_defeated: target.finish_defeat_presentation()
@@ -58,7 +58,7 @@ func present_attack(result: AttackActionResult) -> void:
 			var return_camera_subject := _attack_camera_subject(target, attacker)
 			var return_camera_focus := target.global_position if return_camera_subject == attacker else (attacker.global_position if is_instance_valid(attacker) else result.target_position)
 			camera_presented = await action_camera_director.present(return_camera_subject, &"attack", return_camera_focus, 0, true) or camera_presented
-		await _wait_for_shot(target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position))
+		await _present_firing_solution(target, attacker.global_position if is_instance_valid(attacker) else result.target_position, event.firing_solution)
 		if event.did_hit and is_instance_valid(attacker):
 			attacker.present_attack_impact(event.target_defeated)
 			if event.target_defeated: attacker.finish_defeat_presentation()
@@ -68,6 +68,12 @@ func present_attack(result: AttackActionResult) -> void:
 	if camera_presented:
 		await _safe_delay(0.42)
 		await _finish_camera(true)
+
+func _present_firing_solution(actor: TacticalUnit, target_world: Vector3, solution: CombatRules.FiringSolution) -> void:
+	if solution and solution.body_offset != Vector3.ZERO and is_instance_valid(actor.visual_adapter):
+		await actor.visual_adapter.present_contextual_attack(solution.body_offset, solution.facing_point)
+	else:
+		await _wait_for_shot(actor.present_attack(target_world))
 
 func present_reload(result: ReloadActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
@@ -178,7 +184,7 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 				reaction_camera_used = await action_camera_director.present(reaction_camera_subject, &"attack", reaction_camera_focus, 0, true)
 			if not _move_actor_available(unit): return reaction_camera_used
 			if is_instance_valid(watcher):
-				await _wait_for_shot(watcher.present_attack(unit.global_position))
+				await _present_firing_solution(watcher, unit.global_position, event.firing_solution)
 			if event.did_hit and is_instance_valid(unit):
 				unit.present_attack_impact(event.target_defeated)
 			if attack_feedback.is_valid(): attack_feedback.call(watcher, unit, event.did_hit, event.hit_chance)
