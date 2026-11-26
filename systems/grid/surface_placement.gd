@@ -40,6 +40,11 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 		if not curve.is_valid(): return {"fits": false, "reason": "Invalid curved obstacle"}
 		if curve.enclosing_bounds().intersects(search): local_curves.append(curve)
 	if local.size() + local_curves.size() > MAX_PARTS: return {"fits": false, "reason": "Local geometry budget exceeded"}
+	# The expanded curved footprint is convex. Four buried corners mean
+	# every point on the same floor within this logical cell is obstructed.
+	for curve in local_curves:
+		if _curve_contains_tile(curve, center, half_cell, radius, height, clearance):
+			return {"fits": false, "reason": "Curved solid fills the tile"}
 	var xs: Array[float] = [desired.x, center.x - half_cell, center.x + half_cell]
 	var zs: Array[float] = [desired.z, center.z - half_cell, center.z + half_cell]
 	for bounds in local:
@@ -79,6 +84,13 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 		if _clear_candidate(point, local, local_curves, radius, height, clearance, box_footprint):
 			return {"fits": true, "position": point, "offset": point - center, "tested": tested, "reason": "Geometric fit only; support, route and occupancy still require validation"}
 	return {"fits": false, "reason": "No tested body-sized position fits this cell"}
+
+static func _curve_contains_tile(curve: CylinderPart, center: Vector3, half_cell: float, radius: float, height: float, clearance: float) -> bool:
+	for x in [-half_cell, half_cell]:
+		for z in [-half_cell, half_cell]:
+			var corner := center + Vector3(x, 0.0, z)
+			if curve.segment_clear(corner, corner, radius, height, clearance, 0.000001): return false
+	return true
 
 static func _clear_candidate(point: Vector3, boxes: Array[AABB], curves: Array[CylinderPart], radius: float, height: float, clearance: float, box_footprint: bool) -> bool:
 	for bounds in boxes:

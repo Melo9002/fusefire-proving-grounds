@@ -164,6 +164,16 @@ func _move_at_tank(battle: BattleLevel, recovered: Array[Vector3i], tank: Cylind
 	var stand := actor.global_position - Vector3.UP * actor.standing_height
 	check(stand.is_equal_approx(desired) and SurfaceNavigation.body_clear(grid.map_data, stand), "MIRA reaches the canonical body-clear point")
 	var radial := tank.contact(desired)
+	var blocked_adjacent := grid.world_to_grid(desired + radial.direction)
+	check(CombatRules.can_reach_adjacent(start, target, grid)
+		and not CombatRules.can_reach_adjacent(target, blocked_adjacent, grid),
+		"Mission adjacency uses supported reach beside the tank and rejects reaching into it")
+	var ray_start := desired + Vector3.UP
+	var ray_end: Vector3 = ray_start + radial.direction * (radial.distance + 0.03)
+	var same_cell_hit := CombatRules.get_blocking_cell(ray_start, ray_end, grid)
+	check(grid.world_to_grid(ray_start) == grid.world_to_grid(ray_end)
+		and same_cell_hit != null and same_cell_hit.curved_part == tank,
+		"A real curved obstacle still blocks a ray entirely inside the recovered cell")
 	var contact := Pose.cover_at(grid, target, radial.direction)
 	check(contact.get("stand_position", Vector3.INF) == desired and contact.get("surface_normal", Vector3.ZERO).dot(radial.surface_normal) > 0.99,
 		"Pose contact uses the same standing point and actual radial normal")
@@ -172,6 +182,31 @@ func _move_at_tank(battle: BattleLevel, recovered: Array[Vector3i], tank: Cylind
 	print("[CurveTank] start=%s recovered=%s standing=%s contact=%s" % [start, target, desired, radial.distance])
 	await _capture(battle, actor.global_position, "depot-curved-stop")
 	await _tank_shot(battle, actor, tank)
+	await _move_around_tank(battle, actor, tank, radial.surface_normal)
+
+func _move_around_tank(battle: BattleLevel, actor: TacticalUnit, tank: CylinderPart, initial_normal: Vector3) -> void:
+	var controller := battle.battle_controller
+	var grid := controller.grid_manager
+	var plan: MoveQueryResult
+	for x in range(-5, 6):
+		for z in range(-5, 6):
+			var cell := actor.grid_position + Vector3i(x, 0, z)
+			if not grid.can_unit_occupy_cell(actor, cell): continue
+			var contact := tank.contact(grid.grid_to_world(cell))
+			if not contact.found or contact.distance > 0.82 or contact.surface_normal.dot(initial_normal) > 0.85: continue
+			var candidate := controller.query_move(actor, cell)
+			if candidate.is_legal() and candidate.path_cells.size() >= 3:
+				plan = candidate
+				break
+		if plan != null: break
+	check(plan != null, "A multi-edge Move can turn around the tank while staying beside its shell")
+	if plan == null: return
+	var destination: Vector3i = plan.path_cells[-1]
+	var start := actor.grid_position
+	check(await controller.try_move(actor, destination) and actor.grid_position == destination,
+		"Authority follows the computed route around the tank")
+	print("[CurveArc] start=%s end=%s path=%s" % [start, destination, plan.path_cells])
+	await _capture(battle, actor.global_position, "depot-around-tank")
 
 func _tank_shot(battle: BattleLevel, actor: TacticalUnit, tank: CylinderPart) -> void:
 	var controller := battle.battle_controller

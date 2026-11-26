@@ -18,6 +18,7 @@ var los_revision := 0
 ## Authoritative curves and their column index for standing, sweeps and shots.
 var curved_parts: Array[CylinderPart] = []
 var curved_columns: Dictionary = {}
+var curved_envelope := AABB()
 ## Presentation-only shapes for round assets, in world units. Tactics never read these: the
 ## reserved tiles, cover, shots and standing points are unchanged. Cover markers and pose
 ## contacts use them so they follow the real wall instead of the tile-sized stand-ins below.
@@ -148,6 +149,7 @@ func add_curved_obstacle(part: CylinderPart, unit: float) -> void:
 	var lower := Vector2i(floori(bounds.position.x / unit + half.x), floori(bounds.position.z / unit + half.y)).max(Vector2i.ZERO)
 	var upper := Vector2i(ceili(bounds.end.x / unit + half.x), ceili(bounds.end.z / unit + half.y)).min(map_size)
 	if lower.x >= upper.x or lower.y >= upper.y: return
+	curved_envelope = bounds if curved_parts.is_empty() else curved_envelope.merge(bounds)
 	curved_parts.append(part)
 	var obstacle := MapCellData.new(Vector3i(lower.x, floori(part.center.y / unit), lower.y), part.center)
 	obstacle.curved_part = part
@@ -194,6 +196,7 @@ func clear() -> void:
 	los_revision += 1
 	curved_parts.clear()
 	curved_columns.clear()
+	curved_envelope = AABB()
 	presentation_cylinders.clear()
 	presentation_boxes.clear()
 	presentation_stand_ins.clear()

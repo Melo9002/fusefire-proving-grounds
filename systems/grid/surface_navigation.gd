@@ -223,8 +223,13 @@ static func _local_parts(data: MapData, from: Vector3, to: Vector3, margin: floa
 	return result
 
 static func _local_curves(data: MapData, from: Vector3, to: Vector3, margin: float) -> Array[CylinderPart]:
+	if data.curved_parts.is_empty(): return []
+	var bounds := data.curved_envelope
+	if minf(from.x, to.x) - margin > bounds.end.x or maxf(from.x, to.x) + margin < bounds.position.x \
+		or minf(from.z, to.z) - margin > bounds.end.z or maxf(from.z, to.z) + margin < bounds.position.z:
+		return []
+	if data.curved_parts.size() == 1: return data.curved_parts
 	var result: Array[CylinderPart] = []
-	if data.curved_parts.is_empty(): return result
 	var half := Vector2(data.map_size) * 0.5
 	var seen := {}
 	for x in range(floori((minf(from.x, to.x) - margin) / data.surface_unit + half.x), floori((maxf(from.x, to.x) + margin) / data.surface_unit + half.x) + 1):
