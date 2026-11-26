@@ -42,7 +42,7 @@ func cinematic_blockers(eye: Vector3, subject: Vector3, already_hidden: Dictiona
 				break
 	return blockers
 
-func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
+func update_view(eye: Vector3, subject: Vector3, delta: float, cut_floor := -100000.0) -> void:
 	if not subject.is_finite():
 		restore_view()
 		return
@@ -56,6 +56,7 @@ func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
 		blocking[geometry] = true
 		geometry.set_instance_shader_parameter(&"aperture_eye", eye)
 		geometry.set_instance_shader_parameter(&"aperture_subject", subject)
+		geometry.set_instance_shader_parameter(&"cut_floor", cut_floor)
 	for geometry in active.keys():
 		if not is_instance_valid(geometry):
 			active.erase(geometry)

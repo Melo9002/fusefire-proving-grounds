@@ -1,6 +1,8 @@
 class_name UnitSelectionVisualizer
 extends Node
 
+const OccludedSelection := preload("res://presentation/overlays/occluded_selection.gdshader")
+
 @export var turn_manager: TurnManager
 @export var battle_controller: BattleController
 @export var outline_color: Color = Color(0.35, 0.9, 1.0, 0.9)
@@ -9,6 +11,7 @@ extends Node
 
 var selected_unit: TacticalUnit
 var _outline_material: StandardMaterial3D
+var _body_outline_material: StandardMaterial3D
 
 func _ready() -> void:
 	_outline_material = StandardMaterial3D.new()
@@ -17,6 +20,12 @@ func _ready() -> void:
 	_outline_material.cull_mode = BaseMaterial3D.CULL_FRONT
 	_outline_material.grow = true
 	_outline_material.grow_amount = outline_width
+	var silhouette := ShaderMaterial.new()
+	silhouette.shader = OccludedSelection
+	silhouette.render_priority = 1
+	silhouette.set_shader_parameter(&"tint", Color(outline_color, 0.19))
+	_body_outline_material = _outline_material.duplicate()
+	_body_outline_material.next_pass = silhouette
 	turn_manager.active_unit_changed.connect(_on_active_unit_changed)
 	battle_controller.debug_enemy_control_changed.connect(_on_debug_enemy_control_changed)
 	battle_controller.debug_player_ai_changed.connect(_on_debug_player_ai_changed)
@@ -33,7 +42,8 @@ func _set_outline(unit, enabled: bool) -> void:
 		return
 	for child in unit.find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance = child as MeshInstance3D
-		mesh_instance.material_overlay = _outline_material if enabled else null
+		var material := _body_outline_material if mesh_instance.skin else _outline_material
+		mesh_instance.material_overlay = material if enabled else null
 
 func _on_debug_enemy_control_changed(_enabled: bool) -> void:
 	_on_active_unit_changed(turn_manager.active_unit)

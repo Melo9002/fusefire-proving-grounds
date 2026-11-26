@@ -2,13 +2,12 @@ class_name CoverVisualizer
 extends Node3D
 
 @export var grid_manager: GridManager
-@export var low_cover_color := Color(0.2, 0.85, 1.0, 0.95)
+@export var low_cover_color := Color(1.0, 0.7, 0.15, 0.95)
 @export var full_cover_color := Color(1.0, 0.7, 0.15, 0.95)
-@export_range(0.05, 0.3, 0.01) var edge_width := 0.12
+@export_range(0.05, 0.3, 0.01) var edge_width := 0.09
 ## Curved walls read from further away than a flat strip, so their band is drawn thicker.
 const ARC_BAND_SCALE := 2.2
-const ARC_TICK_LENGTH := 0.4
-const ARC_TICK_HALF_WIDTH := 0.05
+const STROKE_FRACTION := 0.4
 ## Lifts the band off the wall so it separates from the base shadow and reads from a distance.
 const ARC_WALL_GAP := 0.08
 
@@ -49,8 +48,8 @@ func draw_for_cells(destination_cells: Array[Vector3i]) -> void:
 
 	low_indicator_count = low_edges.size()
 	full_indicator_count = full_edges.size()
-	_low_mesh.mesh = _build_edge_mesh(low_edges)
-	_full_mesh.mesh = _build_edge_mesh(full_edges)
+	_low_mesh.mesh = _build_edge_mesh(low_edges, false)
+	_full_mesh.mesh = _build_edge_mesh(full_edges, true)
 
 func _draw_surface_contacts(cells: Array[Vector3i]) -> void:
 	var low: Array = []
@@ -58,6 +57,7 @@ func _draw_surface_contacts(cells: Array[Vector3i]) -> void:
 	for key in cells:
 		var cell := grid_manager.get_cell_data(key)
 		if not cell: continue
+		var contacts: Array[Dictionary] = []
 		var seen := {}
 		for obstacle in SurfaceNavigation.cover_surfaces(grid_manager.map_data, cell.world_position):
 			if obstacle.curved_part: continue
@@ -69,66 +69,81 @@ func _draw_surface_contacts(cells: Array[Vector3i]) -> void:
 			if not contact.found: continue
 			var point: Vector3 = contact.surface_position
 			point.y = cell.world_position.y + 0.07
-			var marker := {"point": point, "normal": contact.surface_normal}
-			if bounds.end.y - cell.world_position.y >= grid_manager.cell_size * 1.2: full.append(marker)
-			else: low.append(marker)
+			contacts.append({"point": point, "normal": contact.surface_normal, "distance": contact.distance,
+				"full": bounds.end.y - cell.world_position.y >= grid_manager.cell_size * 1.2})
 		for entry in SurfaceNavigation.presentation_contacts(grid_manager.map_data, cell.world_position, grid_manager.cell_size * SurfaceNavigation.ROUND_REACH_UNITS):
 			var wall: Dictionary = entry.contact
-			var round_marker: Dictionary
+			var wall_point: Vector3 = wall.surface_position
+			wall_point.y = cell.world_position.y + 0.07
+			var marker := {"point": wall_point, "normal": wall.surface_normal, "distance": wall.distance,
+				"full": entry.top - cell.world_position.y >= grid_manager.cell_size * 1.2}
 			if entry.has("cylinder"):
-				# An arc hugging the curved wall, not a flat strip at a tile edge.
 				var part: CylinderPart = entry.cylinder
-				round_marker = {"arc": true, "axis": Vector3(part.center.x, cell.world_position.y + 0.07, part.center.z), "radius": part.radius, "angle": atan2(wall.surface_normal.z, wall.surface_normal.x)}
-			else:
-				var wall_point: Vector3 = wall.surface_position
-				wall_point.y = cell.world_position.y + 0.07
-				round_marker = {"point": wall_point, "normal": wall.surface_normal}
-			if entry.top - cell.world_position.y >= grid_manager.cell_size * 1.2: full.append(round_marker)
-			else: low.append(round_marker)
+				marker.axis = Vector3(part.center.x, wall_point.y, part.center.z)
+				marker.radius = part.radius
+				marker.angle = atan2(wall.surface_normal.z, wall.surface_normal.x)
+			contacts.append(marker)
+		contacts.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			if a.full != b.full: return a.full
+			return a.distance < b.distance)
+		var kept: Array[Dictionary] = []
+		for marker in contacts:
+			# A band and its nearby supports can report the same facing from a
+			# cell. Keep the strongest of those, but retain actual corner faces.
+			var duplicate := false
+			for prior in kept:
+				if marker.normal.dot(prior.normal) >= 0.78 and marker.point.distance_to(prior.point) <= grid_manager.cell_size * 0.55:
+					duplicate = true
+					break
+			if duplicate: continue
+			kept.append(marker)
+			if marker.full: full.append(marker)
+			else: low.append(marker)
 	low_indicator_count = low.size()
 	full_indicator_count = full.size()
-	_low_mesh.mesh = _build_contact_mesh(low)
-	_full_mesh.mesh = _build_contact_mesh(full)
+	_low_mesh.mesh = _build_contact_mesh(low, false)
+	_full_mesh.mesh = _build_contact_mesh(full, true)
 
-func _build_contact_mesh(contacts: Array) -> Mesh:
+func _build_contact_mesh(contacts: Array, full_cover: bool) -> Mesh:
 	if contacts.is_empty(): return null
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for contact in contacts:
-		if contact.has("arc"):
-			_add_arc(surface, contact)
+		if contact.has("axis"):
+			_add_arc(surface, contact, full_cover)
 			continue
 		var normal: Vector3 = contact.normal
-		var tangent := Vector3(-normal.z, 0, normal.x) * grid_manager.cell_size * 0.35
-		var outer: Vector3 = contact.point + normal * 0.02
-		var inner := outer + normal * edge_width
-		for point in [outer - tangent, outer + tangent, inner + tangent, outer - tangent, inner + tangent, inner - tangent]: surface.add_vertex(point)
+		var half_length: float = contact.get("half_length", grid_manager.cell_size * 0.26)
+		var tangent := Vector3(-normal.z, 0, normal.x) * half_length
+		_add_strokes(surface, contact.point, normal, tangent, full_cover)
 	surface.generate_normals()
 	return surface.commit()
 
-## A band that follows a circle, long enough that neighboring cells join into one line, with a
-## short outward tick at the cell's own contact angle (the same "line with ticks" read as flat walls).
-func _add_arc(surface: SurfaceTool, arc: Dictionary) -> void:
+func _add_strokes(surface: SurfaceTool, origin: Vector3, normal: Vector3, tangent: Vector3, full_cover: bool) -> void:
+	for index in (2 if full_cover else 1):
+		var near := origin + normal * (0.02 + index * edge_width * (1.0 - STROKE_FRACTION))
+		var far := near + normal * edge_width * STROKE_FRACTION
+		for point in [near - tangent, near + tangent, far + tangent, near - tangent, far + tangent, far - tangent]:
+			surface.add_vertex(point)
+
+func _add_arc(surface: SurfaceTool, arc: Dictionary, full_cover: bool) -> void:
 	var radius: float = arc.radius
 	var axis: Vector3 = arc.axis
 	var half_angle := grid_manager.cell_size * 0.5 / maxf(radius, 0.1)
 	var segments := 8
 	var step := half_angle * 2.0 / segments
-	var inner_radius := radius + ARC_WALL_GAP
-	var outer_radius := inner_radius + edge_width * ARC_BAND_SCALE
-	for index in segments:
-		var first: float = arc.angle - half_angle + index * step
-		var second := first + step
-		var a := axis + Vector3(cos(first), 0, sin(first)) * inner_radius
-		var b := axis + Vector3(cos(second), 0, sin(second)) * inner_radius
-		var c := axis + Vector3(cos(second), 0, sin(second)) * outer_radius
-		var d := axis + Vector3(cos(first), 0, sin(first)) * outer_radius
-		for point in [a, b, c, a, c, d]: surface.add_vertex(point)
-	var direction := Vector3(cos(arc.angle), 0, sin(arc.angle))
-	var side := Vector3(-direction.z, 0, direction.x) * ARC_TICK_HALF_WIDTH
-	var tick_start := axis + direction * outer_radius
-	var tick_end := tick_start + direction * ARC_TICK_LENGTH
-	for point in [tick_start - side, tick_start + side, tick_end + side, tick_start - side, tick_end + side, tick_end - side]: surface.add_vertex(point)
+	var band_width := edge_width * ARC_BAND_SCALE
+	for stripe in (2 if full_cover else 1):
+		var inner_radius := radius + ARC_WALL_GAP + stripe * band_width * (1.0 - STROKE_FRACTION)
+		var outer_radius := inner_radius + band_width * STROKE_FRACTION
+		for index in segments:
+			var first: float = arc.angle - half_angle + index * step
+			var second: float = first + step
+			var a := axis + Vector3(cos(first), 0, sin(first)) * inner_radius
+			var b := axis + Vector3(cos(second), 0, sin(second)) * inner_radius
+			var c := axis + Vector3(cos(second), 0, sin(second)) * outer_radius
+			var d := axis + Vector3(cos(first), 0, sin(first)) * outer_radius
+			for point in [a, b, c, a, c, d]: surface.add_vertex(point)
 
 func clear() -> void:
 	low_indicator_count = 0
@@ -136,44 +151,14 @@ func clear() -> void:
 	_low_mesh.mesh = null
 	_full_mesh.mesh = null
 
-func _build_edge_mesh(edges: Array) -> Mesh:
-	if edges.is_empty():
-		return null
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var half = grid_manager.cell_size * 0.46
+func _build_edge_mesh(edges: Array, full_cover: bool) -> Mesh:
+	var contacts: Array[Dictionary] = []
+	var half := grid_manager.cell_size * 0.46
 	for edge in edges:
-		_add_edge(surface, grid_manager.grid_to_world(edge[0]), edge[1], half)
-	surface.generate_normals()
-	return surface.commit()
-
-func _add_edge(surface: SurfaceTool, center: Vector3, direction: Vector3i, half: float) -> void:
-	var outer_a: Vector3
-	var outer_b: Vector3
-	var inner_a: Vector3
-	var inner_b: Vector3
-	var y = center.y + 0.07
-	if direction.x != 0:
-		var outer_x = center.x + direction.x * half
-		var inner_x = outer_x - direction.x * edge_width
-		outer_a = Vector3(outer_x, y, center.z - half)
-		outer_b = Vector3(outer_x, y, center.z + half)
-		inner_a = Vector3(inner_x, y, center.z - half)
-		inner_b = Vector3(inner_x, y, center.z + half)
-	else:
-		var outer_z = center.z + direction.z * half
-		var inner_z = outer_z - direction.z * edge_width
-		outer_a = Vector3(center.x - half, y, outer_z)
-		outer_b = Vector3(center.x + half, y, outer_z)
-		inner_a = Vector3(center.x - half, y, inner_z)
-		inner_b = Vector3(center.x + half, y, inner_z)
-
-	surface.add_vertex(outer_a)
-	surface.add_vertex(outer_b)
-	surface.add_vertex(inner_b)
-	surface.add_vertex(outer_a)
-	surface.add_vertex(inner_b)
-	surface.add_vertex(inner_a)
+		var normal := -Vector3(edge[1])
+		var point := grid_manager.grid_to_world(edge[0]) - normal * half + Vector3.UP * 0.07
+		contacts.append({"point": point, "normal": normal, "half_length": half})
+	return _build_contact_mesh(contacts, full_cover)
 
 func _create_material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

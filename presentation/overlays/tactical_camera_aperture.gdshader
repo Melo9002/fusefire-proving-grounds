@@ -10,6 +10,7 @@ uniform float surface_metallic = 0.0;
 uniform float surface_specular = 0.5;
 instance uniform float opening = 0.0;
 instance uniform float aperture_radius;
+instance uniform float cut_floor = -100000.0;
 instance uniform vec3 aperture_eye;
 instance uniform vec3 aperture_subject;
 
@@ -38,9 +39,12 @@ void fragment() {
 		if (depth > 0.0 && depth < range) {
 			float radius = aperture_radius * depth / range * sqrt(opening);
 			float radial = length(offset - direction * depth);
-			float cut = 1.0 - smoothstep(radius * 0.70, radius, radial);
+			// Keep a solid band at the actor's floor so the prop still
+			// reads as cover and its ground marker has a visible anchor.
+			float above_base = smoothstep(cut_floor, cut_floor + 0.10, world_position.y);
+			float cut = (1.0 - smoothstep(radius * 0.90, radius, radial)) * above_base;
 			// Stable grain softens the edge without a transparent draw pass.
-			vec3 grain = floor(world_position * 70.0);
+			vec3 grain = floor(world_position * 140.0);
 			float threshold = fract(sin(dot(grain, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 			if (cut > threshold) {
 				discard;
