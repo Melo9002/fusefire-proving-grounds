@@ -22,7 +22,7 @@ static func _intersects_body(point: Vector3, bounds: AABB, radius: float, height
 
 ## Closest tested fit to a requested point, constrained to its logical cell.
 ## The body may extend into adjacent open space; later occupancy must check it.
-static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF, box_footprint := false) -> Dictionary:
+static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF, box_footprint := false, curves: Array[CylinderPart] = []) -> Dictionary:
 	if not _finite(center) or not is_finite(radius) or not is_finite(height) or not is_finite(clearance) or not is_finite(cell_size) or radius <= 0 or height <= 0 or clearance < 0 or cell_size <= 0.002:
 		return {"fits": false, "reason": "Invalid body or cell dimensions"}
 	if preferred != Vector3.INF and not _finite(preferred): return {"fits": false, "reason": "Invalid requested point"}
@@ -35,7 +35,11 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 	for bounds in obstacles:
 		if not _valid_bounds(bounds): return {"fits": false, "reason": "Invalid obstacle bounds"}
 		if bounds.intersects(search): local.append(bounds)
-	if local.size() > MAX_PARTS: return {"fits": false, "reason": "Local geometry budget exceeded"}
+	var local_curves: Array[CylinderPart] = []
+	for curve in curves:
+		if not curve.is_valid(): return {"fits": false, "reason": "Invalid curved obstacle"}
+		if curve.enclosing_bounds().intersects(search): local_curves.append(curve)
+	if local.size() + local_curves.size() > MAX_PARTS: return {"fits": false, "reason": "Local geometry budget exceeded"}
 	var xs: Array[float] = [desired.x, center.x - half_cell, center.x + half_cell]
 	var zs: Array[float] = [desired.z, center.z - half_cell, center.z + half_cell]
 	for bounds in local:
@@ -48,6 +52,22 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 		for z in zs:
 			var point := Vector3(x, center.y, z)
 			if not candidates.has(point): candidates.append(point)
+	if not local_curves.is_empty():
+		if _clear_candidate(desired, local, local_curves, radius, height, clearance, box_footprint):
+			return {"fits": true, "position": desired, "offset": desired - center, "tested": 1}
+		# Projection gives true tangent candidates on simple faces. The fixed
+		# lattice also tests mixed contacts, interior queries and rotated corners.
+		for curve in local_curves:
+			var contact := curve.contact(desired, radius, height, clearance)
+			if contact.found:
+				var point: Vector3 = contact.desired_stand_point
+				point.x = clampf(point.x, center.x - half_cell, center.x + half_cell)
+				point.z = clampf(point.z, center.z - half_cell, center.z + half_cell)
+				if not candidates.has(point): candidates.append(point)
+		for x in 9:
+			for z in 9:
+				var point := center + Vector3(x * 0.25 - 1.0, 0, z * 0.25 - 1.0) * half_cell
+				if not candidates.has(point): candidates.append(point)
 	candidates.sort_custom(func(a: Vector3, b: Vector3):
 		var da := a.distance_squared_to(desired)
 		var db := b.distance_squared_to(desired)
@@ -56,13 +76,16 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 	for point in candidates:
 		if tested >= MAX_CANDIDATES: return {"fits": false, "reason": "Standing-point search budget exceeded"}
 		tested += 1
-		var blocked := false
-		for bounds in local:
-			if _intersects_body(point, bounds, margin, height, box_footprint):
-				blocked = true
-				break
-		if not blocked: return {"fits": true, "position": point, "offset": point - center, "tested": tested, "reason": "Geometric fit only; support, route and occupancy still require validation"}
+		if _clear_candidate(point, local, local_curves, radius, height, clearance, box_footprint):
+			return {"fits": true, "position": point, "offset": point - center, "tested": tested, "reason": "Geometric fit only; support, route and occupancy still require validation"}
 	return {"fits": false, "reason": "No tested body-sized position fits this cell"}
+
+static func _clear_candidate(point: Vector3, boxes: Array[AABB], curves: Array[CylinderPart], radius: float, height: float, clearance: float, box_footprint: bool) -> bool:
+	for bounds in boxes:
+		if _intersects_body(point, bounds, radius + clearance, height, box_footprint): return false
+	for curve in curves:
+		if not curve.segment_clear(point, point, radius, height, clearance, 0.000001): return false
+	return true
 
 ## World-space contact targets for an authored clip plus future procedural fitting.
 ## This does not move the actor, grant cover, plant feet or solve IK.

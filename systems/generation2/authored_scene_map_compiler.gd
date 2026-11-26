@@ -78,7 +78,12 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 		# The pilot consumes existing part boxes automatically; ordinary assets
 		# do not need a new per-asset flag to participate.
 		var use_precise_bounds := precise_shot_bounds and (data.surface_placement_enabled or bool(node.get_meta("precise_shot_bounds", false)))
-		_stamp_volume(data, transform, node.get_meta("solid_size"), node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node))
+		var wants_curve := shape_revision >= 7 and node.has_meta("tactical_curve")
+		var curve := _curved_volume(node, transform) if wants_curve else null
+		if curve != null:
+			data.add_curved_obstacle(curve, unit)
+		else:
+			_stamp_volume(data, transform, node.get_meta("solid_size"), not wants_curve and node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node))
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -126,6 +131,30 @@ static func _presentation_of(node: Node) -> Dictionary:
 	if not node.get_meta("round_volume", false): return {}
 	var center: Vector2 = node.get_meta("presentation_center", Vector2.ZERO)
 	return {"shape": StringName(node.get_meta("presentation_shape", &"cylinder")), "radius": float(node.get_meta("presentation_radius", 0.0)), "center": center}
+
+## Curves are authored once per reusable asset. Tilt, shear and unequal
+## horizontal scale are unsupported and deliberately fall back to the full box.
+static func _curved_volume(node: Node, transform: Transform3D) -> CylinderPart:
+	var dimensions: Vector3 = node.get_meta("solid_size")
+	var x := transform.basis.x
+	var y := transform.basis.y
+	var z := transform.basis.z
+	var scale := x.length()
+	if not transform.is_finite() or not dimensions.is_finite() or dimensions.x <= 0.0 or dimensions.y <= 0.0 or dimensions.z <= 0.0: return null
+	if scale <= 0.0 or y.y <= 0.0 or not is_equal_approx(scale, z.length()): return null
+	if not is_zero_approx(x.y) or not is_zero_approx(z.y) or not is_zero_approx(y.x) or not is_zero_approx(y.z) or not is_zero_approx(x.dot(z) / (scale * scale)): return null
+	var axis_offset: Vector2 = node.get_meta("presentation_center", Vector2.ZERO)
+	var center := transform * Vector3(axis_offset.x, -dimensions.y * 0.5, axis_offset.y)
+	var result: CylinderPart
+	match StringName(node.get_meta("tactical_curve")):
+		&"cylinder":
+			var radius := float(node.get_meta("presentation_radius", minf(dimensions.x, dimensions.z) * 0.5))
+			result = CylinderPart.create(center, radius * scale, dimensions.y * y.y)
+		&"rounded_box":
+			var radius := float(node.get_meta("tactical_corner_radius", 0.0))
+			var half := Vector2(dimensions.x, dimensions.z) * (scale * 0.5)
+			result = RoundedPrism.from_box(center, half, radius * scale, dimensions.y * y.y, Vector2(x.x, x.z).angle())
+	return result if result != null and result.is_valid() else null
 
 ## Records the real shape of a round asset for cover markers and pose contacts only.
 static func _register_presentation(data: MapData, transform: Transform3D, dimensions: Vector3, bounds: AABB, presentation: Dictionary) -> void:

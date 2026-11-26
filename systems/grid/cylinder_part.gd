@@ -13,7 +13,6 @@ extends RefCounted
 ## exactly as for SurfacePlacement. Rounding a result to the canonical 1/10000 tile is the
 ## caller's job; pass the same absolute tolerance the box code uses (surface_unit / 10000).
 ##
-## Not integrated anywhere yet. Today a round asset is replaced by stepped whole-tile boxes.
 
 const MAX_PARTS := 32
 const MAX_CANDIDATES := 256
@@ -44,6 +43,9 @@ func axis() -> Vector2:
 ## The box the existing code would have used for this part.
 func enclosing_bounds() -> AABB:
 	return AABB(Vector3(center.x - radius, center.y, center.z - radius), Vector3(radius * 2.0, height, radius * 2.0))
+
+func geometry_record(unit: float) -> String:
+	return "%s:%d:%d" % [(center / unit * 10000.0).round(), roundi(radius / unit * 10000.0), roundi(height / unit * 10000.0)]
 
 # ---------------------------------------------------------------- shots
 

@@ -39,8 +39,14 @@ position = Vector3(0, 2.404015, 0)
 metadata/solid_size = Vector3(7.54208, 4.80803, 8.24208)
 metadata/round_volume = true
 metadata/presentation_shape = &"cylinder"
+metadata/tactical_curve = &"cylinder"
 metadata/presentation_radius = 3.77104
 metadata/presentation_center = Vector2(0, 0.35)
+
+[node name="PipeTacticalVolume" type="Node3D" parent="MainTank"]
+position = Vector3(0, 2.156, -3.767)
+metadata/solid_size = Vector3(0.502, 4.312, 0.710)
+metadata/min_shape_revision = 7
 
 [node name="TankWest" type="Node3D" parent="."]
 position = Vector3(2.5, 0, 12)

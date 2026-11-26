@@ -247,6 +247,7 @@
   "squad_loss_outcome_test": {"sub": ["core"], "scope": "battle", "crit": "critical", "contracts": ["mission"]},
   "supply_reload_test": {"sub": ["actions", "combat", "equipment"], "scope": "battle", "crit": "critical", "contracts": ["authority"]},
   "surface_battle_replay_test": {"sub": ["movement", "replay"], "scope": "battle", "crit": "critical", "contracts": ["replay"]},
+  "surface_curved_battle_test": {"sub": ["core", "movement", "combat", "ai", "replay"], "scope": "battle", "crit": "critical", "contracts": ["movement", "replay"]},
   "surface_cylinder_test": {"sub": ["core", "movement"], "scope": "unit", "fast": true},
   "surface_fit_demo_test": {"sub": ["core", "movement"], "scope": "component", "fast": true},
   "surface_navigation_test": {"sub": ["core", "movement"], "scope": "integration", "crit": "critical", "contracts": ["movement"], "smoke": true, "fast": true},

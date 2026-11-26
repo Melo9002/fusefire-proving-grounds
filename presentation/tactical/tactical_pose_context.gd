@@ -17,7 +17,7 @@ static func cover_at(grid: GridManager, cell: Vector3i, facing: Vector3) -> Dict
 			var neighbor := grid.get_cell_data(cell + offset)
 			if neighbor: nearby.append(neighbor)
 	for neighbor in nearby:
-		if not neighbor or neighbor.cover_height <= 0 or neighbor.cover_type == MapCellData.CoverType.NONE: continue
+		if not neighbor or neighbor.curved_part or neighbor.cover_height <= 0 or neighbor.cover_type == MapCellData.CoverType.NONE: continue
 		var bounds: Array[AABB] = neighbor.authored_shot_parts.duplicate()
 		if bounds.is_empty():
 			bounds.append(neighbor.authored_shot_bounds if neighbor.authored_shot_bounds.has_volume() else AABB(neighbor.world_position - Vector3(grid.cell_size * 0.5, 0, grid.cell_size * 0.5), Vector3(grid.cell_size, neighbor.cover_height, grid.cell_size)))

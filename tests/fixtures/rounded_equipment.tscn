@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material"]
+albedo_color = Color(0.16, 0.42, 0.48, 1)
+roughness = 0.76
+
+[sub_resource type="BoxMesh" id="Length"]
+material = SubResource("Material")
+size = Vector3(3.6, 1.6, 1.3)
+
+[sub_resource type="BoxMesh" id="Width"]
+material = SubResource("Material")
+size = Vector3(2.3, 1.6, 2.6)
+
+[sub_resource type="CylinderMesh" id="Corner"]
+material = SubResource("Material")
+top_radius = 0.65
+bottom_radius = 0.65
+height = 1.6
+radial_segments = 48
+
+[node name="RoundedEquipment" type="Node3D"]
+
+[node name="TacticalVolume" type="Node3D" parent="."]
+position = Vector3(0, 0.8, 0)
+metadata/solid_size = Vector3(3.6, 1.6, 2.6)
+metadata/tactical_curve = &"rounded_box"
+metadata/tactical_corner_radius = 0.65
+
+[node name="Length" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.8, 0)
+mesh = SubResource("Length")
+
+[node name="Width" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.8, 0)
+mesh = SubResource("Width")
+
+[node name="Corner0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.15, 0.799, -0.65)
+mesh = SubResource("Corner")
+
+[node name="Corner1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.15, 0.799, 0.65)
+mesh = SubResource("Corner")
+
+[node name="Corner2" type="MeshInstance3D" parent="."]
+position = Vector3(1.15, 0.799, -0.65)
+mesh = SubResource("Corner")
+
+[node name="Corner3" type="MeshInstance3D" parent="."]
+position = Vector3(1.15, 0.799, 0.65)
+mesh = SubResource("Corner")
