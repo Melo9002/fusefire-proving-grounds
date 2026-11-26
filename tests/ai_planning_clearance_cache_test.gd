@@ -31,11 +31,21 @@ func _run() -> void:
 	grid.update_unit_position(blocker, blocker.grid_position, Vector3i(1, 0, 22))
 	var wanted: Array[Vector3i] = [start, start + Vector3i.RIGHT, start + Vector3i.BACK, goal]
 	graph.configure_cell(Vector3i(1, 0, 18), true, true, 3)
-	var field := graph.planning_costs_to_goal(goal, wanted, grid, actor)
+	var field: Dictionary = await graph.planning_costs_to_goal(goal, wanted, grid, actor)
 	for cell in wanted:
 		var route := graph.calculate_path_with_occupancy(cell, goal, grid, actor)
 		var expected := graph.get_path_cost(route, level.battle_controller.world_to_grid) if not route.is_empty() else INF
 		check(is_equal_approx(float(field.get(cell, INF)), expected), "Goal field matches occupancy-aware route cost at %s" % cell)
+	var resumed := [0]
+	var keep_going := func() -> bool:
+		if resumed[0] == 0: await process_frame
+		resumed[0] += 1
+		return true
+	var sliced: Variant = await graph.planning_costs_to_goal(goal, wanted, grid, actor, keep_going, 1)
+	check(resumed[0] > 0 and sliced == field, "Budgeted reverse search preserves the exact cost field (checkpoints %d, sizes %d / %d)" % [resumed[0], field.size(), sliced.size() if sliced is Dictionary else -1])
+	var abort := func() -> bool: return false
+	var abandoned: Variant = await graph.planning_costs_to_goal(goal, wanted, grid, actor, abort, 1)
+	check(abandoned == null, "Cancelled goal search returns no partial cost field")
 	graph.configure_cell(Vector3i(1, 0, 18), true, true, 1)
 	var cache := {}
 	var first := graph.calculate_path_with_occupancy(start, goal, grid, actor, cache)
@@ -50,7 +60,7 @@ func _run() -> void:
 		check(shared_route == graph.calculate_3d_path(start, destination),
 			"Same-layout endpoint scan preserves the uncached route to %s" % destination)
 	check(not live_scan.is_empty(), "Occupied route scan exercises scratch edge reuse")
-	var changed_field := graph.planning_costs_to_goal(goal, wanted, grid, actor)
+	var changed_field: Dictionary = await graph.planning_costs_to_goal(goal, wanted, grid, actor)
 	for cell in wanted:
 		var route := graph.calculate_path_with_occupancy(cell, goal, grid, actor)
 		var expected := graph.get_path_cost(route, level.battle_controller.world_to_grid) if not route.is_empty() else INF

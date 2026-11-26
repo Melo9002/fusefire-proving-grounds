@@ -123,7 +123,7 @@ func _carrier_lane_follows_the_carrier() -> void:
 	f.place(escort, f.free_cell_near(escort, Vector3i(6, 0, 18), 4))
 	carrier.carried_unit = casualty   # the carrier predicate only; no action is submitted
 	var squad: SquadContext = f.battle.get_squad_context(carrier)
-	var lane: Dictionary = f.ai_of(carrier)._carrier_route(carrier)
+	var lane: Dictionary = (await f.ai_of(carrier)._carrier_route(carrier))
 	check(lane.size() >= 4 and lane.keys()[0] == start and lane.keys()[-1] == exit, "Setup: the carrier's lane runs from where it stands to the exit (%d cells)" % lane.size())
 	squad.reserve_corridor(carrier, lane)
 	var lane_cells: Array = lane.keys()
@@ -137,7 +137,7 @@ func _carrier_lane_follows_the_carrier() -> void:
 	check(squad.block_reason(escort, start).is_empty() and not squad.block_reason(escort, ahead).is_empty(), "so the escort may use them, and the way ahead stays held")
 	check(squad.corridor_owner == SquadContext._actor_id(carrier), "and the lane is still the carrier's")
 	# The escort's own view of the lane is the live one, not a stale copy.
-	var escort_view: Dictionary = f.ai_of(escort)._carrier_route(carrier)
+	var escort_view: Dictionary = (await f.ai_of(escort)._carrier_route(carrier))
 	check(escort_view.keys()[0] == step, "The escort reads the trimmed lane, starting at the carrier's cell")
 	# The exit moves.
 	var moved_exit := Vector3i(8, 0, 20)
@@ -145,12 +145,12 @@ func _carrier_lane_follows_the_carrier() -> void:
 	f.grid.map_data.set_objective_zone(&"extract", new_zone)
 	squad = f.battle.get_squad_context(escort)
 	check(squad.reserved_corridor.is_empty() and squad.corridor_owner.is_empty(), "A moved exit ends the old lane at the next squad lookup")
-	var new_lane: Dictionary = f.ai_of(escort)._carrier_route(carrier)
+	var new_lane: Dictionary = (await f.ai_of(escort)._carrier_route(carrier))
 	check(new_lane.is_empty() or new_lane.keys()[-1] == moved_exit, "and the escort's route to the carrier's exit is the new one")
 	# Control: the exit unchanged keeps the lane.
 	f.grid.map_data.set_objective_zone(&"extract", zone)
 	squad = f.battle.get_squad_context(carrier)
-	squad.reserve_corridor(carrier, f.ai_of(carrier)._carrier_route(carrier))
+	squad.reserve_corridor(carrier, (await f.ai_of(carrier)._carrier_route(carrier)))
 	squad = f.battle.get_squad_context(escort)
 	check(not squad.reserved_corridor.is_empty(), "Control: with the exit where it was the lane is kept")
 	# The carrier is displaced off the lane.
@@ -160,7 +160,7 @@ func _carrier_lane_follows_the_carrier() -> void:
 	# The carrier is defeated.
 	f.place(carrier, step)
 	squad = f.battle.get_squad_context(carrier)
-	squad.reserve_corridor(carrier, f.ai_of(carrier)._carrier_route(carrier))
+	squad.reserve_corridor(carrier, (await f.ai_of(carrier)._carrier_route(carrier)))
 	check(not f.battle.peek_squad_context(carrier).reserved_corridor.is_empty(), "Setup: a lane is held again")
 	carrier.carried_unit = null
 	carrier.stats.take_damage(9999)
@@ -181,20 +181,20 @@ func _committed_route_is_replanned_when_the_map_changes() -> void:
 	f.place(casualty, f.free_cell_near(casualty, Vector3i(6, 0, 16), 3))
 	carrier.carried_unit = casualty
 	var ai: AIController = f.ai_of(carrier)
-	var first: Array = ai._carrier_route(carrier).keys()
+	var first: Array = (await ai._carrier_route(carrier)).keys()
 	check(first.size() >= 4, "Setup: the carrier commits to a route of %d cells" % first.size())
-	check(ai._carrier_route(carrier).keys() == first and ai._committed_carrier_route.size() == first.size(), "Control: asked again on an unchanged map, it keeps the committed route")
+	check((await ai._carrier_route(carrier)).keys() == first and ai._committed_carrier_route.size() == first.size(), "Control: asked again on an unchanged map, it keeps the committed route")
 	# Something other than a unit changes the map: a cell in the middle of the route closes.
 	var closed: Vector3i = first[first.size() / 2]
 	f.set_walls([closed])
-	var second: Array = ai._carrier_route(carrier).keys()
+	var second: Array = (await ai._carrier_route(carrier)).keys()
 	check(not second.has(closed), "A cell that closed on the route is not in the route the carrier plans next (%s)" % str(closed))
 	check(second.is_empty() or second[-1] == exit, "and any route it does plan still reaches the exit")
 	check(ai._committed_route_graph == f.battle.pathfinder.graph_revision(), "and the new route is committed against the current map")
 	# Units standing about do not count as the map changing.
 	var after_walls: Array = ai._committed_carrier_route.duplicate()
 	f.place(casualty, f.free_cell_near(casualty, Vector3i(7, 0, 16), 3))
-	ai._carrier_route(carrier)
+	(await ai._carrier_route(carrier))
 	check(ai._committed_carrier_route == after_walls, "Control: moving a unit leaves the committed route alone")
 	carrier.carried_unit = null
 	await f.dispose(self)

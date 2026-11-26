@@ -67,8 +67,37 @@ func _run() -> void:
 	var replacement_exit := Vector3i(1, 0, 23)
 	grid.map_data.set_objective_zone(&"extract", [replacement_exit])
 	ai._committed_carrier_route = [goal, Vector3i(1, 0, 25)]
-	var refreshed_route := ai._carrier_route(actor)
+	var refreshed_route := await ai._carrier_route(actor)
 	check(refreshed_route.has(replacement_exit) and not refreshed_route.has(Vector3i(1, 0, 25)), "Changed extraction invalidates the carrier's cached endpoint")
+	# Budget one microsecond to exercise the real suspension deterministically.
+	# Move the exit without an action-service revision or occupancy change.
+	level.turn_manager.active_unit = actor
+	var transaction := battle.action_service.last_transaction_id
+	var rng := ai._decision_rng.state
+	var earlier_exit := replacement_exit
+	var latest_exit := Vector3i(2, 0, 23)
+	ai._committed_carrier_route.clear()
+	process_frame.connect(func() -> void:
+		grid.map_data.set_objective_zone(&"extract", [latest_exit]), CONNECT_ONE_SHOT)
+	var rebuilt := await ai._carrier_route(actor, false, 1)
+	check(rebuilt.has(latest_exit) and rebuilt.keys().back() == latest_exit and earlier_exit != latest_exit,
+		"Resumed route is rebuilt against the relocated exit rather than publishing the old endpoint")
+	check(battle.action_service.last_transaction_id == transaction and ai._decision_rng.state == rng,
+		"A suspended search publishes no authoritative action and consumes no decision RNG")
+	var blocker_origin := other.grid_position
+	ai._committed_carrier_route.clear()
+	process_frame.connect(func() -> void:
+		grid.update_unit_position(other, blocker_origin, latest_exit), CONNECT_ONE_SHOT)
+	var blocked_exit := await ai._carrier_route(actor, false, 1)
+	check(blocked_exit.is_empty() and ai._committed_carrier_route.is_empty(),
+		"A hostile blocking the exit during suspension cannot inherit the obsolete clear route")
+	grid.update_unit_position(other, latest_exit, blocker_origin)
+	ai._committed_carrier_route.clear()
+	process_frame.connect(func() -> void: level.turn_manager.active_unit = ally, CONNECT_ONE_SHOT)
+	var cancelled := await ai._carrier_route(actor, false, 1)
+	check(cancelled.is_empty() and ai._committed_carrier_route.is_empty() and battle.action_service.last_transaction_id == transaction,
+		"Losing activation during a suspended search publishes no route or transaction")
+	level.turn_manager.active_unit = actor
 	var args := OS.get_cmdline_user_args()
 	if args.size() == 2 and args[0] == "capture" and DisplayServer.get_name() != "headless":
 		var tools := level.get_node("Visualizers/BattleUI/DebugTools") as DebugTools
@@ -78,6 +107,10 @@ func _run() -> void:
 		DirAccess.make_dir_recursive_absolute(args[1])
 		check(root.get_texture().get_image().save_png(args[1].path_join("f3-rejected-move.png")) == OK, "Capture real rejected movement inspection")
 		tools.set_panel_open(false)
+	ai._committed_carrier_route.clear()
+	process_frame.connect(func() -> void: level.queue_free(), CONNECT_ONE_SHOT)
+	var disposed := await ai._carrier_route(actor, false, 1)
+	check(disposed.is_empty(), "A route in flight is discarded when the battle is queued for disposal")
 	actor.carried_unit = null
 	level.queue_free()
 	await process_frame
