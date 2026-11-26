@@ -155,5 +155,11 @@ hash the resulting canonical positions and shapes. A saved manifest for
 compiler 6 reconstructs the historical stepped geometry, including its old
 stopping points and line-of-fire behavior.
 
+Cover markers use amber on the surface, with one stroke for low cover and two
+for full cover. A nearby stronger contact suppresses an overlapping weaker
+marker in the same direction. The camera opens a small window toward the
+selected unit while keeping a solid strip near the unit's floor. A faint
+selected-body silhouette provides context for the parts that remain hidden.
+
 See the [integration report](quality/curved-tactical-geometry.md) and the
 [rounded equipment fixture](../tests/fixtures/rounded_equipment.tscn).

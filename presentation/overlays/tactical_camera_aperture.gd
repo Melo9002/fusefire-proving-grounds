@@ -4,7 +4,8 @@ extends MeshInstance3D
 
 const GROUP := &"tactical_camera_apertures"
 const TRANSITION_SECONDS := 0.18
-const APERTURE_RADIUS := 1.05
+const APERTURE_RADIUS := 0.62
+const SOLID_BASE_HEIGHT := 0.22
 
 var strength := 0.0
 
@@ -12,7 +13,7 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	set_instance_shader_parameter(&"aperture_radius", APERTURE_RADIUS)
 
-func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
+func update_view(eye: Vector3, subject: Vector3, delta: float, cut_floor := -100000.0) -> void:
 	var obstructs := false
 	if is_visible_in_tree() and subject.is_finite():
 		# Include neighboring tiles within the opening. The shader tests the
@@ -27,6 +28,7 @@ func update_view(eye: Vector3, subject: Vector3, delta: float) -> void:
 	if obstructs:
 		set_instance_shader_parameter(&"aperture_eye", eye)
 		set_instance_shader_parameter(&"aperture_subject", subject)
+		set_instance_shader_parameter(&"cut_floor", cut_floor)
 
 func restore_view() -> void:
 	if strength > 0.0:

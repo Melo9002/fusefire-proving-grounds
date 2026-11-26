@@ -65,6 +65,11 @@ func _run() -> void:
 			around.append(cell.grid_position)
 	print("[Round] standing cells within reach of the tank wall: %d" % around.size())
 	check(around.size() >= 4, "There are standing cells within reach of the tank wall (%d)" % around.size())
+	var flat: Array[Dictionary] = [{"point": Vector3.ZERO, "normal": Vector3.RIGHT}]
+	var low_faces := _vertices(visualizer._build_contact_mesh(flat, false))
+	var full_faces := _vertices(visualizer._build_contact_mesh(flat, true))
+	check(low_faces.size() == 6 and full_faces.size() == 12, "Low cover has one stroke and full cover has two")
+	check(visualizer.low_cover_color == visualizer.full_cover_color, "Both cover strengths use the same amber color")
 	visualizer.draw_for_cells(around)
 	var vertices := _vertices(visualizer._full_mesh.mesh)
 	var on_wall := 0
@@ -74,10 +79,14 @@ func _run() -> void:
 		var offset := Vector2(vertex.x, vertex.z) - tank.axis()
 		var distance := offset.length()
 		# Only the marker vertices belonging to the tank (not the drum or other props).
-		if distance < tank.radius - 0.05 or distance > tank.radius + visualizer.edge_width * CoverVisualizer.ARC_BAND_SCALE + 0.05: continue
+		if distance < tank.radius - 0.05 or distance > tank.radius + CoverVisualizer.ARC_WALL_GAP + visualizer.edge_width * CoverVisualizer.ARC_BAND_SCALE + 0.05: continue
 		on_wall += 1
 		var inner := distance - (tank.radius + CoverVisualizer.ARC_WALL_GAP)
-		worst = maxf(worst, minf(absf(inner), absf(inner - visualizer.edge_width * CoverVisualizer.ARC_BAND_SCALE)))
+		var width := visualizer.edge_width * CoverVisualizer.ARC_BAND_SCALE
+		var error := INF
+		for edge: float in [0.0, CoverVisualizer.STROKE_FRACTION, 1.0 - CoverVisualizer.STROKE_FRACTION, 1.0]:
+			error = minf(error, absf(inner - width * edge))
+		worst = maxf(worst, error)
 		angles[int(floor(rad_to_deg(offset.angle()) / 45.0))] = true
 	check(on_wall >= 60, "Many marker vertices lie on the tank wall (%d)" % on_wall)
 	check(worst < 0.005, "Every marker vertex sits exactly on the real wall or its band edge; worst deviation %.4f (the tile-box markers were up to about a tile away)" % worst)

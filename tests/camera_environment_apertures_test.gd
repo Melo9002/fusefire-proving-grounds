@@ -30,11 +30,12 @@ func _run() -> void:
 	var apertures := Apertures.new()
 	apertures.register_environment(scenery, floor_mesh)
 	_check(car_mesh.get_active_material(0) == original, "Registration leaves imported assets untouched")
-	apertures.update_view(center + Vector3(0, 0, 5), center + Vector3(0, 0, -2), 0.2)
+	apertures.update_view(center + Vector3(0, 0, 5), center + Vector3(0, 0, -2), 0.2, 0.22)
 	var adapted := car_mesh.get_active_material(0) as ShaderMaterial
 	_check(apertures.active.has(car_mesh) and adapted != null, "Actual imported car participates without per-map setup (bounds %s, cull %s, transparency %s, roughness texture %s)" % [bounds, original.cull_mode, original.transparency, original.roughness_texture])
 	if adapted and original:
 		_check(original.albedo_texture != null and adapted.get_shader_parameter(&"surface_texture") == original.albedo_texture, "The cutout preserves the imported car's palette texture")
+	_check(is_equal_approx(float(car_mesh.get_instance_shader_parameter(&"cut_floor")), 0.22), "Imported geometry receives the camera floor cutout limit")
 	_check(not apertures.active.has(floor_mesh), "The ground stays outside the aperture pass")
 	apertures.update_view(Vector3(10, 1, 5), Vector3(10, 1, -5), 0.2)
 	_check(car_mesh.get_active_material(0) == original, "Clearing the sightline restores the original surface resource")

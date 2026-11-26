@@ -224,12 +224,13 @@ func _update_local_apertures(delta: float) -> bool:
 			surface.restore_view()
 		_environment_apertures.restore_view()
 		return false
-	var subject := actor.global_position
+	var subject := actor.global_position + Vector3.UP * 0.12
+	var cut_floor := actor.global_position.y - actor.standing_height + TacticalCameraAperture.SOLID_BASE_HEIGHT
 	if camera.is_position_behind(subject) or not get_viewport().get_visible_rect().has_point(camera.unproject_position(subject)):
 		subject = Vector3.INF
 	for surface in surfaces:
-		surface.update_view(camera.global_position, subject, delta)
-	_environment_apertures.update_view(camera.global_position, subject, delta)
+		surface.update_view(camera.global_position, subject, delta, cut_floor)
+	_environment_apertures.update_view(camera.global_position, subject, delta, cut_floor)
 	return subject.is_finite()
 
 func _camera_occlusion_focuses() -> Array[Vector3]:
