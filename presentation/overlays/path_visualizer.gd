@@ -11,11 +11,10 @@ func draw_range_zone(grid_positions: Array[Vector3i], color: Color = range_color
 	tile_layers.show_cells(GroundTileLayers.Layer.RANGE, grid_positions, tile_padding, color)
 
 func draw_path(path_vectors: PackedVector3Array, color: Color = path_color) -> void:
-	var centers := {}
-	for center in path_vectors:
-		var cell := grid_manager.world_to_grid(center)
-		centers[cell] = center
-	tile_layers.show_tiles(GroundTileLayers.Layer.PATH, centers, tile_padding, color)
+	var cells: Array[Vector3i] = []
+	for point in path_vectors:
+		cells.append(grid_manager.world_to_grid(point))
+	tile_layers.show_cells(GroundTileLayers.Layer.PATH, cells, tile_padding, color)
 
 func clear_range_zone() -> void:
 	tile_layers.clear_layer(GroundTileLayers.Layer.RANGE)

@@ -21,6 +21,7 @@ const HISTORY_TARGET_LIMIT := 32
 @export var objective_manager: ObjectiveManager
 ## Battle-local parent for developer overlays; independent of scene hierarchy.
 @export var presentation_root: Node3D
+@export var tile_layers: GroundTileLayers
 
 var panel_open: bool = false
 var _paused_by_debug_tools: bool = false
@@ -63,6 +64,9 @@ var _inspection_labels: Dictionary = {}
 var _inspection_status: Label
 var _target_picker: OptionButton
 var _manifest_toggle: CheckButton
+var _walkability_toggle: CheckButton
+var _walkability_source: MapData
+var _walkability_revision := -1
 var _tabs: TabContainer
 var _monitor_elapsed := 0.0
 var _inspection_invalidated := false
@@ -86,6 +90,8 @@ func _ready() -> void:
 		_set_overlay_visible(overlay_visible_at_start)
 
 func _process(_delta: float) -> void:
+	if _walkability_toggle.button_pressed:
+		_refresh_walkability()
 	if panel_open:
 		_monitor_elapsed += _delta
 		if _monitor_elapsed >= 0.5:
@@ -721,6 +727,12 @@ func _build_inspection_section(tabs: TabContainer, section: String) -> void:
 		_target_picker.item_selected.connect(_show_target_snapshot)
 		column.add_child(_target_picker)
 	if section == "Map":
+		_walkability_toggle = CheckButton.new()
+		_walkability_toggle.text = "Show walkable tiles"
+		_walkability_toggle.tooltip_text = "Shows walkable terrain on every floor, including occupied tiles. Green is independent of the selected unit and its AP."
+		_walkability_toggle.disabled = not is_instance_valid(tile_layers)
+		_walkability_toggle.toggled.connect(_set_walkability_visible)
+		column.add_child(_walkability_toggle)
 		_manifest_toggle = CheckButton.new()
 		_manifest_toggle.text = "Show technical manifest (recorded parcel/population choices)"
 		_manifest_toggle.toggled.connect(func(_enabled: bool): _show_map_snapshot())
@@ -752,6 +764,26 @@ func _build_inspection_section(tabs: TabContainer, section: String) -> void:
 		_timeline_details = details
 	column.add_child(details)
 	_inspection_labels[section] = details
+
+func _set_walkability_visible(enabled: bool) -> void:
+	if not is_instance_valid(tile_layers): return
+	if enabled:
+		_refresh_walkability()
+	else:
+		tile_layers.clear_layer(GroundTileLayers.Layer.WALKABLE)
+		_walkability_source = null
+
+func _refresh_walkability() -> void:
+	if not is_instance_valid(tile_layers) or not is_instance_valid(grid_manager): return
+	var data := grid_manager.map_data
+	var revision := battle_controller.pathfinder.graph_revision()
+	if data == _walkability_source and revision == _walkability_revision: return
+	_walkability_source = data
+	_walkability_revision = revision
+	var cells: Array[Vector3i] = []
+	for cell: MapCellData in data.cells.values():
+		if cell.walkable: cells.append(cell.grid_position)
+	tile_layers.show_cells(GroundTileLayers.Layer.WALKABLE, cells, 0.08, Color(0.15, 0.95, 0.35, 0.28))
 
 func _layout_panel() -> void:
 	if not is_instance_valid(_panel): return
