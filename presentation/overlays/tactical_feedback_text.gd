@@ -20,7 +20,7 @@ static func shot(query: AttackQueryResult, detailed := false, counterfire: Comba
 	var heading := "%s → %s: " % [query.actor_id, query.target_id]
 	var evaluation := query.evaluation
 	var engagement := engagement_label(evaluation, counterfire)
-	var relation := "" if engagement.is_empty() else "\n" + engagement
+	var relation := "" if engagement.is_empty() or engagement == query.reason else "\n" + engagement
 	if not query.is_legal():
 		if not detailed and query.reason == "Blocked" and evaluation:
 			var adjustment := "" if evaluation.contextual_rejection.is_empty() else "\nNo valid firing position"
@@ -57,12 +57,16 @@ static func obstruction_text(evaluation: CombatRules.AttackEvaluation) -> String
 ## A range failure has its own language because LOS was never evaluated.
 static func engagement_label(outgoing: CombatRules.AttackEvaluation, incoming: CombatRules.AttackEvaluation) -> String:
 	if not outgoing or not incoming: return ""
+	if not outgoing.is_legal and not incoming.is_legal and (outgoing.reason == CombatRules.NO_MUTUAL_LANE or incoming.reason == CombatRules.NO_MUTUAL_LANE):
+		return CombatRules.NO_MUTUAL_LANE
 	if outgoing.is_legal:
 		if incoming.is_legal: return "Both firing lanes clear"
 		if incoming.reason == "Blocked": return "Your firing lane is clear · Their return lane is blocked"
+		if incoming.reason == CombatRules.INSUFFICIENT_EXPOSURE: return "Your firing lane is clear · They have no clear shot at your head or core"
 		if incoming.reason == "Out of range": return "Your firing lane is clear · Their return shot is out of range"
 	if incoming.is_legal:
 		if outgoing.reason == "Blocked": return "Exposed · Your return lane is blocked"
+		if outgoing.reason == CombatRules.INSUFFICIENT_EXPOSURE: return "Exposed · Their head and core are protected"
 		if outgoing.reason == "Out of range": return "Exposed · Your return shot is out of range"
 	if outgoing.reason == "Blocked" and incoming.reason == "Blocked":
 		return "Both firing lanes blocked"
@@ -151,7 +155,7 @@ static func _destination_summary(query: MoveQueryResult, actor: TacticalUnit, op
 		var enemy: TacticalUnit = option.enemy
 		var incoming: CombatRules.AttackEvaluation = option.incoming
 		var outgoing: CombatRules.AttackEvaluation = option.outgoing
-		var exposed := incoming.is_legal and outgoing.reason == "Blocked"
+		var exposed := incoming.is_legal and outgoing.reason in ["Blocked", CombatRules.INSUFFICIENT_EXPOSURE]
 		if incoming.is_legal: incoming_count += 1
 		if outgoing.is_legal:
 			outgoing_count += 1

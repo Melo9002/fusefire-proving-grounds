@@ -29,6 +29,7 @@ var aim_enabled := true
 var shield_enabled := true
 ## False only while reproducing recordings created before Overwatch existed.
 var overwatch_enabled := true
+var guard_minimum_chance := 0
 ## False while reconstructing recordings authored before conditions existed.
 var conditions_enabled := true
 var last_beat_events: Array[Dictionary] = []
@@ -1227,6 +1228,9 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	event.target_defeated = attacker.stats.is_defeated
 	result.reaction_events.append(event)
 
+func guard_quality_allows(evaluation: CombatRules.AttackEvaluation) -> bool:
+	return evaluation.is_legal and evaluation.hit_chance >= guard_minimum_chance
+
 ## Read-only: reactions ignore the watcher's spent AP and active phase, but use
 ## the ordinary supported-point range/LOS, ammo and carrying restrictions.
 func query_guard_reaction(watcher: TacticalUnit, target: TacticalUnit, target_cell := Vector3i(-1, -1, -1)) -> Dictionary:
@@ -1243,11 +1247,18 @@ func query_guard_reaction(watcher: TacticalUnit, target: TacticalUnit, target_ce
 	if not reason.is_empty(): return {"can_fire": false, "reason": reason}
 	if target_cell == Vector3i(-1, -1, -1): target_cell = _grid_manager.get_unit_grid(target)
 	var evaluation := CombatRules.evaluate_attack_at_cell(watcher, target, target_cell, _grid_manager, null, CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled)
+	if evaluation.is_legal and not guard_quality_allows(evaluation):
+		return {"can_fire": false, "reason": "Held fire at %d%% hit (minimum %d%%)" % [evaluation.hit_chance, guard_minimum_chance], "evaluation": evaluation, "held_fire": true}
 	return {"can_fire": evaluation.is_legal, "reason": evaluation.reason, "evaluation": evaluation}
 
 func _record_guard_skip(result, watcher: TacticalUnit, target: TacticalUnit, checkpoint: Vector3i, trigger: String, opportunity: Dictionary) -> void:
-	# One latest checked reason per watcher, not a log entry for every path cell.
+	# Keep one explanation per watcher. A quality refusal is actionable even
+	# when later checkpoints happen to be blocked.
+	if result.guard_checks.get(watcher.tactical_id, {}).get("held_fire", false) and not opportunity.get("held_fire", false):
+		return
 	result.guard_checks[watcher.tactical_id] = {"target": target.tactical_id, "checkpoint": checkpoint, "trigger": trigger, "reason": opportunity.reason, "reserved": watcher.tactical_state != null and watcher.tactical_state.is_overwatching and not watcher.stats.is_defeated}
+	if opportunity.get("held_fire", false):
+		result.guard_checks[watcher.tactical_id]["held_fire"] = true
 	var evaluation: CombatRules.AttackEvaluation = opportunity.get("evaluation")
 	if evaluation and evaluation.reason == "Blocked" and evaluation.blocking_cell:
 		result.guard_checks[watcher.tactical_id]["obstacle_label"] = evaluation.blocking_cell.shot_obstacle_label
@@ -1260,6 +1271,8 @@ func _code_for_reason(reason: String) -> StringName:
 		"Out of range": return &"out_of_range"
 		"Outside battlefield": return &"outside_battlefield"
 		"Blocked": return &"blocked_los"
+		CombatRules.NO_MUTUAL_LANE: return &"no_mutual_lane"
+		CombatRules.INSUFFICIENT_EXPOSURE: return &"insufficient_exposure"
 		"Invalid target": return &"target_missing"
 		_: return &"illegal_attack"
 

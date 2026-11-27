@@ -97,7 +97,7 @@ func _process(_delta: float) -> void:
 		if _monitor_elapsed >= 0.5:
 			_monitor_elapsed = 0.0
 			_update_inspection_status()
-			_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
+			_inspection_labels["Runtime"].text = DebugInspection.runtime_summary(battle_controller)
 	if debug_tools_enabled and _overlay.visible:
 		_update_overlay()
 	if debug_tools_enabled and _map_inspector and _map_inspector.inspection_enabled:
@@ -807,7 +807,7 @@ func _capture_inspection() -> void:
 		_update_ai_scoring_details(_latest_ai_decision)
 	_inspection_labels["AI"].text = ("Latest recorded decision (historical):\n" + _ai_decision_label.text + "\n\n" + _ai_scoring_label.text if not _latest_ai_decision.is_empty() else "No AI decision recorded in this battle yet.") + "\n\n" + _inspection_snapshot.squad
 	_inspection_labels["AI"].text = "Latest authoritative AI outcome:\n" + _format_ai_outcome() + "\n\n" + _inspection_labels["AI"].text
-	_inspection_labels["Runtime"].text = DebugInspection.runtime_summary()
+	_inspection_labels["Runtime"].text = DebugInspection.runtime_summary(battle_controller)
 	_update_inspection_status()
 
 func _show_target_snapshot(index: int) -> void:

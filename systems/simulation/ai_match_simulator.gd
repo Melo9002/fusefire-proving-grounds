@@ -70,6 +70,10 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 		battle_config.enemy_archetypes = TacticalArchetypeCatalog.normalize_ids(enemy_roster, enemy_count)
 		result.configuration["player_archetypes"] = Array(battle_config.player_archetypes).map(func(id): return String(id))
 		result.configuration["enemy_archetypes"] = Array(battle_config.enemy_archetypes).map(func(id): return String(id))
+	for option in ["engagement_policy", "guard_minimum_chance", "contextual_firing_disabled"]:
+		if config.has(option):
+			battle_config.set(option, config[option])
+			result.configuration[option] = config[option]
 	battle_config.select_battlefield(BattlefieldCatalog.id_from_configuration(config, BattlefieldCatalog.SERVICE_DEPOT))
 	result.configuration.battlefield_id = String(battle_config.battlefield_id)
 	if config.has("content_manifest"):
@@ -103,6 +107,15 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	_round_samples.clear()
 	level.battle_controller.ai_decision_recorded.connect(_on_ai_decision)
 	level.battle_controller.ai_action_outcome_recorded.connect(func(record: Dictionary): _action_outcomes.append(record.duplicate(true)))
+	var policy_evidence := {}
+	if config.get("capture_combat_policy_evidence", false):
+		policy_evidence = {"guard_holds": 0, "one_way_pairs": 0, "mutually_obstructed_pairs": 0, "protected_activations": 0, "sampled_activations": 0}
+		level.battle_controller.action_service.action_committed.connect(func(action):
+			if action is AttackActionResult or action is MoveActionResult:
+				for guard_check in action.guard_checks.values():
+					policy_evidence.guard_holds += int(guard_check.get("held_fire", false)))
+		level.turn_manager.active_unit_changed.connect(func(actor):
+			_sample_combat_policy_evidence(level, actor, policy_evidence))
 	level.battle_controller.set_debug_player_ai(true)
 	var started_at := Time.get_ticks_msec()
 	var last_progress_at := started_at
@@ -139,6 +152,11 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	for outcome in _action_outcomes:
 		if outcome.stage == "committed": result.committed_action_count += 1
 		else: result.rejected_action_count += 1
+	if config.get("capture_combat_policy_evidence", false):
+		var recording: BattleReplayRecording = level._replay_recorder.recording
+		result.configuration["combat_policy_evidence"] = policy_evidence
+		result.configuration["combat_transactions"] = _serializable_value(recording.actions.map(func(action):
+			return {"kind": action.get("kind"), "actor": action.get("actor"), "target": action.get("target"), "resolved": action.get("resolved", {})}))
 	result.final_state = _state_signature(level)
 	result.battle_result = level.turn_manager.battle_result
 	if result.battle_result != TurnManager.BattleResult.ONGOING:
@@ -147,6 +165,27 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	print("[AISim] %s" % result.summary())
 	await _dispose_level(level)
 	return result
+
+func _sample_combat_policy_evidence(level: BattleLevel, actor: TacticalUnit, evidence: Dictionary) -> void:
+	if not is_instance_valid(actor) or not actor.stats or actor.stats.is_defeated: return
+	var grid := level.battle_controller.grid_manager
+	var protected := false
+	var central := CombatRules.requires_central(grid.map_data.engagement_policy)
+	var reciprocal := CombatRules.requires_reciprocity(grid.map_data.engagement_policy)
+	for enemy in level.turn_manager.player_units + level.turn_manager.enemy_units + level.turn_manager.allied_units:
+		if not is_instance_valid(enemy) or enemy.stats.is_defeated or not FactionRules.are_hostile(actor.faction, enemy.faction): continue
+		var a := grid.get_unit_grid(actor)
+		var b := grid.get_unit_grid(enemy)
+		if not grid.map_data.has_cell(a) or not grid.map_data.has_cell(b): continue
+		if CombatRules.attack_distance(a, b, grid) > maxf(actor.attack_range, enemy.attack_range): continue
+		var outgoing := CombatRules._has_physical_lane(actor, a, enemy, b, grid, central)
+		var incoming := CombatRules._has_physical_lane(enemy, b, actor, a, grid, central)
+		var one_way := outgoing != incoming
+		evidence.one_way_pairs += int(one_way and not reciprocal)
+		evidence.mutually_obstructed_pairs += int((not outgoing and not incoming) or (reciprocal and one_way))
+		protected = protected or CombatRules.get_directional_cover(b, a, grid, enemy.standing_height, actor.standing_height) != MapCellData.CoverType.NONE
+	evidence.sampled_activations += 1
+	evidence.protected_activations += int(protected)
 
 func _on_ai_decision(record: Dictionary) -> void:
 	_decision_count += 1

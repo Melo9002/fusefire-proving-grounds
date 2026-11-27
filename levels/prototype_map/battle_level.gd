@@ -115,6 +115,9 @@ func configure_battle(config: BattleConfigurationData) -> void:
 	conditions_enabled = config.conditions_enabled
 	tactical_tempo_enabled = config.tactical_tempo_enabled
 	requested_content_manifest = config.content_manifest.duplicate(true)
+	battle_controller.engagement_policy = config.engagement_policy as CombatRules.EngagementPolicy
+	battle_controller.guard_minimum_chance = config.guard_minimum_chance
+	battle_controller.contextual_firing_disabled = config.contextual_firing_disabled
 	battle_controller.ai_difficulty = config.difficulty
 	battle_controller.battle_seed = config.battle_seed
 	battle_controller.ai_decision_seed = config.battle_seed

@@ -6,6 +6,7 @@ const LocalContent := preload("res://systems/generation2/local_parcel_content.gd
 const CURRENT_SCHEMA_VERSION := 3
 const LEGACY_SCHEMA_VERSION := 2
 const SIMULATION_VERSION := "prototype-1.5-guaranteed-hit-11"
+const POLICY_SIMULATION_VERSION := "prototype-1.5-combat-policy-12"
 
 var schema_version := CURRENT_SCHEMA_VERSION
 var simulation_version := SIMULATION_VERSION
@@ -34,8 +35,14 @@ func validation_message() -> String:
 		return validation_error
 	if schema_version not in [LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]:
 		return "Unsupported replay schema %d; this build supports %d and legacy %d" % [schema_version, CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION]
-	if simulation_version != SIMULATION_VERSION:
-		return "Incompatible replay simulation '%s'; this build requires '%s'. Combat rules changed; start a new recording." % [simulation_version, SIMULATION_VERSION]
+	if simulation_version != SIMULATION_VERSION and simulation_version != POLICY_SIMULATION_VERSION:
+		return "Incompatible replay simulation '%s'. Start a new recording." % simulation_version
+	if simulation_version != version_for_configuration(configuration):
+		return "Replay combat policy does not match its simulation version"
+	var policy := int(configuration.get("engagement_policy", 0))
+	var threshold := int(configuration.get("guard_minimum_chance", 0))
+	if policy not in [0, 1, 2, 3] or threshold < 0 or threshold > 100:
+		return "Replay contains an invalid combat policy"
 	if not CombatRules.cover_tuning.is_valid():
 		return "Invalid combat tuning; correct the shared settings before playback."
 	if cover_tuning_signature != CombatRules.cover_tuning.signature():
@@ -63,6 +70,11 @@ func validation_message() -> String:
 			for point in points:
 				if not _coordinate(point, 3): return "Surface Move contains invalid standing coordinates"
 	return ""
+
+static func version_for_configuration(config: Dictionary) -> String:
+	if int(config.get("engagement_policy", 0)) != 0 or int(config.get("guard_minimum_chance", 0)) != 0 or bool(config.get("contextual_firing_disabled", false)):
+		return POLICY_SIMULATION_VERSION
+	return SIMULATION_VERSION
 
 ## Every archetype that takes part in the recorded battle, from its saved configuration.
 static func participating_archetypes(battle_configuration: Dictionary) -> Array:
@@ -157,8 +169,9 @@ static func _disk_shape_error(data: Dictionary) -> String:
 		return "Replay has no valid battle_configuration object"
 	if not _scalar_fields(data, ["schema_version", "expected_result"], TYPE_INT):
 		return "Replay schema_version and expected_result must be integers"
-	if not _scalar_fields(config, ["player_count", "enemy_count", "ally_count", "seed", "battlefield_preset", "vip_behavior", "difficulty", "player_commander", "enemy_commander"], TYPE_INT) \
-	or not _scalar_fields(config, ["battlefield_id"], TYPE_STRING):
+	if not _scalar_fields(config, ["player_count", "enemy_count", "ally_count", "seed", "battlefield_preset", "vip_behavior", "difficulty", "player_commander", "enemy_commander", "engagement_policy", "guard_minimum_chance"], TYPE_INT) \
+	or not _scalar_fields(config, ["battlefield_id"], TYPE_STRING) \
+	or not _scalar_fields(config, ["contextual_firing_disabled"], TYPE_BOOL):
 		return "Replay battle_configuration has invalid counts, identifiers or settings"
 	if not _coordinate(config.get("map_size", [32, 24]), 2):
 		return "Replay battle_configuration.map_size must contain two integers"
@@ -235,6 +248,9 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"overwatch_enabled": bool(source.get("overwatch_enabled", false)),
 		"conditions_enabled": bool(source.get("conditions_enabled", false)),
 		"tactical_tempo_enabled": bool(source.get("tactical_tempo_enabled", false)),
+		"engagement_policy": int(source.get("engagement_policy", 0)),
+		"guard_minimum_chance": int(source.get("guard_minimum_chance", 0)),
+		"contextual_firing_disabled": bool(source.get("contextual_firing_disabled", false)),
 		"generated_map": bool(source.get("generated_map", false)),
 		"battlefield_preset": int(source.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)),
 		"seed": int(source.get("seed", 1)),
@@ -271,6 +287,9 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"overwatch_enabled": bool(data.get("overwatch_enabled", false)),
 		"conditions_enabled": bool(data.get("conditions_enabled", false)),
 		"tactical_tempo_enabled": bool(data.get("tactical_tempo_enabled", false)),
+		"engagement_policy": int(data.get("engagement_policy", 0)),
+		"guard_minimum_chance": int(data.get("guard_minimum_chance", 0)),
+		"contextual_firing_disabled": bool(data.get("contextual_firing_disabled", false)),
 		"generated_map": bool(data.get("generated_map", false)),
 		"battlefield_preset": int(data.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)),
 		"seed": int(data.get("seed", 1)),

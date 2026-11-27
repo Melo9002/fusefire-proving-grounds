@@ -629,7 +629,14 @@ func _guard_has_plausible_trigger() -> bool:
 	for hostile in _get_hostile_units():
 		if not is_instance_valid(hostile) or not hostile.stats or hostile.stats.is_defeated:
 			continue
-		if battle_controller.query_attack(unit, hostile).is_legal():
+		var direct := battle_controller.query_attack(unit, hostile)
+		var service := battle_controller.action_service
+		var currently_useful := direct.is_legal()
+		if service.guard_minimum_chance > 0:
+			var evaluated := CombatRules.evaluate_attack(unit, hostile, battle_controller.grid_manager, null,
+				CombatRules.cover_tuning.guard_accuracy_modifier, battle_controller.shield_enabled)
+			currently_useful = service.guard_quality_allows(evaluated)
+		if currently_useful:
 			_guard_trigger_note = "Reserved a reaction against %s, who is currently in a legal firing lane." % hostile.name
 			return true
 		var hostile_cell := battle_controller.grid_manager.get_unit_grid(hostile)

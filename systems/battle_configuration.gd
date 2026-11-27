@@ -31,6 +31,9 @@ var overwatch_enabled := true
 var conditions_enabled := true
 ## Old replay configurations omit this and retain the pre-tempo fingerprint shape.
 var tactical_tempo_enabled := true
+var engagement_policy := 0
+var guard_minimum_chance := 0
+var contextual_firing_disabled := false
 var generated_map := false
 var battlefield_preset: BattlefieldPreset = BattlefieldPreset.LEGACY
 var battlefield_id: StringName = BattlefieldCatalogData.SERVICE_DEPOT
@@ -60,6 +63,9 @@ func apply_replay(data: Dictionary) -> void:
 	overwatch_enabled = bool(data.get("overwatch_enabled", false))
 	conditions_enabled = bool(data.get("conditions_enabled", false))
 	tactical_tempo_enabled = bool(data.get("tactical_tempo_enabled", false))
+	engagement_policy = int(data.get("engagement_policy", 0))
+	guard_minimum_chance = int(data.get("guard_minimum_chance", 0))
+	contextual_firing_disabled = bool(data.get("contextual_firing_disabled", false))
 	normalize_rosters()
 	generated_map = data.get("generated_map", false)
 	battlefield_preset = int(data.get("battlefield_preset", BattlefieldPreset.LEGACY)) as BattlefieldPreset
@@ -81,6 +87,9 @@ func to_replay() -> Dictionary:
 	return {
 		"player_count": player_count,
 		"enemy_count": enemy_count,
+		"engagement_policy": engagement_policy,
+		"guard_minimum_chance": guard_minimum_chance,
+		"contextual_firing_disabled": contextual_firing_disabled,
 		"generated_map": generated_map,
 		"battlefield_preset": battlefield_preset,
 		"battlefield_id": resolved_battlefield_id(),
@@ -107,6 +116,8 @@ func to_replay() -> Dictionary:
 
 func validate_generation_selection() -> Array[Dictionary]:
 	var failures: Array[Dictionary] = []
+	if engagement_policy < 0 or engagement_policy > 3 or guard_minimum_chance < 0 or guard_minimum_chance > 100:
+		failures.append(_failure("INVALID_COMBAT_POLICY", "combat_policy", "Invalid engagement policy or Guard minimum chance"))
 	if battlefield_preset != BattlefieldPreset.LEGACY:
 		failures.append(_failure("RETIRED_GENERATOR", "battlefield_preset", "Archived experimental generator presets are quarantined; current Generation 2 uses named battlefields."))
 	if generated_map and not BattlefieldCatalogData.has(resolved_battlefield_id()):

@@ -78,8 +78,12 @@ Current expiry: round/unit boundaries; explicit expiry refinement belongs to mil
 	result.elapsed_ms = float(Time.get_ticks_usec() - start) / 1000
 	return result
 
-static func runtime_summary() -> String:
-	var lines := PackedStringArray(["Simulation: " + BattleReplayRecording.SIMULATION_VERSION])
+static func runtime_summary(battle: BattleController) -> String:
+	var config := {"engagement_policy": battle.engagement_policy, "guard_minimum_chance": battle.guard_minimum_chance,
+		"contextual_firing_disabled": battle.contextual_firing_disabled}
+	var lines := PackedStringArray(["Simulation: " + BattleReplayRecording.version_for_configuration(config)])
+	var guard := "%d%% minimum" % battle.guard_minimum_chance if battle.guard_minimum_chance else "first legal shot"
+	lines.append("Engagement %s · Guard %s" % [CombatRules.engagement_policy_label(battle.engagement_policy), guard])
 	lines.append("LIVE BATTLE · F3 inspection is unavailable during replay playback.")
 	lines.append("\nRuntime monitors · last reported values (pause affects frame readings)")
 	lines.append("FPS %.0f · process %.2f ms · physics %.2f ms" % [Performance.get_monitor(Performance.TIME_FPS), Performance.get_monitor(Performance.TIME_PROCESS) * 1000, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000])

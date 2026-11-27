@@ -85,6 +85,9 @@ var aim_enabled := true
 var shield_enabled := true
 var overwatch_enabled := true
 var conditions_enabled := true
+var engagement_policy := CombatRules.EngagementPolicy.LEGACY
+var guard_minimum_chance := 0
+var contextual_firing_disabled := false
 var action_camera_director: Node
 var action_service: TacticalActionService
 var action_confirmation: BattleActionConfirmation
@@ -172,6 +175,10 @@ func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition 
 	# established runtime planning path.
 	if not MissionZonePlanner.has_complete_defaults(grid_manager.map_data):
 		MissionZonePlanner.populate_defaults(grid_manager.map_data, pathfinder)
+	grid_manager.map_data.engagement_policy = engagement_policy
+	if contextual_firing_disabled:
+		grid_manager.map_data.contextual_steps.clear()
+		grid_manager.map_data.contextual_discovery_enabled = false
 	_apply_authored_tile_hazards()
 	preload("res://systems/objectives/extraction_transport_planner.gd").place(grid_manager.map_data, pathfinder, mission)
 	pathfinder.live_grid = grid_manager
@@ -238,6 +245,7 @@ func _initialize_action_service() -> void:
 		return
 	action_service = TacticalActionService.new()
 	action_service.name = "TacticalActionService"
+	action_service.guard_minimum_chance = guard_minimum_chance
 	add_child(action_service)
 	action_presenter = TacticalActionPresenter.new()
 	action_presenter.name = "TacticalActionPresenter"
@@ -330,7 +338,7 @@ func _append_combat_entries(entries: PackedStringArray) -> void:
 func _refresh_overwatch_range() -> void:
 	if not is_instance_valid(overwatch_range_visualizer):
 		return
-	if is_instance_valid(grid_manager) and grid_manager.map_data != null and grid_manager.map_data.contextual_discovery_enabled:
+	if is_instance_valid(grid_manager) and grid_manager.map_data != null and (grid_manager.map_data.contextual_discovery_enabled or CombatRules.requires_reciprocity(grid_manager.map_data.engagement_policy)):
 		_guard_overlay_revision += 1
 		_refresh_contextual_guard_range.call_deferred(_guard_overlay_revision)
 	else:
@@ -696,7 +704,7 @@ func update_attack_range() -> void:
 		path_visualizer.clear_range_zone()
 		return
 
-	if grid_manager.map_data.contextual_discovery_enabled:
+	if (grid_manager.map_data.contextual_discovery_enabled or CombatRules.requires_reciprocity(grid_manager.map_data.engagement_policy)):
 		_attack_overlay_revision += 1
 		path_visualizer.clear_range_zone()
 		_draw_contextual_attack_range(tactical_unit, _attack_overlay_revision)
@@ -761,7 +769,7 @@ func _begin_shot_coverage(attacker: TacticalUnit) -> ShotCoverage:
 				body_points[occupant.grid_position] = point
 	var signature: Array = [data.get_instance_id(), data.los_revision, pathfinder._graph_revision,
 		attacker_grid, support, attacker.standing_height, attacker.attack_range,
-		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights, discovered]
+		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights, discovered, data.engagement_policy]
 	var key := attacker.get_instance_id()
 	# Named authored variants have immutable terrain. Include current bodies and
 	# equipment in the display cache. The bay's mutable test marker stays live.
@@ -771,7 +779,7 @@ func _begin_shot_coverage(attacker: TacticalUnit) -> ShotCoverage:
 			attacker.visual_adapter.scene_file_path if is_instance_valid(attacker.visual_adapter) else "",
 			rig.weapon_scene if is_instance_valid(rig) else null,
 			attacker.tactical_state != null and attacker.tactical_state.is_shielding])
-	query.cacheable = not data.contextual_steps.has(attacker_grid)
+	query.cacheable = not data.contextual_steps.has(attacker_grid) and not CombatRules.requires_reciprocity(data.engagement_policy)
 	query.signature = signature
 	var cached: Dictionary = _shot_cell_cache.get(key, {})
 	if query.cacheable and cached.get("signature") == signature:
