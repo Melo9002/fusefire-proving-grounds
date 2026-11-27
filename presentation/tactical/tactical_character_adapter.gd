@@ -438,6 +438,7 @@ func present_movement_end() -> void:
 		present_idle()
 
 var _contextual_attack_active := false
+const CONTEXTUAL_PREPARATION := &"contextual_preparation"
 
 func _cover_context() -> Dictionary:
 	if _contextual_attack_active:
@@ -668,7 +669,7 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 
 ## A physical offset of the visual host only. The selected simulation solution
 ## already certified the same-cell sweep, supports, weapon envelope and ray.
-func present_contextual_attack(offset: Vector3, target_world_position: Vector3) -> void:
+func present_contextual_attack(offset: Vector3, target_world_position: Vector3, show_impact: Callable) -> void:
 	var tree := get_tree()
 	var home := position
 	var heading := target_world_position - (rig.global_position + offset)
@@ -691,7 +692,9 @@ func present_contextual_attack(offset: Vector3, target_world_position: Vector3) 
 	await _play_local_step(home, local_offset, offset, ankles, hips_y, false)
 	if not is_inside_tree(): return
 	var attack := present_attack(target_world_position)
-	while not attack.is_done():
+	rig.readiness.release(CONTEXTUAL_PREPARATION)
+	attack.shot.when_done(func(_outcome): show_impact.call())
+	while not attack.is_done() and presenter.attack.phase != AttackSequence.Phase.RELEASE:
 		await tree.process_frame
 		if not is_inside_tree(): return
 	await _play_local_step(home, local_offset, offset, ankles, hips_y, true)
@@ -705,26 +708,34 @@ func present_contextual_attack(offset: Vector3, target_world_position: Vector3) 
 func _play_local_step(home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float, returning: bool) -> void:
 	var tree := get_tree()
 	var elapsed := 0.0
-	const STEP_SECONDS := 0.46
-	while elapsed < STEP_SECONDS and is_inside_tree():
+	var duration := 0.36 if returning else 0.40
+	var raising := false
+	while elapsed < duration and is_inside_tree():
 		await tree.process_frame
 		if not is_inside_tree(): return
 		if not can_process(): continue
-		elapsed = minf(STEP_SECONDS, elapsed + get_process_delta_time())
-		var progress := elapsed / STEP_SECONDS
+		elapsed = minf(duration, elapsed + get_process_delta_time())
+		var progress := elapsed / duration
+		if not returning and not raising and progress >= 0.25:
+			raising = true
+			rig.readiness.request(CONTEXTUAL_PREPARATION, WeaponReadiness.Level.AIMED)
+			_play(&"aim")
 		_apply_local_step(1.0 - progress if returning else progress, home, local_offset, offset, ankles, hips_y)
 
 func _apply_local_step(progress: float, home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float) -> void:
-	position = home + local_offset * smoothstep(0.0, 1.0, progress)
+	# Hold most of the transfer until the lead foot finds support, then
+	# bring the trailing foot underneath the firing stance.
+	var weight := 0.32 * smoothstep(0.06, 0.53, progress) + 0.68 * smoothstep(0.40, 0.99, progress)
+	position = home + local_offset * weight
 	var pose := rig.traversal_modifier.input
 	pose.mode = TraversalPoseInput.Mode.LOCAL_STEP
 	pose.solved = true
 	pose.weight = 1.0
-	pose.pelvis_height = hips_y - sin(progress * PI) * 0.035
+	pose.pelvis_height = hips_y - sin(progress * PI) * 0.028
 	var first_side := 0 if offset.dot(rig.character_root.global_basis.x) > 0.0 else 1
 	for side in 2:
-		var swing := smoothstep(0.0, 0.5, progress) if side == first_side else smoothstep(0.5, 1.0, progress)
-		pose.ankles_world[side] = ankles[side] + offset * swing + Vector3.UP * (sin(PI * swing) * 0.055)
+		var swing := smoothstep(0.06, 0.52, progress) if side == first_side else smoothstep(0.56, 0.98, progress)
+		pose.ankles_world[side] = ankles[side] + offset * swing + Vector3.UP * (sin(PI * swing) * 0.045)
 		pose.planted[side] = true
 
 ## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.

@@ -201,7 +201,17 @@ func _focus_action(record: Dictionary, continues_from_previous := false) -> void
 		var focus_point := _action_focus_point(record, actor)
 		var director := level.action_camera_director
 		if director:
-			await director.present(actor, StringName(record.get("kind", "")), focus_point, actor.stats.current_ap, false, true)
+			var step := Vector3.ZERO
+			var solution: Variant = record.get("resolved", {}).get("firing_solution", {})
+			if solution is Dictionary and solution.get("posture") == "side_step":
+				step = _recorded_world_point(solution.get("body_offset", []), Vector3.ZERO)
+				focus_point = _recorded_world_point(solution.get("aim_point", []), focus_point)
+			await director.present(actor, StringName(record.get("kind", "")), focus_point, actor.stats.current_ap, false, true, step)
+
+func _recorded_world_point(value: Variant, fallback: Vector3) -> Vector3:
+	if value is Array and value.size() == 3:
+		return Vector3(float(value[0]), float(value[1]), float(value[2])) / 10000.0
+	return fallback
 
 func _action_focus_point(record: Dictionary, actor: TacticalUnit) -> Vector3:
 	var kind: String = record.get("kind", "")

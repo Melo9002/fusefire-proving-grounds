@@ -86,6 +86,30 @@ static func movement_options(query: MoveQueryResult, actor: TacticalUnit, enemie
 		options.append({"enemy": enemy, "incoming": incoming, "outgoing": outgoing, "unavailable": unavailable, "cover": cover, "damage": CombatRules.damage_of(outgoing), "incoming_damage": CombatRules.damage_of(incoming), "incoming_unavailable": incoming_unavailable})
 	return options
 
+## Target-specific view of an already queried hypothetical destination.
+static func destination_attack(query: MoveQueryResult, option: Dictionary, use_supply: bool) -> String:
+	var enemy: TacticalUnit = option.enemy
+	var outgoing: CombatRules.AttackEvaluation = option.outgoing
+	var incoming: CombatRules.AttackEvaluation = option.incoming
+	var shot := outgoing.reason
+	if outgoing.is_legal:
+		var posture := "Side-step shot" if outgoing.firing_solution and outgoing.firing_solution.body_offset != Vector3.ZERO else "Direct shot"
+		shot = "%s · %d%% hit · %d AP" % [posture, outgoing.hit_chance, TacticalActionService.ATTACK_AP_COST]
+		if use_supply: shot += " · %d SP" % TacticalActionService.ATTACK_SUPPLY_COST
+		if not option.unavailable.is_empty(): shot += " · " + option.unavailable
+	elif outgoing.reason == "Blocked":
+		shot = obstruction_text(outgoing)
+	var threat := "%d%% hit" % incoming.hit_chance if incoming.is_legal else incoming.reason.to_lower()
+	var relation := engagement_label(outgoing, incoming)
+	var lines := PackedStringArray(["After moving · %d AP remaining · %s" % [query.actor_ap_after, enemy.get_display_name()],
+		shot, "Incoming lane · " + threat])
+	if not option.incoming_unavailable.is_empty(): lines[-1] += " · " + option.incoming_unavailable
+	if not relation.is_empty(): lines.append(relation)
+	if enemy.tactical_state and enemy.tactical_state.is_overwatching:
+		lines.append("Guard active · may react along the route")
+	lines.append("Click the pinned tile to move · V unpins")
+	return "\n".join(lines)
+
 static func movement(query: MoveQueryResult, actor: TacticalUnit, enemies: Array[TacticalUnit], grid: GridManager, use_supply := true, use_shield := true, use_aim := true, detailed := false) -> String:
 	return movement_description(query, actor, movement_options(query, actor, enemies, grid, use_supply, use_shield, use_aim), grid, use_supply, detailed)
 
@@ -165,7 +189,8 @@ static func _destination_summary(query: MoveQueryResult, actor: TacticalUnit, op
 static func committed(result) -> PackedStringArray:
 	var lines := PackedStringArray()
 	if result is AttackActionResult:
-		lines.append(_shot_result(result.request.actor_id, result.request.target_id, result.did_hit, result.damage, result.target_defeated))
+		var posture := " · side-step shot" if result.firing_solution and result.firing_solution.body_offset != Vector3.ZERO else ""
+		lines.append(_shot_result(result.request.actor_id, result.request.target_id, result.did_hit, result.damage, result.target_defeated) + posture)
 	elif result is AimActionResult:
 		lines.append("%s: Aim +%d — next Attack; canceled by Move, Reload or stance changes" % [result.request.actor_id, result.accuracy_bonus])
 	elif result is ShieldActionResult:
@@ -186,7 +211,8 @@ static func committed(result) -> PackedStringArray:
 				reason = "Firing lane obstructed" if obstacle.is_empty() else obstacle + " blocks the firing lane"
 			lines.append("Guard: %s did not fire at %s · %s. %s" % [watcher_id, skipped.target, reason, "Reaction still reserved." if skipped.reserved else "No reaction remains."])
 		for event: OverwatchReactionEvent in result.reaction_events:
-			lines.append("Guard: " + _shot_result(event.watcher_id, result.request.actor_id, event.did_hit, event.damage, event.target_defeated) + " · %s · %d%% hit · 1 SP; reaction spent" % ["movement at %s" % event.checkpoint_cell if event.checkpoint_index > 0 else "retaliation after being attacked", event.hit_chance])
+			var posture := " · side-step shot" if event.firing_solution and event.firing_solution.body_offset != Vector3.ZERO else ""
+			lines.append("Guard: " + _shot_result(event.watcher_id, result.request.actor_id, event.did_hit, event.damage, event.target_defeated) + posture + " · %s · %d%% hit · 1 SP; reaction spent" % ["movement at %s" % event.checkpoint_cell if event.checkpoint_index > 0 else "retaliation after being attacked", event.hit_chance])
 	return lines
 
 static func _shot_result(attacker: StringName, target: StringName, hit: bool, damage: int, defeated: bool) -> String:

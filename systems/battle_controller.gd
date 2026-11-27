@@ -89,6 +89,13 @@ var action_camera_director: Node
 var action_service: TacticalActionService
 var action_confirmation: BattleActionConfirmation
 var movement_ghost: MovementGhost
+const NO_PREVIEW_CELL := Vector3i(-1, -1, -1)
+var _preview_cell := NO_PREVIEW_CELL
+var _pinned_destination := NO_PREVIEW_CELL
+var _preview_query: MoveQueryResult
+var _preview_options: Array[Dictionary] = []
+var _preview_target: TacticalUnit
+
 var action_presenter: TacticalActionPresenter
 var _objective_manager: ObjectiveManager
 var is_action_in_progress: bool:
@@ -495,33 +502,79 @@ func _process(_delta: float) -> void:
 		shot_trajectory_visualizer.clear_destination_options()
 	_update_attack_preview()
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_V:
+		if _toggle_destination_inspection(): get_viewport().set_input_as_handled()
+
+func _toggle_destination_inspection() -> bool:
+	if not is_move_mode_active or is_action_in_progress or not is_current_phase_manually_controlled():
+		return false
+	if _pinned_destination != NO_PREVIEW_CELL:
+		_pinned_destination = NO_PREVIEW_CELL
+		_preview_target = null
+		_movement_feedback_key = ""
+		return true
+	if _preview_cell == NO_PREVIEW_CELL or not _preview_query or not _preview_query.is_legal(): return false
+	_pinned_destination = _preview_cell
+	_update_destination_inspection(null, true)
+	return true
+
 func _update_movement_preview(floor_hit: Dictionary) -> void:
-	if not floor_hit.is_empty():
-		var hover_grid = world_to_grid(floor_hit.position)
-		if current_movement_zone.has(hover_grid):
-			var query := query_move(tactical_unit, hover_grid)
-			if query.is_legal() and query.path.size() > 1:
-				path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
-				var feedback_key := "%s:%s:%d" % [tactical_unit.tactical_id, hover_grid, action_service.state_revision]
-				if feedback_key != _movement_feedback_key:
-					_movement_feedback_key = feedback_key
-					var opponents: Array[TacticalUnit] = []
-					opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
-					var options := TacticalFeedbackText.movement_options(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
-					_set_tactical_preview(TacticalFeedbackText.movement_description(query, tactical_unit, options, grid_manager, supply_points_enabled))
-					if shot_trajectory_visualizer: shot_trajectory_visualizer.draw_destination_options(tactical_unit, hover_grid, options)
-					if not is_instance_valid(movement_ghost):
-						movement_ghost = MovementGhost.new()
-						add_child(movement_ghost)
-					movement_ghost.show_destination(tactical_unit, hover_grid, grid_manager)
-				return
+	var pinned := _pinned_destination != NO_PREVIEW_CELL
+	var hover_grid := _pinned_destination if pinned else world_to_grid(floor_hit.position) if not floor_hit.is_empty() else NO_PREVIEW_CELL
+	if current_movement_zone.has(hover_grid):
+		var query := query_move(tactical_unit, hover_grid)
+		if query.is_legal() and query.path.size() > 1:
+			path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
+			var opponents: Array[TacticalUnit] = []
+			opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
+			var known := PackedStringArray()
+			for unit in opponents:
+				if is_instance_valid(unit) and unit.is_visible_in_tree() and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
+					known.append(String(unit.tactical_id))
+			var key := "%s:%s:%d:%s" % [tactical_unit.tactical_id, hover_grid, action_service.state_revision, ",".join(known)]
+			var refreshed := key != _movement_feedback_key
+			if refreshed:
+				_movement_feedback_key = key
+				_preview_cell = hover_grid
+				_preview_query = query
+				_preview_options = TacticalFeedbackText.movement_options(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
+				if not is_instance_valid(movement_ghost):
+					movement_ghost = MovementGhost.new()
+					add_child(movement_ghost)
+				movement_ghost.show_destination(tactical_unit, hover_grid, grid_manager)
+			if pinned:
+				_update_destination_inspection(mouse_raycaster.get_unit_under_mouse() if mouse_raycaster else null, refreshed)
+			elif refreshed:
+				var summary := TacticalFeedbackText.movement_description(query, tactical_unit, _preview_options, grid_manager, supply_points_enabled)
+				_set_tactical_preview(summary + ("\nV · pin and inspect targets" if not _preview_options.is_empty() else ""))
+				if shot_trajectory_visualizer: shot_trajectory_visualizer.draw_destination_options(tactical_unit, hover_grid, _preview_options)
+			return
 	path_visualizer.clear_path()
 	_clear_destination_preview()
-	_movement_feedback_key = ""
 	_set_tactical_preview("")
+
+func _update_destination_inspection(target: TacticalUnit, force := false) -> void:
+	if not is_instance_valid(target) or not target.is_visible_in_tree() or not target.stats or target.stats.is_defeated:
+		target = null
+	if not force and target == _preview_target: return
+	_preview_target = target
+	for option in _preview_options:
+		if not target or option.enemy != target: continue
+		_set_tactical_preview(TacticalFeedbackText.destination_attack(_preview_query, option, supply_points_enabled))
+		if shot_trajectory_visualizer: shot_trajectory_visualizer.draw_destination_options(tactical_unit, _preview_cell, [option])
+		return
+	_set_tactical_preview(TacticalFeedbackText.movement_description(_preview_query, tactical_unit, _preview_options, grid_manager, supply_points_enabled)
+		+ "\nDestination pinned · hover a hostile · V unpins")
+	if shot_trajectory_visualizer: shot_trajectory_visualizer.clear_destination_options()
 
 func _clear_destination_preview() -> void:
 	_movement_feedback_key = ""
+	_preview_cell = NO_PREVIEW_CELL
+	_pinned_destination = NO_PREVIEW_CELL
+	_preview_query = null
+	_preview_options.clear()
+	_preview_target = null
 	if is_instance_valid(movement_ghost): movement_ghost.clear()
 	if is_instance_valid(shot_trajectory_visualizer): shot_trajectory_visualizer.clear_destination_options()
 
@@ -587,6 +640,7 @@ func _on_floor_clicked(raw_position: Vector3) -> void:
 		return
 
 	var clicked_grid = world_to_grid(raw_position)
+	if _pinned_destination != NO_PREVIEW_CELL and clicked_grid != _pinned_destination: return
 	if not current_movement_zone.has(clicked_grid):
 		return
 
