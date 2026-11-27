@@ -50,7 +50,18 @@ func _run() -> void:
 		selectors[1].select(skirmisher_index)
 		selectors[1].item_selected.emit(skirmisher_index)
 		check(setup.player_archetypes[1] == &"skirmisher", "Choosing it sets the second player slot")
-	setup._start_battle()
+	var engagement := setup.engagement_option
+	check(engagement.get_selected_id() == CombatRules.EngagementPolicy.LEGACY, "Fresh setup defaults to Legacy")
+	for policy in CombatRules.EngagementPolicy.values():
+		var index := engagement.get_item_index(policy)
+		check(index >= 0, "Setup offers %s" % CombatRules.engagement_policy_label(policy))
+		if index < 0: continue
+		engagement.select(index)
+		check(setup._build_battle_configuration().engagement_policy == policy, "Selected option reaches the battle configuration")
+	engagement.select(engagement.get_item_index(CombatRules.EngagementPolicy.SYMMETRIC))
+	engagement.item_selected.emit(engagement.selected)
+	check(setup.deployment_summary.text.contains("Engagement: Symmetrical"), "The briefing shows the active selection")
+	setup.start_button.pressed.emit()
 	var deadline := Time.get_ticks_msec() + 30000
 	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
 		await process_frame
@@ -58,6 +69,10 @@ func _run() -> void:
 	check(battle != null, "The battle starts")
 	if battle:
 		for i in 10: await process_frame
+		check(battle.battle_controller.grid_manager.map_data.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC,
+			"Start Battle applies Symmetrical to the live firing rules")
+		check(battle._replay_recorder.recording.configuration.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC,
+			"The match recording preserves the selected engagement rule")
 		var unit: TacticalUnit = battle.turn_manager.player_units[0]
 		check(unit.archetype_id == &"bulwark" and unit.shield_capability != null and unit.stats.speed == 4, "The chosen slot spawns as a Bulwark")
 		var stripe: Node = null

@@ -4,7 +4,9 @@ Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `
 
 ## Play the comparison
 
-Run these from the Godot project root, using the existing battle controls. The mode, side-step setting and Guard policy appear below the turn indicator. In Move, hover for arrival lanes or press **V** to pin the hologram and inspect a particular known enemy. Click the pinned tile to commit, or cancel as usual.
+In the normal game, open **Match Setup → Mission → Engagement Rule** and select the policy before starting the battle. The briefing confirms your selection. Legacy is selected for a fresh setup. **F3 → Runtime** shows the rule in the live battle.
+
+For the matched comparison deployments, run these from the Godot project root, using the existing battle controls. The mode, side-step setting and Guard policy appear below the turn indicator. In Move, hover for arrival lanes or press **V** to pin the hologram and inspect a particular known enemy. Click the pinned tile to commit, or cancel as usual.
 
 ```powershell
 godot_console --path . --script res://docs/quality/evidence/combat-policy-05/play_comparison.gd -- legacy

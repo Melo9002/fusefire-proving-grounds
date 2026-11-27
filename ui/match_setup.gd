@@ -19,6 +19,7 @@ const EXPLORATION_PLAYGROUND_PATH := "res://research/exploration_playground/expl
 var vip_toggle: CheckButton
 var vip_behavior: OptionButton
 var objective_option: OptionButton
+var engagement_option: OptionButton
 var difficulty_option: OptionButton
 var player_commander_option: OptionButton
 var enemy_commander_option: OptionButton
@@ -48,6 +49,7 @@ const RESTART_MARKER := "--fusefire-renderer-restart"
 func _ready() -> void:
 	_build_population_setup()
 	_build_objective_setup()
+	_build_engagement_setup()
 	_build_vip_setup()
 	_build_compatibility_setup()
 	_build_authoring_tools()
@@ -388,6 +390,29 @@ func _build_objective_setup() -> void:
 	commander_box.add_child(commander_columns)
 	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(commander_box)
 
+func _build_engagement_setup() -> void:
+	var box := VBoxContainer.new()
+	box.name = "EngagementSetup"
+	var label := Label.new()
+	label.text = "ENGAGEMENT RULE"
+	box.add_child(label)
+	engagement_option = OptionButton.new()
+	engagement_option.name = "EngagementOption"
+	engagement_option.tooltip_text = "Sets how both sides qualify for a firing lane. Symmetrical requires a physically clear return lane."
+	var descriptions := [
+		"Any exposed target sample can qualify. One-way shots are possible.",
+		"The shot must reach the target's head or core. One-way shots are possible.",
+		"Both units need a physical firing lane. Range, AP, and SP can still differ.",
+		"Both units need a physical firing lane that reaches the other unit's head or core.",
+	]
+	for policy in CombatRules.EngagementPolicy.values():
+		engagement_option.add_item(CombatRules.engagement_policy_label(policy), policy)
+		engagement_option.set_item_tooltip(engagement_option.item_count - 1, descriptions[policy])
+	engagement_option.select(engagement_option.get_item_index(CombatRules.EngagementPolicy.LEGACY))
+	engagement_option.item_selected.connect(func(_index: int): _update_summary(0.0))
+	box.add_child(engagement_option)
+	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Mission.add_child(box)
+
 func _create_commander_selector(label_text: String, tooltip: String) -> OptionButton:
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -458,12 +483,13 @@ func _update_summary(_value: float) -> void:
 	var player_controlled := int(player_count.value) + player_vip
 	var ai_controlled := int(ally_count.value) + ai_vip
 	if deployment_summary:
+		var engagement_label := CombatRules.engagement_policy_label(engagement_option.get_selected_id())
 		var difficulty_label := difficulty_option.get_item_text(difficulty_option.selected) if difficulty_option else "Normal"
 		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
 		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
 		var population_line := "\nPopulation: %s" % ("ON" if population_toggle.button_pressed else "OFF") if population_toggle.visible else ""
-		deployment_summary.text = "MISSION\n%s%s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
+		deployment_summary.text = "MISSION\n%s%s\nEngagement: %s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, engagement_label, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
 func _on_battlefield_selected(_index: int) -> void:
@@ -584,6 +610,7 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
+	config.engagement_policy = engagement_option.get_selected_id()
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
