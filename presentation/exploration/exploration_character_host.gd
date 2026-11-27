@@ -356,7 +356,7 @@ func is_on_stairs() -> bool:
 # ------------------------------------------------------------------ carrying a body
 
 ## Lift the body lying at `world_point` onto the shoulders (the shared rescue lift: the character steps in, reaches, lifts). The handle settles when the lift is over; a loaded character walks with the loaded gait.
-func pick_up(world_point: Vector3) -> ActionHandle:
+func pick_up(world_point: Vector3, passenger: PassengerDefinition = null) -> ActionHandle:
 	if is_carrying() or presenter.is_defeated():
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	_aiming = false
@@ -364,7 +364,7 @@ func pick_up(world_point: Vector3) -> ActionHandle:
 	presenter.cancel_gesture()   # a lift takes the body
 	presenter.face_point(world_point)
 	_state = &""
-	return rig.begin_pickup(world_point)
+	return rig.begin_pickup(world_point, null, passenger)
 
 
 ## Put the carried body down in front (the shared release). The body is left lying where it is put.

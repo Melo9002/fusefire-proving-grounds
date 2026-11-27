@@ -31,6 +31,8 @@ var skeleton: Skeleton3D
 ## The passenger's own bone roles, from the rig profile of its model (see RigBones).
 var bones: RigBones
 var posed := false
+## Who this passenger is (character, model, scale, rig profile). It travels with the body: the rig that carries it, the ground casualty it becomes on release and the next pickup all read it from here.
+var definition: PassengerDefinition
 ## 1 = full size. The boarding presentation shrinks the passenger by tweening this (the node's own scale is derived from the
 ## carrier's chest every update, so it is not the place to animate size).
 var presence := 1.0
@@ -89,6 +91,11 @@ const CONTACTS := {
 
 ## Builds the passenger from `model_scene` (a humanoid with a Skeleton3D), scaled like the carrier's model, posed and with
 ## its abdomen at this node's origin. Call after the node is in the tree.
+func build_from(passenger: PassengerDefinition) -> void:
+	definition = passenger
+	build(passenger.scene, passenger.scale, passenger.rig_profile)
+
+
 func build(model_scene: PackedScene, model_scale: float, rig_profile: Resource) -> void:
 	_body = Node3D.new()
 	_body.name = "Body"

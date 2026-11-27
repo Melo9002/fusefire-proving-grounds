@@ -254,6 +254,9 @@ const CARRY_GRIP_CURL := 0.75
 const RESCUE_PASSENGER := preload("res://presentation/characters/rig/rescue_passenger.gd")
 ## The carried passenger while carrying, else null. Created by begin_carry, freed by end_carry.
 var carry_passenger: Node3D
+## Who the next carried passenger is. Null (the default) means a body of this rig's own kind, which is what every host that never names one gets. A host that carries someone else sets it before a pickup
+## (`begin_pickup`'s argument does), and the carried body keeps it (`carry_passenger.definition`) until it is set down.
+var passenger_definition: PassengerDefinition
 ## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's
 ## contact point, the intended palm centre and the intended finger and palm directions (world). Read by diagnostics.
 var carry_contact_report: Array = []
@@ -1442,7 +1445,9 @@ func begin_carry() -> void:
 ## The pickup: the passenger lies on the floor at `passenger_world` (where the rescued actor was) and the shared timeline lifts
 ## it into the carry while the carrier turns, steps in, kneels, takes hold, rises and steps back. Facing the passenger is the
 ## caller's business (the adapter turns the carrier first); the lift is built in the carrier's own frame.
-func begin_pickup(passenger_world: Vector3, lying_basis = null) -> ActionHandle:
+func begin_pickup(passenger_world: Vector3, lying_basis = null, definition: PassengerDefinition = null) -> ActionHandle:
+	if definition != null:
+		passenger_definition = definition
 	if rescue_interaction.kind == RescueInteraction.Kind.PICKUP:
 		return _rescue_handle   # already lifting: a repeated request is the same operation, not a second pickup
 	if rescue_interaction.kind == RescueInteraction.Kind.RELEASE:
@@ -1618,7 +1623,7 @@ func _ensure_passenger(lift: float, pose: float) -> void:
 	carry_passenger.waypoint_local = rescue_interaction.lift_waypoint
 	carry_passenger.lift = lift
 	carry_passenger.pose_blend = pose
-	carry_passenger.build(character_scene, character_scale, rig_profile)
+	carry_passenger.build_from(passenger_definition if passenger_definition != null else PassengerDefinition.from_rig(self))
 	carry_passenger.update_presentation(lift, pose, carry_passenger.global_transform, 0.0)
 	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck)
 
