@@ -68,6 +68,8 @@ var motion_swing_degrees := 4.0
 var motion_offset := Vector3.ZERO
 var motion_swing := 0.0
 var motion_tilt := Quaternion.IDENTITY
+## Where along the limb each contact is held, overriding CONTACTS (a fitted body is held nearer the elbow or the hip when the carrier's arm cannot reach the wrist or the knee).
+var contact_fractions := {}
 
 var _body: Node3D
 var _anchor: ChestAnchor
@@ -139,6 +141,52 @@ func _repose(blend: float, swing: float) -> void:
 	posed = PoseTable.apply(skeleton, bones, _body_to_skeleton, params)
 	_place_abdomen_on_origin()
 	_skeleton_in_node = global_transform.affine_inverse() * skeleton.global_transform
+
+
+## Where the body would be, and where a carrier's hands would hold it, if it were carried with `params` (pose table values) at `at_anchor` (world), without changing anything this node shows: the one question the
+## fit (PassengerFit) asks. `shoulders` are the carrier's right and left shoulder joints (world) and `contacts` the carry's [hand, contact, optional approach] list. Returns the lowest world y of any bone and
+## the contact points in hand order [right, left].
+func trial(params: Dictionary, at_anchor: Transform3D, shoulders: Array, contacts: Array, carrier_basis: Basis, fractions := {}) -> Dictionary:
+	var kept_key := _applied_key
+	var kept_fractions := contact_fractions
+	contact_fractions = fractions
+	var kept_lift := lift
+	var kept_in_node := _skeleton_in_node
+	var merged := PoseTable.DEFAULTS.duplicate()
+	merged.merge(params, true)
+	posed = PoseTable.apply(skeleton, bones, _body_to_skeleton, merged)
+	_place_abdomen_on_origin()
+	lift = 1.0
+	_skeleton_in_node = global_transform.affine_inverse() * skeleton.global_transform
+	var to_world := placement(at_anchor) * _skeleton_in_node
+	var lowest := INF
+	for bone in skeleton.get_bone_count():
+		lowest = minf(lowest, (to_world * skeleton.get_bone_global_pose(bone).origin).y)
+	var points: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
+	var limbs := {}
+	for assignment in contacts:
+		var side := 0 if assignment[0] == &"right" else 1
+		var approach := Vector3.ZERO
+		if assignment.size() > 2:
+			approach = (carrier_basis * (assignment[2] as Vector3)).normalized()
+		points[side] = contact_frame(assignment[1], at_anchor, shoulders[side], approach).point
+		var definition: Dictionary = CONTACTS[assignment[1]]
+		limbs[assignment[1]] = {"side": side, "start": to_world * skeleton.get_bone_global_pose(skeleton.find_bone(bones.role(definition.bone))).origin, "end": to_world * skeleton.get_bone_global_pose(skeleton.find_bone(bones.role(definition.child))).origin}
+	lift = kept_lift
+	contact_fractions = kept_fractions
+	_skeleton_in_node = kept_in_node
+	_applied_key = Vector2(-1.0, -1.0)
+	_repose(pose_blend, motion_swing)
+	_applied_key = kept_key
+	return {"lowest": lowest, "contact_points": points, "limbs": limbs}
+
+
+## Takes a fitted set of pose values (PassengerFit) as this body's carried pose.
+func apply_fit(pose: Dictionary, fractions := {}) -> void:
+	_carried_params.merge(pose, true)
+	contact_fractions = fractions.duplicate()
+	_applied_key = Vector2(-1.0, -1.0)
+	_repose(pose_blend, motion_swing)
 
 
 ## Moves the body so the abdomen (the attach bone) is at this node's origin.
@@ -283,13 +331,14 @@ func anchor_world() -> Transform3D:
 ## direction from the limb axis toward `from_point`, and the limb radius.
 func contact_frame(contact: StringName, at_anchor: Transform3D, from_point: Vector3, approach := Vector3.ZERO) -> Dictionary:
 	var definition: Dictionary = CONTACTS[contact]
+	var fraction := float(contact_fractions.get(contact, definition.fraction))
 	var to_world := placement(at_anchor) * _skeleton_in_node
 	var bone := skeleton.find_bone(bones.role(definition.bone))
 	var child := skeleton.find_bone(bones.role(definition.child))
 	var start: Vector3 = to_world * skeleton.get_bone_global_pose(bone).origin
 	var end: Vector3 = to_world * skeleton.get_bone_global_pose(child).origin
 	var axis := (end - start).normalized()
-	var point := start.lerp(end, float(definition.fraction))
+	var point := start.lerp(end, fraction)
 	var side := approach if approach != Vector3.ZERO else from_point - point
 	side = (side - axis * side.dot(axis)).normalized()
 	return {"point": point, "axis": axis, "side": side, "radius": float(definition.radius) * presence}

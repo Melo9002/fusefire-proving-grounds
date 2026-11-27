@@ -257,6 +257,8 @@ var carry_passenger: Node3D
 ## Who the next carried passenger is. Null (the default) means a body of this rig's own kind, which is what every host that never names one gets. A host that carries someone else sets it before a pickup
 ## (`begin_pickup`'s argument does), and the carried body keeps it (`carry_passenger.definition`) until it is set down.
 var passenger_definition: PassengerDefinition
+## What the fit decided for the passenger now carried: {fitted, pose, slide, tuck, lowest, reach}. Empty when nobody is carried.
+var carry_fit := {}
 ## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's
 ## contact point, the intended palm centre and the intended finger and palm directions (world). Read by diagnostics.
 var carry_contact_report: Array = []
@@ -1625,7 +1627,11 @@ func _ensure_passenger(lift: float, pose: float) -> void:
 	carry_passenger.pose_blend = pose
 	carry_passenger.build_from(passenger_definition if passenger_definition != null else PassengerDefinition.from_rig(self))
 	carry_passenger.update_presentation(lift, pose, carry_passenger.global_transform, 0.0)
-	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck)
+	# A body of another size than the carrier's own is fitted to it (PassengerFit); the authored carry of a body carrying its own kind is left exactly as it is.
+	carry_fit = PassengerFit.solve(self, carry_passenger, CARRY_CONTACTS)
+	if bool(carry_fit.fitted):
+		carry_passenger.apply_fit(carry_fit.pose, carry_fit.fractions)
+	carry_passenger.attach_to_carrier(skeleton, character_root, torso_bone_name, neck_bone_name, passenger_anchor_from_neck + (carry_fit.slide as Vector3))
 
 
 ## Where a passenger left lying (the workbench's keep_released_passenger) is put: beside this rig's host, in the host's own container, so it is no longer part of the carrier.

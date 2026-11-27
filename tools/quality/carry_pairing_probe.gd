@@ -30,9 +30,9 @@ func _run() -> void:
 		for passenger in characters:
 			report.append(await _measure(carrier, passenger, args.armed == "true"))
 	for entry in report:
-		print("PAIRING %s carries %s: passenger scale %.3f (own %.3f) %s | passenger y %.2f..%.2f m, lateral +-%.2f m, lowest %.2f m above the floor (%s; carrier neck at %.2f m) | hands: %s" % [
+		print("PAIRING %s carries %s: passenger scale %.3f (own %.3f) %s | passenger y %.2f..%.2f m, lateral +-%.2f m, lowest %.2f m above the floor (%s; carrier neck at %.2f m) | hands: %s | fit %s" % [
 			entry.carrier, entry.passenger, entry.passenger_scale, entry.passenger_own_scale, "OK" if entry.identity_ok else "WRONG BODY",
-			entry.passenger_y[0], entry.passenger_y[1], entry.lateral, entry.lowest, entry.lowest_bone, entry.neck_height, entry.hands])
+			entry.passenger_y[0], entry.passenger_y[1], entry.lateral, entry.lowest, entry.lowest_bone, entry.neck_height, entry.hands, JSON.stringify(entry.fit)])
 	if not String(args.json).is_empty():
 		var file := FileAccess.open(String(args.json), FileAccess.WRITE)
 		file.store_string(JSON.stringify(report, "\t"))
@@ -111,6 +111,7 @@ func _summarise(rig: CharacterRig, carrier: StringName, passenger: StringName, d
 		"lowest_bone": lowest_bone, "neck_height": snappedf(_final.neck.y - floor_y, 0.01),
 		"passenger_y": [snappedf(low if low != INF else 0.0, 0.01), snappedf(high if high != -INF else 0.0, 0.01)],
 		"lateral": snappedf(lateral, 0.01), "lowest": snappedf(low if low != INF else 0.0, 0.01), "hands": ", ".join(hands),
+		"fit": {"fitted": rig.carry_fit.get("fitted", false), "tuck": rig.carry_fit.get("tuck", 1.0), "slide": str(rig.carry_fit.get("slide", Vector3.ZERO)), "predicted_lowest": snappedf(float(rig.carry_fit.get("lowest", 0.0)), 0.01), "predicted_reach": (rig.carry_fit.get("reach", []) as Array).map(func(r): return snappedf(float(r), 0.01))},
 	}
 
 
