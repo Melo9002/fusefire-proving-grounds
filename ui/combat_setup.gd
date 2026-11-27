@@ -28,7 +28,7 @@ func _ready() -> void:
 	_guard = _choices(_row(), [["First legal", 0], ["15%", 15], ["25%", 25]], 0)
 
 	add_child(HSeparator.new())
-	_add_label("Load a playtest preset")
+	_add_label("Scenario presets")
 	var presets := _row()
 	for pressure in [false, true]:
 		var button := Button.new()
