@@ -34,6 +34,11 @@ var body_radius := 0.28
 var body_height := 1.8
 var body_clearance := 0.04
 var movement_parts: Array[AABB] = []
+## Certified local footing offsets, indexed by the canonical resting cell.
+var contextual_steps: Dictionary[Vector3i, Vector3] = {}
+## Only versioned battlefield IDs can enable discovered side steps.
+var contextual_discovery_enabled := false
+var engagement_policy := 0
 var movement_columns: Dictionary = {}
 var movement_index_count := -1
 var movement_routes: Dictionary = {}
@@ -203,6 +208,9 @@ func clear() -> void:
 	surface_placement_enabled = false
 	surface_points_resolved = false
 	movement_parts.clear()
+	contextual_steps.clear()
+	contextual_discovery_enabled = false
+	engagement_policy = 0
 	movement_columns.clear()
 	movement_index_count = -1
 	movement_routes.clear()

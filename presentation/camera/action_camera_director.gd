@@ -44,12 +44,12 @@ func should_present_for_faction(faction: TacticalUnit.Faction, kind: StringName,
 		return false
 	return should_present(kind, ap_after, important)
 
-func present(actor: TacticalUnit, kind: StringName, focus_point: Vector3, ap_after: int, important := false, force := false) -> bool:
+func present(actor: TacticalUnit, kind: StringName, focus_point: Vector3, ap_after: int, important := false, force := false, step := Vector3.ZERO) -> bool:
 	if not is_instance_valid(tactical_camera) or not is_instance_valid(actor):
 		return false
 	if not force and not should_present_for_faction(actor.faction, kind, ap_after, important):
 		return false
-	tactical_camera.frame_cinematic_action(actor, focus_point)
+	tactical_camera.frame_cinematic_action(actor, focus_point, step)
 	while is_instance_valid(tactical_camera) and tactical_camera.is_camera_transitioning():
 		await get_tree().process_frame
 	return true

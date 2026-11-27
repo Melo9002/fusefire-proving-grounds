@@ -5,6 +5,7 @@ var watcher_id: StringName
 var checkpoint_cell: Vector3i
 var checkpoint_index := 0
 var hit_chance := 0
+var firing_solution: CombatRules.FiringSolution
 var roll := 0.0
 var did_hit := false
 var damage := 0
@@ -19,7 +20,7 @@ var shield_accuracy_modifier := 0
 var shield_damage_multiplier := 1.0
 
 func to_dictionary() -> Dictionary:
-	return {
+	var record := {
 		"watcher_id": String(watcher_id),
 		"checkpoint": [checkpoint_cell.x, checkpoint_cell.y, checkpoint_cell.z],
 		"checkpoint_index": checkpoint_index,
@@ -33,3 +34,5 @@ func to_dictionary() -> Dictionary:
 		"shield_accuracy_modifier": shield_accuracy_modifier,
 		"shield_damage_multiplier_milli": roundi(shield_damage_multiplier * 1000.0),
 	}
+	if firing_solution: record["firing_solution"] = firing_solution.to_replay_record()
+	return record

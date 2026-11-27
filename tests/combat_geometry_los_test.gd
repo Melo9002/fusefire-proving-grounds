@@ -44,6 +44,7 @@ func _run() -> void:
 		check(grid.map_data.get_cell(Vector3i(6, 0, 6)).can_stop, "Shot-only beam does not reserve ground below it")
 		if hit:
 			check(hit.authored_shot_bounds.has_point(Vector3(0, 2.7, 0)), "Raised blocker evidence identifies the actual beam height")
+	_check_delivery_shot_parts(grid)
 	beam.rotation = Vector3.ZERO
 	var old := TacticalMapBuilder.generate(12, 12, 1, 17)
 	AuthoredSceneMapCompiler.compile(beam, old, 1, Transform3D.IDENTITY, true, 3)
@@ -128,6 +129,7 @@ func _run() -> void:
 	var visualizer := ShotTrajectoryVisualizer.new()
 	visualizer.grid_manager = grid
 	root.add_child(visualizer)
+	visualizer.set_debug_enabled(true)
 	visualizer.draw_trajectory(CombatRules.get_shot_origin(actor, grid), evaluation.aim_point, evaluation, true)
 	check(visualizer.blocker_marker.mesh.size.is_equal_approx(front_part.size) and visualizer.blocker_marker.position.is_equal_approx(front_part.get_center()), "Rendered blocker marker consumes the exact intersected part bounds")
 	visualizer.queue_free()
@@ -139,3 +141,25 @@ func _run() -> void:
 	await process_frame
 	print("Combat geometry LOS: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
+
+func _check_delivery_shot_parts(grid: GridManager) -> void:
+	var delivery := preload("res://art/environments/authored/objects/delivery.tscn").instantiate() as Node3D
+	for turn in 4:
+		var rotation := Transform3D(Basis(Vector3.UP, turn * PI * 0.5), Vector3.ZERO)
+		var historical := TacticalMapBuilder.generate(12, 12, 1.0, 17)
+		AuthoredSceneMapCompiler.compile(delivery, historical, 1.0, rotation, true, 9)
+		var current := TacticalMapBuilder.generate(12, 12, 1.0, 17)
+		AuthoredSceneMapCompiler.compile(delivery, current, 1.0, rotation)
+		check(current.movement_parts == historical.movement_parts, "Cargo quarter-turn %d preserves its movement hulls" % turn)
+		grid.map_data = historical
+		var upper_from := rotation * Vector3(-1.3, 0.9, -2.0)
+		var upper_to := rotation * Vector3(1.3, 0.9, -2.0)
+		check(CombatRules.get_blocking_cell(upper_from, upper_to, grid) != null, "Compiler 9 keeps the old cargo obstruction")
+		grid.map_data = current
+		check(CombatRules.get_blocking_cell(upper_from, upper_to, grid) == null
+			and CombatRules.get_blocking_cell(upper_to, upper_from, grid) == null, "Cleared rear taper stays open in both directions")
+		check(CombatRules.get_blocking_cell(rotation * Vector3(-1.3, 0.5, -2.0), rotation * Vector3(1.3, 0.5, -2.0), grid) != null,
+			"The lower overhang remains solid")
+		check(CombatRules.get_blocking_cell(rotation * Vector3(-1.3, 0.9, -1.85), rotation * Vector3(1.3, 0.9, -1.85), grid) != null,
+			"The cargo core remains solid")
+	delivery.free()

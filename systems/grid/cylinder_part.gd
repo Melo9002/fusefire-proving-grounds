@@ -52,12 +52,12 @@ func geometry_record(unit: float) -> String:
 ## Entry fraction along origin -> destination, or INF. Matches the box ray test: an open
 ## probe that only grazes the surface misses, a closed probe (tolerant edges) counts the
 ## graze, and a ray that starts inside enters at 0.
-func ray_entry(origin: Vector3, destination: Vector3, closed_edges := false) -> float:
+func ray_entry(origin: Vector3, destination: Vector3, closed_edges := false, padding := 0.0) -> float:
 	if not is_valid() or not origin.is_finite() or not destination.is_finite():
 		return INF
-	var reach := radius + INSET if closed_edges else radius - INSET
-	var low := center.y + INSET
-	var high := top() - INSET
+	var reach := radius + (INSET if closed_edges else -INSET) + padding
+	var low := center.y + INSET - padding
+	var high := top() - INSET + padding
 	if reach <= 0.0 or low >= high:
 		return INF
 	var enter := 0.0

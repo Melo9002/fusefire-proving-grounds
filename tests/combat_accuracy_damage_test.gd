@@ -171,7 +171,7 @@ func _run() -> void:
 		check(not tuning.is_valid() and not service.query_attack(actor.tactical_id, target.tactical_id).is_legal(), "Invalid setting rejects rather than silently changing damage or chance: %s" % invalid[0])
 		tuning.set(invalid[0], original)
 	query = service.query_attack(actor.tactical_id, target.tactical_id)
-	var text := TacticalFeedbackText.shot(query)
+	var text := TacticalFeedbackText.shot(query, true)
 	check(text.contains("Damage on hit: 25") and text.contains("strongest only") and text.contains("Raw") and text.contains("limits 5–100"), "Prediction explains fixed hit damage, protection stacking and chance limits")
 	_prepare(5)
 	tuning.aim_accuracy_bonus = 0

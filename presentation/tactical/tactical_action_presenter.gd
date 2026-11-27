@@ -38,36 +38,49 @@ func present_attack(result: AttackActionResult) -> void:
 		return
 	var camera_presented := false
 	if _camera_available():
-		var camera_subject := _attack_camera_subject(attacker, target)
-		var camera_focus := attacker.global_position if camera_subject == target else result.target_position
-		camera_presented = await action_camera_director.present(camera_subject, &"attack", camera_focus, result.actor_ap_after, result.target_defeated)
+		camera_presented = await _present_attack_camera(attacker, target, result.target_position, result.actor_ap_after, result.target_defeated, result.firing_solution)
 	if not is_instance_valid(attacker):
 		result.presentation_error = "Attack actor left the scene during presentation"
 		await _finish_camera(camera_presented)
 		return
-	await _wait_for_shot(attacker.present_attack(result.target_position))
-	if result.did_hit and is_instance_valid(target):
-		target.present_attack_impact(result.target_defeated)
-		if result.target_defeated: target.finish_defeat_presentation()
-	if attack_feedback.is_valid(): attack_feedback.call(attacker, target, result.did_hit, result.hit_chance)
+	await _present_firing_solution(attacker, result.target_position, result.firing_solution,
+		_show_attack_impact.bind(attacker, target, result.did_hit, result.hit_chance, result.target_defeated))
 	for condition_event in result.condition_events:
 		print_rich("[color=sky_blue][Condition][/color] %s applied to %s" % [condition_event.get("condition_id", ""), condition_event.get("target_id", "")])
 	for event in result.reaction_events:
 		if not is_instance_valid(target): break
+		var focus := attacker.global_position if is_instance_valid(attacker) else result.target_position
 		if _camera_available():
-			var return_camera_subject := _attack_camera_subject(target, attacker)
-			var return_camera_focus := target.global_position if return_camera_subject == attacker else (attacker.global_position if is_instance_valid(attacker) else result.target_position)
-			camera_presented = await action_camera_director.present(return_camera_subject, &"attack", return_camera_focus, 0, true) or camera_presented
-		await _wait_for_shot(target.present_attack(attacker.global_position if is_instance_valid(attacker) else result.target_position))
-		if event.did_hit and is_instance_valid(attacker):
-			attacker.present_attack_impact(event.target_defeated)
-			if event.target_defeated: attacker.finish_defeat_presentation()
-		if attack_feedback.is_valid(): attack_feedback.call(target, attacker, event.did_hit, event.hit_chance)
+			camera_presented = await _present_attack_camera(target, attacker, focus, 0, true, event.firing_solution) or camera_presented
+		if not is_instance_valid(target): break
+		await _present_firing_solution(target, focus, event.firing_solution,
+			_show_attack_impact.bind(target, attacker, event.did_hit, event.hit_chance, event.target_defeated))
 		print_rich("[color=orange][Guard Return][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 		await _safe_delay(0.18)
 	if camera_presented:
 		await _safe_delay(0.42)
 		await _finish_camera(true)
+
+func _present_firing_solution(actor: TacticalUnit, target_world: Vector3, solution: CombatRules.FiringSolution, show_impact: Callable) -> void:
+	if solution and solution.body_offset != Vector3.ZERO and is_instance_valid(actor.visual_adapter):
+		await actor.visual_adapter.present_contextual_attack(solution.body_offset, solution.facing_point, show_impact)
+	else:
+		await _wait_for_shot(actor.present_attack(target_world))
+		show_impact.call()
+
+func _show_attack_impact(actor: TacticalUnit, target: TacticalUnit, hit: bool, chance: int, defeated: bool) -> void:
+	if hit and is_instance_valid(target):
+		target.present_attack_impact(defeated)
+		if defeated: target.finish_defeat_presentation()
+	if attack_feedback.is_valid(): attack_feedback.call(actor, target, hit, chance)
+
+func _present_attack_camera(actor: TacticalUnit, target: TacticalUnit, target_world: Vector3, ap_after: int, important: bool, solution: CombatRules.FiringSolution) -> bool:
+	var subject := _attack_camera_subject(actor, target)
+	var focus := actor.global_position if subject == target else target_world
+	if solution and solution.body_offset != Vector3.ZERO and actor.is_visible_in_tree() and is_instance_valid(target) and target.is_visible_in_tree():
+		if action_camera_director.should_present_for_faction(subject.faction, &"attack", ap_after, important):
+			return await action_camera_director.present(actor, &"attack", target_world, ap_after, important, true, solution.body_offset)
+	return await action_camera_director.present(subject, &"attack", focus, ap_after, important)
 
 func present_reload(result: ReloadActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
@@ -173,18 +186,13 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 		for event in reactions_by_checkpoint.get(last, []):
 			var watcher := _actor(event.watcher_id)
 			if not reaction_camera_used and is_instance_valid(watcher) and _camera_available():
-				var reaction_camera_subject := _attack_camera_subject(watcher, unit)
-				var reaction_camera_focus := watcher.global_position if reaction_camera_subject == unit else unit.global_position
-				reaction_camera_used = await action_camera_director.present(reaction_camera_subject, &"attack", reaction_camera_focus, 0, true)
+				reaction_camera_used = await _present_attack_camera(watcher, unit, unit.global_position, 0, true, event.firing_solution)
 			if not _move_actor_available(unit): return reaction_camera_used
 			if is_instance_valid(watcher):
-				await _wait_for_shot(watcher.present_attack(unit.global_position))
-			if event.did_hit and is_instance_valid(unit):
-				unit.present_attack_impact(event.target_defeated)
-			if attack_feedback.is_valid(): attack_feedback.call(watcher, unit, event.did_hit, event.hit_chance)
+				await _present_firing_solution(watcher, unit.global_position, event.firing_solution,
+					_show_attack_impact.bind(watcher, unit, event.did_hit, event.hit_chance, event.target_defeated))
 			print_rich("[color=orange][Guard][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
-			if event.target_defeated and is_instance_valid(unit):
-				unit.finish_defeat_presentation()
+			if event.target_defeated:
 				return reaction_camera_used
 			await _safe_delay(0.18)
 		index = last + 1

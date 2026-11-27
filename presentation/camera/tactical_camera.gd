@@ -43,6 +43,7 @@ var _dragging := false
 var _drag_anchor := Vector3.ZERO
 var _cinematic_actor: TacticalUnit
 var _cinematic_focus := Vector3.ZERO
+var _cinematic_step := Vector3.ZERO
 var _cinematic_side := 1.0
 var _cinematic_active := false
 var _cinematic_camera_position := Vector3.ZERO
@@ -368,7 +369,7 @@ func focus_position(point: Vector3) -> void:
 	clear_cinematic_view()
 	global_position = _clamped_focus_position(point)
 
-func frame_cinematic_action(actor: TacticalUnit, focus_point: Vector3) -> void:
+func frame_cinematic_action(actor: TacticalUnit, focus_point: Vector3, step := Vector3.ZERO) -> void:
 	if not is_instance_valid(actor) or not is_instance_valid(camera):
 		return
 	_cancel_selection_focus()
@@ -377,6 +378,7 @@ func frame_cinematic_action(actor: TacticalUnit, focus_point: Vector3) -> void:
 	var previous_fov := camera.fov
 	_cinematic_actor = actor
 	_cinematic_focus = focus_point
+	_cinematic_step = step
 	_cinematic_active = true
 	_update_cinematic_camera(1.0)
 	var next_transform := camera.global_transform
@@ -523,9 +525,14 @@ func _update_cinematic_camera(delta: float) -> void:
 	var size_scale := body_height / 1.6
 	var shoulder_side := direction.cross(Vector3.UP).normalized()
 	var base := eye + Vector3.UP * (0.25 * size_scale) - direction * (2.8 * size_scale)
-	var desired_position := base + shoulder_side * (0.65 * size_scale * _cinematic_side)
+	var side := _cinematic_side
+	if _cinematic_step != Vector3.ZERO:
+		side = 1.0 if _cinematic_step.dot(shoulder_side) >= 0.0 else -1.0
+		base = focus + Vector3.UP * (2.1 * size_scale) - direction * (4.1 * size_scale)
+	var shoulder_distance := (1.45 if _cinematic_step != Vector3.ZERO else 0.65) * size_scale
+	var desired_position := base + shoulder_side * (shoulder_distance * side)
 	if not _cinematic_view_clear(focus, desired_position):
-		var opposite := base - shoulder_side * (0.65 * size_scale * _cinematic_side)
+		var opposite := base - shoulder_side * (shoulder_distance * side)
 		if _cinematic_view_clear(focus, opposite):
 			_cinematic_side *= -1.0
 			desired_position = opposite
@@ -536,6 +543,8 @@ func _update_cinematic_camera(delta: float) -> void:
 	var distance_to_focus := actor_position.distance_to(_cinematic_focus)
 	var forward_interest := minf(distance_to_focus * 0.2, 1.8 * size_scale)
 	var desired_target := focus + direction * forward_interest
+	if _cinematic_step != Vector3.ZERO:
+		desired_target = focus + direction * minf(distance_to_focus * 0.38, 2.8 * size_scale) + _cinematic_step * 0.5
 	var blend := 1.0 if delta >= 0.99 else 1.0 - exp(-8.0 * delta)
 	var eased_position := _cinematic_camera_position.lerp(desired_position, blend)
 	# Never ease through a wall when changing shoulders. Pull inward immediately.

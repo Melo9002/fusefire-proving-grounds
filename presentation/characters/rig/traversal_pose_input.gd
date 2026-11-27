@@ -4,7 +4,7 @@ extends RefCounted
 ## the traversal or stair pose changes (the solved pose itself is TraversalSolver / StairFootPlanner output; the rig translates it), and the modifier reads nothing else of the rig.
 ## Ladder values are in the character's own frame (the modifier converts them with the character root of THIS pass); stair values are the planner's world-space results.
 
-enum Mode { NONE, LADDER, STAIRS }
+enum Mode { NONE, LADDER, STAIRS, LOCAL_STEP }
 
 var mode: Mode = Mode.NONE
 ## False while a ladder traversal is active but its pose has not been solved yet (nothing to apply).

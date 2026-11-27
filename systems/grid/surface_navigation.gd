@@ -92,6 +92,19 @@ static func edge_clear(data: MapData, from: Vector3, to: Vector3) -> bool:
 		return true
 	return _sweep_clear(data, from, to, true)
 
+## A visual side step uses a straight level trajectory. Regular navigation may
+## choose an elbow, vault or link that the firing pose cannot reproduce.
+static func straight_supported_step(data: MapData, from: Vector3, to: Vector3) -> bool:
+	return is_equal_approx(from.y, to.y) and _sweep_clear(data, from, to, true)
+
+static func weapon_envelope_clear(data: MapData, from: Vector3, to: Vector3, margin: float, height: float) -> bool:
+	var envelope := AABB(from.min(to) - Vector3(margin, 0, margin), (to - from).abs() + Vector3(margin * 2.0, height, margin * 2.0))
+	for part in _local_parts(data, from, to, margin):
+		if envelope.intersects(part): return false
+	for curve in _local_curves(data, from, to, margin):
+		if envelope.intersects(curve.enclosing_bounds()): return false
+	return true
+
 ## An explicit ladder supplies support during traversal. Rise outside the upper
 ## floor first, then step onto it; descending follows the same route in reverse.
 static func traversal_route(data: MapData, from: Vector3, to: Vector3) -> PackedVector3Array:

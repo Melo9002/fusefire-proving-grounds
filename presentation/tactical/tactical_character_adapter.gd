@@ -437,7 +437,12 @@ func present_movement_end() -> void:
 	else:
 		present_idle()
 
+var _contextual_attack_active := false
+const CONTEXTUAL_PREPARATION := &"contextual_preparation"
+
 func _cover_context() -> Dictionary:
+	if _contextual_attack_active:
+		return {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	var cell := preview_cell if preview_cell != Vector3i(-1, -1, -1) else tactical_unit.grid_position if is_instance_valid(tactical_unit) else Vector3i(-1, -1, -1)
 	if is_instance_valid(presentation_grid) and cell != Vector3i(-1, -1, -1):
 		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, cell, rig.global_basis.z)
@@ -661,6 +666,77 @@ func present_attack(target_world_position: Vector3) -> AttackHandle:
 	attack_plan = plan
 	presenter.cancel_hold()
 	return presenter.attack.begin(_attack_host, presenter.time, shot, get_presentation_state(), rig.aim_blend)
+
+## A physical offset of the visual host only. The selected simulation solution
+## already certified the same-cell sweep, supports, weapon envelope and ray.
+func present_contextual_attack(offset: Vector3, target_world_position: Vector3, show_impact: Callable) -> void:
+	var tree := get_tree()
+	var home := position
+	var heading := target_world_position - (rig.global_position + offset)
+	var prior_yaw := atan2(rig.character_root.global_basis.z.x, rig.character_root.global_basis.z.z)
+	# The solution already specified the pose. Release the resting cover
+	# request while stepping, firing, and recovering to the resting point.
+	_contextual_attack_active = true
+	present_idle()
+	presenter.face_authoritative(atan2(heading.x, heading.z), false)
+	# Read fresh ankle poses after the facing request has reached the skeleton.
+	for frame in 3:
+		await tree.process_frame
+		if not is_inside_tree(): return
+	var sk := rig.skeleton
+	var ankles: Array[Vector3] = []
+	for bones in [rig.bones.left_leg, rig.bones.right_leg]:
+		ankles.append(sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bones[2])).origin)
+	var hips_y: float = (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(rig.bones.hips)).origin).y
+	var local_offset := (get_parent_node_3d().global_basis.inverse() * offset)
+	await _play_local_step(home, local_offset, offset, ankles, hips_y, false)
+	if not is_inside_tree(): return
+	var attack := present_attack(target_world_position)
+	rig.readiness.release(CONTEXTUAL_PREPARATION)
+	attack.shot.when_done(func(_outcome): show_impact.call())
+	while not attack.is_done() and presenter.attack.phase != AttackSequence.Phase.RELEASE:
+		await tree.process_frame
+		if not is_inside_tree(): return
+	await _play_local_step(home, local_offset, offset, ankles, hips_y, true)
+	if not is_inside_tree(): return
+	position = home
+	rig.traversal_modifier.input.clear()
+	_contextual_attack_active = false
+	presenter.face_authoritative(prior_yaw, false)
+	present_idle()
+
+func _play_local_step(home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float, returning: bool) -> void:
+	var tree := get_tree()
+	var elapsed := 0.0
+	var duration := 0.36 if returning else 0.40
+	var raising := false
+	while elapsed < duration and is_inside_tree():
+		await tree.process_frame
+		if not is_inside_tree(): return
+		if not can_process(): continue
+		elapsed = minf(duration, elapsed + get_process_delta_time())
+		var progress := elapsed / duration
+		if not returning and not raising and progress >= 0.25:
+			raising = true
+			rig.readiness.request(CONTEXTUAL_PREPARATION, WeaponReadiness.Level.AIMED)
+			_play(&"aim")
+		_apply_local_step(1.0 - progress if returning else progress, home, local_offset, offset, ankles, hips_y)
+
+func _apply_local_step(progress: float, home: Vector3, local_offset: Vector3, offset: Vector3, ankles: Array[Vector3], hips_y: float) -> void:
+	# Hold most of the transfer until the lead foot finds support, then
+	# bring the trailing foot underneath the firing stance.
+	var weight := 0.32 * smoothstep(0.06, 0.53, progress) + 0.68 * smoothstep(0.40, 0.99, progress)
+	position = home + local_offset * weight
+	var pose := rig.traversal_modifier.input
+	pose.mode = TraversalPoseInput.Mode.LOCAL_STEP
+	pose.solved = true
+	pose.weight = 1.0
+	pose.pelvis_height = hips_y - sin(progress * PI) * 0.028
+	var first_side := 0 if offset.dot(rig.character_root.global_basis.x) > 0.0 else 1
+	for side in 2:
+		var swing := smoothstep(0.06, 0.52, progress) if side == first_side else smoothstep(0.56, 0.98, progress)
+		pose.ankles_world[side] = ankles[side] + offset * swing + Vector3.UP * (sin(PI * swing) * 0.045)
+		pose.planted[side] = true
 
 ## The target-aware posture for an authorized attack from the unit's current cover; {} outside cover. Records the plan (and any mismatch) in `attack_plan_log`.
 func _plan_attack_posture(cover: Dictionary, target_world_position: Vector3) -> Dictionary:

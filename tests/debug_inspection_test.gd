@@ -53,7 +53,7 @@ func _run() -> void:
 	var revision := service.state_revision
 	var fingerprint := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
 	var squad_count := battle._squad_contexts.size()
-	var expected_shot := TacticalFeedbackText.shot(battle.query_attack(actor, enemy))
+	var expected_shot := TacticalFeedbackText.shot(battle.query_attack(actor, enemy), true)
 	check(battle.query_attack(actor, enemy).is_legal(), "Fixture contains a legal outgoing shot")
 	var expected_move := battle.query_move(actor, destination)
 	check(expected_move.is_legal(), "Fixture contains a legal hovered move")

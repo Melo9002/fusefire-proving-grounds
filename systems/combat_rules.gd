@@ -2,6 +2,38 @@ class_name CombatRules
 extends RefCounted
 static var cover_tuning = preload("res://systems/combat_cover_tuning.tres")
 
+## A selected geometric shot, independent of AP, aim bonuses and hit rolls.
+## Direct shots share the canonical pose and support point. Future posture
+## families must prove their adjustment before constructing a solution.
+class FiringSolution:
+	var resting_point: Vector3
+	var origin: Vector3
+	var body_offset := Vector3.ZERO
+	var facing_point := Vector3.ZERO
+	var target_samples: PackedVector3Array
+
+	func _init(support: Vector3, launch: Vector3, visible_samples: PackedVector3Array) -> void:
+		resting_point = support
+		origin = launch
+		target_samples = visible_samples
+
+	func aim_point() -> Vector3:
+		return target_samples[0]
+
+	func to_replay_record() -> Dictionary:
+		return {
+			"posture": "direct" if body_offset == Vector3.ZERO else "side_step",
+			"body_offset": _packed_point(body_offset),
+			"firing_support": _packed_point(resting_point + body_offset),
+			"facing_point": _packed_point(facing_point),
+			"resting_point": _packed_point(resting_point),
+			"origin": _packed_point(origin),
+			"aim_point": _packed_point(aim_point()),
+		}
+
+	static func _packed_point(point: Vector3) -> Array[int]:
+		return [roundi(point.x * 10000.0), roundi(point.y * 10000.0), roundi(point.z * 10000.0)]
+
 class AttackEvaluation:
 	var is_legal: bool
 	var hit_chance: int
@@ -12,6 +44,9 @@ class AttackEvaluation:
 	var obstruction: String
 	var blocking_cell: MapCellData
 	var blocking_bounds := AABB()
+	var blocking_point := Vector3.INF
+	var firing_solution: FiringSolution
+	var contextual_rejection := ""
 	var cover_cell: MapCellData
 	var cover_penalty := 0
 	var obstruction_penalty := 0
@@ -57,7 +92,25 @@ class AttackEvaluation:
 		shield_accuracy_modifier = p_shield_accuracy_modifier
 		shield_damage_multiplier = p_shield_damage_multiplier
 
-## What one hit of this attack deals: the combat tuning's damage scaled by the weapon and the shield.
+enum EngagementPolicy { LEGACY, HEAD_CORE, SYMMETRIC, HEAD_CORE_SYMMETRIC }
+
+const NO_MUTUAL_LANE := "No mutual firing lane"
+const INSUFFICIENT_EXPOSURE := "Insufficient target exposure"
+
+static func engagement_policy_label(policy: int) -> String:
+	match policy:
+		EngagementPolicy.HEAD_CORE: return "Head/core"
+		EngagementPolicy.SYMMETRIC: return "Symmetrical"
+		EngagementPolicy.HEAD_CORE_SYMMETRIC: return "Head/core + symmetrical"
+		_: return "Legacy five-point"
+
+static func requires_central(policy: int) -> bool:
+	return policy == EngagementPolicy.HEAD_CORE or policy == EngagementPolicy.HEAD_CORE_SYMMETRIC
+
+static func requires_reciprocity(policy: int) -> bool:
+	return policy == EngagementPolicy.SYMMETRIC or policy == EngagementPolicy.HEAD_CORE_SYMMETRIC
+
+## Combat tuning damage scaled by the weapon and directional Shield.
 static func damage_of(evaluation: AttackEvaluation) -> int:
 	return cover_tuning.damage_for_hit(evaluation.damage_multiplier)
 
@@ -74,8 +127,10 @@ static func evaluate_attack_at_cell(attacker: TacticalUnit, target: TacticalUnit
 	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, target_cell, grid, accuracy_bonus, allow_shield)
 
 ## A completed Move cancels the target's Shield. Do not mutate live stance for previews.
-static func evaluate_attack_after_move(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, world: World3D, accuracy_bonus := 0) -> AttackEvaluation:
-	return evaluate_attack_at_cell(attacker, target, target_cell, grid, world, accuracy_bonus, false)
+static func evaluate_attack_after_move(attacker: TacticalUnit, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, _world: World3D, accuracy_bonus := 0) -> AttackEvaluation:
+	if not is_instance_valid(attacker):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
+	return _evaluate_attack_cells(attacker, grid.get_unit_grid(attacker), target, target_cell, grid, accuracy_bonus, false, false, true)
 
 ## Geometric coverage for a hypothetical hostile body, not AP/faction permission.
 ## Occupied cells use the actual body's height; empty cells use the shooter's height.
@@ -84,15 +139,19 @@ static func has_firing_lane_to_cell(attacker: TacticalUnit, target_cell: Vector3
 	var source := grid.get_unit_grid(attacker)
 	if source == target_cell or not grid.map_data.has_cell(source) or not grid.map_data.has_cell(target_cell): return false
 	if attack_distance(source, target_cell, grid) > attacker.attack_range: return false
-	return _evaluate_target_visibility_cells(attacker, source, grid.get_unit_at(target_cell), target_cell, grid, true).visible_count > 0
+	var occupant := grid.get_unit_at(target_cell)
+	var policy := grid.map_data.engagement_policy
+	var central := requires_central(policy)
+	if not _has_physical_lane(attacker, source, occupant, target_cell, grid, central): return false
+	return not requires_reciprocity(policy) or _has_physical_lane(occupant, target_cell, attacker, source, grid, central)
 
 ## Pure outgoing preview. Moving cancels Aim, so callers should use zero bonus.
 static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
-	return _evaluate_attack_cells(attacker, attacker_cell, target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield)
+	return _evaluate_attack_cells(attacker, attacker_cell, target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield, grid.get_unit_grid(attacker) != attacker_cell)
 
-static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool) -> AttackEvaluation:
+static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool, moved := false, target_moved := false) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	if not cover_tuning.is_valid():
@@ -111,13 +170,34 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var distance := attack_distance(attacker_cell, target_cell, grid)
 	if distance > attacker.attack_range:
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Out of range", default_aim)
+	var policy := grid.map_data.engagement_policy
+	var central := requires_central(policy)
 	var visibility := _evaluate_target_visibility_cells(attacker, attacker_cell, target, target_cell, grid)
+	var contextual: FiringSolution
+	var candidate_details := {}
+	if visibility.visible_count == 0 or (central and not visibility.central_visible):
+		contextual = _contextual_step(attacker, attacker_cell, target, target_cell, grid, candidate_details, moved, central)
+		if contextual:
+			visibility.visible_count = contextual.target_samples.size()
+			visibility.aim_point = contextual.aim_point()
 	if visibility.visible_count == 0:
 		var blocked := AttackEvaluation.new(false, 0, MapCellData.CoverType.FULL, "Blocked", visibility.aim_point, 0.0, "Blocked", visibility.blocker)
-		blocked.blocking_bounds = _blocking_part_bounds(get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height, visibility.aim_point, visibility.blocker, grid.cell_size)
+		blocked.contextual_rejection = candidate_details.get("reason", "")
+		var origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height
+		blocked.blocking_bounds = _blocking_part_bounds(origin, blocked.aim_point, blocked.blocking_cell, grid.cell_size)
+		var entry := _obstacle_entry(origin, blocked.aim_point, blocked.blocking_cell, grid.cell_size)
+		if not is_finite(entry):
+			# Paired box seams have a closed hit but no open entry.
+			entry = _obstacle_entry(origin, blocked.aim_point, blocked.blocking_cell, grid.cell_size, true)
+		if is_finite(entry):
+			blocked.blocking_point = origin.lerp(blocked.aim_point, entry)
 		return blocked
-	var cover_cell := _protecting_cover(attacker_cell, target_cell, grid, attacker.standing_height, target.standing_height)
-	var protection_origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height
+	if central and not visibility.central_visible and not contextual:
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, INSUFFICIENT_EXPOSURE, visibility.aim_point)
+	if requires_reciprocity(policy) and not _has_physical_lane(target, target_cell, attacker, attacker_cell, grid, central, target_moved):
+		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, NO_MUTUAL_LANE, visibility.aim_point)
+	var protection_origin := contextual.origin if contextual else get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height
+	var cover_cell := _protecting_cover(attacker_cell, target_cell, grid, attacker.standing_height, target.standing_height, protection_origin)
 	var target_ground := get_support_position(target_cell, grid)
 	var cover := _cover_type_for_ray(cover_cell, protection_origin, target_ground + Vector3.UP * target.standing_height * 0.5, target_ground.y, grid.cell_size)
 	var cover_penalty: int = cover_tuning.full_cover_penalty if cover == MapCellData.CoverType.FULL else cover_tuning.low_cover_penalty if cover == MapCellData.CoverType.LOW else 0
@@ -133,6 +213,9 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var chance := chance_for_raw(raw_chance)
 	var fraction: float = float(visibility.visible_count) / float(visibility.sample_count)
 	var evaluation := AttackEvaluation.new(true, chance, cover, "", visibility.aim_point, fraction, _obstruction_label(visibility.visible_count, visibility.sample_count), visibility.blocker, bool(shield.get("applied", false)), shield_accuracy, float(shield.get("damage_multiplier", 1.0)))
+	var resting_point := get_support_position(attacker_cell, grid)
+	evaluation.firing_solution = contextual if contextual else FiringSolution.new(resting_point, protection_origin, visibility.visible_samples)
+	if not contextual: evaluation.firing_solution.facing_point = default_aim
 	evaluation.shield_reason = String(shield.get("reason", ""))
 	evaluation.damage_multiplier = attacker.weapon_damage_multiplier * evaluation.shield_damage_multiplier
 	evaluation.cover_cell = cover_cell
@@ -231,9 +314,18 @@ static func get_shot_origin(attacker: TacticalUnit, grid: GridManager) -> Vector
 static func get_shot_destination(target: TacticalUnit, grid: GridManager) -> Vector3:
 	return get_support_position(grid.get_unit_grid(target), grid) + Vector3.UP * target.standing_height
 
-static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, first_visible_only := false) -> Dictionary:
-	var origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker.standing_height
-	var body_height := target.standing_height if is_instance_valid(target) else attacker.standing_height
+## Geometric direction only. No AP, SP, faction, range, accuracy or policy
+## checks here. Vacant coverage cells have a direct standing-body proxy only.
+static func _has_physical_lane(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, central: bool, moved := false) -> bool:
+	var visibility := _evaluate_target_visibility_cells(attacker, source, target, destination, grid, true, Vector3.INF, central)
+	if visibility.visible_count > 0: return true
+	return is_instance_valid(attacker) and _contextual_step(attacker, source, target, destination, grid, {}, moved, central) != null
+
+static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, first_visible_only := false, override_origin := Vector3.INF, central_only := false) -> Dictionary:
+	var source_height := attacker.standing_height if is_instance_valid(attacker) else target.standing_height
+	var origin := get_support_position(attacker_cell, grid) + Vector3.UP * source_height
+	if override_origin.is_finite(): origin = override_origin
+	var body_height := target.standing_height if is_instance_valid(target) else source_height
 	var center := get_support_position(target_cell, grid) + Vector3.UP * body_height
 	var horizontal := center - origin
 	horizontal.y = 0.0
@@ -247,12 +339,14 @@ static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_c
 		base + Vector3.UP * body_height * 0.9 - side * grid.cell_size * 0.28,
 		base + Vector3.UP * body_height * 0.5,
 	]
-	var visible: Array[Vector3] = []
+	var visible := PackedVector3Array()
+	var central_visible := false
 	var first_blocker: MapCellData = null
 	var blocked_aim := center
 	var blocked_distance := INF
 	var ignored_cells: Array[Vector3i] = [attacker_cell, target_cell]
-	for sample in samples:
+	for index in 2 if central_only else samples.size():
+		var sample := samples[index]
 		# Boolean coverage can stop at one clear body sample. Full evaluations
 		# explain the blocked sample nearest the body center, with stable ties.
 		var distance := sample.distance_squared_to(center)
@@ -264,8 +358,84 @@ static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_c
 				blocked_distance = distance
 		else:
 			visible.append(sample)
+			central_visible = central_visible or index < 2
 			if first_visible_only: break
-	return {"visible_count": visible.size(), "sample_count": samples.size(), "aim_point": visible[0] if not visible.is_empty() else blocked_aim, "blocker": first_blocker}
+	return {"central_visible": central_visible, "visible_count": visible.size(), "sample_count": samples.size(), "aim_point": visible[0] if not visible.is_empty() else blocked_aim, "blocker": first_blocker, "visible_samples": visible}
+
+## Versioned battlefields can try the two lateral directions after a blocked
+## direct shot. The reference bay retains its authored offset and bearing.
+static func _contextual_step(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, details: Dictionary, moved := false, central := false) -> FiringSolution:
+	var data := grid.map_data
+	var marked := data.contextual_steps.has(source)
+	if not marked and not data.contextual_discovery_enabled: return null
+	details.reason = "Uncertified rig or stance"
+	if attacker.is_carrying_unit() or attacker.use_legacy_bean or not is_instance_valid(attacker.visual_adapter): return null
+	if attacker.visual_adapter.scene_file_path != "res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn": return null
+	var rig := attacker.visual_adapter.rig
+	if not is_instance_valid(rig) or not rig.weapon_scene or rig.weapon_scene.resource_path != "res://art/weapons/aug/models/aug_runtime_socketed.glb": return null
+	var tile := data.get_cell(source)
+	if not tile or not tile.can_stop or not is_equal_approx(attacker.standing_height, 1.0) or not is_equal_approx(grid.cell_size, 1.0): return null
+	if not moved and attacker.tactical_state and attacker.tactical_state.is_shielding: return null
+	var occupied := grid.get_unit_at(source)
+	if is_instance_valid(occupied) and occupied != attacker: return null
+	var support := tile.world_position
+	var target_support := get_support_position(destination, grid)
+	var bearing := target_support - support
+	details.reason = "Target lies outside the certified aim cone"
+	if absf(bearing.y) > 0.001 or bearing.length_squared() < 0.0001: return null
+	if marked:
+		var offset: Vector3 = data.contextual_steps[source]
+		return _evaluate_side_step(attacker, source, target, destination, grid, support, target_support, offset, offset.normalized().cross(Vector3.UP), details, central)
+	var forward := bearing.normalized()
+	# Size the authored-map step from the supported body. Keep 5 mm in
+	# reserve for rounding and preserve the calibrated bay's 24 cm offset.
+	var side := (forward.cross(Vector3.UP) * (data.body_radius - 0.005) * 10000.0).round() / 10000.0
+	for offset in [side, -side]:
+		var solution := _evaluate_side_step(attacker, source, target, destination, grid, support, target_support, offset, forward, details, central)
+		if solution: return solution
+	return null
+
+static func _evaluate_side_step(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, support: Vector3, target_support: Vector3, offset: Vector3, certified_forward: Vector3, details: Dictionary, central: bool) -> FiringSolution:
+	var data := grid.map_data
+	var step := support + offset
+	details.attempted = int(details.get("attempted", 0)) + 1
+	details.reason = "Step exceeds the certified local region"
+	if offset.length() > data.body_radius or grid.world_to_grid(step) != source: return null
+	details.reason = "Target lies outside the certified aim cone"
+	var forward := (target_support - step).normalized()
+	if forward.dot(certified_forward) < cos(deg_to_rad(5.0)): return null
+	details.reason = "Step lacks body clearance or floor support"
+	# A straight level sweep is reversible and checks support throughout.
+	if not SurfaceNavigation.straight_supported_step(data, support, step): return null
+	details.reason = "Weapon cannot clear the transition"
+	if not SurfaceNavigation.weapon_envelope_clear(data, support, step, 0.90, 1.85): return null
+	details.reason = "Another unit obstructs the step"
+	var envelope := AABB(support.min(step) - Vector3(0.90, 0, 0.90), offset.abs() + Vector3(1.8, 1.85, 1.8))
+	var radius := data.body_radius + data.body_clearance
+	for other: TacticalUnit in grid.occupancy_map.values():
+		if not is_instance_valid(other) or other == attacker: continue
+		# The target may itself be at a hypothetical arrival or Guard checkpoint.
+		var other_point := target_support if other == target else get_support_position(other.grid_position, grid)
+		if envelope.intersects(AABB(other_point - Vector3(radius, 0, radius), Vector3(radius * 2, data.body_height, radius * 2))): return null
+	details.reason = "No clear muzzle ray to a reachable sample"
+	var origin := step + Vector3.UP * 1.315 + forward * 0.659 + forward.cross(Vector3.UP) * 0.067
+	var visibility := _evaluate_target_visibility_cells(attacker, source, target, destination, grid, false, origin)
+	if visibility.visible_count == 0 or (central and not visibility.central_visible): return null
+	var aim_direction: Vector3 = (visibility.aim_point - origin).normalized()
+	if forward.dot(aim_direction) < cos(deg_to_rad(2.5)):
+		details.reason = "Muzzle ray lies outside the certified pitch"
+		return null
+	# Keep the authored bay's recorded calibration. Discovered positions need
+	# slack for the largest measured presentation-origin error in the bay test.
+	if data.contextual_discovery_enabled:
+		var ignored: Array[Vector3i] = [source, destination]
+		if _get_geometry_between(origin, visibility.aim_point, grid, false, ignored, false, [], 0.025):
+			details.reason = "Muzzle ray lacks clearance at the obstacle edge"
+			return null
+	var solution := FiringSolution.new(support, origin, visibility.visible_samples)
+	solution.body_offset = offset
+	solution.facing_point = target_support + Vector3.UP * (target.standing_height if is_instance_valid(target) else attacker.standing_height)
+	return solution
 
 static func _shot_destination_at(target: TacticalUnit, target_cell: Vector3i, grid: GridManager) -> Vector3:
 	return get_support_position(target_cell, grid) + Vector3.UP * target.standing_height
@@ -287,9 +457,9 @@ static func get_directional_cover(attacker_cell: Vector3i, target_cell: Vector3i
 	var ground := get_support_position(target_cell, grid)
 	return _cover_type_for_ray(surface, origin, ground + Vector3.UP * target_height * 0.5, ground.y, grid.cell_size)
 
-static func _protecting_cover(attacker_cell: Vector3i, target_cell: Vector3i, grid: GridManager, attacker_height: float, target_height: float) -> MapCellData:
+static func _protecting_cover(attacker_cell: Vector3i, target_cell: Vector3i, grid: GridManager, attacker_height: float, target_height: float, firing_origin := Vector3.INF) -> MapCellData:
 	if not grid.map_data.has_cell(attacker_cell) or not grid.map_data.has_cell(target_cell): return null
-	var origin := get_support_position(attacker_cell, grid) + Vector3.UP * attacker_height
+	var origin := firing_origin if firing_origin.is_finite() else get_support_position(attacker_cell, grid) + Vector3.UP * attacker_height
 	var ground := get_support_position(target_cell, grid)
 	var protected_point := ground + Vector3.UP * target_height * 0.5
 	var candidates: Array[MapCellData] = []
@@ -336,7 +506,7 @@ static func _cover_type_for_ray(cell: MapCellData, origin: Vector3, protected_po
 static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridManager) -> MapCellData:
 	return _get_geometry_between(origin, destination, grid, true)
 
-static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true, selected_candidates: Array[MapCellData] = []) -> MapCellData:
+static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true, selected_candidates: Array[MapCellData] = [], padding := 0.0) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
 	var candidates: Array = _shot_candidates(grid, origin_cell, target_cell, los_blockers_only) if selected_candidates.is_empty() else selected_candidates
@@ -351,14 +521,14 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			continue
 		if not data.is_shot_only and (data.grid_position == origin_cell or data.grid_position == target_cell):
 			continue
-		var entry := _obstacle_entry(origin, destination, data, grid.cell_size)
+		var entry := _obstacle_entry(origin, destination, data, grid.cell_size, false, padding)
 		if is_finite(entry) and not nearest_blocker: return data
 		if is_finite(entry) and _closer_blocker(data, entry, nearest, nearest_entry):
 			nearest = data
 			nearest_entry = entry
 		# A pure tangent to one continuous curve is open. Only legacy box
 		# cells can take part in the paired-diagonal seam contract.
-		if data.curved_part: continue
+		if data.curved_part or padding > 0.0: continue
 		var closed_entry := _obstacle_entry(origin, destination, data, grid.cell_size, true) if data.blocks_line_of_sight else INF
 		if is_finite(closed_entry):
 			for other in grazed:
@@ -410,14 +580,14 @@ static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, lo
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
 	return is_finite(_obstacle_entry(origin, destination, cell, cell_size, closed_edges))
 
-static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> float:
-	if cell.curved_part: return cell.curved_part.ray_entry(origin, destination, closed_edges)
+static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false, padding := 0.0) -> float:
+	if cell.curved_part: return cell.curved_part.ray_entry(origin, destination, closed_edges, padding)
 	if not cell.authored_shot_parts.is_empty():
 		var nearest := INF
 		for part in cell.authored_shot_parts:
-			nearest = minf(nearest, _bounds_entry(origin, destination, cell, cell_size, closed_edges, part))
+			nearest = minf(nearest, _bounds_entry(origin, destination, cell, cell_size, closed_edges, part, padding))
 		return nearest
-	return _bounds_entry(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds)
+	return _bounds_entry(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds, padding)
 
 ## Feedback highlights the intersected part, not a compound object's empty envelope.
 static func _blocking_part_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float) -> AABB:
@@ -434,7 +604,7 @@ static func _blocking_part_bounds(origin: Vector3, destination: Vector3, cell: M
 static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> bool:
 	return is_finite(_bounds_entry(origin, destination, cell, cell_size, closed_edges, bounds))
 
-static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> float:
+static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB, padding := 0.0) -> float:
 	var inset := 0.001
 	# Full-height obstacles meet at their edges. Shrinking their horizontal
 	# bounds creates artificial cracks through touching diagonal blocks.
@@ -449,6 +619,9 @@ static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellDa
 		maximum = maximum.min(bounds.end + edge_tolerance)
 		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
 			return INF
+	if padding > 0.0:
+		minimum -= Vector3.ONE * padding
+		maximum += Vector3.ONE * padding
 	var direction = destination - origin
 	var enter := 0.0
 	var exit := 1.0

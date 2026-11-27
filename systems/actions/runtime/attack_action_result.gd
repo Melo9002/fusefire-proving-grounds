@@ -32,6 +32,7 @@ var target_defeated: bool
 var battle_result_before: int
 var battle_result_after: int
 var target_position := Vector3.ZERO
+var firing_solution: CombatRules.FiringSolution
 var objective_state_before: Dictionary = {}
 var objective_state_after: Dictionary = {}
 ## Presentation-only explanations; no new replay state or random draws.
@@ -64,7 +65,7 @@ func to_replay_record() -> Dictionary:
 func resolved_dictionary() -> Dictionary:
 	var serialized_reactions: Array[Dictionary] = []
 	for event in reaction_events: serialized_reactions.append(event.to_dictionary())
-	return {
+	var record := {
 		"hit_chance": hit_chance,
 		"base_hit_chance": base_hit_chance,
 		"aim_bonus": aim_bonus,
@@ -91,6 +92,9 @@ func resolved_dictionary() -> Dictionary:
 		"reaction_events": serialized_reactions,
 		"condition_events": condition_events.duplicate(true),
 	}
+
+	if firing_solution: record["firing_solution"] = firing_solution.to_replay_record()
+	return record
 
 func compare_resolved(expected: Dictionary) -> String:
 	return ReplayRecordTools.compare_fields(expected, resolved_dictionary(), "resolved")

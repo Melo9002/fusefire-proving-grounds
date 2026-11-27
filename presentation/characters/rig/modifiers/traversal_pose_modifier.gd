@@ -58,8 +58,8 @@ func _process_modification_with_delta(delta: float) -> void:
 			_have_last = false
 			if is_instance_valid(leg_ik) and leg_ik.active:
 				leg_ik.active = false
-		TraversalPoseInput.Mode.STAIRS:
-			_apply_stairs()
+		TraversalPoseInput.Mode.STAIRS, TraversalPoseInput.Mode.LOCAL_STEP:
+			_apply_feet()
 		TraversalPoseInput.Mode.LADDER:
 			_apply_ladder(delta)
 
@@ -131,7 +131,7 @@ func _apply_ladder(delta: float) -> void:
 
 ## Stair walking: the feet go to the planner's footholds through the leg IK and the pelvis takes the height the legs allow (StairFootPlanner.pelvis), both by the stair weight.
 ## The root already rides the stair surface (the tactical route), so the pelvis HEIGHT is replaced and, with the stance motion on, it shifts sideways over the supporting foot; its fore-aft motion stays the gait's.
-func _apply_stairs() -> void:
+func _apply_feet() -> void:
 	weight = input.weight
 	var current := skeleton.get_bone_pose_position(_hips)
 	var current_world: Vector3 = skeleton.global_transform * current

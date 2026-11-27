@@ -47,11 +47,16 @@ Current expiry: round/unit boundaries; explicit expiry refinement belongs to mil
 				if not is_instance_valid(target_actor) or not FactionRules.are_hostile(actor.faction, target_actor.faction): continue
 				if result.targets.size() >= 8: break
 				var query: AttackQueryResult = inventory.get_candidate(target_id)
-				var text := TacticalFeedbackText.shot(query)
+				var text := TacticalFeedbackText.shot(query, true)
 				if query.evaluation:
 					text += "\nVisibility sample fraction %.2f · distance %.3f tiles" % [query.visibility_fraction, query.evaluation.distance_tiles]
+					var firing := query.evaluation.firing_solution
+					if firing:
+						text += "\nFiring origin %s / sample %s / local step %s" % [firing.origin, firing.aim_point(), firing.body_offset]
+					if not query.evaluation.contextual_rejection.is_empty():
+						text += "\nStep rejected: " + query.evaluation.contextual_rejection
 					if query.evaluation.blocking_cell:
-						text += "\nNearest explained blocker %s · highlighted bounds %s" % [query.evaluation.blocking_cell.grid_position, query.evaluation.blocking_bounds]
+						text += "\nNearest explained blocker %s · contact %s · bounds %s" % [query.evaluation.blocking_cell.grid_position, query.evaluation.blocking_point, query.evaluation.blocking_bounds]
 				result.targets.append({"id": String(target_id), "text": text})
 			if destination.x >= 0:
 				var move := battle.query_move(actor, destination)
@@ -59,7 +64,7 @@ Current expiry: round/unit boundaries; explicit expiry refinement belongs to mil
 					var enemies: Array[TacticalUnit] = []
 					for candidate in battle.turn_manager.player_units + battle.turn_manager.enemy_units + battle.turn_manager.allied_units:
 						if is_instance_valid(candidate) and FactionRules.are_hostile(actor.faction, candidate.faction): enemies.append(candidate)
-					result.movement = TacticalFeedbackText.movement(move, actor, enemies, grid, battle.supply_points_enabled, battle.shield_enabled, battle.aim_enabled)
+					result.movement = TacticalFeedbackText.movement(move, actor, enemies, grid, battle.supply_points_enabled, battle.shield_enabled, battle.aim_enabled, true)
 					result.movement += "\nDestination %s\nPath cells %s\nVisual traversal segments %s" % [destination, move.path_cells, move.visual_segments]
 				else:
 					result.movement = "Destination %s: %s\nBlocking actor: %s" % [destination, move.validation.message, move.blocking_actor_id]
@@ -73,8 +78,15 @@ Current expiry: round/unit boundaries; explicit expiry refinement belongs to mil
 	result.elapsed_ms = float(Time.get_ticks_usec() - start) / 1000
 	return result
 
-static func runtime_summary() -> String:
-	var lines := PackedStringArray(["Simulation: " + BattleReplayRecording.SIMULATION_VERSION])
+static func runtime_summary(battle: BattleController) -> String:
+	var config := {"engagement_policy": battle.engagement_policy, "guard_minimum_chance": battle.guard_minimum_chance,
+		"contextual_firing_disabled": battle.contextual_firing_disabled}
+	var lines := PackedStringArray(["Simulation: " + BattleReplayRecording.version_for_configuration(config)])
+	var guard := "%d%% minimum" % battle.guard_minimum_chance if battle.guard_minimum_chance else "first legal shot"
+	var map := battle.grid_manager.map_data
+	var contextual := map.contextual_discovery_enabled or not map.contextual_steps.is_empty()
+	lines.append("Engagement %s · Contextual firing %s · Guard %s" % [
+		CombatRules.engagement_policy_label(battle.engagement_policy), "on" if contextual else "off", guard])
 	lines.append("LIVE BATTLE · F3 inspection is unavailable during replay playback.")
 	lines.append("\nRuntime monitors · last reported values (pause affects frame readings)")
 	lines.append("FPS %.0f · process %.2f ms · physics %.2f ms" % [Performance.get_monitor(Performance.TIME_FPS), Performance.get_monitor(Performance.TIME_PROCESS) * 1000, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000])

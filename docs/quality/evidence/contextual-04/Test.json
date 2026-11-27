@@ -1,0 +1,5693 @@
+{
+	"schema_version": 3,
+	"simulation_version": "prototype-1.5-guaranteed-hit-11",
+	"cover_tuning_signature": "combat-3:5bb5e4e29e01ec29b8cd63582ffcb888b18350bcc00b23e801bff24440f0975e",
+	"shield_capability_signature": "shield-set-1:6d37b032b42f40cb0dd6456ca3929e3deae9b2a24910ec01063d94cf08db82d9",
+	"battle_configuration": {
+		"player_count": 2,
+		"enemy_count": 2,
+		"ally_count": 0,
+		"player_archetypes": [
+			"generic",
+			"generic"
+		],
+		"enemy_archetypes": [
+			"generic",
+			"generic"
+		],
+		"ally_archetypes": [],
+		"supply_points_enabled": true,
+		"aim_enabled": true,
+		"shield_enabled": true,
+		"overwatch_enabled": true,
+		"conditions_enabled": true,
+		"tactical_tempo_enabled": true,
+		"generated_map": true,
+		"battlefield_preset": 0,
+		"seed": 407140976,
+		"map_size": [
+			40,
+			40
+		],
+		"include_vip": false,
+		"vip_behavior": 0,
+		"mission": {
+			"mission_id": "prototype_eliminate",
+			"title": "Eliminate Test",
+			"objectives": [
+				{
+					"objective_id": "eliminate",
+					"kind": 0,
+					"title": "Eliminate",
+					"description": "",
+					"required": true,
+					"target_amount": 2,
+					"target_ids": [],
+					"zone_id": "",
+					"pursuing_factions": 5
+				}
+			],
+			"terminals": []
+		},
+		"difficulty": 1,
+		"player_commander": 0,
+		"enemy_commander": 0,
+		"refinery": false,
+		"industrial_warehouse": false,
+		"refinery_2": false,
+		"loading_yard": false,
+		"battlefield_id": "service_depot",
+		"content_manifest": {
+			"schema": 1,
+			"plot_id": "depot_loading_crossing",
+			"plot_revision": 1,
+			"map_size": [
+				40,
+				40
+			],
+			"seed": 407140976,
+			"population_enabled": true,
+			"placements": [
+				{
+					"slot_id": "loading",
+					"parcel_id": "loading_yard_a_painted_containers",
+					"parcel_revision": 1,
+					"origin": [
+						3,
+						0,
+						0
+					],
+					"rotation": 0,
+					"population": [
+						{
+							"region_id": "depot_containers",
+							"socket_id": "container_west",
+							"asset_id": "city_kit_industrial/shipping-container-a"
+						},
+						{
+							"region_id": "depot_containers",
+							"socket_id": "container_east",
+							"asset_id": "city_kit_industrial/shipping-container-b"
+						},
+						{
+							"region_id": "loading_vehicles",
+							"socket_id": "loading_vehicle",
+							"asset_id": "car_kit/delivery"
+						},
+						{
+							"region_id": "painted_container_7_20",
+							"socket_id": "painted_container_7_20",
+							"asset_id": "city_kit_industrial/shipping-container-a"
+						}
+					]
+				},
+				{
+					"slot_id": "process",
+					"parcel_id": "process_pad_a",
+					"parcel_revision": 1,
+					"origin": [
+						22,
+						0,
+						16
+					],
+					"rotation": 0,
+					"population": []
+				},
+				{
+					"slot_id": "storage",
+					"parcel_id": "tank_storage_a",
+					"parcel_revision": 1,
+					"origin": [
+						22,
+						0,
+						0
+					],
+					"rotation": 1,
+					"population": []
+				}
+			],
+			"compiler_revision": 10,
+			"standing_points_signature": "96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796"
+		}
+	},
+	"battlefield_layout_document": {},
+	"battlefield_layout_signature": "",
+	"generation_seed": 407140976,
+	"initial_state_fingerprint": "round=1|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-185000,0,165000|unit=PlayerUnit1,0,1,0,36,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-185000,0,85000|unit=PlayerUnit2,0,1,0,28,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0",
+	"expected_result": 1,
+	"ordered_records": [
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 1,
+			"base_revision": 0,
+			"committed_revision": 1,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					3,
+					0,
+					32
+				],
+				"details": {},
+				"expected_revision": 0,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					1,
+					0,
+					36
+				],
+				"to": [
+					3,
+					0,
+					32
+				],
+				"path": [
+					[
+						1,
+						0,
+						36
+					],
+					[
+						1,
+						0,
+						35
+					],
+					[
+						1,
+						0,
+						34
+					],
+					[
+						2,
+						0,
+						33
+					],
+					[
+						3,
+						0,
+						32
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-185000,
+						0,
+						165000
+					],
+					[
+						-185000,
+						0,
+						155000
+					],
+					[
+						-185000,
+						0,
+						145000
+					],
+					[
+						-175000,
+						0,
+						135000
+					],
+					[
+						-165000,
+						0,
+						125000
+					]
+				]
+			},
+			"record_index": 0,
+			"expected_state": "round=1|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-165000,0,125000|unit=PlayerUnit1,0,3,0,32,100,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-185000,0,85000|unit=PlayerUnit2,0,1,0,28,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 2,
+			"base_revision": 1,
+			"committed_revision": 2,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					6,
+					0,
+					29
+				],
+				"details": {},
+				"expected_revision": 1,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					3,
+					0,
+					32
+				],
+				"to": [
+					6,
+					0,
+					29
+				],
+				"path": [
+					[
+						3,
+						0,
+						32
+					],
+					[
+						4,
+						0,
+						31
+					],
+					[
+						5,
+						0,
+						30
+					],
+					[
+						6,
+						0,
+						29
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-165000,
+						0,
+						125000
+					],
+					[
+						-155000,
+						0,
+						115000
+					],
+					[
+						-145000,
+						0,
+						105000
+					],
+					[
+						-135000,
+						0,
+						95700
+					]
+				]
+			},
+			"record_index": 1,
+			"expected_state": "round=1|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-185000,0,85000|unit=PlayerUnit2,0,1,0,28,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit1",
+			"transaction_id": 3,
+			"base_revision": 2,
+			"committed_revision": 3,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 2,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 2,
+			"expected_state": "round=1|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-185000,0,85000|unit=PlayerUnit2,0,1,0,28,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 4,
+			"base_revision": 3,
+			"committed_revision": 4,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					5,
+					0,
+					26
+				],
+				"details": {},
+				"expected_revision": 3,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					1,
+					0,
+					28
+				],
+				"to": [
+					5,
+					0,
+					26
+				],
+				"path": [
+					[
+						1,
+						0,
+						28
+					],
+					[
+						2,
+						0,
+						28
+					],
+					[
+						3,
+						0,
+						28
+					],
+					[
+						4,
+						0,
+						27
+					],
+					[
+						5,
+						0,
+						26
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-185000,
+						0,
+						85000
+					],
+					[
+						-175000,
+						0,
+						85000
+					],
+					[
+						-165000,
+						0,
+						85000
+					],
+					[
+						-155000,
+						0,
+						75000
+					],
+					[
+						-145000,
+						0,
+						65000
+					]
+				]
+			},
+			"record_index": 3,
+			"expected_state": "round=1|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-145000,0,65000|unit=PlayerUnit2,0,5,0,26,100,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 5,
+			"base_revision": 4,
+			"committed_revision": 5,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					9,
+					0,
+					24
+				],
+				"details": {},
+				"expected_revision": 4,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					5,
+					0,
+					26
+				],
+				"to": [
+					9,
+					0,
+					24
+				],
+				"path": [
+					[
+						5,
+						0,
+						26
+					],
+					[
+						6,
+						0,
+						26
+					],
+					[
+						7,
+						0,
+						26
+					],
+					[
+						8,
+						0,
+						25
+					],
+					[
+						9,
+						0,
+						24
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-145000,
+						0,
+						65000
+					],
+					[
+						-135000,
+						0,
+						65000
+					],
+					[
+						-125000,
+						0,
+						65000
+					],
+					[
+						-115000,
+						0,
+						55000
+					],
+					[
+						-105000,
+						0,
+						45000
+					]
+				]
+			},
+			"record_index": 4,
+			"expected_state": "round=1|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-105000,0,45000|unit=PlayerUnit2,0,9,0,24,100,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 6,
+			"base_revision": 5,
+			"committed_revision": 6,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					24
+				],
+				"details": {},
+				"expected_revision": 5,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					9,
+					0,
+					24
+				],
+				"to": [
+					14,
+					0,
+					24
+				],
+				"path": [
+					[
+						9,
+						0,
+						24
+					],
+					[
+						10,
+						0,
+						24
+					],
+					[
+						11,
+						0,
+						24
+					],
+					[
+						12,
+						0,
+						24
+					],
+					[
+						13,
+						0,
+						24
+					],
+					[
+						14,
+						0,
+						24
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-105000,
+						0,
+						45000
+					],
+					[
+						-97515,
+						0,
+						45000
+					],
+					[
+						-85000,
+						0,
+						48765
+					],
+					[
+						-72485,
+						0,
+						45000
+					],
+					[
+						-65000,
+						0,
+						45000
+					],
+					[
+						-57515,
+						0,
+						45000
+					]
+				]
+			},
+			"record_index": 5,
+			"expected_state": "round=1|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit2",
+			"round": 1,
+			"phase": 0,
+			"record_index": 6,
+			"schema_version": 1,
+			"transaction_id": "command-000006",
+			"committed_revision": 7,
+			"base_revision": 6,
+			"expected_state": "round=1|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,185000,0,-135000|unit=EnemyUnit1,1,38,0,6,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 7,
+			"base_revision": 7,
+			"committed_revision": 8,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					35,
+					0,
+					9
+				],
+				"details": {},
+				"expected_revision": 7,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					38,
+					0,
+					6
+				],
+				"to": [
+					35,
+					0,
+					9
+				],
+				"path": [
+					[
+						38,
+						0,
+						6
+					],
+					[
+						37,
+						0,
+						7
+					],
+					[
+						36,
+						0,
+						8
+					],
+					[
+						35,
+						0,
+						9
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						185000,
+						0,
+						-135000
+					],
+					[
+						175000,
+						0,
+						-125000
+					],
+					[
+						165000,
+						0,
+						-115000
+					],
+					[
+						155000,
+						0,
+						-105000
+					]
+				]
+			},
+			"record_index": 7,
+			"expected_state": "round=1|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,155000,0,-105000|unit=EnemyUnit1,1,35,0,9,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 8,
+			"base_revision": 8,
+			"committed_revision": 9,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					32,
+					0,
+					12
+				],
+				"details": {},
+				"expected_revision": 8,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					35,
+					0,
+					9
+				],
+				"to": [
+					32,
+					0,
+					12
+				],
+				"path": [
+					[
+						35,
+						0,
+						9
+					],
+					[
+						34,
+						0,
+						10
+					],
+					[
+						33,
+						0,
+						11
+					],
+					[
+						32,
+						0,
+						12
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						155000,
+						0,
+						-105000
+					],
+					[
+						145000,
+						0,
+						-95000
+					],
+					[
+						135000,
+						0,
+						-85000
+					],
+					[
+						125000,
+						0,
+						-75000
+					]
+				]
+			},
+			"record_index": 8,
+			"expected_state": "round=1|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,125000,0,-75000|unit=EnemyUnit1,1,32,0,12,100,1,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,2,1|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 9,
+			"base_revision": 9,
+			"committed_revision": 10,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					28,
+					0,
+					14
+				],
+				"details": {},
+				"expected_revision": 9,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					32,
+					0,
+					12
+				],
+				"to": [
+					28,
+					0,
+					14
+				],
+				"path": [
+					[
+						32,
+						0,
+						12
+					],
+					[
+						31,
+						0,
+						12
+					],
+					[
+						30,
+						0,
+						12
+					],
+					[
+						29,
+						0,
+						13
+					],
+					[
+						28,
+						0,
+						14
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						125000,
+						0,
+						-75000
+					],
+					[
+						115000,
+						0,
+						-75000
+					],
+					[
+						105066,
+						0,
+						-74245
+					],
+					[
+						95000,
+						0,
+						-65000
+					],
+					[
+						85000,
+						0,
+						-55000
+					]
+				]
+			},
+			"record_index": 9,
+			"expected_state": "round=1|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 1,
+			"phase": 2,
+			"record_index": 10,
+			"schema_version": 1,
+			"transaction_id": "command-000010",
+			"committed_revision": 11,
+			"base_revision": 10,
+			"expected_state": "round=1|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,185000,0,-105000|unit=EnemyUnit2,1,38,0,9,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 10,
+			"base_revision": 11,
+			"committed_revision": 12,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					34,
+					0,
+					11
+				],
+				"details": {},
+				"expected_revision": 11,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					38,
+					0,
+					9
+				],
+				"to": [
+					34,
+					0,
+					11
+				],
+				"path": [
+					[
+						38,
+						0,
+						9
+					],
+					[
+						37,
+						0,
+						9
+					],
+					[
+						36,
+						0,
+						9
+					],
+					[
+						35,
+						0,
+						10
+					],
+					[
+						34,
+						0,
+						11
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						185000,
+						0,
+						-105000
+					],
+					[
+						175000,
+						0,
+						-105000
+					],
+					[
+						165000,
+						0,
+						-105000
+					],
+					[
+						155000,
+						0,
+						-95000
+					],
+					[
+						145000,
+						0,
+						-85000
+					]
+				]
+			},
+			"record_index": 11,
+			"expected_state": "round=1|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,145000,0,-85000|unit=EnemyUnit2,1,34,0,11,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,1,2|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 11,
+			"base_revision": 12,
+			"committed_revision": 13,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					30,
+					0,
+					13
+				],
+				"details": {},
+				"expected_revision": 12,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					34,
+					0,
+					11
+				],
+				"to": [
+					30,
+					0,
+					13
+				],
+				"path": [
+					[
+						34,
+						0,
+						11
+					],
+					[
+						33,
+						0,
+						11
+					],
+					[
+						32,
+						0,
+						12
+					],
+					[
+						31,
+						0,
+						12
+					],
+					[
+						30,
+						0,
+						13
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						145000,
+						0,
+						-85000
+					],
+					[
+						135000,
+						0,
+						-85000
+					],
+					[
+						125000,
+						0,
+						-75000
+					],
+					[
+						115000,
+						0,
+						-75000
+					],
+					[
+						105000,
+						0,
+						-65000
+					]
+				]
+			},
+			"record_index": 12,
+			"expected_state": "round=1|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,105000,0,-65000|unit=EnemyUnit2,1,30,0,13,100,1,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,2,1|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 12,
+			"base_revision": 13,
+			"committed_revision": 14,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					26,
+					0,
+					15
+				],
+				"details": {},
+				"expected_revision": 13,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					30,
+					0,
+					13
+				],
+				"to": [
+					26,
+					0,
+					15
+				],
+				"path": [
+					[
+						30,
+						0,
+						13
+					],
+					[
+						29,
+						0,
+						13
+					],
+					[
+						28,
+						0,
+						13
+					],
+					[
+						27,
+						0,
+						14
+					],
+					[
+						26,
+						0,
+						15
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						105000,
+						0,
+						-65000
+					],
+					[
+						95000,
+						0,
+						-65000
+					],
+					[
+						85000,
+						0,
+						-65000
+					],
+					[
+						75000,
+						0,
+						-55000
+					],
+					[
+						67515,
+						0,
+						-45000
+					]
+				]
+			},
+			"record_index": 13,
+			"expected_state": "round=1|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit2",
+			"round": 1,
+			"phase": 2,
+			"record_index": 14,
+			"schema_version": 1,
+			"transaction_id": "command-000014",
+			"committed_revision": 15,
+			"base_revision": 14,
+			"expected_state": "round=2|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-135000,0,95700|unit=PlayerUnit1,0,6,0,29,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 13,
+			"base_revision": 15,
+			"committed_revision": 16,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					10,
+					0,
+					27
+				],
+				"details": {},
+				"expected_revision": 15,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					6,
+					0,
+					29
+				],
+				"to": [
+					10,
+					0,
+					27
+				],
+				"path": [
+					[
+						6,
+						0,
+						29
+					],
+					[
+						7,
+						0,
+						29
+					],
+					[
+						8,
+						0,
+						29
+					],
+					[
+						9,
+						0,
+						28
+					],
+					[
+						10,
+						0,
+						27
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-135000,
+						0,
+						95700
+					],
+					[
+						-125000,
+						0,
+						95700
+					],
+					[
+						-115000,
+						0,
+						95700
+					],
+					[
+						-105000,
+						0,
+						85000
+					],
+					[
+						-95000,
+						0,
+						75000
+					]
+				]
+			},
+			"record_index": 15,
+			"expected_state": "round=2|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-95000,0,75000|unit=PlayerUnit1,0,10,0,27,100,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 14,
+			"base_revision": 16,
+			"committed_revision": 17,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					25
+				],
+				"details": {},
+				"expected_revision": 16,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					10,
+					0,
+					27
+				],
+				"to": [
+					14,
+					0,
+					25
+				],
+				"path": [
+					[
+						10,
+						0,
+						27
+					],
+					[
+						11,
+						0,
+						27
+					],
+					[
+						12,
+						0,
+						27
+					],
+					[
+						13,
+						0,
+						26
+					],
+					[
+						14,
+						0,
+						25
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-95000,
+						0,
+						75000
+					],
+					[
+						-85000,
+						0,
+						75000
+					],
+					[
+						-75000,
+						0,
+						75000
+					],
+					[
+						-65000,
+						0,
+						65000
+					],
+					[
+						-57515,
+						0,
+						55000
+					]
+				]
+			},
+			"record_index": 16,
+			"expected_state": "round=2|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-57515,0,45000|unit=PlayerUnit2,0,14,0,24,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 15,
+			"base_revision": 17,
+			"committed_revision": 18,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					13,
+					0,
+					20
+				],
+				"details": {},
+				"expected_revision": 17,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					24
+				],
+				"to": [
+					13,
+					0,
+					20
+				],
+				"path": [
+					[
+						14,
+						0,
+						24
+					],
+					[
+						14,
+						0,
+						23
+					],
+					[
+						14,
+						0,
+						22
+					],
+					[
+						14,
+						0,
+						21
+					],
+					[
+						13,
+						0,
+						20
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-57515,
+						0,
+						45000
+					],
+					[
+						-57515,
+						0,
+						35000
+					],
+					[
+						-55000,
+						0,
+						25000
+					],
+					[
+						-55000,
+						0,
+						15000
+					],
+					[
+						-66325,
+						0,
+						5000
+					]
+				]
+			},
+			"record_index": 17,
+			"expected_state": "round=2|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit2",
+			"transaction_id": 16,
+			"base_revision": 18,
+			"committed_revision": 19,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 18,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 18,
+			"expected_state": "round=2|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 17,
+			"base_revision": 19,
+			"committed_revision": 20,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					23
+				],
+				"details": {},
+				"expected_revision": 19,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					25
+				],
+				"to": [
+					14,
+					0,
+					23
+				],
+				"path": [
+					[
+						14,
+						0,
+						25
+					],
+					[
+						14,
+						0,
+						24
+					],
+					[
+						14,
+						0,
+						23
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-57515,
+						0,
+						55000
+					],
+					[
+						-57515,
+						0,
+						45000
+					],
+					[
+						-57515,
+						0,
+						35000
+					]
+				]
+			},
+			"record_index": 19,
+			"expected_state": "round=2|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,0,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit1",
+			"round": 2,
+			"phase": 0,
+			"record_index": 20,
+			"schema_version": 1,
+			"transaction_id": "command-000020",
+			"committed_revision": 21,
+			"base_revision": 20,
+			"expected_state": "round=2|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,85000,0,-55000|unit=EnemyUnit1,1,28,0,14,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 18,
+			"base_revision": 21,
+			"committed_revision": 22,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					25,
+					0,
+					17
+				],
+				"details": {},
+				"expected_revision": 21,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					28,
+					0,
+					14
+				],
+				"to": [
+					25,
+					0,
+					17
+				],
+				"path": [
+					[
+						28,
+						0,
+						14
+					],
+					[
+						27,
+						0,
+						15
+					],
+					[
+						27,
+						0,
+						16
+					],
+					[
+						26,
+						0,
+						16
+					],
+					[
+						25,
+						0,
+						17
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						85000,
+						0,
+						-55000
+					],
+					[
+						75000,
+						0,
+						-45000
+					],
+					[
+						75000,
+						0,
+						-35000
+					],
+					[
+						65000,
+						0,
+						-35000
+					],
+					[
+						55000,
+						0,
+						-25000
+					]
+				]
+			},
+			"record_index": 21,
+			"expected_state": "round=2|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,55000,0,-25000|unit=EnemyUnit1,1,25,0,17,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 19,
+			"base_revision": 22,
+			"committed_revision": 23,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					21,
+					0,
+					16
+				],
+				"details": {},
+				"expected_revision": 22,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					25,
+					0,
+					17
+				],
+				"to": [
+					21,
+					0,
+					16
+				],
+				"path": [
+					[
+						25,
+						0,
+						17
+					],
+					[
+						24,
+						0,
+						17
+					],
+					[
+						23,
+						0,
+						17
+					],
+					[
+						22,
+						0,
+						17
+					],
+					[
+						21,
+						0,
+						16
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [
+					{
+						"watcher_id": "PlayerUnit2",
+						"checkpoint": [
+							22,
+							0,
+							17
+						],
+						"checkpoint_index": 3,
+						"hit_chance": 5,
+						"roll_milli": 84245,
+						"did_hit": false,
+						"damage": 0,
+						"target_hp_before": 100,
+						"target_hp_after": 100,
+						"target_defeated": false,
+						"supply_points_before": 4,
+						"supply_points_after": 3,
+						"environmental_cover": 0,
+						"shield_applied": false,
+						"shield_accuracy_modifier": 0,
+						"shield_damage_multiplier_milli": 1000,
+						"firing_solution": {
+							"posture": "direct",
+							"body_offset": [
+								0,
+								0,
+								0
+							],
+							"firing_support": [
+								-66325,
+								0,
+								5000
+							],
+							"facing_point": [
+								25000,
+								10000,
+								-25000
+							],
+							"resting_point": [
+								-66325,
+								0,
+								5000
+							],
+							"origin": [
+								-66325,
+								10000,
+								5000
+							],
+							"aim_point": [
+								25000,
+								12000,
+								-25000
+							]
+						}
+					}
+				],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						55000,
+						0,
+						-25000
+					],
+					[
+						45000,
+						0,
+						-25000
+					],
+					[
+						35000,
+						0,
+						-25000
+					],
+					[
+						25000,
+						0,
+						-25000
+					],
+					[
+						15000,
+						0,
+						-35000
+					]
+				]
+			},
+			"record_index": 22,
+			"expected_state": "round=2|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,1,4,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,2,1|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,100,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit1",
+			"target": "PlayerUnit2",
+			"transaction_id": 20,
+			"base_revision": 23,
+			"committed_revision": 24,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit1",
+				"target_id": "PlayerUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 23,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 9,
+				"base_hit_chance": 9,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 3752,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 2,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 3,
+				"target_hp_before": 100,
+				"target_hp_after": 75,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						15000,
+						0,
+						-35000
+					],
+					"facing_point": [
+						-66325,
+						10000,
+						5000
+					],
+					"resting_point": [
+						15000,
+						0,
+						-35000
+					],
+					"origin": [
+						15000,
+						10000,
+						-35000
+					],
+					"aim_point": [
+						-65089,
+						9000,
+						7513
+					]
+				}
+			},
+			"record_index": 23,
+			"expected_state": "round=2|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 2,
+			"phase": 2,
+			"record_index": 24,
+			"schema_version": 1,
+			"transaction_id": "command-000024",
+			"committed_revision": 25,
+			"base_revision": 24,
+			"expected_state": "round=2|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,67515,0,-45000|unit=EnemyUnit2,1,26,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 21,
+			"base_revision": 25,
+			"committed_revision": 26,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					22,
+					0,
+					15
+				],
+				"details": {},
+				"expected_revision": 25,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					26,
+					0,
+					15
+				],
+				"to": [
+					22,
+					0,
+					15
+				],
+				"path": [
+					[
+						26,
+						0,
+						15
+					],
+					[
+						25,
+						0,
+						15
+					],
+					[
+						24,
+						0,
+						15
+					],
+					[
+						23,
+						0,
+						15
+					],
+					[
+						22,
+						0,
+						15
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						67515,
+						0,
+						-45000
+					],
+					[
+						55000,
+						0,
+						-41235
+					],
+					[
+						42485,
+						0,
+						-45000
+					],
+					[
+						35000,
+						0,
+						-45000
+					],
+					[
+						25000,
+						0,
+						-45000
+					]
+				]
+			},
+			"record_index": 25,
+			"expected_state": "round=2|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,25000,0,-45000|unit=EnemyUnit2,1,22,0,15,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,1,2|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 22,
+			"base_revision": 26,
+			"committed_revision": 27,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					20,
+					0,
+					15
+				],
+				"details": {},
+				"expected_revision": 26,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					22,
+					0,
+					15
+				],
+				"to": [
+					20,
+					0,
+					15
+				],
+				"path": [
+					[
+						22,
+						0,
+						15
+					],
+					[
+						21,
+						0,
+						15
+					],
+					[
+						20,
+						0,
+						15
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						25000,
+						0,
+						-45000
+					],
+					[
+						15000,
+						0,
+						-45000
+					],
+					[
+						5000,
+						0,
+						-45000
+					]
+				]
+			},
+			"record_index": 26,
+			"expected_state": "round=2|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,1,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,2,1|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "EnemyUnit2",
+			"transaction_id": 23,
+			"base_revision": 27,
+			"committed_revision": 28,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 27,
+				"source": 1
+			},
+			"resolved": {
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 27,
+			"expected_state": "round=2|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,0,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit2",
+			"round": 2,
+			"phase": 2,
+			"record_index": 28,
+			"schema_version": 1,
+			"transaction_id": "command-000028",
+			"committed_revision": 29,
+			"base_revision": 28,
+			"expected_state": "round=3|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-66325,0,5000|unit=PlayerUnit2,0,13,0,20,75,3,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 24,
+			"base_revision": 29,
+			"committed_revision": 30,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					13,
+					0,
+					18
+				],
+				"details": {},
+				"expected_revision": 29,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					13,
+					0,
+					20
+				],
+				"to": [
+					13,
+					0,
+					18
+				],
+				"path": [
+					[
+						13,
+						0,
+						20
+					],
+					[
+						13,
+						0,
+						19
+					],
+					[
+						13,
+						0,
+						18
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-66325,
+						0,
+						5000
+					],
+					[
+						-65075,
+						0,
+						-5000
+					],
+					[
+						-66325,
+						0,
+						-15000
+					]
+				]
+			},
+			"record_index": 29,
+			"expected_state": "round=3|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,2,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit2",
+			"transaction_id": 25,
+			"base_revision": 30,
+			"committed_revision": 31,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 30,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 30,
+			"expected_state": "round=3|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,35000|unit=PlayerUnit1,0,14,0,23,100,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 26,
+			"base_revision": 31,
+			"committed_revision": 32,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					25
+				],
+				"details": {},
+				"expected_revision": 31,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					23
+				],
+				"to": [
+					14,
+					0,
+					25
+				],
+				"path": [
+					[
+						14,
+						0,
+						23
+					],
+					[
+						14,
+						0,
+						24
+					],
+					[
+						14,
+						0,
+						25
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-57515,
+						0,
+						35000
+					],
+					[
+						-57515,
+						0,
+						45000
+					],
+					[
+						-57515,
+						0,
+						55000
+					]
+				]
+			},
+			"record_index": 31,
+			"expected_state": "round=3|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit1",
+			"transaction_id": 27,
+			"base_revision": 32,
+			"committed_revision": 33,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 32,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 32,
+			"expected_state": "round=3|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,0,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit1",
+			"round": 3,
+			"phase": 0,
+			"record_index": 33,
+			"schema_version": 1,
+			"transaction_id": "command-000033",
+			"committed_revision": 34,
+			"base_revision": 33,
+			"expected_state": "round=3|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,15000,0,-35000|unit=EnemyUnit1,1,21,0,16,100,3,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 28,
+			"base_revision": 34,
+			"committed_revision": 35,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					16,
+					0,
+					16
+				],
+				"details": {},
+				"expected_revision": 34,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					21,
+					0,
+					16
+				],
+				"to": [
+					16,
+					0,
+					16
+				],
+				"path": [
+					[
+						21,
+						0,
+						16
+					],
+					[
+						20,
+						0,
+						16
+					],
+					[
+						19,
+						0,
+						16
+					],
+					[
+						18,
+						0,
+						16
+					],
+					[
+						17,
+						0,
+						16
+					],
+					[
+						16,
+						0,
+						16
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						15000,
+						0,
+						-35000
+					],
+					[
+						5000,
+						0,
+						-35000
+					],
+					[
+						-5000,
+						0,
+						-35000
+					],
+					[
+						-15000,
+						0,
+						-35000
+					],
+					[
+						-25000,
+						0,
+						-35000
+					],
+					[
+						-35000,
+						0,
+						-35000
+					]
+				]
+			},
+			"record_index": 34,
+			"expected_state": "round=3|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,2,3,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 4,
+			"kind": "aim",
+			"actor": "EnemyUnit1",
+			"transaction_id": 29,
+			"base_revision": 35,
+			"committed_revision": 36,
+			"request": {
+				"schema_version": 1,
+				"kind": "aim",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 35,
+				"source": 1
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"aiming_before": false,
+				"aiming_after": true,
+				"accuracy_bonus": 35
+			},
+			"record_index": 35,
+			"expected_state": "round=3|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,1,3,4,0,1,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,2,1|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,100,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit1",
+			"target": "PlayerUnit1",
+			"transaction_id": 30,
+			"base_revision": 36,
+			"committed_revision": 37,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit1",
+				"target_id": "PlayerUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 36,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 38,
+				"base_hit_chance": 5,
+				"aim_bonus": 35,
+				"aim_applied": true,
+				"aiming_after": false,
+				"roll_milli": 32895,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 2,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 2,
+				"target_hp_before": 100,
+				"target_hp_after": 75,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-35000,
+						0,
+						-35000
+					],
+					"facing_point": [
+						-57515,
+						10000,
+						55000
+					],
+					"resting_point": [
+						-35000,
+						0,
+						-35000
+					],
+					"origin": [
+						-35000,
+						10000,
+						-35000
+					],
+					"aim_point": [
+						-60231,
+						9000,
+						54320
+					]
+				}
+			},
+			"record_index": 36,
+			"expected_state": "round=3|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 3,
+			"phase": 2,
+			"record_index": 37,
+			"schema_version": 1,
+			"transaction_id": "command-000037",
+			"committed_revision": 38,
+			"base_revision": 37,
+			"expected_state": "round=3|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,5000,0,-45000|unit=EnemyUnit2,1,20,0,15,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 31,
+			"base_revision": 38,
+			"committed_revision": 39,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					15,
+					0,
+					15
+				],
+				"details": {},
+				"expected_revision": 38,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					20,
+					0,
+					15
+				],
+				"to": [
+					15,
+					0,
+					15
+				],
+				"path": [
+					[
+						20,
+						0,
+						15
+					],
+					[
+						19,
+						0,
+						15
+					],
+					[
+						18,
+						0,
+						15
+					],
+					[
+						17,
+						0,
+						15
+					],
+					[
+						16,
+						0,
+						15
+					],
+					[
+						15,
+						0,
+						15
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						5000,
+						0,
+						-45000
+					],
+					[
+						-5000,
+						0,
+						-45000
+					],
+					[
+						-15000,
+						0,
+						-45000
+					],
+					[
+						-25000,
+						0,
+						-45000
+					],
+					[
+						-35000,
+						0,
+						-45000
+					],
+					[
+						-45000,
+						0,
+						-45000
+					]
+				]
+			},
+			"record_index": 38,
+			"expected_state": "round=3|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-45000,0,-45000|unit=EnemyUnit2,1,15,0,15,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,1,2|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 32,
+			"base_revision": 39,
+			"committed_revision": 40,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					16
+				],
+				"details": {},
+				"expected_revision": 39,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					15,
+					0,
+					15
+				],
+				"to": [
+					14,
+					0,
+					16
+				],
+				"path": [
+					[
+						15,
+						0,
+						15
+					],
+					[
+						14,
+						0,
+						16
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-45000,
+						0,
+						-45000
+					],
+					[
+						-55000,
+						0,
+						-38513
+					]
+				]
+			},
+			"record_index": 39,
+			"expected_state": "round=3|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,1,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,2,1|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "EnemyUnit2",
+			"transaction_id": 33,
+			"base_revision": 40,
+			"committed_revision": 41,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 40,
+				"source": 1
+			},
+			"resolved": {
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 40,
+			"expected_state": "round=3|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit2",
+			"round": 3,
+			"phase": 2,
+			"record_index": 41,
+			"schema_version": 1,
+			"transaction_id": "command-000041",
+			"committed_revision": 42,
+			"base_revision": 41,
+			"expected_state": "round=4|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-57515,0,55000|unit=PlayerUnit1,0,14,0,25,75,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,3,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 34,
+			"base_revision": 42,
+			"committed_revision": 43,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					11,
+					0,
+					24
+				],
+				"details": {},
+				"expected_revision": 42,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					25
+				],
+				"to": [
+					11,
+					0,
+					24
+				],
+				"path": [
+					[
+						14,
+						0,
+						25
+					],
+					[
+						13,
+						0,
+						25
+					],
+					[
+						12,
+						0,
+						25
+					],
+					[
+						11,
+						0,
+						24
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-57515,
+						0,
+						55000
+					],
+					[
+						-65000,
+						0,
+						55000
+					],
+					[
+						-75000,
+						0,
+						55000
+					],
+					[
+						-85000,
+						0,
+						48765
+					]
+				]
+			},
+			"record_index": 42,
+			"expected_state": "round=4|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,3,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit1",
+			"transaction_id": 35,
+			"base_revision": 43,
+			"committed_revision": 44,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 43,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 0,
+				"supply_points_before": 4,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 43,
+			"expected_state": "round=4|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-66325,0,-15000|unit=PlayerUnit2,0,13,0,18,75,3,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 36,
+			"base_revision": 44,
+			"committed_revision": 45,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					13,
+					0,
+					23
+				],
+				"details": {},
+				"expected_revision": 44,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					13,
+					0,
+					18
+				],
+				"to": [
+					13,
+					0,
+					23
+				],
+				"path": [
+					[
+						13,
+						0,
+						18
+					],
+					[
+						13,
+						0,
+						19
+					],
+					[
+						13,
+						0,
+						20
+					],
+					[
+						13,
+						0,
+						21
+					],
+					[
+						13,
+						0,
+						22
+					],
+					[
+						13,
+						0,
+						23
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-66325,
+						0,
+						-15000
+					],
+					[
+						-65075,
+						0,
+						-5000
+					],
+					[
+						-66325,
+						0,
+						5000
+					],
+					[
+						-65000,
+						0,
+						15000
+					],
+					[
+						-65000,
+						0,
+						25000
+					],
+					[
+						-65000,
+						0,
+						35000
+					]
+				]
+			},
+			"record_index": 44,
+			"expected_state": "round=4|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-65000,0,35000|unit=PlayerUnit2,0,13,0,23,75,2,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 37,
+			"base_revision": 45,
+			"committed_revision": 46,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					27
+				],
+				"details": {},
+				"expected_revision": 45,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					13,
+					0,
+					23
+				],
+				"to": [
+					14,
+					0,
+					27
+				],
+				"path": [
+					[
+						13,
+						0,
+						23
+					],
+					[
+						13,
+						0,
+						24
+					],
+					[
+						13,
+						0,
+						25
+					],
+					[
+						13,
+						0,
+						26
+					],
+					[
+						14,
+						0,
+						27
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-65000,
+						0,
+						35000
+					],
+					[
+						-65000,
+						0,
+						45000
+					],
+					[
+						-65000,
+						0,
+						55000
+					],
+					[
+						-65000,
+						0,
+						65000
+					],
+					[
+						-57515,
+						0,
+						75000
+					]
+				]
+			},
+			"record_index": 45,
+			"expected_state": "round=4|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,1,3,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "PlayerUnit2",
+			"transaction_id": 38,
+			"base_revision": 46,
+			"committed_revision": 47,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 46,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 46,
+			"expected_state": "round=4|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,0,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit2",
+			"round": 4,
+			"phase": 0,
+			"record_index": 47,
+			"schema_version": 1,
+			"transaction_id": "command-000047",
+			"committed_revision": 48,
+			"base_revision": 47,
+			"expected_state": "round=4|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,-35000|unit=EnemyUnit1,1,16,0,16,100,3,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 39,
+			"base_revision": 48,
+			"committed_revision": 49,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					15,
+					0,
+					20
+				],
+				"details": {},
+				"expected_revision": 48,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					16,
+					0,
+					16
+				],
+				"to": [
+					15,
+					0,
+					20
+				],
+				"path": [
+					[
+						16,
+						0,
+						16
+					],
+					[
+						16,
+						0,
+						17
+					],
+					[
+						16,
+						0,
+						18
+					],
+					[
+						16,
+						0,
+						19
+					],
+					[
+						15,
+						0,
+						20
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-35000,
+						0,
+						-35000
+					],
+					[
+						-35000,
+						0,
+						-25000
+					],
+					[
+						-35000,
+						0,
+						-15000
+					],
+					[
+						-35000,
+						0,
+						-5000
+					],
+					[
+						-43675,
+						0,
+						5000
+					]
+				]
+			},
+			"record_index": 48,
+			"expected_state": "round=4|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-43675,0,5000|unit=EnemyUnit1,1,15,0,20,100,2,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 40,
+			"base_revision": 49,
+			"committed_revision": 50,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					15,
+					0,
+					23
+				],
+				"details": {},
+				"expected_revision": 49,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					15,
+					0,
+					20
+				],
+				"to": [
+					15,
+					0,
+					23
+				],
+				"path": [
+					[
+						15,
+						0,
+						20
+					],
+					[
+						15,
+						0,
+						21
+					],
+					[
+						15,
+						0,
+						22
+					],
+					[
+						15,
+						0,
+						23
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-43675,
+						0,
+						5000
+					],
+					[
+						-45000,
+						0,
+						15000
+					],
+					[
+						-45000,
+						0,
+						25000
+					],
+					[
+						-45000,
+						0,
+						31235
+					]
+				]
+			},
+			"record_index": 49,
+			"expected_state": "round=4|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,1,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,2,1|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "EnemyUnit1",
+			"transaction_id": 41,
+			"base_revision": 50,
+			"committed_revision": 51,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 50,
+				"source": 1
+			},
+			"resolved": {
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 2,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 50,
+			"expected_state": "round=4|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,3,4,4,0,0,0,0,0,1,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 4,
+			"phase": 2,
+			"record_index": 51,
+			"schema_version": 1,
+			"transaction_id": "command-000051",
+			"committed_revision": 52,
+			"base_revision": 51,
+			"expected_state": "round=4|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-55000,0,-38513|unit=EnemyUnit2,1,14,0,16,100,3,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,0,3|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,3,4,0,0,0,0,0,1,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit2",
+			"transaction_id": 42,
+			"base_revision": 52,
+			"committed_revision": 53,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit2",
+				"target_id": "",
+				"destination": [
+					13,
+					0,
+					20
+				],
+				"details": {},
+				"expected_revision": 52,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					16
+				],
+				"to": [
+					13,
+					0,
+					20
+				],
+				"path": [
+					[
+						14,
+						0,
+						16
+					],
+					[
+						13,
+						0,
+						16
+					],
+					[
+						13,
+						0,
+						17
+					],
+					[
+						13,
+						0,
+						18
+					],
+					[
+						13,
+						0,
+						19
+					],
+					[
+						13,
+						0,
+						20
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [
+					{
+						"watcher_id": "PlayerUnit2",
+						"checkpoint": [
+							13,
+							0,
+							18
+						],
+						"checkpoint_index": 3,
+						"hit_chance": 44,
+						"roll_milli": 56523,
+						"did_hit": false,
+						"damage": 0,
+						"target_hp_before": 100,
+						"target_hp_after": 100,
+						"target_defeated": false,
+						"supply_points_before": 3,
+						"supply_points_after": 2,
+						"environmental_cover": 0,
+						"shield_applied": false,
+						"shield_accuracy_modifier": 0,
+						"shield_damage_multiplier_milli": 1000,
+						"firing_solution": {
+							"posture": "direct",
+							"body_offset": [
+								0,
+								0,
+								0
+							],
+							"firing_support": [
+								-57515,
+								0,
+								75000
+							],
+							"facing_point": [
+								-66325,
+								10000,
+								-15000
+							],
+							"resting_point": [
+								-57515,
+								0,
+								75000
+							],
+							"origin": [
+								-57515,
+								10000,
+								75000
+							],
+							"aim_point": [
+								-66325,
+								12000,
+								-15000
+							]
+						}
+					}
+				],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-55000,
+						0,
+						-38513
+					],
+					[
+						-66325,
+						0,
+						-35000
+					],
+					[
+						-66325,
+						0,
+						-25000
+					],
+					[
+						-66325,
+						0,
+						-15000
+					],
+					[
+						-65075,
+						0,
+						-5000
+					],
+					[
+						-66325,
+						0,
+						5000
+					]
+				]
+			},
+			"record_index": 52,
+			"expected_state": "round=4|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,100,2,4,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,1,2|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit2",
+			"target": "PlayerUnit2",
+			"transaction_id": 43,
+			"base_revision": 53,
+			"committed_revision": 54,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit2",
+				"target_id": "PlayerUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 53,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 95,
+				"base_hit_chance": 95,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 78909,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 4,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 3,
+				"target_hp_before": 75,
+				"target_hp_after": 50,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-66325,
+						0,
+						5000
+					],
+					"facing_point": [
+						-57515,
+						10000,
+						75000
+					],
+					"resting_point": [
+						-66325,
+						0,
+						5000
+					],
+					"origin": [
+						-66325,
+						10000,
+						5000
+					],
+					"aim_point": [
+						-57515,
+						12000,
+						75000
+					]
+				}
+			},
+			"record_index": 53,
+			"expected_state": "round=4|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,100,1,3,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,2,1|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit2",
+			"target": "PlayerUnit2",
+			"transaction_id": 44,
+			"base_revision": 54,
+			"committed_revision": 55,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit2",
+				"target_id": "PlayerUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 54,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 95,
+				"base_hit_chance": 95,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 99933,
+				"did_hit": false,
+				"damage": 0,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 2,
+				"target_hp_before": 50,
+				"target_hp_after": 50,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-66325,
+						0,
+						5000
+					],
+					"facing_point": [
+						-57515,
+						10000,
+						75000
+					],
+					"resting_point": [
+						-66325,
+						0,
+						5000
+					],
+					"origin": [
+						-66325,
+						10000,
+						5000
+					],
+					"aim_point": [
+						-57515,
+						12000,
+						75000
+					]
+				}
+			},
+			"record_index": 54,
+			"expected_state": "round=4|phase=2|active=EnemyUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,0,4,4,0,0,0,0,0,1,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit2",
+			"round": 4,
+			"phase": 2,
+			"record_index": 55,
+			"schema_version": 1,
+			"transaction_id": "command-000055",
+			"committed_revision": 56,
+			"base_revision": 55,
+			"expected_state": "round=5|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,100,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,3,2,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit2",
+			"target": "EnemyUnit2",
+			"transaction_id": 45,
+			"base_revision": 56,
+			"committed_revision": 57,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit2",
+				"target_id": "EnemyUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 56,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 95,
+				"base_hit_chance": 95,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 74768,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"supply_points_before": 2,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 1,
+				"target_hp_before": 100,
+				"target_hp_after": 75,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-57515,
+						0,
+						75000
+					],
+					"facing_point": [
+						-66325,
+						10000,
+						5000
+					],
+					"resting_point": [
+						-57515,
+						0,
+						75000
+					],
+					"origin": [
+						-57515,
+						10000,
+						75000
+					],
+					"aim_point": [
+						-66325,
+						12000,
+						5000
+					]
+				}
+			},
+			"record_index": 56,
+			"expected_state": "round=5|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,75,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,2,1,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit2",
+			"target": "EnemyUnit2",
+			"transaction_id": 46,
+			"base_revision": 57,
+			"committed_revision": 58,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit2",
+				"target_id": "EnemyUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 57,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 95,
+				"base_hit_chance": 95,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 23155,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 1,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 0,
+				"target_hp_before": 75,
+				"target_hp_after": 50,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-57515,
+						0,
+						75000
+					],
+					"facing_point": [
+						-66325,
+						10000,
+						5000
+					],
+					"resting_point": [
+						-57515,
+						0,
+						75000
+					],
+					"origin": [
+						-57515,
+						10000,
+						75000
+					],
+					"aim_point": [
+						-66325,
+						12000,
+						5000
+					]
+				}
+			},
+			"record_index": 57,
+			"expected_state": "round=5|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,50,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-85000,0,48765|unit=PlayerUnit1,0,11,0,24,75,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,1,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 47,
+			"base_revision": 58,
+			"committed_revision": 59,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					12,
+					0,
+					28
+				],
+				"details": {},
+				"expected_revision": 58,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					11,
+					0,
+					24
+				],
+				"to": [
+					12,
+					0,
+					28
+				],
+				"path": [
+					[
+						11,
+						0,
+						24
+					],
+					[
+						11,
+						0,
+						25
+					],
+					[
+						11,
+						0,
+						26
+					],
+					[
+						11,
+						0,
+						27
+					],
+					[
+						12,
+						0,
+						28
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 0
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-85000,
+						0,
+						48765
+					],
+					[
+						-85000,
+						0,
+						55000
+					],
+					[
+						-85000,
+						0,
+						65000
+					],
+					[
+						-85000,
+						0,
+						75000
+					],
+					[
+						-75000,
+						0,
+						85000
+					]
+				]
+			},
+			"record_index": 58,
+			"expected_state": "round=5|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,50,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,1,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit2",
+			"transaction_id": 48,
+			"base_revision": 59,
+			"committed_revision": 60,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 59,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 82,
+				"base_hit_chance": 82,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 17714,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 4,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 3,
+				"target_hp_before": 50,
+				"target_hp_after": 25,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-75000,
+						0,
+						85000
+					],
+					"facing_point": [
+						-66325,
+						10000,
+						5000
+					],
+					"resting_point": [
+						-75000,
+						0,
+						85000
+					],
+					"origin": [
+						-75000,
+						10000,
+						85000
+					],
+					"aim_point": [
+						-66325,
+						12000,
+						5000
+					]
+				}
+			},
+			"record_index": 59,
+			"expected_state": "round=5|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=EnemyUnit2,-66325,0,5000|unit=EnemyUnit2,1,13,0,20,25,0,2,4,0,0,0,0,0,0,none|seal=EnemyUnit2,1|tempo=EnemyUnit2,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,1,3,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,1,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,0|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit2",
+			"transaction_id": 49,
+			"base_revision": 60,
+			"committed_revision": 61,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit2",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 60,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 82,
+				"base_hit_chance": 82,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 37763,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 2,
+				"target_hp_before": 25,
+				"target_hp_after": 0,
+				"target_defeated": true,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-75000,
+						0,
+						85000
+					],
+					"facing_point": [
+						-66325,
+						10000,
+						5000
+					],
+					"resting_point": [
+						-75000,
+						0,
+						85000
+					],
+					"origin": [
+						-75000,
+						10000,
+						85000
+					],
+					"aim_point": [
+						-66325,
+						12000,
+						5000
+					]
+				}
+			},
+			"record_index": 60,
+			"expected_state": "round=5|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-57515,0,75000|unit=PlayerUnit2,0,14,0,27,50,1,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 50,
+			"base_revision": 61,
+			"committed_revision": 62,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					14,
+					0,
+					32
+				],
+				"details": {},
+				"expected_revision": 61,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					27
+				],
+				"to": [
+					14,
+					0,
+					32
+				],
+				"path": [
+					[
+						14,
+						0,
+						27
+					],
+					[
+						14,
+						0,
+						28
+					],
+					[
+						14,
+						0,
+						29
+					],
+					[
+						14,
+						0,
+						30
+					],
+					[
+						14,
+						0,
+						31
+					],
+					[
+						14,
+						0,
+						32
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-57515,
+						0,
+						75000
+					],
+					[
+						-55000,
+						0,
+						85000
+					],
+					[
+						-55000,
+						0,
+						95000
+					],
+					[
+						-55000,
+						0,
+						105000
+					],
+					[
+						-55000,
+						0,
+						115000
+					],
+					[
+						-55000,
+						0,
+						125000
+					]
+				]
+			},
+			"record_index": 61,
+			"expected_state": "round=5|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit2",
+			"round": 5,
+			"phase": 0,
+			"record_index": 62,
+			"schema_version": 1,
+			"transaction_id": "command-000062",
+			"committed_revision": 63,
+			"base_revision": 62,
+			"expected_state": "round=5|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-45000,0,31235|unit=EnemyUnit1,1,15,0,23,100,3,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 51,
+			"base_revision": 63,
+			"committed_revision": 64,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					16,
+					0,
+					25
+				],
+				"details": {},
+				"expected_revision": 63,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					15,
+					0,
+					23
+				],
+				"to": [
+					16,
+					0,
+					25
+				],
+				"path": [
+					[
+						15,
+						0,
+						23
+					],
+					[
+						16,
+						0,
+						23
+					],
+					[
+						16,
+						0,
+						24
+					],
+					[
+						16,
+						0,
+						25
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-45000,
+						0,
+						31235
+					],
+					[
+						-32485,
+						0,
+						35000
+					],
+					[
+						-32485,
+						0,
+						45000
+					],
+					[
+						-32485,
+						0,
+						55000
+					]
+				]
+			},
+			"record_index": 63,
+			"expected_state": "round=5|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,100,2,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 6,
+			"kind": "overwatch",
+			"actor": "EnemyUnit1",
+			"transaction_id": 52,
+			"base_revision": 64,
+			"committed_revision": 65,
+			"request": {
+				"schema_version": 1,
+				"kind": "overwatch",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 64,
+				"source": 1
+			},
+			"resolved": {
+				"actor_ap_before": 2,
+				"actor_ap_after": 0,
+				"supply_points_before": 2,
+				"overwatching_before": false,
+				"overwatching_after": true
+			},
+			"record_index": 64,
+			"expected_state": "round=5|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 5,
+			"phase": 2,
+			"record_index": 65,
+			"schema_version": 1,
+			"transaction_id": "command-000065",
+			"committed_revision": 66,
+			"base_revision": 65,
+			"expected_state": "round=6|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-75000,0,85000|unit=PlayerUnit1,0,12,0,28,75,3,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,3,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit1",
+			"transaction_id": 53,
+			"base_revision": 66,
+			"committed_revision": 67,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					15,
+					0,
+					31
+				],
+				"details": {},
+				"expected_revision": 66,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					12,
+					0,
+					28
+				],
+				"to": [
+					15,
+					0,
+					31
+				],
+				"path": [
+					[
+						12,
+						0,
+						28
+					],
+					[
+						13,
+						0,
+						29
+					],
+					[
+						14,
+						0,
+						30
+					],
+					[
+						15,
+						0,
+						31
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-75000,
+						0,
+						85000
+					],
+					[
+						-65000,
+						0,
+						95000
+					],
+					[
+						-55000,
+						0,
+						105000
+					],
+					[
+						-45000,
+						0,
+						115000
+					]
+				]
+			},
+			"record_index": 66,
+			"expected_state": "round=6|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,100,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,2,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,3,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit1",
+			"transaction_id": 54,
+			"base_revision": 67,
+			"committed_revision": 68,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 67,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 50,
+				"base_hit_chance": 50,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 38384,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 2,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 1,
+				"target_hp_before": 100,
+				"target_hp_after": 75,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-45000,
+						0,
+						115000
+					],
+					"facing_point": [
+						-32485,
+						10000,
+						55000
+					],
+					"resting_point": [
+						-45000,
+						0,
+						115000
+					],
+					"origin": [
+						-45000,
+						10000,
+						115000
+					],
+					"aim_point": [
+						-29744,
+						9000,
+						55572
+					]
+				}
+			},
+			"record_index": 67,
+			"expected_state": "round=6|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,75,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,1,1,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,3,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit1",
+			"transaction_id": 55,
+			"base_revision": 68,
+			"committed_revision": 69,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 68,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 50,
+				"base_hit_chance": 50,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 49556,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 1,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 0,
+				"target_hp_before": 75,
+				"target_hp_after": 50,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-45000,
+						0,
+						115000
+					],
+					"facing_point": [
+						-32485,
+						10000,
+						55000
+					],
+					"resting_point": [
+						-45000,
+						0,
+						115000
+					],
+					"origin": [
+						-45000,
+						10000,
+						115000
+					],
+					"aim_point": [
+						-29744,
+						9000,
+						55572
+					]
+				}
+			},
+			"record_index": 68,
+			"expected_state": "round=6|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,50,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,3,0,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 3,
+			"kind": "reload",
+			"actor": "PlayerUnit2",
+			"transaction_id": 56,
+			"base_revision": 69,
+			"committed_revision": 70,
+			"request": {
+				"schema_version": 1,
+				"kind": "reload",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 69,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"supply_points_before": 0,
+				"max_supply_points": 4,
+				"supply_points_after": 4,
+				"supply_points_restored": 4
+			},
+			"record_index": 69,
+			"expected_state": "round=6|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,50,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-55000,0,125000|unit=PlayerUnit2,0,14,0,32,50,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,1,2|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 57,
+			"base_revision": 70,
+			"committed_revision": 71,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					9,
+					0,
+					32
+				],
+				"details": {},
+				"expected_revision": 70,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					14,
+					0,
+					32
+				],
+				"to": [
+					9,
+					0,
+					32
+				],
+				"path": [
+					[
+						14,
+						0,
+						32
+					],
+					[
+						13,
+						0,
+						32
+					],
+					[
+						12,
+						0,
+						32
+					],
+					[
+						11,
+						0,
+						32
+					],
+					[
+						10,
+						0,
+						32
+					],
+					[
+						9,
+						0,
+						32
+					]
+				],
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-55000,
+						0,
+						125000
+					],
+					[
+						-65000,
+						0,
+						125000
+					],
+					[
+						-75000,
+						0,
+						125000
+					],
+					[
+						-85000,
+						0,
+						125000
+					],
+					[
+						-95000,
+						0,
+						125000
+					],
+					[
+						-105000,
+						0,
+						125000
+					]
+				]
+			},
+			"record_index": 70,
+			"expected_state": "round=6|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,50,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-105000,0,125000|unit=PlayerUnit2,0,9,0,32,50,1,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,2,1|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "PlayerUnit2",
+			"transaction_id": 58,
+			"base_revision": 71,
+			"committed_revision": 72,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "PlayerUnit2",
+				"target_id": "",
+				"destination": [
+					6,
+					0,
+					29
+				],
+				"details": {},
+				"expected_revision": 71,
+				"source": 0
+			},
+			"resolved": {
+				"from": [
+					9,
+					0,
+					32
+				],
+				"to": [
+					6,
+					0,
+					29
+				],
+				"path": [
+					[
+						9,
+						0,
+						32
+					],
+					[
+						8,
+						0,
+						31
+					],
+					[
+						7,
+						0,
+						30
+					],
+					[
+						6,
+						0,
+						29
+					]
+				],
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-105000,
+						0,
+						125000
+					],
+					[
+						-115000,
+						0,
+						115000
+					],
+					[
+						-125000,
+						0,
+						105000
+					],
+					[
+						-135000,
+						0,
+						95700
+					]
+				]
+			},
+			"record_index": 71,
+			"expected_state": "round=6|phase=0|active=PlayerUnit2|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,50,0,2,4,0,0,0,0,0,1,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "PlayerUnit2",
+			"round": 6,
+			"phase": 0,
+			"record_index": 72,
+			"schema_version": 1,
+			"transaction_id": "command-000072",
+			"committed_revision": 73,
+			"base_revision": 72,
+			"expected_state": "round=6|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-32485,0,55000|unit=EnemyUnit1,1,16,0,25,50,3,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,0,3|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 10,
+			"kind": "move",
+			"actor": "EnemyUnit1",
+			"transaction_id": 59,
+			"base_revision": 73,
+			"committed_revision": 74,
+			"request": {
+				"schema_version": 1,
+				"kind": "move",
+				"actor_id": "EnemyUnit1",
+				"target_id": "",
+				"destination": [
+					16,
+					0,
+					29
+				],
+				"details": {},
+				"expected_revision": 73,
+				"source": 1
+			},
+			"resolved": {
+				"from": [
+					16,
+					0,
+					25
+				],
+				"to": [
+					16,
+					0,
+					29
+				],
+				"path": [
+					[
+						16,
+						0,
+						25
+					],
+					[
+						16,
+						0,
+						26
+					],
+					[
+						16,
+						0,
+						27
+					],
+					[
+						16,
+						0,
+						28
+					],
+					[
+						16,
+						0,
+						29
+					]
+				],
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"objective_state": {
+					"eliminate": {
+						"status": 0,
+						"progress": 1
+					}
+				},
+				"carried_actor_id": "",
+				"reaction_events": [],
+				"condition_events": [],
+				"movement_interrupted": false,
+				"standing_points": [
+					[
+						-32485,
+						0,
+						55000
+					],
+					[
+						-32485,
+						0,
+						65000
+					],
+					[
+						-32485,
+						0,
+						75000
+					],
+					[
+						-35000,
+						0,
+						85000
+					],
+					[
+						-35000,
+						0,
+						95000
+					]
+				]
+			},
+			"record_index": 73,
+			"expected_state": "round=6|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,50,2,2,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,1,2|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,75,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit1",
+			"target": "PlayerUnit1",
+			"transaction_id": 60,
+			"base_revision": 74,
+			"committed_revision": 75,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit1",
+				"target_id": "PlayerUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 74,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 100,
+				"base_hit_chance": 100,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 52050,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 2,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 1,
+				"target_hp_before": 75,
+				"target_hp_after": 50,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-35000,
+						0,
+						95000
+					],
+					"facing_point": [
+						-45000,
+						10000,
+						115000
+					],
+					"resting_point": [
+						-35000,
+						0,
+						95000
+					],
+					"origin": [
+						-35000,
+						10000,
+						95000
+					],
+					"aim_point": [
+						-45000,
+						12000,
+						115000
+					]
+				}
+			},
+			"record_index": 74,
+			"expected_state": "round=6|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,50,1,1,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,2,1|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,50,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "EnemyUnit1",
+			"target": "PlayerUnit1",
+			"transaction_id": 61,
+			"base_revision": 75,
+			"committed_revision": 76,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "EnemyUnit1",
+				"target_id": "PlayerUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 75,
+				"source": 1
+			},
+			"resolved": {
+				"hit_chance": 100,
+				"base_hit_chance": 100,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 81907,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 1,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 0,
+				"target_hp_before": 50,
+				"target_hp_after": 25,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-35000,
+						0,
+						95000
+					],
+					"facing_point": [
+						-45000,
+						10000,
+						115000
+					],
+					"resting_point": [
+						-35000,
+						0,
+						95000
+					],
+					"origin": [
+						-35000,
+						10000,
+						95000
+					],
+					"aim_point": [
+						-45000,
+						12000,
+						115000
+					]
+				}
+			},
+			"record_index": 75,
+			"expected_state": "round=6|phase=2|active=EnemyUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,50,0,0,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,25,0,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,0,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,3,0|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"kind": "end_turn",
+			"actor": "EnemyUnit1",
+			"round": 6,
+			"phase": 2,
+			"record_index": 76,
+			"schema_version": 1,
+			"transaction_id": "command-000076",
+			"committed_revision": 77,
+			"base_revision": 76,
+			"expected_state": "round=7|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,50,0,0,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,25,3,0,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,0,3|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 3,
+			"kind": "reload",
+			"actor": "PlayerUnit1",
+			"transaction_id": 62,
+			"base_revision": 77,
+			"committed_revision": 78,
+			"request": {
+				"schema_version": 1,
+				"kind": "reload",
+				"actor_id": "PlayerUnit1",
+				"target_id": "",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 77,
+				"source": 0
+			},
+			"resolved": {
+				"actor_ap_before": 3,
+				"actor_ap_after": 2,
+				"supply_points_before": 0,
+				"max_supply_points": 4,
+				"supply_points_after": 4,
+				"supply_points_restored": 4
+			},
+			"record_index": 77,
+			"expected_state": "round=7|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,50,0,0,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,25,2,4,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,1,2|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit1",
+			"transaction_id": 63,
+			"base_revision": 78,
+			"committed_revision": 79,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 78,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 100,
+				"base_hit_chance": 100,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 59396,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 2,
+				"actor_ap_after": 1,
+				"supply_points_before": 4,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 3,
+				"target_hp_before": 50,
+				"target_hp_after": 25,
+				"target_defeated": false,
+				"battle_result_before": 0,
+				"battle_result_after": 0,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-45000,
+						0,
+						115000
+					],
+					"facing_point": [
+						-35000,
+						10000,
+						95000
+					],
+					"resting_point": [
+						-45000,
+						0,
+						115000
+					],
+					"origin": [
+						-45000,
+						10000,
+						115000
+					],
+					"aim_point": [
+						-35000,
+						12000,
+						95000
+					]
+				}
+			},
+			"record_index": 78,
+			"expected_state": "round=7|phase=0|active=PlayerUnit1|result=0|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=EnemyUnit1,-35000,0,95000|unit=EnemyUnit1,1,16,0,29,25,0,0,4,0,0,0,0,0,0,none|seal=EnemyUnit1,1|tempo=EnemyUnit1,3,3,3,3,0|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,25,1,3,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,2,1|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,0,1|extraction=0,0,0"
+		},
+		{
+			"schema_version": 9,
+			"kind": "attack",
+			"actor": "PlayerUnit1",
+			"target": "EnemyUnit1",
+			"transaction_id": 64,
+			"base_revision": 79,
+			"committed_revision": 80,
+			"request": {
+				"schema_version": 1,
+				"kind": "attack",
+				"actor_id": "PlayerUnit1",
+				"target_id": "EnemyUnit1",
+				"destination": [
+					-1,
+					-1,
+					-1
+				],
+				"details": {},
+				"expected_revision": 79,
+				"source": 0
+			},
+			"resolved": {
+				"hit_chance": 100,
+				"base_hit_chance": 100,
+				"aim_bonus": 0,
+				"aim_applied": false,
+				"aiming_after": false,
+				"roll_milli": 13648,
+				"did_hit": true,
+				"damage": 25,
+				"environmental_cover": 0,
+				"shield_applied": false,
+				"shield_accuracy_modifier": 0,
+				"shield_damage_multiplier_milli": 1000,
+				"actor_ap_before": 1,
+				"actor_ap_after": 0,
+				"supply_points_before": 3,
+				"max_supply_points": 4,
+				"supply_points_cost": 1,
+				"supply_points_after": 2,
+				"target_hp_before": 25,
+				"target_hp_after": 0,
+				"target_defeated": true,
+				"battle_result_before": 0,
+				"battle_result_after": 1,
+				"reaction_events": [],
+				"condition_events": [],
+				"firing_solution": {
+					"posture": "direct",
+					"body_offset": [
+						0,
+						0,
+						0
+					],
+					"firing_support": [
+						-45000,
+						0,
+						115000
+					],
+					"facing_point": [
+						-35000,
+						10000,
+						95000
+					],
+					"resting_point": [
+						-45000,
+						0,
+						115000
+					],
+					"origin": [
+						-45000,
+						10000,
+						115000
+					],
+					"aim_point": [
+						-35000,
+						12000,
+						95000
+					]
+				}
+			},
+			"record_index": 79,
+			"expected_state": "round=7|phase=3|active=none|result=1|standing_map=96df66e38b3a21d43c3c5a82fcbe7c3e5f45382351c5337fe27b5425d7aad796|standing=PlayerUnit1,-45000,0,115000|unit=PlayerUnit1,0,15,0,31,25,0,2,4,0,0,0,0,0,0,none|seal=PlayerUnit1,1|tempo=PlayerUnit1,3,3,3,3,0|standing=PlayerUnit2,-135000,0,95700|unit=PlayerUnit2,0,6,0,29,50,3,4,4,0,0,0,0,0,0,none|seal=PlayerUnit2,1|tempo=PlayerUnit2,3,3,3,0,3|objective=eliminate,1,2|extraction=0,0,0"
+		}
+	]
+}
