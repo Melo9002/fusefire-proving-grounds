@@ -29,7 +29,8 @@ static func generate(seed_value: int, unit: float) -> MapData:
 	wall.set_meta("shot_label", "Corner wall")
 	AuthoredSceneMapCompiler.compile(wall, data, unit)
 	wall.free()
-	SurfaceNavigation.resolve_map(data, unit)
+	# Bay recordings have a fixed seed-only layout, with no compiler manifest.
+	SurfaceNavigation.resolve_map(data, unit, false)
 	if is_equal_approx(unit, 1.0): data.contextual_steps[home] = _vector_at(OFFSET, seed_value)
 	var shooter := TacticalUnit.Faction.PLAYER if seed_value % 2 != 0 else TacticalUnit.Faction.ENEMY
 	var other := TacticalUnit.Faction.ENEMY if shooter == TacticalUnit.Faction.PLAYER else TacticalUnit.Faction.PLAYER

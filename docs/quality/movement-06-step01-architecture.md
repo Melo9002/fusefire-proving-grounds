@@ -58,7 +58,8 @@ A tile has a logical identity, a support center and, when legal, a canonical sta
 flowchart TD
   Inputs["Authored solids / semantic shape rules / floor and elevation markers"] --> Index["Movement and LOS indexes; support columns"]
   Index --> Fit["SurfacePlacement ranks obstacle-clear points inside one cell"]
-  Fit --> Check["SurfaceNavigation rounds first point and checks support and clearance"]
+  Fit --> Check["SurfaceNavigation rounds each contender and requires support and stationary clearance"]
+  Check -->|Candidate rejected in compiler 11| Fit
   Check --> Points["Canonical point / rejected stop / raised vault transit"]
   Points --> Graph["MapGraphBuilder validates static swept edges"]
   Index --> Graph
@@ -71,6 +72,8 @@ flowchart TD
 ```
 
 Sources: [shape rules](../../systems/generation2/tactical_shape_rules.gd), [asset placement guide](../asset-edge-placement.md), [SurfacePlacement](../../systems/grid/surface_placement.gd), [SurfaceNavigation](../../systems/grid/surface_navigation.gd), [Pathfinder](../../systems/grid/pathfinder.gd), [GridManager](../../systems/grid/grid_manager.gd), [tactical route builder](../../presentation/tactical/tactical_route_builder.gd).
+
+[Step 06.02 documents the supported search and the historical compiler boundary](movement-06-step02-support-placement.md).
 
 ## D. Action window, Guard and presentation
 

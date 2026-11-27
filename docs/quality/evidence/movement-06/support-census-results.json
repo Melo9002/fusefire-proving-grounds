@@ -1,0 +1,1161 @@
+[
+  {
+    "case": "service_depot/16",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1455,
+      1455
+    ],
+    "transit": [
+      6,
+      6
+    ],
+    "signature": [
+      "582e76be092b37c7c1c5f44500390d6444c9badccf6eff3bb401b6e108c125b5",
+      "582e76be092b37c7c1c5f44500390d6444c9badccf6eff3bb401b6e108c125b5"
+    ],
+    "geometry_key": [
+      [
+        24,
+        1,
+        278
+      ],
+      [
+        24,
+        1,
+        278
+      ]
+    ],
+    "compile_us": [
+      [
+        332785,
+        342550
+      ],
+      [
+        339514,
+        350733
+      ]
+    ],
+    "graph_us": [
+      [
+        236860,
+        247995
+      ],
+      [
+        236494,
+        252093
+      ]
+    ],
+    "inventory_us": [
+      [
+        754,
+        859
+      ],
+      [
+        756,
+        973
+      ]
+    ],
+    "route_us": [
+      [
+        83,
+        87
+      ],
+      [
+        82,
+        108
+      ]
+    ],
+    "options": [
+      50,
+      50
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "service_depot/17",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1455,
+      1455
+    ],
+    "transit": [
+      6,
+      6
+    ],
+    "signature": [
+      "29182469d9850b8d4991d1d84db7d6771c42d93bac65ad92487000a85f84003e",
+      "29182469d9850b8d4991d1d84db7d6771c42d93bac65ad92487000a85f84003e"
+    ],
+    "geometry_key": [
+      [
+        24,
+        1,
+        278
+      ],
+      [
+        24,
+        1,
+        278
+      ]
+    ],
+    "compile_us": [
+      [
+        324883,
+        338739
+      ],
+      [
+        328043,
+        334684
+      ]
+    ],
+    "graph_us": [
+      [
+        228668,
+        232317
+      ],
+      [
+        231921,
+        235102
+      ]
+    ],
+    "inventory_us": [
+      [
+        711,
+        783
+      ],
+      [
+        716,
+        798
+      ]
+    ],
+    "route_us": [
+      [
+        66,
+        73
+      ],
+      [
+        67,
+        73
+      ]
+    ],
+    "options": [
+      48,
+      48
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "service_depot/950507647",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1452,
+      1452
+    ],
+    "transit": [
+      8,
+      8
+    ],
+    "signature": [
+      "b1f44bf88a4f5f162d665381f82b2c5937505bbcddf259942f55d5704ea9d25e",
+      "b1f44bf88a4f5f162d665381f82b2c5937505bbcddf259942f55d5704ea9d25e"
+    ],
+    "geometry_key": [
+      [
+        24,
+        1,
+        275
+      ],
+      [
+        24,
+        1,
+        275
+      ]
+    ],
+    "compile_us": [
+      [
+        337454,
+        346718
+      ],
+      [
+        326968,
+        374004
+      ]
+    ],
+    "graph_us": [
+      [
+        235226,
+        238473
+      ],
+      [
+        228538,
+        239684
+      ]
+    ],
+    "inventory_us": [
+      [
+        777,
+        1326
+      ],
+      [
+        754,
+        828
+      ]
+    ],
+    "route_us": [
+      [
+        84,
+        142
+      ],
+      [
+        83,
+        90
+      ]
+    ],
+    "options": [
+      50,
+      50
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "freight_yard/16",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1510,
+      1510
+    ],
+    "transit": [
+      16,
+      16
+    ],
+    "signature": [
+      "b149d3a21f4f08615466e5227e35a66e83bdfcb99319e2fa48f5faecdc985bc6",
+      "b149d3a21f4f08615466e5227e35a66e83bdfcb99319e2fa48f5faecdc985bc6"
+    ],
+    "geometry_key": [
+      [
+        29,
+        0,
+        284
+      ],
+      [
+        29,
+        0,
+        284
+      ]
+    ],
+    "compile_us": [
+      [
+        316048,
+        367065
+      ],
+      [
+        310679,
+        327879
+      ]
+    ],
+    "graph_us": [
+      [
+        220724,
+        231302
+      ],
+      [
+        214661,
+        216504
+      ]
+    ],
+    "inventory_us": [
+      [
+        717,
+        802
+      ],
+      [
+        719,
+        788
+      ]
+    ],
+    "route_us": [
+      [
+        74,
+        83
+      ],
+      [
+        76,
+        81
+      ]
+    ],
+    "options": [
+      49,
+      49
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "freight_yard/17",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1510,
+      1510
+    ],
+    "transit": [
+      16,
+      16
+    ],
+    "signature": [
+      "b936dc592547d09833a01bdc376320307fc42cfd3ee3e95ddb5d79462568659e",
+      "b936dc592547d09833a01bdc376320307fc42cfd3ee3e95ddb5d79462568659e"
+    ],
+    "geometry_key": [
+      [
+        21,
+        0,
+        268
+      ],
+      [
+        21,
+        0,
+        268
+      ]
+    ],
+    "compile_us": [
+      [
+        307305,
+        315271
+      ],
+      [
+        309541,
+        323596
+      ]
+    ],
+    "graph_us": [
+      [
+        215400,
+        222018
+      ],
+      [
+        215588,
+        231016
+      ]
+    ],
+    "inventory_us": [
+      [
+        652,
+        726
+      ],
+      [
+        650,
+        729
+      ]
+    ],
+    "route_us": [
+      [
+        60,
+        68
+      ],
+      [
+        60,
+        68
+      ]
+    ],
+    "options": [
+      45,
+      45
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "freight_yard/950507647",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1513,
+      1513
+    ],
+    "transit": [
+      16,
+      16
+    ],
+    "signature": [
+      "4c24b10214f31c6324d834f23d2ad6c5eb6a4a2200f3e07fdc93c56a1ed48dcd",
+      "4c24b10214f31c6324d834f23d2ad6c5eb6a4a2200f3e07fdc93c56a1ed48dcd"
+    ],
+    "geometry_key": [
+      [
+        24,
+        0,
+        261
+      ],
+      [
+        24,
+        0,
+        261
+      ]
+    ],
+    "compile_us": [
+      [
+        304121,
+        306822
+      ],
+      [
+        322584,
+        370774
+      ]
+    ],
+    "graph_us": [
+      [
+        211801,
+        214982
+      ],
+      [
+        213858,
+        262105
+      ]
+    ],
+    "inventory_us": [
+      [
+        701,
+        785
+      ],
+      [
+        727,
+        1125
+      ]
+    ],
+    "route_us": [
+      [
+        76,
+        86
+      ],
+      [
+        78,
+        123
+      ]
+    ],
+    "options": [
+      48,
+      48
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "fleet_station/16",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1505,
+      1505
+    ],
+    "transit": [
+      8,
+      8
+    ],
+    "signature": [
+      "45740459db69e8f8ee5bf3f10583e1f9aa2c07d387290771c6d65d857924530f",
+      "45740459db69e8f8ee5bf3f10583e1f9aa2c07d387290771c6d65d857924530f"
+    ],
+    "geometry_key": [
+      [
+        29,
+        0,
+        285
+      ],
+      [
+        29,
+        0,
+        285
+      ]
+    ],
+    "compile_us": [
+      [
+        305524,
+        305900
+      ],
+      [
+        312821,
+        336224
+      ]
+    ],
+    "graph_us": [
+      [
+        209491,
+        211579
+      ],
+      [
+        217612,
+        233395
+      ]
+    ],
+    "inventory_us": [
+      [
+        747,
+        818
+      ],
+      [
+        754,
+        827
+      ]
+    ],
+    "route_us": [
+      [
+        82,
+        92
+      ],
+      [
+        83,
+        92
+      ]
+    ],
+    "options": [
+      50,
+      50
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "fleet_station/17",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1511,
+      1511
+    ],
+    "transit": [
+      8,
+      8
+    ],
+    "signature": [
+      "cface9531ece9808251bcd4c56d0618655a066feabb4fac92ffef6aa0c00f172",
+      "cface9531ece9808251bcd4c56d0618655a066feabb4fac92ffef6aa0c00f172"
+    ],
+    "geometry_key": [
+      [
+        23,
+        0,
+        247
+      ],
+      [
+        23,
+        0,
+        247
+      ]
+    ],
+    "compile_us": [
+      [
+        301106,
+        301629
+      ],
+      [
+        311706,
+        314207
+      ]
+    ],
+    "graph_us": [
+      [
+        208507,
+        213547
+      ],
+      [
+        212897,
+        220912
+      ]
+    ],
+    "inventory_us": [
+      [
+        758,
+        1004
+      ],
+      [
+        761,
+        860
+      ]
+    ],
+    "route_us": [
+      [
+        69,
+        75
+      ],
+      [
+        69,
+        80
+      ]
+    ],
+    "options": [
+      49,
+      49
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "fleet_station/950507647",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1600,
+      1600
+    ],
+    "stops": [
+      1502,
+      1502
+    ],
+    "transit": [
+      8,
+      8
+    ],
+    "signature": [
+      "b3aaf6607b5502a7a89f830288f58514d416d5e67fa34e5dfb0c10ac93a8d56e",
+      "b3aaf6607b5502a7a89f830288f58514d416d5e67fa34e5dfb0c10ac93a8d56e"
+    ],
+    "geometry_key": [
+      [
+        34,
+        0,
+        316
+      ],
+      [
+        34,
+        0,
+        316
+      ]
+    ],
+    "compile_us": [
+      [
+        309174,
+        329119
+      ],
+      [
+        316631,
+        360804
+      ]
+    ],
+    "graph_us": [
+      [
+        213913,
+        225191
+      ],
+      [
+        229784,
+        241810
+      ]
+    ],
+    "inventory_us": [
+      [
+        750,
+        886
+      ],
+      [
+        783,
+        1328
+      ]
+    ],
+    "route_us": [
+      [
+        82,
+        86
+      ],
+      [
+        84,
+        157
+      ]
+    ],
+    "options": [
+      50,
+      50
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "tactical_test_range/16",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      1246,
+      1246
+    ],
+    "stops": [
+      1095,
+      1095
+    ],
+    "transit": [
+      12,
+      12
+    ],
+    "signature": [
+      "28b9bb7dc02334c2d77483d91aee9033e19ac11fbe33eefc79c57b3491e825f0",
+      "28b9bb7dc02334c2d77483d91aee9033e19ac11fbe33eefc79c57b3491e825f0"
+    ],
+    "geometry_key": [
+      [
+        146,
+        0,
+        70
+      ],
+      [
+        146,
+        0,
+        70
+      ]
+    ],
+    "compile_us": [
+      [
+        242450,
+        244672
+      ],
+      [
+        246150,
+        250117
+      ]
+    ],
+    "graph_us": [
+      [
+        167432,
+        167828
+      ],
+      [
+        167945,
+        179102
+      ]
+    ],
+    "inventory_us": [
+      [
+        816,
+        996
+      ],
+      [
+        815,
+        909
+      ]
+    ],
+    "route_us": [
+      [
+        75,
+        89
+      ],
+      [
+        76,
+        87
+      ]
+    ],
+    "options": [
+      54,
+      54
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "contextual_firing_bay/16",
+    "compiler": [
+      0,
+      0
+    ],
+    "logical": [
+      144,
+      144
+    ],
+    "stops": [
+      144,
+      144
+    ],
+    "transit": [
+      0,
+      0
+    ],
+    "signature": [
+      "422df80a712a0c492edd77d0d805edb84e8bb8e02f8ce403ef93ce0c34d3337d",
+      "422df80a712a0c492edd77d0d805edb84e8bb8e02f8ce403ef93ce0c34d3337d"
+    ],
+    "geometry_key": [
+      [
+        1,
+        0,
+        2
+      ],
+      [
+        1,
+        0,
+        2
+      ]
+    ],
+    "compile_us": [
+      [
+        4770,
+        5284
+      ],
+      [
+        5050,
+        5441
+      ]
+    ],
+    "graph_us": [
+      [
+        16341,
+        16705
+      ],
+      [
+        16428,
+        17682
+      ]
+    ],
+    "inventory_us": [
+      [
+        1141,
+        1267
+      ],
+      [
+        1136,
+        1251
+      ]
+    ],
+    "route_us": [
+      [
+        108,
+        119
+      ],
+      [
+        108,
+        115
+      ]
+    ],
+    "options": [
+      64,
+      64
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "parking_garage/16",
+    "compiler": [
+      10,
+      11
+    ],
+    "logical": [
+      2080,
+      2080
+    ],
+    "stops": [
+      1519,
+      1519
+    ],
+    "transit": [
+      0,
+      0
+    ],
+    "signature": [
+      "22d6ce1561c64b8856f5ad4128231095e7a398d885491c94c338b90564b27283",
+      "22d6ce1561c64b8856f5ad4128231095e7a398d885491c94c338b90564b27283"
+    ],
+    "geometry_key": [
+      [
+        551,
+        0,
+        231
+      ],
+      [
+        551,
+        0,
+        231
+      ]
+    ],
+    "compile_us": [
+      [
+        473831,
+        486692
+      ],
+      [
+        483940,
+        500946
+      ]
+    ],
+    "graph_us": [
+      [
+        358663,
+        441728
+      ],
+      [
+        360771,
+        375689
+      ]
+    ],
+    "inventory_us": [
+      [
+        792,
+        1133
+      ],
+      [
+        739,
+        821
+      ]
+    ],
+    "route_us": [
+      [
+        82,
+        124
+      ],
+      [
+        80,
+        86
+      ]
+    ],
+    "options": [
+      50,
+      50
+    ],
+    "recovered": {},
+    "lost": {},
+    "shifted": {},
+    "edges_added": [],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  },
+  {
+    "case": "partial_support/16",
+    "compiler": [
+      0,
+      0
+    ],
+    "logical": [
+      49,
+      49
+    ],
+    "stops": [
+      47,
+      48
+    ],
+    "transit": [
+      0,
+      0
+    ],
+    "signature": [
+      "eeed926e2eb634f0fc862068188b1a6b099ba16404e8ce20103e40cdbd9acf12",
+      "77c85e32d2f309e6d5d9f91b00c360c97f497b67c1a5b88945a509ae0ef2e919"
+    ],
+    "geometry_key": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0
+      ]
+    ],
+    "compile_us": [
+      [
+        1910,
+        2137
+      ],
+      [
+        1830,
+        2597
+      ]
+    ],
+    "graph_us": [
+      [
+        5263,
+        5884
+      ],
+      [
+        5006,
+        5592
+      ]
+    ],
+    "inventory_us": [
+      [
+        392,
+        469
+      ],
+      [
+        434,
+        605
+      ]
+    ],
+    "route_us": [
+      [
+        19,
+        26
+      ],
+      [
+        19,
+        22
+      ]
+    ],
+    "options": [
+      35,
+      37
+    ],
+    "recovered": {
+      "(3, 0, 3)": "(0.0, 0.0, -4200.0)"
+    },
+    "lost": {},
+    "shifted": {},
+    "edges_added": [
+      "(2, 0, 2)>(3, 0, 3)",
+      "(2, 0, 3)>(3, 0, 2)",
+      "(2, 0, 3)>(3, 0, 3)",
+      "(2, 0, 3)>(3, 0, 4)",
+      "(2, 0, 4)>(3, 0, 3)",
+      "(3, 0, 2)>(2, 0, 3)",
+      "(3, 0, 2)>(3, 0, 3)",
+      "(3, 0, 3)>(2, 0, 2)",
+      "(3, 0, 3)>(2, 0, 3)",
+      "(3, 0, 3)>(2, 0, 4)",
+      "(3, 0, 3)>(3, 0, 2)",
+      "(3, 0, 4)>(2, 0, 3)"
+    ],
+    "edges_removed": [],
+    "unsupported_or_colliding_stops": [
+      [],
+      []
+    ]
+  }
+]

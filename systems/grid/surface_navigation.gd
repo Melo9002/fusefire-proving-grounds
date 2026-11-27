@@ -4,7 +4,7 @@ extends RefCounted
 const Fit = preload("res://systems/grid/surface_placement.gd")
 const PRECISION := 10000.0
 
-static func resolve_map(data: MapData, unit: float) -> void:
+static func resolve_map(data: MapData, unit: float, support_aware := true) -> void:
 	if not data.surface_placement_enabled: return
 	data.surface_unit = unit
 	data.body_radius = 0.28 * unit
@@ -13,17 +13,20 @@ static func resolve_map(data: MapData, unit: float) -> void:
 	data.movement_routes.clear()
 	data.movement_parts.sort_custom(_bounds_less)
 	_rebuild_movement_index(data)
+	var accept := _valid_standing_candidate.bind(data) if support_aware else Callable()
 	for cell: MapCellData in data.cells.values():
 		if cell.surface_forbidden or not (cell.surface_candidate or (cell.walkable and cell.can_stop)): continue
 		cell.is_vault_transit = false
 		cell.world_position = cell.support_center
 		cell.elevation = cell.support_center.y
-		var fit := Fit.resolve(cell.support_center, _local_parts(data, cell.support_center, cell.support_center, unit * 0.5 + data.body_radius + data.body_clearance), data.body_radius, data.body_height, data.body_clearance, unit, Vector3.INF, true, _local_curves(data, cell.support_center, cell.support_center, unit * 0.5 + data.body_radius + data.body_clearance))
+		var reach := unit * 0.5 + data.body_radius + data.body_clearance
+		var fit := Fit.resolve(cell.support_center, _local_parts(data, cell.support_center, cell.support_center, reach),
+			data.body_radius, data.body_height, data.body_clearance, unit, Vector3.INF, true,
+			_local_curves(data, cell.support_center, cell.support_center, reach), accept)
 		var valid: bool = fit.fits
 		if valid:
-			var point: Vector3 = fit.position
-			point = (point / unit * PRECISION).round() / PRECISION * unit
-			valid = supported(data, point, data.body_radius) and _sweep_clear(data, point, point, true)
+			var point := _quantize(fit.position, unit)
+			valid = support_aware or _valid_standing_candidate(fit.position, data)
 			if valid: cell.world_position = point
 		cell.walkable = valid
 		cell.can_stop = valid
@@ -48,6 +51,13 @@ static func resolve_map(data: MapData, unit: float) -> void:
 			cell.blocks_line_of_sight = false
 	data.rebuild_los_index()
 	data.surface_points_resolved = true
+
+static func _quantize(point: Vector3, unit: float) -> Vector3:
+	return (point / unit * PRECISION).round() / PRECISION * unit
+
+static func _valid_standing_candidate(candidate: Vector3, data: MapData) -> bool:
+	var point := _quantize(candidate, data.surface_unit)
+	return supported(data, point, data.body_radius) and _sweep_clear(data, point, point, true)
 
 static func _bounds_less(a: AABB, b: AABB) -> bool:
 	for index in 6:
