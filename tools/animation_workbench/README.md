@@ -20,7 +20,8 @@ godot --path . res://tools/animation_workbench/pose_workbench.tscn -- --characte
 |---|---|
 | `--character=<key>` | a key of `CHARACTER_RIGS` in `pose_workbench.gd` (`mira_0`, `small_mira_0`) |
 | `--unarmed` | build the character without its weapon |
-| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing`, `rescue` |
+| `--passenger=<key>` | who is carried, chosen apart from the carrier (a key of the character list, e.g. `mira_0` or `small_mira_0`); omitted, the carried body is the carrier's own kind |
+| `--scenario=<id>` | start a scenario on launch: `tactical`, `exploration`, `contacts`, `landing`, `rescue`, `loaded_ladder` |
 | `--tab=<name or number>` | open on a tab: `Start`, `Scenario`, `Why?`, `Tune`, `Diagnostics`, `Character`, `Evidence` |
 | `--side-view`, `--auto-sequence` | as before |
 
@@ -50,7 +51,8 @@ Each preset is data in `workbench_scenarios.gd`: timed steps calling the workben
 | `exploration` | walk, turn, crouch, stand, gesture, nod, inspect, a reaction that interrupts a gesture | nothing (armed or unarmed) | the shared presenter's public API, as `ExplorationCharacterHost` uses it; no tactical state |
 | `contacts` | a 12-tread stair, then a 4 m ladder shown from a three-quarter inspection camera, interrupted mid-climb; contact diagnostics switch on | nothing | the workbench supplies the progress the game would; planner, leg IK, ladder solver and hand contacts are the production ones |
 | `landing` | the supported ladder transfer on a 3 m ladder: a deck with posts and a deck whose ladder rails run on, each climbed and entered in reverse, then a deck with nothing to hold and a lip too far for the arm (both must stay on the fallback). Uses `LandingFixtures`; the Diagnostics tab shows the landing status and the measured deck and bar clearances. | none (unarmed works) | **synthetic** deck; the pose is the production solver and rig, the landing is the same `LadderLanding` the sandbox supplies |
-| `rescue` | pick a casualty up from the floor, carry it walking, stop, set it down (the R, P, M and Q key calls, as steps); contact diagnostics switch on | nothing (armed or unarmed) | the workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's |
+| `rescue` | pick a casualty up from the floor, carry it walking, stop, set it down (the R, P, M and Q key calls, as steps); contact diagnostics switch on | nothing (armed or unarmed) | the workbench supplies the passenger a metre ahead, as the game supplies the rescued actor's place; the lift, carry contacts and release are the rig's. The casualty is whoever the **Character tab** (or `--passenger=`) says |
+| `loaded_ladder` | pick a casualty up, walk loaded, stop at the ladder, move it onto the back and climb with the landing, cross the deck lip, then go down from the deck the same way and set the casualty down (27 s) | nothing (armed or unarmed; the weapon stays slung) | the production loaded-ladder presentation (`LoadedLadderCarry`) over the shared ladder solver and landing; this workbench and the Exploration Playground ask for it, the tactical host does not. Any carrier carries any casualty: pick them in the Character tab |
 
 An unsupported combination is shown disabled with the reason (for example `tactical` on an unarmed character). **Pause** stops the scenario and the character together (the animation tree runs in manual mode and the presenter is not ticked); **Step frame** advances both by exactly one step (1/60 s). **Reset** ends every bench, hold and posture request the workbench made and squares the body; it works while paused and mid-scenario. Starting a scenario resets first.
 

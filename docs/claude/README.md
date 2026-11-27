@@ -6,6 +6,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 
 | Document | What it is |
 | --- | --- |
+| [Carrying someone of another size, and up a ladder](carry-ladder-report-2026-11-27.md) | Independent passenger identity, mixed-size carry, the loaded-ladder presentation, the four-pairing measurements, renders, limits and what the tactical host needs. |
 | [Character animation (current guide)](../animation.md) | The maintained architecture and developer guide (Task 07 final). |
 | [Procedural animation layer](animation-procedural-layer.md) (superseded) | The cover crouch, kneel and weapon-grip approach, how it was measured and checked, its limits and the ordered next steps. |
 | [AI decision pipeline](ai-decision-pipeline.md) | How one AI decision flows from the battle to a committed action and who owns each stage (milestone 05 step 4). |

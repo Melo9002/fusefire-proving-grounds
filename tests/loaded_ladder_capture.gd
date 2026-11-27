@@ -1,7 +1,7 @@
 extends SceneTree
 ## Rendered evidence for the loaded ladder (explicit-only: needs a GPU, not part of the standard tiers): one carrier/passenger pairing climbing or descending the Workbench's ladder with the landing, in paused fixed steps
 ## so every frame is reproducible, with PNGs at chosen scenario times.
-##   godot --path . --script res://tests/loaded_ladder_capture.gd -- <output-folder> carrier=mira_0 passenger=small_mira_0 [direction=1|-1] [times=0,0.5,...] [view=side|front|three_quarter] [width=800 height=800]
+##   godot --path . --script res://tests/loaded_ladder_capture.gd -- <output-folder> carrier=mira_0 passenger=small_mira_0 [direction=1|-1] [times=0,0.5,...] [view=side|front|rear|rear_quarter|front_quarter|three_quarter|upper] [width=800 height=800] [fallback=true: the baseline, without the loaded presentation]
 const SCENE := "res://tools/animation_workbench/pose_workbench.tscn"
 const VIEWS := {
 	"side": [Vector3(3.4, 1.7, 0.35), Vector3(0.0, 1.5, 0.35)],
@@ -13,7 +13,7 @@ const VIEWS := {
 	"front_quarter": [Vector3(2.2, 1.6, 3.0), Vector3(0.0, 1.3, 0.2)],
 }
 var out_dir := "res://artifacts/carry-captures/ladder"
-var _args := {"carrier": "mira_0", "passenger": "mira_0", "direction": "1", "times": "0,0.5,1,1.5,2.5,3.5,4.5,5.5", "view": "side", "width": "800", "height": "800", "armed": "false", "landing": "rails", "roll": "", "pitch": "", "yaw": "", "ux": "", "fx": "", "fz": "", "ax": "", "ay": "", "az": "", "lean": "", "thigh": "", "shin": ""}
+var _args := {"carrier": "mira_0", "passenger": "mira_0", "direction": "1", "times": "0,0.5,1,1.5,2.5,3.5,4.5,5.5", "view": "side", "width": "800", "height": "800", "armed": "false", "landing": "rails", "fallback": "false", "roll": "", "pitch": "", "yaw": "", "ux": "", "fx": "", "fz": "", "ax": "", "ay": "", "az": "", "lean": "", "thigh": "", "shin": ""}
 
 
 func _initialize() -> void:
@@ -48,6 +48,8 @@ func _run() -> void:
 	var rig: CharacterRig = bench.rig
 	rig.passenger_definition = PassengerDefinition.for_character(StringName(_args.passenger))
 	_tune(rig.loaded_climb_profile)
+	if _args.fallback == "true":
+		rig.loaded_climb_profile = null   # the baseline: no loaded-ladder presentation, a carrier on a ladder as the tactical fallback has it
 	rig.begin_carry()
 	rig.animation_controller.play(&"carry_idle")
 	await _frames(30)
