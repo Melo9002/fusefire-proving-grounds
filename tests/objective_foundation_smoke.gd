@@ -57,8 +57,11 @@ func _run() -> void:
 	var setup_panel := setup.get_node("CenterContainer/Panel") as PanelContainer
 	var setup_tabs := setup.get_node("CenterContainer/Panel/Margin/VBox/Body/SetupTabs") as TabContainer
 	check(setup_panel.global_position.y >= 0.0 and setup_panel.global_position.y + setup_panel.size.y <= setup.size.y, "Match setup fits inside the 720p reference viewport")
-	check(setup_tabs.get_tab_count() == 4, "Match setup groups choices into four focused tabs")
-	check(setup_tabs.get_tab_title(0) == "Mission" and setup_tabs.get_tab_title(1) == "Forces" and setup_tabs.get_tab_title(2) == "Battlefield" and setup_tabs.get_tab_title(3) == "Settings", "Match setup tabs use clear responsibility names")
+	var tab_titles: Array[String] = []
+	for index in setup_tabs.get_tab_count():
+		tab_titles.append(setup_tabs.get_tab_title(index))
+	check(tab_titles == ["Mission", "Forces", "Battlefield", "Settings", "Combat"],
+		"Match setup exposes one named tab for each responsibility, including Combat")
 	check(setup.start_button.text == "START BATTLE", "The primary action remains concise while the briefing carries configuration details")
 	check(setup.randomize_seed_button != null and setup.copy_seed_button != null, "Battlefield seed actions are easy to discover")
 	check(setup.auto_seed_toggle.button_pressed and setup.seed_input.value >= 1, "A fresh setup prepares a valid automatic seed")
