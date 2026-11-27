@@ -13,7 +13,7 @@ const VIEWS := {
 	"front_quarter": [Vector3(2.2, 1.6, 3.0), Vector3(0.0, 1.3, 0.2)],
 }
 var out_dir := "res://artifacts/carry-captures/ladder"
-var _args := {"carrier": "mira_0", "passenger": "mira_0", "direction": "1", "times": "0,0.5,1,1.5,2.5,3.5,4.5,5.5", "view": "side", "width": "800", "height": "800", "armed": "false", "landing": "rails", "roll": "", "pitch": "", "yaw": "", "ax": "", "ay": "", "az": "", "lean": "", "thigh": "", "shin": ""}
+var _args := {"carrier": "mira_0", "passenger": "mira_0", "direction": "1", "times": "0,0.5,1,1.5,2.5,3.5,4.5,5.5", "view": "side", "width": "800", "height": "800", "armed": "false", "landing": "rails", "roll": "", "pitch": "", "yaw": "", "ux": "", "fx": "", "fz": "", "ax": "", "ay": "", "az": "", "lean": "", "thigh": "", "shin": ""}
 
 
 func _initialize() -> void:
@@ -90,6 +90,13 @@ func _tune(profile: LoadedClimbProfile) -> void:
 	if String(_args.az) != "": anchor.z = float(_args.az)
 	profile.anchor_from_neck = anchor
 	if String(_args.lean) != "": profile.climb_lean_degrees = float(_args.lean)
+	var up := profile.body_up
+	if String(_args.ux) != "": up.x = float(_args.ux)
+	profile.body_up = up
+	var face := profile.body_face
+	if String(_args.fx) != "": face.x = float(_args.fx)
+	if String(_args.fz) != "": face.z = float(_args.fz)
+	profile.body_face = face
 	var pose := profile.pose_overrides.duplicate()
 	if String(_args.thigh) != "": pose["thigh"] = float(_args.thigh)
 	if String(_args.shin) != "": pose["shin"] = float(_args.shin)

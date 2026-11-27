@@ -20,6 +20,16 @@ const REACH_MINIMUM := 0.40
 const GRIP_WRIST: Array[float] = [0.85, 0.65, 0.45, 0.25]
 const GRIP_THIGH: Array[float] = [0.9, 0.7, 0.5]
 const TUCK_STEPS := [1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.0]
+## How far the knees are bent in the climbing carry, degrees (the carry's own is the first): more lifts the feet.
+## The most the body may reach out sideways from the carrier's centre line in the climbing carry (metres, reference body): the rails' inner faces are 0.64 m apart and a limb has a radius.
+const LATERAL_LIMIT := 0.24
+## The climbing carry lifts the body clear of the floor by more than the ordinary carry needs: a passenger whose feet only just clear it reads as standing behind the carrier, not carried (metres, reference body).
+const LADDER_CLEARANCE := 0.30
+const LADDER_KNEE_BENDS: Array[float] = [60.0, 85.0, 110.0, 135.0]
+## How far the thighs may be swung up toward the passenger's belly side, away from the ladder (degrees added to the hang), and how far ahead of the carrier's hips the legs may reach (metres, reference body).
+const LADDER_THIGH_LIFTS: Array[float] = [0.0, 20.0, 40.0, 60.0]
+## How far behind the rung plane every part of the passenger stays (a rung and a limb each have a radius, and the carrier's own body hugs the rungs).
+const RUNG_MARGIN := 0.12
 ## How far the body may be moved along the carrier's x (toward its legs positive); y up and z forward are bounded inside the search.
 const SLIDE_X := 0.30
 const SLIDE_STEP := 0.02
@@ -40,6 +50,86 @@ static func solve(rig: CharacterRig, passenger: Node3D, contacts: Array) -> Dict
 	var result := _search(rig, passenger, contacts)
 	_cache[key] = result
 	return result
+
+
+## The same question for the CLIMBING carry (LoadedClimbProfile): the body turned onto the back, the trunk leaned into the ladder. The search runs with the carrier's lean applied, because the passenger rides the
+## chest and the lean lowers its legs and moves the supporting hand. Knobs: how far the knees are bent (the legs hang along the real down, so bending them lifts the feet), where the body hangs on the back (a
+## carrier-frame vector) and where along the thigh the supporting hand holds. Returns {changed, pose, slide, fractions, lowest, reach}; `changed` is false when the authored climbing carry already clears the floor
+## and keeps the hand in reach.
+static func solve_ladder(rig: CharacterRig, passenger: Node3D, base_pose: Dictionary, orientation: Basis, contacts: Array) -> Dictionary:
+	var definition: PassengerDefinition = passenger.definition
+	var key := "ladder|%s|%s" % [PassengerDefinition.from_rig(rig).character_id, definition.character_id if definition != null else ""]
+	if _cache.has(key):
+		return _cache[key]
+	var result := _search_ladder(rig, passenger, base_pose, orientation, contacts)
+	_cache[key] = result
+	return result
+
+
+static func _search_ladder(rig: CharacterRig, passenger: Node3D, base_pose: Dictionary, orientation: Basis, contacts: Array) -> Dictionary:
+	var profile := rig.loaded_climb_profile
+	var body := rig.ladder_body()
+	var ratio := body.ratio
+	var arm := body.arm_length()
+	var carrier_basis := rig.character_root.global_basis.orthonormalized()
+	var floor_y := rig.character_root.global_position.y
+	var hips := rig.skeleton.global_transform * rig.skeleton.get_bone_global_rest(rig.skeleton.find_bone(rig.bones.hips)).origin
+	var lean := Basis(carrier_basis.x, deg_to_rad(profile.climb_lean_degrees))
+	# On the ladder the pelvis hangs back from the rungs where the plan puts it, not where the rest pose has it: the trunk, and the passenger on it, ride that.
+	var plan := TraversalSolver.plan_ladder(rig.traversal_profile, LadderGeometry.for_rise(3.0), body)
+	var pelvis := rig.character_root.to_global(plan.hips as Vector3)
+	var plane_z := LadderGeometry.PLANE_AHEAD
+	var neck := rig.skeleton.global_transform * rig.skeleton.get_bone_global_rest(rig.skeleton.find_bone(rig.neck_bone_name)).origin
+	var anchor_origin := neck + carrier_basis * (profile.anchor_from_neck * ratio)
+	# The trunk leans about the hips: the anchor and the shoulders go with it, the floor does not.
+	var leaned_anchor := Transform3D(lean * carrier_basis * orientation, pelvis + lean * (anchor_origin - hips))
+	var shoulders: Array[Vector3] = []
+	for chain in [rig.right_arm_bones, rig.left_arm_bones]:
+		var shoulder: Vector3 = rig.skeleton.global_transform * rig.skeleton.get_bone_global_rest(rig.skeleton.find_bone(chain[0])).origin
+		shoulders.append(pelvis + lean * (shoulder - hips))
+	var clearance := LADDER_CLEARANCE * ratio
+	var support := 0 if profile.free_hand == &"left" else 1
+	var best := {}
+	var best_cost := INF
+	var centre_x := hips.dot(carrier_basis.x)
+	for lift: float in LADDER_THIGH_LIFTS:
+		for bend: float in LADDER_KNEE_BENDS:
+			var pose := base_pose.duplicate()
+			pose["thigh"] = float(base_pose.thigh) + lift
+			pose["shin"] = float(pose.thigh) - bend
+			pose["foot"] = float(pose.shin) - 16.0
+			var trial: Dictionary = passenger.trial(pose, leaned_anchor, shoulders, contacts, carrier_basis * orientation)
+			var limb: Dictionary = trial.limbs[&"thigh"]
+			var lowest := float(trial.lowest) - floor_y
+			# Sideways extent about the carrier's centre line (the body passes between the rails), and how far the legs reach ahead of the carrier's hips toward the rungs.
+			var lowest_x := INF
+			var highest_x := -INF
+			var front := -INF
+			for point: Vector3 in trial.points:
+				var along := point.dot(carrier_basis.x)
+				lowest_x = minf(lowest_x, along)
+				highest_x = maxf(highest_x, along)
+				front = maxf(front, rig.character_root.to_local(point).z)
+			for dx in range(-int(0.20 / SLIDE_STEP), int(0.20 / SLIDE_STEP) + 1):
+				for dy in range(int(-0.04 / SLIDE_STEP), int(0.16 / SLIDE_STEP) + 1):
+					for dz in range(int(-0.30 / SLIDE_STEP), int(0.12 / SLIDE_STEP) + 1):
+						var slide := Vector3(dx, dy, dz) * SLIDE_STEP
+						var shift := lean * carrier_basis * slide
+						var sideways := maxf(highest_x + shift.dot(carrier_basis.x) - centre_x, centre_x - (lowest_x + shift.dot(carrier_basis.x)))
+						var ahead := front + shift.dot(carrier_basis.z) - (plane_z - RUNG_MARGIN * ratio)
+						var body_cost := maxf(clearance - (lowest + shift.y), 0.0) * 40.0 + maxf(sideways - LATERAL_LIMIT * ratio, 0.0) * 30.0 + maxf(ahead, 0.0) * 40.0
+						if body_cost >= best_cost:
+							continue
+						for thigh: float in GRIP_THIGH:
+							var point: Vector3 = (limb.start as Vector3).lerp(limb.end, thigh) + shift
+							var reach := point.distance_to(shoulders[support]) / arm
+							var cost := body_cost + maxf(reach - REACH_LIMIT, 0.0) * 30.0 + maxf(REACH_MINIMUM - reach, 0.0) * 6.0
+							cost += slide.length() * 1.0 + absf(thigh - GRIP_THIGH[0]) * 0.5 + (bend - LADDER_KNEE_BENDS[0]) * 0.01 + lift * 0.01
+							if cost < best_cost:
+								best_cost = cost
+								best = {"changed": lift != 0.0 or bend != LADDER_KNEE_BENDS[0] or slide != Vector3.ZERO or thigh != GRIP_THIGH[0], "pose": {"thigh": pose.thigh, "shin": pose.shin, "foot": pose.foot}, "slide": slide,
+									"fractions": {&"wrist": 0.85, &"thigh": thigh}, "lowest": lowest + shift.y, "reach": reach, "cost": cost, "bend": bend, "lift": lift}
+	return best
 
 
 static func clear_cache() -> void:

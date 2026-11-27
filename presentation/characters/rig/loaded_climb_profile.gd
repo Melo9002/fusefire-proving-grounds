@@ -9,10 +9,24 @@ extends Resource
 
 ## Seconds the transfer takes, each way (on the simulation clock).
 @export_range(0.2, 3.0, 0.05, "suffix:s") var transfer_seconds := 0.9
+## Which way the passenger's spine points (head end) and which way its belly faces, in the carrier's frame (x left, y up, z forward). The default is a back carry: the passenger upright on the carrier's back, leaning a little
+## to the carrier's right, its back against the carrier's back (belly facing away, so its head lolls away from the ladder), narrow enough to pass between a ladder's rails.
+@export var body_up := Vector3(-0.2, 1.0, 0.0)
+@export var body_face := Vector3(0.0, 0.0, -1.0)
+## An extra turn applied after the two above, degrees about the carrier's x, y and z (for fine tuning).
+@export var orientation_degrees := Vector3.ZERO
+
+
+## The turn of the ordinary carry's orientation that gives the passenger `body_up` and `body_face`, for a body whose ordinary carry mapping is `ordinary` (RescuePassenger.body_basis_in_carrier()).
+func orientation_from(ordinary: Basis) -> Basis:
+	var up := body_up.normalized()
+	var face := (body_face - up * body_face.dot(up)).normalized()
+	var wanted := Basis(up.cross(face).normalized(), up, face)   # the passenger's x, y and z in the carrier's frame
+	return Basis.from_euler(orientation_degrees * (PI / 180.0)) * wanted * ordinary.inverse()
+
+
 ## Where the passenger's abdomen lies in the climbing carry, from the carrier's neck bone, in the carrier's frame (x left, y up, z forward), reference body.
 @export var anchor_from_neck := Vector3(0.04, -0.12, -0.28)
-## The passenger's turn relative to the ordinary carry's orientation, about the carrier's x (pitch), y (yaw) and z (roll) axes. A negative roll lifts the head end and lowers the legs.
-@export var orientation_degrees := Vector3(0.0, 0.0, -55.0)
 ## Pose-table overrides for the climbing carry. The limbs' own hang is derived from the turn (they hang along the real down); anything named here replaces that.
 @export var pose_overrides := {}
 ## Which carrier hand lets go of the passenger to climb ("right" or "left"); the other keeps its hold throughout.

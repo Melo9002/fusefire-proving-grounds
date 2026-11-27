@@ -11,6 +11,9 @@ var blend := 0.0
 var target := 1.0
 ## The ladder's last free-hand target in the carrier's frame, kept so the hand can return to the passenger after the ladder has ended.
 var last_hand_local := Vector3.INF
+## How far the passenger's legs are drawn up for crossing a deck lip, and where that is heading (it follows the landing's phase and holds after the ladder ends, until the ordinary carry has returned).
+var tuck := 0.0
+var tuck_target := 0.0
 var last_hand_weight := 0.0
 
 

@@ -263,6 +263,8 @@ var carry_fit := {}
 var loaded_climb_profile := LoadedClimbProfile.new()
 ## The loaded-ladder presentation of the climb in progress (and of the restoring carry after it), else null. See LoadedLadderCarry.
 var loaded_ladder: LoadedLadderCarry
+## What the fit decided for the climbing carry of the passenger now carried (PassengerFit.solve_ladder).
+var loaded_fit := {}
 ## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's
 ## contact point, the intended palm centre and the intended finger and palm directions (world). Read by diagnostics.
 var carry_contact_report: Array = []
@@ -1651,11 +1653,19 @@ func _begin_loaded_ladder() -> void:
 	loaded_ladder.target = 1.0
 	if not carry_passenger.has_ladder_anchor():
 		var ratio := body_ratio()
-		var orientation := Basis.from_euler(profile.orientation_degrees * (PI / 180.0))
+		var orientation := profile.orientation_from(carry_passenger.body_basis_in_carrier())
 		# The limbs hang along the REAL down in the passenger's own frame once it is turned; the profile's own overrides win over that.
 		var hang := PassivePassengerPose.hanging_along(carry_passenger.body_basis_in_carrier(orientation).inverse() * Vector3.DOWN)
 		hang.merge(profile.pose_overrides, true)
-		carry_passenger.attach_ladder_anchor(skeleton, character_root, torso_bone_name, neck_bone_name, profile.anchor_from_neck * ratio, orientation, hang, profile.transfer_arc * ratio)
+		var base := PassivePassengerPose.DEFAULTS.duplicate()
+		base.merge(passenger_pose_overrides, true)
+		base.merge(hang, true)
+		# The body may be another size than the carrier's own: fit the climbing carry to this pair (bent knees, where it hangs on the back, where the supporting hand holds).
+		var fit := PassengerFit.solve_ladder(self, carry_passenger, base, orientation, CARRY_CONTACTS)
+		hang.merge(fit.pose, true)
+		carry_passenger.ladder_fractions = fit.fractions
+		loaded_fit = fit
+		carry_passenger.attach_ladder_anchor(skeleton, character_root, torso_bone_name, neck_bone_name, profile.anchor_from_neck * ratio + (fit.slide as Vector3), orientation, hang, profile.transfer_arc * ratio)
 
 
 ## The transfer's clock: once per frame with the presentation's own delta. The passenger moves between the two carries, and the state is dropped once the ordinary carry is back and no climb needs it.
@@ -1663,7 +1673,14 @@ func _advance_loaded_ladder(delta: float) -> void:
 	if loaded_ladder == null:
 		return
 	loaded_ladder.advance(delta)
+	# Crossing a deck lip the legs are drawn up (the phase the landing solver publishes), and let down again as the ordinary carry returns.
+	if ladder != null and ladder.pose != null and ladder.pose.landing_phase >= 0.0:
+		loaded_ladder.tuck_target = smoothstep(0.10, 0.34, ladder.pose.landing_phase)
+	elif ladder != null:
+		loaded_ladder.tuck_target = 0.0
+	loaded_ladder.tuck = move_toward(loaded_ladder.tuck, loaded_ladder.tuck_target, delta / 0.4)
 	if is_instance_valid(carry_passenger):
+		carry_passenger.set_landing_tuck(loaded_ladder.tuck)
 		carry_passenger.blend_ladder(loaded_ladder.eased())
 	if ladder == null and loaded_ladder.restored():
 		loaded_ladder = null

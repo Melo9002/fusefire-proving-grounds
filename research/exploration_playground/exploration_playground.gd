@@ -683,6 +683,8 @@ func _prompt_text() -> String:
 func interact() -> bool:
 	if menu_open or dead:
 		return false
+	if traversal.on_ladder:
+		return false   # nothing to do with the hands full on a ladder: a carried body is not put down mid-climb
 	if visual.is_carrying():
 		if carry.busy:
 			return false
