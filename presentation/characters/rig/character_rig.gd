@@ -1683,6 +1683,9 @@ func _advance_loaded_ladder(delta: float) -> void:
 		carry_passenger.set_landing_tuck(loaded_ladder.tuck)
 		carry_passenger.blend_ladder(loaded_ladder.eased())
 	if ladder == null and loaded_ladder.restored():
+		if is_instance_valid(carry_passenger):
+			carry_passenger.set_landing_tuck(0.0)   # nothing of the climbing carry is left on the body
+			carry_passenger.blend_ladder(0.0)
 		loaded_ladder = null
 
 

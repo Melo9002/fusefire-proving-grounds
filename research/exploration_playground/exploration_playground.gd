@@ -669,10 +669,10 @@ func can_interact() -> bool:
 func _prompt_text() -> String:
 	if dead or menu_open:
 		return ""
+	if traversal.can_mount():
+		return "Press E to climb"   # at the ladder a loaded carrier is offered the climb; stepping away from it offers the put-down
 	if visual.is_carrying():
 		return "" if carry.busy else "Press E to put the body down"
-	if traversal.can_mount():
-		return "Press E to climb"
 	if carry.can_pick_up():
 		return "Press E to lift the body"
 	if can_interact() and not cover.active and not traversal.on_ladder:
@@ -685,13 +685,13 @@ func interact() -> bool:
 		return false
 	if traversal.on_ladder:
 		return false   # nothing to do with the hands full on a ladder: a carried body is not put down mid-climb
+	if traversal.can_mount():
+		traversal.mount()
+		return true
 	if visual.is_carrying():
 		if carry.busy:
 			return false
 		carry.put_down()
-		return true
-	if traversal.can_mount():
-		traversal.mount()
 		return true
 	if carry.can_pick_up():
 		carry.pick_up()
