@@ -1,6 +1,19 @@
 class_name TacticalFeedbackText
 extends RefCounted
 
+static func movement_rejection(validation: ActionValidationResult, blocker: TacticalUnit = null) -> String:
+	if not validation: return "Cannot move there."
+	match validation.code:
+		&"occupied":
+			if is_instance_valid(blocker) and blocker.is_visible_in_tree():
+				return "Destination occupied by %s." % blocker.get_display_name()
+			return "Cannot stand here."
+		&"stale_revision": return "Battle state changed. Review the move again."
+		&"actor_missing", &"actor_defeated", &"wrong_activation": return "Unit cannot move now."
+		&"action_busy": return "Wait for the current action."
+		&"battle_unavailable", &"service_unavailable": return "Movement is unavailable."
+	return validation.message
+
 static func chance_label(chance: int, legal := true) -> String:
 	if not legal: return "Unavailable"
 	if chance >= 100: return "Guaranteed"

@@ -6,6 +6,8 @@ class_name GridManager
 @export var map_floor: CSGBox3D
 var map_data := MapData.new()
 var occupancy_map: Dictionary = {}
+## Presentation caches can observe live board changes without changing the action revision.
+var occupancy_revision := 0
 
 signal unit_registered(unit: TacticalUnit, grid_pos: Vector3i)
 signal unit_unregistered(unit: TacticalUnit, grid_pos: Vector3i)
@@ -13,6 +15,7 @@ signal unit_unregistered(unit: TacticalUnit, grid_pos: Vector3i)
 func register_unit(unit: TacticalUnit, grid_pos: Vector3i) -> bool:
 	if map_data.surface_placement_enabled and not can_unit_occupy_cell(unit, grid_pos): return false
 	occupancy_map[grid_pos] = unit
+	occupancy_revision += 1
 	unit.grid_position = grid_pos
 	if unit.visual_adapter:
 		unit.visual_adapter.presentation_grid = self
@@ -24,6 +27,7 @@ func unregister_unit_at(grid_pos: Vector3i) -> void:
 	if occupancy_map.has(grid_pos):
 		var unit = occupancy_map[grid_pos]
 		occupancy_map.erase(grid_pos)
+		occupancy_revision += 1
 		unit_unregistered.emit(unit, grid_pos)
 
 ## Reserve the destination before animation; occupancy never changes terrain.
@@ -31,6 +35,7 @@ func update_unit_position(unit: TacticalUnit, from_grid: Vector3i, to_grid: Vect
 	if occupancy_map.get(from_grid) == unit:
 		occupancy_map.erase(from_grid)
 	occupancy_map[to_grid] = unit
+	occupancy_revision += 1
 	unit.grid_position = to_grid
 
 func get_unit_grid(unit: TacticalUnit) -> Vector3i:

@@ -1,6 +1,8 @@
 extends Node3D
 class_name MouseRaycaster
 signal floor_clicked(raw_position: Vector3)
+signal rejected_floor_clicked(cell: Vector3i)
+signal inspected_floor_changed
 signal unit_clicked(unit: TacticalUnit)
 
 @export var camera: Camera3D
@@ -15,6 +17,8 @@ var _surface_index := 0
 var _surface_cells: Array[Vector3i] = []
 var _surface_visibility: Array[bool] = []
 var _preferred_floor_height := INF
+## Diagnostic only. This hit never participates in floor cycling or unit picking.
+var rejected_floor_hit: Dictionary = {}
 var _floor_hint: Label
 var _level_panel: PanelContainer
 var _level_label: Label
@@ -66,6 +70,7 @@ func _inspect_level(height: float) -> void:
 	rig.inspect_floor(point)
 	rig._update_camera_occlusion(0.0)
 	_update_level_panel()
+	inspected_floor_changed.emit()
 
 func _update_level_panel() -> void:
 	var rig := camera.get_parent() as TacticalCamera if camera else null
@@ -139,14 +144,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
 			return
-		var floor_hit = get_floor_raycast_result()
-		var clicked_unit = get_unit_under_mouse()
+		var floor_hit := get_floor_raycast_result(event.position)
+		var rejected := rejected_floor_hit
+		var clicked_unit := get_unit_under_mouse(event.position)
 		if clicked_unit:
 			unit_clicked.emit(clicked_unit)
 			return
 
 		if not floor_hit.is_empty():
 			floor_clicked.emit(floor_hit.position)
+		elif not rejected.is_empty():
+			rejected_floor_clicked.emit(rejected.grid_position)
 	elif event is InputEventMouseMotion and _left_pressed:
 		if event.position.distance_to(_left_press_position) >= click_drag_threshold:
 			_left_dragged = true
@@ -185,14 +193,17 @@ func get_floor_raycast_result(screen_position := Vector2.INF) -> Dictionary:
 func cycle_surface(direction: int, screen_position := Vector2.INF) -> void:
 	get_floor_raycast_result(screen_position)
 	if not _surface_cells.is_empty():
+		var previous := _surface_index
 		_surface_index = posmod(_surface_index + direction, _surface_cells.size())
 		var rig := camera.get_parent() as TacticalCamera if camera else null
 		if rig and _available_levels().size() > 1:
 			rig.inspect_floor(grid_manager.get_cell_data(_surface_cells[_surface_index]).world_position)
 			rig._update_camera_occlusion(0.0)
+		if _surface_index != previous: inspected_floor_changed.emit()
 
 func get_floor_candidates(screen_position: Vector2) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
+	rejected_floor_hit = {}
 	if not grid_manager or not get_viewport().get_visible_rect().has_point(screen_position):
 		return candidates
 	if not camera:
@@ -220,7 +231,12 @@ func get_floor_candidates(screen_position: Vector2) -> Array[Dictionary]:
 			continue
 		var coordinate := grid_manager.world_to_grid(result.position)
 		var cell := grid_manager.get_cell_data(coordinate)
-		if not cell or not cell.walkable or not cell.can_stop or seen.has(coordinate):
+		if not cell or not cell.walkable or not cell.can_stop:
+			var collider := result.get("collider") as Node3D
+			if rejected_floor_hit.is_empty() and (not collider or collider.is_visible_in_tree()):
+				rejected_floor_hit = {"grid_position": coordinate, "position": result.position}
+			continue
+		if seen.has(coordinate):
 			continue
 		seen[coordinate] = true
 		result.grid_position = coordinate

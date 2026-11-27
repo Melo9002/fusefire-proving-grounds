@@ -256,6 +256,7 @@
   "surface_cylinder_test": {"sub": ["core", "movement"], "scope": "unit", "fast": true},
   "surface_fit_demo_test": {"sub": ["core", "movement"], "scope": "component", "fast": true},
   "surface_navigation_test": {"sub": ["core", "movement"], "scope": "integration", "crit": "critical", "contracts": ["movement"], "smoke": true, "fast": true},
+  "movement_readability_test": {"sub": ["movement", "actions", "ui"], "scope": "battle", "crit": "critical", "contracts": ["movement", "presentation-sync"]},
   "surface_placement_test": {"sub": ["core", "movement"], "scope": "integration", "fast": true},
   "surface_rollout_test": {"sub": ["movement"], "scope": "battle"},
   "surface_vault_test": {"sub": ["movement"], "scope": "battle", "crit": "critical", "contracts": ["movement"]},

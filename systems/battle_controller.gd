@@ -97,6 +97,9 @@ const NO_PREVIEW_CELL := Vector3i(-1, -1, -1)
 var _preview_cell := NO_PREVIEW_CELL
 var _pinned_destination := NO_PREVIEW_CELL
 var _preview_query: MoveQueryResult
+var _hover_query: MoveQueryResult
+var _hover_query_key: Array = []
+var _movement_zone_key: Array = []
 var _preview_options: Array[Dictionary] = []
 var _preview_target: TacticalUnit
 
@@ -112,6 +115,10 @@ var is_move_mode_active: bool = false:
 			move_mode_toggled.emit(is_move_mode_active)
 			if not is_move_mode_active:
 				_clear_destination_preview()
+				_hover_query = null
+				_hover_query_key.clear()
+				_movement_zone_key.clear()
+				_set_tactical_preview("")
 				path_visualizer.clear_path()
 				path_visualizer.clear_range_zone()
 				cover_visualizer.clear()
@@ -156,6 +163,8 @@ func _ready() -> void:
 	turn_manager.active_unit_changed.connect(_on_active_unit_changed)
 	turn_manager.player_actions_exhausted.connect(_on_player_actions_exhausted)
 	mouse_raycaster.floor_clicked.connect(_on_floor_clicked)
+	mouse_raycaster.rejected_floor_clicked.connect(_on_rejected_floor_clicked)
+	mouse_raycaster.inspected_floor_changed.connect(_on_inspected_floor_changed)
 	mouse_raycaster.unit_clicked.connect(_on_unit_clicked)
 
 func initialize_battle(prebuilt_map: MapData = null, mission: MissionDefinition = null) -> bool:
@@ -384,27 +393,47 @@ func _collect_guard_coverage(revision := -1) -> void:
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
 	var start_cell := grid_manager.get_unit_grid(unit)
 	var movement_budget := unit.stats.speed if unit.stats else 0
-	var reachable := pathfinder.get_reachable_cells(start_cell, movement_budget)
+	var targeted := target_cell != NO_PREVIEW_CELL
+	if targeted:
+		var cell := grid_manager.get_cell_data(target_cell)
+		if not cell: return _move_denied(&"invalid_destination", "No destination here.")
+		if target_cell == start_cell: return _move_denied(&"already_there", "Already here.")
+		if cell.walkable and not cell.can_stop:
+			return _move_denied(&"transit_only", "Cannot stop here.")
+		if not cell.walkable or not cell.can_stop:
+			return _move_denied(&"unsupported" if not cell.support_surface else &"cannot_stand", "Cannot stand here.")
+		var blocker := grid_manager.get_unit_at(target_cell)
+		if is_instance_valid(blocker):
+			return _move_denied(&"occupied", "Destination occupied.", blocker.tactical_id)
+		if not grid_manager.can_unit_occupy_cell(unit, target_cell):
+			return _move_denied(&"cannot_stand", "Cannot stand here.")
+	var frontier: Variant = {} if targeted and grid_manager.map_data.surface_placement_enabled else null
+	var reachable := pathfinder.get_reachable_cells(start_cell, movement_budget, frontier)
+	if targeted and not reachable.has(target_cell):
+		if frontier != null and frontier.has(target_cell):
+			return _move_denied(&"beyond_movement_range", "Beyond movement range.")
+		if not pathfinder.grid_to_id_map.has(target_cell) or (frontier != null and frontier.is_empty()):
+			return _move_denied(&"path_unavailable", "No available route.")
+		return _move_denied(&"unreachable", "No route within movement range.")
 	var legal_destinations: Array[Vector3i] = []
 	for candidate in reachable:
 		if grid_manager.can_unit_occupy_cell(unit, candidate):
 			legal_destinations.append(candidate)
-	if target_cell == Vector3i(-1, -1, -1):
+	if not targeted:
 		return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations}
-	if not reachable.has(target_cell):
-		return {"accepted": false, "code": "unreachable", "message": "Destination is unreachable"}
-	if not grid_manager.can_unit_occupy_cell(unit, target_cell):
-		var blocker := grid_manager.get_unit_at(target_cell)
-		return {"accepted": false, "code": "occupied", "message": "Destination cannot be occupied", "blocking_actor_id": String(blocker.tactical_id) if is_instance_valid(blocker) else ""}
 	var path := pathfinder.calculate_3d_path(start_cell, target_cell)
 	if path.is_empty():
-		return {"accepted": false, "code": "path_unavailable", "message": "No path reaches the destination"}
-	if pathfinder.get_path_cost(path, world_to_grid) > movement_budget:
-		return {"accepted": false, "code": "unreachable", "message": "Safe route exceeds movement budget"}
+		return _move_denied(&"path_unavailable", "No available route.")
+	var path_cost := pathfinder.get_path_cost(path, world_to_grid)
+	if path_cost > movement_budget:
+		return _move_denied(&"beyond_movement_range", "Beyond movement range.")
 	var path_cells: Array[Vector3i] = []
 	for point in path:
 		path_cells.append(world_to_grid(point))
-	return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations, "path_cells": path_cells, "path": path, "path_cost": pathfinder.get_path_cost(path, world_to_grid), "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/tactical/tactical_pose_context.gd").path_poses(grid_manager, path)}
+	return {"accepted": true, "movement_budget": movement_budget, "legal_destinations": legal_destinations, "path_cells": path_cells, "path": path, "path_cost": path_cost, "presentation_path": _build_movement_path(unit, path), "visual_segments": preload("res://presentation/tactical/tactical_pose_context.gd").path_poses(grid_manager, path)}
+
+func _move_denied(code: StringName, message: String, blocker := &"") -> Dictionary:
+	return {"accepted": false, "code": code, "message": message, "blocking_actor_id": blocker}
 
 func _on_movement_committed(unit: TacticalUnit, start_cell: Vector3i, target_cell: Vector3i) -> void:
 	unit_moved.emit(unit, start_cell, target_cell)
@@ -502,11 +531,18 @@ func _process(_delta: float) -> void:
 			grid_cursor.clear_hover()
 		else:
 			grid_cursor.update_hover_position(floor_hit.position)
-	if not is_move_mode_active or not is_instance_valid(tactical_unit) or tactical_unit.is_moving:
+	if not is_move_mode_active:
 		path_visualizer.clear_path()
 		_movement_feedback_key = ""
+	elif not is_instance_valid(tactical_unit) or tactical_unit.is_moving or is_action_in_progress:
+		_clear_destination_preview()
+		path_visualizer.clear_path()
+		_set_tactical_preview("")
 	else:
-		_update_movement_preview(floor_hit)
+		if _movement_zone_key != _move_view_key():
+			update_unit_movement_zone()
+		var movement_hit: Dictionary = mouse_raycaster.rejected_floor_hit if floor_hit.is_empty() and mouse_raycaster else floor_hit
+		_update_movement_preview(movement_hit)
 
 	if shot_trajectory_visualizer and (not is_move_mode_active or _movement_feedback_key.is_empty()):
 		shot_trajectory_visualizer.clear_destination_options()
@@ -531,23 +567,31 @@ func _toggle_destination_inspection() -> bool:
 
 func _update_movement_preview(floor_hit: Dictionary) -> void:
 	var pinned := _pinned_destination != NO_PREVIEW_CELL
-	var hover_grid := _pinned_destination if pinned else world_to_grid(floor_hit.position) if not floor_hit.is_empty() else NO_PREVIEW_CELL
-	if current_movement_zone.has(hover_grid):
-		var query := query_move(tactical_unit, hover_grid)
-		if query.is_legal() and query.path.size() > 1:
-			path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
+	var hover_grid := _pinned_destination if pinned else _move_hit_cell(floor_hit)
+	if hover_grid != NO_PREVIEW_CELL and is_instance_valid(tactical_unit):
+		var key := _move_view_key()
+		key.append(hover_grid)
+		if _hover_query == null or key != _hover_query_key:
+			_hover_query = query_move(tactical_unit, hover_grid)
+			_hover_query_key = key
+		var query := _hover_query
+		if not query.is_legal():
+			_show_move_rejection(query)
+			return
+		if query.path.size() > 1:
 			var opponents: Array[TacticalUnit] = []
 			opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
 			var known := PackedStringArray()
 			for unit in opponents:
 				if is_instance_valid(unit) and unit.is_visible_in_tree() and FactionRules.are_hostile(tactical_unit.faction, unit.faction):
 					known.append(String(unit.tactical_id))
-			var key := "%s:%s:%d:%s" % [tactical_unit.tactical_id, hover_grid, action_service.state_revision, ",".join(known)]
-			var refreshed := key != _movement_feedback_key
+			var known_key := "visible:" + ",".join(known)
+			var refreshed := _preview_query != query or known_key != _movement_feedback_key
 			if refreshed:
-				_movement_feedback_key = key
+				_movement_feedback_key = known_key
 				_preview_cell = hover_grid
 				_preview_query = query
+				path_visualizer.draw_path(query.path, Color(0.0, 0.5, 1.0, 0.4))
 				_preview_options = TacticalFeedbackText.movement_options(query, tactical_unit, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
 				if not is_instance_valid(movement_ghost):
 					movement_ghost = MovementGhost.new()
@@ -564,6 +608,29 @@ func _update_movement_preview(floor_hit: Dictionary) -> void:
 	_clear_destination_preview()
 	_set_tactical_preview("")
 
+func _move_hit_cell(hit: Dictionary) -> Vector3i:
+	if hit.is_empty(): return NO_PREVIEW_CELL
+	if hit.has("grid_position"): return hit.grid_position
+	return world_to_grid(hit.position)
+
+func _move_view_key() -> Array:
+	var stats := tactical_unit.stats
+	return [tactical_unit.tactical_id, tactical_unit.grid_position, stats.current_ap if stats else -1,
+		stats.speed if stats else 0, action_service.state_revision if action_service else -1, grid_manager.occupancy_revision]
+
+func _show_move_rejection(query: MoveQueryResult) -> void:
+	_clear_destination_preview(true)
+	path_visualizer.clear_path()
+	var blocker := action_service.actor_registry.resolve(query.blocking_actor_id) if action_service and not query.blocking_actor_id.is_empty() else null
+	_set_tactical_preview(TacticalFeedbackText.movement_rejection(query.validation, blocker))
+
+func _on_inspected_floor_changed() -> void:
+	if not is_move_mode_active: return
+	_clear_destination_preview()
+	_hover_query = null
+	path_visualizer.clear_path()
+	_set_tactical_preview("")
+
 func _update_destination_inspection(target: TacticalUnit, force := false) -> void:
 	if not is_instance_valid(target) or not target.is_visible_in_tree() or not target.stats or target.stats.is_defeated:
 		target = null
@@ -578,14 +645,16 @@ func _update_destination_inspection(target: TacticalUnit, force := false) -> voi
 		+ "\nDestination pinned · hover a hostile · V unpins")
 	if shot_trajectory_visualizer: shot_trajectory_visualizer.clear_destination_options()
 
-func _clear_destination_preview() -> void:
+func _clear_destination_preview(keep_ghost := false) -> void:
 	_movement_feedback_key = ""
 	_preview_cell = NO_PREVIEW_CELL
 	_pinned_destination = NO_PREVIEW_CELL
 	_preview_query = null
 	_preview_options.clear()
 	_preview_target = null
-	if is_instance_valid(movement_ghost): movement_ghost.clear()
+	if is_instance_valid(movement_ghost):
+		if keep_ghost: movement_ghost.conceal()
+		else: movement_ghost.clear()
 	if is_instance_valid(shot_trajectory_visualizer): shot_trajectory_visualizer.clear_destination_options()
 
 func _set_tactical_preview(text: String, tint := Color.WHITE) -> void:
@@ -644,6 +713,9 @@ func _on_unit_clicked(unit: TacticalUnit) -> void:
 		is_move_mode_active = false
 		is_attack_mode_active = false
 		is_shield_mode_active = false
+	elif is_move_mode_active and is_instance_valid(tactical_unit) and _pinned_destination == NO_PREVIEW_CELL:
+		var query := query_move(tactical_unit, unit.grid_position)
+		if not query.is_legal(): _show_move_rejection(query)
 
 func _on_floor_clicked(raw_position: Vector3) -> void:
 	if is_action_in_progress or not is_move_mode_active or not is_instance_valid(tactical_unit):
@@ -651,13 +723,13 @@ func _on_floor_clicked(raw_position: Vector3) -> void:
 
 	var clicked_grid = world_to_grid(raw_position)
 	if _pinned_destination != NO_PREVIEW_CELL and clicked_grid != _pinned_destination: return
-	if not current_movement_zone.has(clicked_grid):
-		return
-
-	if not query_move(tactical_unit, clicked_grid).is_legal():
-		return
-
 	await confirm_player_action(&"move", tactical_unit, null, clicked_grid)
+
+func _on_rejected_floor_clicked(cell: Vector3i) -> void:
+	if not is_move_mode_active or is_action_in_progress or not is_instance_valid(tactical_unit) or _pinned_destination != NO_PREVIEW_CELL:
+		return
+	var query := query_move(tactical_unit, cell)
+	if not query.is_legal(): _show_move_rejection(query)
 
 func _on_turn_phase_changed(_new_phase: TurnManager.TurnPhase) -> void:
 	var is_player_control = is_current_phase_manually_controlled()
@@ -693,6 +765,7 @@ func update_unit_movement_zone() -> void:
 		return
 
 	var query := query_move(tactical_unit)
+	_movement_zone_key = _move_view_key()
 	current_movement_zone.clear()
 	if query.is_legal():
 		current_movement_zone.assign(query.legal_destination_cells)
@@ -1018,9 +1091,11 @@ func confirm_player_action(kind: StringName, actor: TacticalUnit, target: Tactic
 			text = "%s: skip %d remaining AP. Active Shield is kept; Aim is canceled." % [actor.tactical_id, actor.stats.current_ap]
 		&"move":
 			var query := query_move(actor, destination)
-			if not query.is_legal(): return
+			if not query.is_legal():
+				_show_move_rejection(query)
+				return
 			# A click may arrive before the next hover frame. Freeze the chosen preview.
-			_update_movement_preview({"position": grid_manager.grid_to_world(destination)})
+			_update_movement_preview({"grid_position": destination})
 			var opponents: Array[TacticalUnit] = []
 			opponents.assign(turn_manager.enemy_units + turn_manager.player_units + turn_manager.allied_units)
 			text = TacticalFeedbackText.movement(query, actor, opponents, grid_manager, supply_points_enabled, shield_enabled, aim_enabled)
@@ -1034,7 +1109,13 @@ func confirm_player_action(kind: StringName, actor: TacticalUnit, target: Tactic
 		var current_actor := action_service.actor_registry.resolve(actor_id)
 		var current_target := action_service.actor_registry.resolve(target_id) if not target_id.is_empty() else null
 		if action_service.state_revision != revision or not is_instance_valid(current_actor) or turn_manager.active_unit != current_actor:
-			_set_tactical_preview("Battle state changed. Review the action again.")
+			if kind == &"move":
+				_clear_destination_preview()
+				_hover_query = null
+				path_visualizer.clear_path()
+				_set_tactical_preview("Battle state changed. Review the move again.")
+			else:
+				_set_tactical_preview("Battle state changed. Review the action again.")
 			return
 		if kind in [&"attack", &"shield"] and not is_instance_valid(current_target):
 			_set_tactical_preview("Target is no longer available. Review the action again.")
@@ -1044,7 +1125,12 @@ func confirm_player_action(kind: StringName, actor: TacticalUnit, target: Tactic
 			&"aim": await try_aim(current_actor)
 			&"shield": await try_shield(current_actor, current_target)
 			&"wait": await try_end_unit_turn(current_actor, "Skipped manually by the player.")
-			&"move": await try_move(current_actor, destination)
+			&"move":
+				var query := query_move(current_actor, destination)
+				if not query.is_legal():
+					_show_move_rejection(query)
+					return
+				await try_move(current_actor, destination)
 	await _confirmation_dialog().request("Confirm " + ("Skip" if kind == &"wait" else String(kind).capitalize()), text, commit, kind == &"move")
 
 func _confirmation_dialog() -> BattleActionConfirmation:

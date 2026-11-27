@@ -36,7 +36,13 @@ func show_destination(actor: TacticalUnit, cell: Vector3i, grid: GridManager) ->
 	model.global_position += destination - (actor.global_position - Vector3.UP * actor.standing_height)
 	# This is the same arrival/idle selection used by the real unit, including cover.
 	model.present_idle()
+	process_mode = Node.PROCESS_MODE_INHERIT
 	show()
+
+## Keep one rig during Move hover. Cancel and selection changes still free it.
+func conceal() -> void:
+	hide()
+	process_mode = Node.PROCESS_MODE_DISABLED
 
 func _tint(node: Node, material: Material) -> void:
 	if node is MeshInstance3D:
