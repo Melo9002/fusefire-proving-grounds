@@ -33,7 +33,9 @@ func ladder_foot() -> Vector3:
 
 
 func can_mount() -> bool:
-	if on_ladder or ctx.dead or ctx.visual.is_carrying() or ctx.cover.active:
+	if on_ladder or ctx.dead or ctx.cover.active or ctx.carry.busy:
+		return false
+	if ctx.visual.is_carrying() and not ctx.visual.supports_loaded_ladder():
 		return false
 	var p: Vector3 = ctx.body.global_position
 	if absf(p.x - float(ladder.x)) >= MOUNT_RANGE:
@@ -58,6 +60,20 @@ func mount() -> void:
 	on_ladder = true
 	_top_out_time = TOP_OUT_SECONDS if _entering_from_top else -1.0
 	ctx.visual.set_climb_height(climbed, float(ladder.z) - z, 1.0 if _entering_from_top else 0.0)
+
+
+## Stands the character at the foot of the ladder, or on the tower at the head of it, facing the rungs: the two approaches a loaded climb is tried from. Not while on the ladder or in the middle of an interaction.
+func place_at_approach(top: bool) -> bool:
+	if on_ladder or ctx.dead or ctx.carry.busy:
+		return false
+	ctx.body.velocity = Vector3.ZERO
+	if top:
+		ctx.body.global_position = Vector3(float(ladder.x), float(ladder.length), float(ladder.top_z))
+		ctx.visual.reset_motion(PI)   # facing the way the descent starts: back toward the rungs
+	else:
+		ctx.body.global_position = ladder_foot()
+		ctx.visual.reset_motion(0.0)
+	return true
 
 
 func dismount_bottom() -> void:

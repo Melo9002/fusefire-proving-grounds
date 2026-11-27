@@ -11,8 +11,6 @@ extends RefCounted
 
 const RIG_SCENE := "res://art/characters/%s/runtime/%s_rig.tscn"
 const CHARACTER_ROOT := "res://art/characters"
-## Used only when the character folder cannot be listed (an exported build).
-const FALLBACK_KEYS: Array[StringName] = [&"mira_0", &"small_mira_0"]
 
 static var _cache := {}
 
@@ -32,7 +30,7 @@ static func from_rig(rig: CharacterRig) -> PassengerDefinition:
 	return definition
 
 
-## The passenger for the character with this id (`mira_0`, `small_mira_0`, any folder under art/characters with a runtime rig scene). Cached; null when there is no such character.
+## The passenger for the character with this id (any folder under art/characters that has a runtime rig scene). Cached; null when there is no such character.
 static func for_character(id: StringName) -> PassengerDefinition:
 	if _cache.has(id):
 		return _cache[id]
@@ -47,6 +45,10 @@ static func for_character(id: StringName) -> PassengerDefinition:
 
 
 ## The character id a model path belongs to (`res://art/characters/<id>/...`), or `fallback`.
+static func id_from_path(path: String, fallback := &"") -> StringName:
+	return _id_of(path, fallback)
+
+
 static func _id_of(path: String, fallback: StringName) -> StringName:
 	var parts := path.split("/")
 	var at := parts.find("characters")
@@ -65,7 +67,7 @@ static func from_rig_scene(rig_scene: PackedScene) -> PassengerDefinition:
 	return definition
 
 
-## Every character with a runtime rig scene, in a stable order.
+## Every character with a runtime rig scene, in a stable order (empty where the folder cannot be listed, an exported build: a host then names its own characters).
 static func known_characters() -> Array[StringName]:
 	var found: Array[StringName] = []
 	var directory := DirAccess.open(CHARACTER_ROOT)
@@ -73,8 +75,6 @@ static func known_characters() -> Array[StringName]:
 		for folder in directory.get_directories():
 			if ResourceLoader.exists(RIG_SCENE % [folder, folder]):
 				found.append(StringName(folder))
-	if found.is_empty():
-		found.assign(FALLBACK_KEYS)
 	found.sort()
 	return found
 

@@ -1609,6 +1609,11 @@ func end_carry(leave_passenger := false) -> void:
 	_settle_rescue(PresentationTypes.Outcome.INTERRUPTED)   # last, once the rig is clean; a no-op when the operation had already settled
 
 
+## Whether this rig can present a climb with a passenger (the loaded ladder carry): it needs the carry and the ladder stack both. A host opts a climb in; the tactical host does not (its loaded ladder stays the fallback).
+func supports_loaded_ladder() -> bool:
+	return false
+
+
 func carry_contacts_active() -> bool:
 	return carry_contacts_enabled and is_instance_valid(carry_passenger)
 

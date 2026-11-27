@@ -380,6 +380,11 @@ func is_carrying() -> bool:
 	return is_instance_valid(rig.carry_passenger)
 
 
+## Whether a climb while carrying is presented (the shared loaded-ladder presentation) rather than refused. Hosts decide what to do with a loaded character at a ladder; this says whether the rig can show it.
+func supports_loaded_ladder() -> bool:
+	return rig.supports_loaded_ladder()
+
+
 # ------------------------------------------------------------------ per frame
 
 func _process(delta: float) -> void:

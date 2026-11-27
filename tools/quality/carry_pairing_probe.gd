@@ -25,6 +25,8 @@ func _arguments() -> Dictionary:
 func _run() -> void:
 	var args := _arguments()
 	var characters := PassengerDefinition.known_characters()
+	if characters.is_empty():
+		characters.assign([&"mira_0", &"small_mira_0"])
 	var report: Array[Dictionary] = []
 	for carrier in characters:
 		for passenger in characters:

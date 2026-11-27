@@ -36,6 +36,8 @@ func _run() -> void:
 	root.size = Vector2i(int(_args.width), int(_args.height))
 	await _frames(3)
 	var characters := PassengerDefinition.known_characters()
+	if characters.is_empty():
+		characters.assign([&"mira_0", &"small_mira_0"])
 	var carriers: Array = characters if String(_args.carriers).is_empty() else String(_args.carriers).split(",")
 	var passengers: Array = characters if String(_args.passengers).is_empty() else String(_args.passengers).split(",")
 	var views: Array = VIEWS.keys() if String(_args.views).is_empty() else String(_args.views).split(",")
