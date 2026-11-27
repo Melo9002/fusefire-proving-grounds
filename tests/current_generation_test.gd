@@ -94,7 +94,9 @@ func _run() -> void:
 	check(level.battle_initialization_succeeded, "Actual Service Depot battle initializes: %s" % [level.battle_initialization_errors])
 	check(level.active_generated_map != null and level.active_generated_map.source_kind == Layout.DEPOT_SOURCE, "Tactical and visual identity agree")
 	check(level.get_node_or_null("GeneratedTerrain/DepotServiceSpine") != null, "Accepted authored plot renders through the real presentation path")
-	check(StringName(level._replay_configuration.get("battlefield_id", "")) == Catalog.SERVICE_DEPOT, "Replay records stable current identity")
+	check(StringName(level._replay_configuration.get("battlefield_id", "")) == Catalog.CONTEXTUAL_DEPOT
+		and level.active_generated_map.contextual_discovery_enabled,
+		"Replay records the exact contextual Depot variant selected by the setup defaults")
 	check(not level._replay_configuration.get("content_manifest", {}).is_empty(), "Replay records exact accepted placements")
 	var stale_config := BattleConfiguration.new()
 	stale_config.generated_map = true

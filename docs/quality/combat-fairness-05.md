@@ -1,10 +1,10 @@
 # Package 05 — Combat fairness and counterplay
 
-Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `codex/asymmetric-line-of-fire`. The earlier Package 03A and 03B checkpoints are `79d9c71` and `e47acf8`. The three narrow lanes from the first Depot match and a fourth from the second match disappear under Head/core and Symmetrical. The two policies produced different AI behavior in a matched cautious Depot battle. Both belong in the human comparison. Legacy remains the default.
+Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `codex/asymmetric-line-of-fire`. The earlier Package 03A and 03B checkpoints are `79d9c71` and `e47acf8`. The three narrow lanes from the first Depot match and a fourth from the second match disappear under Head/core and Symmetrical. The two policies produced different AI behavior in a matched cautious Depot battle. Both belong in the human comparison. Combined is the default for new matches started from Match Setup after the owner playtest.
 
 ## Play the comparison
 
-**Match Setup → Combat** contains the engagement rule, contextual firing and Guard threshold. **Battlefield** owns the map and seed, and **Settings** owns the commander and AI difficulty. Selecting a different tab keeps the same setup. The briefing reflects the settings that **Start Battle** will use. A fresh setup uses Legacy, contextual firing off and Guard's first legal shot.
+**Match Setup → Combat** contains the engagement rule, contextual firing and Guard threshold. **Battlefield** owns the map and seed, and **Settings** owns the commander and AI difficulty. Selecting a different tab keeps the same setup. The briefing reflects the settings that **Start Battle** will use. A fresh setup uses Combined, contextual firing on where supported, and Guard's first legal shot.
 
 Choose **Service Depot — Crossfire** or **Freight Yard — Pressure** under **Combat** to load a preset into those shared controls. Both presets start with a Hard 2v2 at seed 16, Cautious enemy, Symmetrical, contextual firing on and 15% Guard. You can edit any setting before starting. To reproduce the Head/core showcase, pick Crossfire and then select Head/core. **F3 → Runtime** confirms the combat settings in the live battle.
 
@@ -96,6 +96,8 @@ Depot C repeated the same outcome with side steps off and with Guard B at 15%. I
 In the Depot C stagnation, the log repeatedly reported moves outside the route or below the movement value threshold. A trial widening the existing AI's blocked-origin short-plan scan to regular mutual lanes produced the same Depot action counts and terminal state. The trial was removed. The previous Strange replay also had a final hostile who waited while potentially useful moves existed outside the preferred route, under Legacy. These observations identify route and exposure scoring as a follow-up for further reproduction. They cannot identify from outcome alone the best repair or establish that the AI was immobile. [Stress tool](evidence/combat-policy-05/stress.gd) · [AI movement decisions](../../units/ai_controller.gd).
 
 ## Verification and what to play first
+
+The owner requested Combined, contextual firing on and first-legal Guard as the setup defaults. They also reported winning every playtest match. The match conditions and causes are still unverified, so AI challenge remains a separate investigation.
 
 Play **Symmetrical first** in Depot Crossfire, then rerun the same deployment with **Head/core**, keeping Guard and side steps identical. C directly solves the unwanted one-way affordance. During comparison, watch for a clean-looking target that cannot return fire, and for both sides waiting behind cover. B is the stronger alternative on the current automated pace evidence. It preserves some directional advantages, including one-way central exposures, and removes every examined narrow incident. Combined loses mutual lanes over C and has shown no pacing advantage in this seed. None of these results substitutes for human gameplay approval. Cover and flanking still matter where the terrain produces mutual geometry with unequal protection, accuracy or range. Strict symmetry intentionally removes a flank's ability to shoot someone whose return geometry is entirely blocked.
 

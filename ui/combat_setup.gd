@@ -15,11 +15,12 @@ func _ready() -> void:
 		["Head/core — Central exposure", CombatRules.EngagementPolicy.HEAD_CORE],
 		["Symmetrical — Mutual firing lanes", CombatRules.EngagementPolicy.SYMMETRIC],
 		["Combined — Head/core and symmetry", CombatRules.EngagementPolicy.HEAD_CORE_SYMMETRIC],
-	], CombatRules.EngagementPolicy.LEGACY)
+	], CombatRules.EngagementPolicy.HEAD_CORE_SYMMETRIC)
 	add_child(HSeparator.new())
 
 	_contextual = CheckButton.new()
 	_contextual.text = "Contextual firing"
+	_contextual.button_pressed = true
 	_contextual.toggled.connect(func(_enabled: bool): changed.emit())
 	add_child(_contextual)
 

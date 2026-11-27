@@ -53,8 +53,9 @@ func _run() -> void:
 	var mission_tab := setup._setup_tabs.get_tab_control(0)
 	check(mission_tab.find_child("EngagementSetup", true, false) == null,
 		"The Mission tab has no duplicate combat controls")
-	check(setup.deployment_summary.text.contains("Engagement: Legacy") and setup.deployment_summary.text.contains("Contextual firing: Off"),
-		"The shared briefing shows regular combat defaults")
+	check(setup.deployment_summary.text.contains("Engagement: Head/core + symmetrical")
+		and setup.deployment_summary.text.contains("Contextual firing: On") and setup.deployment_summary.text.contains("Guard: First legal"),
+		"The shared briefing shows Combined, side steps on, and first-legal Guard")
 	setup.start_button.pressed.emit()
 	var deadline := Time.get_ticks_msec() + 30000
 	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
@@ -63,11 +64,13 @@ func _run() -> void:
 	check(battle != null, "The battle starts")
 	if battle:
 		for i in 10: await process_frame
-		check(battle.battle_controller.grid_manager.map_data.engagement_policy == CombatRules.EngagementPolicy.LEGACY,
-			"Start Battle uses the regular Legacy policy")
-		check(not battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
-			and battle._replay_recorder.recording.configuration.battlefield_id == BattlefieldCatalog.SERVICE_DEPOT,
-			"Regular Depot uses its original recorded identity with contextual firing off")
+		check(battle.battle_controller.grid_manager.map_data.engagement_policy == CombatRules.EngagementPolicy.HEAD_CORE_SYMMETRIC
+			and battle.battle_controller.action_service.guard_minimum_chance == 0,
+			"Start Battle applies Combined and first-legal Guard by default")
+		check(battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
+			and battle._replay_recorder.recording.configuration.battlefield_id == BattlefieldCatalog.CONTEXTUAL_DEPOT
+			and battle._replay_recorder.recording.configuration.engagement_policy == CombatRules.EngagementPolicy.HEAD_CORE_SYMMETRIC,
+			"Regular Depot records the certified contextual variant and Combined rule")
 		var unit: TacticalUnit = battle.turn_manager.player_units[0]
 		check(unit.archetype_id == &"bulwark" and unit.shield_capability != null and unit.stats.speed == 4, "The chosen slot spawns as a Bulwark")
 		var stripe: Node = null
