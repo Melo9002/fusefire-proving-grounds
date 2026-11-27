@@ -61,6 +61,23 @@ func _run() -> void:
 	engagement.select(engagement.get_item_index(CombatRules.EngagementPolicy.SYMMETRIC))
 	engagement.item_selected.emit(engagement.selected)
 	check(setup.deployment_summary.text.contains("Engagement: Symmetrical"), "The briefing shows the active selection")
+	var contextual := setup.contextual_firing_toggle
+	check(not contextual.disabled and not contextual.button_pressed, "Contextual firing is opt-in on the default Depot")
+	for index in setup.map_size_option.item_count:
+		var id: StringName = setup.map_size_option.get_item_metadata(index)
+		setup.map_size_option.select(index)
+		setup.map_size_option.item_selected.emit(index)
+		var variant := BattlefieldCatalog.contextual_variant(id)
+		check(setup._build_battle_configuration().battlefield_id == id, "Toggle off preserves the ordinary battlefield")
+		check(contextual.disabled == variant.is_empty(), "Only certified battlefields enable the contextual toggle")
+		if not contextual.disabled:
+			contextual.button_pressed = true
+			check(setup._build_battle_configuration().battlefield_id == variant, "Toggle on selects the corresponding certified variant")
+		contextual.button_pressed = false
+	setup.map_size_option.select(0)
+	setup.map_size_option.item_selected.emit(0)
+	contextual.button_pressed = true
+	check(setup.deployment_summary.text.contains("Contextual firing: On"), "The briefing confirms the contextual firing selection")
 	setup.start_button.pressed.emit()
 	var deadline := Time.get_ticks_msec() + 30000
 	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
@@ -73,6 +90,9 @@ func _run() -> void:
 			"Start Battle applies Symmetrical to the live firing rules")
 		check(battle._replay_recorder.recording.configuration.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC,
 			"The match recording preserves the selected engagement rule")
+		check(battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled, "Start Battle enables contextual firing")
+		check(battle._replay_recorder.recording.configuration.battlefield_id == BattlefieldCatalog.CONTEXTUAL_DEPOT,
+			"The match recording identifies the certified contextual variant")
 		var unit: TacticalUnit = battle.turn_manager.player_units[0]
 		check(unit.archetype_id == &"bulwark" and unit.shield_capability != null and unit.stats.speed == 4, "The chosen slot spawns as a Bulwark")
 		var stripe: Node = null

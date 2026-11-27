@@ -45,8 +45,14 @@ const DEFINITIONS := {
 # Curated-site release/mission matrices keep their existing scope. The menu
 # additionally exposes the same authored range; no scene/content copy is made.
 const PLAYABLE := [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION]
-const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT]
-const REPLAYABLE := SELECTABLE + [CONTEXTUAL_BAY, CONTEXTUAL_SHOWCASE]
+const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE]
+const REPLAYABLE := SELECTABLE + [CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_BAY, CONTEXTUAL_SHOWCASE]
+
+static func contextual_variant(id: StringName) -> StringName:
+	match id:
+		SERVICE_DEPOT: return CONTEXTUAL_DEPOT
+		FREIGHT_YARD: return CONTEXTUAL_FREIGHT
+		_: return &""
 
 static func uses_population(id: StringName) -> bool:
 	return id in [SERVICE_DEPOT, FREIGHT_YARD, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_SHOWCASE, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]

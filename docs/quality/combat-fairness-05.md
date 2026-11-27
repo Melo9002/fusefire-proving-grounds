@@ -4,7 +4,7 @@ Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `
 
 ## Play the comparison
 
-In the normal game, open **Match Setup → Mission → Engagement Rule** and select the policy before starting the battle. The briefing confirms your selection. Legacy is selected for a fresh setup. **F3 → Runtime** shows the rule in the live battle.
+In the normal game, open **Match Setup → Mission**. Choose an **Engagement Rule** and use **Contextual Firing** to enable side steps on Service Depot or Freight Yard. A fresh setup starts with Legacy and side steps off. The briefing and **F3 → Runtime** show both settings. The toggle resolves to the existing certified battlefield variant, so saved replays retain their original map and firing rules.
 
 For the matched comparison deployments, run these from the Godot project root, using the existing battle controls. The mode, side-step setting and Guard policy appear below the turn indicator. In Move, hover for arrival lanes or press **V** to pin the hologram and inspect a particular known enemy. Click the pinned tile to commit, or cancel as usual.
 

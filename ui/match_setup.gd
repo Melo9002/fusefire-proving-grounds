@@ -20,6 +20,7 @@ var vip_toggle: CheckButton
 var vip_behavior: OptionButton
 var objective_option: OptionButton
 var engagement_option: OptionButton
+var contextual_firing_toggle: CheckButton
 var difficulty_option: OptionButton
 var player_commander_option: OptionButton
 var enemy_commander_option: OptionButton
@@ -411,6 +412,11 @@ func _build_engagement_setup() -> void:
 	engagement_option.select(engagement_option.get_item_index(CombatRules.EngagementPolicy.LEGACY))
 	engagement_option.item_selected.connect(func(_index: int): _update_summary(0.0))
 	box.add_child(engagement_option)
+	contextual_firing_toggle = CheckButton.new()
+	contextual_firing_toggle.name = "ContextualFiringToggle"
+	contextual_firing_toggle.text = "CONTEXTUAL FIRING"
+	contextual_firing_toggle.toggled.connect(func(_enabled: bool): _update_summary(0.0))
+	box.add_child(contextual_firing_toggle)
 	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Mission.add_child(box)
 
 func _create_commander_selector(label_text: String, tooltip: String) -> OptionButton:
@@ -484,12 +490,13 @@ func _update_summary(_value: float) -> void:
 	var ai_controlled := int(ally_count.value) + ai_vip
 	if deployment_summary:
 		var engagement_label := CombatRules.engagement_policy_label(engagement_option.get_selected_id())
+		var contextual := "Unavailable" if contextual_firing_toggle.disabled else ("On" if contextual_firing_toggle.button_pressed else "Off")
 		var difficulty_label := difficulty_option.get_item_text(difficulty_option.selected) if difficulty_option else "Normal"
 		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
 		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
 		var population_line := "\nPopulation: %s" % ("ON" if population_toggle.button_pressed else "OFF") if population_toggle.visible else ""
-		deployment_summary.text = "MISSION\n%s%s\nEngagement: %s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, engagement_label, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
+		deployment_summary.text = "MISSION\n%s%s\nEngagement: %s\nContextual firing: %s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, engagement_label, contextual, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
 func _on_battlefield_selected(_index: int) -> void:
@@ -498,7 +505,13 @@ func _on_battlefield_selected(_index: int) -> void:
 	_update_summary(0.0)
 
 func _refresh_generation_controls() -> void:
-	population_toggle.visible = BattlefieldCatalogData.uses_population(_selected_battlefield_id())
+	var battlefield := _selected_battlefield_id()
+	population_toggle.visible = BattlefieldCatalogData.uses_population(battlefield)
+	var supported := not BattlefieldCatalogData.contextual_variant(battlefield).is_empty()
+	contextual_firing_toggle.disabled = not supported
+	if not supported: contextual_firing_toggle.set_pressed_no_signal(false)
+	contextual_firing_toggle.tooltip_text = ("A MIRA can take a brief side step to find a valid shot and then return to cover."
+		if supported else "Available on Service Depot and Freight Yard.")
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -614,7 +627,8 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
-	config.select_battlefield(battlefield)
+	var contextual := BattlefieldCatalogData.contextual_variant(battlefield)
+	config.select_battlefield(contextual if contextual_firing_toggle.button_pressed and not contextual.is_empty() else battlefield)
 	if BattlefieldCatalogData.uses_population(battlefield):
 		config.content_manifest = {"population_enabled": population_toggle.button_pressed}
 	return config

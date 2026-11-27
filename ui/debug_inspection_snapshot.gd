@@ -83,7 +83,10 @@ static func runtime_summary(battle: BattleController) -> String:
 		"contextual_firing_disabled": battle.contextual_firing_disabled}
 	var lines := PackedStringArray(["Simulation: " + BattleReplayRecording.version_for_configuration(config)])
 	var guard := "%d%% minimum" % battle.guard_minimum_chance if battle.guard_minimum_chance else "first legal shot"
-	lines.append("Engagement %s · Guard %s" % [CombatRules.engagement_policy_label(battle.engagement_policy), guard])
+	var map := battle.grid_manager.map_data
+	var contextual := map.contextual_discovery_enabled or not map.contextual_steps.is_empty()
+	lines.append("Engagement %s · Contextual firing %s · Guard %s" % [
+		CombatRules.engagement_policy_label(battle.engagement_policy), "on" if contextual else "off", guard])
 	lines.append("LIVE BATTLE · F3 inspection is unavailable during replay playback.")
 	lines.append("\nRuntime monitors · last reported values (pause affects frame readings)")
 	lines.append("FPS %.0f · process %.2f ms · physics %.2f ms" % [Performance.get_monitor(Performance.TIME_FPS), Performance.get_monitor(Performance.TIME_PROCESS) * 1000, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000])
