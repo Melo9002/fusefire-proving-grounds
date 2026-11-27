@@ -296,6 +296,7 @@
   "turn_removal_continuation_test": {"sub": ["core"], "scope": "integration", "crit": "critical", "contracts": ["lifecycle"], "smoke": true, "fast": true},
   "hit_defeat_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "context_independence_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
+  "loaded_ladder_test": {"sub": ["animation"], "scope": "integration"},
   "loaded_ladder_playground_test": {"sub": ["animation"], "scope": "integration"},
   "carry_pairing_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "loaded_ladder_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
