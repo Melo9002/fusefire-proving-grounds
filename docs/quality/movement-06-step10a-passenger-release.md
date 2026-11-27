@@ -44,6 +44,13 @@ The [durable regression](../../tests/reactive_passenger_release_test.gd) records
 | Historical configuration with no checkpoint-release flag | Replay restores the old drop at `(13, 4, 1)` and verifies both transactions. |
 | Stationary, pickup-time or noncarrier defeat and mission completion | Covered by the existing Rescue loss and playback suites. |
 
+### Results
+
+- Catalog validation passed with 309 catalogued scripts. Editor import and project parse passed. The targeted Ironclad run selected 18 tests and finished with 17 passes, one inherited failure, zero timeouts and zero unexecuted selections. The new regression reported 127 checks and zero failures. The original audit probe independently reported the VIP at `(13, 4, 2)`. A separate `tactical_conditions_test` run passed.
+- Passing coverage included Rescue loss, Rescue replay and pickup handles, Guard reactions, the action service, surface navigation, loaded traversal, ladder interruption, AI reservations and scene lifetime, mission terminals, battle and defensive-action replay, traversal replay determinism, and presentation authority and lifecycle.
+- `ladder_landing_test` reproduced the four inherited assertions for armed and unarmed regular MIRA descent on posts and rails. Its measured overlaps were 112.7–122.4 mm. The test ran as written. The selected run's `results.json` and logs are under `artifacts/0610a/ironclad/20261127-123742050-8f9c785c-select`. Ironclad left 254 ordinary scripts and 37 explicit-only scripts outside this local selection. The separate condition run and hosted smoke covered additional cases. The ordinary full tier was outside this targeted verification.
+- The rendered sequence reported 27 checks and zero failures. [Hosted Ironclad smoke passed on the production change in PR #101](https://github.com/Melo9002/fusefire-proving-grounds/actions/runs/46026927907).
+
 ### Rendered observations
 
 The normal-speed fixture used the production Move presenter, Guard reaction, Combat Only action camera and objective HUD. Alpha carried the visible model while moving. The actual passenger became visible at the checkpoint when the lethal impact was presented. The carry model was removed, the incapacitated VIP settled at the registered position, and Bravo picked them up on the next action. The committed Guard log and objective HUD update before the cosmetic walk and shot finish. One impact frame can include both the defeated carrier and the released VIP at the checkpoint. The existing incapacitation transition takes several frames to settle. The capture verifies the sequence on this authored platform. It does not certify animation quality on ladders, uneven terrain or every camera angle.
