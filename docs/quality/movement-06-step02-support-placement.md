@@ -4,7 +4,7 @@
 
 Integrated main was `8616b1862f41a5ea1d5c5565687a59ecaa696cd1` with PRs #95 through #101. The review work used an isolated checkout. The [06.01 support probe](evidence/movement-06/support_probe.gd) established the original 7 × 7 fixture. A new assertion on that baseline failed with `can_stop=false`, even though the audit's southern alternative at `(0, 0, 0.43)` independently passed floor, body and approach checks. The new compiler chooses `(0, 0, -0.42)` in logical cell `(3, 0, 3)`. The tested north and south candidates tie in distance and the established lower-Z tie-break chooses north. With eastern support restored the original `(0.33, 0, 0)` wins unchanged.
 
-The final production revision is `57ff464d8aee2ca48f8c25674181d147c0c0829d` on `codex/support-aware-placement`. The follow-up report commit records verification of that code.
+The final production revision is `57ff464d8aee2ca48f8c25674181d147c0c0829d` on `codex/support-aware-placement`. Follow-up commits record verification of that code.
 
 ## Placement and route lifecycle
 
@@ -62,8 +62,18 @@ For the census, copy [support_census.gd](evidence/movement-06/support_census.gd)
 - The focused dependency run executed 25 ordinary catalog scripts using their Godot options and isolated profiles while the full runner continued. It finished with 24 passes and one inherited failure. The unchanged `ladder_landing_test` reproduced four standard-MIRA descent overlap assertions for armed and unarmed posts/rails under [#64](https://github.com/Melo9002/fusefire-proving-grounds/issues/64).
 - Passed coverage included both placement tests, both authored surface battle and replay tests, the new deck regression, surface vaulting, compound and curved geometry, diagonal movement and path refinement, action service, AI clearance and carrier reservations, Guard, both Rescue loss regressions including the checkpoint fallback, contextual firing on the Bay and authored fields, combat geometry, HUD, presentation authority and the 48-case current mission/replay matrix.
 - Two actual revision-10 Depot recordings verified all their actions. The tracked `Test.json` verified 80/80 and retained its victory. The local Combined/contextual Crossfire seed-16 recording verified 50/50. The new deck record verified 1/1 with revision 11. Both matched renderer captures used the existing tactical action presenter in Compatibility mode at normal speed.
-- The ordinary Ironclad full tier started with all 273 ordinary scripts selected and no blocked entries. The 37 explicit-only scripts were outside full scope. At this report snapshot, 56 scripts had passed, zero had failed or timed out, and 217 had yet to finish. The run is active and has no final verdict. The serial campaign has historically taken about 53 minutes on this host. Full-only coverage beyond the focused checks, including the extended animation, generation, AI scenario and content/persistence cases still in the queue, remains pending. The live `results.json` and logs are in `artifacts/0602/full/20261127-130324480-5f74939f-full`.
+- Full Ironclad finished **RED** with 267 passes, six failures, zero timeouts and zero unexecuted selections in 3,515.69 seconds. All 273 ordinary scripts ran. Ironclad excluded 37 explicit-only scripts. The run began before the production commit, so its recorded Git revision is the baseline and the checkout contained the reviewed implementation. The new surface battle test passed again in this run. The final `results.json` and logs are in `artifacts/0602/full/20261127-130324480-5f74939f-full`.
+- All six full-tier failures reproduced on a separately imported Git archive of exact integrated main, `8616b1862f41a5ea1d5c5565687a59ecaa696cd1`. Baseline controls are under `artifacts/0602/baseline-control`. The same archive also reproduced all 13 baseline census point, edge and signature records with the final diagnostic script.
+
+| Full-tier failure | Exact-main control |
+| --- | --- |
+| `camera_environment_apertures_test` | Same Contextual Firing Bay aperture-compatibility assertion. |
+| `core_objectives_smoke` | Same pre-pickup VIP incapacitation assertion intermittently failed on main. Two uncapped controls passed and one failed. The assertion also failed on main at low fixed FPS. This fixture checks the authored prototype scene, which has surface placement disabled. |
+| `generation_retirement_test` | Same compact-Depot/explicit-seed setup default assertion. |
+| `ladder_landing_test` | Same four regular-MIRA descent assertions under matched 60 FPS sampling. An uncapped baseline control tripped three of the four. The assertion source and tolerances were left intact. |
+| `reusable_occupant_test` | Same four assertions for the three extracted loading-yard parcels and the delivery asset. |
+| `tactical_archetype_lab_test` | Same four-tab Match Setup expectation. |
 
 ## Review boundary
 
-Step 06.03 evidence covers routes, budget, live occupancy and shared queries for the recovered stop. Broader route and reaction parity remains open. Issue #7 remains open for separate owner reproductions. Issues #8 and #9 still concern mesh apertures and stale baked asset bounds. #64 remains the inherited ladder descent issue. Review this geometry change now and wait for the full result before accepting it and proceeding to 06.04.
+Step 06.03 evidence covers routes, budget, live occupancy and shared queries for the recovered stop. Broader route and reaction parity remains open. Issue #7 remains open for separate owner reproductions. Issues #8 and #9 still concern mesh apertures and stale baked asset bounds. #64 remains the inherited ladder descent issue. The full-run failures reproduced on main. Recommend owner acceptance of this bounded correction before starting 06.04.
