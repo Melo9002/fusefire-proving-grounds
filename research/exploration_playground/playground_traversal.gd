@@ -33,7 +33,9 @@ func ladder_foot() -> Vector3:
 
 
 func can_mount() -> bool:
-	if on_ladder or ctx.dead or ctx.visual.is_carrying() or ctx.cover.active:
+	if on_ladder or ctx.dead or ctx.cover.active or ctx.carry.busy:
+		return false
+	if ctx.visual.is_carrying() and not ctx.visual.supports_loaded_ladder():
 		return false
 	var p: Vector3 = ctx.body.global_position
 	if absf(p.x - float(ladder.x)) >= MOUNT_RANGE:
@@ -60,6 +62,32 @@ func mount() -> void:
 	ctx.visual.set_climb_height(climbed, float(ladder.z) - z, 1.0 if _entering_from_top else 0.0)
 
 
+## Stands the character at the foot of the ladder, or on the tower at the head of it, facing the rungs: the two approaches a loaded climb is tried from. Not while on the ladder or in the middle of an interaction.
+func place_at_approach(top: bool) -> bool:
+	if on_ladder or ctx.dead or ctx.carry.busy:
+		return false
+	ctx.body.velocity = Vector3.ZERO
+	if top:
+		ctx.body.global_position = Vector3(float(ladder.x), float(ladder.length), float(ladder.top_z))
+		ctx.visual.reset_motion(PI)   # facing the way the descent starts: back toward the rungs
+	else:
+		ctx.body.global_position = ladder_foot()
+		ctx.visual.reset_motion(0.0)
+	return true
+
+
+## Keeps the pose where the body is while the loaded transfer runs: nothing translates, and W and S wait.
+func _hold_for_transfer() -> void:
+	ctx.body.velocity = Vector3.ZERO
+	ctx.moving = false
+	if _top_out_time >= 0.0:
+		var progress := smoothstep(0.0, TOP_OUT_SECONDS, _top_out_time)
+		ctx.visual.set_climb_height(climbed, float(ladder.z) - float(ctx.body.global_position.z), progress)
+	else:
+		var mount_progress := smoothstep(0.0, float(ctx.visual.rig.traversal_profile.mount_length), climbed)
+		ctx.visual.set_climb_height(climbed, lerpf(MOUNT_CLEARANCE, LadderGeometry.PLANE_AHEAD, mount_progress))
+
+
 func dismount_bottom() -> void:
 	_end_ladder()
 	ctx.body.global_position = ladder_foot()
@@ -76,6 +104,10 @@ func _end_ladder() -> void:
 
 ## Per frame on the ladder: W and S climb, the body rides the height, and the ends step her off.
 func move_ladder(delta: float) -> void:
+	# Carrying someone: the passenger is moved into the climbing carry before the body moves (on the ladder's foot and at its head); the pose is kept current meanwhile and the controls are ignored.
+	if not ctx.visual.loaded_ladder_ready():
+		_hold_for_transfer()
+		return
 	if _top_out_time >= 0.0:
 		var from_z := float(ladder.z) - LadderGeometry.PLANE_AHEAD
 		var previous_z: float = ctx.body.global_position.z

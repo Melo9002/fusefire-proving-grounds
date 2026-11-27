@@ -317,7 +317,8 @@ func _sync_cover(delta: float) -> void:
 ## Start climbing a ladder of `length` metres (the character's origin is at the ladder's foot level; the ladder plane is ahead of it). The controller moves the body up and calls `set_climb_height`.
 func begin_climb(length: float, landing: LadderLanding = null, direction := 1) -> void:
 	presenter.cancel_gesture()
-	rig.begin_traversal(&"ladder", length, direction, landing)
+	# Carrying someone up a ladder is the shared loaded presentation here (this host opts in); a rig that cannot show it falls back as before.
+	rig.begin_traversal(&"ladder", length, direction, landing, is_carrying() and supports_loaded_ladder())
 	_state = &""
 
 
@@ -356,7 +357,7 @@ func is_on_stairs() -> bool:
 # ------------------------------------------------------------------ carrying a body
 
 ## Lift the body lying at `world_point` onto the shoulders (the shared rescue lift: the character steps in, reaches, lifts). The handle settles when the lift is over; a loaded character walks with the loaded gait.
-func pick_up(world_point: Vector3) -> ActionHandle:
+func pick_up(world_point: Vector3, passenger: PassengerDefinition = null) -> ActionHandle:
 	if is_carrying() or presenter.is_defeated():
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)
 	_aiming = false
@@ -364,7 +365,7 @@ func pick_up(world_point: Vector3) -> ActionHandle:
 	presenter.cancel_gesture()   # a lift takes the body
 	presenter.face_point(world_point)
 	_state = &""
-	return rig.begin_pickup(world_point)
+	return rig.begin_pickup(world_point, null, passenger)
 
 
 ## Put the carried body down in front (the shared release). The body is left lying where it is put.
@@ -378,6 +379,16 @@ func put_down() -> ActionHandle:
 
 func is_carrying() -> bool:
 	return is_instance_valid(rig.carry_passenger)
+
+
+## Whether a climb while carrying is presented (the shared loaded-ladder presentation) rather than refused. Hosts decide what to do with a loaded character at a ladder; this says whether the rig can show it.
+func supports_loaded_ladder() -> bool:
+	return rig.supports_loaded_ladder()
+
+
+## Whether the climb may start moving the body (the passenger has been moved into the climbing carry, or nobody is carried). A controller holds the body back until it is.
+func loaded_ladder_ready() -> bool:
+	return rig.loaded_ladder_ready()
 
 
 # ------------------------------------------------------------------ per frame
@@ -404,7 +415,7 @@ func _select_state() -> void:
 	if presenter.is_defeated() or presenter.is_holding() or presenter.attack.is_active() or rig.interaction_active():
 		return
 	var wanted: StringName
-	if rig.ladder != null:
+	if rig.ladder != null and not is_carrying():
 		wanted = &"rifle_idle"
 	elif is_carrying():
 		wanted = &"carry_move" if is_moving() else &"carry_idle"

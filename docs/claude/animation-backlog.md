@@ -102,3 +102,10 @@ Known flaky at the baseline: `ladder_climb_test` (fails about 3 runs in 4 on the
 * Final verification: animation tier 85 pass, 1 fail (`ladder_landing_test`, above). The overhead probe is not informative (issue 79).
 * Not verified by eye: cover entry (0.2 s hand-over) and the interrupted-climb ease-out (0.25 s). Headless numbers do not establish that they look right.
 
+
+### Carry and loaded ladder (2026-11-27, `review/claude-carry-ladder`)
+
+* New: Small→Regular loaded climb, right toe tip reads −0.9 cm against the conservative rail envelope at 1.4 s (transfer); look at it by eye.
+* New: passenger arms hang limp at the deck lip; no purposeful passenger hand pose.
+* Not done: tactical adoption (adapter flag, transfer-time budget, Guard timing); owner decision. See `carry-ladder-report-2026-11-27.md`.
+* Unchanged: #64 (≈118–122 mm), #68, carrier chest steps at the landing (13–28 cm, inherited).

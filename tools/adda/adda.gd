@@ -13,7 +13,7 @@ extends SceneTree
 ##
 ##   godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- run --scenario=contacts --character=small_mira_0 --unarmed --mesh --out=user://adda/a.json
 ##
-## Arguments (after `--`): run: --scenario=<id> [--character=<key>] [--unarmed] [--mesh[=N]] [--detail=full] [--window=n0-n1] [--out=<path>] [--fps=<n> (only recorded in the command line)] [--fail-on=high|medium]
+## Arguments (after `--`): run: --scenario=<id> [--character=<key>] [--passenger=<key>] [--unarmed] [--mesh[=N]] [--detail=full] [--window=n0-n1] [--out=<path>] [--fps=<n> (only recorded in the command line)] [--fail-on=high|medium]
 ##                         (run and isolate also take --fault=<json> or --challenge=<id>: a known fault injected for diagnostic challenges, see docs/claude/adda/)
 ##                         (run and isolate use the GAME's tuning; --drafts also reads the Workbench Tune drafts in art/characters/<id>/tuning/drafts/, as the window does; the report's config.tuning says which)
 ##                         isolate: --scenario=<id> --at=<seconds> --bones=<name|@role,...> [--window=<updates>: sample that many updates per condition, to see a fault that fires only on some] [--character=..] [--unarmed] [--out=<path>]
@@ -150,14 +150,14 @@ func _run(flags: Dictionary) -> void:
 		_fail("the scenario did not finish within %d frames" % limit, 1)
 		return
 	var character := String(WorkbenchSession.character) if WorkbenchSession.character != &"" else "mira_0"
-	var cli := "godot_console --headless%s --path . --script res://tools/adda/adda.gd -- run --scenario=%s --character=%s%s%s%s" % [(" --fixed-fps %s" % flags.fps) if flags.has("fps") else "", id, character, "" if WorkbenchSession.armed else " --unarmed", " --mesh" if flags.has("mesh") else "", _lever_text(flags)]
+	var cli := "godot_console --headless%s --path . --script res://tools/adda/adda.gd -- run --scenario=%s --character=%s%s%s%s%s" % [(" --fixed-fps %s" % flags.fps) if flags.has("fps") else "", id, character, _passenger_flag(), "" if WorkbenchSession.armed else " --unarmed", " --mesh" if flags.has("mesh") else "", _lever_text(flags)]
 	var window: Array = []
 	if flags.has("window"):
 		var parts := String(flags.window).split("-")
 		if parts.size() == 2:
 			window = [int(parts[0]), int(parts[1])]
-	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": _experiment_text(experiment, switched_back, frames), "tuning": _tuning_of(bench.rig)})
-	var default_path := "%s/%s-%s%s.json" % [DEFAULT_FOLDER, character, id, "" if WorkbenchSession.armed else "-unarmed"]
+	var report := AddaReport.build(recorder, {"scenario": String(id), "character": character, "passenger": String(WorkbenchSession.passenger), "command": WorkbenchSession.repro_command(id), "cli": cli, "detail": String(flags.get("detail", "summary")), "window": window, "experiment": _experiment_text(experiment, switched_back, frames), "tuning": _tuning_of(bench.rig)})
+	var default_path := "%s/%s-%s%s%s.json" % [DEFAULT_FOLDER, character, id, "" if WorkbenchSession.passenger == &"" else "-carrying-%s" % WorkbenchSession.passenger, "" if WorkbenchSession.armed else "-unarmed"]
 	var path := String(flags.get("out", default_path))
 	var error := AddaReport.save(report, path)
 	_print_summary(report, path, error)
@@ -223,7 +223,7 @@ func _isolate(flags: Dictionary) -> void:
 			bones.append(resolved)
 	var result := await StageIsolation.new().measure(bench.rig, bones, self, maxi(int(flags.get("window", "1")), 1))
 	result["config"] = {"scenario": String(id), "character": String(WorkbenchSession.character), "armed": WorkbenchSession.armed, "at_s": float(flags.get("at", "0")), "frame_step_s": 1.0 / 60.0,
-		"revision": AddaReport.revision(), "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=%s --at=%s --bones=%s --character=%s%s%s%s" % [id, flags.get("at", "0"), flags.get("bones", ""), String(WorkbenchSession.character), "" if WorkbenchSession.armed else " --unarmed", _lever_text(flags), (" --window=%s" % flags.window) if flags.has("window") else ""]}
+		"revision": AddaReport.revision(), "cli": "godot_console --headless --fixed-fps 60 --path . --script res://tools/adda/adda.gd -- isolate --scenario=%s --at=%s --bones=%s --character=%s%s%s%s%s" % [id, flags.get("at", "0"), flags.get("bones", ""), String(WorkbenchSession.character), _passenger_flag(), "" if WorkbenchSession.armed else " --unarmed", _lever_text(flags), (" --window=%s" % flags.window) if flags.has("window") else ""]}
 	result["config"]["held_at_s"] = snappedf(bench.scenario_runner.time, 0.001)
 	print("Pose held at scenario time %.2f s (requested %s s; the scenario does not advance during the experiment)" % [bench.scenario_runner.time, flags.get("at", "0")])
 	print(StageIsolation.text(result))
@@ -276,6 +276,11 @@ func _experiment_text(experiment: Dictionary, switched_back: Dictionary, frames:
 	return out
 
 ## The levers of a run as command-line text (the challenge or fault that was injected, the modifiers disabled, the values set), so a reproduction command repeats the same run.
+## ` --passenger=<key>` when the run carries a chosen body, else nothing (the reproduction lines name who is carried).
+func _passenger_flag() -> String:
+	return "" if WorkbenchSession.passenger == &"" else " --passenger=%s" % WorkbenchSession.passenger
+
+
 func _lever_text(flags: Dictionary) -> String:
 	var text := ""
 	if flags.has("challenge"):

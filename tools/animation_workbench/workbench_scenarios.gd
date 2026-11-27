@@ -11,9 +11,10 @@ const EXPLORATION := &"exploration"
 const CONTACTS := &"contacts"
 const LANDING := &"landing"
 const RESCUE := &"rescue"
+const LOADED_LADDER := &"loaded_ladder"
 
 static func all() -> Array[Dictionary]:
-	return [tactical(), exploration(), contacts(), landing(), rescue()]
+	return [tactical(), exploration(), contacts(), landing(), rescue(), loaded_ladder()]
 
 static func find(id: StringName) -> Dictionary:
 	for scenario in all():
@@ -120,4 +121,28 @@ static func rescue() -> Dictionary:
 			_step(9.0, "carry: stop", func(b: Node3D) -> void: b.rescue_carry(0.0)),
 			_step(10.0, "set the casualty down", func(b: Node3D) -> void: b.rescue_release()),
 			_step(14.0, "free again", func(b: Node3D) -> void: b.command_stop()),
+		]}
+
+
+## Carry a casualty up a ladder and down again: the shared loaded-ladder presentation. The passenger is whoever the Character tab says (any model on any carrier), and the climb starts only once it has been moved onto the back.
+static func loaded_ladder() -> Dictionary:
+	return {"id": LOADED_LADDER, "title": "F  Loaded ladder (carry a casualty up and down)", "short": "F  Carry someone up a ladder and down", "needs_weapon": false, "duration": 27.0,
+		"summary": "Pick a casualty up, walk loaded, move it onto the back, climb the ladder, cross the deck lip and set the carry back to normal; then go down the same way from the deck, and put the casualty down. The carrier and the casualty are chosen independently (Character tab).",
+		"context": "The pose is the production loaded-ladder presentation (LoadedLadderCarry) over the shared ladder solver and landing. The hosts that opt in (this workbench and the Exploration Playground) ask for it; the tactical host does not and keeps its loaded fallback. The body does not climb until the transfer has finished (see the Contacts and Why? tabs).",
+		"steps": [
+			_step(0.0, "pickup from the floor (side view)", func(b: Node3D) -> void:
+				b.look_from(Vector3(3.4, 1.3, 0.4), Vector3(0, 0.8, 0.5))
+				b.diagnostics_for_contacts()
+				b.rescue_pickup()),
+			_step(4.0, "carry: walk loaded at 1.0 m/s", func(b: Node3D) -> void: b.rescue_carry(1.0)),
+			_step(6.5, "stop at the ladder", func(b: Node3D) -> void: b.rescue_carry(0.0)),
+			_step(7.0, "up: move the casualty onto the back, then climb (rear three-quarter view)", func(b: Node3D) -> void:
+				b.look_from(Vector3(2.0, 1.9, -2.6), Vector3(0.0, 1.35, 0.25))
+				b.start_ladder_demo(3.0, 1, 0.85, -1.0, "rails")),
+			_step(14.8, "down: from the deck, move it onto the back, then descend", func(b: Node3D) -> void: b.start_ladder_demo(3.0, -1, 0.75, -1.0, "rails")),
+			_step(22.0, "ladder done: ordinary carry, set the casualty down (side view)", func(b: Node3D) -> void:
+				b.end_ladder_demo()
+				b.look_from(Vector3(3.4, 1.3, 0.4), Vector3(0, 0.8, 0.5))
+				b.rescue_release()),
+			_step(26.0, "free again", func(b: Node3D) -> void: b.command_stop()),
 		]}

@@ -28,6 +28,8 @@ const MATCH_SETUP_PATH := "res://ui/match_setup.tscn"
 const VISUAL := preload("res://art/characters/mira_0/runtime/mira_0_exploration_visual.tscn")
 const SMALL_VISUAL := preload("res://art/characters/small_mira_0/runtime/small_mira_0_exploration_visual.tscn")
 const CHARACTER_VISUALS := [VISUAL, SMALL_VISUAL]
+## The names the pickers show, in the same order (the controlled character and the casualty choose from the same characters).
+const CHARACTER_LABELS := ["MIRA", "Small MIRA"]
 const ACTIONS := {
 	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E, &"playground_crouch": KEY_C, &"playground_weapon": KEY_Q, &"playground_run": KEY_SHIFT, &"playground_cover": KEY_SPACE, &"playground_respawn": KEY_R,
 }
@@ -41,6 +43,9 @@ var visual: ExplorationCharacterHost
 var armed := true
 var character_index := 0
 var character_picker: OptionButton
+var passenger_picker: OptionButton
+var _passenger_ids: Array[StringName] = []
+var _approach_buttons: Array[Button] = []
 var spawn_guard: ExplorationSpawnGuard
 var ui_layer: CanvasLayer
 var props := {}
@@ -298,6 +303,38 @@ func toggle_weapon() -> void:
 	cover.leave()
 	_spawn_visual(not armed, visual.rig.rotation.y)
 
+func _select_passenger(index: int) -> void:
+	if index < 0 or index >= _passenger_ids.size() or not carry.set_passenger(_passenger_ids[index]):
+		passenger_picker.select(maxi(_passenger_ids.find(carry.passenger_id), 0))
+
+
+func _respawn_casualty() -> void:
+	carry.respawn()
+
+
+## Swaps who is controlled and who is the casualty (both change, deliberately). Only while neither is mid-interaction.
+func _swap_models() -> void:
+	if not _can_replace_visual() or not carry.can_change_passenger():
+		return
+	var controlled := PassengerDefinition.id_from_path(CHARACTER_VISUALS[character_index].resource_path)
+	var casualty: StringName = carry.passenger_id
+	var wanted := -1
+	for index in CHARACTER_VISUALS.size():
+		if PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path) == casualty:
+			wanted = index
+	if wanted < 0:
+		return
+	_select_character(wanted)
+	carry.set_passenger(controlled)
+	character_picker.select(character_index)
+	passenger_picker.select(maxi(_passenger_ids.find(carry.passenger_id), 0))
+
+
+func _go_to_ladder(top: bool) -> void:
+	traversal.place_at_approach(top)
+	_close_menu()
+
+
 func _can_replace_visual() -> bool:
 	return not dead and not traversal.on_ladder and not traversal.on_stairs and not carry.busy and not visual.is_carrying()
 
@@ -397,10 +434,40 @@ func _build_ui() -> void:
 	box.add_child(title)
 	character_picker = OptionButton.new()
 	character_picker.name = "CharacterPicker"
-	character_picker.add_item("MIRA")
-	character_picker.add_item("Small MIRA")
+	for label in CHARACTER_LABELS:
+		character_picker.add_item(label)
 	character_picker.item_selected.connect(_select_character)
 	box.add_child(character_picker)
+	# The casualty is chosen on its own: the controlled character and the casualty never change each other.
+	var passenger_label := Label.new()
+	passenger_label.text = "Casualty (carried body)"
+	box.add_child(passenger_label)
+	passenger_picker = OptionButton.new()
+	passenger_picker.name = "PassengerPicker"
+	for index in CHARACTER_VISUALS.size():
+		_passenger_ids.append(PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path))
+		passenger_picker.add_item(CHARACTER_LABELS[index])
+	passenger_picker.select(maxi(_passenger_ids.find(PlaygroundCarry.DEFAULT_PASSENGER), 0))
+	passenger_picker.item_selected.connect(_select_passenger)
+	box.add_child(passenger_picker)
+	var casualty_row := HBoxContainer.new()
+	box.add_child(casualty_row)
+	for entry in [["RespawnCasualtyButton", "Reset casualty", _respawn_casualty], ["SwapModelsButton", "Swap models", _swap_models]]:
+		var button := Button.new()
+		button.name = entry[0]
+		button.text = entry[1]
+		button.pressed.connect(entry[2])
+		casualty_row.add_child(button)
+		_approach_buttons.append(button)
+	var approach_row := HBoxContainer.new()
+	box.add_child(approach_row)
+	for entry in [["LadderFootButton", "Ladder foot", false], ["LadderTopButton", "Ladder top", true]]:
+		var button := Button.new()
+		button.name = entry[0]
+		button.text = entry[1]
+		button.pressed.connect(_go_to_ladder.bind(entry[2]))
+		approach_row.add_child(button)
+		_approach_buttons.append(button)
 	var resume := Button.new()
 	resume.name = "ResumeButton"
 	resume.text = "Resume"
@@ -483,6 +550,10 @@ func _open_menu() -> void:
 	menu_open = true
 	character_picker.disabled = not _can_replace_visual()
 	character_picker.tooltip_text = "Finish traversal or carrying before changing models." if character_picker.disabled else "Change character model"
+	passenger_picker.disabled = not carry.can_change_passenger()
+	passenger_picker.tooltip_text = carry.why_passenger_locked() if passenger_picker.disabled else "Change who the casualty is (independent of the controlled character)"
+	for button in _approach_buttons:
+		button.disabled = traversal.on_ladder or carry.busy or dead
 	menu_panel.visible = true
 	_set_mouse_captured(false)
 
@@ -598,10 +669,10 @@ func can_interact() -> bool:
 func _prompt_text() -> String:
 	if dead or menu_open:
 		return ""
+	if traversal.can_mount():
+		return "Press E to climb"   # at the ladder a loaded carrier is offered the climb; stepping away from it offers the put-down
 	if visual.is_carrying():
 		return "" if carry.busy else "Press E to put the body down"
-	if traversal.can_mount():
-		return "Press E to climb"
 	if carry.can_pick_up():
 		return "Press E to lift the body"
 	if can_interact() and not cover.active and not traversal.on_ladder:
@@ -612,13 +683,15 @@ func _prompt_text() -> String:
 func interact() -> bool:
 	if menu_open or dead:
 		return false
+	if traversal.on_ladder:
+		return false   # nothing to do with the hands full on a ladder: a carried body is not put down mid-climb
+	if traversal.can_mount():
+		traversal.mount()
+		return true
 	if visual.is_carrying():
 		if carry.busy:
 			return false
 		carry.put_down()
-		return true
-	if traversal.can_mount():
-		traversal.mount()
 		return true
 	if carry.can_pick_up():
 		carry.pick_up()
