@@ -137,6 +137,7 @@ func configure_replay(recording) -> void:
 	if not recording.is_playable():
 		_configuration_errors.append(_diagnostic("UNSUPPORTED_REPLAY", "replay", recording.validation_message()))
 	battle_controller.replay_mode = true
+	battle_controller.checkpoint_passenger_release = bool(recording.configuration.get("checkpoint_passenger_release", false))
 
 func _ready() -> void:
 	battle_initialization_progress.emit("Validating battle configuration…", 0.10)
@@ -272,6 +273,7 @@ func _initialize_replay_support() -> void:
 		player.begin(self, pending_replay)
 		return
 	_replay_recorder = ReplayRecorderData.new()
+	_replay_configuration["checkpoint_passenger_release"] = battle_controller.checkpoint_passenger_release
 	_replay_recorder.begin(_replay_configuration, battle_controller, turn_manager, objective_manager)
 
 func _configure_replay_presentation() -> void:

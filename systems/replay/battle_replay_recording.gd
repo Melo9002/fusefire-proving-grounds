@@ -171,7 +171,7 @@ static func _disk_shape_error(data: Dictionary) -> String:
 		return "Replay schema_version and expected_result must be integers"
 	if not _scalar_fields(config, ["player_count", "enemy_count", "ally_count", "seed", "battlefield_preset", "vip_behavior", "difficulty", "player_commander", "enemy_commander", "engagement_policy", "guard_minimum_chance"], TYPE_INT) \
 	or not _scalar_fields(config, ["battlefield_id"], TYPE_STRING) \
-	or not _scalar_fields(config, ["contextual_firing_disabled"], TYPE_BOOL):
+	or not _scalar_fields(config, ["contextual_firing_disabled", "checkpoint_passenger_release"], TYPE_BOOL):
 		return "Replay battle_configuration has invalid counts, identifiers or settings"
 	if not _coordinate(config.get("map_size", [32, 24]), 2):
 		return "Replay battle_configuration.map_size must contain two integers"
@@ -251,6 +251,7 @@ static func _configuration_to_data(source: Dictionary) -> Dictionary:
 		"engagement_policy": int(source.get("engagement_policy", 0)),
 		"guard_minimum_chance": int(source.get("guard_minimum_chance", 0)),
 		"contextual_firing_disabled": bool(source.get("contextual_firing_disabled", false)),
+		"checkpoint_passenger_release": bool(source.get("checkpoint_passenger_release", false)),
 		"generated_map": bool(source.get("generated_map", false)),
 		"battlefield_preset": int(source.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)),
 		"seed": int(source.get("seed", 1)),
@@ -290,6 +291,7 @@ static func _configuration_from_data(data: Dictionary) -> Dictionary:
 		"engagement_policy": int(data.get("engagement_policy", 0)),
 		"guard_minimum_chance": int(data.get("guard_minimum_chance", 0)),
 		"contextual_firing_disabled": bool(data.get("contextual_firing_disabled", false)),
+		"checkpoint_passenger_release": bool(data.get("checkpoint_passenger_release", false)),
 		"generated_map": bool(data.get("generated_map", false)),
 		"battlefield_preset": int(data.get("battlefield_preset", BattleConfiguration.BattlefieldPreset.LEGACY)),
 		"seed": int(data.get("seed", 1)),

@@ -84,6 +84,7 @@ var supply_points_enabled := true
 var aim_enabled := true
 var shield_enabled := true
 var overwatch_enabled := true
+var checkpoint_passenger_release := true
 var conditions_enabled := true
 var engagement_policy := CombatRules.EngagementPolicy.LEGACY
 var guard_minimum_chance := 0
@@ -285,6 +286,7 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.aim_enabled = aim_enabled
 	action_service.shield_enabled = shield_enabled
 	action_service.overwatch_enabled = overwatch_enabled
+	action_service.checkpoint_passenger_release = checkpoint_passenger_release
 	action_service.conditions_enabled = conditions_enabled
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
@@ -1224,8 +1226,8 @@ func _on_unit_defeated(unit: TacticalUnit) -> void:
 	var fall_cell := grid_manager.get_unit_grid(unit)
 	grid_manager.unregister_unit_at(fall_cell)
 	turn_manager.remove_unit(unit)
-	# A carried VIP must not be stranded with its carrier: put it down where the carrier fell.
-	if is_instance_valid(_objective_manager):
+	# Reactive Move settles release at its interrupted checkpoint after this cleanup.
+	if is_instance_valid(_objective_manager) and (not is_instance_valid(action_service) or not action_service.settles_reactive_passenger_release(unit)):
 		_objective_manager.release_carried_unit(unit, fall_cell)
 	if tactical_unit == unit:
 		tactical_unit = null
