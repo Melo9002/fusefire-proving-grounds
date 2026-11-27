@@ -102,21 +102,27 @@ func get_log_name() -> String:
 func is_carrying_unit() -> bool:
 	return is_instance_valid(carried_unit)
 
-## Puts the passenger down: it becomes visible and active again and this unit moves at its normal
-## speed. Placing it on the grid is the caller's job. Returns the passenger, or null if there was none.
-func release_carried_unit() -> TacticalUnit:
+## Ends the carry. The caller places the passenger. Reactive Move defers the
+## visual handoff until it presents the lethal checkpoint.
+func release_carried_unit(defer_presentation := false) -> TacticalUnit:
 	var passenger := carried_unit
 	carried_unit = null
 	if _movement_speed_before_carry >= 0 and stats:
 		stats.speed = _movement_speed_before_carry
 	_movement_speed_before_carry = -1
-	if is_instance_valid(passenger):
-		passenger.visible = true
-		passenger.process_mode = Node.PROCESS_MODE_INHERIT
-	# The visual passenger the carrier showed is gone with it; the revealed actor is the one that remains.
-	if visual_adapter:
-		visual_adapter.present_carry_released()
+	if not defer_presentation:
+		if is_instance_valid(passenger):
+			passenger.present_released_passenger()
+		present_carry_release()
 	return passenger if is_instance_valid(passenger) else null
+
+func present_carry_release() -> void:
+	if is_instance_valid(visual_adapter):
+		visual_adapter.present_carry_released()
+
+func present_released_passenger() -> void:
+	visible = true
+	process_mode = Node.PROCESS_MODE_INHERIT
 
 func get_mission_id() -> StringName:
 	return mission_actor.mission_id if mission_actor else StringName(name)

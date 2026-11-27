@@ -74,7 +74,7 @@ Sources: [shape rules](../../systems/generation2/tactical_shape_rules.gd), [asse
 
 ## D. Action window, Guard and presentation
 
-The authoritative Move can visit several logical checkpoints in one transaction. Guard and applicable environmental effects run on those checkpoints. Presentation can animate the shorter committed route after a lethal reaction. It holds the action window until settled. The new carrier probe finds a defeat callback that reads the origin before the lethal checkpoint is committed.
+The authoritative Move can visit several logical checkpoints in one transaction. Guard and applicable environmental effects run on those checkpoints. A lethal reaction removes the defeated carrier from its registered origin. Move then settles passenger release from the lethal checkpoint before publishing its receipt. The presenter animates the shortened route and reveals the passenger at the lethal impact. [Step 06.10A explains the ordering and historical replay compatibility](movement-06-step10a-passenger-release.md).
 
 ```mermaid
 sequenceDiagram
@@ -87,12 +87,16 @@ sequenceDiagram
   S->>S: Validate, re-query and acquire busy window
   S->>W: Spend AP, resolve checkpoint hazards and Guard
   opt Lethal Guard
-    W-->>W: Defeat signal can release carried VIP
+    W-->>W: Defeat removes carrier from registered origin
     S->>S: Truncate committed route to lethal checkpoint
+    S->>W: Release passenger at checkpoint or legal fallback
   end
   S->>W: Final occupancy, pose-state cleanup and objective update
   S-->>R: Commit typed receipt and revision
   S->>P: Present committed movement unless suppressed
+  opt Lethal Guard with passenger
+    P->>P: At impact, remove carry visual and reveal placed passenger
+  end
   P-->>S: Settlement / cancellation
   S-->>H: Release action window and return result
 ```

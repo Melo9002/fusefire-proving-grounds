@@ -140,15 +140,18 @@ func present_move(result: MoveActionResult) -> void:
 	var unit := _actor(result.request.actor_id)
 	if not _move_actor_available(unit):
 		result.presentation_error = "Move presenter could not find actor '%s'" % result.request.actor_id
+		_present_passenger_release(unit, result)
 		return
 	if result.presentation_suppressed:
 		_snap_to_committed_destination(unit, result)
+		_present_passenger_release(unit, result)
 		return
 	var camera_presented := false
 	if _camera_available():
 		camera_presented = await action_camera_director.present(unit, &"move", grid_manager.grid_to_world(result.target_cell), result.actor_ap_after)
 	if not _move_actor_available(unit):
 		result.presentation_error = "Move actor left the scene before traversal"
+		_present_passenger_release(unit, result)
 		await _finish_camera(camera_presented)
 		return
 	if result.reaction_events.is_empty():
@@ -157,6 +160,7 @@ func present_move(result: MoveActionResult) -> void:
 		await _wait_for_rescue_interaction(unit)   # a rescue decided by this move is lifted on arrival; the next command waits for it
 	else:
 		camera_presented = await _present_reactive_move(unit, result) or camera_presented
+	_present_passenger_release(unit, result)
 	if is_instance_valid(unit): _snap_to_committed_destination(unit, result)
 	else: result.presentation_error = "Move actor left the scene during traversal"
 	await _finish_camera(camera_presented)
@@ -190,13 +194,27 @@ func _present_reactive_move(unit: TacticalUnit, result: MoveActionResult) -> boo
 			if not _move_actor_available(unit): return reaction_camera_used
 			if is_instance_valid(watcher):
 				await _present_firing_solution(watcher, unit.global_position, event.firing_solution,
-					_show_attack_impact.bind(watcher, unit, event.did_hit, event.hit_chance, event.target_defeated))
+					_present_move_impact.bind(watcher, unit, event, result))
 			print_rich("[color=orange][Guard][/color] %s -> %s: %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
 			if event.target_defeated:
 				return reaction_camera_used
 			await _safe_delay(0.18)
 		index = last + 1
 	return reaction_camera_used
+
+func _present_move_impact(watcher: TacticalUnit, mover: TacticalUnit, event: OverwatchReactionEvent, result: MoveActionResult) -> void:
+	if event.target_defeated:
+		_present_passenger_release(mover, result)
+	_show_attack_impact(watcher, mover, event.did_hit, event.hit_chance, event.target_defeated)
+
+func _present_passenger_release(carrier: TacticalUnit, result: MoveActionResult) -> void:
+	if not result.passenger_release_pending:
+		return
+	result.passenger_release_pending = false
+	if is_instance_valid(carrier):
+		carrier.present_carry_release()
+	if is_instance_valid(result.released_passenger):
+		result.released_passenger.present_released_passenger()
 
 func present_simple(result: SimpleActionResult) -> void:
 	var unit := _actor(result.request.actor_id)

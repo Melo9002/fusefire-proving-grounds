@@ -29,6 +29,9 @@ var aim_enabled := true
 var shield_enabled := true
 ## False only while reproducing recordings created before Overwatch existed.
 var overwatch_enabled := true
+## Older recordings retain the original release location during playback.
+var checkpoint_passenger_release := true
+var _reactive_damage_mover: TacticalUnit
 var guard_minimum_chance := 0
 ## False while reconstructing recordings authored before conditions existed.
 var conditions_enabled := true
@@ -647,6 +650,14 @@ func submit_move(request: TacticalActionRequest, suppress_presentation := false)
 		_grid_manager.update_unit_position(actor, result.start_cell, result.target_cell)
 	else:
 		actor.grid_position = result.target_cell
+		if checkpoint_passenger_release and result.movement_interrupted and _objective_manager and actor.is_carrying_unit():
+			var passenger := actor.carried_unit
+			result.passenger_release_pending = true
+			var drop: Array[int] = []
+			if _objective_manager.release_carried_unit(actor, result.target_cell, true):
+				result.released_passenger = passenger
+				drop = [passenger.grid_position.x, passenger.grid_position.y, passenger.grid_position.z]
+			result.passenger_release = {"actor": String(passenger.tactical_id), "cell": drop}
 	_cancel_aim(actor)
 	_cancel_shield(actor)
 	_cancel_overwatch(actor)
@@ -1077,6 +1088,9 @@ func _cancel_shield(actor: TacticalUnit) -> bool:
 func _cancel_overwatch(actor: TacticalUnit) -> bool:
 	return actor.tactical_state.clear_overwatch() if overwatch_enabled and is_instance_valid(actor) and actor.tactical_state else false
 
+func settles_reactive_passenger_release(unit: TacticalUnit) -> bool:
+	return checkpoint_passenger_release and _reactive_damage_mover == unit
+
 func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult) -> void:
 	if result.path_cells.size() <= 1:
 		return
@@ -1130,7 +1144,9 @@ func _resolve_overwatch_reactions(mover: TacticalUnit, result: MoveActionResult)
 			if event.did_hit:
 				var requested_damage := CombatRules.damage_of(evaluation)
 				mover.defer_stat_presentation = true
+				_reactive_damage_mover = mover
 				mover.stats.take_damage(requested_damage)
+				_reactive_damage_mover = null
 				mover.defer_stat_presentation = false
 			event.supply_points_after = watcher.stats.current_supply_points
 			event.target_hp_after = mover.stats.current_hp

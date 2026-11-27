@@ -286,7 +286,7 @@ func complete_rescue(rescuer: TacticalUnit, target: TacticalUnit) -> bool:
 ## stood on), active and visible again, and the Rescue objective reopens so any pursuing unit can
 ## carry it again. If there is nowhere to put it, the VIP is lost with its extraction objective.
 ## Called by the battle after the carrier has left the grid.
-func release_carried_unit(carrier: TacticalUnit, fall_cell: Vector3i) -> bool:
+func release_carried_unit(carrier: TacticalUnit, fall_cell: Vector3i, defer_presentation := false) -> bool:
 	if not is_instance_valid(carrier) or not carrier.is_carrying_unit() or not _grid_manager:
 		return false
 	var passenger := carrier.carried_unit
@@ -294,13 +294,13 @@ func release_carried_unit(carrier: TacticalUnit, fall_cell: Vector3i) -> bool:
 	if drop_cell.x < 0 and not is_instance_valid(passenger):
 		return false
 	if drop_cell.x < 0:
-		carrier.release_carried_unit()
+		carrier.release_carried_unit(defer_presentation)
 		for state in get_objectives():
 			if state.definition.kind == MissionObjectiveDefinition.Kind.EXTRACT and state.definition.target_ids.has(passenger.get_mission_id()):
 				fail_objective(state.definition.objective_id)
 		print_rich("[color=red][Objectives][/color] The rescued VIP could not be put down and was lost with its carrier")
 		return false
-	carrier.release_carried_unit()
+	carrier.release_carried_unit(defer_presentation)
 	_grid_manager.register_unit(passenger, drop_cell)
 	passenger.global_position = _grid_manager.grid_to_world(drop_cell) + Vector3.UP * passenger.standing_height
 	var rescue := get_objective(&"rescue")

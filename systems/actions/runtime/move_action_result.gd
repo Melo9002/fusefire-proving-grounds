@@ -25,6 +25,9 @@ var defense_notes := PackedStringArray()
 var reaction_events: Array[OverwatchReactionEvent] = []
 var condition_events: Array[Dictionary] = []
 var movement_interrupted := false
+var passenger_release: Dictionary = {}
+var passenger_release_pending := false
+var released_passenger: TacticalUnit
 var presentation_suppressed := false
 var presentation_completed := false
 var presentation_error := ""
@@ -40,6 +43,7 @@ func resolved_dictionary() -> Dictionary:
 	for event in reaction_events: serialized_reactions.append(event.to_dictionary())
 	var result := {"from": [start_cell.x, start_cell.y, start_cell.z], "to": [target_cell.x, target_cell.y, target_cell.z], "path": serialized_path, "actor_ap_before": actor_ap_before, "actor_ap_after": actor_ap_after, "objective_state": objective_state_after.duplicate(true), "carried_actor_id": String(carried_actor_id), "reaction_events": serialized_reactions, "condition_events": condition_events.duplicate(true), "movement_interrupted": movement_interrupted}
 	if not standing_points.is_empty(): result.standing_points = standing_points.duplicate(true)
+	if not passenger_release.is_empty(): result.passenger_release = passenger_release.duplicate(true)
 	return result
 
 func compare_resolved(expected: Dictionary) -> String:

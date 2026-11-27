@@ -227,6 +227,7 @@
   "replay_shield_identity_test": {"sub": ["actions", "combat", "equipment", "replay"], "scope": "unit", "crit": "critical", "contracts": ["replay"], "fast": true},
   "rescue_battle_replay_smoke": {"sub": ["missions", "replay", "rescue"], "scope": "battle", "crit": "critical", "contracts": ["replay"]},
   "rescue_carrier_loss_test": {"sub": ["ai", "missions", "rescue"], "scope": "battle", "crit": "critical", "contracts": ["mission"]},
+  "reactive_passenger_release_test": {"sub": ["actions", "combat", "movement", "missions", "rescue", "replay"], "scope": "battle", "crit": "critical", "contracts": ["lifecycle", "mission", "replay", "presentation-sync"]},
   "rescue_carrier_support_smoke": {"sub": ["ai", "missions", "rescue"], "scope": "battle"},
   "rescue_interaction_test": {"sub": ["actions", "combat", "missions", "rescue"], "scope": "integration"},
   "rescue_lifecycle_test": {"sub": ["missions", "rescue"], "scope": "battle", "crit": "critical", "contracts": ["mission"]},
