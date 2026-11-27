@@ -4,6 +4,7 @@ extends Control
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
+const CombatLabSetup := preload("res://ui/combat_lab_setup.gd")
 const ParcelEditorScene := preload("res://tools/parcel_editor/parcel_editor.tscn")
 ## Experimental, isolated sandbox (research/): opened by path so Match Setup does not depend on it.
 const EXPLORATION_PLAYGROUND_PATH := "res://research/exploration_playground/exploration_playground.tscn"
@@ -25,6 +26,8 @@ var difficulty_option: OptionButton
 var player_commander_option: OptionButton
 var enemy_commander_option: OptionButton
 var deployment_summary: Label
+var combat_lab: CombatLabSetup
+@onready var _setup_tabs: TabContainer = $CenterContainer/Panel/Margin/VBox/Body/SetupTabs
 var compatibility_toggle: CheckButton
 var compatibility_status: Label
 var randomize_seed_button: Button
@@ -57,6 +60,11 @@ func _ready() -> void:
 	_build_seed_actions()
 	_build_deployment_summary()
 	_build_roster_editor()
+	combat_lab = CombatLabSetup.new()
+	combat_lab.name = "Combat Lab"
+	_setup_tabs.add_child(combat_lab)
+	combat_lab.changed.connect(func(): _update_summary(0.0))
+	_setup_tabs.tab_changed.connect(func(_index: int): _update_summary(0.0))
 	_seed_rng.randomize()
 	_prepare_new_seed()
 	for id: StringName in BattlefieldCatalogData.SELECTABLE:
@@ -481,6 +489,15 @@ func _on_objective_selected(index: int) -> void:
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:
+	if combat_lab != null and _setup_tabs.get_current_tab_control() == combat_lab:
+		var config := combat_lab.build_configuration()
+		var guard := "%d%% minimum" % config.guard_minimum_chance if config.guard_minimum_chance > 0 else "First legal"
+		deployment_summary.text = "%s\n\n2 vs 2 · Eliminate\nHard · Seed %d\n\nEngagement: %s\nContextual firing: %s\nGuard: %s\nEnemy: %s" % [
+			"Freight Yard — Pressure" if config.battlefield_id == BattlefieldCatalogData.CONTEXTUAL_FREIGHT else "Service Depot — Crossfire",
+			config.battle_seed, CombatRules.engagement_policy_label(config.engagement_policy),
+			"Off" if config.contextual_firing_disabled else "On", guard, AICommanderPolicy.get_label(config.enemy_commander)]
+		start_button.text = "START COMPARISON"
+		return
 	var map_label := BattlefieldCatalogData.label(_selected_battlefield_id()).to_upper()
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
@@ -528,7 +545,8 @@ func _refresh_seed_controls() -> void:
 
 func _start_battle() -> void:
 	if not _launch_in_progress:
-		_launch_battle(_build_battle_configuration())
+		var config := combat_lab.build_configuration() if _setup_tabs.get_current_tab_control() == combat_lab else _build_battle_configuration()
+		_launch_battle(config)
 
 func _choose_replay_file() -> void:
 	if _launch_in_progress:

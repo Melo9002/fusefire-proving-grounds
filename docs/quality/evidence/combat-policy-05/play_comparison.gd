@@ -32,14 +32,7 @@ func _start() -> void:
 			push_error("Unknown comparison option: " + arg)
 			quit(2)
 			return
-	config.generated_map = true
-	config.select_battlefield(BattlefieldCatalog.CONTEXTUAL_FREIGHT if pressure else BattlefieldCatalog.CONTEXTUAL_SHOWCASE)
-	config.player_count = size
-	config.enemy_count = size
-	config.mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, size)
-	config.battle_seed = 16
-	config.difficulty = AIDifficultyPolicy.Tier.HARD
-	config.enemy_commander = AICommanderPolicy.Profile.DEFAULT if ordinary else AICommanderPolicy.Profile.CAUTIOUS
+	config.configure_comparison(pressure, size, ordinary)
 	var level := Scene.instantiate() as BattleLevel
 	level.configure_battle(config)
 	root.add_child(level)

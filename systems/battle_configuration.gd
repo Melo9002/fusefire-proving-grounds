@@ -50,6 +50,17 @@ var enemy_commander: AICommanderPolicy.Profile = AICommanderPolicy.Profile.DEFAU
 var content_manifest: Dictionary = {}
 
 
+## Fixed deployment used by both the Combat Lab and its command-line launcher.
+func configure_comparison(pressure: bool, size: int, ordinary: bool) -> void:
+	generated_map = true
+	select_battlefield(BattlefieldCatalogData.CONTEXTUAL_FREIGHT if pressure else BattlefieldCatalogData.CONTEXTUAL_SHOWCASE)
+	player_count = size
+	enemy_count = size
+	mission = MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, size)
+	battle_seed = 16
+	difficulty = AIDifficultyPolicy.Tier.HARD
+	enemy_commander = AICommanderPolicy.Profile.DEFAULT if ordinary else AICommanderPolicy.Profile.CAUTIOUS
+
 func apply_replay(data: Dictionary) -> void:
 	player_count = data.get("player_count", 2)
 	enemy_count = data.get("enemy_count", 2)

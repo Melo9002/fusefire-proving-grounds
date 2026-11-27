@@ -6,6 +6,8 @@ Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `
 
 In the normal game, open **Match Setup → Mission**. Choose an **Engagement Rule** and use **Contextual Firing** to enable side steps on Service Depot or Freight Yard. A fresh setup starts with Legacy and side steps off. The briefing and **F3 → Runtime** show both settings. The toggle resolves to the existing certified battlefield variant, so saved replays retain their original map and firing rules.
 
+Open **Match Setup → Combat Lab** for the curated 2v2 comparisons. Pick the engagement rule, contextual firing, Guard minimum hit chance, enemy commander and battlefield on one tab. **Start Comparison** launches the configured battle directly. **Copy launch command** copies the equivalent PowerShell command with the active project path. The tab opens with Symmetrical, contextual firing on, 15% Guard, Cautious and Depot Crossfire. Ordinary match setup retains its own settings.
+
 For the matched comparison deployments, run these from the Godot project root, using the existing battle controls. The mode, side-step setting and Guard policy appear below the turn indicator. In Move, hover for arrival lanes or press **V** to pin the hologram and inspect a particular known enemy. Click the pinned tile to commit, or cancel as usual.
 
 ```powershell

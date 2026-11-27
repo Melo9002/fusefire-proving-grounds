@@ -117,5 +117,45 @@ func _run() -> void:
 			check(other.archetype_id == &"generic" and other.find_children("ClassMarkerStripe", "", true, false).is_empty(), "A Generic unit has no stripe")
 		battle.queue_free()
 	await process_frame
+	await _check_combat_lab()
 	print("Match setup Bulwark: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
+
+
+func _check_combat_lab() -> void:
+	var setup := load("res://ui/match_setup.tscn").instantiate() as MatchSetup
+	root.add_child(setup)
+	var lab := setup.combat_lab
+	setup._setup_tabs.current_tab = setup._setup_tabs.get_tab_idx_from_control(lab)
+	var initial := lab.build_configuration()
+	check(initial.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC and not initial.contextual_firing_disabled
+		and initial.guard_minimum_chance == 15 and initial.enemy_commander == AICommanderPolicy.Profile.CAUTIOUS
+		and initial.battlefield_id == BattlefieldCatalog.CONTEXTUAL_SHOWCASE, "Combat Lab opens with the comparison defaults")
+	check(setup.start_button.text == "START COMPARISON" and setup.deployment_summary.text.contains("Guard: 15% minimum"),
+		"The comparison briefing and start button follow the active tab")
+	check(lab.launch_command().ends_with("-- symmetric guard=15"), "Copy uses the matching default launcher switches")
+
+	for button in lab._battlefield.get_buttons():
+		if button.get_meta("value") == 1: button.button_pressed = true
+	for button in lab._commander.get_buttons():
+		if button.get_meta("value") == AICommanderPolicy.Profile.DEFAULT: button.button_pressed = true
+	for button in lab._guard.get_buttons():
+		if button.get_meta("value") == 25: button.button_pressed = true
+	lab._contextual.button_pressed = false
+	check(lab.launch_command().ends_with("-- symmetric no-context guard=25 ordinary pressure"),
+		"Copy combines independent comparison choices")
+	setup.start_button.pressed.emit()
+	var deadline := Time.get_ticks_msec() + 30000
+	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
+		await process_frame
+	var battle := current_scene as BattleLevel
+	check(battle != null, "Start Comparison launches a live battle")
+	if battle:
+		var record: Dictionary = battle._replay_recorder.recording.configuration
+		check(record.battlefield_id == BattlefieldCatalog.CONTEXTUAL_FREIGHT and record.seed == 16 and record.guard_minimum_chance == 25
+			and record.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC and record.contextual_firing_disabled
+			and record.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "The actual comparison saves the selected settings")
+		check(not battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
+			and battle.battle_controller.action_service.guard_minimum_chance == 25, "Combat Lab selections reach live authority")
+		battle.queue_free()
+	await process_frame
