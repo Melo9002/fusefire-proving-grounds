@@ -28,7 +28,47 @@ func _fixture(revision := 5) -> MapData:
 	scene.free()
 	return data
 
+func _check_support_aware_selection() -> void:
+	var target := Vector3i(3, 0, 3)
+	var approach := Vector3i(3, 0, 2)
+	var data := _support_fixture(false)
+	var tile := data.get_cell(target)
+	var alternate_south := Vector3(0, 0, 0.43)
+	check(SurfaceNavigation.supported(data, alternate_south, data.body_radius) and SurfaceNavigation.body_clear(data, alternate_south)
+		and SurfaceNavigation.edge_clear(data, data.get_cell(Vector3i(3, 0, 4)).world_position, alternate_south), "The audit's southern alternate independently clears body, support and approach")
+	check(tile.can_stop and tile.world_position.is_equal_approx(Vector3(0, 0, -0.42)), "Recover the supported alternative; the existing equal-distance tie favors lower Z: %s" % tile.world_position)
+	check(tile.support_center.is_zero_approx(), "Placement preserves logical cell identity and center")
+	check(_support_fixture(true).get_cell(target).world_position.is_equal_approx(Vector3(0.33, 0, 0)), "Full flooring preserves the original valid east candidate")
+	check(not _support_fixture(false, false).get_cell(target).can_stop, "Historical placement preserves the documented rejection")
+	check(not _support_fixture(false, true, &"unsupported").get_cell(target).can_stop, "No tested candidate is accepted without same-height floor in its own tile")
+	check(not _support_fixture(false, true, &"obstructed").get_cell(target).can_stop, "No tested candidate is accepted through a complete solid")
+	check(SurfaceNavigation.signature(data) == SurfaceNavigation.signature(_support_fixture(false)), "Identical mixed support gives a deterministic standing signature")
+	var graph := Pathfinder.new()
+	MapGraphBuilder.build(data, graph)
+	var north := graph.grid_to_id_map[approach] as int
+	var target_id := graph.grid_to_id_map[target] as int
+	var south := graph.grid_to_id_map[Vector3i(3, 0, 4)] as int
+	check(graph.astar.are_points_connected(north, target_id) and is_equal_approx(graph.get_step_cost(approach, target), 1.0), "The selected north point has a legal cardinal approach at one movement unit")
+	check(not graph.astar.are_points_connected(south, target_id), "The selected point does not authorize a direct south approach through the solid")
+	check(target not in graph.get_reachable_cells(approach, 0) and target in graph.get_reachable_cells(approach, 1), "A valid standing point remains subject to the movement budget")
+	var diagonal := Vector3i(2, 0, 1)
+	check(is_equal_approx(graph.get_step_cost(approach, diagonal), sqrt(2.0)), "Diagonal route weight remains sqrt(2)")
+
+func _support_fixture(east_support: bool, support_aware := true, variant := &"") -> MapData:
+	var data := TacticalMapBuilder.generate(7, 7, 1.0, 16)
+	data.surface_placement_enabled = true
+	data.get_cell(Vector3i(4, 0, 3)).support_surface = east_support
+	data.movement_parts.append(AABB(Vector3(-0.45, 0, -0.10), Vector3(0.46, 1.8, 0.2)))
+	if variant == &"unsupported":
+		data.get_cell(Vector3i(3, 0, 3)).support_surface = false
+		data.add_cell(MapCellData.new(Vector3i(3, -1, 3), Vector3(0, -1, 0)))
+	if variant == &"obstructed":
+		data.movement_parts.append(AABB(Vector3(-0.5, 0, -0.5), Vector3(1, 1.8, 1)))
+	SurfaceNavigation.resolve_map(data, 1.0, support_aware)
+	return data
+
 func _run() -> void:
+	_check_support_aware_selection()
 	var data := _fixture()
 	var partial := Vector3i(8, 0, 8)
 	var cell := data.get_cell(partial)

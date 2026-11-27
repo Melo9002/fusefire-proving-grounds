@@ -28,6 +28,8 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 				data.surface_placement_enabled = data.surface_placement_enabled or bool(probe.get_meta("surface_placement_enabled", false))
 				probe.free()
 	var precise_shot_bounds := int(resolved.compiler_revision) != Resolver.LEGACY_COMPILER_REVISION
+	# Placement revision 11 retains the revision-10 authored solids verbatim.
+	var shape_revision := mini(int(resolved.compiler_revision), Compiler.SHAPE_REVISION)
 	for placement: Dictionary in resolved.placements:
 		var parcel = parcels.get_definition(StringName(placement.parcel_id))
 		if parcel == null or parcel.revision != int(placement.parcel_revision):
@@ -42,9 +44,9 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		})
 		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
-		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, int(resolved.compiler_revision))
+		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, shape_revision)
 		root.free()
-	SurfaceNavigation.resolve_map(data, cell_size)
+	SurfaceNavigation.resolve_map(data, cell_size, int(resolved.compiler_revision) >= Resolver.SUPPORT_AWARE_COMPILER_REVISION)
 	if data.surface_placement_enabled:
 		var signature := SurfaceNavigation.signature(data)
 		if resolved.has("standing_points_signature") and resolved.standing_points_signature != signature:

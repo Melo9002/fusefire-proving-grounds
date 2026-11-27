@@ -21,8 +21,8 @@ static func _intersects_body(point: Vector3, bounds: AABB, radius: float, height
 	return Vector2(point.x, point.z).distance_squared_to(nearest) < radius * radius * 0.99998
 
 ## Closest tested fit to a requested point, constrained to its logical cell.
-## The body may extend into adjacent open space; later occupancy must check it.
-static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF, box_footprint := false, curves: Array[CylinderPart] = []) -> Dictionary:
+## The optional final check can reject a geometric fit; live occupancy is separate.
+static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, height := 1.8, clearance := 0.04, cell_size := 1.0, preferred := Vector3.INF, box_footprint := false, curves: Array[CylinderPart] = [], accept := Callable()) -> Dictionary:
 	if not _finite(center) or not is_finite(radius) or not is_finite(height) or not is_finite(clearance) or not is_finite(cell_size) or radius <= 0 or height <= 0 or clearance < 0 or cell_size <= 0.002:
 		return {"fits": false, "reason": "Invalid body or cell dimensions"}
 	if preferred != Vector3.INF and not _finite(preferred): return {"fits": false, "reason": "Invalid requested point"}
@@ -58,7 +58,8 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 			var point := Vector3(x, center.y, z)
 			if not candidates.has(point): candidates.append(point)
 	if not local_curves.is_empty():
-		if _clear_candidate(desired, local, local_curves, radius, height, clearance, box_footprint):
+		if _clear_candidate(desired, local, local_curves, radius, height, clearance, box_footprint) \
+			and (not accept.is_valid() or accept.call(desired)):
 			return {"fits": true, "position": desired, "offset": desired - center, "tested": 1}
 		# Projection gives true tangent candidates on simple faces. The fixed
 		# lattice also tests mixed contacts, interior queries and rotated corners.
@@ -81,9 +82,10 @@ static func resolve(center: Vector3, obstacles: Array[AABB], radius := 0.28, hei
 	for point in candidates:
 		if tested >= MAX_CANDIDATES: return {"fits": false, "reason": "Standing-point search budget exceeded"}
 		tested += 1
-		if _clear_candidate(point, local, local_curves, radius, height, clearance, box_footprint):
+		if _clear_candidate(point, local, local_curves, radius, height, clearance, box_footprint) \
+			and (not accept.is_valid() or accept.call(point)):
 			return {"fits": true, "position": point, "offset": point - center, "tested": tested, "reason": "Geometric fit only; support, route and occupancy still require validation"}
-	return {"fits": false, "reason": "No tested body-sized position fits this cell"}
+	return {"fits": false, "reason": "No tested supported fit" if accept.is_valid() else "No tested body-sized position fits this cell"}
 
 static func _curve_contains_tile(curve: CylinderPart, center: Vector3, half_cell: float, radius: float, height: float, clearance: float) -> bool:
 	for x in [-half_cell, half_cell]:

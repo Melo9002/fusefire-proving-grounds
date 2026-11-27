@@ -7,7 +7,8 @@ const ParcelCatalog = preload("res://systems/generation2/authored_parcel_catalog
 const SlotContract = preload("res://systems/generation2/parcel_slot_contract.gd")
 ## Bump if the shared authored compilation or deployment repair changes
 ## the tactical result for an unchanged exact manifest.
-const COMPILER_REVISION := preload("res://systems/generation2/tactical_shape_rules.gd").REVISION
+const SUPPORT_AWARE_COMPILER_REVISION := 11
+const COMPILER_REVISION := SUPPORT_AWARE_COMPILER_REVISION
 const LEGACY_COMPILER_REVISION := 1
 
 static func resolve(catalog, map_seed: int, population_enabled: bool = true, requested: Dictionary = {}, parcels = ParcelCatalog) -> Dictionary:
@@ -22,7 +23,7 @@ static func resolve(catalog, map_seed: int, population_enabled: bool = true, req
 			result.errors.append(_error("UNSUPPORTED_MANIFEST", String(plot.plot_id)))
 			return result
 		var revision: Variant = requested.get("compiler_revision", LEGACY_COMPILER_REVISION)
-		if not (revision is int or revision is float) or revision not in [1, 2, 3, 4, 5, 6, 7, 8, 9, COMPILER_REVISION]:
+		if not (revision is int or revision is float) or revision != int(revision) or revision < LEGACY_COMPILER_REVISION or revision > COMPILER_REVISION:
 			result.errors.append(_error("UNSUPPORTED_COMPILER_REVISION", "%s requires %s. This build supports revisions 1 through %d." % [plot.plot_id, revision, COMPILER_REVISION]))
 			return result
 		result.compiler_revision = int(revision)
