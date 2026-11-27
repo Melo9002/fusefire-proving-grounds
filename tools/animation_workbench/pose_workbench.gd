@@ -70,6 +70,22 @@ func _swap_character() -> void:
 	move_child(replacement, 0)
 
 
+## The carried body for a passenger choice: a key of CHARACTER_RIGS, or null for "the same kind as the carrier" (and for a key this workbench does not know).
+func _passenger_for(key: StringName) -> PassengerDefinition:
+	return PassengerDefinition.for_character(key) if key != &"" and CHARACTER_RIGS.has(key) else null
+
+
+## Chooses who the carried body is, independently of the carrier. Whatever is being carried or lifted is let go of first (a deliberate, clean reset: no orphaned passenger, no stale contacts), so the next lift or carry
+## builds the chosen body. The choice is kept for the next launch and is part of every reproduction command.
+func set_passenger(key: StringName) -> void:
+	if key != &"" and not CHARACTER_RIGS.has(key):
+		return
+	reset_scene()
+	WorkbenchSession.passenger = key
+	rig.passenger_definition = _passenger_for(key)
+	_update_status()
+
+
 ## A reference-body camera position or focus, scaled to this character.
 func _view(point: Vector3) -> Vector3:
 	return point * view_scale
@@ -131,6 +147,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return   # the rig poses itself in the editor (its own _ready)
 	rig.animation_controller.state_changed.connect(_on_animation_state_changed)
+	rig.passenger_definition = _passenger_for(WorkbenchSession.passenger)
 	view_scale = rig.body_ratio()
 	camera.position = _view(camera.position)
 	camera.look_at(_view(Vector3(0.42, 0.72, 0.0)), Vector3.UP)

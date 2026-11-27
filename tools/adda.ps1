@@ -15,6 +15,7 @@ param(
 	[Parameter(Mandatory = $true, Position = 0)][ValidateSet("run", "inspect", "compare", "list", "isolate", "challenges", "score")][string]$Command,
 	[string]$Scenario,
 	[string]$Character = "mira_0",
+	[string]$Passenger,
 	[switch]$Unarmed,
 	[switch]$Mesh,
 	[switch]$Drafts,
@@ -52,6 +53,7 @@ switch ($Command) {
 	"run" {
 		if (-not $Scenario) { throw "run needs -Scenario <id> (.\tools\adda.ps1 list shows them)" }
 		$arguments += "--scenario=$Scenario", "--character=$Character", "--fps=$Fps", "--detail=$Detail"
+		if ($Passenger) { $arguments += "--passenger=$Passenger" }
 		if ($Unarmed) { $arguments += "--unarmed" }
 		if ($Mesh) { $arguments += "--mesh" }
 		if ($Drafts) { $arguments += "--drafts" }
@@ -66,6 +68,7 @@ switch ($Command) {
 	"isolate" {
 		if (-not $Scenario -or -not $At -or -not $Bones) { throw "isolate needs -Scenario <id> -At <seconds> -Bones <name|@role,...>" }
 		$arguments += "--scenario=$Scenario", "--character=$Character", "--at=$At", "--bones=$Bones"
+		if ($Passenger) { $arguments += "--passenger=$Passenger" }
 		if ($Unarmed) { $arguments += "--unarmed" }
 		if ($Window) { $arguments += "--window=$Window" }
 		if ($Challenge) { $arguments += "--challenge=$Challenge" }

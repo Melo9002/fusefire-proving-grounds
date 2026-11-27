@@ -9,6 +9,8 @@ var _roles_box: VBoxContainer
 var _caps: RichTextLabel
 var _character_choice: OptionButton
 var _armed: CheckBox
+var _passenger_choice: OptionButton
+var _passenger_note: Label
 var _check_choice: OptionButton
 var _check_result: RichTextLabel
 var _role_choice: OptionButton
@@ -43,6 +45,19 @@ func setup(workbench: Node3D) -> void:
 	_armed = WorkbenchUI.check("Armed (carries its weapon)", WorkbenchSession.armed, func(_on: bool) -> void: pass)
 	choose.add_child(_armed)
 	choose.add_child(WorkbenchUI.row([["Apply and reload", _apply_character]]))
+
+	var carried := WorkbenchUI.section(self, "Carried body (passenger)")
+	carried.add_child(WorkbenchUI.label("Who is lifted, carried and climbed with, chosen on its own: any model can carry any model. Changing it lets go of whatever is carried now; no reload.", 12, WorkbenchUI.DIM))
+	_passenger_choice = OptionButton.new()
+	_passenger_choice.add_item("Same as the carrier")
+	for key in keys:
+		_passenger_choice.add_item(String(key))
+	_passenger_choice.select(0 if WorkbenchSession.passenger == &"" else maxi(keys.find(WorkbenchSession.passenger) + 1, 0))
+	carried.add_child(_passenger_choice)
+	carried.add_child(WorkbenchUI.row([["Apply passenger", _apply_passenger]]))
+	_passenger_note = WorkbenchUI.mono("", 12)
+	carried.add_child(_passenger_note)
+	_describe_passenger()
 
 	var roles := WorkbenchUI.section(self, "Semantic roles and bones")
 	roles.add_child(WorkbenchUI.label("* required by FuseFire's animation code. Pick a role to mark its bone on the body.", 12, WorkbenchUI.DIM))
@@ -106,6 +121,22 @@ func _highlight_role(index: int) -> void:
 	if row.bone != "":
 		names.append(row.bone)
 	bench.diagnostics.highlight_bones(names)
+
+func _apply_passenger() -> void:
+	var keys: Array = bench.CHARACTER_RIGS.keys()
+	var chosen: StringName = &"" if _passenger_choice.selected <= 0 else keys[_passenger_choice.selected - 1]
+	bench.set_passenger(chosen)
+	_describe_passenger()
+
+
+## What the next carry will be: the carried body's own character, scale and rig profile, read from the definition (never from the carrier).
+func _describe_passenger() -> void:
+	var definition: PassengerDefinition = bench.rig.passenger_definition
+	if definition == null:
+		_passenger_note.text = "The carried body is the carrier's own kind."
+	else:
+		_passenger_note.text = "The carried body is %s (scale %.2f, profile %s)." % [definition.character_id, definition.scale, definition.rig_profile.display_name if definition.rig_profile != null else "none"]
+
 
 func _apply_character() -> void:
 	var keys: Array = bench.CHARACTER_RIGS.keys()

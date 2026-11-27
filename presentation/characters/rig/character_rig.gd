@@ -1877,7 +1877,11 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 			var release := loaded_ladder.eased()
 			var rung_local := _loaded_hand_local()
 			if rung_local.is_finite() and release > 0.0:
-				point = point.lerp(character_root.to_global(rung_local), release)
+				# A target the arm cannot reach is not taken: the hand stays with the passenger until the ladder brings it within reach (the deck handhold at the head of a descent is such a target).
+				var rung_world := character_root.to_global(rung_local)
+				var arm := ladder_body().arm_length()
+				release *= 1.0 - smoothstep(arm * 0.90, arm * 1.00, (shoulders[shoulder_of[assignment[0]]] as Vector3).distance_to(rung_world))
+				point = point.lerp(rung_world, release)
 				fingers = fingers.lerp(Vector3.UP, release).normalized()
 				normal = normal.lerp(character_root.global_basis.orthonormalized().z, release).normalized()
 				hand_curl = lerpf(curl, 0.6, release)

@@ -21,6 +21,12 @@ const VERSION := 1
 const CONTEXT_ROWS := 2
 
 ## `options`: scenario (String), character (key), command (relaunch line), cli (headless line), detail ("summary" | "full"), window ([n0, n1] rows to include in full).
+## Who the carried body is, as the rig describes it (character, scale, profile), or empty when nobody is carried and none is chosen.
+static func _passenger_identity(rig: CharacterRig) -> Dictionary:
+	var definition: PassengerDefinition = rig.carry_passenger.definition if is_instance_valid(rig.carry_passenger) and rig.carry_passenger.get("definition") != null else rig.passenger_definition
+	return definition.describe() if definition != null else {}
+
+
 static func build(recorder: SessionRecorder, options := {}) -> Dictionary:
 	var rows: Array = recorder.rows
 	var rig: CharacterRig = recorder.rig
@@ -30,7 +36,7 @@ static func build(recorder: SessionRecorder, options := {}) -> Dictionary:
 	if not rows.is_empty():
 		for bone in (rows[0].bones as Dictionary):
 			names[String(bone)] = String(BodyParts.describe(rig, String(bone)).text)
-	var config := {"scenario": String(options.get("scenario", "")), "character": String(options.get("character", "")), "identity": Measurement.identity_of(rig),
+	var config := {"scenario": String(options.get("scenario", "")), "character": String(options.get("character", "")), "passenger": String(options.get("passenger", "")), "passenger_identity": _passenger_identity(rig), "identity": Measurement.identity_of(rig),
 		"armed": rig.has_weapon(), "body_ratio": snappedf(rig.body_ratio(), 0.0001), "frame_dt_s": description.frame_dt_s, "fps": snappedf(1.0 / float(description.frame_dt_s), 0.1) if float(description.frame_dt_s) > 0.0 else 0.0,
 		"rows": description.rows, "dropped": description.dropped, "duration_s": snappedf(float(analysis.metrics.get("duration_s", {}).get("value", 0.0)), 0.001), "mesh_sampling": description.mesh_sampling,
 		"engine": Engine.get_version_info().string, "revision": revision(), "command": String(options.get("command", "")), "cli": String(options.get("cli", "")), "experiment": options.get("experiment", []), "tuning": options.get("tuning", {})}

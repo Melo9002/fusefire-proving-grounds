@@ -1,7 +1,7 @@
 class_name WorkbenchSession
 extends RefCounted
 ## What the next workbench launch should look like. A scene reload is the workbench's one reliable "full reset" (it also switches the character, whose rig builds itself once), so the choice made in the panel is kept
-## here, in static variables that outlive the reload, and read by the workbench before its rig builds. Command-line user arguments (`--character=<key>`, `--unarmed`, `--scenario=<id>`) set the same things.
+## here, in static variables that outlive the reload, and read by the workbench before its rig builds. Command-line user arguments (`--character=<key>`, `--passenger=<key>`, `--unarmed`, `--scenario=<id>`) set the same things.
 
 ## The product name. AniLab is the animation framework; ADDA (AniLab Diagnostic & Debugging Assistant) is its diagnostic and debugging suite; this scene is ADDA's Workbench. Paths, scene names and command lines
 ## keep their old names (pose_workbench.tscn) on purpose: only what a person reads says ADDA.
@@ -9,6 +9,8 @@ const PRODUCT := "ADDA — Workbench"
 const PRODUCT_LONG := "ADDA — AniLab Diagnostic & Debugging Assistant: Workbench"
 
 static var character: StringName = &""
+## Who a carried body is (a key of the workbench's CHARACTER_RIGS), chosen independently of the carrier: empty means the same kind as the carrier. `--passenger=<key>` on the command line chooses one too.
+static var passenger: StringName = &""
 static var armed := true
 static var autostart_scenario: StringName = &""
 static var start_tab := -1
@@ -20,6 +22,8 @@ static func read_arguments() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--character="):
 			character = StringName(argument.trim_prefix("--character="))
+		elif argument.begins_with("--passenger="):
+			passenger = StringName(argument.trim_prefix("--passenger="))
 		elif argument == "--unarmed":
 			armed = false
 		elif argument.begins_with("--scenario="):
@@ -35,6 +39,8 @@ static func repro_command(scenario: StringName = &"") -> String:
 		parts.append("--character=%s" % character)
 	if not armed:
 		parts.append("--unarmed")
+	if passenger != &"":
+		parts.append("--passenger=%s" % passenger)
 	if scenario != &"":
 		parts.append("--scenario=%s" % scenario)
 	return " ".join(parts)
