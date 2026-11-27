@@ -64,6 +64,23 @@ godot_console --headless --path . --script docs/quality/evidence/movement-06/rea
 
 For the timing comparison, run the same probe against an imported checkout at the baseline revision. Baseline reproduction logs, timing logs, running-command metadata, controls and Ironclad result JSON are under `artifacts/0604` in the review checkout.
 
+## Verification results
+
+The production change is recorded at `75371f2d3bdcfb347116078e71846a28151d60c6`. Catalog validation passed with 311 entries. The 29-test Ironclad selection passed import validation and returned 24 passes and five failures, with no timeouts or unexecuted selections. The rendered movement regression also passed in Compatibility mode. The selection included the new feedback regression, route and occupancy checks, layered picking, tactical HUD and firing previews, AI clearance reuse, Guard, reactive passenger release, contextual firing and traversal replay determinism.
+
+All six controls from the preceding full run were executed against an archive of exact integrated main. The review branch reproduced five. Their assertions were left intact.
+
+| Test | Integrated main → review branch | Finding |
+| --- | --- | --- |
+| `camera_environment_apertures_test` | Fail → fail | Contextual Firing Bay misses a shared environment camera-aperture geometry assertion. |
+| `core_objectives_smoke` | Fail → pass | Previously isolated as an intermittent Rescue presentation failure involving incapacitated pose readiness. One branch pass does not resolve it. |
+| `generation_retirement_test` | Fail → fail | The compact Depot default assertion predates the contextual battlefield variant selected by the current defaults. |
+| `ladder_landing_test` | Fail → fail | Same four descent intersections for regular MIRA in armed and unarmed posts and rails transfers, tracked under #64. |
+| `reusable_occupant_test` | Fail → fail | Same four extracted-asset parity failures for the loading-yard variants and delivery object. |
+| `tactical_archetype_lab_test` | Fail → fail | The four-tab assertion predates the added Combat tab. |
+
+The selected run ID is `20261127-170803038-556bfacc-select`. Its machine-readable results, command and completion record are under `artifacts/0604`. Another 245 ordinary tests were outside this selection and 37 tests remain explicit-only. No full suite rerun was performed for 06.04.
+
 ## Remaining scope
 
 Feedback applies to the floor the existing picker returns. Ambiguous distant connectivity keeps the bounded generic explanation. No new camera, pointer, traversal, Guard or contextual firing rule is needed. The tests provide targeted 06.03 evidence for preview, cost and occupancy. After this review, use the existing traversal fixtures to continue verification of stair, ramp and ladder cases separately.
