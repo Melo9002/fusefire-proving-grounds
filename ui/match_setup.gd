@@ -4,7 +4,7 @@ extends Control
 const BattleConfigurationData := preload("res://systems/battle_configuration.gd")
 const BattlefieldCatalogData := preload("res://systems/generation/battlefield_catalog.gd")
 const BattleLoadingScreenData := preload("res://ui/battle_loading_screen.gd")
-const CombatLabSetup := preload("res://ui/combat_lab_setup.gd")
+const CombatSetup := preload("res://ui/combat_setup.gd")
 const ParcelEditorScene := preload("res://tools/parcel_editor/parcel_editor.tscn")
 ## Experimental, isolated sandbox (research/): opened by path so Match Setup does not depend on it.
 const EXPLORATION_PLAYGROUND_PATH := "res://research/exploration_playground/exploration_playground.tscn"
@@ -20,13 +20,11 @@ const EXPLORATION_PLAYGROUND_PATH := "res://research/exploration_playground/expl
 var vip_toggle: CheckButton
 var vip_behavior: OptionButton
 var objective_option: OptionButton
-var engagement_option: OptionButton
-var contextual_firing_toggle: CheckButton
 var difficulty_option: OptionButton
 var player_commander_option: OptionButton
 var enemy_commander_option: OptionButton
 var deployment_summary: Label
-var combat_lab: CombatLabSetup
+var combat_setup: CombatSetup
 @onready var _setup_tabs: TabContainer = $CenterContainer/Panel/Margin/VBox/Body/SetupTabs
 var compatibility_toggle: CheckButton
 var compatibility_status: Label
@@ -53,18 +51,17 @@ const RESTART_MARKER := "--fusefire-renderer-restart"
 func _ready() -> void:
 	_build_population_setup()
 	_build_objective_setup()
-	_build_engagement_setup()
 	_build_vip_setup()
 	_build_compatibility_setup()
 	_build_authoring_tools()
 	_build_seed_actions()
 	_build_deployment_summary()
 	_build_roster_editor()
-	combat_lab = CombatLabSetup.new()
-	combat_lab.name = "Combat Lab"
-	_setup_tabs.add_child(combat_lab)
-	combat_lab.changed.connect(func(): _update_summary(0.0))
-	_setup_tabs.tab_changed.connect(func(_index: int): _update_summary(0.0))
+	combat_setup = CombatSetup.new()
+	combat_setup.name = "Combat"
+	_setup_tabs.add_child(combat_setup)
+	combat_setup.changed.connect(func(): _update_summary(0.0))
+	combat_setup.preset_selected.connect(_apply_comparison_preset)
 	_seed_rng.randomize()
 	_prepare_new_seed()
 	for id: StringName in BattlefieldCatalogData.SELECTABLE:
@@ -399,34 +396,6 @@ func _build_objective_setup() -> void:
 	commander_box.add_child(commander_columns)
 	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Settings.add_child(commander_box)
 
-func _build_engagement_setup() -> void:
-	var box := VBoxContainer.new()
-	box.name = "EngagementSetup"
-	var label := Label.new()
-	label.text = "ENGAGEMENT RULE"
-	box.add_child(label)
-	engagement_option = OptionButton.new()
-	engagement_option.name = "EngagementOption"
-	engagement_option.tooltip_text = "Sets how both sides qualify for a firing lane. Symmetrical requires a physically clear return lane."
-	var descriptions := [
-		"Any exposed target sample can qualify. One-way shots are possible.",
-		"The shot must reach the target's head or core. One-way shots are possible.",
-		"Both units need a physical firing lane. Range, AP, and SP can still differ.",
-		"Both units need a physical firing lane that reaches the other unit's head or core.",
-	]
-	for policy in CombatRules.EngagementPolicy.values():
-		engagement_option.add_item(CombatRules.engagement_policy_label(policy), policy)
-		engagement_option.set_item_tooltip(engagement_option.item_count - 1, descriptions[policy])
-	engagement_option.select(engagement_option.get_item_index(CombatRules.EngagementPolicy.LEGACY))
-	engagement_option.item_selected.connect(func(_index: int): _update_summary(0.0))
-	box.add_child(engagement_option)
-	contextual_firing_toggle = CheckButton.new()
-	contextual_firing_toggle.name = "ContextualFiringToggle"
-	contextual_firing_toggle.text = "CONTEXTUAL FIRING"
-	contextual_firing_toggle.toggled.connect(func(_enabled: bool): _update_summary(0.0))
-	box.add_child(contextual_firing_toggle)
-	$CenterContainer/Panel/Margin/VBox/Body/SetupTabs/Mission.add_child(box)
-
 func _create_commander_selector(label_text: String, tooltip: String) -> OptionButton:
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -489,15 +458,6 @@ func _on_objective_selected(index: int) -> void:
 	_update_summary(0.0)
 
 func _update_summary(_value: float) -> void:
-	if combat_lab != null and _setup_tabs.get_current_tab_control() == combat_lab:
-		var config := combat_lab.build_configuration()
-		var guard := "%d%% minimum" % config.guard_minimum_chance if config.guard_minimum_chance > 0 else "First legal"
-		deployment_summary.text = "%s\n\n2 vs 2 · Eliminate\nHard · Seed %d\n\nEngagement: %s\nContextual firing: %s\nGuard: %s\nEnemy: %s" % [
-			"Freight Yard — Pressure" if config.battlefield_id == BattlefieldCatalogData.CONTEXTUAL_FREIGHT else "Service Depot — Crossfire",
-			config.battle_seed, CombatRules.engagement_policy_label(config.engagement_policy),
-			"Off" if config.contextual_firing_disabled else "On", guard, AICommanderPolicy.get_label(config.enemy_commander)]
-		start_button.text = "START COMPARISON"
-		return
 	var map_label := BattlefieldCatalogData.label(_selected_battlefield_id()).to_upper()
 	var objective_label := MissionCatalog.get_preset_names()[objective_option.selected] if objective_option else "Eliminate"
 	var has_vip := vip_toggle != null and vip_toggle.button_pressed
@@ -506,14 +466,16 @@ func _update_summary(_value: float) -> void:
 	var player_controlled := int(player_count.value) + player_vip
 	var ai_controlled := int(ally_count.value) + ai_vip
 	if deployment_summary:
-		var engagement_label := CombatRules.engagement_policy_label(engagement_option.get_selected_id())
-		var contextual := "Unavailable" if contextual_firing_toggle.disabled else ("On" if contextual_firing_toggle.button_pressed else "Off")
+		var engagement := CombatRules.engagement_policy_label(combat_setup.engagement_policy())
+		var guard := combat_setup.guard_minimum_chance()
+		var guard_label := "%d%% minimum" % guard if guard > 0 else "First legal"
+		var contextual_label := "On" if combat_setup.contextual_enabled() else "Off"
 		var difficulty_label := difficulty_option.get_item_text(difficulty_option.selected) if difficulty_option else "Normal"
 		var player_commander_label := player_commander_option.get_item_text(player_commander_option.selected) if player_commander_option else "Default"
 		var enemy_commander_label := enemy_commander_option.get_item_text(enemy_commander_option.selected) if enemy_commander_option else "Default"
 		var vip_line := "\nVIP\n%s" % vip_behavior.get_item_text(vip_behavior.selected) if has_vip else ""
 		var population_line := "\nPopulation: %s" % ("ON" if population_toggle.button_pressed else "OFF") if population_toggle.visible else ""
-		deployment_summary.text = "MISSION\n%s%s\nEngagement: %s\nContextual firing: %s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\n\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, engagement_label, contextual, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
+		deployment_summary.text = "MISSION\n%s%s\nCOMBAT\nEngagement: %s\nContextual firing: %s\nGuard: %s\n\nFORCES\nPlayer-controlled: %d\nAI allies: %d\nEnemies: %d\n\nBATTLEFIELD\n%s\nSeed: %d%s\nAI\nDifficulty: %s\nPlayer + Ally: %s\nEnemy: %s" % [objective_label.to_upper(), vip_line, engagement, contextual_label, guard_label, player_controlled, ai_controlled, int(enemy_count.value), map_label, int(seed_input.value), population_line, difficulty_label, player_commander_label, enemy_commander_label]
 	start_button.text = "START BATTLE"
 
 func _on_battlefield_selected(_index: int) -> void:
@@ -524,11 +486,33 @@ func _on_battlefield_selected(_index: int) -> void:
 func _refresh_generation_controls() -> void:
 	var battlefield := _selected_battlefield_id()
 	population_toggle.visible = BattlefieldCatalogData.uses_population(battlefield)
-	var supported := not BattlefieldCatalogData.contextual_variant(battlefield).is_empty()
-	contextual_firing_toggle.disabled = not supported
-	if not supported: contextual_firing_toggle.set_pressed_no_signal(false)
-	contextual_firing_toggle.tooltip_text = ("A MIRA can take a brief side step to find a valid shot and then return to cover."
-		if supported else "Available on Service Depot and Freight Yard.")
+	combat_setup.set_contextual_supported(not BattlefieldCatalogData.contextual_variant(battlefield).is_empty())
+
+func _apply_comparison_preset(pressure: bool) -> void:
+	var preset := BattleConfigurationData.new()
+	preset.configure_comparison(pressure, 2, false)
+	var site := BattlefieldCatalogData.FREIGHT_YARD if pressure else preset.battlefield_id
+	for index in map_size_option.item_count:
+		if map_size_option.get_item_metadata(index) == site:
+			map_size_option.select(index)
+			_on_battlefield_selected(index)
+			break
+	objective_option.select(MissionObjectiveDefinition.Kind.ELIMINATE)
+	_on_objective_selected(objective_option.selected)
+	player_count.value = preset.player_count
+	enemy_count.value = preset.enemy_count
+	ally_count.value = preset.ally_count
+	player_archetypes = TacticalArchetypeCatalog.normalize_ids([], preset.player_count)
+	enemy_archetypes = TacticalArchetypeCatalog.normalize_ids([], preset.enemy_count)
+	ally_archetypes = TacticalArchetypeCatalog.normalize_ids([], preset.ally_count)
+	_rebuild_roster_entries()
+	auto_seed_toggle.button_pressed = false
+	seed_input.value = preset.battle_seed
+	difficulty_option.select(preset.difficulty)
+	player_commander_option.select(preset.player_commander)
+	enemy_commander_option.select(preset.enemy_commander)
+	combat_setup.apply_preset()
+	_update_summary(0.0)
 
 func _on_auto_seed_toggled(enabled: bool) -> void:
 	if enabled:
@@ -545,8 +529,7 @@ func _refresh_seed_controls() -> void:
 
 func _start_battle() -> void:
 	if not _launch_in_progress:
-		var config := combat_lab.build_configuration() if _setup_tabs.get_current_tab_control() == combat_lab else _build_battle_configuration()
-		_launch_battle(config)
+		_launch_battle(_build_battle_configuration())
 
 func _choose_replay_file() -> void:
 	if _launch_in_progress:
@@ -641,12 +624,15 @@ func _build_battle_configuration() -> BattleConfigurationData:
 	config.include_vip = vip_toggle.button_pressed
 	config.vip_behavior = vip_behavior.selected as MissionActor.VIPBehavior
 	config.mission = MissionCatalog.create_mission(objective_option.selected, config.enemy_count, config.include_vip)
-	config.engagement_policy = engagement_option.get_selected_id()
 	config.difficulty = difficulty_option.selected as AIDifficultyPolicy.Tier
 	config.player_commander = player_commander_option.selected as AICommanderPolicy.Profile
 	config.enemy_commander = enemy_commander_option.selected as AICommanderPolicy.Profile
-	var contextual := BattlefieldCatalogData.contextual_variant(battlefield)
-	config.select_battlefield(contextual if contextual_firing_toggle.button_pressed and not contextual.is_empty() else battlefield)
+	config.engagement_policy = combat_setup.engagement_policy()
+	config.guard_minimum_chance = combat_setup.guard_minimum_chance()
+	var contextual_site := BattlefieldCatalogData.contextual_variant(battlefield)
+	var contextual := combat_setup.contextual_enabled() and not contextual_site.is_empty()
+	config.select_battlefield(contextual_site if contextual else battlefield)
+	config.contextual_firing_disabled = battlefield == BattlefieldCatalogData.CONTEXTUAL_SHOWCASE and not contextual
 	if BattlefieldCatalogData.uses_population(battlefield):
 		config.content_manifest = {"population_enabled": population_toggle.button_pressed}
 	return config

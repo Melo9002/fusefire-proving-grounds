@@ -4,9 +4,9 @@ Start from Package 04 checkpoint `51eddaf803f5df20535628b18e071dfaf0f2e4ae` on `
 
 ## Play the comparison
 
-In the normal game, open **Match Setup → Mission**. Choose an **Engagement Rule** and use **Contextual Firing** to enable side steps on Service Depot or Freight Yard. A fresh setup starts with Legacy and side steps off. The briefing and **F3 → Runtime** show both settings. The toggle resolves to the existing certified battlefield variant, so saved replays retain their original map and firing rules.
+**Match Setup → Combat** contains the engagement rule, contextual firing and Guard threshold. **Battlefield** owns the map and seed, and **Settings** owns the commander and AI difficulty. Selecting a different tab keeps the same setup. The briefing reflects the settings that **Start Battle** will use. A fresh setup uses Legacy, contextual firing off and Guard's first legal shot.
 
-Open **Match Setup → Combat Lab** for the curated 2v2 comparisons. Pick the engagement rule, contextual firing, Guard minimum hit chance, enemy commander and battlefield on one tab. **Start Comparison** launches the configured battle directly. **Copy launch command** copies the equivalent PowerShell command with the active project path. The tab opens with Symmetrical, contextual firing on, 15% Guard, Cautious and Depot Crossfire. Ordinary match setup retains its own settings.
+Choose **Service Depot — Crossfire** or **Freight Yard — Pressure** under **Combat** to load a preset into those shared controls. Both presets start with a Hard 2v2 at seed 16, Cautious enemy, Symmetrical, contextual firing on and 15% Guard. You can edit any setting before starting. To reproduce the Head/core showcase, pick Crossfire and then select Head/core. **F3 → Runtime** confirms the combat settings in the live battle.
 
 For the matched comparison deployments, run these from the Godot project root, using the existing battle controls. The mode, side-step setting and Guard policy appear below the turn indicator. In Move, hover for arrival lanes or press **V** to pin the hologram and inspect a particular known enemy. Click the pinned tile to commit, or cancel as usual.
 

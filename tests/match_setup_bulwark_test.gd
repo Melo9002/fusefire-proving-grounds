@@ -50,34 +50,11 @@ func _run() -> void:
 		selectors[1].select(skirmisher_index)
 		selectors[1].item_selected.emit(skirmisher_index)
 		check(setup.player_archetypes[1] == &"skirmisher", "Choosing it sets the second player slot")
-	var engagement := setup.engagement_option
-	check(engagement.get_selected_id() == CombatRules.EngagementPolicy.LEGACY, "Fresh setup defaults to Legacy")
-	for policy in CombatRules.EngagementPolicy.values():
-		var index := engagement.get_item_index(policy)
-		check(index >= 0, "Setup offers %s" % CombatRules.engagement_policy_label(policy))
-		if index < 0: continue
-		engagement.select(index)
-		check(setup._build_battle_configuration().engagement_policy == policy, "Selected option reaches the battle configuration")
-	engagement.select(engagement.get_item_index(CombatRules.EngagementPolicy.SYMMETRIC))
-	engagement.item_selected.emit(engagement.selected)
-	check(setup.deployment_summary.text.contains("Engagement: Symmetrical"), "The briefing shows the active selection")
-	var contextual := setup.contextual_firing_toggle
-	check(not contextual.disabled and not contextual.button_pressed, "Contextual firing is opt-in on the default Depot")
-	for index in setup.map_size_option.item_count:
-		var id: StringName = setup.map_size_option.get_item_metadata(index)
-		setup.map_size_option.select(index)
-		setup.map_size_option.item_selected.emit(index)
-		var variant := BattlefieldCatalog.contextual_variant(id)
-		check(setup._build_battle_configuration().battlefield_id == id, "Toggle off preserves the ordinary battlefield")
-		check(contextual.disabled == variant.is_empty(), "Only certified battlefields enable the contextual toggle")
-		if not contextual.disabled:
-			contextual.button_pressed = true
-			check(setup._build_battle_configuration().battlefield_id == variant, "Toggle on selects the corresponding certified variant")
-		contextual.button_pressed = false
-	setup.map_size_option.select(0)
-	setup.map_size_option.item_selected.emit(0)
-	contextual.button_pressed = true
-	check(setup.deployment_summary.text.contains("Contextual firing: On"), "The briefing confirms the contextual firing selection")
+	var mission_tab := setup._setup_tabs.get_tab_control(0)
+	check(mission_tab.find_child("EngagementSetup", true, false) == null,
+		"The Mission tab has no duplicate combat controls")
+	check(setup.deployment_summary.text.contains("Engagement: Legacy") and setup.deployment_summary.text.contains("Contextual firing: Off"),
+		"The shared briefing shows regular combat defaults")
 	setup.start_button.pressed.emit()
 	var deadline := Time.get_ticks_msec() + 30000
 	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
@@ -86,13 +63,11 @@ func _run() -> void:
 	check(battle != null, "The battle starts")
 	if battle:
 		for i in 10: await process_frame
-		check(battle.battle_controller.grid_manager.map_data.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC,
-			"Start Battle applies Symmetrical to the live firing rules")
-		check(battle._replay_recorder.recording.configuration.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC,
-			"The match recording preserves the selected engagement rule")
-		check(battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled, "Start Battle enables contextual firing")
-		check(battle._replay_recorder.recording.configuration.battlefield_id == BattlefieldCatalog.CONTEXTUAL_DEPOT,
-			"The match recording identifies the certified contextual variant")
+		check(battle.battle_controller.grid_manager.map_data.engagement_policy == CombatRules.EngagementPolicy.LEGACY,
+			"Start Battle uses the regular Legacy policy")
+		check(not battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
+			and battle._replay_recorder.recording.configuration.battlefield_id == BattlefieldCatalog.SERVICE_DEPOT,
+			"Regular Depot uses its original recorded identity with contextual firing off")
 		var unit: TacticalUnit = battle.turn_manager.player_units[0]
 		check(unit.archetype_id == &"bulwark" and unit.shield_capability != null and unit.stats.speed == 4, "The chosen slot spawns as a Bulwark")
 		var stripe: Node = null
@@ -117,45 +92,60 @@ func _run() -> void:
 			check(other.archetype_id == &"generic" and other.find_children("ClassMarkerStripe", "", true, false).is_empty(), "A Generic unit has no stripe")
 		battle.queue_free()
 	await process_frame
-	await _check_combat_lab()
+	await _check_combat_setup()
 	print("Match setup Bulwark: %d checks, %d failure(s)" % [checks, failures])
 	quit(1 if failures else 0)
 
 
-func _check_combat_lab() -> void:
+func _check_combat_setup() -> void:
 	var setup := load("res://ui/match_setup.tscn").instantiate() as MatchSetup
 	root.add_child(setup)
-	var lab := setup.combat_lab
-	setup._setup_tabs.current_tab = setup._setup_tabs.get_tab_idx_from_control(lab)
-	var initial := lab.build_configuration()
-	check(initial.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC and not initial.contextual_firing_disabled
-		and initial.guard_minimum_chance == 15 and initial.enemy_commander == AICommanderPolicy.Profile.CAUTIOUS
-		and initial.battlefield_id == BattlefieldCatalog.CONTEXTUAL_SHOWCASE, "Combat Lab opens with the comparison defaults")
-	check(setup.start_button.text == "START COMPARISON" and setup.deployment_summary.text.contains("Guard: 15% minimum"),
-		"The comparison briefing and start button follow the active tab")
-	check(lab.launch_command().ends_with("-- symmetric guard=15"), "Copy uses the matching default launcher switches")
+	var combat := setup.combat_setup
+	setup._setup_tabs.current_tab = setup._setup_tabs.get_tab_idx_from_control(combat)
+	check(setup.start_button.text == "START BATTLE", "The Combat tab uses the shared Start Battle button")
+	(combat.find_child("CrossfirePreset", true, false) as Button).pressed.emit()
+	var crossfire := setup._build_battle_configuration()
+	check(crossfire.battlefield_id == BattlefieldCatalog.CONTEXTUAL_SHOWCASE and crossfire.battle_seed == 16
+		and crossfire.player_count == 2 and crossfire.enemy_count == 2
+		and crossfire.enemy_commander == AICommanderPolicy.Profile.CAUTIOUS
+		and crossfire.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC
+		and crossfire.guard_minimum_chance == 15 and not crossfire.contextual_firing_disabled,
+		"Crossfire fills in the existing setup controls")
+	combat._contextual.button_pressed = false
+	var crossfire_off := setup._build_battle_configuration()
+	check(crossfire_off.battlefield_id == BattlefieldCatalog.CONTEXTUAL_SHOWCASE and crossfire_off.contextual_firing_disabled,
+		"Turning off contextual fire keeps the Crossfire deployment")
 
-	for button in lab._battlefield.get_buttons():
-		if button.get_meta("value") == 1: button.button_pressed = true
-	for button in lab._commander.get_buttons():
-		if button.get_meta("value") == AICommanderPolicy.Profile.DEFAULT: button.button_pressed = true
-	for button in lab._guard.get_buttons():
+	(combat.find_child("PressurePreset", true, false) as Button).pressed.emit()
+	check(setup._selected_battlefield_id() == BattlefieldCatalog.FREIGHT_YARD
+		and setup._build_battle_configuration().battlefield_id == BattlefieldCatalog.CONTEXTUAL_FREIGHT,
+		"Pressure fills in Freight Yard and enables its contextual variant")
+	for button in combat._engagement.get_buttons():
+		button.button_pressed = true
+		check(setup._build_battle_configuration().engagement_policy == button.get_meta("value"),
+			"Each engagement choice goes through the shared configuration")
+	for button in combat._engagement.get_buttons():
+		if button.get_meta("value") == CombatRules.EngagementPolicy.HEAD_CORE: button.button_pressed = true
+	for button in combat._guard.get_buttons():
 		if button.get_meta("value") == 25: button.button_pressed = true
-	lab._contextual.button_pressed = false
-	check(lab.launch_command().ends_with("-- symmetric no-context guard=25 ordinary pressure"),
-		"Copy combines independent comparison choices")
+	setup.player_count.value = 1
+	setup.enemy_commander_option.select(AICommanderPolicy.Profile.DEFAULT)
+	combat.changed.emit()
+	setup._setup_tabs.current_tab = 0
+	check(setup.deployment_summary.text.contains("Engagement: Head/core") and setup.deployment_summary.text.contains("Guard: 25% minimum"),
+		"The shared briefing follows edits across tabs")
 	setup.start_button.pressed.emit()
 	var deadline := Time.get_ticks_msec() + 30000
 	while not current_scene is BattleLevel and Time.get_ticks_msec() < deadline:
 		await process_frame
 	var battle := current_scene as BattleLevel
-	check(battle != null, "Start Comparison launches a live battle")
+	check(battle != null, "Start Battle launches the edited preset from the Mission tab")
 	if battle:
 		var record: Dictionary = battle._replay_recorder.recording.configuration
 		check(record.battlefield_id == BattlefieldCatalog.CONTEXTUAL_FREIGHT and record.seed == 16 and record.guard_minimum_chance == 25
-			and record.engagement_policy == CombatRules.EngagementPolicy.SYMMETRIC and record.contextual_firing_disabled
-			and record.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "The actual comparison saves the selected settings")
-		check(not battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
-			and battle.battle_controller.action_service.guard_minimum_chance == 25, "Combat Lab selections reach live authority")
+			and record.engagement_policy == CombatRules.EngagementPolicy.HEAD_CORE and record.player_count == 1
+			and record.enemy_commander == AICommanderPolicy.Profile.DEFAULT, "The battle recording preserves edits from every tab")
+		check(battle.battle_controller.grid_manager.map_data.contextual_discovery_enabled
+			and battle.battle_controller.action_service.guard_minimum_chance == 25, "The edited setup reaches live combat authority")
 		battle.queue_free()
 	await process_frame
