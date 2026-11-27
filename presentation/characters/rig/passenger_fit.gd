@@ -23,8 +23,8 @@ const TUCK_STEPS := [1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.0]
 ## How far the body may be moved along the carrier's x (toward its legs positive); y up and z forward are bounded inside the search.
 const SLIDE_X := 0.30
 const SLIDE_STEP := 0.02
-## The legs at full tuck, in the pose table's own terms (degrees forward of straight down the body): thighs lifted toward the spine, shins folded back up.
-const TUCKED := {"thigh": 48.0, "shin": 140.0, "foot": 100.0}
+## The legs at full tuck, in the pose table's own terms (degrees forward of straight down the body): thighs raised toward the body's own line and the knees bent the right way (the shank swings toward the back of the leg), so less of the leg hangs below the shoulder.
+const TUCKED := {"thigh": 55.0, "shin": 15.0, "foot": 5.0}
 
 static var _cache := {}
 

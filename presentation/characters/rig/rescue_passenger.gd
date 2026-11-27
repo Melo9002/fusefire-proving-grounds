@@ -76,7 +76,13 @@ var _anchor: ChestAnchor
 var _carrier_skeleton: Skeleton3D
 var _body_to_skeleton := Basis.IDENTITY
 var _carried_params := {}
-var _applied_key := Vector2(-1.0, -1.0)
+var _applied_key := Vector3(-1.0, -1.0, -1.0)
+## The climbing carry (LoadedLadderCarry): how far the body has moved from lying across the shoulders (0) to the diagonal on the upper back (1) — `ladder_blend` is the eased value; the second anchor, the pose values
+## it blends toward and the height of the arc it passes over the shoulder on. The ordinary carry is the whole story while `ladder_blend` is 0.
+var ladder_blend := 0.0
+var ladder_arc := 0.0
+var _ladder_anchor: ChestAnchor
+var _ladder_params := {}
 var _lag_position := Vector3.INF
 var _lag_basis := Basis.IDENTITY
 ## The passenger skeleton's transform relative to this node (constant for a given pose; refreshed when the pose changes).
@@ -125,11 +131,12 @@ func build(model_scene: PackedScene, model_scale: float, rig_profile: Resource) 
 ## Poses the skeleton for the given blend (0 lying, 1 draped) and the free limbs' swing, and re-measures where the abdomen is.
 ## Cheap, and only redone when the blend or the swing changed.
 func _repose(blend: float, swing: float) -> void:
-	var key := Vector2(snappedf(blend, 1.0 / 256.0), snappedf(swing, 1.0 / 64.0))
+	var key := Vector3(snappedf(blend, 1.0 / 256.0), snappedf(swing, 1.0 / 64.0), snappedf(ladder_blend, 1.0 / 256.0))
 	if key == _applied_key or skeleton == null:
 		return
 	_applied_key = key
-	var params := PoseTable.blend(PoseTable.LYING, _carried_params, blend)
+	var carried := _carried_params if ladder_blend <= 0.0 or _ladder_params.is_empty() else PoseTable.blend(_carried_params, _ladder_params, ladder_blend)
+	var params := PoseTable.blend(PoseTable.LYING, carried, blend)
 	if absf(swing) > 0.0:
 		var fold: Array = params.fold
 		fold[4] = float(fold[4]) + swing * motion_swing_degrees
@@ -175,7 +182,7 @@ func trial(params: Dictionary, at_anchor: Transform3D, shoulders: Array, contact
 	lift = kept_lift
 	contact_fractions = kept_fractions
 	_skeleton_in_node = kept_in_node
-	_applied_key = Vector2(-1.0, -1.0)
+	_applied_key = Vector3(-1.0, -1.0, -1.0)
 	_repose(pose_blend, motion_swing)
 	_applied_key = kept_key
 	return {"lowest": lowest, "contact_points": points, "limbs": limbs}
@@ -185,7 +192,7 @@ func trial(params: Dictionary, at_anchor: Transform3D, shoulders: Array, contact
 func apply_fit(pose: Dictionary, fractions := {}) -> void:
 	_carried_params.merge(pose, true)
 	contact_fractions = fractions.duplicate()
-	_applied_key = Vector2(-1.0, -1.0)
+	_applied_key = Vector3(-1.0, -1.0, -1.0)
 	_repose(pose_blend, motion_swing)
 
 
@@ -208,6 +215,39 @@ func attach_to_carrier(carrier_skeleton: Skeleton3D, carrier_node: Node3D, chest
 	if not carrier_skeleton.skeleton_updated.is_connected(_follow):
 		carrier_skeleton.skeleton_updated.connect(_follow)
 	_follow()
+
+
+## Gives the body its climbing carry: a second anchor (an offset from the neck and an orientation, both in the carrier's frame) and the pose values it takes. `blend_ladder` then moves it between the two.
+func attach_ladder_anchor(carrier_skeleton: Skeleton3D, carrier_node: Node3D, chest_bone: StringName, neck_bone: StringName, offset_from_neck: Vector3, orientation: Basis, pose_overrides: Dictionary, arc: float) -> void:
+	_ladder_anchor = ChestAnchor.create(carrier_skeleton, carrier_node, chest_bone, neck_bone, offset_from_neck, orientation)
+	_ladder_params = _carried_params.duplicate(true)
+	_ladder_params.merge(pose_overrides, true)
+	ladder_arc = arc
+
+
+## The passenger's body axes (columns: its x, y, z) in the carrier's frame when the carry is turned by `orientation`: the ordinary carry's own mapping, then the turn.
+func body_basis_in_carrier(orientation := Basis.IDENTITY) -> Basis:
+	return orientation * Basis(Vector3.UP, deg_to_rad(carry_yaw_degrees)) * BODY_TO_CARRY
+
+
+func has_ladder_anchor() -> bool:
+	return _ladder_anchor != null
+
+
+## Moves the body between the ordinary carry (0) and the climbing carry (1) and re-poses its limbs for it.
+func blend_ladder(amount: float) -> void:
+	ladder_blend = clampf(amount, 0.0, 1.0) if _ladder_anchor != null else 0.0
+	_repose(pose_blend, motion_swing)
+
+
+## The anchor the body hangs from now: the ordinary one, or the two blended (the origin passing over the shoulder on an arc, the orientation turned the short way).
+func _blended(base: Transform3D) -> Transform3D:
+	if ladder_blend <= 0.0 or _ladder_anchor == null:
+		return base
+	var other := _ladder_anchor.world_transform()
+	var origin := base.origin.lerp(other.origin, ladder_blend) + Vector3.UP * (sin(ladder_blend * PI) * ladder_arc)
+	var basis := Basis(base.basis.orthonormalized().get_rotation_quaternion().slerp(other.basis.orthonormalized().get_rotation_quaternion(), ladder_blend))
+	return Transform3D(basis, origin)
 
 
 ## Lies on the floor with no carrier (an incapacitated rescue target awaiting a carrier): the same lying pose the pickup starts from, so the
@@ -241,7 +281,7 @@ func detach_to(new_parent: Node) -> void:
 func _follow() -> void:
 	if _anchor == null or not is_inside_tree():
 		return
-	global_transform = placement(_anchor.world_transform())
+	global_transform = placement(_blended(_anchor.world_transform()))
 
 
 ## Where this node is for a given carry anchor (the chest's, in world space): the anchor itself once lifted, and before that a
@@ -322,7 +362,7 @@ func anchor_point() -> Vector3:
 
 ## The carrier's chest anchor in world space as the skeleton is now (read inside its update, where it includes the modifiers).
 func anchor_world() -> Transform3D:
-	return _anchor.world_transform() if _anchor != null else global_transform
+	return _blended(_anchor.world_transform()) if _anchor != null else global_transform
 
 
 ## One graspable contact in world space, for this node placed at `anchor_world` (its true place, which the follow in the

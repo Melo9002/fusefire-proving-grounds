@@ -72,6 +72,21 @@ static func blend(from: Dictionary, to: Dictionary, t: float) -> Dictionary:
 	return result
 
 
+## The values that make the limbs of a body hang along `gravity_body` (the world's down, in the BODY frame) instead of along +z, which is what DEFAULTS assume (a body lying face-down across the shoulders). Legs
+## hang from the thigh along it with a little knee bend, the arms hang along it, slightly apart. The spine's own fold is left as it is. Used by a carry that turns the body (the ladder carry).
+static func hanging_along(gravity_body: Vector3, knee_bend_degrees := 22.0, foot_bend_degrees := 38.0) -> Dictionary:
+	var down := gravity_body.normalized()
+	# Angle forward from straight down the body (-y) toward +z at which gravity lies.
+	var angle := rad_to_deg(atan2(down.z, -down.y))
+	var side := Vector3(1.0, 0.0, 0.0)
+	var arm := (down + side * 0.10).normalized()
+	var other := (down - side * 0.10).normalized()
+	return {
+		"thigh": angle, "shin": maxf(angle - knee_bend_degrees, -20.0), "foot": maxf(angle - foot_bend_degrees, -30.0),
+		"held_upper": other, "held_fore": other, "free_upper": arm, "free_fore": arm,
+	}
+
+
 ## [bone, child, direction of the child from the bone (body frame); side entries give the left and right directions].
 static func chain(overrides := {}) -> Array:
 	var p := DEFAULTS.duplicate()

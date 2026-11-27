@@ -867,10 +867,11 @@ func start_ladder_demo(length: float, direction: int, rate: float, climbed := -1
 	var start := (0.0 if direction > 0 else length) if climbed < 0.0 else climbed
 	ladder_demo = {"length": length, "direction": direction, "rate": rate, "climbed": start, "playing": rate > 0.0, "landing_kind": landing_kind,
 		"across": 1.0 if (landing != null and direction < 0 and climbed < 0.0) else 0.0}
-	rig.begin_traversal(&"ladder", length, direction, landing)
+	# A carried passenger is climbed with (the shared loaded presentation): the bench asks for it the way a host does.
+	rig.begin_traversal(&"ladder", length, direction, landing, is_instance_valid(rig.carry_passenger))
 	_build_ladder_visuals(landing)
 	_apply_ladder_progress()
-	rig.animation_controller.play(&"rifle_idle")
+	rig.animation_controller.play(&"carry_idle" if is_instance_valid(rig.carry_passenger) else &"rifle_idle")
 
 
 ## One bench at a time: starting the cover, ladder or stair bench ends the other two, so a cover wall never stands in front of a ladder (or the reverse). The path corridor is a separate overlay and is left alone.
@@ -924,7 +925,8 @@ func _apply_ladder_progress() -> void:
 func _advance_ladder_demo(delta: float) -> void:
 	if ladder_demo.is_empty():
 		return
-	if bool(ladder_demo.playing):
+	# A loaded climb waits for the passenger to be in the climbing carry before the body moves.
+	if bool(ladder_demo.playing) and rig.loaded_ladder_ready():
 		var length: float = float(ladder_demo.length)
 		var rate: float = float(ladder_demo.rate)
 		if String(ladder_demo.landing_kind) != "":

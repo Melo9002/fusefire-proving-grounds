@@ -259,6 +259,10 @@ var carry_passenger: Node3D
 var passenger_definition: PassengerDefinition
 ## What the fit decided for the passenger now carried: {fitted, pose, slide, tuck, lowest, reach}. Empty when nobody is carried.
 var carry_fit := {}
+## How this rig's carrier holds a passenger on a ladder (tuning data). A host opts a climb in with `begin_traversal(..., loaded_presentation)`; null disables the capability for this rig.
+var loaded_climb_profile := LoadedClimbProfile.new()
+## The loaded-ladder presentation of the climb in progress (and of the restoring carry after it), else null. See LoadedLadderCarry.
+var loaded_ladder: LoadedLadderCarry
 ## What the contacts asked of each hand in the last pass: [dominant (right), support (left)] dictionaries with the passenger's
 ## contact point, the intended palm centre and the intended finger and palm directions (world). Read by diagnostics.
 var carry_contact_report: Array = []
@@ -740,8 +744,11 @@ func _publish_traversal_input() -> void:
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
 ## `landing` is the supported landing the HOST verified at the top (see LadderLanding); null keeps the ordinary height-only climb-out. A landing this body cannot use (the deck too far, too small, or
 ## nothing to hold) is refused here with the reason in `ladder.landing_status`, never half-used.
-func begin_traversal(kind: StringName, length: float, direction: int, landing: LadderLanding = null) -> void:
+func begin_traversal(kind: StringName, length: float, direction: int, landing: LadderLanding = null, loaded_presentation := false) -> void:
 	ladder = LadderClimb.new(kind, length, direction)
+	# Opt-in: only a host that asks gets the loaded climb; every other caller with a passenger keeps the existing loaded fallback (no rung contacts for the carrier).
+	if loaded_presentation and supports_loaded_ladder() and is_instance_valid(carry_passenger):
+		_begin_loaded_ladder()
 	ladder.body = ladder_body()
 	if landing != null:
 		var reason := landing.unsupported_reason(ladder.geometry, ladder.body)
@@ -769,6 +776,11 @@ func set_traversal_progress(climbed: float, rung_plane := NAN, across_deck := 0.
 	ladder.pose = LadderPose.from_solver(result)
 	_publish_traversal_input()
 	var weight: float = ladder.pose.weight
+	if loaded_ladder != null:
+		# The passenger goes back to the ordinary carry as the carrier reaches the far end (over the deck lip going up, near the floor going down); until then it stays in the climbing carry.
+		var restoring: bool = across_deck >= loaded_climb_profile.restore_across if ladder.direction > 0 else climbed <= loaded_climb_profile.restore_height
+		loaded_ladder.target = 0.0 if restoring else 1.0
+		return   # a carrier's trunk, hands and slung weapon belong to the carry (see _apply_carry_posture); the legs and hips come from the pose published above
 	if crouch_modifier != null:
 		crouch_modifier.aim_lean_degrees = ladder.pose.lean_degrees * weight
 	if weight > 0.001:
@@ -833,6 +845,9 @@ func end_stairs() -> void:
 func end_traversal() -> void:
 	if ladder == null:
 		return
+	if loaded_ladder != null:
+		loaded_ladder.last_hand_local = _loaded_hand_local()
+		loaded_ladder.target = 0.0   # the passenger settles back into the ordinary carry (and the hand returns to it), whether or not the climb got that far
 	# Only a host that ticks the presenter every frame can advance the ease; a rig nobody ticks (a tool or test driving it by hand) releases at once, as before.
 	var ticking := presenter.tick_count > 0 and Engine.get_process_frames() - presenter.last_tick_frame <= 5
 	var easing := ticking and traversal_release_seconds > 0.0 and traversal_modifier != null and (stairs == null or stairs.pose == null) and traversal_modifier.input.mode == TraversalPoseInput.Mode.LADDER and traversal_modifier.input.solved and traversal_modifier.input.weight > 0.001
@@ -1595,6 +1610,7 @@ func end_carry(leave_passenger := false) -> void:
 			carry_passenger.get_parent().remove_child(carry_passenger)
 			carry_passenger.free()
 	carry_passenger = null
+	loaded_ladder = null
 	carry_contact_report = []
 	_carry_lean = 0.0
 	_release_rescue_posture()   # the posture is the arbiter's: whatever else is requested (cover) takes the body back
@@ -1611,11 +1627,60 @@ func end_carry(leave_passenger := false) -> void:
 
 ## Whether this rig can present a climb with a passenger (the loaded ladder carry): it needs the carry and the ladder stack both. A host opts a climb in; the tactical host does not (its loaded ladder stays the fallback).
 func supports_loaded_ladder() -> bool:
-	return false
+	return loaded_climb_profile != null and carry_contacts_enabled
+
+
+## True when a climb may start moving the body: there is no loaded presentation, or the passenger has finished moving into the climbing carry. The host holds the climb back until then.
+func loaded_ladder_ready() -> bool:
+	return loaded_ladder == null or loaded_ladder.ready()
+
+
+func loaded_ladder_active() -> bool:
+	return loaded_ladder != null
 
 
 func carry_contacts_active() -> bool:
 	return carry_contacts_enabled and is_instance_valid(carry_passenger)
+
+
+## Starts the loaded-ladder presentation for the passenger being carried: gives it the climbing carry's anchor and pose, and starts the transfer. Resumes a restoring one when a new climb begins before the ordinary carry is back.
+func _begin_loaded_ladder() -> void:
+	var profile := loaded_climb_profile
+	if loaded_ladder == null:
+		loaded_ladder = LoadedLadderCarry.new(profile)
+	loaded_ladder.target = 1.0
+	if not carry_passenger.has_ladder_anchor():
+		var ratio := body_ratio()
+		var orientation := Basis.from_euler(profile.orientation_degrees * (PI / 180.0))
+		# The limbs hang along the REAL down in the passenger's own frame once it is turned; the profile's own overrides win over that.
+		var hang := PassivePassengerPose.hanging_along(carry_passenger.body_basis_in_carrier(orientation).inverse() * Vector3.DOWN)
+		hang.merge(profile.pose_overrides, true)
+		carry_passenger.attach_ladder_anchor(skeleton, character_root, torso_bone_name, neck_bone_name, profile.anchor_from_neck * ratio, orientation, hang, profile.transfer_arc * ratio)
+
+
+## The transfer's clock: once per frame with the presentation's own delta. The passenger moves between the two carries, and the state is dropped once the ordinary carry is back and no climb needs it.
+func _advance_loaded_ladder(delta: float) -> void:
+	if loaded_ladder == null:
+		return
+	loaded_ladder.advance(delta)
+	if is_instance_valid(carry_passenger):
+		carry_passenger.blend_ladder(loaded_ladder.eased())
+	if ladder == null and loaded_ladder.restored():
+		loaded_ladder = null
+
+
+## The free hand's ladder target in the carrier's frame (INF when there is none): the rung it takes, or where it last was after the ladder ended.
+func _loaded_hand_local() -> Vector3:
+	if loaded_ladder == null:
+		return Vector3.INF
+	if ladder != null and ladder.pose != null:
+		return ladder.pose.hands[_free_hand_ladder_side()]
+	return loaded_ladder.last_hand_local
+
+
+## The ladder's own order is 0 left, 1 right.
+func _free_hand_ladder_side() -> int:
+	return 1 if loaded_climb_profile.free_hand == &"right" else 0
 
 
 func _ensure_passenger(lift: float, pose: float) -> void:
@@ -1650,6 +1715,7 @@ func _discard_passenger() -> void:
 		carry_passenger.get_parent().remove_child(carry_passenger)
 		carry_passenger.free()
 	carry_passenger = null
+	loaded_ladder = null
 
 
 func _hands_to_contacts() -> void:
@@ -1675,6 +1741,7 @@ func advance_rescue_clock(delta: float) -> void:
 ## Once per frame while carrying (before the skeleton's modifiers, after the presenter has advanced the clock): sets the carrier's body from
 ## its sample (bend, kneel, lean, step toward the passenger, base clip, weapon position).
 func _apply_carry_posture(delta: float) -> void:
+	_advance_loaded_ladder(delta)
 	_interaction_sample = rescue_interaction.sample()
 	var sample := _interaction_sample
 	var interacting := rescue_interaction.active()
@@ -1698,6 +1765,9 @@ func _apply_carry_posture(delta: float) -> void:
 			var loaded: bool = is_instance_valid(animation_controller) and animation_controller.current_state in [&"carry_idle", &"carry_move"]
 			_carry_lean = move_toward(_carry_lean, 1.0 if loaded else 0.0, delta / CARRY_LEAN_SECONDS)
 			crouch_modifier.aim_lean_degrees = CARRY_LEAN_DEGREES * _carry_lean
+			if loaded_ladder != null:
+				# On the ladder the trunk leans into it by the profile's amount, as far as the passenger has moved onto the back.
+				crouch_modifier.aim_lean_degrees = lerpf(crouch_modifier.aim_lean_degrees, loaded_climb_profile.climb_lean_degrees, loaded_ladder.eased())
 		crouch_modifier.support_reach_degrees = 0.0
 
 
@@ -1781,7 +1851,17 @@ func apply_carry_targets(shoulders: Array, anchor: Transform3D) -> void:
 		var side_index := 0 if assignment[0] == &"right" else 1
 		# Before the hands have reached, they are where they were (carried with the body); `reach` brings them onto the contact.
 		var point: Vector3 = character_root.to_global(_reach_hands[side_index]).lerp(on_contact, reach) if reach < 1.0 else on_contact
-		claim_hand_contact(HandContact.make(HandContact.Hand.RIGHT if assignment[0] == &"right" else HandContact.Hand.LEFT, point, fingers, normal, reach, curl))
+		var hand_curl := curl
+		if loaded_ladder != null and assignment[0] == loaded_climb_profile.free_hand:
+			# The free hand lets go of the passenger and goes to the ladder, by how far the passenger has moved onto the back (and returns the same way).
+			var release := loaded_ladder.eased()
+			var rung_local := _loaded_hand_local()
+			if rung_local.is_finite() and release > 0.0:
+				point = point.lerp(character_root.to_global(rung_local), release)
+				fingers = fingers.lerp(Vector3.UP, release).normalized()
+				normal = normal.lerp(character_root.global_basis.orthonormalized().z, release).normalized()
+				hand_curl = lerpf(curl, 0.6, release)
+		claim_hand_contact(HandContact.make(HandContact.Hand.RIGHT if assignment[0] == &"right" else HandContact.Hand.LEFT, point, fingers, normal, reach, hand_curl))
 		report[side_index] = {"contact": assignment[1], "point": frame.point, "intended_palm": palm, "intended_finger_direction": fingers, "intended_palm_normal": normal, "reach": reach}
 	carry_contact_report = report
 

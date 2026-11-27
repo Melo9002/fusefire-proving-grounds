@@ -317,7 +317,8 @@ func _sync_cover(delta: float) -> void:
 ## Start climbing a ladder of `length` metres (the character's origin is at the ladder's foot level; the ladder plane is ahead of it). The controller moves the body up and calls `set_climb_height`.
 func begin_climb(length: float, landing: LadderLanding = null, direction := 1) -> void:
 	presenter.cancel_gesture()
-	rig.begin_traversal(&"ladder", length, direction, landing)
+	# Carrying someone up a ladder is the shared loaded presentation here (this host opts in); a rig that cannot show it falls back as before.
+	rig.begin_traversal(&"ladder", length, direction, landing, is_carrying() and supports_loaded_ladder())
 	_state = &""
 
 
@@ -385,6 +386,11 @@ func supports_loaded_ladder() -> bool:
 	return rig.supports_loaded_ladder()
 
 
+## Whether the climb may start moving the body (the passenger has been moved into the climbing carry, or nobody is carried). A controller holds the body back until it is.
+func loaded_ladder_ready() -> bool:
+	return rig.loaded_ladder_ready()
+
+
 # ------------------------------------------------------------------ per frame
 
 func _process(delta: float) -> void:
@@ -409,7 +415,7 @@ func _select_state() -> void:
 	if presenter.is_defeated() or presenter.is_holding() or presenter.attack.is_active() or rig.interaction_active():
 		return
 	var wanted: StringName
-	if rig.ladder != null:
+	if rig.ladder != null and not is_carrying():
 		wanted = &"rifle_idle"
 	elif is_carrying():
 		wanted = &"carry_move" if is_moving() else &"carry_idle"
