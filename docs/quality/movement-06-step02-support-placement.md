@@ -4,6 +4,8 @@
 
 Integrated main was `8616b1862f41a5ea1d5c5565687a59ecaa696cd1` with PRs #95 through #101. The review work used an isolated checkout. The [06.01 support probe](evidence/movement-06/support_probe.gd) established the original 7 × 7 fixture. A new assertion on that baseline failed with `can_stop=false`, even though the audit's southern alternative at `(0, 0, 0.43)` independently passed floor, body and approach checks. The new compiler chooses `(0, 0, -0.42)` in logical cell `(3, 0, 3)`. The tested north and south candidates tie in distance and the established lower-Z tie-break chooses north. With eastern support restored the original `(0.33, 0, 0)` wins unchanged.
 
+The final production revision is `57ff464d8aee2ca48f8c25674181d147c0c0829d` on `codex/support-aware-placement`. The follow-up report commit records verification of that code.
+
 ## Placement and route lifecycle
 
 1. The authored layout compiler builds logical cells and support columns from elevation and deck metadata, and stamps explicit component bounds into independent movement and shot geometry indexes. The shape compiler stays at revision 10; the authored-layout compiler revision identifies placement and reconstruction behavior.
@@ -54,6 +56,14 @@ godot_console --path . --rendering-method gl_compatibility --resolution 1280x720
 
 For the census, copy [support_census.gd](evidence/movement-06/support_census.gd) to the corresponding path in an imported checkout at each commit. Run `godot_console --headless --path . --script docs/quality/evidence/movement-06/support_census.gd --log-file <absolute-output-path>` in each checkout. Pass both logs to [compare_support_census.py](evidence/movement-06/compare_support_census.py). The `-- placement-only` user argument runs the alternating microbenchmark on the corrected checkout.
 
+## Verification results
+
+- Ironclad catalog validation passed with 310 entries. Project import passed. [Hosted smoke passed on the production revision](https://github.com/Melo9002/fusefire-proving-grounds/actions/runs/46031334747).
+- The focused dependency run executed 25 ordinary catalog scripts using their Godot options and isolated profiles while the full runner continued. It finished with 24 passes and one inherited failure. The unchanged `ladder_landing_test` reproduced four standard-MIRA descent overlap assertions for armed and unarmed posts/rails under [#64](https://github.com/Melo9002/fusefire-proving-grounds/issues/64).
+- Passed coverage included both placement tests, both authored surface battle and replay tests, the new deck regression, surface vaulting, compound and curved geometry, diagonal movement and path refinement, action service, AI clearance and carrier reservations, Guard, both Rescue loss regressions including the checkpoint fallback, contextual firing on the Bay and authored fields, combat geometry, HUD, presentation authority and the 48-case current mission/replay matrix.
+- Two actual revision-10 Depot recordings verified all their actions. The tracked `Test.json` verified 80/80 and retained its victory. The local Combined/contextual Crossfire seed-16 recording verified 50/50. The new deck record verified 1/1 with revision 11. Both matched renderer captures used the existing tactical action presenter in Compatibility mode at normal speed.
+- The ordinary Ironclad full tier started with all 273 ordinary scripts selected and no blocked entries. The 37 explicit-only scripts were outside full scope. At this report snapshot, 56 scripts had passed, zero had failed or timed out, and 217 had yet to finish. The run is active and has no final verdict. The serial campaign has historically taken about 53 minutes on this host. Full-only coverage beyond the focused checks, including the extended animation, generation, AI scenario and content/persistence cases still in the queue, remains pending. The live `results.json` and logs are in `artifacts/0602/full/20261127-130324480-5f74939f-full`.
+
 ## Review boundary
 
-Step 06.03 evidence covers routes, budget, live occupancy and shared queries for the recovered stop. Broader route and reaction parity remains open. Issue #7 remains open for separate owner reproductions. Issues #8 and #9 still concern mesh apertures and stale baked asset bounds. #64 remains the inherited ladder descent issue. Proceed to 06.04 after review of this geometry change.
+Step 06.03 evidence covers routes, budget, live occupancy and shared queries for the recovered stop. Broader route and reaction parity remains open. Issue #7 remains open for separate owner reproductions. Issues #8 and #9 still concern mesh apertures and stale baked asset bounds. #64 remains the inherited ladder descent issue. Review this geometry change now and wait for the full result before accepting it and proceeding to 06.04.
