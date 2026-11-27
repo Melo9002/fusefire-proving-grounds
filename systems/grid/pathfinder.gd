@@ -311,8 +311,8 @@ func _reconstruct_hypothetical_path(came_from: Dictionary, end_id: int) -> Packe
 func disable_cell(grid_pos: Vector3i) -> void:
 	configure_cell(grid_pos, false, false)
 
-## Dijkstra search respects terrain movement costs.
-func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Vector3i]:
+## Optionally expose checked edges crossing the budget boundary. No extra nodes are explored.
+func get_reachable_cells(start_grid: Vector3i, movement_budget: int, budget_frontier: Variant = null) -> Array[Vector3i]:
 	var reachable: Array[Vector3i] = []
 	if not grid_to_id_map.has(start_grid):
 		return reachable
@@ -342,7 +342,10 @@ func get_reachable_cells(start_grid: Vector3i, movement_budget: int) -> Array[Ve
 				if live_grid.is_cell_occupied(neighbor): continue
 				if not _planning_units_clear(live_grid, astar.get_point_position(current_id), astar.get_point_position(neighbor_id), actor, clearance): continue
 			var new_cost = current_cost + get_step_cost(current_pos, neighbor)
-			if new_cost > movement_budget or (best_cost.has(neighbor) and best_cost[neighbor] <= new_cost):
+			if new_cost > movement_budget:
+				if budget_frontier != null: budget_frontier[neighbor] = true
+				continue
+			if best_cost.has(neighbor) and best_cost[neighbor] <= new_cost:
 				continue
 			best_cost[neighbor] = new_cost
 			frontier.append([neighbor, new_cost])
