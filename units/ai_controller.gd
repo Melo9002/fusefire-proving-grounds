@@ -279,10 +279,15 @@ func _plan_activation() -> bool:
 			_wait_for_next_turn(_movement_wait_reason("Carrier cannot advance toward extraction."), "Move")
 			break
 		var attack_target = _find_attack_target()
-		# Move then Attack: a legal shot is not always the best use of the turn. If one move reaches a
-		# cell whose shots are clearly worth more, and the unit can still fire afterwards, move first.
-		if attack_target != null and not has_moved and _reposition_allowed():
-			var reposition := await _best_reposition_plan(attack_target)
+		# Contextual opportunities can be entirely absent from the current attack
+		# inventory. On these battlefields, allow the same short-plan comparison
+		# to start from zero shot value, using a known target for the action cost.
+		if not has_moved and _reposition_allowed():
+			var plan_target: TacticalUnit = attack_target
+			if plan_target == null and battle_controller.grid_manager.map_data.contextual_discovery_enabled:
+				var known_hostiles := _get_hostile_units()
+				if not known_hostiles.is_empty(): plan_target = known_hostiles[0]
+			var reposition := await _best_reposition_plan(plan_target, attack_target == null) if is_instance_valid(plan_target) else null
 			if not _battle_is_live(): return false
 			if reposition != null:
 				var start_cell := battle_controller.grid_manager.get_unit_grid(unit)
@@ -524,7 +529,7 @@ func _reposition_allowed() -> bool:
 ## of shots the unit can afford, at the authoritative chance and damage for that standing cell. A move
 ## costs its real AP, so the unit must still be able to fire afterwards. Candidates are bounded and
 ## the destination must pass the same exposure check as any other advance.
-func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
+func _best_reposition_plan(target: TacticalUnit, discover_contextual := false) -> AIActionPlan:
 	var move_query := battle_controller.query_move(unit)
 	if not move_query.is_legal():
 		return null
@@ -545,9 +550,14 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 	var kill_bonus := 20.0 * _ensure_policy().finishing_bonus_weight
 	var aim_bonus: int = CombatRules.cover_tuning.aim_accuracy_bonus if battle_controller.aim_enabled and unit.tactical_state and unit.tactical_state.is_aiming else 0
 	var now_shots := AIPlanEvaluator.shots_with(unit.stats.current_ap, unit.stats.current_supply_points, attack_ap, supply_cost, uses_supply, MAX_ATTACK_PLAN_AP)
-	var now := AIPlanEvaluator.best_attack_from(unit, start, hostiles, battle_controller, now_shots, kill_bonus, aim_bonus)
+	# The ordinary Attack inventory already established zero useful shots
+	# for discovery. Only check the adjacent maneuver there. Distant tactical
+	# movement still uses the existing route and position scorer below.
+	var now_value := 0.0 if discover_contextual else float(AIPlanEvaluator.best_attack_from(
+		unit, start, hostiles, battle_controller, now_shots, kill_bonus, aim_bonus).value)
 	_profile_note("short_plans", baseline_plan_start)
-	var required: float = float(now.value) + maxf(REPOSITION_MIN_GAIN, float(now.value) * REPOSITION_MIN_GAIN_FRACTION)
+	var discovered_shot := false
+	var required := now_value + maxf(REPOSITION_MIN_GAIN, now_value * REPOSITION_MIN_GAIN_FRACTION)
 	var snapshot := AIPlanningSnapshot.capture(battle_controller)
 	var scored: Array[Dictionary] = []
 	var slice_start := Time.get_ticks_usec()
@@ -561,12 +571,16 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 			slice_start = Time.get_ticks_usec()
 		if cell == start or (_squad_context and not _squad_context.block_reason(unit, cell).is_empty()):
 			continue
+		var delta := (cell - start).abs()
+		if discover_contextual and (delta.y != 0 or delta.x > 1 or delta.z > 1):
+			continue
 		var plan_start := _profile_clock()
 		var shot := AIPlanEvaluator.best_attack_from(unit, cell, hostiles, battle_controller, moved_shots, kill_bonus)
 		_profile_note("short_plans", plan_start)
 		if shot.target != null and float(shot.value) >= required:
+			discovered_shot = discovered_shot or bool(shot.contextual)
 			scored.append({"cell": cell, "shot": shot})
-	if scored.is_empty():
+	if scored.is_empty() or (discover_contextual and not discovered_shot):
 		return null
 	# Best shots first; equal shots go to the lower cell so the choice never depends on iteration order.
 	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
@@ -579,7 +593,7 @@ func _best_reposition_plan(target: TacticalUnit) -> AIActionPlan:
 			return null
 		if _is_safe_advance_cell(entry.cell, current_exposure):
 			var plan := AIPlanEvaluator.move_then_attack(entry.cell, entry.shot, move_ap, attack_ap, supply_cost)
-			plan.summary += "; shooting from here is worth %.1f, from there %.1f" % [float(now.value), plan.value]
+			plan.summary += "; shooting from here is worth %.1f, from there %.1f" % [now_value, plan.value]
 			return plan
 	return null
 

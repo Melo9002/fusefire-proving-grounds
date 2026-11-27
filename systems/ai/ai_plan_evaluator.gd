@@ -34,7 +34,7 @@ static func shots_with(ap: int, supply: int, attack_ap: int, attack_supply: int,
 ## tactical ID, so the result never depends on iteration luck. Returns {value, target, chance, damage, shots}
 ## with value 0.0 and a null target when no hostile can be shot from there.
 static func best_attack_from(unit: TacticalUnit, cell: Vector3i, hostiles: Array[TacticalUnit], battle: BattleController, shots: int, kill_bonus: float, accuracy_bonus := 0) -> Dictionary:
-	var best := {"value": 0.0, "target": null, "chance": 0, "damage": 0, "shots": shots}
+	var best := {"value": 0.0, "target": null, "chance": 0, "damage": 0, "shots": shots, "contextual": false}
 	if shots < 1:
 		return best
 	for hostile in hostiles:
@@ -51,7 +51,8 @@ static func best_attack_from(unit: TacticalUnit, cell: Vector3i, hostiles: Array
 		var better := value > float(best.value) + 0.0001
 		var tied := absf(value - float(best.value)) <= 0.0001 and best.target != null and String(hostile.tactical_id) < String(best.target.tactical_id)
 		if better or tied:
-			best = {"value": value, "target": hostile, "chance": evaluation.hit_chance, "damage": damage, "shots": shots}
+			best = {"value": value, "target": hostile, "chance": evaluation.hit_chance, "damage": damage, "shots": shots,
+				"contextual": evaluation.firing_solution != null and evaluation.firing_solution.body_offset != Vector3.ZERO}
 	return best
 
 ## The plan "move to `destination`, then fire `shots` times", valued from a best_attack_from result.
@@ -68,6 +69,7 @@ static func move_then_attack(destination: Vector3i, shot: Dictionary, move_ap: i
 	var target: TacticalUnit = shot.target
 	plan.target_id = target.tactical_id if is_instance_valid(target) else &""
 	plan.summary = "Move to %s, then %d shot(s) at %s (%d%% each)" % [destination, plan.shots, String(plan.target_id), int(shot.chance)]
+	if shot.get("contextual", false): plan.summary += " via side step"
 	return plan
 
 ## The Shield stance, valued as the damage it is expected to prevent. Shield only lowers damage taken: for

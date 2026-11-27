@@ -105,6 +105,8 @@ static func movement_description(query: MoveQueryResult, actor: TacticalUnit, op
 		if not option.incoming_unavailable.is_empty(): threat = "%s now (geometry: %s)" % [option.incoming_unavailable, threat]
 		lines.append("%s from %s: cover %s · %s" % [enemy.tactical_id, direction, ["none", "low", "full"][option.cover], threat])
 		var shot_description := "%d%% hit · %s · %d damage on hit" % [outgoing.hit_chance, chance_label(outgoing.hit_chance), option.damage] if outgoing.is_legal else outgoing.reason
+		if outgoing.firing_solution and outgoing.firing_solution.body_offset != Vector3.ZERO:
+			shot_description = "Side-step shot · " + shot_description
 		if not option.unavailable.is_empty(): shot_description = "%s (geometry: %s)" % [option.unavailable, shot_description]
 		lines.append("  Your shot → %s: %s" % [enemy.tactical_id, shot_description])
 		if enemy.tactical_state and enemy.tactical_state.is_overwatching:
@@ -118,6 +120,7 @@ static func _destination_summary(query: MoveQueryResult, actor: TacticalUnit, op
 	var outgoing_count := 0
 	var exposed_count := 0
 	var returnable_count := 0
+	var contextual_count := 0
 	var entries: Array[Dictionary] = []
 	var route_guard := false
 	for option in options:
@@ -136,10 +139,14 @@ static func _destination_summary(query: MoveQueryResult, actor: TacticalUnit, op
 		var text := "%s · %s · Your cover: %s" % [enemy.tactical_id, relation, ["none", "low", "full"][option.cover]]
 		if incoming.is_legal and not option.incoming_unavailable.is_empty():
 			text += " · Enemy now: " + option.incoming_unavailable
-		if outgoing.firing_solution and outgoing.firing_solution.body_offset != Vector3.ZERO: text += " · Side-step shot available"
+		if outgoing.firing_solution and outgoing.firing_solution.body_offset != Vector3.ZERO:
+			contextual_count += 1
+			text += " · Side-step shot available"
 		if not option.unavailable.is_empty() and outgoing.is_legal: text += " · " + option.unavailable
 		entries.append({"priority": 0 if exposed else (1 if incoming.is_legal else 2), "text": text})
 	lines.append("On arrival · Firing lanes: %d out, %d in" % [outgoing_count, incoming_count])
+	if contextual_count > 0:
+		lines.append("Side-step shot available against %d" % contextual_count)
 	if returnable_count < outgoing_count:
 		lines.append("Attack available against %d now (after Move)" % returnable_count)
 	if exposed_count > 0: lines.append("Exposed to %d with no clear return lane" % exposed_count)

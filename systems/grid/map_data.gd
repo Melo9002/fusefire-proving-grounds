@@ -36,6 +36,8 @@ var body_clearance := 0.04
 var movement_parts: Array[AABB] = []
 ## Certified local footing offsets, indexed by the canonical resting cell.
 var contextual_steps: Dictionary[Vector3i, Vector3] = {}
+## Only versioned battlefield IDs can enable discovered side steps.
+var contextual_discovery_enabled := false
 var movement_columns: Dictionary = {}
 var movement_index_count := -1
 var movement_routes: Dictionary = {}
@@ -206,6 +208,7 @@ func clear() -> void:
 	surface_points_resolved = false
 	movement_parts.clear()
 	contextual_steps.clear()
+	contextual_discovery_enabled = false
 	movement_columns.clear()
 	movement_index_count = -1
 	movement_routes.clear()

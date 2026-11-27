@@ -127,9 +127,9 @@ static func has_firing_lane_to_cell(attacker: TacticalUnit, target_cell: Vector3
 static func evaluate_attack_from_cell(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, grid: GridManager, _world: World3D, accuracy_bonus := 0, allow_shield := true) -> AttackEvaluation:
 	if not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
-	return _evaluate_attack_cells(attacker, attacker_cell, target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield)
+	return _evaluate_attack_cells(attacker, attacker_cell, target, grid.get_unit_grid(target), grid, accuracy_bonus, allow_shield, grid.get_unit_grid(attacker) != attacker_cell)
 
-static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool) -> AttackEvaluation:
+static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector3i, target: TacticalUnit, target_cell: Vector3i, grid: GridManager, accuracy_bonus: int, allow_shield: bool, moved := false) -> AttackEvaluation:
 	if not is_instance_valid(attacker) or not is_instance_valid(target):
 		return AttackEvaluation.new(false, 0, MapCellData.CoverType.NONE, "Invalid target")
 	if not cover_tuning.is_valid():
@@ -152,7 +152,7 @@ static func _evaluate_attack_cells(attacker: TacticalUnit, attacker_cell: Vector
 	var contextual: FiringSolution
 	var candidate_details := {}
 	if visibility.visible_count == 0:
-		contextual = _contextual_step(attacker, attacker_cell, target, target_cell, grid, candidate_details)
+		contextual = _contextual_step(attacker, attacker_cell, target, target_cell, grid, candidate_details, moved)
 		if contextual:
 			visibility.visible_count = contextual.target_samples.size()
 			visibility.aim_point = contextual.aim_point()
@@ -323,58 +323,76 @@ static func _evaluate_target_visibility_cells(attacker: TacticalUnit, attacker_c
 			if first_visible_only: break
 	return {"visible_count": visible.size(), "sample_count": samples.size(), "aim_point": visible[0] if not visible.is_empty() else blocked_aim, "blocker": first_blocker, "visible_samples": visible}
 
-## Intentionally opt-in to marked calibration cells. An unsupported rig, slope
-## or bearing keeps the ordinary blocked result. Weapon clearance is a swept
-## conservative envelope calibrated on MIRA/AUG, including the lowered carry.
-static func _contextual_step(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, details: Dictionary) -> FiringSolution:
+## Versioned battlefields can try the two lateral directions after a blocked
+## direct shot. The reference bay retains its authored offset and bearing.
+static func _contextual_step(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, details: Dictionary, moved := false) -> FiringSolution:
 	var data := grid.map_data
-	if not data.contextual_steps.has(source): return null
+	var marked := data.contextual_steps.has(source)
+	if not marked and not data.contextual_discovery_enabled: return null
 	details.reason = "Uncertified rig or stance"
 	if attacker.use_legacy_bean or not is_instance_valid(attacker.visual_adapter): return null
 	if attacker.visual_adapter.scene_file_path != "res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn": return null
 	var rig := attacker.visual_adapter.rig
 	if not is_instance_valid(rig) or not rig.weapon_scene or rig.weapon_scene.resource_path != "res://art/weapons/aug/models/aug_runtime_socketed.glb": return null
 	var tile := data.get_cell(source)
-	if not tile or not tile.can_stop or not is_equal_approx(attacker.standing_height, 1.0): return null
-	if attacker.tactical_state and attacker.tactical_state.is_shielding: return null
+	if not tile or not tile.can_stop or not is_equal_approx(attacker.standing_height, 1.0) or not is_equal_approx(grid.cell_size, 1.0): return null
+	if not moved and attacker.tactical_state and attacker.tactical_state.is_shielding: return null
 	var occupied := grid.get_unit_at(source)
 	if is_instance_valid(occupied) and occupied != attacker: return null
 	var support := tile.world_position
-	var offset: Vector3 = data.contextual_steps[source]
+	var target_support := get_support_position(destination, grid)
+	var bearing := target_support - support
+	details.reason = "Target lies outside the certified aim cone"
+	if absf(bearing.y) > 0.001 or bearing.length_squared() < 0.0001: return null
+	if marked:
+		var offset: Vector3 = data.contextual_steps[source]
+		return _evaluate_side_step(attacker, source, target, destination, grid, support, target_support, offset, offset.normalized().cross(Vector3.UP), details)
+	var forward := bearing.normalized()
+	# Size the authored-map step from the supported body. Keep 5 mm in
+	# reserve for rounding and preserve the calibrated bay's 24 cm offset.
+	var side := (forward.cross(Vector3.UP) * (data.body_radius - 0.005) * 10000.0).round() / 10000.0
+	for offset in [side, -side]:
+		var solution := _evaluate_side_step(attacker, source, target, destination, grid, support, target_support, offset, forward, details)
+		if solution: return solution
+	return null
+
+static func _evaluate_side_step(attacker: TacticalUnit, source: Vector3i, target: TacticalUnit, destination: Vector3i, grid: GridManager, support: Vector3, target_support: Vector3, offset: Vector3, certified_forward: Vector3, details: Dictionary) -> FiringSolution:
+	var data := grid.map_data
 	var step := support + offset
+	details.attempted = int(details.get("attempted", 0)) + 1
 	details.reason = "Step exceeds the certified local region"
 	if offset.length() > data.body_radius or grid.world_to_grid(step) != source: return null
 	details.reason = "Target lies outside the certified aim cone"
-	var target_support := get_support_position(destination, grid)
-	var direction := target_support - step
-	if absf(direction.y) > 0.001: return null
-	var forward := direction.normalized()
-	var certified_forward := offset.normalized().cross(Vector3.UP)
+	var forward := (target_support - step).normalized()
 	if forward.dot(certified_forward) < cos(deg_to_rad(5.0)): return null
 	details.reason = "Step lacks body clearance or floor support"
-	if not SurfaceNavigation.supported(data, support, data.body_radius) or not SurfaceNavigation.supported(data, step, data.body_radius): return null
-	if not SurfaceNavigation.edge_clear(data, support, step) or not SurfaceNavigation.edge_clear(data, step, support): return null
-	details.reason = "Another unit obstructs the step"
-	if not SurfaceNavigation.units_clear(grid, support, step, attacker): return null
+	# A straight level sweep is reversible and checks support throughout.
+	if not SurfaceNavigation.straight_supported_step(data, support, step): return null
 	details.reason = "Weapon cannot clear the transition"
-	var weapon_envelope := AABB(support.min(step) - Vector3(0.90, 0, 0.90), (offset.abs() + Vector3(1.8, 1.85, 1.8)))
-	for part: AABB in data.movement_parts:
-		if weapon_envelope.intersects(part): return null
-	for curve in data.curved_parts:
-		if weapon_envelope.intersects(curve.enclosing_bounds()): return null
+	if not SurfaceNavigation.weapon_envelope_clear(data, support, step, 0.90, 1.85): return null
+	details.reason = "Another unit obstructs the step"
+	var envelope := AABB(support.min(step) - Vector3(0.90, 0, 0.90), offset.abs() + Vector3(1.8, 1.85, 1.8))
+	var radius := data.body_radius + data.body_clearance
 	for other: TacticalUnit in grid.occupancy_map.values():
 		if not is_instance_valid(other) or other == attacker: continue
+		# The target may itself be at a hypothetical arrival or Guard checkpoint.
 		var other_point := target_support if other == target else get_support_position(other.grid_position, grid)
-		var radius := data.body_radius
-		if weapon_envelope.intersects(AABB(other_point - Vector3(radius, 0, radius), Vector3(radius * 2, data.body_height, radius * 2))): return null
+		if envelope.intersects(AABB(other_point - Vector3(radius, 0, radius), Vector3(radius * 2, data.body_height, radius * 2))): return null
 	details.reason = "No clear muzzle ray to a reachable sample"
 	var origin := step + Vector3.UP * 1.315 + forward * 0.659 + forward.cross(Vector3.UP) * 0.067
 	var visibility := _evaluate_target_visibility_cells(attacker, source, target, destination, grid, false, origin)
 	if visibility.visible_count == 0: return null
-	# The calibrated upright aim is approximately level. The animation and
-	# legality must agree on the first sample; never aim an arbitrary pitch.
 	var aim_direction: Vector3 = (visibility.aim_point - origin).normalized()
-	if forward.dot(aim_direction) < cos(deg_to_rad(2.5)): return null
+	if forward.dot(aim_direction) < cos(deg_to_rad(2.5)):
+		details.reason = "Muzzle ray lies outside the certified pitch"
+		return null
+	# Keep the authored bay's recorded calibration. Discovered positions need
+	# slack for the largest measured presentation-origin error in the bay test.
+	if data.contextual_discovery_enabled:
+		var ignored: Array[Vector3i] = [source, destination]
+		if _get_geometry_between(origin, visibility.aim_point, grid, false, ignored, false, [], 0.025):
+			details.reason = "Muzzle ray lacks clearance at the obstacle edge"
+			return null
 	var solution := FiringSolution.new(support, origin, visibility.visible_samples)
 	solution.body_offset = offset
 	solution.facing_point = target_support + Vector3.UP * (target.standing_height if is_instance_valid(target) else attacker.standing_height)
@@ -449,7 +467,7 @@ static func _cover_type_for_ray(cell: MapCellData, origin: Vector3, protected_po
 static func get_blocking_cell(origin: Vector3, destination: Vector3, grid: GridManager) -> MapCellData:
 	return _get_geometry_between(origin, destination, grid, true)
 
-static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true, selected_candidates: Array[MapCellData] = []) -> MapCellData:
+static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: GridManager, los_blockers_only: bool, ignored_cells: Array[Vector3i] = [], nearest_blocker := true, selected_candidates: Array[MapCellData] = [], padding := 0.0) -> MapCellData:
 	var origin_cell = grid.world_to_grid(origin)
 	var target_cell = grid.world_to_grid(destination)
 	var candidates: Array = _shot_candidates(grid, origin_cell, target_cell, los_blockers_only) if selected_candidates.is_empty() else selected_candidates
@@ -464,14 +482,14 @@ static func _get_geometry_between(origin: Vector3, destination: Vector3, grid: G
 			continue
 		if not data.is_shot_only and (data.grid_position == origin_cell or data.grid_position == target_cell):
 			continue
-		var entry := _obstacle_entry(origin, destination, data, grid.cell_size)
+		var entry := _obstacle_entry(origin, destination, data, grid.cell_size, false, padding)
 		if is_finite(entry) and not nearest_blocker: return data
 		if is_finite(entry) and _closer_blocker(data, entry, nearest, nearest_entry):
 			nearest = data
 			nearest_entry = entry
 		# A pure tangent to one continuous curve is open. Only legacy box
 		# cells can take part in the paired-diagonal seam contract.
-		if data.curved_part: continue
+		if data.curved_part or padding > 0.0: continue
 		var closed_entry := _obstacle_entry(origin, destination, data, grid.cell_size, true) if data.blocks_line_of_sight else INF
 		if is_finite(closed_entry):
 			for other in grazed:
@@ -523,14 +541,14 @@ static func _shot_candidates(grid: GridManager, from: Vector3i, to: Vector3i, lo
 static func _segment_enters_obstacle(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> bool:
 	return is_finite(_obstacle_entry(origin, destination, cell, cell_size, closed_edges))
 
-static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false) -> float:
-	if cell.curved_part: return cell.curved_part.ray_entry(origin, destination, closed_edges)
+static func _obstacle_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges := false, padding := 0.0) -> float:
+	if cell.curved_part: return cell.curved_part.ray_entry(origin, destination, closed_edges, padding)
 	if not cell.authored_shot_parts.is_empty():
 		var nearest := INF
 		for part in cell.authored_shot_parts:
-			nearest = minf(nearest, _bounds_entry(origin, destination, cell, cell_size, closed_edges, part))
+			nearest = minf(nearest, _bounds_entry(origin, destination, cell, cell_size, closed_edges, part, padding))
 		return nearest
-	return _bounds_entry(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds)
+	return _bounds_entry(origin, destination, cell, cell_size, closed_edges, cell.authored_shot_bounds, padding)
 
 ## Feedback highlights the intersected part, not a compound object's empty envelope.
 static func _blocking_part_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float) -> AABB:
@@ -547,7 +565,7 @@ static func _blocking_part_bounds(origin: Vector3, destination: Vector3, cell: M
 static func _segment_enters_bounds(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> bool:
 	return is_finite(_bounds_entry(origin, destination, cell, cell_size, closed_edges, bounds))
 
-static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB) -> float:
+static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellData, cell_size: float, closed_edges: bool, bounds: AABB, padding := 0.0) -> float:
 	var inset := 0.001
 	# Full-height obstacles meet at their edges. Shrinking their horizontal
 	# bounds creates artificial cracks through touching diagonal blocks.
@@ -562,6 +580,9 @@ static func _bounds_entry(origin: Vector3, destination: Vector3, cell: MapCellDa
 		maximum = maximum.min(bounds.end + edge_tolerance)
 		if minimum.x >= maximum.x or minimum.y >= maximum.y or minimum.z >= maximum.z:
 			return INF
+	if padding > 0.0:
+		minimum -= Vector3.ONE * padding
+		maximum += Vector3.ONE * padding
 	var direction = destination - origin
 	var enter := 0.0
 	var exit := 1.0

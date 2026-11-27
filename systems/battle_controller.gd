@@ -28,6 +28,19 @@ var _ai_decision_sequence := 0
 var _pending_ai_decisions: Dictionary = {}
 var _last_unlinked_ai_commit: Dictionary = {}
 var _shot_cell_cache: Dictionary = {}
+var _guard_overlay_revision := 0
+var _attack_overlay_revision := 0
+const COVERAGE_SLICE_USEC := 4000
+
+class ShotCoverage:
+	var actor: TacticalUnit
+	var source: Vector3i
+	var signature: Array
+	var candidates: Array
+	var cursor := 0
+	var cells: Array[Vector3i] = []
+	var cacheable := false
+	var from_cache := false
 
 @export var battle_root: Node3D
 @export var tactical_unit: TacticalUnit
@@ -99,6 +112,7 @@ var is_attack_mode_active: bool = false:
 			is_attack_mode_active = value
 			attack_mode_toggled.emit(is_attack_mode_active)
 			if not is_attack_mode_active:
+				_attack_overlay_revision += 1
 				path_visualizer.clear_range_zone()
 				if shot_trajectory_visualizer:
 					shot_trajectory_visualizer.clear()
@@ -309,6 +323,25 @@ func _append_combat_entries(entries: PackedStringArray) -> void:
 func _refresh_overwatch_range() -> void:
 	if not is_instance_valid(overwatch_range_visualizer):
 		return
+	if is_instance_valid(grid_manager) and grid_manager.map_data != null and grid_manager.map_data.contextual_discovery_enabled:
+		_guard_overlay_revision += 1
+		_refresh_contextual_guard_range.call_deferred(_guard_overlay_revision)
+	else:
+		_collect_guard_coverage()
+
+func _refresh_contextual_guard_range(revision: int) -> void:
+	if not _guard_overlay_current(revision): return
+	overwatch_range_visualizer.clear()
+	await _collect_guard_coverage(revision)
+
+func _guard_overlay_current(revision: int) -> bool:
+	return is_inside_tree() and revision == _guard_overlay_revision and is_instance_valid(overwatch_range_visualizer)
+
+func _collect_guard_coverage(revision := -1) -> void:
+	var yielded := revision >= 0
+	var snapshot := AIPlanningSnapshot.capture(self) if yielded else null
+	var current := func() -> bool:
+		return _guard_overlay_current(revision) and not snapshot.is_stale(self)
 	var committed_guarded := {}
 	var enemy_guarded := {}
 	var watchers: Array[TacticalUnit] = []
@@ -318,14 +351,17 @@ func _refresh_overwatch_range() -> void:
 		or not watcher.tactical_state or not watcher.tactical_state.is_overwatching:
 			continue
 		var coverage := enemy_guarded if watcher.faction == TacticalUnit.Faction.ENEMY else committed_guarded
-		for cell in _legal_shot_cells(watcher): coverage[cell] = true
+		var cells := (await _sliced_shot_cells(watcher, current)) if yielded else _legal_shot_cells(watcher)
+		if yielded and not current.call(): return
+		for cell in cells: coverage[cell] = true
 	var committed_cells: Array[Vector3i] = []
 	for cell: Vector3i in committed_guarded.keys(): committed_cells.append(cell)
 	var enemy_cells: Array[Vector3i] = []
 	enemy_cells.assign(enemy_guarded.keys())
 	var preview_cells: Array[Vector3i] = []
 	if is_overwatch_mode_active and is_instance_valid(tactical_unit):
-		preview_cells.assign(_legal_shot_cells(tactical_unit))
+		preview_cells = (await _sliced_shot_cells(tactical_unit, current)) if yielded else _legal_shot_cells(tactical_unit)
+	if yielded and not current.call(): return
 	overwatch_range_visualizer.show_ranges(preview_cells, committed_cells, enemy_cells)
 
 func _query_move_data(unit: TacticalUnit, target_cell: Vector3i) -> Dictionary:
@@ -606,48 +642,118 @@ func update_attack_range() -> void:
 		path_visualizer.clear_range_zone()
 		return
 
-	current_attack_zone.assign(_legal_shot_cells(tactical_unit))
+	if grid_manager.map_data.contextual_discovery_enabled:
+		_attack_overlay_revision += 1
+		path_visualizer.clear_range_zone()
+		_draw_contextual_attack_range(tactical_unit, _attack_overlay_revision)
+	else:
+		_draw_attack_range(_legal_shot_cells(tactical_unit))
+
+func _draw_contextual_attack_range(actor: TacticalUnit, revision: int) -> void:
+	var current := func() -> bool:
+		return is_inside_tree() and is_attack_mode_active and revision == _attack_overlay_revision and tactical_unit == actor
+	var cells := await _sliced_shot_cells(actor, current)
+	if current.call(): _draw_attack_range(cells)
+
+func _draw_attack_range(cells: Array[Vector3i]) -> void:
+	current_attack_zone.assign(cells)
 	path_visualizer.draw_range_zone(current_attack_zone, Color(0.95, 0.2, 0.2, 0.3))
 
 func _legal_shot_cells(attacker: TacticalUnit) -> Array[Vector3i]:
-	var cells: Array[Vector3i] = []
-	if not is_instance_valid(attacker) or not attacker.stats:
-		return cells
-	var attacker_grid = grid_manager.get_unit_grid(attacker)
+	var query := _begin_shot_coverage(attacker)
+	if query == null: return []
+	_scan_shot_coverage(query)
+	return _finish_shot_coverage(query)
+
+## Coverage is an exhaustive display query. Slice its work in the enabled
+## variants without changing the synchronous check for an actual target.
+func _sliced_shot_cells(attacker: TacticalUnit, current: Callable) -> Array[Vector3i]:
+	var query := _begin_shot_coverage(attacker)
+	if query == null: return []
+	var snapshot := AIPlanningSnapshot.capture(self)
+	var graph_revision := pathfinder._graph_revision
+	var los_revision := grid_manager.map_data.los_revision
+	while not _scan_shot_coverage(query, COVERAGE_SLICE_USEC):
+		await get_tree().process_frame
+		if not current.call() or not is_instance_valid(attacker): return []
+		while not can_process():
+			await get_tree().process_frame
+			if not current.call() or not is_instance_valid(attacker): return []
+		if snapshot.is_stale(self) or graph_revision != pathfinder._graph_revision or los_revision != grid_manager.map_data.los_revision:
+			return []
+	return _finish_shot_coverage(query)
+
+func _begin_shot_coverage(attacker: TacticalUnit) -> ShotCoverage:
+	if not is_instance_valid(attacker) or not attacker.stats: return null
+	var query := ShotCoverage.new()
+	query.actor = attacker
+	query.source = grid_manager.get_unit_grid(attacker)
+	var attacker_grid := query.source
 	var data := grid_manager.map_data
 	var heights := {}
-	# An empty cell uses the shooter's height, so equal-height occupants do not
-	# change this geometric overlay when they move. Actual attacks still query live state.
+	var body_points := {}
+	var discovered := data.contextual_discovery_enabled
+	var support := grid_manager.grid_to_world(attacker_grid)
+	# A remote body cannot intersect either of the two same-cell pose envelopes.
+	var nearby_margin := 0.90 + data.body_radius * 2.0 + data.body_clearance
 	for occupant in grid_manager.occupancy_map.values():
-		if is_instance_valid(occupant) and occupant.standing_height != attacker.standing_height:
+		if not is_instance_valid(occupant): continue
+		if occupant.standing_height != attacker.standing_height:
 			heights[occupant.grid_position] = occupant.standing_height
+		if discovered and occupant != attacker:
+			var point := grid_manager.grid_to_world(occupant.grid_position)
+			var distance := (point - support).abs()
+			if distance.x <= nearby_margin and distance.z <= nearby_margin:
+				body_points[occupant.grid_position] = point
 	var signature: Array = [data.get_instance_id(), data.los_revision, pathfinder._graph_revision,
-		attacker_grid, grid_manager.grid_to_world(attacker_grid), attacker.standing_height, attacker.attack_range,
-		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights]
+		attacker_grid, support, attacker.standing_height, attacker.attack_range,
+		attacker.is_carrying_unit(), grid_manager.cell_size, grid_manager.elevation_step, heights, discovered]
 	var key := attacker.get_instance_id()
-	# A side step depends on same-height bodies and stance, which the
-	# direct-lane cache deliberately ignores. Contextual bays query live.
-	var cache_direct := not data.contextual_steps.has(attacker_grid)
+	# Named authored variants have immutable terrain. Include current bodies and
+	# equipment in the display cache. The bay's mutable test marker stays live.
+	if discovered:
+		var rig := attacker.visual_adapter.rig if is_instance_valid(attacker.visual_adapter) else null
+		signature.append_array([body_points, attacker.use_legacy_bean,
+			attacker.visual_adapter.scene_file_path if is_instance_valid(attacker.visual_adapter) else "",
+			rig.weapon_scene if is_instance_valid(rig) else null,
+			attacker.tactical_state != null and attacker.tactical_state.is_shielding])
+	query.cacheable = not data.contextual_steps.has(attacker_grid)
+	query.signature = signature
 	var cached: Dictionary = _shot_cell_cache.get(key, {})
-	if cache_direct and cached.get("signature") == signature:
-		cells.assign(cached.cells)
-		return cells
-	if _shot_cell_cache.size() >= 32: _shot_cell_cache.clear()
-	for grid_pos in pathfinder.grid_to_id_map.keys():
-		var point_id = pathfinder.grid_to_id_map[grid_pos]
-		if pathfinder.astar.is_point_disabled(point_id):
-			continue
+	if query.cacheable and cached.get("signature") == signature:
+		query.cells.assign(cached.cells)
+		query.from_cache = true
+	else:
+		query.candidates = pathfinder.grid_to_id_map.keys()
+	return query
 
-		var distance = CombatRules.attack_distance(attacker_grid, grid_pos, grid_manager)
-		if distance == 0 or distance > attacker.attack_range:
-			continue
+func _scan_shot_coverage(query: ShotCoverage, budget_usec := 0) -> bool:
+	var deadline := Time.get_ticks_usec() + budget_usec
+	while query.cursor < query.candidates.size():
+		var cell: Vector3i = query.candidates[query.cursor]
+		query.cursor += 1
+		if _shot_coverage_includes(query.actor, query.source, cell):
+			query.cells.append(cell)
+		if budget_usec > 0 and Time.get_ticks_usec() >= deadline:
+			return false
+	return true
 
-		if CombatRules.has_firing_lane_to_cell(attacker, grid_pos, grid_manager):
-			cells.append(grid_pos)
-	cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
+func _shot_coverage_includes(actor: TacticalUnit, origin: Vector3i, cell: Vector3i) -> bool:
+	var point_id = pathfinder.grid_to_id_map[cell]
+	if pathfinder.astar.is_point_disabled(point_id) or cell == origin:
+		return false
+	if CombatRules.attack_distance(origin, cell, grid_manager) > actor.attack_range:
+		return false
+	return CombatRules.has_firing_lane_to_cell(actor, cell, grid_manager)
+
+func _finish_shot_coverage(query: ShotCoverage) -> Array[Vector3i]:
+	if query.from_cache: return query.cells
+	query.cells.sort_custom(func(a: Vector3i, b: Vector3i) -> bool:
 		return a.x < b.x or (a.x == b.x and (a.z < b.z or (a.z == b.z and a.y < b.y))))
-	if cache_direct: _shot_cell_cache[key] = {"signature": signature, "cells": cells.duplicate()}
-	return cells
+	if query.cacheable:
+		if _shot_cell_cache.size() >= 32: _shot_cell_cache.clear()
+		_shot_cell_cache[query.actor.get_instance_id()] = {"signature": query.signature, "cells": query.cells.duplicate()}
+	return query.cells
 
 func world_to_grid(pos: Vector3) -> Vector3i:
 	return grid_manager.world_to_grid(pos)

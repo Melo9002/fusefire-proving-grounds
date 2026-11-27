@@ -437,7 +437,11 @@ func present_movement_end() -> void:
 	else:
 		present_idle()
 
+var _contextual_attack_active := false
+
 func _cover_context() -> Dictionary:
+	if _contextual_attack_active:
+		return {"type": MapCellData.CoverType.NONE, "direction": Vector3.ZERO}
 	var cell := preview_cell if preview_cell != Vector3i(-1, -1, -1) else tactical_unit.grid_position if is_instance_valid(tactical_unit) else Vector3i(-1, -1, -1)
 	if is_instance_valid(presentation_grid) and cell != Vector3i(-1, -1, -1):
 		last_cover_contact = POSE_CONTEXT.cover_at(presentation_grid, cell, rig.global_basis.z)
@@ -669,6 +673,10 @@ func present_contextual_attack(offset: Vector3, target_world_position: Vector3) 
 	var home := position
 	var heading := target_world_position - (rig.global_position + offset)
 	var prior_yaw := atan2(rig.character_root.global_basis.z.x, rig.character_root.global_basis.z.z)
+	# The solution already specified the pose. Release the resting cover
+	# request while stepping, firing, and recovering to the resting point.
+	_contextual_attack_active = true
+	present_idle()
 	presenter.face_authoritative(atan2(heading.x, heading.z), false)
 	# Read fresh ankle poses after the facing request has reached the skeleton.
 	for frame in 3:
@@ -690,6 +698,7 @@ func present_contextual_attack(offset: Vector3, target_world_position: Vector3) 
 	if not is_inside_tree(): return
 	position = home
 	rig.traversal_modifier.input.clear()
+	_contextual_attack_active = false
 	presenter.face_authoritative(prior_yaw, false)
 	present_idle()
 

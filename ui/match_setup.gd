@@ -512,7 +512,7 @@ func _open_replay_file(path: String) -> void:
 	var recording := BattleReplayRecording.load_json(path)
 	var issue := recording.validation_message()
 	if issue.is_empty() and (not bool(recording.configuration.get("generated_map", false)) \
-	or StringName(recording.configuration.get("battlefield_id", "")) not in BattlefieldCatalogData.SELECTABLE):
+	or StringName(recording.configuration.get("battlefield_id", "")) not in BattlefieldCatalogData.REPLAYABLE):
 		issue = "This recording uses a retired battlefield."
 	if not issue.is_empty():
 		if not _replay_error:

@@ -24,8 +24,8 @@ func enclosing_bounds() -> AABB:
 	var reach := Vector2(c * core.x + s * core.y, s * core.x + c * core.y) + Vector2.ONE * radius
 	return AABB(center - Vector3(reach.x, 0.0, reach.y), Vector3(2.0 * reach.x, height, 2.0 * reach.y))
 
-func ray_entry(origin: Vector3, destination: Vector3, closed_edges := false) -> float:
-	return _entry(origin, destination, radius + (INSET if closed_edges else -INSET), INSET, height - INSET)
+func ray_entry(origin: Vector3, destination: Vector3, closed_edges := false, padding := 0.0) -> float:
+	return _entry(origin, destination, radius + (INSET if closed_edges else -INSET) + padding, INSET - padding, height - INSET + padding)
 
 func segment_clear(from: Vector3, to: Vector3, body_radius: float, body_height: float, clearance := 0.04, tolerance := 0.0) -> bool:
 	return not is_finite(_entry(from, to, radius + body_radius + clearance - tolerance, -body_height, height))

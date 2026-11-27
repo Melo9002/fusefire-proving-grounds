@@ -17,12 +17,19 @@ const FLEET_STATION := &"fleet_station"
 const SERVICE_DEPOT := &"service_depot"
 const TACTICAL_TEST_RANGE := &"tactical_test_range"
 const CONTEXTUAL_BAY := &"contextual_firing_bay"
+# Named rules variants preserve historical recordings for the ordinary sites.
+const CONTEXTUAL_DEPOT := &"service_depot_contextual_v1"
+const CONTEXTUAL_SHOWCASE := &"service_depot_contextual_showcase_v1"
+const CONTEXTUAL_FREIGHT := &"freight_yard_contextual_v1"
 const ContextualBay = preload("res://systems/generation/contextual_firing_bay.gd")
 const PARCEL_TEST := &"parcel_editor_test"
 const CurrentGenerator = preload("res://systems/generation2/generator.gd")
 
 
 const DEFINITIONS := {
+	CONTEXTUAL_SHOWCASE: {"label": "Depot Crossfire", "source_kind": CurrentGenerator.DEPOT_SOURCE, "fixed_size": CurrentGenerator.DEPOT_SIZE},
+	CONTEXTUAL_DEPOT: {"label": "Service Depot — Contextual Firing", "source_kind": CurrentGenerator.DEPOT_SOURCE, "fixed_size": CurrentGenerator.DEPOT_SIZE},
+	CONTEXTUAL_FREIGHT: {"label": "Freight Yard — Contextual Firing", "source_kind": CurrentGenerator.FREIGHT_SOURCE, "fixed_size": CurrentGenerator.FREIGHT_SIZE},
 	CONTEXTUAL_BAY: {"label": "Contextual Firing Bay", "source_kind": CONTEXTUAL_BAY, "fixed_size": Vector2i(12, 12)},
 	FREIGHT_YARD: {"label": "Freight Yard", "source_kind": CurrentGenerator.FREIGHT_SOURCE, "fixed_size": CurrentGenerator.FREIGHT_SIZE},
 	FLEET_STATION: {"label": "Fleet Station", "source_kind": CurrentGenerator.FLEET_SOURCE, "fixed_size": CurrentGenerator.FLEET_SIZE},
@@ -38,10 +45,11 @@ const DEFINITIONS := {
 # Curated-site release/mission matrices keep their existing scope. The menu
 # additionally exposes the same authored range; no scene/content copy is made.
 const PLAYABLE := [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION]
-const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE]
+const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT]
+const REPLAYABLE := SELECTABLE + [CONTEXTUAL_BAY, CONTEXTUAL_SHOWCASE]
 
 static func uses_population(id: StringName) -> bool:
-	return id in [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
+	return id in [SERVICE_DEPOT, FREIGHT_YARD, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_SHOWCASE, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
 
 static func has(id: StringName) -> bool:
 	return DEFINITIONS.has(id)
@@ -76,6 +84,13 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 	var size := map_size(id, requested_size)
 	match id:
 		CONTEXTUAL_BAY: return ContextualBay.generate(map_seed, cell_size)
+		CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_SHOWCASE:
+			var source := CurrentGenerator.DEPOT_SOURCE if id != CONTEXTUAL_FREIGHT else CurrentGenerator.FREIGHT_SOURCE
+			var map := CurrentGenerator.generate(source, map_seed, cell_size, requested_manifest)
+			map.contextual_discovery_enabled = true
+			if id == CONTEXTUAL_SHOWCASE and map.generation_errors.is_empty():
+				_configure_crossfire_deployment(map)
+			return map
 		FREIGHT_YARD:
 			return CurrentGenerator.generate(CurrentGenerator.FREIGHT_SOURCE, map_seed, cell_size, requested_manifest)
 		FLEET_STATION:
@@ -92,6 +107,19 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 			var rejected := MapData.new()
 			rejected.generation_errors.append({"code": "UNKNOWN_BATTLEFIELD", "detail": String(id)})
 			return rejected
+
+## Start squads near surveyed geometry using the standard deployment contract.
+## Preserve the other authored spawn options for larger rosters.
+static func _configure_crossfire_deployment(map: MapData) -> void:
+	for faction in [TacticalUnit.Faction.PLAYER, TacticalUnit.Faction.ENEMY]:
+		var zone := map.get_zone(StringName("deployment_%d" % faction))
+		if not zone: continue
+		var starts := [Vector3i(11, 0, 25), Vector3i(23, 0, 21)] if faction == TacticalUnit.Faction.PLAYER else [Vector3i(17, 0, 22), Vector3i(30, 0, 22)]
+		for index in range(starts.size() - 1, -1, -1):
+			var cell := map.get_cell(starts[index])
+			if not cell or not cell.can_stop: continue
+			zone.cells.erase(starts[index])
+			zone.cells.push_front(starts[index])
 
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
