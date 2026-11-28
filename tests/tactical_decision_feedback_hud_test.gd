@@ -18,7 +18,7 @@ func check(condition: bool, message: String) -> void:
 
 func _run() -> void:
 	var level := load("res://levels/prototype_map/prototype_map.tscn").instantiate() as BattleLevel
-	level.configure(1, 1, false, 1, 0, Vector2i(32, 24), false, MissionActor.VIPBehavior.PLAYER_CONTROLLED, MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 1, false))
+	level.configure(1, 2, false, 1, 0, Vector2i(32, 24), false, MissionActor.VIPBehavior.PLAYER_CONTROLLED, MissionCatalog.create_mission(MissionObjectiveDefinition.Kind.ELIMINATE, 1, false))
 	root.add_child(level)
 	await create_timer(0.2).timeout
 	level.action_camera_director.frequency = ActionCameraDirector.Frequency.OFF
@@ -70,6 +70,24 @@ func _run() -> void:
 
 	var move := battle.query_move(actor, Vector3i(1, 0, 3))
 	check(move.is_legal(), "Movement preview uses a real reachable destination")
+	var second_enemy: TacticalUnit = level.turn_manager.enemy_units[1]
+	_place(second_enemy, Vector3i(3, 0, 3), grid)
+	trajectory.set_debug_enabled(false)
+	battle.is_move_mode_active = true
+	battle.update_unit_movement_zone()
+	battle._update_movement_preview({"position": grid.grid_to_world(move.target_cell)})
+	var ghost_origin := grid.grid_to_world(move.target_cell) + Vector3.UP * actor.standing_height
+	check(battle._last_tactical_preview.contains("2 out, 2 in")
+		and trajectory.destination_lines.size() == 2, "Ordinary Move hover draws both clear lanes from the ghost")
+	for line in trajectory.destination_lines:
+		check(line.mesh_instance.mesh != null and line.last_origin.is_equal_approx(ghost_origin), "Each visible lane uses the hypothetical firing origin")
+	check(trajectory.destination_lines.size() == 2
+		and not trajectory.destination_lines[0].last_line_end.is_equal_approx(trajectory.destination_lines[1].last_line_end),
+		"The two lanes reach different enemies")
+	second_enemy.hide()
+	battle._update_movement_preview({"position": grid.grid_to_world(move.target_cell)})
+	check(trajectory.destination_lines.size() == 1, "Move hover immediately removes the hidden target's lane")
+	battle.is_move_mode_active = false
 	var fingerprint := BattleStateFingerprint.capture(level.turn_manager, grid, level.objective_manager)
 	var description := TacticalFeedbackText.movement(move, actor, [enemy], grid)
 	check(description.contains("1 AP") and description.contains(String(enemy.tactical_id)) and description.contains("cover"), "Movement describes AP and directional cover against the actual enemy")

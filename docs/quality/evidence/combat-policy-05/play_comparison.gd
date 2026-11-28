@@ -56,6 +56,9 @@ func _start() -> void:
 	title.text = "%s  ·  %s  ·  Guard %s" % [CombatRules.engagement_policy_label(config.engagement_policy),
 		"Side steps off" if config.contextual_firing_disabled else "Side steps on",
 		"%d%% minimum" % config.guard_minimum_chance if config.guard_minimum_chance > 0 else "first legal shot"]
+	var lab_build := OS.get_environment("FUSEFIRE_LAB_BUILD")
+	if not lab_build.is_empty():
+		title.text += "  ·  Build %s  ·  Seed %d" % [lab_build, config.battle_seed]
 	print("[CombatPolicy] ", title.text)
 	if autoplay:
 		level.battle_controller.action_service.action_committed.connect(func(result):

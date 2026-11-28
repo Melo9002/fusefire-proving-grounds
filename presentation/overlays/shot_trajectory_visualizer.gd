@@ -65,13 +65,16 @@ func clear() -> void:
 func draw_destination_options(actor: TacticalUnit, destination: Vector3i, options: Array[Dictionary]) -> void:
 	clear_destination_options()
 	var origin := CombatRules.get_support_position(destination, grid_manager) + Vector3.UP * actor.standing_height
-	if options.size() > 1 and not debug_enabled: return
+	# Show clear lanes in the overview. Keep obstruction details for a
+	# single inspected target or debug mode, where the marker has context.
+	var overview := options.size() > 1 and not debug_enabled
 	for option in options:
+		var evaluation: CombatRules.AttackEvaluation = option.outgoing
+		if overview and not evaluation.is_legal: continue
 		var line := ShotTrajectoryVisualizer.new()
 		line.grid_manager = grid_manager
 		add_child(line)
 		destination_lines.append(line)
-		var evaluation: CombatRules.AttackEvaluation = option.outgoing
 		line.draw_trajectory(origin, evaluation.aim_point, evaluation, true, option.unavailable.is_empty())
 
 func clear_destination_options() -> void:

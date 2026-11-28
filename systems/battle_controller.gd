@@ -992,11 +992,19 @@ func is_current_phase_manually_controlled() -> bool:
 	return (not debug_player_ai and turn_manager.current_phase == TurnManager.TurnPhase.PLAYER_TURN) \
 		or (debug_enemy_control and turn_manager.current_phase == TurnManager.TurnPhase.ENEMY_TURN)
 
+## Simulation laboratory only. An empty list uses the production shared context.
+var simulation_isolated_squad_factions: Array[int] = []
+
+func _squad_context_key(unit: TacticalUnit) -> int:
+	if is_instance_valid(unit) and int(unit.faction) in simulation_isolated_squad_factions:
+		return -unit.get_instance_id()
+	return _ai_team_id(unit)
+
 func peek_squad_context(unit: TacticalUnit) -> SquadContext:
-	return _squad_contexts.get(_ai_team_id(unit))
+	return _squad_contexts.get(_squad_context_key(unit))
 
 func get_squad_context(unit: TacticalUnit) -> SquadContext:
-	var team_id := _ai_team_id(unit)
+	var team_id := _squad_context_key(unit)
 	if not _squad_contexts.has(team_id):
 		_squad_contexts[team_id] = SquadContextData.new()
 	var context: SquadContext = _squad_contexts[team_id]

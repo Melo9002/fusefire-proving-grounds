@@ -303,6 +303,13 @@ func _configure_replay_presentation() -> void:
 		if control:
 			control.hide()
 
+func get_replay_recording() -> BattleReplayRecording:
+	if pending_replay:
+		return pending_replay
+	if _replay_recorder:
+		return _replay_recorder.recording
+	return null
+
 func replay_last_battle() -> void:
 	if is_instance_valid(_replay_loading): return
 	var recording = pending_replay if pending_replay else ReplaySessionData.last_recording

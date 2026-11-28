@@ -6,19 +6,24 @@ class_name TurnHUDController
 @export var objective_manager: ObjectiveManager
 @export var turn_label: Label
 @export var end_turn_button: Button
+@export var round_label: Label
 var replay_button: Button
 var setup_button: Button
 var save_replay_button: Button
 var _save_dialog: FileDialog
+var _recording_to_save: BattleReplayRecording
 var _save_dialog_holds_pause := false
 var _paused_before_save_dialog := false
 var _save_status: Label
+var _dialog_status: Label
 
 func _ready() -> void:
 	if not turn_manager or not battle_controller or not turn_label or not end_turn_button:
 		push_error("TurnHUDController: Missing UI dependencies!")
 		return
 	turn_manager.turn_phase_changed.connect(_on_turn_phase_changed)
+	turn_manager.round_started.connect(_on_round_started)
+	_on_round_started(turn_manager.current_round)
 	turn_manager.battle_ended.connect(_on_battle_ended)
 	turn_manager.player_actions_exhausted.connect(_on_player_actions_exhausted)
 	battle_controller.debug_enemy_control_changed.connect(_on_debug_enemy_control_changed)
@@ -62,7 +67,7 @@ func _on_turn_phase_changed(new_phase: TurnManager.TurnPhase) -> void:
 		return
 	end_turn_button.show()
 	if battle_controller.replay_mode and new_phase != TurnManager.TurnPhase.TRANSITION:
-		turn_label.text = "REPLAY — ROUND %d" % turn_manager.current_round
+		turn_label.text = "REPLAY"
 		turn_label.modulate = Color(0.55, 0.86, 1.0)
 		end_turn_button.disabled = true
 		end_turn_button.text = "REPLAY IN PROGRESS"
@@ -89,6 +94,11 @@ func _on_turn_phase_changed(new_phase: TurnManager.TurnPhase) -> void:
 			turn_label.text = "PHASE TRANSITION..."
 			turn_label.modulate = Color.YELLOW
 			end_turn_button.disabled = true
+
+func _on_round_started(round_number: int) -> void:
+	if round_label:
+		round_label.visible = round_number > 0
+		round_label.text = "Round %d" % round_number
 
 func _on_end_turn_pressed() -> void:
 	print_rich("[color=cyan][UI][/color] End Turn button pressed!")
@@ -136,6 +146,11 @@ func _choose_replay_destination() -> void:
 	if not BattleReplaySession.has_recording():
 		_show_save_status("No completed replay is available.", false)
 		return
+	choose_replay_destination(BattleReplaySession.last_recording)
+
+func choose_replay_destination(recording: BattleReplayRecording, status_label: Label = null) -> void:
+	_recording_to_save = recording
+	_dialog_status = status_label if status_label else _save_status
 	if not _save_dialog:
 		_save_dialog = FileDialog.new()
 		_save_dialog.name = "SaveReplayDialog"
@@ -150,9 +165,10 @@ func _choose_replay_destination() -> void:
 		_save_dialog.file_selected.connect(_save_replay_file)
 		_save_dialog.visibility_changed.connect(_on_save_dialog_visibility_changed)
 		add_child(_save_dialog)
-	var recording: BattleReplayRecording = BattleReplaySession.last_recording
+	_dialog_status.hide()
 	var battlefield := String(recording.configuration.get("battlefield_id", "battle")).validate_filename()
-	_save_dialog.current_file = "%s-%d.replay.json" % [battlefield, int(recording.configuration.get("seed", 0))]
+	var suffix := "-partial" if recording.expected_result == TurnManager.BattleResult.ONGOING else ""
+	_save_dialog.current_file = "%s-%d%s.replay.json" % [battlefield, int(recording.configuration.get("seed", 0)), suffix]
 	_save_dialog.popup_centered_ratio(0.75)
 
 func _on_save_dialog_visibility_changed() -> void:
@@ -172,13 +188,14 @@ func _release_save_dialog_pause() -> void:
 		get_tree().paused = _paused_before_save_dialog
 
 func _save_replay_file(path: String) -> void:
-	var result := BattleReplaySession.save_last(path)
-	_show_save_status("Replay saved." if result == OK else "Save failed. %s" % error_string(result), result == OK)
+	var result := _recording_to_save.save_json(path)
+	_show_save_status("Replay saved." if result == OK else "Save failed. %s" % error_string(result), result == OK, _dialog_status)
 
-func _show_save_status(message: String, success: bool) -> void:
-	_save_status.text = message
-	_save_status.modulate = Color("b9e8cf") if success else Color("ff9385")
-	_save_status.show()
+func _show_save_status(message: String, success: bool, status_label: Label = null) -> void:
+	var label := status_label if status_label else _save_status
+	label.text = message
+	label.modulate = Color("b9e8cf") if success else Color("ff9385")
+	label.show()
 
 func _on_setup_pressed() -> void:
 	var level := _find_battle_level()

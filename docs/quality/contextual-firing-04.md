@@ -59,3 +59,22 @@ godot_console --path . --rendering-method gl_compatibility --resolution 1280x720
 ```
 
 The rendered probe also supports `-- repeat`, `-- showcase` and `-- playback`. The playback mode uses the contextual clip saved by the standard probe under the same Godot user profile. Animation sequences run at normal simulation speed and are encoded at 30 FPS. Movie capture is evidence of motion and framing, independent of hardware performance benchmarking.
+
+## Second human replay — Strange.json
+
+A byte-identical local copy is in `artifacts/contextual-04/Strange.json`, SHA-256 `f499c46a84f8e5701936ed8eed2f9e80170811a1de947461e50d6fe7d64062af`. The replay verified **74/74 records** and reproduced Victory. It is a different match from `Test.json` on the same ordinary Depot seed, with Normal difficulty, Default commanders and contextual firing disabled.
+
+At revision 56, Bravo reached `(15,0,29)` and had a 50% direct Attack against Hostile 2 at `(14,0,26)`. Only one opposing lateral body sample cleared the container, and the reverse lane was blocked. Both of Bravo's 50% attacks hit. Translating the ray endpoints to tile centers removed the shot, as did restricting the target to head/core. A head-height visibility gate alone retained it.
+
+On revision 63, Hostile 2 moved one cell back to `(14,0,25)` and entered Guard. The move closed Bravo's outgoing lane. That was a defensible retreat at 25 HP, even though a read-only alternate stop at `(13,0,24)` already offered the AI a 50% shot and no direct return lane.
+
+Once alone at revision 70, Hostile 2 had 3 AP and 2 SP. The recorded Wait reason was “No legal shot or reachable approach. 34 cells outside route; 19 moves below threshold”. There were **53 legal destinations** and **34** that offered an Attack after one Move. At `(13,0,24)`, a 1 AP Move would leave 2 AP and a 50% direct shot, with Bravo's return blocked. The stop was outside the chosen approach corridor. A farther stop at `(12,0,22)` also offered a one-way shot at 40% and fell outside the corridor. Inside the corridor, `(14,0,27)` offered a 100% shot at the cost of exposure to a 90% return. The AI held a mutually blocked position and spent the activation on Wait. On the next player activation, Bravo moved to `(14,0,29)`, opened a mutual 100% lane and won with the first shot.
+
+The replay records an actual planning miss with reachable options. The short-plan comparison for a unit with no current attack is gated to contextual maps, so the ordinary map relied on route scoring. Its corridor filter excluded the safer shooting positions. The recording does not preserve each candidate's historic utility breakdown, so this audit makes no claim about the precise score that caused the earlier retreat. The alternate positions are read-only forecasts from the reconstructed board. They do not predict a different completed match. Keep this case for a focused AI follow-up on stalls from a blocked firing position.
+
+[Replay audit](evidence/contextual-04/strange_replay_audit.gd).
+
+```powershell
+$replay = Join-Path $PWD "artifacts/contextual-04/Strange.json"
+godot_console --headless --path . --fixed-fps 60 --script res://docs/quality/evidence/contextual-04/strange_replay_audit.gd -- "$replay"
+```
