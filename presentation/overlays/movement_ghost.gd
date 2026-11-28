@@ -4,6 +4,7 @@ extends Node3D
 const FallbackVisual := preload("res://art/characters/mira_0/runtime/mira_0_unit_visual.tscn")
 var model: TacticalCharacterAdapter
 var source_id := 0
+var passenger_id := 0
 var destination := Vector3.ZERO
 
 func show_destination(actor: TacticalUnit, cell: Vector3i, grid: GridManager) -> void:
@@ -11,9 +12,12 @@ func show_destination(actor: TacticalUnit, cell: Vector3i, grid: GridManager) ->
 		clear()
 		return
 	var source := actor.visual_adapter
-	if source_id != actor.get_instance_id() or not is_instance_valid(model) or model.preview_carrying != actor.is_carrying_unit():
+	var carried := actor.carried_unit
+	var carried_id := carried.get_instance_id() if is_instance_valid(carried) else 0
+	if source_id != actor.get_instance_id() or not is_instance_valid(model) or passenger_id != carried_id:
 		clear()
 		source_id = actor.get_instance_id()
+		passenger_id = carried_id
 		var scene: PackedScene = load(source.scene_file_path) if not source.scene_file_path.is_empty() else FallbackVisual
 		model = scene.instantiate() as TacticalCharacterAdapter
 		# Share authored assets/calibration; never clone the live unit or its stats.
@@ -24,7 +28,12 @@ func show_destination(actor: TacticalUnit, cell: Vector3i, grid: GridManager) ->
 		model.preview_cell = cell
 		model.preview_carrying = actor.is_carrying_unit()
 		add_child(model)
-		if model.preview_carrying: model.present_pickup()
+		if model.preview_carrying:
+			var definition := carried.get_passenger_definition()
+			if definition != null:
+				model.present_pickup(Vector3.INF, null, definition)
+			else:
+				model.rig.stow_weapon()
 		var material := StandardMaterial3D.new()
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -58,4 +67,5 @@ func clear() -> void:
 	if is_instance_valid(model): model.free()
 	model = null
 	source_id = 0
+	passenger_id = 0
 	hide()

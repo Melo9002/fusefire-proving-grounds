@@ -77,11 +77,15 @@ var _segment_to := Vector3.ZERO
 ## Returns the handle of the visual lift: it settles when the lift ends (see CharacterRig.rescue_presentation). A pickup that has to wait for the carrier to arrive returns the reserved handle at once and the
 ## same handle is the one the lift settles later; a pickup without a place has no lift to run (the passenger just appears across the shoulders): its handle is the pickup clip's hold, which settles when the
 ## unit returns to idle.
-func present_pickup(passenger_world := Vector3.INF, lying_orientation = null) -> ActionHandle:
+func present_pickup(passenger_world := Vector3.INF, lying_orientation = null, definition: PassengerDefinition = null) -> ActionHandle:
 	if presenter.is_defeated():
 		return ActionHandle.settled(PresentationTypes.Outcome.CANCELLED)   # a defeated carrier lifts nobody
 	presenter.attack.cancel()
 	presenter.cancel_hold()
+	if definition != null:
+		# Keep the resolved body through a pending pickup. It belongs to this carry
+		# and is cleared when the carry ends, even if the lift never starts.
+		rig.passenger_definition = definition
 	if passenger_world.is_finite() and is_instance_valid(tactical_unit) and (tactical_unit.is_moving or _flat_distance_to(passenger_world) > rig.rescue_interaction.max_step + rig.rescue_interaction.stand_off + 0.3):
 		# The tactical layer decides the rescue when the move is COMMITTED, before the carrier's body has walked there (the move's presentation
 		# starts after). The lift is shown on arrival (present_movement_end); until then it is an ordinary walk with the rifle in hand and nobody on
@@ -111,7 +115,10 @@ func _on_pickup_presented(outcome: PresentationTypes.Outcome) -> void:
 func present_carry_released() -> void:
 	presenter.cancel_pending_pickup(PresentationTypes.Outcome.INTERRUPTED)
 	presenter.cancel_hold()
+	if rig.loaded_ladder_active():
+		_end_ladder()
 	rig.end_carry()
+	rig.passenger_definition = null
 	if is_instance_valid(rig.animation_controller) and rig.animation_controller.current_state in [&"pickup", &"carry_idle", &"carry_move", &"boarding"]:
 		present_idle()
 
@@ -172,7 +179,10 @@ func pickup_pending() -> bool:
 	return presenter.has_pending_pickup()
 
 func _carrying() -> bool:
-	return preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit() and not pickup_pending())
+	# A lethal reaction settles ownership before the presenter shows its impact.
+	# Until that handoff the attached visual body still needs the carry gait.
+	return preview_carrying or (is_instance_valid(tactical_unit) and not pickup_pending()
+		and (tactical_unit.is_carrying_unit() or is_instance_valid(rig.carry_passenger)))
 const POSE_CONTEXT := preload("res://presentation/tactical/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 ## States in which the sights are up.
@@ -354,10 +364,14 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 	_ladder_step = absf(to_world.y - from_world.y) < 0.05 and state_name in [&"climb", &"descend"] and link_kind == TraversalLinkData.LADDER
 	var vertical := absf(to_world.y - from_world.y) > 0.05 and Vector2(to_world.x - from_world.x, to_world.z - from_world.z).length() < 0.02
 	var profile: TraversalProfile = rig.traversal_profile
-	if _carrying():
-		# A loaded carrier on a ladder is an unsupported combination (the passenger's contacts and the rungs would compete for the hands): the placeholder clips, as before.
+	var loaded := can_present_loaded_ladder()
+	if _carrying() and not loaded:
 		_ladder_step = false
 		_end_ladder()
+		return 0.0
+	if _ladder_step and rig.loaded_ladder_active() and _ladder.get("direction", 0) > 0:
+		# Retain the ascending pose across the authored top transfer. Passing
+		# across-deck progress lets the shared rig begin restoring the carry.
 		return 0.0
 	# Only a link DECLARED a ladder gets the rung contacts; a generic or undeclared vertical link keeps the placeholder clips (no guessing from its height).
 	if not (vertical and link_kind == TraversalLinkData.LADDER):
@@ -366,6 +380,8 @@ func note_segment(from_world: Vector3, to_world: Vector3, state_name: StringName
 	var facing := Vector3(toward_deck.x, 0.0, toward_deck.z)
 	_ladder = {"low_y": minf(from_world.y, to_world.y), "length": absf(to_world.y - from_world.y), "direction": 1 if to_world.y > from_world.y else -1,
 		"yaw": atan2(facing.x, facing.z) if facing.length() > 0.01 else rig.rotation.y}
+	if loaded:
+		rig.begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction), null, true)
 	if profile == null or not profile.slow_ladder_enabled:
 		return 0.0
 	return profile.climb_speed if int(_ladder.direction) > 0 else profile.descend_speed
@@ -381,6 +397,20 @@ func note_stairs(model: StairModel, ascending: bool, enter: float, exit: float) 
 func is_ladder_active() -> bool:
 	return not _ladder.is_empty()
 
+func can_present_loaded_ladder() -> bool:
+	return can_process() and rig.supports_loaded_ladder() and is_instance_valid(rig.carry_passenger)
+
+## A presented segment waits for the shared transfer clock. Once the ladder
+## ends, wait for restoration before continuing the ordinary route.
+func movement_pose_ready() -> bool:
+	if not rig.loaded_ladder_active() or not can_process():
+		return true
+	return is_ladder_active() and rig.loaded_ladder_ready()
+
+func finish_movement_traversal() -> bool:
+	_end_ladder()
+	return movement_pose_ready()
+
 
 ## Once per frame: while a ladder segment is walked, the character faces the ladder and the pose follows the unit's height up it.
 func _tick_traversal(delta: float) -> void:
@@ -395,7 +425,10 @@ func _tick_traversal(delta: float) -> void:
 	presenter.turn_toward_yaw(float(_ladder.yaw), turn_speed_degrees, delta)
 	if rig.ladder == null:
 		rig.begin_traversal(&"ladder", float(_ladder.length), int(_ladder.direction))
-	rig.set_traversal_progress(climbed)
+	var across_deck := 0.0
+	if _ladder_step and rig.loaded_ladder_active():
+		across_deck = clampf(tactical_unit.global_position.distance_to(_segment_from) / maxf(0.001, _segment_from.distance_to(_segment_to)), 0.0, 1.0)
+	rig.set_traversal_progress(climbed, NAN, across_deck)
 
 
 func _end_ladder() -> void:
@@ -823,7 +856,7 @@ func _process(delta: float) -> void:
 ## A tactical unit says when it is moving; a rig with no tactical unit (tools, tests) is moving while it is being fed velocities (the presenter infers that).
 func _sync_movement_authority() -> void:
 	if is_instance_valid(tactical_unit):
-		presenter.set_movement_authority(tactical_unit.is_moving)
+		presenter.set_movement_authority(tactical_unit.is_moving and movement_pose_ready())
 	else:
 		presenter.clear_movement_authority()
 
