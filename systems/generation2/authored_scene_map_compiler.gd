@@ -10,7 +10,8 @@ const SHAPE_REVISION := ShapeRules.REVISION
 static func is_active_solid(node: Node, revision := SHAPE_REVISION) -> bool:
 	return ShapeRules.is_active_solid(node, revision)
 
-static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY, precise_shot_bounds := true, shape_revision := SHAPE_REVISION) -> void:
+## `door_overrides` {door id: state} compiles the same scene with a door in the other state (MapDoors.capture compiles each door's alternate this way); empty means every door in its authored initial state.
+static func compile(root: Node, data: MapData, cell_size: float, root_transform := Transform3D.IDENTITY, precise_shot_bounds := true, shape_revision := SHAPE_REVISION, door_overrides := {}) -> void:
 	var retired := retired_metadata(root)
 	for issue in retired: data.generation_errors.append({"code": "RETIRED_ABSOLUTE_TACTICAL_METADATA", "detail": issue})
 	if not retired.is_empty(): return
@@ -21,6 +22,7 @@ static func compile(root: Node, data: MapData, cell_size: float, root_transform 
 	# Establish every walkable surface before any object can stamp onto it.
 	_compile_surfaces(root, root_transform, data, cell_size)
 	if shape_revision >= 6: _connect_surface_paths(root, root_transform, data, cell_size)
+	_collect_doors(root, root_transform, data, cell_size, door_overrides)
 	_compile_contents(root, root_transform, data, cell_size, precise_shot_bounds, shape_revision)
 	data.rebuild_los_index()
 
@@ -71,9 +73,47 @@ static func _connect_surface_paths(node: Node, parent_transform: Transform3D, da
 					data.add_traversal_link(link)
 	for child in node.get_children(): _connect_surface_paths(child, transform, data, unit)
 
+## Authored doors: a marker node (`door_id`, `door_cell_local`, `door_initial_state`, `door_hinge_local`, `door_swing_radius`, `door_swing_from_deg`, `door_swing_to_deg`) gives the door its identity and swing; the
+## solid parts of each state are ordinary part nodes carrying `door_id` and `door_state` ("closed" or "open"). Only the active state's parts are stamped into the map; both states' boxes are recorded on the door.
+static func _collect_doors(node: Node, parent_transform: Transform3D, data: MapData, unit: float, overrides: Dictionary) -> void:
+	var transform := parent_transform
+	if node is Node3D: transform *= node.transform
+	if node.has_meta("door_cell_local"):
+		var id := StringName(node.get_meta("door_id"))
+		if not data.surface_placement_enabled or data.doors.has(id):
+			data.generation_errors.append({"code": "INVALID_DOOR", "detail": "%s: doors need surface placement and a unique id" % id})
+		else:
+			var door := DoorData.new()
+			door.door_id = id
+			door.cell = _local_cell_to_grid(transform, node.get_meta("door_cell_local"), data, unit)
+			door.initial_state = StringName(node.get_meta("door_initial_state", DoorData.CLOSED))
+			door.state = StringName(overrides.get(id, door.initial_state))
+			var hinge: Vector3 = transform * Vector3(node.get_meta("door_hinge_local", Vector3.ZERO))
+			door.hinge = Vector2(hinge.x, hinge.z)
+			door.swing_radius = float(node.get_meta("door_swing_radius", 0.0)) * transform.basis.x.length()
+			for pair in [["door_swing_from_deg", "swing_from"], ["door_swing_to_deg", "swing_to"]]:
+				var local := deg_to_rad(float(node.get_meta(pair[0], 0.0)))
+				var direction := transform.basis * Vector3(cos(local), 0.0, sin(local))
+				door.set(pair[1], atan2(direction.z, direction.x))
+			data.doors[id] = door
+	for child in node.get_children():
+		_collect_doors(child, transform, data, unit, overrides)
+
 static func _compile_contents(node: Node, parent_transform: Transform3D, data: MapData, unit: float, precise_shot_bounds: bool, shape_revision: int) -> void:
 	var transform := parent_transform
 	if node is Node3D: transform *= node.transform
+	var door_id := &""
+	if is_active_solid(node, shape_revision) and node.has_meta("door_state") and data.doors.has(StringName(node.get_meta("door_id", ""))):
+		var door: DoorData = data.doors[StringName(node.get_meta("door_id"))]
+		var size: Vector3 = node.get_meta("solid_size")
+		var part_state := StringName(node.get_meta("door_state"))
+		door.record_part(part_state, transform * AABB(-size * 0.5, size))
+		if part_state != door.state:
+			# The other state's leaf: recorded above, not part of this map.
+			for child in node.get_children():
+				_compile_contents(child, transform, data, unit, precise_shot_bounds, shape_revision)
+			return
+		door_id = door.door_id
 	if is_active_solid(node, shape_revision):
 		# The pilot consumes existing part boxes automatically; ordinary assets
 		# do not need a new per-asset flag to participate.
@@ -84,7 +124,7 @@ static func _compile_contents(node: Node, parent_transform: Transform3D, data: M
 			data.add_curved_obstacle(curve, unit)
 		else:
 			_stamp_volume(data, transform, node.get_meta("solid_size"), not wants_curve and node.get_meta("round_volume", false), unit, int(node.get_meta("movement_cost", 1)), use_precise_bounds, shape_revision >= 3, maxf(0.0, float(node.get_meta("standing_clearance", 0.0))), shape_revision >= 4, _presentation_of(node), String(node.get_meta("shot_label", "")),
-				node.get_meta("shot_local_parts", []) if shape_revision >= 10 and data.surface_placement_enabled else [])
+				node.get_meta("shot_local_parts", []) if shape_revision >= 10 and data.surface_placement_enabled else [], door_id)
 	if node.has_meta("objective_zone_id"):
 		var cells: Array[Vector3i] = []
 		for local_cell: Vector3i in node.get_meta("objective_local_cells", []):
@@ -169,7 +209,7 @@ static func _register_presentation(data: MapData, transform: Transform3D, dimens
 	var part := CylinderPart.create(Vector3(axis.x, bounds.position.y, axis.z), radius * scale, bounds.size.y)
 	if part.is_valid(): data.presentation_cylinders.append(part)
 
-static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false, presentation := {}, shot_label := "", shot_local_parts: Array = []) -> void:
+static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vector3, round_volume: bool, unit: float, movement_cost: int, precise_shot_bounds: bool, separate_parts := true, standing_clearance := 0.0, index_raised_shots := false, presentation := {}, shot_label := "", shot_local_parts: Array = [], door_id := &"") -> void:
 	var bounds := transform * AABB(-dimensions * 0.5, dimensions)
 	var world_units := data.surface_placement_enabled
 	var coordinate_unit := unit if world_units else 1.0
@@ -245,6 +285,7 @@ static func _stamp_volume(data: MapData, transform: Transform3D, dimensions: Vec
 				obstacle.blocks_line_of_sight = true
 				obstacle.authored_shot_bounds = shot_bounds
 				obstacle.shot_obstacle_label = shot_label
+				obstacle.door_id = door_id
 				if not shot_local_parts.is_empty(): obstacle.authored_shot_parts.assign(shot_parts)
 				obstacle.cover_type = MapCellData.CoverType.FULL if shot_bounds.size.y >= unit * 1.2 else MapCellData.CoverType.LOW
 				data.add_shot_obstacle(obstacle)

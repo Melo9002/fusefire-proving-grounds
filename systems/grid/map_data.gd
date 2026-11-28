@@ -34,6 +34,8 @@ var body_radius := 0.28
 var body_height := 1.8
 var body_clearance := 0.04
 var movement_parts: Array[AABB] = []
+## Authored doors by id (DoorData); empty on every map without one.
+var doors: Dictionary = {}
 ## Certified local footing offsets, indexed by the canonical resting cell.
 var contextual_steps: Dictionary[Vector3i, Vector3] = {}
 ## Only versioned battlefield IDs can enable discovered side steps.

@@ -7,7 +7,8 @@ const Compiler = preload("res://systems/generation2/authored_scene_map_compiler.
 const DeploymentRepair = preload("res://systems/generation2/authored_deployment_repair.gd")
 const SlotContract = preload("res://systems/generation2/parcel_slot_contract.gd")
 
-static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String, extra_ally_slots: int = 0, parcels = ParcelCatalog) -> MapData:
+## `door_overrides` is only used by this function itself, to compile each door's alternate state (MapDoors.capture); callers leave it empty.
+static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: float, source_kind: String, extra_ally_slots: int = 0, parcels = ParcelCatalog, door_overrides := {}) -> MapData:
 	var size: Vector2i = resolved.get("map_size", Vector2i(40, 40))
 	var data := TacticalMapBuilder.generate(size.x, size.y, cell_size, int(resolved.get("seed", map_seed)), 5, extra_ally_slots)
 	data.source_kind = source_kind
@@ -44,12 +45,12 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		})
 		parcel.apply_population(root, placement.get("population", []))
 		root.transform = ParcelTransform.scene_transform(parcel.size, placement.origin, placement.rotation, size, cell_size)
-		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, shape_revision)
+		Compiler.compile(root, data, cell_size, Transform3D.IDENTITY, precise_shot_bounds, shape_revision, door_overrides)
 		root.free()
 	SurfaceNavigation.resolve_map(data, cell_size, int(resolved.compiler_revision) >= Resolver.SUPPORT_AWARE_COMPILER_REVISION)
 	if data.surface_placement_enabled:
 		var signature := SurfaceNavigation.signature(data)
-		if resolved.has("standing_points_signature") and resolved.standing_points_signature != signature:
+		if door_overrides.is_empty() and resolved.has("standing_points_signature") and resolved.standing_points_signature != signature:
 			data.generation_errors.append({"code": "CHANGED_STANDING_POINTS", "detail": "Resolved body positions differ from the recorded map"})
 		data.content_manifest.standing_points_signature = signature
 	for interface in interfaces:
@@ -60,6 +61,13 @@ static func compile_resolved(resolved: Dictionary, map_seed: int, cell_size: flo
 		return data
 	if not DeploymentRepair.apply(data):
 		data.generation_errors.append({"code": "UNSATISFIABLE_DEPLOYMENT", "detail": "No connected stopping cells remain in a required deployment column"})
+	if door_overrides.is_empty() and not data.doors.is_empty() and data.generation_errors.is_empty():
+		# Each door's other state, compiled by the same pipeline with only that door changed: the cells that differ are the door's affected region (MapDoors).
+		for door_id: StringName in data.doors.keys():
+			var door: DoorData = data.doors[door_id]
+			var alternate := compile_resolved(resolved, map_seed, cell_size, source_kind, extra_ally_slots, parcels, {door_id: DoorData.other(door.state)})
+			if not alternate.generation_errors.is_empty() or not MapDoors.capture(data, alternate, door_id):
+				data.generation_errors.append({"code": "DOOR_STATE_UNRESOLVED", "detail": String(door_id)})
 	return data
 
 static func present_resolved(data: MapData, parent: Node3D, cell_size: float, plot_scene: PackedScene, world_environment: WorldEnvironment = null, parcels = ParcelCatalog) -> bool:
