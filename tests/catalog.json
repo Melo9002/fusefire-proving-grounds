@@ -308,6 +308,8 @@
   "loaded_ladder_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "playground_foundation_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "playground_session_capture": {"sub": ["animation"], "scope": "integration", "run": "explicit", "req": "render", "kind": "capture"},
+  "interaction_range_experiments_test": {"sub": ["combat"], "scope": "battle"},
+  "interaction_range_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_actions_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "unarmed_capture": {"sub": ["animation", "equipment"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
   "unarmed_hand_clearance_test": {"sub": ["animation", "equipment"], "scope": "integration", "fast": true},

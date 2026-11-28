@@ -102,6 +102,7 @@ func _run() -> void:
 		_occupancy(state)
 		_guard(state)
 		await _close_battle()
+	await _match_setup()
 	await _mesh_bounds_trap()
 	_signatures()
 	await _ai_matches()
@@ -299,16 +300,29 @@ func _ai_matches() -> void:
 		var simulator := AIMatchSimulator.new()
 		root.add_child(simulator)
 		var result: AIMatchSimulationResult = await simulator.run_match({"seed": map_seed, "generated_map": true, "battlefield_id": Catalog.INTERACTION_RANGE, "player_count": 2, "enemy_count": 2, "maximum_rounds": 12, "timeout_seconds": 60.0})
-		var kinds := {}
-		var through_door := 0
-		for outcome in result.action_outcomes:
-			kinds[String(outcome.get("kind", "?"))] = int(kinds.get(String(outcome.get("kind", "?")), 0)) + 1
-			var cells = outcome.get("path_cells", [])
-			if cells is Array:
-				for c in cells:
-					if c is Array and c.size() == 3 and int(c[0]) == 7 and int(c[2]) == 12:
-						through_door += 1
-		note("[AI door %s] status %s, result %s, rounds %d, decisions %d, committed %d, rejected %d, action kinds %s, path cells through the door cell: %d" % ["CLOSED" if map_seed % 2 == 0 else "OPEN", result.status, result.battle_result, result.rounds, result.decision_count, result.committed_action_count, result.rejected_action_count, kinds, through_door])
+		note("[AI door %s] status %s (0 = completed), battle result %s (1 = player victory, 2 = defeat), rounds %d, decisions %d, committed %d, rejected %d (one seed per state: an observation, not a balance claim)" % ["CLOSED" if map_seed % 2 == 0 else "OPEN", result.status, result.battle_result, result.rounds, result.decision_count, result.committed_action_count, result.rejected_action_count])
 		check(result.committed_action_count > 0 and result.validation_errors.is_empty(), "[AI door %s] The AI plans and commits actions on the Interaction Range without validation errors (%d actions)" % ["CLOSED" if map_seed % 2 == 0 else "OPEN", result.committed_action_count])
 		simulator.queue_free()
 		await process_frame
+
+
+# ------------------------------------------------------------------------------------------------ the game interface
+
+## The map is offered by the real Match Setup screen and builds the configuration a battle starts from.
+func _match_setup() -> void:
+	var menu: Node = load("res://ui/match_setup.tscn").instantiate()
+	root.add_child(menu)
+	await process_frame
+	var found := -1
+	for index in menu.map_size_option.item_count:
+		if StringName(menu.map_size_option.get_item_metadata(index)) == Catalog.INTERACTION_RANGE:
+			found = index
+	check(found >= 0, "Match Setup lists the Interaction Range")
+	if found >= 0:
+		menu.map_size_option.select(found)
+		menu._on_battlefield_selected(found)
+		var config: BattleConfiguration = menu._build_battle_configuration()
+		note("Match Setup entry: label '%s', battlefield %s, map size %s, population toggle pressed %s" % [menu.map_size_option.get_item_text(found), config.battlefield_id, config.map_size, menu.population_toggle.button_pressed])
+		check(config.battlefield_id == Catalog.INTERACTION_RANGE and config.map_size == Vector2i(16, 32) and not menu.population_toggle.button_pressed, "Selecting it builds an Interaction Range configuration (16 x 32, no population)")
+	menu.queue_free()
+	await process_frame
