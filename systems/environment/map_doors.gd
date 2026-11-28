@@ -89,8 +89,11 @@ static func check(map: MapData, grid: GridManager, actor: TacticalUnit, door_id:
 	if tile == null:
 		return _reject(&"out_of_range", "Stand directly beside the door")
 	var direction := Vector3(step.x, 0.0, step.z)
-	if not SurfaceNavigation._sweep_clear(map, tile.world_position, tile.world_position + direction * 0.1, true):
+	# Physical reach: the body must be able to travel from where it stands until it touches the door (the near face of the leaf, less the body's own radius), over supported floor and past anything in between.
+	if not SurfaceNavigation._sweep_clear(map, tile.world_position, tile.world_position + direction * reach_distance(map, door, tile.world_position, direction), true):
 		return _reject(&"out_of_reach", "Something blocks the way to the door")
+	if not region_matches(map, door, door.state):
+		return _reject(&"region_modified", "The ground around the door has changed since the map was built; it cannot be moved safely")
 	if is_instance_valid(grid.get_unit_at(door.cell)):
 		return _reject(&"door_occupied", "A unit is standing in the doorway")
 	for unit: TacticalUnit in _units(grid):
@@ -102,12 +105,27 @@ static func check(map: MapData, grid: GridManager, actor: TacticalUnit, door_id:
 	var after: Dictionary = door.cell_geometry.get(desired, {})
 	for position: Vector3i in after.keys():
 		var occupant := grid.get_unit_at(position)
-		if is_instance_valid(occupant) and snapshot(map.cells[position]) != after[position]:
+		if is_instance_valid(occupant) and not _differing(door, position, door.state, desired).is_empty():
 			return _reject(&"leaf_obstructed", "A unit is standing where the door would change the floor")
 	for part: AABB in door.movement_parts.get(desired, []):
 		if _circle_hits_box(Vector2(tile.world_position.x, tile.world_position.z), map.body_radius, part):
 			return _reject(&"leaf_obstructed", "The door would swing into you; step back")
 	return {"ok": true, "code": &"", "message": ""}
+
+
+## How far the body can travel toward the door's leaf before touching it: the distance to the leaf's near face minus the swept body radius (the same radius the navigation sweep uses).
+static func reach_distance(map: MapData, door: DoorData, from: Vector3, direction: Vector3) -> float:
+	var face := 0.5
+	for part: AABB in door.movement_parts.get(door.state, []):
+		var along: float
+		if absf(direction.x) > 0.5:
+			along = (part.position.x - from.x) if direction.x > 0.0 else (from.x - part.end.x)
+		else:
+			along = (part.position.z - from.z) if direction.z > 0.0 else (from.z - part.end.z)
+		if along > 0.0:
+			face = minf(face, along)
+	var radius := map.body_radius + map.body_clearance - map.surface_unit / SurfaceNavigation.PRECISION
+	return maxf(0.05, face - radius - 0.01)
 
 
 static func _reject(code: StringName, message: String) -> Dictionary:
@@ -181,8 +199,17 @@ static func apply(map: MapData, door_id: StringName, state: StringName) -> Dicti
 			return {}
 	var backup := _backup(map, door)
 	var old_state := door.state
+	if not region_matches(map, door, old_state):
+		return {}
+	# Only the fields this door changes are written: anything else another system set on these cells (an extraction footprint, a hazard) is left as it is.
 	for position: Vector3i in door.cell_geometry[state].keys():
-		write(map.cells[position], door.cell_geometry[state][position])
+		for field: StringName in _differing(door, position, old_state, state):
+			var value: Variant = door.cell_geometry[state][position][field]
+			if value is Array:
+				(map.cells[position].get(field) as Array).clear()
+				(map.cells[position].get(field) as Array).append_array(value)
+			else:
+				map.cells[position].set(field, value)
 	for part: AABB in door.movement_parts.get(old_state, []):
 		var index := map.movement_parts.find(part)
 		if index >= 0: map.movement_parts.remove_at(index)
@@ -236,14 +263,37 @@ static func apply_with_graph(map: MapData, pathfinder: Pathfinder, door_id: Stri
 	return true
 
 
-## Every cell of the door's region holds the state's snapshot and the leaf's parts are in the map.
+## The names of the fields this door changes in one cell between two of its states.
+static func _differing(door: DoorData, position: Vector3i, from_state: StringName, to_state: StringName) -> Array[StringName]:
+	var result: Array[StringName] = []
+	var a: Dictionary = door.cell_geometry.get(from_state, {}).get(position, {})
+	var b: Dictionary = door.cell_geometry.get(to_state, {}).get(position, {})
+	for field in FIELDS:
+		if a.has(field) and b.has(field) and a[field] != b[field]:
+			result.append(field)
+	return result
+
+
+## Whether the cells of the door's region still hold, in the fields the door changes, the values of `state` (nothing else rewrote them since the map was built).
+static func region_matches(map: MapData, door: DoorData, state: StringName) -> bool:
+	var other := DoorData.other(state)
+	for position: Vector3i in door.cell_geometry.get(state, {}).keys():
+		var cell: MapCellData = map.cells.get(position)
+		if cell == null:
+			return false
+		for field: StringName in _differing(door, position, state, other):
+			if cell.get(field) != door.cell_geometry[state][position][field]:
+				return false
+	return true
+
+
+## Every cell of the door's region holds the state's values in the fields the door changes and the leaf's parts are in the map.
 static func consistent(map: MapData, door_id: StringName) -> bool:
 	var door: DoorData = map.doors.get(door_id)
 	if door == null:
 		return false
-	for position: Vector3i in door.cell_geometry[door.state].keys():
-		if snapshot(map.cells[position]) != door.cell_geometry[door.state][position]:
-			return false
+	if not region_matches(map, door, door.state):
+		return false
 	for part: AABB in door.movement_parts.get(door.state, []):
 		if not map.movement_parts.has(part):
 			return false

@@ -83,6 +83,7 @@ func _run() -> void:
 	await _parity()
 	await _movement_and_geometry()
 	await _other_factions_and_maps()
+	await _graph_state_and_reach()
 	await _rejections()
 	await _zero_ap()
 	await _guard()
@@ -280,6 +281,117 @@ func _other_factions_and_maps() -> void:
 	check(range_map.doors.is_empty() and range_map.generation_errors.is_empty(), "The Tactical Test Range has no doors and still compiles cleanly")
 	var signature_a := SurfaceNavigation.signature(Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 2, 1.0))
 	check(signature_a == SurfaceNavigation.signature(range_map), "...and compiles identically every time")
+
+
+func _graph_state_and_reach() -> void:
+	_park_all()
+	await_close()
+	var door: DoorData = map.doors[DOOR]
+	var pf := battle.pathfinder
+	# --- Runtime navigation state survives a door transition (the graph is rebuilt from the map, never patched, so everything must live in the map). ---
+	var first_position: Vector3i = door.cell_geometry[DoorData.CLOSED].keys()[0]
+	var differing: Array[StringName] = MapDoors._differing(door, first_position, DoorData.CLOSED, DoorData.OPEN)
+	var spare: StringName = &""
+	for field in [&"movement_cost", &"cover_height", &"blocks_line_of_sight", &"can_stop"]:
+		if not differing.has(field):
+			spare = field
+	check(spare != &"", "A region cell has a geometric field the door does not change (%s), used to prove other systems' edits survive" % spare)
+	var cell := map.cells[first_position] as MapCellData
+	var spare_before: Variant = cell.get(spare)
+	var spare_marked: Variant = (not spare_before) if spare_before is bool else (float(spare_before) + 7.0 if spare_before is float else int(spare_before) + 7)
+	cell.set(spare, spare_marked)
+	check(map.traversal_links.is_empty(), "The Interaction Range has no traversal links of its own (links are physical, checked by the same sweep, so an arbitrary one cannot be injected here; the rebuild reads them from the map exactly as extraction's rebuild does)")
+	var disabled_cell := Vector3i(14, 0, 26)
+	var disabled_was: bool = (map.cells[disabled_cell] as MapCellData).walkable
+	(map.cells[disabled_cell] as MapCellData).walkable = false
+	var live_before := pf.live_grid
+	var max_step_before := pf.max_step_levels
+	var footprints := {&"zone_x": [Vector3i(1, 0, 1)]}
+	map.transport_footprints = footprints
+	MapGraphBuilder.build(map, pf)
+	pf.live_grid = live_before
+	var edges_before := _edge_fingerprint(pf)
+	for round in 2:
+		var opened := await _toggle_and_report(DoorData.OPEN if round == 0 else DoorData.CLOSED)
+		check(opened, "Round %d: the door transition commits" % round)
+		var edges_now := _edge_fingerprint(pf)
+		var outside_changed := _edges_outside_region(edges_before, edges_now, door)
+		check(outside_changed == 0, "Round %d: every graph edge away from the door's region is exactly as before (%d differ)" % [round, outside_changed])
+		check(pf.astar.is_point_disabled(pf.grid_to_id_map[disabled_cell]), "Round %d: a cell another system closed stays closed" % round)
+		check(pf.live_grid == live_before and pf.max_step_levels == max_step_before, "Round %d: the pathfinder keeps its live grid and step limit" % round)
+		check(map.cells[first_position].get(spare) == spare_marked, "Round %d: an edit another system made to a field the door does not change survives (%s)" % [round, spare])
+		check(map.transport_footprints == footprints, "Round %d: extraction footprints are untouched map state" % round)
+	# A region cell whose door-owned field was rewritten by someone else: the door refuses rather than overwrite it, and nothing changes.
+	cell.set(spare, spare_before)
+	var owned: StringName = differing[0] if not differing.is_empty() else &"walkable"
+	var owned_before: Variant = cell.get(owned)
+	cell.set(owned, (not owned_before) if owned_before is bool else (float(owned_before) + 1.0 if owned_before is float else owned_before))
+	_place(player, Vector3i(7, 0, 11))
+	if cell.get(owned) == owned_before:
+		cell.set(&"walkable", not cell.walkable)
+		owned = &"walkable"
+		owned_before = not cell.walkable
+	var guard_before := _world_state()
+	var refused := MapDoors.check(map, grid, player, DOOR, DoorData.OPEN)
+	check(not refused.ok and refused.code == &"region_modified", "A door-owned field of its region rewritten by another system refuses the transition (%s)" % refused.code)
+	check(MapDoors.apply(map, DOOR, DoorData.OPEN).is_empty() and _world_state() == guard_before, "...and a direct apply changes nothing")
+	cell.set(owned, owned_before)
+	(map.cells[disabled_cell] as MapCellData).walkable = disabled_was
+	map.transport_footprints = {}
+	MapGraphBuilder.build(map, pf)
+	pf.live_grid = live_before
+	# --- Physical reach: the old 0.1 m probe cleared the actor's own spot only. ---
+	_park_all()
+	_place(player, Vector3i(7, 0, 11))
+	var tile := map.get_cell(Vector3i(7, 0, 11))
+	# A low crate flush against the leaf, in the actor's own cell: the old 0.1 m probe ended before it, the body cannot actually walk up to the door past it.
+	var crate := AABB(Vector3(tile.world_position.x - 0.5, tile.world_position.y, tile.world_position.z + 0.43), Vector3(1.0, 1.4, 0.07))
+	var base := MapDoors.check(map, grid, player, DOOR, door.other(door.state))
+	check(base.ok, "Control: with the way clear the player at (7,11) can reach the door (%s)" % base.message)
+	map.movement_parts.append(crate)
+	SurfaceNavigation.refresh_movement_parts(map)
+	var short_probe_clear := SurfaceNavigation._sweep_clear(map, tile.world_position, tile.world_position + Vector3(0, 0, 0.1), true)
+	var blocked := MapDoors.check(map, grid, player, DOOR, DoorData.OPEN if door.state == DoorData.CLOSED else DoorData.CLOSED)
+	check(short_probe_clear, "Negative control setup: the old 0.1 m probe would have said the way is clear past a crate just in front of the leaf")
+	check(not blocked.ok and blocked.code == &"out_of_reach", "An obstruction between the actor and the door refuses the action as out_of_reach (%s)" % blocked.code)
+	var service_query := service.query_door(&"open_door" if door.state == DoorData.CLOSED else &"close_door", player.tactical_id, DOOR)
+	check(not service_query.is_legal(), "...through the action service query as well")
+	map.movement_parts.erase(crate)
+	SurfaceNavigation.refresh_movement_parts(map)
+	check(MapDoors.check(map, grid, player, DOOR, door.other(door.state)).ok, "With the crate removed the door is reachable again")
+
+
+func _edge_fingerprint(pf: Pathfinder) -> Dictionary:
+	var edges := {}
+	for cell: Vector3i in pf.grid_to_id_map.keys():
+		var id: int = pf.grid_to_id_map[cell]
+		var targets: Array = []
+		for other in pf.astar.get_point_connections(id):
+			targets.append(pf.id_to_grid_map[other])
+		targets.sort()
+		edges[cell] = targets
+	return edges
+
+
+## Cells whose connections differ between two fingerprints and that are not the door's region or its immediate neighbours.
+func _edges_outside_region(before: Dictionary, now: Dictionary, door: DoorData) -> int:
+	var near := {}
+	for state in door.cell_geometry.keys():
+		for position: Vector3i in door.cell_geometry[state].keys():
+			for dx in range(-1, 2):
+				for dz in range(-1, 2):
+					near[position + Vector3i(dx, 0, dz)] = true
+	var count := 0
+	for cell: Vector3i in before.keys():
+		if not near.has(cell) and before[cell] != now.get(cell):
+			count += 1
+	return count
+
+
+func _toggle_and_report(state: StringName) -> bool:
+	_place(player, Vector3i(7, 0, 11))
+	var result := await service.submit_door(_request(&"open_door" if state == DoorData.OPEN else &"close_door"), true)
+	return result != null
 
 
 func _rejections() -> void:
