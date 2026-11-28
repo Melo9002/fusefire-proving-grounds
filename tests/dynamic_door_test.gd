@@ -277,9 +277,9 @@ func _other_factions_and_maps() -> void:
 	check(as_enemy.ok, "A hostile unit standing at the door passes the same physical check as a player unit (%s)" % as_enemy.message)
 	_park_all()
 	# A map without doors is untouched: no registry, no door line in what a replay compares.
-	var range_map := Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 2, 1.0)
-	check(range_map.doors.is_empty() and range_map.generation_errors.is_empty(), "The Tactical Test Range has no doors and still compiles cleanly")
-	var signature_a := SurfaceNavigation.signature(Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 2, 1.0))
+	var range_map := Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 2, 1.0)
+	check(range_map.doors.is_empty() and range_map.generation_errors.is_empty(), "A map without doors (the Service Depot) has no door registry and still compiles cleanly")
+	var signature_a := SurfaceNavigation.signature(Catalog.generate(Catalog.SERVICE_DEPOT, Vector2i.ZERO, 2, 1.0))
 	check(signature_a == SurfaceNavigation.signature(range_map), "...and compiles identically every time")
 
 

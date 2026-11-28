@@ -313,6 +313,8 @@
   "dynamic_door_test": {"sub": ["combat"], "scope": "battle"},
   "dynamic_door_replay_test": {"sub": ["combat", "replay"], "scope": "battle"},
   "dynamic_door_guard_replay_test": {"sub": ["combat", "replay"], "scope": "battle"},
+  "door_test_section_test": {"sub": ["combat", "generation"], "scope": "battle"},
+  "door_test_section_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "interaction_range_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "dynamic_door_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_actions_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
