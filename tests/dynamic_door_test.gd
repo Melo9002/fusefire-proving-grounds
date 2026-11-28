@@ -82,6 +82,7 @@ func _run() -> void:
 	await _open_battle(2)
 	await _parity()
 	await _movement_and_geometry()
+	await _other_factions_and_maps()
 	await _rejections()
 	await _zero_ap()
 	await _guard()
@@ -180,6 +181,15 @@ func _open_and_compare_shots(static_open: MapData) -> void:
 	var static_table := _shot_table()
 	grid.map_data = saved
 	check(live_open == static_table, "Shot results (legality, chance, cover, blocker) on the toggled-open map equal the static open map's: %s" % ("" if live_open == static_table else "differ"))
+	# Contextual firing (the side step a certified rig can take) is read from the same map: with discovery switched on for both, the evaluations still agree.
+	map.contextual_discovery_enabled = true
+	static_open.contextual_discovery_enabled = true
+	var live_contextual := _shot_table()
+	grid.map_data = static_open
+	var static_contextual := _shot_table()
+	grid.map_data = saved
+	map.contextual_discovery_enabled = false
+	check(live_contextual == static_contextual, "Contextual firing enabled: the toggled-open map and the static open map still give identical shot results")
 
 
 func await_free_open() -> bool:
@@ -255,6 +265,21 @@ func _rejection_leaves_everything(label: String, request: TacticalActionRequest)
 	var after := _world_state()
 	check(result == null and not rejected_codes.is_empty(), "%s: rejected (%s)" % [label, rejected_codes])
 	check(before == after, "%s: AP, RNG, revision, door, geometry, occupancy and transaction counter are unchanged" % label)
+
+
+func _other_factions_and_maps() -> void:
+	# Every faction may operate an ordinary unlocked door: the physical check has no faction rule (the action layer's only gate is whose activation it is).
+	_park_all()
+	await_close()
+	_place(enemy, Vector3i(7, 0, 13))
+	var as_enemy := MapDoors.check(map, grid, enemy, DOOR, DoorData.OPEN)
+	check(as_enemy.ok, "A hostile unit standing at the door passes the same physical check as a player unit (%s)" % as_enemy.message)
+	_park_all()
+	# A map without doors is untouched: no registry, no door line in what a replay compares.
+	var range_map := Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 2, 1.0)
+	check(range_map.doors.is_empty() and range_map.generation_errors.is_empty(), "The Tactical Test Range has no doors and still compiles cleanly")
+	var signature_a := SurfaceNavigation.signature(Catalog.generate(Catalog.TACTICAL_TEST_RANGE, Vector2i.ZERO, 2, 1.0))
+	check(signature_a == SurfaceNavigation.signature(range_map), "...and compiles identically every time")
 
 
 func _rejections() -> void:
