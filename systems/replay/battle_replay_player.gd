@@ -149,7 +149,7 @@ func set_camera_mode(mode: CameraMode) -> void:
 		replay_camera.clear_cinematic_view()
 
 func _wait_until_playing() -> bool:
-	while is_inside_tree() and playback_paused:
+	while is_inside_tree() and (playback_paused or get_tree().paused):
 		await get_tree().process_frame
 	return is_inside_tree()
 

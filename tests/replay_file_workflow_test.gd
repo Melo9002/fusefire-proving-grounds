@@ -11,12 +11,14 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() == 2 and args[0] == "capture" and DisplayServer.get_name() != "headless":
+	if args.size() >= 2 and args[0] == "capture" and DisplayServer.get_name() != "headless":
 		capture_directory = args[1]
 		DirAccess.make_dir_recursive_absolute(capture_directory)
 	Engine.time_scale = 12.0
 	var test_id := str(Time.get_ticks_usec())
 	var saved_path := "res://artifacts/replay-file-%s.replay.json" % test_id
+	var exported_path := "res://artifacts/replay-file-%s-export.replay.json" % test_id
+	var partial_path := "res://artifacts/replay-file-%s-partial.replay.json" % test_id
 	var malformed_path := "res://artifacts/replay-file-%s-malformed.json" % test_id
 	var stale_path := "res://artifacts/replay-file-%s-stale.json" % test_id
 	var retired_path := "res://artifacts/replay-file-%s-retired.json" % test_id
@@ -34,8 +36,26 @@ func _run() -> void:
 	current_scene = original
 	var hud := original.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
 	_check(original.battle_initialization_succeeded and not hud.save_replay_button.visible, "Save appears only at battle end")
+	_check(hud.round_label.visible and hud.round_label.text == "Round 1", "The battle HUD starts at round one")
+	var live_pause := original.get_node("Visualizers/BattleUI/BattlePauseMenu") as BattlePauseMenu
+	live_pause.set_open(true)
+	_check(live_pause._save_replay_button.disabled, "Pause menu waits for the first recorded action")
+	live_pause.set_open(false)
 	original.battle_controller.set_debug_player_ai(true)
 	var deadline := Time.get_ticks_msec() + 30000
+	var live_recording := original.get_replay_recording()
+	while live_recording.actions.is_empty() and Time.get_ticks_msec() < deadline:
+		await process_frame
+	live_pause.set_open(true)
+	_check(not live_pause._save_replay_button.disabled, "Pause menu can save the in-progress match")
+	live_pause._save_replay_button.pressed.emit()
+	if hud._save_dialog:
+		hud._save_dialog.hide()
+		hud._save_dialog.file_selected.emit(partial_path)
+		_check(paused and live_pause._replay_save_status.text == "Replay saved.", "Saving from Esc leaves the pause menu open and confirms the save")
+	live_pause.set_open(false)
+	var partial := BattleReplayRecording.load_json(partial_path)
+	_check(partial.is_playable() and partial.expected_result == TurnManager.BattleResult.ONGOING, "In-progress save is a playable recording of committed actions")
 	while original.turn_manager.battle_result == TurnManager.BattleResult.ONGOING and Time.get_ticks_msec() < deadline:
 		await process_frame
 	var recording: BattleReplayRecording = BattleReplaySession.last_recording
@@ -44,6 +64,7 @@ func _run() -> void:
 		quit(1)
 		return
 	_check(hud.save_replay_button.visible, "Completed depot battle shows Save Replay")
+	_check(original.turn_manager.current_round > 1 and hud.round_label.text == "Round %d" % original.turn_manager.current_round, "The HUD tracks authoritative round progression through the battle result")
 	await _capture("battle-result")
 	hud.save_replay_button.pressed.emit()
 	_check(hud._save_dialog.visible and hud._save_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE, "Save button opens a Save As picker")
@@ -110,16 +131,47 @@ func _run() -> void:
 		var replay := current_scene as BattleLevel
 		_check((replay.get_node("Environment/WorldEnvironment") as WorldEnvironment).environment.fog_enabled, "Saved Depot replay configures its own atmosphere")
 		var player := replay.get_node_or_null("BattleReplayPlayer") as BattleReplayPlayer
+		var replay_hud := replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
 		_check(player != null and replay.active_generated_map.content_manifest == recording.configuration.content_manifest, "Playback reconstructs the exact saved depot and occupants")
 		if player:
+			player.set_camera_mode(BattleReplayPlayer.CameraMode.CINEMATIC)
+			var replay_pause := replay.get_node("Visualizers/BattleUI/BattlePauseMenu") as BattlePauseMenu
+			var escape := InputEventKey.new()
+			escape.keycode = KEY_ESCAPE
+			escape.pressed = true
+			replay_pause._unhandled_key_input(escape)
+			_check(replay_pause.is_open and not replay_pause._save_replay_button.disabled, "Esc offers Save Replay during playback")
+			if not replay_pause._save_replay_button.disabled:
+				BattleReplaySession.last_recording = null
+				replay_pause._save_replay_button.pressed.emit()
+				var completed_before_export := player.verified_actions
+				var revision_before_export := replay.battle_controller.action_service.state_revision
+				_check(replay_hud._save_dialog.visible and paused, "Replay export opens a modal and pauses playback")
+				await create_timer(1.0, true).timeout
+				_check(not player.playback_complete and player.verified_actions == completed_before_export
+					and replay.battle_controller.action_service.state_revision == revision_before_export, "Playback commits no new action while Save As is open")
+				replay_hud._save_dialog.hide()
+				_check(paused, "Closing Save As leaves the Esc menu paused")
+				replay_hud._save_dialog.file_selected.emit(exported_path)
+				var exported := BattleReplayRecording.load_json(exported_path)
+				_check(exported.is_playable() and exported.to_dictionary() == player.recording.to_dictionary(), "Export writes the active recording even when no last recording is stored")
+				await _capture("replay-paused-export")
+				replay_pause.set_open(false)
+				_check(not paused and not player.playback_paused, "Leaving Esc resumes a previously running replay")
+				player.set_playback_paused(true)
+				replay_pause.set_open(true)
+				replay_pause.set_open(false)
+				_check(paused and player.playback_paused, "Leaving Esc preserves manual replay pause")
+				player.set_playback_paused(false)
+			player.set_camera_mode(BattleReplayPlayer.CameraMode.SELECTION_FOCUS)
 			player.set_playback_speed(4.0)
 			deadline = Time.get_ticks_msec() + 30000
 			while not player.playback_complete and Time.get_ticks_msec() < deadline:
 				await process_frame
 			_check(player.playback_succeeded and player.verified_actions == recording.actions.size(), "Replay verifies every action loaded from the user-selected file")
-		_check(not (replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController).save_replay_button.visible, "Playback keeps Save Replay hidden")
+		_check(not replay_hud.save_replay_button.visible, "Playback offers export through the pause menu")
+		_check(replay_hud.round_label.visible and replay_hud.round_label.text == "Round %d" % replay.turn_manager.current_round, "The replay HUD shows the recorded battle's round")
 		if player and player.playback_succeeded:
-			var replay_hud := replay.get_node("Visualizers/BattleUI/TurnHUDController") as TurnHUDController
 			var opened_recording = player.recording
 			replay_hud.replay_button.pressed.emit()
 			_check(current_scene == replay and is_instance_valid(replay._replay_loading), "Rewatch displays loading before replacing the battle")
@@ -141,7 +193,19 @@ func _run() -> void:
 			await process_frame
 			await process_frame
 			_check(current_scene is MatchSetup and not paused, "Returning to setup while replay is paused cancels playback and unpauses the game")
-	for path in [saved_path, stale_path, malformed_path, retired_path]:
+	if partial.is_playable() and current_scene is MatchSetup:
+		var partial_menu := current_scene as MatchSetup
+		partial_menu._open_replay_file(partial_path)
+		deadline = Time.get_ticks_msec() + 10000
+		while current_scene == partial_menu and Time.get_ticks_msec() < deadline:
+			await process_frame
+		var partial_player := current_scene.get_node_or_null("BattleReplayPlayer") as BattleReplayPlayer
+		if partial_player:
+			while not partial_player.playback_complete and Time.get_ticks_msec() < deadline:
+				await process_frame
+		_check(partial_player != null and partial_player.playback_succeeded
+			and partial_player.verified_actions == partial.actions.size(), "A saved in-progress match reopens and verifies every exported action")
+	for path in [saved_path, exported_path, partial_path, stale_path, malformed_path, retired_path]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("Replay file workflow: %d failure(s)" % failures)
 	quit(1 if failures else 0)

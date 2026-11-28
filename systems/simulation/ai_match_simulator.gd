@@ -116,6 +116,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 					policy_evidence.guard_holds += int(guard_check.get("held_fire", false)))
 		level.turn_manager.active_unit_changed.connect(func(actor):
 			_sample_combat_policy_evidence(level, actor, policy_evidence))
+	var observer: Callable = config.get("laboratory_observer", Callable())
+	if observer.is_valid(): observer.call(level)
 	level.battle_controller.set_debug_player_ai(true)
 	var started_at := Time.get_ticks_msec()
 	var last_progress_at := started_at
@@ -162,6 +164,8 @@ func run_match(config: Dictionary) -> AIMatchSimulationResult:
 	if result.battle_result != TurnManager.BattleResult.ONGOING:
 		result.status = AIMatchSimulationResult.Status.COMPLETED
 		result.reason = ""
+	var completion: Callable = config.get("laboratory_completion", Callable())
+	if completion.is_valid(): completion.call(level, result)
 	print("[AISim] %s" % result.summary())
 	await _dispose_level(level)
 	return result

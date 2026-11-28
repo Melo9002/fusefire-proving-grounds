@@ -10,6 +10,8 @@ var action_camera_option: OptionButton
 var confirmations_option: CheckButton
 var movement_confirmation_option: CheckButton
 var _replay_was_paused := false
+var _save_replay_button: Button
+var _replay_save_status: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -42,6 +44,9 @@ func set_open(open: bool) -> void:
 	else:
 		get_tree().paused = open
 	if open:
+		var recording := _get_current_recording()
+		_save_replay_button.disabled = recording == null or not recording.is_playable()
+		_replay_save_status.hide()
 		var resume := get_node("Dimmer/Center/Panel/Margin/Options/ResumeButton") as Button
 		resume.grab_focus()
 
@@ -133,6 +138,15 @@ func _build_interface() -> void:
 	resume.pressed.connect(func(): set_open(false))
 	options.add_child(resume)
 
+	_save_replay_button = Button.new()
+	_save_replay_button.name = "PauseSaveReplayButton"
+	_save_replay_button.text = "SAVE REPLAY…"
+	_save_replay_button.tooltip_text = "Save the recorded actions from this battle."
+	_save_replay_button.pressed.connect(_save_replay)
+	options.add_child(_save_replay_button)
+	_replay_save_status = Label.new()
+	_replay_save_status.hide()
+	options.add_child(_replay_save_status)
 	var setup := Button.new()
 	setup.name = "SetupButton"
 	setup.text = battle_level.return_button_text() if battle_level else "RETURN TO MATCH SETUP"
@@ -165,3 +179,13 @@ func _on_action_camera_selected(index: int) -> void:
 
 func _get_replay_player() -> BattleReplayPlayer:
 	return get_node_or_null("../../../BattleReplayPlayer") as BattleReplayPlayer
+
+func _get_current_recording() -> BattleReplayRecording:
+	var level := get_node_or_null("../../..") as BattleLevel
+	return level.get_replay_recording() if level else null
+
+func _save_replay() -> void:
+	var hud := get_node_or_null("../TurnHUDController") as TurnHUDController
+	var recording := _get_current_recording()
+	if hud and recording:
+		hud.choose_replay_destination(recording, _replay_save_status)
