@@ -181,7 +181,8 @@ func pickup_pending() -> bool:
 func _carrying() -> bool:
 	# A lethal reaction settles ownership before the presenter shows its impact.
 	# Until that handoff the attached visual body still needs the carry gait.
-	return is_instance_valid(rig.carry_passenger) or preview_carrying or (is_instance_valid(tactical_unit) and tactical_unit.is_carrying_unit() and not pickup_pending())
+	return preview_carrying or (is_instance_valid(tactical_unit) and not pickup_pending()
+		and (tactical_unit.is_carrying_unit() or is_instance_valid(rig.carry_passenger)))
 const POSE_CONTEXT := preload("res://presentation/tactical/tactical_pose_context.gd")
 const TRAVERSAL_STATES := [&"vault", &"climb", &"descend"]
 ## States in which the sights are up.
