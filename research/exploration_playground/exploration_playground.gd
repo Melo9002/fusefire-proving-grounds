@@ -43,8 +43,8 @@ var visual: ExplorationCharacterHost
 var armed := true
 var character_index := 0
 var character_picker: OptionButton
-var passenger_picker: OptionButton
-var _passenger_ids: Array[StringName] = []
+var extra_picker: OptionButton
+var _extra_ids: Array[StringName] = [&""]
 var _approach_buttons: Array[Button] = []
 var spawn_guard: ExplorationSpawnGuard
 var ui_layer: CanvasLayer
@@ -303,35 +303,47 @@ func toggle_weapon() -> void:
 	cover.leave()
 	_spawn_visual(not armed, visual.rig.rotation.y)
 
-func _select_passenger(index: int) -> void:
-	if index < 0 or index >= _passenger_ids.size() or not carry.set_passenger(_passenger_ids[index]):
-		passenger_picker.select(maxi(_passenger_ids.find(carry.passenger_id), 0))
-
-
-func _respawn_casualty() -> void:
-	carry.respawn()
-
-
-## Swaps who is controlled and who is the casualty (both change, deliberately). Only while neither is mid-interaction.
-func _swap_models() -> void:
-	if not _can_replace_visual() or not carry.can_change_passenger():
-		return
-	var controlled := PassengerDefinition.id_from_path(CHARACTER_VISUALS[character_index].resource_path)
-	var casualty: StringName = carry.passenger_id
-	var wanted := -1
+## The menu's name for a character model: its entry in CHARACTER_LABELS, matched through the project's own character id.
+func label_of(character_id: StringName) -> String:
 	for index in CHARACTER_VISUALS.size():
-		if PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path) == casualty:
-			wanted = index
-	if wanted < 0:
-		return
-	_select_character(wanted)
-	carry.set_passenger(controlled)
-	character_picker.select(character_index)
-	passenger_picker.select(maxi(_passenger_ids.find(carry.passenger_id), 0))
+		if PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path) == character_id:
+			return CHARACTER_LABELS[index]
+	return String(character_id)
+
+
+func _reset_casualties() -> void:
+	if not carry.reset_all():
+		_show_toast(carry.why_reset_locked())
+
+
+## The optional extra casualty (index 0 is none). The two default casualties never depend on it.
+func _select_extra(index: int) -> void:
+	if index < 0 or index >= _extra_ids.size() or not carry.set_extra(_extra_ids[index], props.extra_spot, 0.0):
+		var extra := carry.find(&"extra")
+		extra_picker.select(maxi(_extra_ids.find(extra.character_id if extra != null else &""), 0))
 
 
 func _go_to_ladder(top: bool) -> void:
 	traversal.place_at_approach(top)
+	_close_menu()
+
+
+## The controlled character back at a spawn point; a body on her shoulders is laid down first, so none is lost.
+func _reset_character() -> void:
+	if traversal.on_ladder or carry.busy:
+		_show_toast("Finish the climb or the lift first")
+		return
+	carry.drop_carried_now()
+	_go_to_start()
+
+
+func _go_to_start() -> void:
+	if traversal.on_ladder or carry.busy or dead:
+		return
+	if traversal.on_stairs:
+		traversal._leave_stairs()
+	spawn_guard.respawn()
+	pivot_position = _focus_point()
 	_close_menu()
 
 
@@ -364,7 +376,7 @@ func _build_actions() -> void:
 	carry = PlaygroundCarry.new()
 	carry.name = "Carry"
 	add_child(carry)
-	carry.setup(self, props.carry_spot)
+	carry.setup(self, props.casualty_specs)
 	player_health = PlaygroundPlayerHealth.new()
 	player_health.name = "PlayerHealth"
 	add_child(player_health)
@@ -438,21 +450,21 @@ func _build_ui() -> void:
 		character_picker.add_item(label)
 	character_picker.item_selected.connect(_select_character)
 	box.add_child(character_picker)
-	# The casualty is chosen on its own: the controlled character and the casualty never change each other.
-	var passenger_label := Label.new()
-	passenger_label.text = "Casualty (carried body)"
-	box.add_child(passenger_label)
-	passenger_picker = OptionButton.new()
-	passenger_picker.name = "PassengerPicker"
+	# Both default casualties are always there. The menu can reset them and add one more body of any model.
+	var extra_label := Label.new()
+	extra_label.text = "Extra casualty (the two default ones are always at the station)"
+	box.add_child(extra_label)
+	extra_picker = OptionButton.new()
+	extra_picker.name = "ExtraCasualtyPicker"
+	extra_picker.add_item("None")
 	for index in CHARACTER_VISUALS.size():
-		_passenger_ids.append(PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path))
-		passenger_picker.add_item(CHARACTER_LABELS[index])
-	passenger_picker.select(maxi(_passenger_ids.find(PlaygroundCarry.DEFAULT_PASSENGER), 0))
-	passenger_picker.item_selected.connect(_select_passenger)
-	box.add_child(passenger_picker)
+		_extra_ids.append(PassengerDefinition.id_from_path(CHARACTER_VISUALS[index].resource_path))
+		extra_picker.add_item(CHARACTER_LABELS[index])
+	extra_picker.item_selected.connect(_select_extra)
+	box.add_child(extra_picker)
 	var casualty_row := HBoxContainer.new()
 	box.add_child(casualty_row)
-	for entry in [["RespawnCasualtyButton", "Reset casualty", _respawn_casualty], ["SwapModelsButton", "Swap models", _swap_models]]:
+	for entry in [["RespawnCasualtyButton", "Reset casualties", _reset_casualties], ["RespawnPlayerButton", "Reset character", _reset_character], ["StartAreaButton", "Start area", _go_to_start]]:
 		var button := Button.new()
 		button.name = entry[0]
 		button.text = entry[1]
@@ -550,8 +562,8 @@ func _open_menu() -> void:
 	menu_open = true
 	character_picker.disabled = not _can_replace_visual()
 	character_picker.tooltip_text = "Finish traversal or carrying before changing models." if character_picker.disabled else "Change character model"
-	passenger_picker.disabled = not carry.can_change_passenger()
-	passenger_picker.tooltip_text = carry.why_passenger_locked() if passenger_picker.disabled else "Change who the casualty is (independent of the controlled character)"
+	extra_picker.disabled = not carry.can_change_extra()
+	extra_picker.tooltip_text = "Put the body down (and get off the ladder) before changing the extra casualty." if extra_picker.disabled else "Add or remove one more body, of any model"
 	for button in _approach_buttons:
 		button.disabled = traversal.on_ladder or carry.busy or dead
 	menu_panel.visible = true
@@ -610,6 +622,8 @@ func _move(delta: float) -> void:
 	if carry.busy:
 		top_speed = 0.0   # the lift or the release owns her body
 	var wanted := move_direction() * top_speed
+	if traversal.update_approach(delta, wanted):
+		return   # she walked at the ladder and is on it now
 	var velocity := Vector3(body.velocity.x, 0.0, body.velocity.z).move_toward(wanted, ACCELERATION * delta)
 	var vertical: float
 	if _jump_requested and (traversal.on_stairs or body.is_on_floor()):
@@ -665,38 +679,46 @@ func distance_to_chair() -> float:
 func can_interact() -> bool:
 	return distance_to_chair() <= INTERACT_DISTANCE
 
-## What E would do now, as the prompt: lift or put down a body, climb the ladder, inspect the chair; empty when nothing is in reach.
-func _prompt_text() -> String:
+## What E does now, decided ONCE: the prompt shows the decision's text and `interact` runs the decision's action, so they cannot disagree. Ladders are not E: walk at the rungs (PlaygroundTraversal.update_approach).
+func decide_interaction() -> PlaygroundInteraction:
 	if dead or menu_open:
-		return ""
-	if traversal.can_mount():
-		return "Press E to climb"   # at the ladder a loaded carrier is offered the climb; stepping away from it offers the put-down
-	if visual.is_carrying():
-		return "" if carry.busy else "Press E to put the body down"
-	if carry.can_pick_up():
-		return "Press E to lift the body"
-	if can_interact() and not cover.active and not traversal.on_ladder:
-		return "Press E to interact"
-	return ""
-
-## E, by context: put the carried body down, climb the ladder, lift the body, or inspect the chair (MIRA turns to it, bends toward it and stands again; the chair responds). Returns whether it did anything.
-func interact() -> bool:
-	if menu_open or dead:
-		return false
+		return PlaygroundInteraction.none()
 	if traversal.on_ladder:
-		return false   # nothing to do with the hands full on a ladder: a carried body is not put down mid-climb
-	if traversal.can_mount():
-		traversal.mount()
-		return true
+		return PlaygroundInteraction.info("W / S: climb")
+	if carry.busy:
+		return PlaygroundInteraction.none()
 	if visual.is_carrying():
-		if carry.busy:
-			return false
-		carry.put_down()
-		return true
-	if carry.can_pick_up():
-		carry.pick_up()
-		return true
-	return _inspect_chair()
+		var label: String = carry.carried.label if carry.carried != null else "the body"
+		if carry.can_put_down():
+			return PlaygroundInteraction.action(&"put_down", "Press E to put down %s" % label)
+		if traversal.can_mount():
+			return PlaygroundInteraction.info("Walk toward the ladder to climb")
+		return PlaygroundInteraction.info("No room to put %s down here" % label)
+	var casualty := carry.target()
+	if casualty != null:
+		return PlaygroundInteraction.action(&"pick_up", "Press E to pick up %s" % casualty.label, casualty)
+	if can_interact() and not cover.active:
+		return PlaygroundInteraction.action(&"inspect", "Press E to inspect the chair")
+	if traversal.can_mount():
+		return PlaygroundInteraction.info("Walk toward the ladder to climb")
+	return PlaygroundInteraction.none()
+
+
+func _prompt_text() -> String:
+	return decide_interaction().prompt
+
+
+## E: runs the decision `_prompt_text` is showing. Returns whether it did anything.
+func interact() -> bool:
+	var decision := decide_interaction()
+	match decision.kind:
+		&"put_down":
+			return carry.put_down()
+		&"pick_up":
+			return carry.pick_up(decision.target)
+		&"inspect":
+			return _inspect_chair()
+	return false
 
 ## The non-tactical interaction this sandbox exercises on the chair: the presenter turns her to it, she bends toward it for the interaction's length and stands again, and the chair responds. The presentation is the
 ## host's `inspect` (an ActionHandle that settles COMPLETED, or INTERRUPTED if the player walks away); what inspecting MEANS here is this sandbox's business.
@@ -722,6 +744,7 @@ func on_player_down() -> void:
 		traversal._end_ladder()
 	if traversal.on_stairs:
 		traversal._leave_stairs()
+	carry.drop_carried_now()   # a body on her shoulders is laid on the floor beside her, not lost
 	visual.defeat()
 
 func show_cursor() -> void:

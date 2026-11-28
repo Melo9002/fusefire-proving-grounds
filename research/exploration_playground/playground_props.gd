@@ -86,7 +86,12 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	world.add_child(ladder_node)
 	# Spots: targets, a body to carry, a hazard plate.
 	info["target_spots"] = [Vector3(-8.0, 0.0, -9.0), Vector3(0.0, 0.0, -12.0)]
-	info["carry_spot"] = Vector3(8.0, 0.0, -6.0)
+	# The casualty station: both default casualties lie here from the start, three metres apart, with open floor around them. Data, so another body is one more entry.
+	info["casualty_specs"] = [
+		{"id": &"casualty_mira", "character": &"mira_0", "position": Vector3(6.5, 0.0, -6.5), "yaw": 0.0},
+		{"id": &"casualty_small_mira", "character": &"small_mira_0", "position": Vector3(9.5, 0.0, -6.5), "yaw": 0.0},
+	]
+	info["extra_spot"] = Vector3(8.0, 0.0, -9.5)
 	var plate := Area3D.new()
 	plate.name = "HazardPlate"
 	plate.position = Vector3(14.0, 0.05, -12.0)

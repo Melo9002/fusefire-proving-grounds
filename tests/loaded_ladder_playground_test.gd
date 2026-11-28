@@ -54,53 +54,64 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 
-## Changing one model never changes the other, and neither silently follows the other.
+## The controlled character is chosen on its own: neither default casualty follows it, and both lie at the station from the start.
 func _selectors_are_independent() -> void:
 	world._select_character(0)
-	world.carry.set_passenger(IDS[1])
-	await _wait(0.5)
-	check(world.character_index == 0 and world.carry.passenger_id == IDS[1] and world.carry.prop.definition.character_id == IDS[1], "A regular carrier and a small casualty: the two choices are held separately")
+	await _wait(0.4)
+	check(world.carry.casualties.size() == 2 and world.carry.find(&"casualty_mira").character_id == IDS[0] and world.carry.find(&"casualty_small_mira").character_id == IDS[1], "Both default casualties lie at the station, each its own model")
 	world._select_character(1)
-	await _wait(0.5)
-	check(world.character_index == 1 and world.carry.passenger_id == IDS[1], "Choosing the carrier does not change the casualty")
-	world.carry.set_passenger(IDS[0])
-	await _wait(0.3)
-	check(world.character_index == 1 and world.carry.prop.definition.character_id == IDS[0], "Choosing the casualty does not change the carrier, and the lying body is rebuilt as the chosen one")
-	var model: Node3D = world.carry.prop.find_child("PassengerModel", true, false)
-	var own := PassengerDefinition.for_character(IDS[0])
-	check(model != null and is_equal_approx(model.scale.x, own.scale), "The casualty keeps its own scale (%.2f), not the carrier's" % (model.scale.x if model != null else -1.0))
-	check(world.passenger_picker.get_selected_id() == world.passenger_picker.get_item_id(0) or world.passenger_picker.selected == 0, "The picker shows the casualty's model")
+	await _wait(0.4)
+	check(world.character_index == 1 and world.carry.find(&"casualty_mira").character_id == IDS[0] and world.carry.find(&"casualty_small_mira").character_id == IDS[1], "Choosing the carrier changes neither casualty")
+	for casualty in world.carry.casualties:
+		var model: Node3D = casualty.node.find_child("PassengerModel", true, false)
+		check(model != null and is_equal_approx(model.scale.x, casualty.definition.scale), "%s keeps its own scale (%.2f), not the carrier's" % [casualty.id, model.scale.x if model != null else -1.0])
+
+
+## Where a carrier stands to pick `character`'s default casualty up, facing it.
+func _station_spot(character: StringName) -> Vector3:
+	return Vector3(6.5, 0.0, -5.2) if character == IDS[0] else Vector3(9.5, 0.0, -5.2)
+
+
+## Holds `action` until the ladder has taken her (or `limit` ms pass).
+func _walk_until_on_ladder(action: StringName, limit := 3000) -> void:
+	_press(action, true)
+	var started := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - started < limit and not world.traversal.on_ladder:
+		await process_frame
 
 
 func _pairing(carrier_index: int, passenger: StringName) -> void:
 	var label := "%s carries %s" % [IDS[carrier_index], passenger]
 	world._select_character(carrier_index)
-	world.carry.set_passenger(passenger)
+	world.carry.reset_all()
 	await _wait(0.6)
-	check(world.character_index == carrier_index and world.carry.passenger_id == passenger, "%s: both choices stand" % label)
+	var casualty: PlaygroundCasualty = world.carry.find(&"casualty_mira" if passenger == IDS[0] else &"casualty_small_mira")
+	var other: PlaygroundCasualty = world.carry.find(&"casualty_small_mira" if passenger == IDS[0] else &"casualty_mira")
+	check(world.character_index == carrier_index and casualty.character_id == passenger, "%s: the carrier and the casualty are the two chosen" % label)
 	var definition := PassengerDefinition.for_character(passenger)
 
 	# ---- Lift: the body that lies there is the one that is lifted.
-	_place(Vector3(8.0, 0.0, -4.5), PI)
+	_place(_station_spot(passenger), PI)
 	await _wait(0.5)
-	var body_before: Node = world.carry.prop
-	check(world.carry.can_pick_up() and world.carry.prop.definition.character_id == passenger, "%s: the lying body is the chosen casualty" % label)
+	var body_before: Node = casualty.node
+	check(world.carry.target() == casualty, "%s: standing at its body, it is the one E would lift" % label)
 	world.interact()
 	await _wait(4.3)
 	var rig: CharacterRig = world.visual.rig
 	check(world.visual.is_carrying() and not world.carry.busy, "%s: the lift completes" % label)
 	check(is_instance_valid(rig.carry_passenger) and rig.carry_passenger.definition.character_id == passenger and is_equal_approx(rig.carry_passenger.find_child("PassengerModel", true, false).scale.x, definition.scale), "%s: the carried body is the casualty, at its own scale" % label)
 	check(not is_instance_valid(body_before) or body_before.is_queued_for_deletion(), "%s: the ground body is gone, so there are not two bodies for one casualty" % label)
-	check(not world.passenger_picker.disabled or true, "%s: (the picker is reachable from the menu)" % label)
+	check(other.is_grounded() and is_instance_valid(other.node) and other.node.visible, "%s: the other casualty is still lying at the station" % label)
 
 	# ---- Up the ladder, from its foot.
 	check(world.traversal.place_at_approach(false), "%s: the foot-of-ladder shortcut places the carrier" % label)
 	await _wait(0.6)
-	check(world.traversal.can_mount() and world._prompt_text() == "Press E to climb", "%s: a loaded carrier is offered the ladder" % label)
-	world.interact()
-	await _wait(0.1)
-	check(world.traversal.on_ladder and rig.ladder != null and rig.loaded_ladder != null, "%s: E mounts it with the loaded presentation" % label)
-	_press(&"playground_forward", true)
+	check(world.traversal.can_mount(), "%s: a loaded carrier at the foot is in the mounting zone" % label)
+	await _wait(0.3)
+	check(not world.traversal.on_ladder, "%s: standing at the foot does not mount" % label)
+	await _walk_until_on_ladder(&"playground_forward")
+	await _wait(0.05)
+	check(world.traversal.on_ladder and rig.ladder != null and rig.loaded_ladder != null, "%s: walking at the ladder mounts it with the loaded presentation" % label)
 	var held := true
 	var started := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - started < 700 and not rig.loaded_ladder_ready():
@@ -121,10 +132,10 @@ func _pairing(carrier_index: int, passenger: StringName) -> void:
 
 	# ---- Down, from the head of the ladder.
 	check(world.traversal.can_mount(), "%s: the ladder can be entered from the deck, loaded" % label)
-	world.interact()
-	await _wait(0.1)
+	await _walk_until_on_ladder(&"playground_back")
+	await _wait(0.05)
+	check(world.traversal.on_ladder, "%s: walking toward the ladder from the deck enters it" % label)
 	var top: Vector3 = world.body.global_position
-	_press(&"playground_back", true)
 	held = true
 	started = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - started < 900 and not rig.loaded_ladder_ready():
@@ -140,10 +151,10 @@ func _pairing(carrier_index: int, passenger: StringName) -> void:
 	check(world.visual.is_carrying() and rig.loaded_ladder == null and rig.carry_passenger.ladder_blend == 0.0, "%s: the ordinary carry is back at the bottom" % label)
 
 	# ---- Put down: the same body lies there, still itself.
-	_place(Vector3(8.0, 0.0, -4.5), PI)
+	_place(Vector3(8.0, 0.0, -2.0), PI)
 	await _wait(0.4)
 	world.interact()
 	await _wait(3.8)
-	check(not world.visual.is_carrying() and is_instance_valid(world.carry.prop) and world.carry.prop.definition.character_id == passenger, "%s: put down, the casualty lies there and is still itself" % label)
-	check(is_equal_approx(world.carry.prop.find_child("PassengerModel", true, false).scale.x, definition.scale), "%s: and still at its own scale" % label)
-	check(world.carry.can_change_passenger(), "%s: the casualty may be changed again" % label)
+	check(not world.visual.is_carrying() and casualty.is_grounded() and casualty.node.definition.character_id == passenger and world.carry.carried == null, "%s: put down, the casualty lies there and is still itself" % label)
+	check(is_equal_approx(casualty.node.find_child("PassengerModel", true, false).scale.x, definition.scale), "%s: and still at its own scale" % label)
+	check(world.carry.can_reset(), "%s: nothing is left locked" % label)

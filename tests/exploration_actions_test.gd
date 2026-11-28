@@ -221,10 +221,16 @@ func _run() -> void:
 	# ---- Ladder: E at its foot mounts, W climbs with her hands on the rungs, and at the top she steps onto the tower.
 	_place(Vector3(0.0, 0.0, 14.4), PI)
 	await _wait(0.5)
-	check(world.traversal.can_mount() and world._prompt_text() == "Press E to climb", "At the foot of the ladder E offers to climb")
-	world.interact()
-	await _wait(0.5)
-	check(world.traversal.on_ladder and world.visual.is_climbing(), "E mounts the ladder")
+	check(world.traversal.can_mount() and world._prompt_text() == "Walk toward the ladder to climb" and not world.interact(), "At the foot of the ladder the prompt says to walk at it, and E does nothing")
+	await _wait(0.3)
+	check(not world.traversal.on_ladder, "Standing at the foot does not mount it")
+	_press(&"playground_forward", true)
+	var mount_started := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - mount_started < 2500 and not world.traversal.on_ladder:
+		await process_frame
+	_press(&"playground_forward", false)
+	await _wait(0.4)
+	check(world.traversal.on_ladder and world.visual.is_climbing(), "Walking at the ladder mounts it")
 	check(float(world.traversal.ladder.z) - world.body.global_position.z >= 0.35, "The mount starts on the near side of the fixed rung plane")
 	_press(&"playground_forward", true)
 	await _wait(1.5)
@@ -245,8 +251,11 @@ func _run() -> void:
 	check(not world.traversal.on_ladder and not world.visual.is_climbing() and absf(world.body.global_position.y - 3.0) < 0.15 and world.body.is_on_floor(), "At the top she steps onto the tower (y %.2f)" % world.body.global_position.y)
 	check(saw_landing_step, "Top-out crosses the landing approach over multiple frames")
 	check(saw_braced_lead, "Lead foot acquires the deck while a hand brace is still active")
-	check(world.traversal.can_mount() and world.interact(), "E can enter the ladder from the deck")
 	_press(&"playground_back", true)
+	var enter_started := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - enter_started < 2500 and not world.traversal.on_ladder:
+		await process_frame
+	check(world.traversal.on_ladder, "Walking toward the ladder from the deck enters it")
 	started = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - started < 8000 and world.traversal.on_ladder:
 		await process_frame
@@ -254,9 +263,9 @@ func _run() -> void:
 	check(not world.visual.is_climbing() and world.body.global_position.y < 0.15, "Reverse entry returns control on the floor")
 
 	# ---- Carry a body: E lifts it (the rescue lift), she walks loaded and slower, E puts it down and it stays lying.
-	_place(Vector3(8.0, 0.0, -4.5), PI)
+	_place(Vector3(6.5, 0.0, -5.2), PI)
 	await _wait(0.5)
-	check(world.carry.can_pick_up() and world._prompt_text() == "Press E to lift the body", "Near the body E offers to lift it")
+	check(world.carry.can_pick_up() and world._prompt_text() == "Press E to pick up MIRA", "Near the body E offers to pick it up (%s)" % world._prompt_text())
 	world.interact()
 	await _wait(4.2)
 	check(world.visual.is_carrying() and not world.carry.busy and world.visual.get_presentation_state() == &"carry_idle", "The lift completes and she carries the body (%s)" % world.visual.get_presentation_state())
@@ -268,7 +277,7 @@ func _run() -> void:
 	await _wait(0.8)
 	world.interact()
 	await _wait(3.6)
-	check(not world.visual.is_carrying() and is_instance_valid(world.carry.prop), "E puts the body down and it stays lying there to be lifted again")
+	check(not world.visual.is_carrying() and is_instance_valid(world.carry.find(&"casualty_mira").node), "E puts the body down and it stays lying there to be lifted again")
 
 	# ---- Health, defeat and the respawn screen: the red plate hurts, each hit reacts, at zero she goes down and a screen offers a respawn.
 	_place(Vector3(14.0, 0.0, -12.0), 0.0)
