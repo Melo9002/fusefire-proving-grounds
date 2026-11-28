@@ -203,7 +203,8 @@ func _cover(state: String) -> void:
 	note("[%s] oblique shooter (5,10) at a target (8,13) through the doorway at an angle: %s" % [state, _describe(oblique)])
 	if state == "OPEN":
 		check(in_column.is_legal and in_column.hit_chance == 100 and beside_jamb.is_legal and beside_jamb.hit_chance < in_column.hit_chance and beside_jamb.cover_type == MapCellData.CoverType.FULL, "[OPEN] In the door column the target is fully exposed (%d%%); one cell aside the jamb is full cover and the shot falls to %d%%" % [in_column.hit_chance, beside_jamb.hit_chance])
-		check(not oblique.is_legal and oblique.blocking_cell != null and oblique.blocking_cell.shot_obstacle_label == "Open door leaf", "[OPEN] The swung-back leaf, a real part, blocks the oblique line through the doorway")
+		# 06.09: the open leaf is now the real door leaf at its settled 100 degree pose, flush against the north wall beside the doorway, so the 06.08 oblique line no longer meets it (leaf blocking is asserted in dynamic_door_test along the leaf).
+		check(oblique.is_legal and oblique.blocking_cell == null, "[OPEN] The settled leaf lies beside the doorway, so the oblique line through the doorway is clear (06.09 pose; 06.08 used a cruder box)")
 	else:
 		check(not in_column.is_legal and not beside_jamb.is_legal, "[CLOSED] Neither is exposed with the door closed")
 	# The sample count behind the window: the units are 1.0 m tall here, the sill is 1.25 m, so only the highest body sample clears it.
