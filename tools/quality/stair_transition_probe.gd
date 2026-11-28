@@ -11,6 +11,9 @@ var world: Node
 var _rows: Array[Dictionary] = []
 var _json := ""
 var _dump := ""
+var _limit := -1.0
+var _cap := true
+var _only := ""
 
 
 func _initialize() -> void:
@@ -35,6 +38,12 @@ func _run() -> void:
 			_json = parts[1]
 		elif parts.size() == 2 and parts[0] == "dump":
 			_dump = parts[1]
+		elif parts.size() == 2 and parts[0] == "cap":
+			_cap = parts[1] != "0"   # cap=0 removes the playground's approach pace limit (the control)
+		elif parts.size() == 2 and parts[0] == "only":
+			_only = parts[1].replace("_", " ")
+		elif parts.size() == 2 and parts[0] == "limit":
+			_limit = float(parts[1])   # the stair foot speed limit (m/s); 0 = the plan shown exactly (the unlimited control)
 	world = load(PLAYGROUND).instantiate()
 	root.add_child(world)
 	current_scene = world
@@ -43,11 +52,16 @@ func _run() -> void:
 	for character in [0, 1]:
 		world._select_character(character)
 		await _wait(0.5)
+		if _limit >= 0.0:
+			world.visual.rig.stair_profile.max_foot_speed = _limit
+		world.traversal.limit_approach = _cap
 		for case in ["walk up", "walk down", "run up", "stop and resume"]:
+			if _only != "" and _only != case:
+				continue
 			var key := "%s | %s" % [["Regular", "Small"][character], case]
 			result[key] = await _measure(case)
 			var r: Dictionary = result[key]
-			print("STAIR %-24s hand-over frames %3d: pelvis jump %5.1f mm, ankle jump %5.1f mm | on the stairs, any frame: ankle %5.1f mm | whole walk: pelvis %5.1f mm (weight %.2f), ankle %5.1f mm (weight %.2f, s %.2f)" % [key, r.hand_frames, r.hand_pelvis * 1000.0, r.hand_ankle * 1000.0, r.on_stairs_ankle * 1000.0, r.pelvis_jump * 1000.0, r.pelvis_weight, r.ankle_jump * 1000.0, r.ankle_weight, r.ankle_s])
+			print("STAIR %-24s hand-over frames %3d: pelvis jump %5.1f mm, ankle jump %5.1f mm | on the stairs, any frame: ankle %5.1f mm | whole walk: pelvis %5.1f mm (weight %.2f), ankle %5.1f mm (weight %.2f, s %.2f) | fastest ankle %.2f m/s" % [key, r.hand_frames, r.hand_pelvis * 1000.0, r.hand_ankle * 1000.0, r.on_stairs_ankle * 1000.0, r.pelvis_jump * 1000.0, r.pelvis_weight, r.ankle_jump * 1000.0, r.ankle_weight, r.ankle_s, r.foot_speed])
 	if _json != "":
 		var file := FileAccess.open(_json, FileAccess.WRITE)
 		file.store_string(JSON.stringify(result, "\t"))
@@ -120,6 +134,12 @@ func _measure(case: String) -> Dictionary:
 	var hand_frames := 0
 	var hand_pelvis := 0.0
 	var hand_ankle := 0.0
+	var foot_speed := 0.0
+	for i in range(1, _rows.size()):
+		var dt := float(_rows[i].t) - float(_rows[i - 1].t)
+		if dt > 0.004 and _rows[i].on and _rows[i - 1].on:
+			for side in 2:
+				foot_speed = maxf(foot_speed, ((_rows[i]["ankle%d" % side] as Vector3) - (_rows[i - 1]["ankle%d" % side] as Vector3)).length() / dt)
 	for i in range(1, _rows.size() - 1):
 		var a: Dictionary = _rows[i - 1]
 		var b: Dictionary = _rows[i]
@@ -151,4 +171,4 @@ func _measure(case: String) -> Dictionary:
 		file.store_line("t,hips_y,a0x,a0y,a0z,a1x,a1y,a1z,weight,on,s")
 		for row in _rows:
 			file.store_line("%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%f" % [row.t, row.hips.y, row.ankle0.x, row.ankle0.y, row.ankle0.z, row.ankle1.x, row.ankle1.y, row.ankle1.z, row.weight, 1 if row.on else 0, row.s])
-	return {"pelvis_jump": pelvis_jump, "pelvis_weight": pelvis_weight, "pelvis_s": pelvis_s, "ankle_jump": ankle_jump, "ankle_weight": ankle_weight, "ankle_s": ankle_s, "frames": _rows.size(), "stair_frames": stair_frames, "hand_frames": hand_frames, "hand_pelvis": hand_pelvis, "hand_ankle": hand_ankle, "on_stairs_ankle": worst}
+	return {"pelvis_jump": pelvis_jump, "pelvis_weight": pelvis_weight, "pelvis_s": pelvis_s, "ankle_jump": ankle_jump, "ankle_weight": ankle_weight, "ankle_s": ankle_s, "frames": _rows.size(), "stair_frames": stair_frames, "hand_frames": hand_frames, "hand_pelvis": hand_pelvis, "hand_ankle": hand_ankle, "on_stairs_ankle": worst, "foot_speed": foot_speed}

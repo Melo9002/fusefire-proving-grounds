@@ -193,21 +193,27 @@ func move_ladder(delta: float) -> void:
 		dismount_bottom()
 
 
-## Whether she is walking up to either end of the staircase (not yet on it): the controller holds her to the stair pace here, so the hand-over to the stair pose happens at the pace it is planned for.
-func approaching_stairs() -> bool:
-	if on_stairs or ctx.dead or not limit_approach:
-		return false
+## The fastest she may go while walking TOWARD either end of the staircase (not yet on it), given the way she is heading: the stair pose is planned for a walk (one foot per tread) and the controller already holds her
+## to a walk once she is on the stairs, so a run is brought down to that pace over the last STAIR_APPROACH metres instead of being cut at the first tread. Walking past, along or away from the stairs, or
+## running anywhere else, is not touched. Returns INF when nothing applies.
+func approach_pace(direction: Vector3, walk: float, run: float) -> float:
+	if on_stairs or ctx.dead or not limit_approach or direction.length() < 0.1:
+		return INF
 	var p: Vector3 = ctx.body.global_position
 	var s := stairs.progress_of(p)
 	var right := stairs.direction.cross(Vector3.UP)
 	if absf((p - stairs.low).dot(right)) > stairs.width * 0.5 + 0.25:
-		return false
+		return INF
+	var along := direction.normalized().dot(stairs.direction)
 	var end := stairs.end_s()
-	if s < 0.0 and s > -STAIR_APPROACH:
-		return absf(p.y) < 0.3
-	if s > end and s < end + STAIR_APPROACH:
-		return absf(p.y - stairs.height_at(end)) < 0.3
-	return false
+	var distance := INF
+	if s < 0.0 and s > -STAIR_APPROACH and absf(p.y) < 0.3 and along > 0.3:
+		distance = -s
+	elif s > end and s < end + STAIR_APPROACH and absf(p.y - stairs.height_at(end)) < 0.3 and along < -0.3:
+		distance = s - end
+	if distance == INF:
+		return INF
+	return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, distance))
 
 
 ## Per frame while walking: gets her on and off the staircase and rides the treads. Returns true while she is on it (the controller then does not apply gravity).

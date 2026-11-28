@@ -208,10 +208,14 @@ func _stairs() -> void:
 	var near: Vector3 = world.traversal.stairs.low + Vector3(0.0, 0.0, -1.0)
 	world.body.global_position = near
 	await _wait(0.3)
-	check(world.traversal.approaching_stairs() and not world.traversal.on_stairs, "One metre before the stairs she is approaching them")
+	var toward: Vector3 = world.traversal.stairs.direction
+	var pace: float = world.traversal.approach_pace(toward, 2.0, 5.0)
+	check(pace > 2.0 and pace < 4.0 and not world.traversal.on_stairs, "One metre before the stairs, heading at them, a run is eased toward the stair pace (%.2f of 2.0..5.0 m/s)" % pace)
+	check(world.traversal.approach_pace(-toward, 2.0, 5.0) == INF, "...heading away from them she is not held at all")
+	check(world.traversal.approach_pace(Vector3.RIGHT, 2.0, 5.0) == INF, "...and walking across, past them, she is not held either")
 	world.body.global_position = Vector3(0.0, 0.0, 0.0)
 	await _wait(0.2)
-	check(not world.traversal.approaching_stairs(), "Far from them she is not")
+	check(world.traversal.approach_pace(toward, 2.0, 5.0) == INF, "Far from them she is not")
 	var run: Dictionary = await _stair_walk(true, 3.0)
 	check(float(run.hand_over) < 0.05 and float(run.pelvis) < 0.05, "A run up to the stairs hands over without a pop (ankle %.0f mm, pelvis %.0f mm per frame squared)" % [float(run.hand_over) * 1000.0, float(run.pelvis) * 1000.0])
 	# The control: the earlier behaviour, no pace limit before the stairs, pops.
@@ -224,8 +228,10 @@ func _stairs() -> void:
 ## The same run with the approach limit bypassed (the behaviour before this assignment), to show the check can fail.
 func _control_without_limits() -> Dictionary:
 	world.traversal.limit_approach = false
+	world.visual.rig.stair_profile.max_foot_speed = 0.0
 	var result: Dictionary = await _stair_walk(true, 3.0)
 	world.traversal.limit_approach = true
+	world.visual.rig.stair_profile.max_foot_speed = 3.5
 	return result
 
 

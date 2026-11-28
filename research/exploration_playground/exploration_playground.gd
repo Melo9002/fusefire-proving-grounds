@@ -634,8 +634,7 @@ func _move(delta: float) -> void:
 		top_speed = minf(top_speed, MOVE_SPEED)   # the stair pose plans one foot per tread: a run is too fast for it, so she takes the stairs at a walk
 		if visual.is_crouched():
 			top_speed *= 0.65
-	if traversal.approaching_stairs():
-		top_speed = minf(top_speed, MOVE_SPEED)   # slowed before the stairs, not on them: the stair pose takes over from a walk, not from a run
+	top_speed = minf(top_speed, traversal.approach_pace(move_direction(), MOVE_SPEED, RUN_SPEED))   # a run toward the stairs eases to the stair pace over the last two metres (walking past or away is untouched)
 	if carry.busy:
 		top_speed = 0.0   # the lift or the release owns her body
 	var wanted := move_direction() * top_speed
