@@ -1,0 +1,495 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/structure-wall.glb" id="structure-wall"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/structure-doorway.glb" id="structure-doorway"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/door.glb" id="door"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/box-large.glb" id="crate"]
+
+[sub_resource type="StandardMaterial3D" id="yard_mat"]
+albedo_color = Color(0.26, 0.31, 0.32, 1)
+roughness = 0.92
+
+[sub_resource type="PlaneMesh" id="yard_mesh"]
+material = SubResource("yard_mat")
+size = Vector2(16, 32)
+
+[sub_resource type="StandardMaterial3D" id="wall_mat"]
+albedo_color = Color(0.62, 0.6, 0.55, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="frame_mat"]
+albedo_color = Color(0.45, 0.47, 0.5, 1)
+roughness = 0.8
+
+[node name="InteractionRange" type="Node3D"]
+metadata/parcel_id = &"interaction_range_closed"
+metadata/parcel_role = &"interaction_range"
+metadata/revision = 1
+metadata/parcel_size = Vector2i(16, 32)
+metadata/allowed_rotations = PackedInt32Array(0)
+metadata/access_cell = Vector3i(8, 0, 31)
+metadata/access_direction = Vector2i(0, 1)
+metadata/access_width = 8
+metadata/access_kind = &"range_entry"
+
+[node name="Yard" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, 0.004, 15.5)
+cast_shadow = 0
+mesh = SubResource("yard_mesh")
+
+[node name="Building" type="Node3D" parent="."]
+
+[node name="WestWall_Solid0" type="Node3D" parent="Building"]
+position = Vector3(3, 2.25, 12)
+metadata/solid_size = Vector3(1, 4.5, 19)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "West wall"
+
+[node name="WestWall_Piece0" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 3.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece1" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 5.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece2" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 6.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece3" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 8.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece4" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 9.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece5" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 11.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece6" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 12.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece7" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 14.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece8" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 15.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece9" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 17.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece10" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 18.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece11" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(2.1, 0, 20.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Solid0" type="Node3D" parent="Building"]
+position = Vector3(12, 2.25, 4.45)
+metadata/solid_size = Vector3(1, 4.5, 3.9)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall"
+
+[node name="EastWall_Lintel1" type="Node3D" parent="Building"]
+position = Vector3(12, 3.45, 7)
+metadata/solid_size = Vector3(1, 2.1, 1.2)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall lintel"
+
+[node name="EastWall_Solid2" type="Node3D" parent="Building"]
+position = Vector3(12, 2.25, 12)
+metadata/solid_size = Vector3(1, 4.5, 8.8)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall"
+
+[node name="EastWall_Lintel3" type="Node3D" parent="Building"]
+position = Vector3(12, 3.45, 17)
+metadata/solid_size = Vector3(1, 2.1, 1.2)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall lintel"
+
+[node name="EastWall_Solid4" type="Node3D" parent="Building"]
+position = Vector3(12, 2.25, 19.55)
+metadata/solid_size = Vector3(1, 4.5, 3.9)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall"
+
+[node name="EastWall_Piece0" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 3.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece1" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 5.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece2" parent="Building" instance=ExtResource("structure-doorway")]
+position = Vector3(11.1, 0, 7)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece3" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 8.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece4" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 9.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece5" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 11.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece6" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 12.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece7" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 14.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece8" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 15.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece9" parent="Building" instance=ExtResource("structure-doorway")]
+position = Vector3(11.1, 0, 17)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece10" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 18.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece11" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.1, 0, 20.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Solid0" type="Node3D" parent="Building"]
+position = Vector3(7.5, 2.25, 3)
+metadata/solid_size = Vector3(9, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "North wall"
+
+[node name="NorthWall_Piece0" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(3.75, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece1" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(5.25, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece2" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(6.75, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece3" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.25, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece4" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(9.75, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece5" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.25, 0, 2.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Solid0" type="Node3D" parent="Building"]
+position = Vector3(7.5, 2.25, 21)
+metadata/solid_size = Vector3(9, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "South wall"
+
+[node name="SouthWall_Piece0" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(3.75, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece1" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(5.25, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece2" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(6.75, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece3" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.25, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece4" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(9.75, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece5" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.25, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Partition_Solid0" type="Node3D" parent="Building"]
+position = Vector3(4.7, 2.25, 12)
+metadata/solid_size = Vector3(3.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition"
+
+[node name="Partition_Lintel1" type="Node3D" parent="Building"]
+position = Vector3(7, 3.45, 12)
+metadata/solid_size = Vector3(1.2, 2.1, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition lintel"
+
+[node name="Partition_Solid2" type="Node3D" parent="Building"]
+position = Vector3(8.5, 2.25, 12)
+metadata/solid_size = Vector3(1.8, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition"
+
+[node name="Partition_Sill3" type="Node3D" parent="Building"]
+position = Vector3(10, 0.625, 12)
+metadata/solid_size = Vector3(1.2, 1.25, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition window sill"
+
+[node name="Look" type="CSGBox3D" parent="Building/Partition_Sill3"]
+size = Vector3(1.2, 1.25, 0.3)
+material = SubResource("frame_mat")
+
+[node name="Partition_WindowHead3" type="Node3D" parent="Building"]
+position = Vector3(10, 3.4, 12)
+metadata/solid_size = Vector3(1.2, 2.2, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition window head"
+
+[node name="Look" type="CSGBox3D" parent="Building/Partition_WindowHead3"]
+size = Vector3(1.2, 2.2, 0.3)
+material = SubResource("frame_mat")
+
+[node name="Partition_Solid4" type="Node3D" parent="Building"]
+position = Vector3(11.3, 2.25, 12)
+metadata/solid_size = Vector3(1.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Partition"
+
+[node name="Partition_Piece0" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(3.75, 0, 11.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Partition_Piece1" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(5.25, 0, 11.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Partition_Piece2" parent="Building" instance=ExtResource("structure-doorway")]
+position = Vector3(7, 0, 11.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Partition_Piece3" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.25, 0, 11.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Partition_Piece5" parent="Building" instance=ExtResource("structure-wall")]
+position = Vector3(11.25, 0, 11.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="DoorLeaf" parent="Building" instance=ExtResource("door")]
+position = Vector3(7, 0, 12)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="DoorLeafSolid" type="Node3D" parent="Building"]
+position = Vector3(7, 1.2, 12)
+metadata/solid_size = Vector3(1.2, 2.4, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Closed door"
+
+[node name="Cover" type="Node3D" parent="."]
+
+[node name="Crate0" type="Node3D" parent="Cover"]
+position = Vector3(5, 0, 11)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate0" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate0"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Crate1" type="Node3D" parent="Cover"]
+position = Vector3(9, 0, 13)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate1" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate1"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Crate2" type="Node3D" parent="Cover"]
+position = Vector3(9, 0, 7)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate2" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate2"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Crate3" type="Node3D" parent="Cover"]
+position = Vector3(6, 0, 17)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate3" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate3"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Crate4" type="Node3D" parent="Cover"]
+position = Vector3(11, 0, 5)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate4" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate4"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Crate5" type="Node3D" parent="Cover"]
+position = Vector3(11, 0, 19)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="Cover/Crate5" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="Cover/Crate5"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="MissionStations" type="Node3D" parent="."]
+
+[node name="PlayerDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 0
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(5, 0, 5), Vector3i(7, 0, 5), Vector3i(10, 0, 6), Vector3i(5, 0, 8), Vector3i(8, 0, 8)])
+
+[node name="EnemyDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 1
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(5, 0, 19), Vector3i(7, 0, 19), Vector3i(10, 0, 18), Vector3i(5, 0, 16), Vector3i(8, 0, 16)])
+
+[node name="AllyDeployment" type="Node" parent="MissionStations"]
+metadata/deployment_faction = 2
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(4, 0, 24), Vector3i(4, 0, 26), Vector3i(4, 0, 28), Vector3i(4, 0, 30)])
+
+[node name="Reach" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"reach"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(10, 0, 19), Vector3i(10, 0, 20), Vector3i(11, 0, 19), Vector3i(11, 0, 20)])
+
+[node name="Extract" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"extract"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(7, 0, 26), Vector3i(7, 0, 27), Vector3i(8, 0, 26), Vector3i(8, 0, 27)])
+
+[node name="EnemyExtract" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"enemy_extract"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(7, 0, 0), Vector3i(7, 0, 1), Vector3i(8, 0, 0), Vector3i(8, 0, 1)])
+
+[node name="RescueSpawn" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"rescue_spawn"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(10, 0, 5)])
+
+[node name="Terminal" type="Node" parent="MissionStations"]
+metadata/objective_zone_id = &"terminal"
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(8, 0, 20)])
+
+[node name="Signs" type="Node3D" parent="."]
+
+[node name="Sign" type="Label3D" parent="Signs"]
+position = Vector3(9, 0.03, 7.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "ROOM A"
+
+[node name="Sign" type="Label3D" parent="Signs"]
+position = Vector3(9, 0.03, 16.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "ROOM B"
+
+[node name="Sign" type="Label3D" parent="Signs"]
+position = Vector3(7, 0.03, 12)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "DOOR (CLOSED)"
+
+[node name="Sign" type="Label3D" parent="Signs"]
+position = Vector3(10, 0.03, 12)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.012
+font_size = 32
+outline_size = 4
+modulate = Color(1, 0.88, 0.5, 1)
+text = "WINDOW"
+

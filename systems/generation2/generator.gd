@@ -13,8 +13,10 @@ const FLEET_SOURCE := "authored_fleet_station"
 const FREIGHT_SIZE := Vector2i(40, 40)
 const FLEET_SIZE := Vector2i(40, 40)
 const RANGE_SOURCE := "authored_tactical_test_range"
+const INTERACTION_SOURCE := "authored_interaction_range"
 const DEPOT_SIZE := Vector2i(40, 40)
 const RANGE_SIZE := Vector2i(32, 32)
+const INTERACTION_SIZE := Vector2i(16, 32)
 
 class DepotPlots:
 	const EAST_WEST := &"depot_loading_crossing"
@@ -68,6 +70,26 @@ class RangePlot:
 			},
 		}]}
 
+## Experimental research map (Milestone 06.08): two rooms, a door, a window, an exterior way round. Two parcels share one role and size, so the seed's parity picks the door state (even: closed, odd: open).
+class InteractionPlot:
+	const CLOSED := &"interaction_range_closed"
+	const OPEN := &"interaction_range_open"
+	const Surroundings := preload("res://art/environments/authored/plots/interaction_range_site.tscn")
+
+	## Even seeds: the door is closed; odd seeds: open (the two states of the same layout, so both can be examined without a mode switch).
+	static func choose(map_seed: int) -> Dictionary:
+		return get_definition(CLOSED if posmod(map_seed, 2) == 0 else OPEN)
+
+	static func get_definition(id: StringName) -> Dictionary:
+		if id not in [CLOSED, OPEN]:
+			return {}
+		return {"plot_id": id, "revision": 1, "map_size": INTERACTION_SIZE, "scene": Surroundings, "slots": [{
+			"slot_id": &"range", "role": Parcels.INTERACTION_RANGE, "size": INTERACTION_SIZE, "preferred_parcel_id": id,
+			"origin": Vector3i.ZERO, "rotation": 0, "required_interface": {
+				"kind": &"range_entry", "cell": Vector3i(8, 0, 31), "outward": Vector2i.DOWN, "width": 8, "external": true,
+			},
+		}]}
+
 class FreightPlots:
 	const WEST := &"freight_staging_west"
 	const EAST := &"freight_staging_east"
@@ -109,6 +131,7 @@ static func _plots_for(source_kind: String):
 		FREIGHT_SOURCE: return FreightPlots
 		FLEET_SOURCE: return FleetPlots
 		RANGE_SOURCE: return RangePlot
+		INTERACTION_SOURCE: return InteractionPlot
 	return null
 
 static func generate(source_kind: String, map_seed: int, cell_size: float, requested: Dictionary) -> MapData:
@@ -118,7 +141,7 @@ static func generate(source_kind: String, map_seed: int, cell_size: float, reque
 		rejected.generation_errors.append({"code": "UNSUPPORTED_GENERATION2_SOURCE", "detail": source_kind})
 		return rejected
 	var plots = _plots_for(source_kind)
-	var enabled := bool(requested.get("population_enabled", source_kind != RANGE_SOURCE))
+	var enabled := bool(requested.get("population_enabled", source_kind not in [RANGE_SOURCE, INTERACTION_SOURCE]))
 	var resolved := Resolver.resolve(plots, map_seed, enabled, requested)
 	return SharedLayout.compile_resolved(resolved, map_seed, cell_size, source_kind, 1)
 

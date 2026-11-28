@@ -36,6 +36,9 @@ const URBAN_COURTYARD := &"urban_courtyard"
 const URBAN_GALLERY := &"urban_gallery"
 const PARKING_GARAGE := &"parking_garage"
 const TACTICAL_RANGE := &"tactical_range"
+const INTERACTION_RANGE := &"interaction_range"
+const INTERACTION_RANGE_CLOSED := &"interaction_range_closed"
+const INTERACTION_RANGE_OPEN := &"interaction_range_open"
 
 const LoadingYardA = preload("res://art/environments/authored/parcels/loading_yard.tscn")
 const LoadingYardPainted = preload("res://art/environments/authored/parcels/loading_yard_painted_containers.tscn")
@@ -50,6 +53,8 @@ const SignalCourtyardA = preload("res://art/environments/authored/parcels/signal
 const CourtyardGalleryA = preload("res://art/environments/authored/parcels/courtyard_gallery.tscn")
 const ParkingGarageA = preload("res://art/environments/authored/parcels/parking_garage.tscn")
 const TacticalRangeA = preload("res://art/environments/authored/parcels/tactical_test_range.tscn")
+const InteractionRangeClosed = preload("res://art/environments/authored/parcels/interaction_range_closed.tscn")
+const InteractionRangeOpen = preload("res://art/environments/authored/parcels/interaction_range_open.tscn")
 
 static func all() -> Array:
 	return [
@@ -70,6 +75,8 @@ static func all() -> Array:
 		Definition.new(COURTYARD_GALLERY_A, "Inward-facing courtyard gallery", URBAN_GALLERY, 1, Vector2i(16, 32), CourtyardGalleryA),
 		Definition.new(PARKING_GARAGE_A, "Two-level service garage", PARKING_GARAGE, 1, Vector2i(32, 32), ParkingGarageA),
 		Definition.new(TACTICAL_RANGE_A, "Tactical Test Range", TACTICAL_RANGE, 3, Vector2i(32, 32), TacticalRangeA),
+		Definition.new(INTERACTION_RANGE_CLOSED, "Interaction Range — door closed", INTERACTION_RANGE, 1, Vector2i(16, 32), InteractionRangeClosed),
+		Definition.new(INTERACTION_RANGE_OPEN, "Interaction Range — door open", INTERACTION_RANGE, 1, Vector2i(16, 32), InteractionRangeOpen),
 	]
 
 static func get_definition(id: StringName):

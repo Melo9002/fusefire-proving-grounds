@@ -30,7 +30,7 @@ func _run() -> void:
 	var menu = load("res://ui/match_setup.tscn").instantiate()
 	root.add_child(menu)
 	await process_frame
-	check(menu.map_size_option.item_count == 5 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Setup offers the three curated sites, test range and Crossfire deployment, with Service Depot selected")
+	check(menu.map_size_option.item_count == 6 and menu._selected_battlefield_id() == Catalog.SERVICE_DEPOT, "Setup offers the three curated sites, test range, Crossfire deployment and the Interaction Range research map, with Service Depot selected")
 	var selected: BattleConfiguration = menu._build_battle_configuration()
 	check(selected.content_manifest.population_enabled and menu.population_toggle.visible, "Population is explicit and enabled by default")
 	menu.population_toggle.button_pressed = false

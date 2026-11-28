@@ -106,7 +106,7 @@ func _build_authoring_tools() -> void:
 func _add_battlefield_option(id: StringName) -> void:
 	var definition := BattlefieldCatalogData.definition(id)
 	var battlefield_size: Vector2i = definition.fixed_size
-	var display_label: String = definition.label + (" — Test map" if id == BattlefieldCatalogData.TACTICAL_TEST_RANGE else "")
+	var display_label: String = definition.label + (" — Test map" if id == BattlefieldCatalogData.TACTICAL_TEST_RANGE else (" — Research map" if id == BattlefieldCatalogData.INTERACTION_RANGE else ""))
 	map_size_option.add_item("%s (%d × %d)" % [display_label, battlefield_size.x, battlefield_size.y])
 	map_size_option.set_item_metadata(map_size_option.item_count - 1, id)
 
@@ -479,7 +479,7 @@ func _update_summary(_value: float) -> void:
 	start_button.text = "START BATTLE"
 
 func _on_battlefield_selected(_index: int) -> void:
-	population_toggle.set_pressed_no_signal(_selected_battlefield_id() != BattlefieldCatalogData.TACTICAL_TEST_RANGE)
+	population_toggle.set_pressed_no_signal(_selected_battlefield_id() not in [BattlefieldCatalogData.TACTICAL_TEST_RANGE, BattlefieldCatalogData.INTERACTION_RANGE])
 	_refresh_generation_controls()
 	_update_summary(0.0)
 
