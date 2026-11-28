@@ -88,3 +88,20 @@ The adapter must pass the loaded flag; the movement presentation must hold the u
 2. Look at the Small→Regular transfer (toe tip near the rail at ≈1.4 s) and the limp passenger hands.
 3. Decide tactical adoption and the transfer-time budget separately.
 4. #64, #68 remain owner decisions.
+
+## 13. Status by verification level, and what was not verified
+
+| Level | State |
+|---|---|
+| Implemented | Yes: identity, mixed-size carry, loaded ladder (up and down), Playground and Workbench/ADDA support |
+| Automated-tested | Yes: four new tests (59 / 38 / 93 / 45 checks, with negative controls for the coupled identity and the fallback); animation tier 91 pass, 2 fail (both also fail on the baseline) |
+| Rendered-tested | **Stills only**, from the Workbench's rendered captures at fixed times, four pairings, up and down, several angles |
+| Owner-approved | **No** |
+| Merged | **No** |
+
+Not verified, stated plainly:
+* **Motion quality.** Nothing was watched at normal speed with real input; the transfer, the deck-lip crossing and the descent entry have been judged from stills and numbers only.
+* **The real game path.** The Playground flow is covered by a scripted test (93 checks driving its interact/mount calls), not by a person pressing keys. No tactical-game run was made, because the tactical host does not use the new presentation.
+* **Mesh intersections.** Clearance is bone-segment sampling with a 5 cm margin, not mesh measurement; visible intersections may exist that no number here would show.
+* **Open defects, not iterated further:** the Small-carries-Regular toe tip at about 1.4 s (−0.9 cm against the margin) and the passenger's limp hands at the lip.
+* **Regression scope.** Executed: the four new tests, the animation tier, `traversal_loaded_carrier_test`, `humanoid_portability_test`. Other tiers were not run, and no claim is made about them.
