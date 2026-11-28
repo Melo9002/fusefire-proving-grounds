@@ -39,6 +39,9 @@ func _process_modification_with_delta(_delta: float) -> void:
 		return
 	if input.mode == TraversalPoseInput.Mode.NONE or not input.solved:
 		return
+	if input.mode == TraversalPoseInput.Mode.GROUND:
+		_apply_ground()
+		return
 	var ladder := input.mode == TraversalPoseInput.Mode.LADDER
 	if not ladder:
 		weight = input.weight
@@ -57,6 +60,25 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var lift: float = input.foot_lift[side] if planted else 0.0
 		if lift > 0.0005:
 			target = Basis(lateral, asin(clampf(lift / ball_length, 0.0, 0.6))) * target   # heel up: the toes tip down about the ball
+		var parent := skeleton.get_bone_parent(bone)
+		var parent_world := (skeleton.global_transform.basis * skeleton.get_bone_global_pose(parent).basis).orthonormalized()
+		var local := (parent_world.inverse() * target).orthonormalized().get_rotation_quaternion()
+		skeleton.set_bone_pose_rotation(bone, skeleton.get_bone_pose_rotation(bone).slerp(local, clampf(amount, 0.0, 1.0)))
+
+
+## Ground mode: a foot on the ground is turned flat to it (the animated orientation tipped from the vertical to the ground's normal), by how planted it is: a foot the gait has lifted keeps the animation's pitch.
+func _apply_ground() -> void:
+	weight = input.ground_weight
+	if weight <= 0.001:
+		return
+	for side in 2:
+		var planted := 1.0 - smoothstep(0.012, 0.07, input.ground_lift[side])
+		var amount := weight * planted
+		if amount <= 0.001:
+			continue
+		var tilt := Basis(Quaternion(Vector3.UP, input.ground_normal[side]))
+		var target := tilt * input.foot_world_basis[side]
+		var bone := _bones[side]
 		var parent := skeleton.get_bone_parent(bone)
 		var parent_world := (skeleton.global_transform.basis * skeleton.get_bone_global_pose(parent).basis).orthonormalized()
 		var local := (parent_world.inverse() * target).orthonormalized().get_rotation_quaternion()

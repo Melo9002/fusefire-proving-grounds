@@ -66,11 +66,10 @@ func _run() -> void:
 	world.combat.set_aim(false)
 	world.cover.leave()
 	# Ladder, mid-climb.
-	_place(Vector3(0.0, 0.0, 14.4), PI)
+	_place(Vector3(0.0, 0.0, 14.0), PI)
 	await _wait(0.5)
-	world.interact()
 	_press(&"playground_forward", true)
-	await _wait(2.0)
+	await _wait(2.5)
 	_press(&"playground_forward", false)
 	await _snap()
 	world.traversal.dismount_bottom()
@@ -91,7 +90,7 @@ func _run() -> void:
 	await _snap()
 	world.visual.set_crouched(false)
 	# Carry.
-	_place(Vector3(8.0, 0.0, -4.5), PI)
+	_place(Vector3(6.5, 0.0, -5.2), PI)
 	await _wait(0.5)
 	world.interact()
 	await _wait(4.2)

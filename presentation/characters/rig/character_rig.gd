@@ -189,6 +189,11 @@ var locomotion_direction := Vector2(0.0, 1.0)
 ## What the presentation is currently doing, for tests and the workbench: the speed the legs follow, the gait blend values, the cadence.
 var locomotion_report := {"speed": 0.0, "gait": 0.0, "loaded": 0.0, "cadence": 0.0, "accel": 0.0, "bank": 0.0}
 var _visual_speed := 0.0
+## The simulation step of the latest presentation tick, and the feet as the stair pose last showed them (see _carry_stair_feet).
+var _tick_delta := 0.0
+var _shown_stair_feet: Array = [null, null]
+var _shown_stair_frame := -1
+var _stair_foot_lagging := [false, false]
 var _gait_blend := 0.0
 var _loaded_blend := 0.0
 var _speed_accel := 0.0
@@ -675,6 +680,7 @@ func _build_traversal_modifier() -> void:
 		leg_ik.set_pole_node(side, leg_ik.get_path_to(knee))
 	leg_ik.active = false
 	traversal_modifier.bind_legs(leg_ik, foot_targets, knee_poles)
+	traversal_modifier.bind_leg_bones(legs)
 	# The feet's orientation, right after the leg IK (which places the ankles but not the feet's rotation).
 	foot_modifier = TraversalFootModifier.new()
 	foot_modifier.name = "TraversalFoot"
@@ -739,8 +745,33 @@ func _publish_traversal_input() -> void:
 		input.stair_profile = stair_profile
 	elif input.releasing:
 		pass   # the climbing pose is easing out (end_traversal); the modifier clears it when it is done
+	elif ground_sampler.is_valid():
+		# Neither a ladder nor stairs: ground that may not be flat. The modifier does nothing on flat ground (see GroundSupport) and eases in and out of a slope by itself.
+		input.release_left = 0.0
+		input.releasing = false
+		input.mode = TraversalPoseInput.Mode.GROUND
+		input.solved = true
+		input.ground_sampler = ground_sampler
+		input.ground_ankle_height = stair_profile.ankle_height
+		input.stair_profile = stair_profile   # the foot's size, for the ground under the whole foot
 	else:
 		input.clear()
+
+
+## How the host answers "what ground lies under this world point": Callable(Vector3) -> Dictionary {y, normal} (empty: none). Set, the feet follow ground that is not flat (GroundSupport); null (the default) leaves ordinary
+## locomotion exactly as it always was. A host that ties the sampler to a physics world sets it; a tool or a tactical host does not.
+var ground_sampler := Callable()
+
+
+func set_ground_sampler(sampler: Callable) -> void:
+	ground_sampler = sampler
+	_publish_traversal_input()
+
+
+## Whether the character stands on the ground now: an airborne one is not held to it (the feet leave it by the animation's own pose).
+func set_ground_contact(on_ground: bool) -> void:
+	if traversal_modifier != null:
+		traversal_modifier.input.ground_contact = on_ground
 
 
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.
@@ -825,6 +856,7 @@ func set_stair_progress(s: float, unit_speed: float, lateral_speed := 0.0, allow
 			contact.tread_top = lerpf(contact.tread_top, side_step.tread_top, lateral_blend)
 			contact.planted = contact.planted and side_step.planted
 		feet.append(contact)
+	_carry_stair_feet(feet, unit_speed)
 	var shift := StairFootPlanner.sway_at(model, stair_profile, holds, ascending, s) * (1.0 - StairFootPlanner.settle_weight(stair_profile, unit_speed))
 	var body := body_root + shift   # the legs are solved for the pelvis where it will actually be
 	var solved := StairFootPlanner.pelvis_smoothed(model, stair_profile, holds, ascending, s, body, feet, facing)
@@ -834,9 +866,47 @@ func set_stair_progress(s: float, unit_speed: float, lateral_speed := 0.0, allow
 		traversal_modifier.input.stair_crouch = crouch_modifier.depth if allow_crouch and crouch_modifier != null else 0.0
 
 
+## A foot target never moves faster than a leg can swing (`stair_profile.max_foot_speed`), while the body is stopping or starting (below `limit_below_speed`) or a foot is still catching up: where the plan changes at once (a stop that settles a swinging foot onto the treads, a start that sends it on again) the
+## shown foot travels there over a few frames, lifted clear of the treads it passes, instead of snapping. It carries the foot's last place across the change; an ordinary stride never reaches the limit and is
+## untouched. Needs a ticking presenter (the step is real time); a rig driven by hand, or planned across a gap, shows the plan exactly.
+func _carry_stair_feet(feet: Array, unit_speed: float) -> void:
+	var frame := Engine.get_process_frames()
+	var ticking := stair_profile.max_foot_speed > 0.0 and _tick_delta > 0.0 and presenter != null and presenter.tick_count > 0 and frame - presenter.last_tick_frame <= 5
+	var continuous := ticking and _shown_stair_frame >= 0 and frame - _shown_stair_frame <= 5
+	for foot in 2:
+		var plan: Dictionary = feet[foot]
+		var target: Vector3 = plan.position
+		var shown: Variant = _shown_stair_feet[foot]
+		if continuous and shown != null:
+			var from: Vector3 = shown
+			var offset := target - from
+			# Only where a plan can jump (the body is stopping or starting) or a foot is already catching one up: an ordinary stride is the plan itself.
+			if unit_speed >= stair_profile.limit_below_speed and not _stair_foot_lagging[foot]:
+				_shown_stair_feet[foot] = plan.position
+				continue
+			var allowed := stair_profile.max_foot_speed * _tick_delta
+			if offset.length() > allowed and offset.length() < 1.2:
+				var step := from + offset.normalized() * allowed
+				var remaining := (target - step)
+				# Raised while it still has far to go, so a foot crossing to a higher or lower tread clears the nosing between.
+				var arc := minf(Vector2(remaining.x, remaining.z).length(), 0.30) * stair_profile.catch_up_lift
+				_shown_stair_feet[foot] = step
+				plan.position = step + Vector3.UP * arc
+				plan.planted = remaining.length() < 0.04 and bool(plan.planted)   # flat on the tread again for the last few centimetres
+				plan["carried"] = true
+				_stair_foot_lagging[foot] = true
+				continue
+		_stair_foot_lagging[foot] = false
+		_shown_stair_feet[foot] = plan.position
+	_shown_stair_frame = frame if ticking else -1
+
+
 func end_stairs() -> void:
 	if stairs == null:
 		return
+	_shown_stair_feet = [null, null]
+	_stair_foot_lagging = [false, false]
+	_shown_stair_frame = -1
 	stairs = null
 	_publish_traversal_input()
 	if is_instance_valid(leg_ik) and ladder == null:
@@ -1379,6 +1449,7 @@ func update_locomotion_presentation(speed: float, heading_rate: float, delta: fl
 	if not is_instance_valid(animation_controller) or not is_instance_valid(animation_controller.animation_tree) or delta <= 0.0:
 		return
 	_locomotion_fed_frame = Engine.get_process_frames()
+	_tick_delta = delta
 	var p := locomotion_profile
 	var previous := _visual_speed
 	_visual_speed = move_toward(_visual_speed, speed, (p.speed_rise if speed > _visual_speed else p.speed_fall) * delta)

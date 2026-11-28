@@ -8,6 +8,17 @@ const CLIMB_SPEED := 0.9
 const MOUNT_RANGE := 1.1
 const MOUNT_CLEARANCE := 0.40
 const TOP_OUT_SECONDS := 0.60
+## The mounting zone and how deliberate the approach has to be: the rails' width either side, from a little behind the foot to just short of the rungs; walking within ~37 degrees of straight at the ladder for a quarter of a second (the body turns to where it is walking, so a separate facing test would only make a turn at the platform's edge dangerous).
+const APPROACH_HALF_WIDTH := 0.45
+const APPROACH_BEHIND := 0.7
+const APPROACH_AHEAD := 0.3
+const APPROACH_ALIGNMENT := 0.8
+const APPROACH_SECONDS := 0.25
+## The zone at the head of the ladder runs from just inside the platform's edge to this far beyond the spot the climb starts from (she is stopped by the zone, not by the edge).
+const TOP_ZONE_DEPTH := 0.45
+const REMOUNT_PAUSE := 0.8
+## How far before either end of the staircase she is already slowed to the pace the stair pose is planned for (a run would otherwise reach the stairs at four metres a second and the pose would have to take over from it in one step).
+const STAIR_APPROACH := 2.0
 
 var ctx: Node
 var ladder := {}
@@ -20,6 +31,11 @@ var use_landing_contacts := true
 var _ascending := true
 var _top_out_time := -1.0
 var _entering_from_top := false
+## Whether the walk up to the stairs is held to the stair pace. Off only to compare with the behaviour before it existed.
+var limit_approach := true
+var _approach_time := 0.0
+var _mount_blocked_for := 0.0
+var _rearm_needed := false
 
 
 func setup(controller: Node, info: Dictionary) -> void:
@@ -32,17 +48,48 @@ func ladder_foot() -> Vector3:
 	return Vector3(float(ladder.x), 0.0, float(ladder.z) - 0.9)
 
 
-func can_mount() -> bool:
+## Which end of the ladder she stands at, as a mounting zone: 1 at the foot, -1 at the head (on the tower), 0 anywhere else, or when she may not mount now (on it already, defeated, in cover, in the middle of a lift,
+## or carrying a body the presentation cannot climb with). A zone is narrow (the width of the rails, not the metre either side the old E prompt allowed) and short.
+func approach_side() -> int:
 	if on_ladder or ctx.dead or ctx.cover.active or ctx.carry.busy:
-		return false
+		return 0
 	if ctx.visual.is_carrying() and not ctx.visual.supports_loaded_ladder():
-		return false
+		return 0
 	var p: Vector3 = ctx.body.global_position
-	if absf(p.x - float(ladder.x)) >= MOUNT_RANGE:
-		return false
+	if absf(p.x - float(ladder.x)) >= APPROACH_HALF_WIDTH:
+		return 0
 	if absf(p.y - float(ladder.length)) < 0.12:
-		return p.z >= float(ladder.deck_edge) and absf(p.z - float(ladder.top_z)) < 0.28
-	return p.y < 0.3 and absf(p.z - float(ladder.z) + 0.9) < MOUNT_RANGE
+		return -1 if p.z >= float(ladder.deck_edge) + 0.05 and p.z < float(ladder.top_z) + TOP_ZONE_DEPTH else 0
+	if p.y < 0.3 and p.z > ladder_foot().z - APPROACH_BEHIND and p.z < ladder_foot().z + APPROACH_AHEAD:
+		return 1
+	return 0
+
+
+## Whether a mount is possible from here (either end).
+func can_mount() -> bool:
+	return approach_side() != 0
+
+
+## The approach-based mount, once per frame from the controller with the direction she is being moved: walking deliberately at the ladder (toward the rungs from the foot, toward the edge from the head, for a moment) puts her on it. Walking past it, standing beside it or stepping onto the zone does not; neither does the walk away from the ladder she has just left (the ladder re-arms once she has been out of the zone).
+func update_approach(delta: float, wanted: Vector3) -> bool:
+	_mount_blocked_for = maxf(_mount_blocked_for - delta, 0.0)
+	var side := approach_side()
+	if side == 0:
+		_rearm_needed = false
+		_approach_time = 0.0
+		return false
+	if wanted.length() < 0.5:
+		_rearm_needed = false   # letting go of the stick re-arms the ladder: the next deliberate walk at it mounts
+	var toward := Vector3(0.0, 0.0, float(side))   # the foot is on the -Z side of the rungs, the head on the +Z side of the edge
+	if _rearm_needed or _mount_blocked_for > 0.0 or wanted.length() < 0.5 or wanted.normalized().dot(toward) < APPROACH_ALIGNMENT:
+		_approach_time = 0.0
+		return false
+	_approach_time += delta
+	if _approach_time < APPROACH_SECONDS:
+		return false
+	_approach_time = 0.0
+	mount()
+	return true
 
 
 func mount() -> void:
@@ -67,6 +114,8 @@ func place_at_approach(top: bool) -> bool:
 	if on_ladder or ctx.dead or ctx.carry.busy:
 		return false
 	ctx.body.velocity = Vector3.ZERO
+	_approach_time = 0.0
+	_rearm_needed = false
 	if top:
 		ctx.body.global_position = Vector3(float(ladder.x), float(ladder.length), float(ladder.top_z))
 		ctx.visual.reset_motion(PI)   # facing the way the descent starts: back toward the rungs
@@ -95,6 +144,8 @@ func dismount_bottom() -> void:
 
 func _end_ladder() -> void:
 	on_ladder = false
+	_rearm_needed = true   # the walk away from the ladder must not put her straight back on it
+	_mount_blocked_for = REMOUNT_PAUSE
 	_top_out_time = -1.0
 	_entering_from_top = false
 	ctx.visual.end_climb()
@@ -140,6 +191,52 @@ func move_ladder(delta: float) -> void:
 		_top_out_time = 0.0
 	elif climbed <= 0.001 and axis < 0.0:
 		dismount_bottom()
+
+
+## The fastest she may go while walking TOWARD either end of the staircase (not yet on it), given the way she is heading: the stair pose is planned for a walk (one foot per tread) and the controller already holds her
+## to a walk once she is on the stairs, so a run is brought down to that pace over the last STAIR_APPROACH metres instead of being cut at the first tread. Walking past, along or away from the stairs, or
+## running anywhere else, is not touched. Returns INF when nothing applies.
+func approach_pace(direction: Vector3, walk: float, run: float) -> float:
+	if on_stairs or on_ladder or ctx.dead or not limit_approach or direction.length() < 0.1:
+		return INF
+	var p: Vector3 = ctx.body.global_position
+	var ladder_pace := _ladder_approach_pace(p, direction, walk, run)
+	if ladder_pace < INF:
+		return ladder_pace
+	var s := stairs.progress_of(p)
+	var right := stairs.direction.cross(Vector3.UP)
+	if absf((p - stairs.low).dot(right)) > stairs.width * 0.5 + 0.25:
+		return INF
+	var along := direction.normalized().dot(stairs.direction)
+	var end := stairs.end_s()
+	var distance := INF
+	if s < 0.0 and s > -STAIR_APPROACH and absf(p.y) < 0.3 and along > 0.3:
+		distance = -s
+	elif s > end and s < end + STAIR_APPROACH and absf(p.y - stairs.height_at(end)) < 0.3 and along < -0.3:
+		distance = s - end
+	if distance == INF:
+		return INF
+	return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, distance))
+
+
+## The same for the ladder: its zone is a metre deep and the mount takes APPROACH_SECONDS of deliberate walking, so at a run she would cross the zone (or, at the head, run off the platform's edge) before it completes.
+## Heading at the rungs from the foot, or at the edge from the platform, she eases to a walk over the last two metres before the zone. Walking past it or away, or anywhere else, is not touched.
+func _ladder_approach_pace(p: Vector3, direction: Vector3, walk: float, run: float) -> float:
+	if absf(p.x - float(ladder.x)) >= APPROACH_HALF_WIDTH + 0.3 or ctx.visual.is_carrying() and not ctx.visual.supports_loaded_ladder():
+		return INF
+	var toward := direction.normalized().dot(Vector3(0.0, 0.0, 1.0))
+	var length := float(ladder.length)
+	if absf(p.y - length) < 0.12:
+		# On the platform: the zone begins at the edge and runs back; the approach is the walk out to it, heading -Z.
+		var zone_start := float(ladder.top_z) + TOP_ZONE_DEPTH
+		if toward < -0.3 and p.z > zone_start and p.z < zone_start + STAIR_APPROACH:
+			return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, p.z - zone_start))
+		return INF
+	if p.y < 0.3 and toward > 0.3:
+		var zone_start := ladder_foot().z - APPROACH_BEHIND
+		if p.z < zone_start and p.z > zone_start - STAIR_APPROACH:
+			return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, zone_start - p.z))
+	return INF
 
 
 ## Per frame while walking: gets her on and off the staircase and rides the treads. Returns true while she is on it (the controller then does not apply gravity).

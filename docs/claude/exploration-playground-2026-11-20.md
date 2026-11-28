@@ -14,7 +14,7 @@ Launch FuseFire, open the **Settings** tab of Match Setup, and press **Explorati
 | Mouse | Look (yaw and pitch, pitch limited to 60 degrees down and 25 degrees up) |
 | Mouse wheel | Zoom the camera (1.4 to 6 m) |
 | Right mouse button (hold) | Recenter the camera behind MIRA |
-| E | Interact, when the yellow ring around the chair is entered ("Press E to interact") |
+| E | The prompt at the bottom says what it will do: pick up or put down a casualty, or inspect the chair (see the [2026-11-27 update](#update-2026-11-27)) |
 | Esc | Release the mouse and show a small menu: **Resume** or **Back to Match Setup** |
 | Left click (while the mouse is free) | Capture the mouse again |
 
@@ -69,3 +69,16 @@ Local to the playground and meant to be thrown away: the input actions (`playgro
 3. **Task 08 (real non-tactical proof).** Promote what worked (continuous locomotion, turning, the camera, the request-and-response interaction) and replace the local pieces (inputs, props, the interaction) with the real context controller; keep the test's structure.
 4. **Facing and strafing.** Decide whether a free-facing, strafe-capable locomotion presentation is wanted before building exploration gameplay on `update_locomotion`'s turn-to-velocity behaviour.
 5. **Selector note.** `research/` has no area in `tests/catalog.json`, so changed-file selection reports it as unmapped and broadens; mapping it to `tooling` (or `animation`) would make selections more precise.
+
+## Update 2026-11-27
+
+The playground has been extended (Prototype 1.5 foundation assignment; full account in [playground-foundation-report-2026-11-27.md](playground-foundation-report-2026-11-27.md)). What changed for someone using it:
+
+* **Two casualties** lie at the red **casualty station** from the start (Regular MIRA and Small MIRA), whichever character you control. E picks up the one the prompt names ("Press E to pick up MIRA" or "... Small MIRA"; the nearest one in reach, of two at nearly the same distance the one more ahead of you), E puts the carried one down where it fits, and the other one stays where it lies. Menu: **Extra casualty** (adds a third body of either model), **Reset casualties**, **Reset character**, **Start area**, the ladder foot and top buttons.
+* **Ladders are climbed by walking at them** (from the foot toward the rungs, from the platform toward the edge), loaded or not; W and S climb, releasing the key stops you on the rungs. E no longer mounts. Walking along or past a ladder, or standing at it, does not.
+* A body is **put down only where it fits**: PlaygroundPlacement looks at the floor under, and the free space around, where the body will lie, and turns you to the nearest direction that has room; with none, E is refused ("No room to put MIRA down here") and the body stays on you.
+* **Ramp**: the feet follow the ground on the ramp (and any ground the host can sample), in the shared rig (`GroundSupport`, `TraversalPoseInput.Mode.GROUND`); flat ground is untouched.
+* **Stairs**: you are held to the stair pace for the two metres before either end (a run no longer pops at the first tread).
+* **Camera and HUD**: zoom out to 9 m, **H** toggles the clean view (no help text, state line or station signs). Station signs mark the yard.
+
+To add a casualty permanently, add an entry to `casualty_specs` in `playground_props.gd` (`{id, character, position, yaw}`, `character` is a project character id with a runtime rig scene); to add a model to the pickers, add its exploration visual to `CHARACTER_VISUALS` and its label to `CHARACTER_LABELS` in `exploration_playground.gd`.

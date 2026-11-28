@@ -37,6 +37,12 @@ enum ContactPolicy { EVERY_TREAD, ALTERNATE, AUTO }
 @export_group("Swing")
 ## The swing foot rises this far above the higher of its two treads at mid-swing.
 @export_range(0.0, 0.3, 0.005, "suffix:m") var swing_lift := 0.04
+## The fastest a foot target may travel (m/s) where the plan changes at once (a stop or a start on the stairs); 0 shows the plan exactly. A stride's own swing is well below it.
+@export_range(0.0, 12.0, 0.1, "suffix:m/s") var max_foot_speed := 3.5
+## How much a foot still catching up with its plan is raised, per metre it has left to travel (to clear the nosing it crosses).
+@export_range(0.0, 1.0, 0.01) var catch_up_lift := 0.7
+## The foot speed limit applies below this body speed (m/s) (a stop or a start) and while a foot is still catching up; an ordinary stride above it is shown exactly as planned.
+@export_range(0.0, 2.0, 0.05, "suffix:m/s") var limit_below_speed := 0.6
 ## The swing foot lifts first (over the first part of the swing) and travels after (the last part), so it clears the riser: fractions of the swing.
 @export_range(0.0, 0.8, 0.01) var lift_phase := 0.6
 @export_range(0.0, 0.8, 0.01) var travel_start := 0.3

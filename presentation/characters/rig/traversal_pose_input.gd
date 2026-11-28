@@ -4,7 +4,7 @@ extends RefCounted
 ## the traversal or stair pose changes (the solved pose itself is TraversalSolver / StairFootPlanner output; the rig translates it), and the modifier reads nothing else of the rig.
 ## Ladder values are in the character's own frame (the modifier converts them with the character root of THIS pass); stair values are the planner's world-space results.
 
-enum Mode { NONE, LADDER, STAIRS, LOCAL_STEP }
+enum Mode { NONE, LADDER, STAIRS, LOCAL_STEP, GROUND }
 
 var mode: Mode = Mode.NONE
 ## False while a ladder traversal is active but its pose has not been solved yet (nothing to apply).
@@ -43,6 +43,20 @@ var foot_lift: Array[float] = [0.0, 0.0]
 var stair_profile: StairProfile
 ## Requested visual pelvis drop; still bounded by the same planted legs.
 var stair_crouch := 0.0
+
+## GROUND: the host's way of asking what ground lies under a world point (Callable(Vector3) -> Dictionary {y, normal}, empty when there is none), whether the character stands on it, the ankle's height above the sole
+## (the foot's own measure), and what the modifier solved this pass: the eased weight, each ankle's shift, the ground normal under each foot, the animated foot orientation to tilt from, and how far each foot is
+## lifted off the ground by the gait (a planted foot is turned to the slope, a lifted one keeps the animation's pitch).
+var ground_sampler := Callable()
+var ground_contact := true
+var ground_ankle_height := 0.08
+var ground_weight := 0.0
+var ground_shift: Array[float] = [0.0, 0.0]
+var ground_normal: Array[Vector3] = [Vector3.UP, Vector3.UP]
+var ground_pelvis := 0.0
+var ground_lift: Array[float] = [0.0, 0.0]
+var foot_world_basis: Array[Basis] = [Basis.IDENTITY, Basis.IDENTITY]
+
 
 func clear() -> void:
 	release_left = 0.0

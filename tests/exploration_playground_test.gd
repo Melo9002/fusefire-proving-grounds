@@ -158,7 +158,7 @@ func _run() -> void:
 	world.body.global_position = Vector3(3.0, 0.0, -1.8)
 	world.body.velocity = Vector3.ZERO
 	await _frames(6)
-	check(world.prompt_label.visible and world.prompt_label.text == "Press E to interact", "Near the chair the prompt appears")
+	check(world.prompt_label.visible and world.prompt_label.text == "Press E to inspect the chair", "Near the chair the prompt appears")
 	var seat_before: Material = world.chair_seat.material_override
 	_press(&"playground_interact", true)
 	_press(&"playground_interact", false)

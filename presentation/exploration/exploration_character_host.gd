@@ -18,6 +18,8 @@ signal presentation_state_changed(state_name: StringName)
 @export_range(0.0, 0.8, 0.01, "suffix:m") var crouch_depth := 0.41
 ## An interaction's default length, seconds of presentation time.
 @export_range(0.2, 6.0, 0.05, "suffix:s") var inspect_seconds := 1.6
+## Whether the feet follow ground that is not flat (a ramp, a slope): the host answers the rig's questions about the ground from this node's own physics world. Flat ground is left exactly as the animation made it.
+@export var follow_ground := true
 
 const CROUCH_SOURCE := &"exploration/crouch"
 const COVER_SOURCE := &"exploration/cover"
@@ -27,6 +29,9 @@ const INSPECT_SOURCE := &"exploration/inspect"
 ## A character is moving while velocity was reported within this many seconds (the controller reports every physics step it moves).
 const MOVING_REPORT_SECONDS := 0.1
 const MOVING_SPEED := 0.05
+## How far above and below the character's feet the ground probe looks.
+const GROUND_PROBE_UP := 0.9
+const GROUND_PROBE_DOWN := 0.6
 
 var rig: CharacterRig
 var presenter: CharacterPresenter
@@ -64,6 +69,8 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	rig.animation_controller.state_changed.connect(func(state_name: StringName) -> void: presentation_state_changed.emit(state_name))
+	if follow_ground:
+		rig.set_ground_sampler(_sample_ground)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	for problem in presenter.foot_point_problems():
@@ -391,11 +398,26 @@ func loaded_ladder_ready() -> bool:
 	return rig.loaded_ladder_ready()
 
 
+## What ground lies under a world point, for the rig's foot placement: {y, normal} of the first solid below, or {} when there is none close enough. The character's own body is not ground.
+func _sample_ground(point: Vector3) -> Dictionary:
+	if not is_inside_tree():
+		return {}
+	var query := PhysicsRayQueryParameters3D.create(Vector3(point.x, global_position.y + GROUND_PROBE_UP, point.z), Vector3(point.x, global_position.y - GROUND_PROBE_DOWN, point.z))
+	var carrier := get_parent() as CollisionObject3D
+	if carrier != null:
+		query.exclude = [carrier.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return {} if hit.is_empty() else {"y": float(hit.position.y), "normal": hit.normal}
+
+
 # ------------------------------------------------------------------ per frame
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not is_instance_valid(rig) or not rig.is_inside_tree() or not is_instance_valid(rig.skeleton) or not rig.skeleton.is_inside_tree():
 		return
+	if follow_ground:
+		var carrier := get_parent() as CharacterBody3D
+		rig.set_ground_contact(carrier == null or carrier.is_on_floor())
 	_select_state()
 	_sync_posture()
 	_advance_aim(delta)
