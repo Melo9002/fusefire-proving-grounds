@@ -13,6 +13,10 @@
 
 [ext_resource type="PackedScene" path="res://art/environments/authored/components/combat_examples.tscn" id="combat_examples"]
 
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/structure-wall.glb" id="structure-wall"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/structure-doorway.glb" id="structure-doorway"]
+[ext_resource type="PackedScene" path="res://art/environments/kenney/factory_kit/models/door.glb" id="door"]
+
 [sub_resource type="StandardMaterial3D" id="asphalt"]
 albedo_color = Color(0.25, 0.31, 0.33, 1)
 roughness = 0.92
@@ -33,10 +37,14 @@ roughness = 0.92
 material = SubResource("paint")
 size = Vector2(0.085, 4.2)
 
+[sub_resource type="StandardMaterial3D" id="isec_frame_mat"]
+albedo_color = Color(0.45, 0.47, 0.5, 1)
+roughness = 0.8
+
 [node name="TacticalTestRange" type="Node3D"]
 metadata/parcel_id = &"tactical_range_a"
 metadata/parcel_role = &"tactical_range"
-metadata/revision = 3
+metadata/revision = 4
 metadata/parcel_size = Vector2i(32, 32)
 metadata/allowed_rotations = PackedInt32Array(0)
 metadata/access_cell = Vector3i(12, 0, 31)
@@ -605,3 +613,221 @@ modulate = Color(0.91, 0.88, 0.72, 1)
 text = "EXTRACT"
 
 [node name="CombatExamples" parent="." instance=ExtResource("combat_examples")]
+
+[node name="InteractionSection" type="Node3D" parent="."]
+
+[node name="Building" type="Node3D" parent="InteractionSection"]
+
+[node name="WestWall_Solid0" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(9, 2.25, 19)
+metadata/solid_size = Vector3(1, 4.5, 5)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "West wall"
+
+[node name="WestWall_Piece0" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.1, 0, 17.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece1" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.1, 0, 19.1)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="WestWall_Piece2" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(8.1, 0, 20.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Solid0" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(13, 2.25, 17.45)
+metadata/solid_size = Vector3(1, 4.5, 1.9)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall"
+
+[node name="EastWall_Sill1" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(13, 0.625, 19)
+metadata/solid_size = Vector3(1, 1.25, 1.2)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall window sill"
+
+[node name="Look" type="CSGBox3D" parent="InteractionSection/Building/EastWall_Sill1"]
+size = Vector3(0.3, 1.25, 1.2)
+material = SubResource("isec_frame_mat")
+
+[node name="EastWall_WindowHead1" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(13, 3.4, 19)
+metadata/solid_size = Vector3(1, 2.2, 1.2)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall window head"
+
+[node name="Look" type="CSGBox3D" parent="InteractionSection/Building/EastWall_WindowHead1"]
+size = Vector3(0.3, 2.2, 1.2)
+material = SubResource("isec_frame_mat")
+
+[node name="EastWall_Solid2" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(13, 2.25, 20.55)
+metadata/solid_size = Vector3(1, 4.5, 1.9)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "East wall"
+
+[node name="EastWall_Piece0" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(12.1, 0, 17.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="EastWall_Piece2" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(12.1, 0, 20.6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Solid0" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(9.7, 2.25, 17)
+metadata/solid_size = Vector3(1.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "North wall"
+
+[node name="NorthWall_Lintel1" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(11, 3.45, 17)
+metadata/solid_size = Vector3(1.2, 2.1, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "North wall lintel"
+
+[node name="NorthWall_Solid2" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(12.3, 2.25, 17)
+metadata/solid_size = Vector3(1.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "North wall"
+
+[node name="NorthWall_Piece0" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(9.75, 0, 16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece1" parent="InteractionSection/Building" instance=ExtResource("structure-doorway")]
+position = Vector3(11, 0, 16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="NorthWall_Piece2" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(12.75, 0, 16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Solid0" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(9.7, 2.25, 21)
+metadata/solid_size = Vector3(1.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "South wall"
+
+[node name="SouthWall_Lintel1" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(11, 3.45, 21)
+metadata/solid_size = Vector3(1.2, 2.1, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "South wall lintel"
+
+[node name="SouthWall_Solid2" type="Node3D" parent="InteractionSection/Building"]
+position = Vector3(12.3, 2.25, 21)
+metadata/solid_size = Vector3(1.4, 4.5, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "South wall"
+
+[node name="SouthWall_Piece0" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(9.75, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece1" parent="InteractionSection/Building" instance=ExtResource("structure-doorway")]
+position = Vector3(11, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="SouthWall_Piece2" parent="InteractionSection/Building" instance=ExtResource("structure-wall")]
+position = Vector3(12.75, 0, 20.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+
+[node name="Door_door_north" type="Node3D" parent="InteractionSection/Building"]
+metadata/door_id = &"door_north"
+metadata/door_cell_local = Vector3i(11, 0, 17)
+metadata/door_initial_state = &"closed"
+metadata/door_hinge_local = Vector3(11.6, 0, 17)
+metadata/door_swing_radius = 1.2
+metadata/door_swing_from_deg = 180.0
+metadata/door_swing_to_deg = 280.0
+
+[node name="Leaf" parent="InteractionSection/Building/Door_door_north" instance=ExtResource("door")]
+position = Vector3(11, 0, 17)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+metadata/door_visual_id = &"door_north"
+
+[node name="ClosedLeaf" type="Node3D" parent="InteractionSection/Building/Door_door_north"]
+position = Vector3(11, 1.2, 17)
+metadata/solid_size = Vector3(1.2, 2.4, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Closed door"
+metadata/door_id = &"door_north"
+metadata/door_state = &"closed"
+
+[node name="OpenLeaf" type="Node3D" parent="InteractionSection/Building/Door_door_north"]
+position = Vector3(11.7042, 1.2, 16.4091)
+metadata/solid_size = Vector3(0.3561, 2.4, 1.2078)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Open door leaf"
+metadata/door_id = &"door_north"
+metadata/door_state = &"open"
+
+[node name="Door_door_south" type="Node3D" parent="InteractionSection/Building"]
+metadata/door_id = &"door_south"
+metadata/door_cell_local = Vector3i(11, 0, 21)
+metadata/door_initial_state = &"closed"
+metadata/door_hinge_local = Vector3(11.6, 0, 21)
+metadata/door_swing_radius = 1.2
+metadata/door_swing_from_deg = 180.0
+metadata/door_swing_to_deg = 280.0
+
+[node name="Leaf" parent="InteractionSection/Building/Door_door_south" instance=ExtResource("door")]
+position = Vector3(11, 0, 21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+metadata/door_visual_id = &"door_south"
+
+[node name="ClosedLeaf" type="Node3D" parent="InteractionSection/Building/Door_door_south"]
+position = Vector3(11, 1.2, 21)
+metadata/solid_size = Vector3(1.2, 2.4, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Closed door"
+metadata/door_id = &"door_south"
+metadata/door_state = &"closed"
+
+[node name="OpenLeaf" type="Node3D" parent="InteractionSection/Building/Door_door_south"]
+position = Vector3(11.7042, 1.2, 20.4091)
+metadata/solid_size = Vector3(0.3561, 2.4, 1.2078)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Open door leaf"
+metadata/door_id = &"door_south"
+metadata/door_state = &"open"
+
+[node name="Cover" type="Node3D" parent="InteractionSection"]
+
+[node name="Crate10_20" type="Node3D" parent="InteractionSection/Cover"]
+position = Vector3(10, 0, 20)
+metadata/asset_id = "factory_kit/box-large"
+
+[node name="Visual" parent="InteractionSection/Cover/Crate10_20" instance=ExtResource("crate")]
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="TacticalVolume" type="Node3D" parent="InteractionSection/Cover/Crate10_20"]
+position = Vector3(0, 0.24, 0)
+metadata/solid_size = Vector3(0.95, 0.48, 0.88)
+metadata/movement_cost = 2
+
+[node name="Sign" type="Label3D" parent="InteractionSection"]
+position = Vector3(11, 0.019, 23.5)
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.017
+font_size = 32
+outline_size = 0
+modulate = Color(0.91, 0.88, 0.72, 1)
+text = "11  DOORS  /  WINDOW"
