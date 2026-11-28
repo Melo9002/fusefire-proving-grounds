@@ -12,8 +12,10 @@ const FLAT_SHIFT := 0.004
 const FLAT_TILT := 0.02
 ## The ground this far above or below the root's floor is not "ground the feet follow" (a stair or a ledge is somebody else's, and a drop is a fall): the foot keeps the animation's height.
 const MAX_SHIFT := 0.45
+## Ground further BELOW the root's floor than this (a foot over the side edge of a ramp, over a ledge) is not followed: the leg reaches down a step, not a drop.
+const MAX_DROP := 0.20
 ## The weight eases up and down at these rates per second.
-const RATE_UP := 12.0
+const RATE_UP := 40.0
 const RATE_DOWN := 8.0
 
 
@@ -28,7 +30,7 @@ static func plan(root_y: float, ankles: Array[Vector3], samples: Array) -> Dicti
 		if sample.is_empty():
 			continue
 		var offset := float(sample.y) - root_y
-		if absf(offset) > MAX_SHIFT:
+		if absf(offset) > MAX_SHIFT or offset < -MAX_DROP:
 			continue
 		shift[side] = offset
 		var n: Vector3 = sample.normal

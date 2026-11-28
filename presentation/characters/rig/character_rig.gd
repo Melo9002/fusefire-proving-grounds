@@ -753,6 +753,7 @@ func _publish_traversal_input() -> void:
 		input.solved = true
 		input.ground_sampler = ground_sampler
 		input.ground_ankle_height = stair_profile.ankle_height
+		input.stair_profile = stair_profile   # the foot's size, for the ground under the whole foot
 	else:
 		input.clear()
 

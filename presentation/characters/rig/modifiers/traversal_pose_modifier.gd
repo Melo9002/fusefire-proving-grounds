@@ -192,7 +192,7 @@ func _apply_ground(delta: float) -> void:
 		knees.append(to_world * skeleton.get_bone_global_pose(_leg_bones[side][1]).origin)
 		input.foot_world_basis[side] = (to_world.basis * pose.basis).orthonormalized()
 		var sample = input.ground_sampler.call(ankles[side])
-		samples.append(sample if sample is Dictionary else {})
+		samples.append(_with_footprint(sample if sample is Dictionary else {}, ankles[side]))
 	var root_y := character_frame.global_position.y
 	var plan := GroundSupport.plan(root_y, ankles, samples)
 	input.ground_weight = GroundSupport.ease_weight(input.ground_weight, bool(plan.slope) and input.ground_contact, step)
@@ -218,6 +218,31 @@ func _apply_ground(delta: float) -> void:
 		knee_poles[side].global_position = knees[side] + Vector3.UP * (input.ground_shift[side] * 0.5) + forward * 0.45
 	leg_ik.influence = weight
 	leg_ik.active = true
+
+
+## The ground under the whole FOOT, not only under the ankle: where the toe tip, the heel or a side of the foot is over ground that rises above the plane the ankle's own ground makes (the foot of a ramp, a step-up,
+## the crest where a slope meets the flat), the foot is held up by that much, so no part of the sole goes into the surface, and the placement engages before the ankle itself is over the slope. On a plain slope every
+## point is on the plane and nothing is added.
+func _with_footprint(sample: Dictionary, ankle: Vector3) -> Dictionary:
+	if sample.is_empty() or input.stair_profile == null:
+		return sample
+	var profile := input.stair_profile
+	var forward := character_frame.global_basis.orthonormalized().z
+	forward = Vector3(forward.x, 0.0, forward.z).normalized()
+	var left := Vector3.UP.cross(forward).normalized()
+	var normal: Vector3 = sample.normal
+	var excess := 0.0
+	for offset in [forward * profile.foot_front, -forward * profile.foot_back, left * profile.foot_half_width, -left * profile.foot_half_width]:
+		var other = input.ground_sampler.call(ankle + offset)
+		if not (other is Dictionary) or other.is_empty():
+			continue
+		var plane_y: float = float(sample.y) - (normal.x * offset.x + normal.z * offset.z) / maxf(normal.y, 0.2)
+		excess = maxf(excess, float(other.y) - plane_y)
+	if excess <= 0.003:
+		return sample
+	var raised := sample.duplicate()
+	raised["y"] = float(sample.y) + minf(excess, 0.12)
+	return raised
 
 
 func _release_ground() -> void:

@@ -15,6 +15,10 @@ var world: Node
 var _json := ""
 var _rows: Array[Dictionary] = []
 var _hips: Array[float] = []
+var _feet: SkinnedSurface
+var _dump := ""
+var _tag := ""
+var _only := ""
 
 
 func _initialize() -> void:
@@ -43,6 +47,10 @@ func _run() -> void:
 		var parts := String(argument).split("=", true, 1)
 		if parts.size() == 2 and parts[0] == "json":
 			_json = parts[1]
+		elif parts.size() == 2 and parts[0] == "only":
+			_only = parts[1].replace("_", " ")
+		elif parts.size() == 2 and parts[0] == "dump":
+			_dump = parts[1]   # per-frame CSV for every case (the series behind the summary)
 	world = load(PLAYGROUND).instantiate()
 	root.add_child(world)
 	current_scene = world
@@ -55,10 +63,13 @@ func _run() -> void:
 		for follow in [false, true]:
 			world.visual.rig.set_ground_sampler(world.visual._sample_ground if follow else Callable())
 			for case in cases:
+				if _only != "" and _only != case:
+					continue
+				_tag = ["Regular", "Small"][character]
 				var key := "%s | %s | %s" % [["Regular", "Small"][character], "ON" if follow else "off", case]
 				result[key] = await _measure(case)
 				var r: Dictionary = result[key]
-				print("CONTACT %-34s clearance min %+6.1f p5 %+5.1f p50 %+5.1f mm | below ground >5 mm: %3d of %3d frames | pitch err p50 %4.1f p95 %4.1f deg | slide %5.1f mm | ext %.3f | hips-ground %.3f..%.3f | airborne weight max %.2f" % [key, r.min * 1000.0, r.p5 * 1000.0, r.p50 * 1000.0, r.under, r.frames, r.pitch50, r.pitch95, r.slide * 1000.0, r.extension, r.hips_low, r.hips_high, r.air_weight])
+				print("CONTACT %-34s MESH clearance min %+6.1f p5 %+5.1f p50 %+5.1f mm | below ground >5 mm: %3d of %3d frames | pitch err p50 %4.1f p95 %4.1f deg | slide %5.1f mm | ext %.3f | hips-ground %.3f..%.3f | airborne weight max %.2f" % [key, r.min * 1000.0, r.p5 * 1000.0, r.p50 * 1000.0, r.under, r.frames, r.pitch50, r.pitch95, r.slide * 1000.0, r.extension, r.hips_low, r.hips_high, r.air_weight])
 	if _json != "":
 		var file := FileAccess.open(_json, FileAccess.WRITE)
 		file.store_string(JSON.stringify(result, "\t"))
@@ -88,12 +99,20 @@ func _sample() -> void:
 		var heel_sole := ankle.y - rig.stair_profile.ankle_height
 		var ball_sole := ball.y - 0.028 * ratio
 		var clearance := 1.0
-		for pair in [[heel, heel_sole], [ball, ball_sole], [tip, ball_sole]]:
+		# The sole is a line from the heel's sole to the ball's sole, carried on to the toe tip: on a tilted foot the tip's sole is higher or lower than the ball's.
+		var run := maxf(Vector2(ball.x - heel.x, ball.z - heel.z).length(), 0.001)
+		var sole_slope := (ball_sole - heel_sole) / run
+		var tip_sole := ball_sole + sole_slope * Vector2(tip.x - ball.x, tip.z - ball.z).length()
+		for pair in [[heel, heel_sole], [ball, ball_sole], [tip, tip_sole]]:
 			var ground: Dictionary = world.visual._sample_ground(pair[0])
 			if ground.is_empty():
 				continue
 			clearance = minf(clearance, float(pair[1]) - float(ground.y))
 		row["clear%d" % side] = clearance
+		var ground_here: Dictionary = world.visual._sample_ground(ankle)
+		row["a" + "lr"[side]] = ankle
+		row["g" + "lr"[side]] = float(ground_here.y) if not ground_here.is_empty() else NAN
+		row["l" + "lr"[side]] = ankle.y - rig.stair_profile.ankle_height - (float(ground_here.y) if not ground_here.is_empty() else ankle.y)
 		var under: Dictionary = world.visual._sample_ground(ankle)
 		if not under.is_empty():
 			var normal: Vector3 = under.normal
@@ -103,7 +122,15 @@ func _sample() -> void:
 		if ankle.y < lowest:
 			lowest = ankle.y
 			row["lowest_ankle"] = ankle
-	row["clear"] = minf(float(row.get("clear0", 1.0)), float(row.get("clear1", 1.0)))
+	# The foot MESH: every skinned vertex that follows the foot or toe bones, against the ground under it (the lowest is the deepest the visible foot goes into the surface).
+	_feet.capture()
+	var mesh_clear := 1.0
+	for point in _feet.points():
+		var world_point := gt * point
+		var ground: Dictionary = world.visual._sample_ground(world_point)
+		if not ground.is_empty():
+			mesh_clear = minf(mesh_clear, world_point.y - float(ground.y))
+	row["clear"] = mesh_clear
 	row["pitch"] = maxf(float(row.get("pitch0", 0.0)), float(row.get("pitch1", 0.0)))
 	var hips: Vector3 = gt * sk.get_bone_global_pose(sk.find_bone(rig.bones.hips)).origin
 	var under_hips: Dictionary = world.visual._sample_ground(hips)
@@ -165,6 +192,8 @@ func _measure(case: String) -> Dictionary:
 	world.visual.reset_motion(float(plan.yaw) + PI)
 	await _wait(0.6)
 	var skeleton: Skeleton3D = world.visual.rig.skeleton
+	var rig_bones: RigBones = world.visual.rig.bones
+	_feet = SkinnedSurface.create(skeleton, [rig_bones.left_leg[2], rig_bones.right_leg[2], rig_bones.left_toes, rig_bones.right_toes], 0.5)
 	var callable := _sample
 	skeleton.skeleton_updated.connect(callable)
 	var first := Vector3.ZERO
@@ -200,6 +229,11 @@ func _measure(case: String) -> Dictionary:
 		_press(key, false)
 	await _wait(0.3)
 	skeleton.skeleton_updated.disconnect(callable)
+	if _dump != "":
+		var file := FileAccess.open("%s_%s_%s_%s.csv" % [_dump, _tag, "on" if world.visual.rig.ground_sampler.is_valid() else "off", case.replace(" ", "_")], FileAccess.WRITE)
+		file.store_line("mesh_clear,ground_weight,grounded,ankle_l_y,ankle_r_y,ground_l,ground_r,lift_l,lift_r")
+		for row in _rows:
+			file.store_line("%f,%f,%d,%f,%f,%f,%f,%f,%f" % [row.clear, row.weight, 1 if row.grounded else 0, row.al.y, row.ar.y, row.gl, row.gr, row.ll, row.lr])
 	return _summarise(case)
 
 
