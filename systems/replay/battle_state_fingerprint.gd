@@ -105,6 +105,12 @@ static func capture(turn_manager: TurnManager, grid: GridManager, objectives: Ob
 				var cell := terminal.definition.grid_position
 				parts.append("terminal=%s,%d,%d,%d,%d" % [terminal_id, cell.x, cell.y, cell.z, int(terminal.is_activated)])
 		parts.append("extraction=%d,%d,%d" % [objectives.extracted_vips, objectives.extracted_units, objectives.escaped_enemies])
+	# Doors (only on maps that have any, so every other map's fingerprint is unchanged): identity, cell and state.
+	if grid and grid.map_data and not grid.map_data.doors.is_empty():
+		var door_ids := grid.map_data.doors.keys()
+		door_ids.sort()
+		for door_id in door_ids:
+			parts.append((grid.map_data.doors[door_id] as DoorData).fingerprint())
 	return "|".join(parts)
 
 static func _unit_id(unit: TacticalUnit) -> String:

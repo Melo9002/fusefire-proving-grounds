@@ -162,16 +162,8 @@ def build(closed):
     swing = math.radians(-100.0)
     # Drawing frame is swapped on output (P): the door sits at world (7, 12); the marker, the parts and the animation use world values directly below.
     s.add('[node name="Door" type="Node3D" parent="Building"]', 'metadata/door_id = &"door_a"', "metadata/door_cell_local = Vector3i(7, 0, 12)", 'metadata/door_initial_state = &"%s"' % ("closed" if closed else "open"), "metadata/door_hinge_local = %s" % v(hinge_x, 0, hinge_z), "metadata/door_swing_radius = 1.2", "metadata/door_swing_from_deg = 180.0", "metadata/door_swing_to_deg = 280.0")
-    if closed:
-        s.add('[node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]', "position = %s" % v(7.0, 0, 12.0), "rotation = Vector3(0, 0, 0)", "scale = %s" % v(SCALE, SCALE, SCALE), 'metadata/door_visual_id = &"door_a"')
-    else:
-        cx = hinge_x + (7.0 - hinge_x) * math.cos(swing)
-        cz = hinge_z + (7.0 - hinge_x) * -math.sin(swing) * -1.0
-        # the leaf centre is the closed centre rotated by `swing` (about +Y) about the hinge
-        dx, dz = 7.0 - hinge_x, 0.0
-        rx = dx * math.cos(swing) + dz * math.sin(swing)
-        rz = -dx * math.sin(swing) + dz * math.cos(swing)
-        s.add('[node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]', "position = %s" % v(hinge_x + rx, 0, hinge_z + rz), "rotation = %s" % v(0, swing, 0), "scale = %s" % v(SCALE, SCALE, SCALE), 'metadata/door_visual_id = &"door_a"')
+    # The leaf is always placed in its closed pose; DoorPresenter shows the committed state (it seeks the model's own `open` animation to its end for an open door).
+    s.add('[node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]', "position = %s" % v(7.0, 0, 12.0), "rotation = Vector3(0, 0, 0)", "scale = %s" % v(SCALE, SCALE, SCALE), 'metadata/door_visual_id = &"door_a"')
     # Parts, world values (this block is outside P): closed = the whole doorway cell, one cell thick like the walls; open = the leaf's bounding box at 100 degrees (thickness 0.15, length 1.2).
     s.add('[node name="DoorClosedLeaf" type="Node3D" parent="Building/Door"]', "position = %s" % v(7.0, OPEN_H / 2.0, 12.0), "metadata/solid_size = %s" % v(OPEN_W, OPEN_H, THICK), "metadata/precise_shot_bounds = true", 'metadata/shot_label = "Closed door"', 'metadata/door_id = &"door_a"', 'metadata/door_state = &"closed"')
     ox = hinge_x + 0.6 * math.cos(math.radians(280.0))

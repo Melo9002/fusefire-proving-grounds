@@ -346,8 +346,8 @@ metadata/door_swing_from_deg = 180.0
 metadata/door_swing_to_deg = 280.0
 
 [node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]
-position = Vector3(7.7042, 0, 11.4091)
-rotation = Vector3(0, -1.7453, 0)
+position = Vector3(7, 0, 12)
+rotation = Vector3(0, 0, 0)
 scale = Vector3(1.5, 1.5, 1.5)
 metadata/door_visual_id = &"door_a"
 

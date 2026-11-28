@@ -22,6 +22,8 @@ var _tracked_conditions: ConditionComponent
 var _preview_label: Label
 var _combat_log_label: Label
 var cancel_move_button: Button
+## Opens or closes the door the active unit stands beside (created here: it exists only while a door is adjacent).
+var door_button: Button
 
 func _ready() -> void:
 	if not battle_controller:
@@ -64,6 +66,12 @@ func _ready() -> void:
 		interact_button.pressed.connect(_on_interact_pressed)
 	if emergency_seal_button:
 		emergency_seal_button.pressed.connect(_on_emergency_seal_pressed)
+	if interact_button and interact_button.get_parent():
+		door_button = Button.new()
+		door_button.name = "DoorButton"
+		door_button.visible = false
+		interact_button.get_parent().add_child(door_button)
+		door_button.pressed.connect(_on_door_pressed)
 	battle_controller.shield_mode_toggled.connect(_on_shield_mode_toggled)
 	battle_controller.overwatch_mode_toggled.connect(_on_overwatch_mode_toggled)
 	if end_unit_button:
@@ -162,6 +170,13 @@ func _on_interact_pressed() -> void:
 	var query := battle_controller.query_terminal(active_unit)
 	if query.legal_target_ids.is_empty(): return
 	await battle_controller.try_terminal(active_unit, query.legal_target_ids[0])
+
+func _on_door_pressed() -> void:
+	var active_unit := battle_controller.tactical_unit
+	if not is_instance_valid(active_unit): return
+	var door := battle_controller.adjacent_door(active_unit)
+	if door == null: return
+	await battle_controller.try_door(active_unit, door.door_id, DoorData.other(door.state))
 
 func _on_emergency_seal_pressed() -> void:
 	var active_unit := battle_controller.tactical_unit
@@ -278,6 +293,15 @@ func _update_button_states() -> void:
 		interact_button.disabled = terminal_query.legal_target_ids.is_empty()
 		interact_button.tooltip_text = "Activate the adjacent mission terminal" if not terminal_query.legal_target_ids.is_empty() else terminal_query.reason()
 		interact_button.text = "Interact"
+	if door_button:
+		var door := battle_controller.adjacent_door(unit)
+		door_button.visible = door != null
+		if door != null:
+			var desired := DoorData.other(door.state)
+			var door_query := battle_controller.query_door(unit, door.door_id, desired)
+			door_button.text = "Open door" if desired == DoorData.OPEN else "Close door"
+			door_button.disabled = not door_query.is_legal() or battle_controller.is_action_in_progress
+			door_button.tooltip_text = "The door is %s. Free action (no AP)." % door.state if door_query.is_legal() else "The door is %s. Unavailable: %s" % [door.state, door_query.reason()]
 	if emergency_seal_button:
 		emergency_seal_button.visible = unit.conditions != null and unit.conditions.has(&"leaking")
 		emergency_seal_button.disabled = not seal_query.is_legal()
@@ -318,6 +342,7 @@ func _disable_all_buttons() -> void:
 	if shield_button: shield_button.disabled = true
 	if overwatch_button: overwatch_button.disabled = true
 	if interact_button: interact_button.disabled = true
+	if door_button: door_button.visible = false
 	if emergency_seal_button: emergency_seal_button.disabled = true
 	if end_unit_button: end_unit_button.disabled = true
 	if supply_points_label: supply_points_label.text = "SP —"

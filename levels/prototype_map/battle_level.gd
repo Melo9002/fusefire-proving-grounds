@@ -221,12 +221,24 @@ func _initialize_generated_battle() -> void:
 			_abort_generated_state()
 			_fail_battle_initialization([_diagnostic("MISSION_BODY_PLACEMENT_FAILED", "mission", "Mission actor has no safe supported placement")])
 			return
+		_install_door_presentation(generated_geometry)
 		_initialize_replay_support()
 		_complete_battle_initialization()
 	else:
 		var message := battle_controller.last_map_validation.describe() if battle_controller.last_map_validation else "compiled battlefield initialization failed"
 		_abort_generated_state()
 		_fail_battle_initialization([_diagnostic("TACTICAL_INITIALIZATION_FAILED", "compiled_map", message)])
+
+## The visual of the map's doors (none on most maps), following the committed state.
+func _install_door_presentation(scene_root: Node) -> void:
+	var map := battle_controller.grid_manager.map_data
+	if map == null or map.doors.is_empty():
+		return
+	var presenter := DoorPresenter.new()
+	presenter.name = "DoorPresenter"
+	add_child(presenter)
+	presenter.setup(map, scene_root)
+	battle_controller.action_presenter.door_presenter = presenter
 
 func _complete_battle_initialization() -> void:
 	battle_initialization_progress.emit("Finalizing mission and replay…", 0.96)
