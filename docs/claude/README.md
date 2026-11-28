@@ -6,6 +6,7 @@ This folder holds the documents Claude wrote, kept apart from the ones Codex wro
 
 | Document | What it is |
 | --- | --- |
+| [Playground refinement and acceptance pass](playground-refinement-report-2026-11-28.md) | PR #107 follow-up: graded stair and ladder approach pace, time-aware stair stop/start, foot-mesh ramp measurements, adversarial ladder and placement review, a continuous automated session through Match Setup; what was and was not verified. |
 | [Exploration playground foundation](playground-foundation-report-2026-11-27.md) | Two physical casualties, one interaction decision, validated put-down, walk-at-the-ladder mounting, slope-aware foot placement, the stair hand-over, camera and layout; measurements, renders, limits. |
 | [Carrying someone of another size, and up a ladder](carry-ladder-report-2026-11-27.md) | Independent passenger identity, mixed-size carry, the loaded-ladder presentation, the four-pairing measurements, renders, limits and what the tactical host needs. |
 | [Character animation (current guide)](../animation.md) | The maintained architecture and developer guide (Task 07 final). |

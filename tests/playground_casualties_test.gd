@@ -251,6 +251,9 @@ func _pairings_and_alternation() -> void:
 			await _put_down()
 			check(not world.visual.is_carrying() and casualty.is_grounded() and carry.carried == null, "%s: put down, it lies in the world" % label)
 			check(casualty.node.definition.character_id == casualty.character_id and _bones_in_solids(world, casualty.node) == 0, "%s: still itself, clear of solids" % label)
+			# The put-down counts the other bodies lying about (they have no collider), so the next carry starts with the casualties back at their homes: from this spot the previous body would otherwise be in the way.
+			carry.reset_all()
+			await _wait(0.3)
 
 
 func _lifecycle() -> void:

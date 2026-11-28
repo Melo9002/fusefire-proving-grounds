@@ -18,18 +18,19 @@ const TURNS_DEGREES := [0.0, 45.0, -45.0, 90.0, -90.0, 135.0, -135.0, 180.0]
 
 
 ## The first direction (a yaw about the vertical, +Z is zero) in which the body can be put down from `feet`, or NAN when there is none. `facing` is the carrier's heading as a flat unit vector,
-## `scale` the body's own scale, `exclude` the bodies that are not obstacles (the carrier's own).
-static func find_direction(world: World3D, feet: Vector3, facing: Vector3, scale: float, exclude: Array[RID]) -> float:
+## `scale` the body's own scale, `exclude` the bodies that are not obstacles (the carrier's own), `others` the bodies already lying about, [{position, axis (the long axis, flat unit), scale}]: they have no collider,
+## so the physics query cannot see them and the footprints are compared here.
+static func find_direction(world: World3D, feet: Vector3, facing: Vector3, scale: float, exclude: Array[RID], others: Array = []) -> float:
 	var base_yaw := atan2(facing.x, facing.z)
 	for turn in TURNS_DEGREES:
 		var yaw := base_yaw + deg_to_rad(float(turn))
-		if is_clear(world, feet, yaw, scale, exclude):
+		if is_clear(world, feet, yaw, scale, exclude, others):
 			return yaw
 	return NAN
 
 
 ## Whether a body put down from `feet` facing `yaw` lies on firm ground with nothing in the way.
-static func is_clear(world: World3D, feet: Vector3, yaw: float, scale: float, exclude: Array[RID]) -> bool:
+static func is_clear(world: World3D, feet: Vector3, yaw: float, scale: float, exclude: Array[RID], others: Array = []) -> bool:
 	var forward := Vector3(sin(yaw), 0.0, cos(yaw))
 	var right := Vector3(forward.z, 0.0, -forward.x)   # forward.cross(up) with +Z forward: the carrier's right
 	var centre := feet + forward * AHEAD
@@ -51,4 +52,23 @@ static func is_clear(world: World3D, feet: Vector3, yaw: float, scale: float, ex
 	query.shape = box
 	query.transform = Transform3D(Basis(Vector3.UP, yaw), Vector3(centre.x, feet.y + 0.04 + HEIGHT * scale * 0.5, centre.z))
 	query.exclude = exclude
-	return space.intersect_shape(query, 1).is_empty()
+	if not space.intersect_shape(query, 1).is_empty():
+		return false
+	for other in others:
+		if _footprints_overlap(centre, right, half_length, half_width, other.position, other.axis, HALF_LENGTH * float(other.scale), HALF_WIDTH * float(other.scale)):
+			return false
+	return true
+
+
+## Whether two lying bodies' footprints (rectangles on the floor: centre, long axis, half length, half width) overlap, with a hand's width of margin between them (separating-axis test).
+static func _footprints_overlap(centre_a: Vector3, long_a: Vector3, half_length_a: float, half_width_a: float, centre_b: Vector3, long_b: Vector3, half_length_b: float, half_width_b: float) -> bool:
+	const MARGIN := 0.10
+	var short_a := Vector3(-long_a.z, 0.0, long_a.x)
+	var short_b := Vector3(-long_b.z, 0.0, long_b.x)
+	var between := centre_b - centre_a
+	for axis in [long_a, short_a, long_b, short_b]:
+		var reach_a := absf(long_a.dot(axis)) * half_length_a + absf(short_a.dot(axis)) * half_width_a
+		var reach_b := absf(long_b.dot(axis)) * half_length_b + absf(short_b.dot(axis)) * half_width_b
+		if absf(between.dot(axis)) > reach_a + reach_b + MARGIN:
+			return false
+	return true

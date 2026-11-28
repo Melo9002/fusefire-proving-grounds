@@ -152,7 +152,19 @@ func release_direction() -> float:
 	var rig: CharacterRig = ctx.visual.rig
 	var forward: Vector3 = rig.character_root.global_basis.orthonormalized().z
 	forward.y = 0.0
-	return PlaygroundPlacement.find_direction(ctx.get_world_3d(), ctx.body.global_position, forward.normalized(), _carried_scale(), [ctx.body.get_rid()])
+	return PlaygroundPlacement.find_direction(ctx.get_world_3d(), ctx.body.global_position, forward.normalized(), _carried_scale(), [ctx.body.get_rid()], _lying_others())
+
+
+## The bodies lying about (not the carried one): they have no collider, so the placement compares their footprints (the long axis is the node's own x).
+func _lying_others() -> Array:
+	var others: Array = []
+	for casualty in casualties:
+		if casualty == carried or not casualty.is_grounded() or not is_instance_valid(casualty.node):
+			continue
+		var axis: Vector3 = casualty.node.global_basis.x
+		axis.y = 0.0
+		others.append({"position": casualty.node.global_position, "axis": axis.normalized() if axis.length() > 0.01 else Vector3.RIGHT, "scale": casualty.definition.scale if casualty.definition.scale > 0.0 else 1.0})
+	return others
 
 
 func _carried_scale() -> float:

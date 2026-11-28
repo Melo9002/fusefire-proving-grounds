@@ -197,9 +197,12 @@ func move_ladder(delta: float) -> void:
 ## to a walk once she is on the stairs, so a run is brought down to that pace over the last STAIR_APPROACH metres instead of being cut at the first tread. Walking past, along or away from the stairs, or
 ## running anywhere else, is not touched. Returns INF when nothing applies.
 func approach_pace(direction: Vector3, walk: float, run: float) -> float:
-	if on_stairs or ctx.dead or not limit_approach or direction.length() < 0.1:
+	if on_stairs or on_ladder or ctx.dead or not limit_approach or direction.length() < 0.1:
 		return INF
 	var p: Vector3 = ctx.body.global_position
+	var ladder_pace := _ladder_approach_pace(p, direction, walk, run)
+	if ladder_pace < INF:
+		return ladder_pace
 	var s := stairs.progress_of(p)
 	var right := stairs.direction.cross(Vector3.UP)
 	if absf((p - stairs.low).dot(right)) > stairs.width * 0.5 + 0.25:
@@ -214,6 +217,26 @@ func approach_pace(direction: Vector3, walk: float, run: float) -> float:
 	if distance == INF:
 		return INF
 	return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, distance))
+
+
+## The same for the ladder: its zone is a metre deep and the mount takes APPROACH_SECONDS of deliberate walking, so at a run she would cross the zone (or, at the head, run off the platform's edge) before it completes.
+## Heading at the rungs from the foot, or at the edge from the platform, she eases to a walk over the last two metres before the zone. Walking past it or away, or anywhere else, is not touched.
+func _ladder_approach_pace(p: Vector3, direction: Vector3, walk: float, run: float) -> float:
+	if absf(p.x - float(ladder.x)) >= APPROACH_HALF_WIDTH + 0.3 or ctx.visual.is_carrying() and not ctx.visual.supports_loaded_ladder():
+		return INF
+	var toward := direction.normalized().dot(Vector3(0.0, 0.0, 1.0))
+	var length := float(ladder.length)
+	if absf(p.y - length) < 0.12:
+		# On the platform: the zone begins at the edge and runs back; the approach is the walk out to it, heading -Z.
+		var zone_start := float(ladder.top_z) + TOP_ZONE_DEPTH
+		if toward < -0.3 and p.z > zone_start and p.z < zone_start + STAIR_APPROACH:
+			return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, p.z - zone_start))
+		return INF
+	if p.y < 0.3 and toward > 0.3:
+		var zone_start := ladder_foot().z - APPROACH_BEHIND
+		if p.z < zone_start and p.z > zone_start - STAIR_APPROACH:
+			return lerpf(walk, run, smoothstep(0.0, STAIR_APPROACH, zone_start - p.z))
+	return INF
 
 
 ## Per frame while walking: gets her on and off the staircase and rides the treads. Returns true while she is on it (the controller then does not apply gravity).
