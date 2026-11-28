@@ -675,6 +675,7 @@ func _build_traversal_modifier() -> void:
 		leg_ik.set_pole_node(side, leg_ik.get_path_to(knee))
 	leg_ik.active = false
 	traversal_modifier.bind_legs(leg_ik, foot_targets, knee_poles)
+	traversal_modifier.bind_leg_bones(legs)
 	# The feet's orientation, right after the leg IK (which places the ankles but not the feet's rotation).
 	foot_modifier = TraversalFootModifier.new()
 	foot_modifier.name = "TraversalFoot"
@@ -739,8 +740,32 @@ func _publish_traversal_input() -> void:
 		input.stair_profile = stair_profile
 	elif input.releasing:
 		pass   # the climbing pose is easing out (end_traversal); the modifier clears it when it is done
+	elif ground_sampler.is_valid():
+		# Neither a ladder nor stairs: ground that may not be flat. The modifier does nothing on flat ground (see GroundSupport) and eases in and out of a slope by itself.
+		input.release_left = 0.0
+		input.releasing = false
+		input.mode = TraversalPoseInput.Mode.GROUND
+		input.solved = true
+		input.ground_sampler = ground_sampler
+		input.ground_ankle_height = stair_profile.ankle_height
 	else:
 		input.clear()
+
+
+## How the host answers "what ground lies under this world point": Callable(Vector3) -> Dictionary {y, normal} (empty: none). Set, the feet follow ground that is not flat (GroundSupport); null (the default) leaves ordinary
+## locomotion exactly as it always was. A host that ties the sampler to a physics world sets it; a tool or a tactical host does not.
+var ground_sampler := Callable()
+
+
+func set_ground_sampler(sampler: Callable) -> void:
+	ground_sampler = sampler
+	_publish_traversal_input()
+
+
+## Whether the character stands on the ground now: an airborne one is not held to it (the feet leave it by the animation's own pose).
+func set_ground_contact(on_ground: bool) -> void:
+	if traversal_modifier != null:
+		traversal_modifier.input.ground_contact = on_ground
 
 
 ## Starts a ladder traversal (kind &"ladder"): `length` is the ladder's rise, `direction` +1 climbing / -1 descending. The pose follows set_traversal_progress.

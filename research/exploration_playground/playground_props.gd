@@ -5,6 +5,8 @@ extends RefCounted
 ## a grid parcel of CSG boxes and tactical links, not a level a physics body can walk, so equivalent fixtures are built here.
 
 const COVER_GROUP := &"exploration_cover"
+## The station signs, so a clean inspection view can hide them with the HUD.
+const SIGN_GROUP := &"exploration_signs"
 const HAZARD_GROUP := &"exploration_hazard"
 const STAIR_STEPS := 10
 const STAIR_RISE := 0.2
@@ -108,4 +110,38 @@ static func build(world: Node3D, ctx: Node) -> Dictionary:
 	plate.add_child(plate_mesh)
 	plate.add_to_group(HAZARD_GROUP)
 	world.add_child(plate)
+	_station_signs(world, ctx)
 	return info
+
+
+## Floor pad and signs that say what each part of the yard is for. Visual only (no colliders): the pad is a thin plate, the signs are billboards above head height.
+static func _station_signs(world: Node3D, ctx: Node) -> void:
+	var pad_mesh := BoxMesh.new()
+	pad_mesh.size = Vector3(8.0, 0.012, 5.0)
+	var pad := MeshInstance3D.new()
+	pad.name = "CasualtyStationPad"
+	pad.mesh = pad_mesh
+	pad.material_override = ctx._material(Color(0.78, 0.25, 0.22))
+	pad.position = Vector3(8.0, 0.006, -6.5)
+	world.add_child(pad)
+	for sign in [
+		["CASUALTY STATION\ncarry either body; E to pick up and put down", Vector3(8.0, 2.6, -9.2)],
+		["STAIRS", Vector3(-12.0, 2.8, 3.5)],
+		["RAMP", Vector3(11.0, 2.6, 5.0)],
+		["LADDER\nwalk at the rungs to climb", Vector3(0.0, 4.2, 13.4)],
+		["COVER AND TARGETS", Vector3(-8.0, 2.4, 0.5)],
+		["HAZARD PLATE", Vector3(14.0, 2.0, -12.0)],
+		["START", Vector3(0.0, 2.2, 1.5)],
+	]:
+		var label := Label3D.new()
+		label.name = "StationSign"
+		label.text = String(sign[0]).replace("\\n", "\n")
+		label.position = sign[1]
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.font_size = 48
+		label.pixel_size = 0.008
+		label.outline_size = 12
+		label.modulate = Color(1.0, 0.95, 0.75)
+		label.no_depth_test = false
+		label.add_to_group(SIGN_GROUP)
+		world.add_child(label)

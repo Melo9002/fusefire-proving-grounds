@@ -6,7 +6,7 @@ extends Node3D
 ## does (it reports its velocity, asks to face a point, crouch, stand, inspect the chair, or be unarmed) and owns the sandbox itself (the world, the camera, the menu); it has no clip-state requests and no
 ## facing logic of its own.
 ##
-## Controls: WASD move, Shift run, right mouse aims, left mouse fires, Space takes or leaves cover (or jumps: a placeholder), E climbs, lifts or puts down a body (or inspects the chair), mouse look, wheel zoom, middle mouse button recenters behind MIRA, C crouch or stand, E inspect the chair, Q holster or draw the rifle (MIRA is rebuilt), Esc release the mouse and show the menu.
+## Controls: WASD move, Shift run, right mouse aims, left mouse fires, Space takes or leaves cover (or jumps: a placeholder), E picks up or puts down a body (or inspects the chair), walking at a ladder climbs it, H toggles the clean view, mouse look, wheel zoom, middle mouse button recenters behind MIRA, C crouch or stand, Q holster or draw the rifle (MIRA is rebuilt), Esc release the mouse and show the menu.
 
 ## Walking speed in metres per second. The walk gait applies up to the locomotion profile's `walk_until` (1.6 m/s); above it the jog starts to blend in.
 const MOVE_SPEED := 1.4
@@ -16,7 +16,8 @@ const RUN_SPEED := 4.6
 const ACCELERATION := 9.0
 const MOUSE_SENSITIVITY := 0.0025
 const PITCH_LIMITS_DEGREES := Vector2(-60.0, 25.0)   # x: looking down (camera high), y: looking up (camera low)
-const ZOOM_RANGE := Vector2(1.4, 6.0)
+## Far enough out to see a Small MIRA carrying a Regular one, and the ladder around them, in one frame.
+const ZOOM_RANGE := Vector2(1.4, 9.0)
 const ZOOM_STEP := 0.4
 const DEFAULT_ZOOM := 3.2
 const SHOULDER_OFFSET := 0.45
@@ -31,7 +32,7 @@ const CHARACTER_VISUALS := [VISUAL, SMALL_VISUAL]
 ## The names the pickers show, in the same order (the controlled character and the casualty choose from the same characters).
 const CHARACTER_LABELS := ["MIRA", "Small MIRA"]
 const ACTIONS := {
-	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E, &"playground_crouch": KEY_C, &"playground_weapon": KEY_Q, &"playground_run": KEY_SHIFT, &"playground_cover": KEY_SPACE, &"playground_respawn": KEY_R,
+	&"playground_forward": KEY_W, &"playground_back": KEY_S, &"playground_left": KEY_A, &"playground_right": KEY_D, &"playground_interact": KEY_E, &"playground_crouch": KEY_C, &"playground_weapon": KEY_Q, &"playground_run": KEY_SHIFT, &"playground_cover": KEY_SPACE, &"playground_respawn": KEY_R, &"playground_clean_view": KEY_H,
 }
 const RECENTER_ACTION := &"playground_recenter"
 const AIM_ACTION := &"playground_aim"
@@ -76,6 +77,8 @@ var moving := false
 var interacted := false
 var toast_time := 0.0
 var menu_open := false
+## The clean inspection view: no help text, state line or station signs, only the character, the world and the prompt.
+var clean_view := false
 ## What the playground last asked of the mouse (headless runs have no real mouse mode to read back).
 var mouse_captured := false
 var _registered: Array[StringName] = []
@@ -413,7 +416,7 @@ func _build_ui() -> void:
 	add_child(layer)
 	ui_layer = layer
 	hint_label = Label.new()
-	hint_label.text = "EXPERIMENTAL SANDBOX\nWASD move   Mouse look   Wheel zoom   Middle mouse: recenter   Shift: run   C: crouch   RMB: aim   LMB: fire   Space: cover / jump   E: use   Q: rifle on/off   Esc: menu"
+	hint_label.text = "EXPERIMENTAL SANDBOX\nWASD move   Mouse look   Wheel zoom   Middle mouse: recenter   Shift: run   C: crouch   RMB: aim   LMB: fire   Space: cover / jump   E: pick up / put down   Walk at a ladder to climb   Q: rifle on/off   H: clean view   Esc: menu"
 	hint_label.position = Vector2(16.0, 12.0)
 	layer.add_child(hint_label)
 	state_label = Label.new()
@@ -510,6 +513,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"playground_respawn"):
 		player_health.respawn()
 		return
+	if event.is_action_pressed(&"playground_clean_view") and not menu_open:
+		set_clean_view(not clean_view)
+		return
 	if menu_open or dead:
 		return
 	if event.is_action_pressed(AIM_ACTION):
@@ -549,6 +555,15 @@ func _cover_or_jump() -> void:
 		cover.enter()
 	elif not traversal.on_ladder and not visual.is_carrying():
 		_jump_requested = true
+
+## Hides or shows the help text, the state line and the station signs (the prompt and the toast stay: they say what E will do).
+func set_clean_view(on: bool) -> void:
+	clean_view = on
+	hint_label.visible = not on
+	state_label.visible = not on
+	for sign in get_tree().get_nodes_in_group(PlaygroundProps.SIGN_GROUP):
+		(sign as Node3D).visible = not on
+
 
 func look(relative: Vector2) -> void:
 	yaw -= relative.x * MOUSE_SENSITIVITY
@@ -619,6 +634,8 @@ func _move(delta: float) -> void:
 		top_speed = minf(top_speed, MOVE_SPEED)   # the stair pose plans one foot per tread: a run is too fast for it, so she takes the stairs at a walk
 		if visual.is_crouched():
 			top_speed *= 0.65
+	if traversal.approaching_stairs():
+		top_speed = minf(top_speed, MOVE_SPEED)   # slowed before the stairs, not on them: the stair pose takes over from a walk, not from a run
 	if carry.busy:
 		top_speed = 0.0   # the lift or the release owns her body
 	var wanted := move_direction() * top_speed

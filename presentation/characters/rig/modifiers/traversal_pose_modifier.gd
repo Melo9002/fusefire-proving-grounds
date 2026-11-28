@@ -17,6 +17,8 @@ var leg_ik: TwoBoneIK3D
 var foot_targets: Array[Marker3D] = []
 var knee_poles: Array[Marker3D] = []
 var _hips := -1
+## The legs' bone indices (upper, lower, foot per side), for the ground mode, which reads the animated ankles and knees before it moves them.
+var _leg_bones: Array = []
 ## Last values written, for diagnostics and tests.
 var weight := 0.0
 var passes := 0
@@ -41,6 +43,12 @@ func setup(target: Skeleton3D, hips_bone: StringName, frame: Node3D) -> bool:
 	return _hips >= 0
 
 
+func bind_leg_bones(leg_bone_names: Array) -> void:
+	_leg_bones = []
+	for names in leg_bone_names:
+		_leg_bones.append([skeleton.find_bone(names[0]), skeleton.find_bone(names[1]), skeleton.find_bone(names[2])])
+
+
 ## The leg IK and its target and pole markers, which the rig creates after the modifier (they belong to the IK solver that runs just after this stage).
 func bind_legs(ik: TwoBoneIK3D, feet: Array[Marker3D], poles: Array[Marker3D]) -> void:
 	leg_ik = ik
@@ -51,6 +59,8 @@ func bind_legs(ik: TwoBoneIK3D, feet: Array[Marker3D], poles: Array[Marker3D]) -
 func _process_modification_with_delta(delta: float) -> void:
 	if skeleton == null or not is_instance_valid(skeleton) or character_frame == null:
 		return
+	if input.mode != TraversalPoseInput.Mode.GROUND:
+		input.ground_weight = 0.0   # a slope's hold on the legs is let go of when anything else takes them
 	match input.mode:
 		TraversalPoseInput.Mode.NONE:
 			weight = 0.0
@@ -62,6 +72,8 @@ func _process_modification_with_delta(delta: float) -> void:
 			_apply_feet()
 		TraversalPoseInput.Mode.LADDER:
 			_apply_ladder(delta)
+		TraversalPoseInput.Mode.GROUND:
+			_apply_ground(delta)
 
 
 func _apply_ladder(delta: float) -> void:
@@ -160,3 +172,55 @@ func _apply_feet() -> void:
 		knee_poles[side].global_position = ankle + forward * 0.55 + Vector3.UP * 0.45
 	leg_ik.influence = weight
 	leg_ik.active = weight > 0.001
+
+
+## Feet on ground that is not flat (GroundSupport): each animated ankle goes where the ground under it says (its own shift), the pelvis follows the lower foot, and the legs are solved by the same two-bone IK the stairs use. The
+## animation is read BEFORE anything here moves, in this pass, so the shift is added to the pose the gait made this frame (no frame of lag). Flat ground, or no ground to ask, leaves everything as the animation made it.
+func _apply_ground(delta: float) -> void:
+	var step := input.sim_delta if Engine.get_process_frames() - input.sim_frame <= 5 else delta
+	if _leg_bones.size() < 2 or not input.ground_sampler.is_valid():
+		input.ground_weight = GroundSupport.ease_weight(input.ground_weight, false, step)
+		_release_ground()
+		return
+	var to_world := skeleton.global_transform
+	var ankles: Array[Vector3] = []
+	var knees: Array[Vector3] = []
+	var samples: Array = []
+	for side in 2:
+		var pose := skeleton.get_bone_global_pose(_leg_bones[side][2])
+		ankles.append(to_world * pose.origin)
+		knees.append(to_world * skeleton.get_bone_global_pose(_leg_bones[side][1]).origin)
+		input.foot_world_basis[side] = (to_world.basis * pose.basis).orthonormalized()
+		var sample = input.ground_sampler.call(ankles[side])
+		samples.append(sample if sample is Dictionary else {})
+	var root_y := character_frame.global_position.y
+	var plan := GroundSupport.plan(root_y, ankles, samples)
+	input.ground_weight = GroundSupport.ease_weight(input.ground_weight, bool(plan.slope) and input.ground_contact, step)
+	weight = input.ground_weight
+	if weight <= 0.001:
+		_release_ground()
+		return
+	for side in 2:
+		input.ground_shift[side] = float(plan.shift[side])
+		input.ground_normal[side] = plan.normal[side]
+		input.ground_lift[side] = maxf(ankles[side].y - (root_y + input.ground_ankle_height), 0.0)
+	input.ground_pelvis = float(plan.pelvis)
+	var forward := character_frame.global_basis.orthonormalized().z
+	# The pelvis first (the ankles and knees were read above, in the pose the gait made).
+	var current := skeleton.get_bone_pose_position(_hips)
+	var current_world: Vector3 = to_world * current
+	var moved := skeleton.global_transform.affine_inverse() * (current_world + Vector3.UP * input.ground_pelvis)
+	skeleton.set_bone_pose_position(_hips, current.lerp(moved, weight))
+	if not is_instance_valid(leg_ik):
+		return
+	for side in 2:
+		foot_targets[side].global_position = ankles[side] + Vector3.UP * input.ground_shift[side]
+		knee_poles[side].global_position = knees[side] + Vector3.UP * (input.ground_shift[side] * 0.5) + forward * 0.45
+	leg_ik.influence = weight
+	leg_ik.active = true
+
+
+func _release_ground() -> void:
+	weight = 0.0
+	if is_instance_valid(leg_ik) and leg_ik.active:
+		leg_ik.active = false

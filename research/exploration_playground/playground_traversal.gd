@@ -17,6 +17,8 @@ const APPROACH_SECONDS := 0.25
 ## The zone at the head of the ladder runs from just inside the platform's edge to this far beyond the spot the climb starts from (she is stopped by the zone, not by the edge).
 const TOP_ZONE_DEPTH := 0.45
 const REMOUNT_PAUSE := 0.8
+## How far before either end of the staircase she is already slowed to the pace the stair pose is planned for (a run would otherwise reach the stairs at four metres a second and the pose would have to take over from it in one step).
+const STAIR_APPROACH := 2.0
 
 var ctx: Node
 var ladder := {}
@@ -29,6 +31,8 @@ var use_landing_contacts := true
 var _ascending := true
 var _top_out_time := -1.0
 var _entering_from_top := false
+## Whether the walk up to the stairs is held to the stair pace. Off only to compare with the behaviour before it existed.
+var limit_approach := true
 var _approach_time := 0.0
 var _mount_blocked_for := 0.0
 var _rearm_needed := false
@@ -187,6 +191,23 @@ func move_ladder(delta: float) -> void:
 		_top_out_time = 0.0
 	elif climbed <= 0.001 and axis < 0.0:
 		dismount_bottom()
+
+
+## Whether she is walking up to either end of the staircase (not yet on it): the controller holds her to the stair pace here, so the hand-over to the stair pose happens at the pace it is planned for.
+func approaching_stairs() -> bool:
+	if on_stairs or ctx.dead or not limit_approach:
+		return false
+	var p: Vector3 = ctx.body.global_position
+	var s := stairs.progress_of(p)
+	var right := stairs.direction.cross(Vector3.UP)
+	if absf((p - stairs.low).dot(right)) > stairs.width * 0.5 + 0.25:
+		return false
+	var end := stairs.end_s()
+	if s < 0.0 and s > -STAIR_APPROACH:
+		return absf(p.y) < 0.3
+	if s > end and s < end + STAIR_APPROACH:
+		return absf(p.y - stairs.height_at(end)) < 0.3
+	return false
 
 
 ## Per frame while walking: gets her on and off the staircase and rides the treads. Returns true while she is on it (the controller then does not apply gravity).
