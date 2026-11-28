@@ -175,7 +175,7 @@ def build(closed):
     s.add('[node name="PlayerDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 0", "metadata/deployment_local_cells = %s" % cells([(5, 5), (5, 7), (6, 10), (8, 5), (8, 8)]))
     s.add('[node name="EnemyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 1", "metadata/deployment_local_cells = %s" % cells([(19, 5), (19, 7), (18, 10), (16, 5), (16, 8)]))
     s.add('[node name="AllyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 2", "metadata/deployment_local_cells = %s" % cells([(24, 4), (26, 4), (28, 4), (30, 4)]))
-    s.add('[node name="Reach" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"reach"', "metadata/objective_local_cells = %s" % cells([(19, 10), (20, 10), (19, 11), (20, 11)]))
+    s.add('[node name="Reach" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"reach"', "metadata/objective_local_cells = %s" % cells([(19, 9), (20, 9), (19, 10), (20, 10)]))
     s.add('[node name="Extract" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"extract"', "metadata/objective_local_cells = %s" % cells([(26, 7), (27, 7), (26, 8), (27, 8)]))
     s.add('[node name="EnemyExtract" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"enemy_extract"', "metadata/objective_local_cells = %s" % cells([(0, 7), (1, 7), (0, 8), (1, 8)]))
     s.add('[node name="RescueSpawn" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"rescue_spawn"', "metadata/objective_local_cells = %s" % cells([(5, 10)]))

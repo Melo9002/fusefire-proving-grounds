@@ -135,7 +135,7 @@ static func _configure_crossfire_deployment(map: MapData) -> void:
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	match data.source_kind:
-		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
+		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.INTERACTION_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
 		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size, world_environment)
 		_: return false
 
@@ -144,7 +144,7 @@ static func present(data: MapData, parent: Node3D, cell_size: float, world_envir
 	if data.source_kind == CONTEXTUAL_BAY:
 		ContextualBay.present(data, parent)
 		return true
-	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
+	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.INTERACTION_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
 		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:
 		_fixtures().present(data, parent, cell_size)

@@ -437,7 +437,7 @@ metadata/deployment_local_cells = Array[Vector3i]([Vector3i(4, 0, 24), Vector3i(
 
 [node name="Reach" type="Node" parent="MissionStations"]
 metadata/objective_zone_id = &"reach"
-metadata/objective_local_cells = Array[Vector3i]([Vector3i(10, 0, 19), Vector3i(10, 0, 20), Vector3i(11, 0, 19), Vector3i(11, 0, 20)])
+metadata/objective_local_cells = Array[Vector3i]([Vector3i(9, 0, 19), Vector3i(9, 0, 20), Vector3i(10, 0, 19), Vector3i(10, 0, 20)])
 
 [node name="Extract" type="Node" parent="MissionStations"]
 metadata/objective_zone_id = &"extract"
