@@ -24,6 +24,7 @@
   {"path": "presentation/diagnostics/", "sub": ["animation", "tooling"], "central": false},
   {"path": "presentation/motion/", "sub": ["animation"], "central": false},
   {"path": "presentation/environment_asset_placement.gd", "sub": ["assets"], "central": false},
+  {"path": "presentation/environment/door_presenter.gd", "sub": ["combat", "replay"], "central": false},
   {"path": "presentation/team_presentation_palette.gd", "sub": ["ui", "animation"], "central": false},
   {"path": "research/", "sub": ["animation"], "central": false},
   {"path": "ui/", "sub": ["ui"], "central": false},
