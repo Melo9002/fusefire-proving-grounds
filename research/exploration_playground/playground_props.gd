@@ -138,9 +138,10 @@ static func _station_signs(world: Node3D, ctx: Node) -> void:
 		label.text = String(sign[0]).replace("\\n", "\n")
 		label.position = sign[1]
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		label.font_size = 48
-		label.pixel_size = 0.008
-		label.outline_size = 12
+		label.fixed_size = true   # the same size on screen near or far: a sign you can read from the camera's whole zoom range, not a banner that fills it up close
+		label.font_size = 32
+		label.pixel_size = 0.0011
+		label.outline_size = 10
 		label.modulate = Color(1.0, 0.95, 0.75)
 		label.no_depth_test = false
 		label.add_to_group(SIGN_GROUP)

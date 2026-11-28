@@ -32,18 +32,11 @@ const MOVING_SPEED := 0.05
 ## How far above and below the character's feet the ground probe looks.
 const GROUND_PROBE_UP := 0.9
 const GROUND_PROBE_DOWN := 0.6
-## How fast (m/s per second) the speed given to the stair pose may fall below 0.45 m/s (the settle band is 0.05 to 0.35), and otherwise change.
-const STAIR_SPEED_SLOW_RATE := 1.0
-const STAIR_SPEED_FAST_RATE := 6.0
-const STAIR_SPEED_SLOW_BELOW := 0.45
 
 var rig: CharacterRig
 var presenter: CharacterPresenter
 
 var _crouched := false
-var _stair_speed := -1.0
-## Whether the speed given to the stair pose is slewed through the low speeds (see set_stairs_progress). Off only to compare with the behaviour before it existed.
-var stair_speed_slew := true
 var _last_report_time := -1000.0
 var _state: StringName = &""
 var _interaction: ActionHandle   # the inspection, while one runs
@@ -354,21 +347,10 @@ func begin_stairs(model: StairModel, ascending: bool) -> void:
 	presenter.cancel_gesture()
 	rig.end_stairs()
 	rig.begin_stairs(model, ascending, model.riser_s(1) - model.tread_depth, model.end_s() + model.tread_depth)
-	_stair_speed = -1.0
 
 
-## The stair pose is a function of where the body is and how fast it moves, and when the body is nearly still the feet gather onto one tread over a narrow band of speed (StairProfile.settle_speed_low to _high, 0.3 m/s wide).
-## A body that stops or starts at several m/s per second crosses that band in a few frames, and the swinging foot snapped to its place (measured: 0.28 m in three frames). The speed the pose is given is therefore
-## slewed through the low speeds: the pose gathers and spreads over about a third of a second, and the body's own movement is untouched.
 func set_stairs_progress(s: float, speed: float, lateral_speed := 0.0) -> void:
-	if _stair_speed < 0.0 or not stair_speed_slew:
-		_stair_speed = speed
-	else:
-		# Only the slowing is slewed through the low band. A body that starts moving again is already leaving the spot it settled on, and holding the pose gathered while it slides on toward the next riser
-		# lets the quantised stance (one tread under the body) hop a whole tread (measured: 0.2 m in one frame).
-		var rate := STAIR_SPEED_SLOW_RATE if speed < _stair_speed and _stair_speed < STAIR_SPEED_SLOW_BELOW else STAIR_SPEED_FAST_RATE
-		_stair_speed = move_toward(_stair_speed, speed, rate * get_process_delta_time())
-	rig.set_stair_progress(s, _stair_speed, lateral_speed, true)
+	rig.set_stair_progress(s, speed, lateral_speed, true)
 
 
 func end_stairs() -> void:
