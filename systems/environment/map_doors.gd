@@ -89,7 +89,7 @@ static func check(map: MapData, grid: GridManager, actor: TacticalUnit, door_id:
 	if tile == null:
 		return _reject(&"out_of_range", "Stand directly beside the door")
 	var direction := Vector3(step.x, 0.0, step.z)
-	if not SurfaceNavigation._sweep_clear(map, tile.world_position, tile.world_position + direction * 0.4, true):
+	if not SurfaceNavigation._sweep_clear(map, tile.world_position, tile.world_position + direction * 0.1, true):
 		return _reject(&"out_of_reach", "Something blocks the way to the door")
 	if is_instance_valid(grid.get_unit_at(door.cell)):
 		return _reject(&"door_occupied", "A unit is standing in the doorway")

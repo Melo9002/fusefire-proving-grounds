@@ -181,8 +181,8 @@ def build(closed):
         s.add('[node name="TacticalVolume" type="Node3D" parent="Cover/Crate%d"]' % i, "position = Vector3(0, 0.24, 0)", "metadata/solid_size = Vector3(0.95, 0.48, 0.88)", "metadata/movement_cost = 2")
     s.add('[node name="MissionStations" type="Node3D" parent="."]')
     # Room A is the drawing's x 4..11 (world z 4..11, the north room); room B the drawing's x 13..20 (the south room). The drawing's z is the world x.
-    s.add('[node name="PlayerDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 0", "metadata/deployment_local_cells = %s" % cells([(5, 5), (5, 7), (6, 10), (8, 5), (8, 8)]))
-    s.add('[node name="EnemyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 1", "metadata/deployment_local_cells = %s" % cells([(19, 5), (19, 7), (18, 10), (16, 5), (16, 8)]))
+    s.add('[node name="PlayerDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 0", "metadata/deployment_local_cells = %s" % cells([(9, 6), (9, 8), (9, 5), (9, 9), (8, 7)]))   # world (6,9) (8,9) (5,9) (9,9) (7,8): in front of the door, two to three cells from it
+    s.add('[node name="EnemyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 1", "metadata/deployment_local_cells = %s" % cells([(15, 6), (15, 8), (15, 5), (15, 9), (16, 7)]))   # world (6,15) (8,15) (5,15) (9,15) (7,16): across the door
     s.add('[node name="AllyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 2", "metadata/deployment_local_cells = %s" % cells([(24, 4), (26, 4), (28, 4), (30, 4)]))
     s.add('[node name="Reach" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"reach"', "metadata/objective_local_cells = %s" % cells([(19, 9), (20, 9), (19, 10), (20, 10)]))
     s.add('[node name="Extract" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"extract"', "metadata/objective_local_cells = %s" % cells([(26, 7), (27, 7), (26, 8), (27, 8)]))

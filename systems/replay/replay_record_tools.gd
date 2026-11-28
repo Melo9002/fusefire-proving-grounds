@@ -74,9 +74,11 @@ static func validate_action_record(record: Dictionary, envelope_version: int) ->
 				return "unsupported terminal interaction payload schema %s (expected 8)" % payload_version
 			if kind == "move" and payload_version not in [2, 6, 9, 10]:
 				return "unsupported Move payload schema %s" % payload_version
+			if kind in ["open_door", "close_door"] and payload_version != DoorActionResult.SCHEMA_VERSION:
+				return "unsupported door payload schema %s (expected %d)" % [payload_version, DoorActionResult.SCHEMA_VERSION]
 			if kind == "emergency_seal" and payload_version != 9:
 				return "unsupported Emergency Seal payload schema %s" % payload_version
-			if kind not in ["attack", "reload", "aim", "shield", "overwatch", "move", "interact_terminal", "emergency_seal"] and payload_version not in [2, 9]:
+			if kind not in ["attack", "reload", "aim", "shield", "overwatch", "move", "interact_terminal", "emergency_seal", "open_door", "close_door"] and payload_version not in [2, 9]:
 				return "unsupported action payload schema %s" % payload_version
 			if int(record.get("request", {}).get("schema_version", -1)) != TacticalActionRequest.SCHEMA_VERSION:
 				return "unsupported request payload schema %s (expected %d)" % [record.get("request", {}).get("schema_version"), TacticalActionRequest.SCHEMA_VERSION]
