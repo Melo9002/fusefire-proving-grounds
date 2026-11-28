@@ -311,6 +311,7 @@
   "interaction_range_experiments_test": {"sub": ["combat"], "scope": "battle"},
   "dynamic_door_test": {"sub": ["combat"], "scope": "battle"},
   "dynamic_door_replay_test": {"sub": ["combat", "replay"], "scope": "battle"},
+  "dynamic_door_guard_replay_test": {"sub": ["combat", "replay"], "scope": "battle"},
   "interaction_range_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "dynamic_door_capture": {"sub": ["combat"], "scope": "battle", "run": "explicit", "req": "render", "kind": "capture"},
   "exploration_actions_capture": {"sub": ["animation"], "scope": "component", "run": "explicit", "req": "render", "kind": "capture"},
