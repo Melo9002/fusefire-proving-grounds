@@ -154,15 +154,24 @@ def build(closed):
     wall_run(s, "Building", "NorthWall", 3.0, 3.0, 12.0, False, [], "North wall")                                                   # world z = 3
     wall_run(s, "Building", "SouthWall", 21.0, 3.0, 12.0, False, [], "South wall")                                                  # world z = 21
     wall_run(s, "Building", "Partition", 12.0, 3.0, 12.0, False, [(6.4, 7.6, "door"), (9.4, 10.6, "window")], "Partition")        # world z = 12
-    # The door leaf (Kenney door.glb; its hinge is its local +x edge). Closed it fills the doorway on the partition line (world z = 12, x = 7); open it is swung 90 degrees about the hinge into room B.
+    # The door (Milestone 06.09: a dynamic door with two supported states). The leaf is Kenney door.glb in its closed pose on the partition line (world z = 12, x = 7; hinge on its +x edge, world x = 7.6). Its own
+    # `open` animation swings it 100 degrees about the hinge into room A (north, -Z) and settles there: the open part is the leaf's bounding box in that pose. The scene carries a marker (identity, doorway cell,
+    # initial state, swing) and the explicit parts of each state; the initial state's parts are the ones compiled. `interaction_range_open` starts open and also places the leaf's visual in the open pose.
     door = s.res("door", KIT + "door.glb")
-    if closed:
-        s.add('[node name="DoorLeaf" parent="Building" instance=ExtResource("door")]', "position = %s" % v(7.0, 0, 12.0), "rotation = %s" % v(0, 0, 0), "scale = %s" % v(SCALE, SCALE, SCALE))
-        box_part(s, "Building", "DoorLeafSolid", 12.0, OPEN_H / 2.0, 7.0, THICK, OPEN_H, OPEN_W, "Closed door")   # fills the doorway's whole cell (one cell thick like the walls)
-    else:
-        # The hinge stays at world x = 7.6, z = 12; the leaf points into room B (+Z): yaw +90 degrees; its centre is 0.6 m along +Z from the hinge, so its drawing-frame position is (12.6, 7.6).
-        s.add('[node name="DoorLeaf" parent="Building" instance=ExtResource("door")]', "position = %s" % v(7.6, 0, 12.6), "rotation = %s" % v(0, math.radians(90.0), 0), "scale = %s" % v(SCALE, SCALE, SCALE))
-        box_part(s, "Building", "DoorLeafOpenSolid", 12.6, OPEN_H / 2.0, 7.6, OPEN_W, OPEN_H, 0.15, "Open door leaf")
+    hinge_x, hinge_z = 7.6, 12.0
+    swing = math.radians(-100.0)
+    # Drawing frame is swapped on output (P): the door sits at world (7, 12); the marker, the parts and the animation use world values directly below.
+    s.add('[node name="Door" type="Node3D" parent="Building"]', 'metadata/door_id = &"door_a"', "metadata/door_cell_local = Vector3i(7, 0, 12)", 'metadata/door_initial_state = &"%s"' % ("closed" if closed else "open"), "metadata/door_hinge_local = %s" % v(hinge_x, 0, hinge_z), "metadata/door_swing_radius = 1.2", "metadata/door_swing_from_deg = 180.0", "metadata/door_swing_to_deg = 280.0")
+    # The leaf is always placed in its closed pose; DoorPresenter shows the committed state (it seeks the model's own `open` animation to its end for an open door).
+    s.add('[node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]', "position = %s" % v(7.0, 0, 12.0), "rotation = Vector3(0, 0, 0)", "scale = %s" % v(SCALE, SCALE, SCALE), 'metadata/door_visual_id = &"door_a"')
+    # Parts, world values (this block is outside P): closed = the whole doorway cell, one cell thick like the walls; open = the leaf's bounding box at 100 degrees (thickness 0.15, length 1.2).
+    s.add('[node name="DoorClosedLeaf" type="Node3D" parent="Building/Door"]', "position = %s" % v(7.0, OPEN_H / 2.0, 12.0), "metadata/solid_size = %s" % v(OPEN_W, OPEN_H, THICK), "metadata/precise_shot_bounds = true", 'metadata/shot_label = "Closed door"', 'metadata/door_id = &"door_a"', 'metadata/door_state = &"closed"')
+    ox = hinge_x + 0.6 * math.cos(math.radians(280.0))
+    oz = hinge_z + 0.6 * math.sin(math.radians(280.0))
+    leaf_dir = (math.cos(math.radians(280.0)), math.sin(math.radians(280.0)))
+    size_x = OPEN_W * abs(leaf_dir[0]) + 0.15 * abs(leaf_dir[1])
+    size_z = OPEN_W * abs(leaf_dir[1]) + 0.15 * abs(leaf_dir[0])
+    s.add('[node name="DoorOpenLeaf" type="Node3D" parent="Building/Door"]', "position = %s" % v(ox, OPEN_H / 2.0, oz), "metadata/solid_size = %s" % v(size_x, OPEN_H, size_z), "metadata/precise_shot_bounds = true", 'metadata/shot_label = "Open door leaf"', 'metadata/door_id = &"door_a"', 'metadata/door_state = &"open"')
     crate = s.res("crate", KIT + "box-large.glb")
     s.add('[node name="Cover" type="Node3D" parent="."]')
     for i, (cx, cz) in enumerate([(11, 5), (13, 9), (7, 9), (17, 6), (5, 11), (19, 11)]):
@@ -172,8 +181,8 @@ def build(closed):
         s.add('[node name="TacticalVolume" type="Node3D" parent="Cover/Crate%d"]' % i, "position = Vector3(0, 0.24, 0)", "metadata/solid_size = Vector3(0.95, 0.48, 0.88)", "metadata/movement_cost = 2")
     s.add('[node name="MissionStations" type="Node3D" parent="."]')
     # Room A is the drawing's x 4..11 (world z 4..11, the north room); room B the drawing's x 13..20 (the south room). The drawing's z is the world x.
-    s.add('[node name="PlayerDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 0", "metadata/deployment_local_cells = %s" % cells([(5, 5), (5, 7), (6, 10), (8, 5), (8, 8)]))
-    s.add('[node name="EnemyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 1", "metadata/deployment_local_cells = %s" % cells([(19, 5), (19, 7), (18, 10), (16, 5), (16, 8)]))
+    s.add('[node name="PlayerDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 0", "metadata/deployment_local_cells = %s" % cells([(9, 6), (9, 8), (9, 5), (9, 9), (8, 7)]))   # world (6,9) (8,9) (5,9) (9,9) (7,8): in front of the door, two to three cells from it
+    s.add('[node name="EnemyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 1", "metadata/deployment_local_cells = %s" % cells([(15, 6), (15, 8), (15, 5), (15, 9), (16, 7)]))   # world (6,15) (8,15) (5,15) (9,15) (7,16): across the door
     s.add('[node name="AllyDeployment" type="Node" parent="MissionStations"]', "metadata/deployment_faction = 2", "metadata/deployment_local_cells = %s" % cells([(24, 4), (26, 4), (28, 4), (30, 4)]))
     s.add('[node name="Reach" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"reach"', "metadata/objective_local_cells = %s" % cells([(19, 9), (20, 9), (19, 10), (20, 10)]))
     s.add('[node name="Extract" type="Node" parent="MissionStations"]', 'metadata/objective_zone_id = &"extract"', "metadata/objective_local_cells = %s" % cells([(26, 7), (27, 7), (26, 8), (27, 8)]))

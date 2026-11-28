@@ -297,6 +297,10 @@ func _execute(record: Dictionary) -> bool:
 			return await _replay_mission(record, actor)
 		"interact_terminal":
 			return await _replay_mission(record, actor)
+		"open_door", "close_door":
+			var request := _request_from_record(record)
+			var result := await level.battle_controller.action_service.submit_door(request)
+			return _verify_action_result(result, record, kind)
 	return false
 
 func _replay_simple(record: Dictionary) -> bool:

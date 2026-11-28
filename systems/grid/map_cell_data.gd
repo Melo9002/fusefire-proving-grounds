@@ -31,6 +31,8 @@ var authored_shot_parts: Array[AABB] = []
 var is_shot_only := false
 ## Optional public name on an independently indexed authored obstacle.
 var shot_obstacle_label := ""
+## The door whose leaf makes this shot obstacle (empty for everything else); lets a door state change replace exactly its own obstacles.
+var door_id: StringName = &""
 var movement_cost: int = 1
 ## Optional authored environmental exposure. Empty cells have no hazard.
 var hazard_condition: ConditionDefinition

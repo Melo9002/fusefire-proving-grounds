@@ -37,6 +37,10 @@ var guard_minimum_chance := 0
 var conditions_enabled := true
 var last_beat_events: Array[Dictionary] = []
 
+## The movement graph a door change rebuilds (set by the battle controller), and the presenter of a committed door change.
+var pathfinder: Pathfinder
+var present_door := Callable()
+
 var _turn_manager: TurnManager
 var _grid_manager: GridManager
 var _objective_manager: ObjectiveManager
@@ -907,6 +911,123 @@ func submit_mission(request: TacticalActionRequest, suppress_presentation := fal
 	_set_busy(false)
 	return result
 
+func make_door_request(kind: StringName, actor: TacticalUnit, door_id: StringName, source: TacticalActionRequest.Source) -> TacticalActionRequest:
+	return TacticalActionRequest.mission(kind, actor.tactical_id if is_instance_valid(actor) else &"", door_id, state_revision, source)
+
+## Whether `actor` may open (`open_door`) or close (`close_door`) door `door_id` now. Free (no AP); the same lifecycle rules as every action (the unit must be the one allowed to act, nothing may be in progress),
+## the existing carrier restriction, and the door's own physical checks (MapDoors.check). A rejection changes nothing.
+func query_door(kind: StringName, actor_id: StringName, door_id: StringName) -> DoorActionQueryResult:
+	var query := DoorActionQueryResult.new()
+	query.kind = kind
+	query.actor_id = actor_id
+	query.door_id = door_id
+	query.state_revision = state_revision
+	query.desired_state = DoorData.OPEN if kind == &"open_door" else DoorData.CLOSED
+	var service_check := _validate_action_window()
+	if not service_check.accepted:
+		query.validation = service_check
+		return query
+	if kind not in [&"open_door", &"close_door"] or not is_instance_valid(_grid_manager) or _grid_manager.map_data == null or not _grid_manager.map_data.doors.has(door_id):
+		query.validation = ActionValidationResult.reject(&"door_missing", "There is no such door", state_revision)
+		return query
+	var door: DoorData = _grid_manager.map_data.doors[door_id]
+	query.door_state = door.state
+	query.door_cell = door.cell
+	var actor := actor_registry.resolve(actor_id)
+	var actor_check := _validate_free_objective_actor(actor)
+	if not actor_check.accepted:
+		query.validation = actor_check
+		return query
+	if actor.is_carrying_unit():
+		query.validation = ActionValidationResult.reject(&"carrying_unit", "Cannot operate a door while carrying someone", state_revision)
+		return query
+	var check := MapDoors.check(_grid_manager.map_data, _grid_manager, actor, door_id, query.desired_state)
+	query.validation = ActionValidationResult.allow(state_revision) if check.ok else ActionValidationResult.reject(check.code, check.message, state_revision)
+	return query
+
+## Commits a door change as one authoritative action: validated, applied atomically (MapDoors), costing nothing, advancing the revision once; opening can create Guard reactions (below). A rejection (or a change
+## that cannot be applied and is rolled back) leaves AP, the RNG, occupancy, the door and the revision exactly as they were.
+func submit_door(request: TacticalActionRequest, suppress_presentation := false) -> DoorActionResult:
+	var validation := _validate_request(request)
+	if not validation.accepted:
+		_reject(validation)
+		return null
+	if request.kind not in [&"open_door", &"close_door"] or not is_instance_valid(pathfinder):
+		_reject(ActionValidationResult.reject(&"unsupported_action", "Door action is unavailable", state_revision))
+		return null
+	var query := query_door(request.kind, request.actor_id, request.target_id)
+	if not query.is_legal():
+		_reject(query.validation)
+		return null
+	var actor := actor_registry.resolve(request.actor_id)
+	var map := _grid_manager.map_data
+	var door: DoorData = map.doors[request.target_id]
+	var actor_cell := _grid_manager.get_unit_grid(actor)
+	# The opening's Guard rule needs the shot the watchers had BEFORE the change: record it now, apply the change, then ask again.
+	var watchers: Array = _guard_watchers_against(actor) if query.desired_state == DoorData.OPEN else []
+	var legal_before := {}
+	for watcher: TacticalUnit in watchers:
+		legal_before[watcher.tactical_id] = CombatRules.evaluate_attack_at_cell(watcher, actor, actor_cell, _grid_manager, null, CombatRules.cover_tuning.guard_accuracy_modifier, shield_enabled).is_legal
+	_set_busy(true, request.actor_id)
+	is_committing = true
+	if not MapDoors.apply_with_graph(map, pathfinder, request.target_id, query.desired_state):
+		is_committing = false
+		_set_busy(false)
+		_reject(ActionValidationResult.reject(&"commit_failed", "The door could not be moved", state_revision))
+		return null
+	last_transaction_id += 1
+	var result := DoorActionResult.new()
+	result.transaction_id = last_transaction_id
+	result.base_revision = state_revision
+	result.request = request
+	result.door_id = request.target_id
+	result.state_before = query.door_state
+	result.state_after = door.state
+	result.actor_cell = actor_cell
+	result.actor_ap_before = actor.stats.current_ap
+	result.region = door.region()
+	for watcher: TacticalUnit in watchers:
+		if not is_instance_valid(actor) or actor.stats.is_defeated:
+			break
+		var opportunity := query_guard_reaction(watcher, actor, actor_cell)
+		if bool(legal_before.get(watcher.tactical_id, false)):
+			result.guard_checks[watcher.tactical_id] = {"reason": "The shot was already legal before the door opened"}
+		elif not opportunity.can_fire:
+			result.guard_checks[watcher.tactical_id] = {"reason": String(opportunity.reason), "held_fire": bool(opportunity.get("held_fire", false))}
+		else:
+			result.reaction_events.append(_fire_guard_reaction(watcher, actor, actor_cell, opportunity.evaluation))
+	result.actor_ap_after = actor.stats.current_ap
+	result.geometry_signature = SurfaceNavigation.signature(map)
+	result.combat_rng_state_after = _combat_rng.state
+	state_revision += 1
+	result.committed_revision = state_revision
+	is_committing = false
+	_publish_commit(result)
+	result.presentation_suppressed = suppress_presentation
+	if present_door.is_valid(): await present_door.call(result, actor)
+	result.presentation_completed = true
+	action_presented.emit(result)
+	_set_busy(false)
+	return result
+
+## Hostile Guard watchers, in the order every reaction uses (faction, then id), that could react to `target`.
+func _guard_watchers_against(target: TacticalUnit) -> Array:
+	var watchers: Array = []
+	if not overwatch_enabled or not is_instance_valid(target):
+		return watchers
+	var ids := actor_registry.get_ids()
+	ids.sort_custom(func(first: StringName, second: StringName) -> bool:
+		var a := actor_registry.resolve(first)
+		var b := actor_registry.resolve(second)
+		var faction_a := int(a.faction) if is_instance_valid(a) else 999
+		var faction_b := int(b.faction) if is_instance_valid(b) else 999
+		return String(first) < String(second) if faction_a == faction_b else faction_a < faction_b)
+	for id in ids:
+		var watcher := actor_registry.resolve(id)
+		if is_instance_valid(watcher) and watcher.tactical_state and watcher.tactical_state.is_overwatching and FactionRules.are_hostile(watcher.faction, target.faction):
+			watchers.append(watcher)
+	return watchers
+
 func get_combat_rng_state() -> int:
 	return _combat_rng.state
 
@@ -919,7 +1040,7 @@ func advance_external_revision() -> int:
 	return state_revision
 
 func _validate_request(request: TacticalActionRequest) -> ActionValidationResult:
-	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"emergency_seal", &"rescue", &"extract", &"interact_terminal"]:
+	if request == null or request.kind not in [&"attack", &"move", &"wait", &"defend", &"reload", &"aim", &"shield", &"overwatch", &"emergency_seal", &"rescue", &"extract", &"interact_terminal", &"open_door", &"close_door"]:
 		return ActionValidationResult.reject(&"unsupported_action", "Action service received an unsupported request", state_revision)
 	var service_check := _validate_action_window()
 	if not service_check.accepted:
@@ -1216,11 +1337,14 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	if not opportunity.can_fire:
 		_record_guard_skip(result, watcher, attacker, checkpoint, "retaliation after being attacked", opportunity)
 		return
-	var evaluation: CombatRules.AttackEvaluation = opportunity.evaluation
+	result.reaction_events.append(_fire_guard_reaction(watcher, attacker, checkpoint, opportunity.evaluation))
+
+## One Guard reaction at a checkpoint the caller has already found legal: the roll, the supply cost, the spent Guard, the damage. Shared by retaliation and the door (the movement path keeps its own copy for its defeat handling).
+func _fire_guard_reaction(watcher: TacticalUnit, target: TacticalUnit, checkpoint: Vector3i, evaluation: CombatRules.AttackEvaluation) -> OverwatchReactionEvent:
 	var event := OverwatchReactionEvent.new()
 	event.firing_solution = evaluation.firing_solution
 	event.watcher_id = watcher.tactical_id
-	event.checkpoint_cell = _grid_manager.get_unit_grid(attacker)
+	event.checkpoint_cell = checkpoint
 	event.hit_chance = evaluation.hit_chance
 	event.roll = _combat_rng.randf() * 100.0
 	event.did_hit = AttackActionResult.roll_hits(event.roll, event.hit_chance)
@@ -1229,20 +1353,20 @@ func _resolve_attack_retaliation(attacker: TacticalUnit, watcher: TacticalUnit, 
 	event.shield_accuracy_modifier = evaluation.shield_accuracy_modifier
 	event.shield_damage_multiplier = evaluation.shield_damage_multiplier
 	event.supply_points_before = watcher.stats.current_supply_points
-	event.target_hp_before = attacker.stats.current_hp
+	event.target_hp_before = target.stats.current_hp
 	watcher.stats.consume_supply_points(OVERWATCH_SUPPLY_COST)
 	watcher.tactical_state.clear_overwatch()
-	_note_shield_attack(attacker, evaluation)
+	_note_shield_attack(target, evaluation)
 	if event.did_hit:
 		var requested_damage := CombatRules.damage_of(evaluation)
-		attacker.defer_stat_presentation = true
-		attacker.stats.take_damage(requested_damage)
-		attacker.defer_stat_presentation = false
+		target.defer_stat_presentation = true
+		target.stats.take_damage(requested_damage)
+		target.defer_stat_presentation = false
 	event.supply_points_after = watcher.stats.current_supply_points
-	event.target_hp_after = attacker.stats.current_hp
+	event.target_hp_after = target.stats.current_hp
 	event.damage = event.target_hp_before - event.target_hp_after
-	event.target_defeated = attacker.stats.is_defeated
-	result.reaction_events.append(event)
+	event.target_defeated = target.stats.is_defeated
+	return event
 
 func guard_quality_allows(evaluation: CombatRules.AttackEvaluation) -> bool:
 	return evaluation.is_legal and evaluation.hit_chance >= guard_minimum_chance

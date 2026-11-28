@@ -219,7 +219,12 @@ static func _sweep_clear(data: MapData, from: Vector3, to: Vector3, require_floo
 		if not supported(data, from.lerp(to, float(step) / steps), data.body_radius, 0.501 if from.y != to.y else 0.001): return false
 	return true
 
-## Compiled geometry is immutable until the next compilation/resolution pass.
+## Compiled geometry is immutable until the next compilation/resolution pass, except through MapDoors, which changes a door's parts and calls this: the parts stay in the canonical order and the index and route cache are rebuilt.
+static func refresh_movement_parts(data: MapData) -> void:
+	data.movement_parts.sort_custom(_bounds_less)
+	data.movement_routes.clear()
+	_rebuild_movement_index(data)
+
 static func _rebuild_movement_index(data: MapData) -> void:
 	data.movement_columns.clear()
 	data.movement_index_count = data.movement_parts.size()

@@ -237,6 +237,29 @@ func present_simple(result: SimpleActionResult) -> void:
 		await _safe_delay(0.25)
 		await _finish_camera(true)
 
+## Set by the battle level once the environment is presented; null on maps without doors.
+var door_presenter: DoorPresenter
+
+## A committed door change: the leaf follows the committed state (animation never gates the rules), then any Guard reactions the opening created are shown like every other reaction.
+func present_door(result: DoorActionResult, actor: TacticalUnit) -> void:
+	if is_instance_valid(door_presenter):
+		await door_presenter.present(result.door_id, result.presentation_suppressed)
+	if result.presentation_suppressed:
+		for event in result.reaction_events:
+			if event.target_defeated and is_instance_valid(actor):
+				actor.queue_free()
+				break
+		return
+	for event in result.reaction_events:
+		if not is_instance_valid(actor): break
+		var watcher := _actor(event.watcher_id)
+		if not is_instance_valid(watcher): continue
+		await _present_firing_solution(watcher, actor.global_position, event.firing_solution,
+			_show_attack_impact.bind(watcher, actor, event.did_hit, event.hit_chance, event.target_defeated))
+		print_rich("[color=orange][Guard][/color] %s -> %s (door opened): %s (%d%%)" % [event.watcher_id, result.request.actor_id, "HIT %d" % event.damage if event.did_hit else "MISS", event.hit_chance])
+		await _safe_delay(0.18)
+		if event.target_defeated: break
+
 func present_mission(result: MissionActionResult, actor: TacticalUnit, _target: TacticalUnit) -> void:
 	if result.request.kind == &"interact_terminal":
 		if result.presentation_suppressed: return

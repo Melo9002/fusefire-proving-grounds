@@ -297,6 +297,8 @@ func _configure_action_service(objectives: ObjectiveManager) -> void:
 	action_service.overwatch_enabled = overwatch_enabled
 	action_service.checkpoint_passenger_release = checkpoint_passenger_release
 	action_service.conditions_enabled = conditions_enabled
+	action_service.pathfinder = pathfinder
+	action_service.present_door = action_presenter.present_door
 
 func bind_objective_manager(manager: ObjectiveManager) -> void:
 	_objective_manager = manager
@@ -1236,6 +1238,37 @@ func try_mission_action(kind: StringName, actor: TacticalUnit, target: TacticalU
 	var result := await action_service.submit_mission(request)
 	if result == null: _report_ai_rejection(request)
 	if result != null and turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
+		turn_manager.complete_free_objective_action(actor)
+	return result != null
+
+## The door `actor` stands orthogonally beside (a door cell one step north, south, east or west of its cell), or null. The HUD offers this door; the action itself validates reach and physics.
+func adjacent_door(actor: TacticalUnit) -> DoorData:
+	if not is_instance_valid(actor) or grid_manager.map_data == null or grid_manager.map_data.doors.is_empty():
+		return null
+	var cell := grid_manager.get_unit_grid(actor)
+	var ids := grid_manager.map_data.doors.keys()
+	ids.sort()
+	for id in ids:
+		var door: DoorData = grid_manager.map_data.doors[id]
+		var step := door.cell - cell
+		if step.y == 0 and absi(step.x) + absi(step.z) == 1:
+			return door
+	return null
+
+func query_door(actor: TacticalUnit, door_id: StringName, desired: StringName) -> DoorActionQueryResult:
+	var kind := &"open_door" if desired == DoorData.OPEN else &"close_door"
+	return action_service.query_door(kind, actor.tactical_id if is_instance_valid(actor) else &"", door_id)
+
+## Opens or closes a door for `actor`: one authoritative action that costs nothing. Like the terminal, a unit left without AP moves on afterwards through the existing exhausted-unit rule (no extra turn, nothing restored).
+func try_door(actor: TacticalUnit, door_id: StringName, desired: StringName) -> bool:
+	if not is_instance_valid(action_service):
+		return false
+	var kind := &"open_door" if desired == DoorData.OPEN else &"close_door"
+	var request := action_service.make_door_request(kind, actor, door_id, _action_source())
+	var result := await action_service.submit_door(request)
+	if result == null:
+		_report_ai_rejection(request)
+	elif turn_manager.battle_result == TurnManager.BattleResult.ONGOING:
 		turn_manager.complete_free_objective_action(actor)
 	return result != null
 

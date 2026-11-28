@@ -336,16 +336,36 @@ position = Vector3(11.25, 0, 11.1)
 rotation = Vector3(0, 0, 0)
 scale = Vector3(1.5, 1.5, 1.5)
 
-[node name="DoorLeaf" parent="Building" instance=ExtResource("door")]
-position = Vector3(7.6, 0, 12.6)
-rotation = Vector3(0, 1.5708, 0)
-scale = Vector3(1.5, 1.5, 1.5)
+[node name="Door" type="Node3D" parent="Building"]
+metadata/door_id = &"door_a"
+metadata/door_cell_local = Vector3i(7, 0, 12)
+metadata/door_initial_state = &"open"
+metadata/door_hinge_local = Vector3(7.6, 0, 12)
+metadata/door_swing_radius = 1.2
+metadata/door_swing_from_deg = 180.0
+metadata/door_swing_to_deg = 280.0
 
-[node name="DoorLeafOpenSolid" type="Node3D" parent="Building"]
-position = Vector3(7.6, 1.2, 12.6)
-metadata/solid_size = Vector3(0.15, 2.4, 1.2)
+[node name="DoorLeaf" parent="Building/Door" instance=ExtResource("door")]
+position = Vector3(7, 0, 12)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.5, 1.5, 1.5)
+metadata/door_visual_id = &"door_a"
+
+[node name="DoorClosedLeaf" type="Node3D" parent="Building/Door"]
+position = Vector3(7, 1.2, 12)
+metadata/solid_size = Vector3(1.2, 2.4, 1)
+metadata/precise_shot_bounds = true
+metadata/shot_label = "Closed door"
+metadata/door_id = &"door_a"
+metadata/door_state = &"closed"
+
+[node name="DoorOpenLeaf" type="Node3D" parent="Building/Door"]
+position = Vector3(7.7042, 1.2, 11.4091)
+metadata/solid_size = Vector3(0.3561, 2.4, 1.2078)
 metadata/precise_shot_bounds = true
 metadata/shot_label = "Open door leaf"
+metadata/door_id = &"door_a"
+metadata/door_state = &"open"
 
 [node name="Cover" type="Node3D" parent="."]
 
@@ -425,11 +445,11 @@ metadata/movement_cost = 2
 
 [node name="PlayerDeployment" type="Node" parent="MissionStations"]
 metadata/deployment_faction = 0
-metadata/deployment_local_cells = Array[Vector3i]([Vector3i(5, 0, 5), Vector3i(7, 0, 5), Vector3i(10, 0, 6), Vector3i(5, 0, 8), Vector3i(8, 0, 8)])
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(6, 0, 9), Vector3i(8, 0, 9), Vector3i(5, 0, 9), Vector3i(9, 0, 9), Vector3i(7, 0, 8)])
 
 [node name="EnemyDeployment" type="Node" parent="MissionStations"]
 metadata/deployment_faction = 1
-metadata/deployment_local_cells = Array[Vector3i]([Vector3i(5, 0, 19), Vector3i(7, 0, 19), Vector3i(10, 0, 18), Vector3i(5, 0, 16), Vector3i(8, 0, 16)])
+metadata/deployment_local_cells = Array[Vector3i]([Vector3i(6, 0, 15), Vector3i(8, 0, 15), Vector3i(5, 0, 15), Vector3i(9, 0, 15), Vector3i(7, 0, 16)])
 
 [node name="AllyDeployment" type="Node" parent="MissionStations"]
 metadata/deployment_faction = 2
