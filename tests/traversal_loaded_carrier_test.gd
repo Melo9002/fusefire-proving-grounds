@@ -1,7 +1,7 @@
 extends SceneTree
 ## A loaded rescue carrier on the Tactical Test Range's stairs, ramp and ladder. The tactical rules allow all of them (carrying only lowers the movement budget); the presentation
-## supports stairs and ramps as a path (the carrier rides the surface in the carry gait) but NOT the stair feet or the ladder contacts, which would compete with the passenger for
-## the legs and hands. This pins the documented fallback: the passenger stays on the carrier, nothing of the unsupported presentation is applied, and the move completes.
+## supports stairs and ramps in the carry gait. The final check opts out of the loaded ladder profile
+## to retain coverage for rigs using the fallback.
 const Fixture := preload("res://tests/support/ai_scenario_fixture.gd")
 var failures := 0
 var checks := 0
@@ -89,6 +89,7 @@ func _run() -> void:
 	f.ready_actor(actor, 6, 4)
 	var no_surface := func(_floor_position: Vector3) -> float:
 		return 0.0
+	adapter.rig.loaded_climb_profile = null
 	var ladder := await _carry_walk(f, actor, adapter, Vector3i(12, 3, 5), no_surface)
 	print("  loaded on ladder: %.1f s (unloaded about 3.7 s), ladder pose %s, passenger drift %.3f..%.3f m" % [ladder.seconds, ladder.ladder, ladder.drift_min, ladder.drift_max])
 	check(ladder.ok and actor.grid_position == Vector3i(12, 3, 5), "A loaded carrier can take the ladder tactically (no rule forbids it)")

@@ -88,9 +88,21 @@ func carry_unit(unit: TacticalUnit) -> void:
 	stats.speed = maxi(2, stats.speed - 2)
 	unit.visible = false
 	unit.process_mode = Node.PROCESS_MODE_DISABLED
-	if visual_adapter:
-		# The pickup starts from where and how the rescued unit actually lies.
-		visual_adapter.present_pickup(unit.global_position, lying_basis_of)
+	if is_instance_valid(visual_adapter) and not use_legacy_bean:
+		var definition := unit.get_passenger_definition()
+		if definition != null:
+			visual_adapter.present_pickup(unit.global_position, lying_basis_of, definition)
+		else:
+			# Preserve the tactical carry without creating a stand-in for an unknown body.
+			visual_adapter.rig.stow_weapon()
+			visual_adapter.present_idle()
+
+func get_passenger_definition() -> PassengerDefinition:
+	if use_legacy_bean or not is_instance_valid(visual_adapter) or not is_instance_valid(visual_adapter.rig):
+		return null
+	if visual_adapter.rig.character_scene == null or not is_instance_valid(visual_adapter.rig.skeleton):
+		return null
+	return PassengerDefinition.from_rig(visual_adapter.rig)
 
 func get_display_name() -> String:
 	return display_name if not display_name.is_empty() else String(name)
@@ -221,6 +233,8 @@ func _process(delta: float) -> void:
 		return
 
 	if current_waypoint_idx >= current_path.size():
+		if visual_adapter and not visual_adapter.finish_movement_traversal():
+			return
 		is_moving = false
 		if visual_adapter:
 			visual_adapter.present_movement_end()
@@ -241,6 +255,8 @@ func _process(delta: float) -> void:
 			else:
 				visual_adapter.rig.end_stairs()
 			visual_adapter.present_path_segment(segment_state)
+		if not visual_adapter.movement_pose_ready():
+			return
 		visual_adapter.update_locomotion(global_position.direction_to(target_waypoint) * movement_speed, delta)
 
 	global_position = global_position.move_toward(target_waypoint, _presented_speed() * delta)
@@ -257,7 +273,12 @@ func _presented_speed() -> float:
 ## never mistaken for a stuck one.
 func estimated_move_seconds() -> float:
 	var traversal_profile: TraversalProfile = visual_adapter.rig.traversal_profile if visual_adapter != null and is_instance_valid(visual_adapter) else null
-	return TacticalRouteBuilder.estimated_seconds(route, current_waypoint_idx, global_position, movement_speed, DEFAULT_MOVEMENT_SPEED, stair_profile, traversal_profile)
+	var seconds := TacticalRouteBuilder.estimated_seconds(route, current_waypoint_idx, global_position, movement_speed, DEFAULT_MOVEMENT_SPEED, stair_profile, traversal_profile)
+	if visual_adapter != null and is_instance_valid(visual_adapter) and visual_adapter.can_present_loaded_ladder():
+		for index in range(maxi(1, current_waypoint_idx), current_path.size()):
+			if route.kind_at(index) == TraversalLinkData.LADDER and absf(current_path[index].y - current_path[index - 1].y) > 0.05:
+				seconds += 2.0 * visual_adapter.rig.loaded_climb_profile.transfer_seconds
+	return seconds
 
 func move_along_path(path: PackedVector3Array, visual_segments: Array[StringName] = []) -> void:
 	if path.size() == 0:

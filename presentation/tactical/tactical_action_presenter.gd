@@ -345,6 +345,8 @@ func _wait_for_movement(unit: TacticalUnit, result: MoveActionResult) -> void:
 	if is_instance_valid(unit) and unit.is_moving:
 		result.presentation_error = "Movement presentation timed out; snapped to committed destination"
 		unit.is_moving = false
+		if is_instance_valid(unit.visual_adapter):
+			unit.visual_adapter.finish_movement_traversal()
 
 func _finish_camera(was_presented: bool) -> void:
 	if was_presented and is_inside_tree() and not is_queued_for_deletion() and is_instance_valid(action_camera_director) and action_camera_director.is_inside_tree() and not action_camera_director.is_queued_for_deletion():
