@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="periphery"]
+albedo_color = Color(0.19, 0.225, 0.21, 1)
+roughness = 0.94
+
+[sub_resource type="BoxMesh" id="ground"]
+material = SubResource("periphery")
+size = Vector3(96, 0.08, 96)
+
+[node name="InteractionRangeSite" type="Node3D"]
+
+[node name="Surroundings" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.065, 0)
+mesh = SubResource("ground")

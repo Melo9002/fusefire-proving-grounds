@@ -16,6 +16,7 @@ const FREIGHT_YARD := &"freight_yard"
 const FLEET_STATION := &"fleet_station"
 const SERVICE_DEPOT := &"service_depot"
 const TACTICAL_TEST_RANGE := &"tactical_test_range"
+const INTERACTION_RANGE := &"interaction_range"
 const CONTEXTUAL_BAY := &"contextual_firing_bay"
 # Named rules variants preserve historical recordings for the ordinary sites.
 const CONTEXTUAL_DEPOT := &"service_depot_contextual_v1"
@@ -36,6 +37,7 @@ const DEFINITIONS := {
 	PARCEL_TEST: {"label": "Local parcel test", "source_kind": CurrentGenerator.ParcelTest.SOURCE, "fixed_size": Vector2i.ZERO},
 	SERVICE_DEPOT: {"label": "Service Depot", "source_kind": CurrentGenerator.DEPOT_SOURCE, "fixed_size": CurrentGenerator.DEPOT_SIZE},
 	TACTICAL_TEST_RANGE: {"label": "Tactical Test Range", "source_kind": CurrentGenerator.RANGE_SOURCE, "fixed_size": CurrentGenerator.RANGE_SIZE},
+	INTERACTION_RANGE: {"label": "Interaction Range", "source_kind": CurrentGenerator.INTERACTION_SOURCE, "fixed_size": CurrentGenerator.INTERACTION_SIZE},
 	PARKING_GARAGE: {"label": "Authored proof — Two-level Parking Garage", "source_kind": "authored_parking_garage", "fixed_size": Vector2i(32, 32)},
 	GENERATED_COVER: {"label": "Generated cover", "source_kind": "generated_cover", "fixed_size": Vector2i.ZERO},
 	REFINERY: {"label": "Special — Refinery", "source_kind": "generated_refinery", "fixed_size": Vector2i(40, 30)},
@@ -45,7 +47,7 @@ const DEFINITIONS := {
 # Curated-site release/mission matrices keep their existing scope. The menu
 # additionally exposes the same authored range; no scene/content copy is made.
 const PLAYABLE := [SERVICE_DEPOT, FREIGHT_YARD, FLEET_STATION]
-const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE, CONTEXTUAL_SHOWCASE]
+const SELECTABLE := PLAYABLE + [TACTICAL_TEST_RANGE, CONTEXTUAL_SHOWCASE, INTERACTION_RANGE]
 const REPLAYABLE := SELECTABLE + [CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_BAY]
 
 static func contextual_variant(id: StringName) -> StringName:
@@ -56,7 +58,7 @@ static func contextual_variant(id: StringName) -> StringName:
 		_: return &""
 
 static func uses_population(id: StringName) -> bool:
-	return id in [SERVICE_DEPOT, FREIGHT_YARD, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_SHOWCASE, FLEET_STATION, TACTICAL_TEST_RANGE, PARKING_GARAGE, PARCEL_TEST]
+	return id in [SERVICE_DEPOT, FREIGHT_YARD, CONTEXTUAL_DEPOT, CONTEXTUAL_FREIGHT, CONTEXTUAL_SHOWCASE, FLEET_STATION, TACTICAL_TEST_RANGE, INTERACTION_RANGE, PARKING_GARAGE, PARCEL_TEST]
 
 static func has(id: StringName) -> bool:
 	return DEFINITIONS.has(id)
@@ -108,6 +110,8 @@ static func generate(id: StringName, requested_size: Vector2i, map_seed: int, ce
 			return CurrentGenerator.generate(CurrentGenerator.DEPOT_SOURCE, map_seed, cell_size, requested_manifest)
 		TACTICAL_TEST_RANGE:
 			return CurrentGenerator.generate(CurrentGenerator.RANGE_SOURCE, map_seed, cell_size, requested_manifest)
+		INTERACTION_RANGE:
+			return CurrentGenerator.generate(CurrentGenerator.INTERACTION_SOURCE, map_seed, cell_size, requested_manifest)
 		PARKING_GARAGE, REFINERY, INDUSTRIAL_WAREHOUSE, GENERATED_COVER:
 			return _fixtures().generate(id, size, map_seed, cell_size, requested_manifest)
 		_:
@@ -131,7 +135,7 @@ static func _configure_crossfire_deployment(map: MapData) -> void:
 ## Returns true when this catalog supplied the complete special presentation.
 static func present_special(data: MapData, parent: Node3D, cell_size: float, world_environment: WorldEnvironment = null) -> bool:
 	match data.source_kind:
-		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
+		CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.INTERACTION_SOURCE, CurrentGenerator.ParcelTest.SOURCE: return CurrentGenerator.present(data, parent, cell_size, world_environment)
 		"authored_parking_garage": return _fixtures().present_garage(data, parent, cell_size, world_environment)
 		_: return false
 
@@ -140,7 +144,7 @@ static func present(data: MapData, parent: Node3D, cell_size: float, world_envir
 	if data.source_kind == CONTEXTUAL_BAY:
 		ContextualBay.present(data, parent)
 		return true
-	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
+	if data.source_kind in [CurrentGenerator.DEPOT_SOURCE, CurrentGenerator.FREIGHT_SOURCE, CurrentGenerator.FLEET_SOURCE, CurrentGenerator.RANGE_SOURCE, CurrentGenerator.INTERACTION_SOURCE, CurrentGenerator.ParcelTest.SOURCE, "authored_parking_garage"]:
 		return present_special(data, parent, cell_size, world_environment)
 	if data.source_kind in ["generated_cover", "generated_refinery", "generated_industrial_warehouse", "generated_flat"]:
 		_fixtures().present(data, parent, cell_size)
